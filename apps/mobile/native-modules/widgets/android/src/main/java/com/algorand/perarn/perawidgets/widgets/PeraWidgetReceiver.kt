@@ -17,9 +17,8 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import com.algorand.perarn.perawidgets.refresh.WidgetRefreshScheduler
 
-class PortfolioWidgetReceiver : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = PortfolioWidget()
-
+// `fetches` is false for a kind that draws only from the snapshot, so its updates start no network pass.
+abstract class PeraWidgetReceiver(private val fetches: Boolean) : GlanceAppWidgetReceiver() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         WidgetRefreshScheduler.schedule(context)
@@ -28,7 +27,7 @@ class PortfolioWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
         WidgetRefreshScheduler.schedule(context)
-        WidgetRefreshScheduler.refreshSoon(context)
+        if (fetches) WidgetRefreshScheduler.refreshSoon(context)
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
@@ -42,14 +41,51 @@ class PortfolioWidgetReceiver : GlanceAppWidgetReceiver() {
     }
 }
 
+class PortfolioWidgetReceiver : PeraWidgetReceiver(fetches = true) {
+    override val glanceAppWidget: GlanceAppWidget = PortfolioWidget()
+}
+
+class PriceWidgetReceiver : PeraWidgetReceiver(fetches = true) {
+    override val glanceAppWidget: GlanceAppWidget = PriceWidget()
+}
+
+class ReceiveWidgetReceiver : PeraWidgetReceiver(fetches = false) {
+    override val glanceAppWidget: GlanceAppWidget = ReceiveWidget()
+}
+
+class TransactionsWidgetReceiver : PeraWidgetReceiver(fetches = true) {
+    override val glanceAppWidget: GlanceAppWidget = TransactionsWidget()
+}
+
+class PortfolioTabsWidgetReceiver : PeraWidgetReceiver(fetches = true) {
+    override val glanceAppWidget: GlanceAppWidget = PortfolioTabsWidget()
+}
+
 object WidgetKinds {
-    val all: List<Class<out GlanceAppWidget>> = listOf(PortfolioWidget::class.java, PriceWidget::class.java, ReceiveWidget::class.java)
+    val all: List<Class<out GlanceAppWidget>> = listOf(
+        PortfolioWidget::class.java,
+        PriceWidget::class.java,
+        ReceiveWidget::class.java,
+        TransactionsWidget::class.java,
+        PortfolioTabsWidget::class.java,
+    )
+
+    // AppWidgetManager lists placed widgets by receiver, not by GlanceAppWidget.
+    val receivers: List<Class<out GlanceAppWidgetReceiver>> = listOf(
+        PortfolioWidgetReceiver::class.java,
+        PriceWidgetReceiver::class.java,
+        ReceiveWidgetReceiver::class.java,
+        TransactionsWidgetReceiver::class.java,
+        PortfolioTabsWidgetReceiver::class.java,
+    )
 
     fun forReceiver(className: String): Class<out GlanceAppWidget>? =
         when (className) {
             PortfolioWidgetReceiver::class.java.name -> PortfolioWidget::class.java
             PriceWidgetReceiver::class.java.name -> PriceWidget::class.java
             ReceiveWidgetReceiver::class.java.name -> ReceiveWidget::class.java
+            TransactionsWidgetReceiver::class.java.name -> TransactionsWidget::class.java
+            PortfolioTabsWidgetReceiver::class.java.name -> PortfolioTabsWidget::class.java
             else -> null
         }
 }

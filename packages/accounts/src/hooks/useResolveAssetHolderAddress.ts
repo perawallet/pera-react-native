@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
+import { type QueryClient, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getAssetHolderAddresses } from '../db'
-import { useAllAccounts } from './useAllAccounts'
 import { chainAccountOf } from '../credentials'
 import { useAccountsStore } from '../store'
 import { getAssetHoldersQueryKey } from './querykeys'
@@ -37,52 +36,49 @@ export type ResolveAssetHolderAddress = (
  * it searches every account's holdings — has to point the selection at the real
  * holder first, or the detail screen attributes the asset to whichever account
  * happened to be selected.
+ *
+ * Reads the accounts as they are when called, so a caller that resolves once
+ * per tap (a deep link) holds no subscription.
  */
+export const resolveAssetHolderAddress = async (
+    queryClient: QueryClient,
+    assetId: string,
+    scope: ChainScope,
+): Promise<Nullable<string>> => {
+    const holders = await queryClient.ensureQueryData({
+        queryKey: getAssetHoldersQueryKey(assetId, scope),
+        queryFn: () => getAssetHolderAddresses({ assetId, scope }),
+        staleTime: ASSET_HOLDERS_STALE_TIME_MS,
+    })
+
+    const { accounts, getSelectedAccount } = useAccountsStore.getState()
+    const selected = getSelectedAccount()
+    const selectedAddress = selected
+        ? chainAccountOf(selected, scope.chainId)?.address
+        : undefined
+    // Account removal clears its holdings, but a stale row would otherwise
+    // select an address the store no longer knows.
+    const known = new Set(
+        accounts.flatMap(
+            account => chainAccountOf(account, scope.chainId)?.address ?? [],
+        ),
+    )
+    const candidates = holders.filter(address => known.has(address))
+    if (candidates.length === 0) return null
+    if (selectedAddress && candidates.includes(selectedAddress)) {
+        return selectedAddress
+    }
+    return candidates[0] ?? null
+}
+
+/** `resolveAssetHolderAddress` bound to the query client and `scope`. */
 export const useResolveAssetHolderAddress = (
     scope: ChainScope,
 ): ResolveAssetHolderAddress => {
-    const selectedAccount = useAccountsStore(state =>
-        state.getSelectedAccount(),
-    )
-    const selectedAccountAddress = selectedAccount
-        ? chainAccountOf(selectedAccount, scope.chainId)?.address
-        : undefined
-    const accounts = useAllAccounts()
     const queryClient = useQueryClient()
-
-    const knownAddresses = useMemo(
-        () =>
-            new Set(
-                accounts.flatMap(
-                    account =>
-                        chainAccountOf(account, scope.chainId)?.address ?? [],
-                ),
-            ),
-        [accounts, scope.chainId],
-    )
-
     return useCallback(
-        async (assetId: string) => {
-            const holders = await queryClient.ensureQueryData({
-                queryKey: getAssetHoldersQueryKey(assetId, scope),
-                queryFn: () => getAssetHolderAddresses({ assetId, scope }),
-                staleTime: ASSET_HOLDERS_STALE_TIME_MS,
-            })
-
-            // Account removal clears its holdings, but a stale row would
-            // otherwise select an address the store no longer knows.
-            const candidates = holders.filter(address =>
-                knownAddresses.has(address),
-            )
-            if (candidates.length === 0) return null
-            if (
-                selectedAccountAddress &&
-                candidates.includes(selectedAccountAddress)
-            ) {
-                return selectedAccountAddress
-            }
-            return candidates[0] ?? null
-        },
-        [queryClient, scope, knownAddresses, selectedAccountAddress],
+        (assetId: string) =>
+            resolveAssetHolderAddress(queryClient, assetId, scope),
+        [queryClient, scope],
     )
 }

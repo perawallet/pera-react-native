@@ -28,9 +28,7 @@ import type {
 import { config } from '@perawallet/wallet-core-config'
 import { buildPinningConfig } from './buildPinningConfig'
 import type { PinningConfig } from './buildPinningConfig'
-
-/** Domains eligible for backend pinning — never pin outside these. */
-const BACKEND_PIN_DOMAINS = ['perawallet.app'] as const
+import { BACKEND_PIN_DOMAINS } from './pins'
 
 export type SslPinningDependencies = {
     remoteConfig: Pick<RemoteConfigService, 'getBooleanValue'>

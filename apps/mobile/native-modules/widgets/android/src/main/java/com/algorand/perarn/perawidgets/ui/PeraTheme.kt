@@ -11,6 +11,8 @@
  */
 package com.algorand.perarn.perawidgets.ui
 
+import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.ui.graphics.Color
 import androidx.glance.color.ColorProvider
 import androidx.glance.unit.ColorProvider as fixedColor
@@ -23,6 +25,8 @@ object PeraPalette {
     val textMainDark = Color(0xFFF1F1F2)
     val textGrayLight = Color(0xFF71717A)
     val textGrayDark = Color(0xFFA1A1AA)
+    val layerLight = Color(0xFFF1F1F2)
+    val layerDark = Color(0xFF27272A)
     val positiveLight = Color(0xFF1F8E9D)
     val positiveDark = Color(0xFF2CB7BC)
     val negativeLight = Color(0xFFDB4645)
@@ -41,6 +45,7 @@ class PeraColors(val isDark: Boolean?) {
     val background = pick(PeraPalette.backgroundLight, PeraPalette.backgroundDark)
     val textMain = pick(PeraPalette.textMainLight, PeraPalette.textMainDark)
     val textGray = pick(PeraPalette.textGrayLight, PeraPalette.textGrayDark)
+    val layer = pick(PeraPalette.layerLight, PeraPalette.layerDark)
     val positive = pick(PeraPalette.positiveLight, PeraPalette.positiveDark)
     val negative = pick(PeraPalette.negativeLight, PeraPalette.negativeDark)
     val testnetBg = fixedColor(PeraPalette.testnetBg)
@@ -48,6 +53,11 @@ class PeraColors(val isDark: Boolean?) {
 }
 
 object PeraTheme {
+    // Read on every draw, not once per session: a "system" widget's bitmaps (the sparkline) follow night mode at
+    // the next redraw rather than when the session restarts.
+    fun systemIsDark(context: Context): Boolean =
+        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+
     fun isDark(theme: String?, systemIsDark: Boolean): Boolean = when (theme) {
         "light" -> false
         "dark" -> true

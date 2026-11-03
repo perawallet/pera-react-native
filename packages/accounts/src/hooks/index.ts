@@ -75,6 +75,7 @@ export {
 export * from './useAccountFundedNetworksQuery'
 export {
     accountChainEntries,
+    otherRegisteredChainIds,
     useOtherRegisteredChainIds,
     type AccountChainEntry,
 } from './accountChainEntries'

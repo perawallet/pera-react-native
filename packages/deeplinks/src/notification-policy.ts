@@ -30,10 +30,11 @@ export const DEEPLINK_NOTIFICATION_POLICY: Record<DeeplinkType, boolean> = {
     [DeeplinkType.ACCOUNT_DETAIL]: true,
     [DeeplinkType.ASSET_DETAIL]: true,
     [DeeplinkType.NFT_DETAIL]: true,
-    // A push notification has no business opening the camera.
+    // Refused because a push's provenance is a trust cue: one that opens the
+    // camera or a backup flow is the shape of a lure. Any app or site can still
+    // open these through the URL scheme; that is acceptable because each lands
+    // on the app's own flow, whose secret-handling steps ask for the PIN.
     [DeeplinkType.SCAN]: false,
-    // A push that opens a backup flow is the shape of a phishing lure; only
-    // the user's own widget tap starts one.
     [DeeplinkType.CLOUD_BACKUP]: false,
     [DeeplinkType.PASSPHRASE_BACKUP]: false,
     // Both only open a Messages tab, which a push already lands on.

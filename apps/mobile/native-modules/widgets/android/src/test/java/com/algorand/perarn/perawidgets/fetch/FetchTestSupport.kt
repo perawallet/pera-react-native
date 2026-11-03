@@ -16,12 +16,14 @@ import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot
 fun feed(currency: String?, backend: String? = "https://api.test") =
     WidgetSnapshot.PriceFeed(backendUrl = backend, apiKey = "test-key", currencyCode = currency)
 
-// Routes by URL path; an unrouted path or a null body behaves as a failed request.
+// Routes by URL path, or by path and query when a route names one; an unrouted path or a null body behaves as a
+// failed request.
 class StubGet(private val routes: Map<String, String?>) {
     val requests = mutableListOf<Pair<String, String>>()
 
     val get: HttpGet = { url, apiKey ->
         synchronized(requests) { requests.add(url to apiKey) }
-        routes[url.removePrefix("https://api.test").substringBefore("?")]
+        val full = url.removePrefix("https://api.test")
+        if (full in routes) routes[full] else routes[full.substringBefore("?")]
     }
 }

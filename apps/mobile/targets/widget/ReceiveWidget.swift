@@ -83,11 +83,8 @@ struct ReceiveWidgetView: View {
 
     // The account the widget shows, on its own chain; the app when there is none.
     private var accountURL: URL? {
-        guard let target = entry.target else { return URL(string: "perawallet://app/") }
-        var components = URLComponents(string: "perawallet://app/account-detail/")
-        components?.queryItems = [URLQueryItem(name: "address", value: target.address)]
-            + (target.chain.map { [URLQueryItem(name: "chain", value: $0)] } ?? [])
-        return components?.url
+        guard let target = entry.target else { return DeepLink.url("") }
+        return DeepLink.url("account-detail/", ["address": target.address, "chain": target.chain])
     }
 
     private func content(_ target: WidgetSnapshot.ReceiveTarget, qr: UIImage) -> some View {
@@ -129,6 +126,7 @@ struct ReceiveWidget: Widget {
     }
 }
 
+#if DEBUG
 #Preview("Receive QR", as: .systemSmall) {
     ReceiveWidget()
 } timeline: {
@@ -136,3 +134,4 @@ struct ReceiveWidget: Widget {
     ReceiveEntry(date: .now, snapshot: .fixtureMainnet, target: target, qr: target.flatMap { QRCode.image($0.paymentUri) })
     ReceiveEntry(date: .now, snapshot: .fixtureTestnetHidden, target: nil, qr: nil)
 }
+#endif

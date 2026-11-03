@@ -55,12 +55,13 @@ import com.algorand.perarn.perawidgets.ui.PeraChrome
 import com.algorand.perarn.perawidgets.ui.PeraColors
 import com.algorand.perarn.perawidgets.ui.PeraLogo
 import com.algorand.perarn.perawidgets.ui.PeraPlaceholder
+import com.algorand.perarn.perawidgets.ui.PeraSizeMode
 import com.algorand.perarn.perawidgets.ui.PeraText
 import com.algorand.perarn.perawidgets.ui.PeraTheme
-import com.algorand.perarn.perawidgets.ui.qrBitmap
+import com.algorand.perarn.perawidgets.ui.QrBitmaps
 
 class ReceiveWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Exact
+    override val sizeMode: SizeMode = PeraSizeMode
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -70,7 +71,7 @@ class ReceiveWidget : GlanceAppWidget() {
             val version = currentState<Preferences>()[WidgetVersion.key]
             val snapshot = remember(version) { SnapshotStore(context).load() }
             val content = remember(version) { receiveContent(snapshot, WidgetConfig(context).receive(appWidgetId)) }
-            val qr = remember(version) { content?.let { qrBitmap(it.payload) } }
+            val qr = remember(version) { content?.let { QrBitmaps.forPayload(it.payload) } }
             val colors = PeraTheme.colors(snapshot?.theme)
             if (snapshot == null || content == null || qr == null) {
                 PeraPlaceholder(colors)
@@ -101,12 +102,18 @@ private fun ReceiveView(
                 ),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(
-                    provider = ImageProvider(qr),
-                    contentDescription = null,
-                    modifier = GlanceModifier.size(layout.sideDp.dp).background(Color.White).cornerRadius(8.dp),
-                    contentScale = ContentScale.Fit,
-                )
+                // White frame in both themes: scanners need dark modules on a light quiet zone.
+                Box(
+                    modifier = GlanceModifier.size(layout.sideDp.dp).background(Color.White).cornerRadius(8.dp).padding(QR_FRAME_DP.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        provider = ImageProvider(qr),
+                        contentDescription = null,
+                        modifier = GlanceModifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
                 Spacer(GlanceModifier.height(QR_GAP_DP.dp))
                 PeraText(content.label, 11.sp, FontWeight.Medium, colors.textMain, align = TextAlign.Center)
             }

@@ -13,6 +13,7 @@
 import {
     addressOn,
     getAccountDisplayName,
+    type WalletAccount,
     useAccountsStore,
     useAccountValueTotalsQuery,
     useSigningAccounts,
@@ -35,6 +36,8 @@ import {
 } from '@perawallet/wallet-core-currencies'
 import { useAccountsNeedingMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCloudBackupSummary } from '@modules/cloud-backup'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useLanguage } from '@hooks/useLanguage'
@@ -50,7 +53,23 @@ import {
 import { useWidgetAssetOptionsQuery } from './useWidgetAssetOptionsQuery'
 import { useWidgetNftCandidatesQuery } from './useWidgetNftCandidatesQuery'
 import { useWidgetReceiveTargets } from './useWidgetReceiveTargets'
+import { useSettledWidgetValue } from './useSettledWidgetValue'
 import type { WidgetSnapshotWriterInput } from './useWidgetSnapshotWriter'
+
+const namedAddressesOn = (
+    accounts: readonly WalletAccount[],
+    scope: ChainScope,
+): { address: string; name: string }[] =>
+    accounts.flatMap(account => {
+        const address = addressOn(account, scope)
+        return address
+            ? [{ address, name: getAccountDisplayName(account, scope.chainId) }]
+            : []
+    })
+
+// `asOf` is when the price was read, not what it is, so it doesn't count as a change.
+const amountKeyOf = <T extends { asOf: number }>({ asOf: _, ...rest }: T) =>
+    JSON.stringify(rest)
 
 export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     const { t, currentLanguage } = useLanguage()
@@ -59,11 +78,9 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     const scope = useSelectedScope(useCapableChainId('balanceHistory'))
     const backupScope = useSelectedScope(useCapableChainId('mnemonicBackup'))
     const deployment = useWalletDeployment()
-    // The widget's yellow bar matches the app's: any deployment that isn't live.
     const isLive = deployment === 'live'
     const inboxDeviceId = useDeploymentDeviceID(deploymentOf(scope))
     const notificationsDeviceId = useDeploymentDeviceID(deployment)
-    // The app's inbox is gated on the same capability.
     const hasInbox = useChainCapability(scope.chainId, 'notifications')
     const { privacyMode, theme } = useSettings()
     const { getPreference } = usePreferences()
@@ -72,28 +89,28 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     const totals = useAccountValueTotalsQuery(accounts, scope)
     const currency = useCurrency(scope)
     const priceQuery = useNativeUsdPriceQuery(scope)
-    const widgetAccounts = accounts.flatMap(account => {
-        const address = addressOn(account, scope)
-        return address
-            ? [
-                  {
-                      address,
-                      name: getAccountDisplayName(account, scope.chainId),
-                  },
-              ]
-            : []
-    })
+    const widgetAccounts = namedAddressesOn(accounts, scope)
     const addresses = widgetAccounts.map(account => account.address)
-    const { options: assetOptions } = useWidgetAssetOptionsQuery(
+    const scopeIdentity = `${scope.chainId}/${scope.networkId}`
+    const holdingsIdentity = `${scopeIdentity}/${addresses.join()}`
+    const assetOptionsQuery = useWidgetAssetOptionsQuery(
         addresses,
         scope,
         !privacyMode,
     )
-    const { candidates } = useWidgetNftCandidatesQuery(
+    const assetOptions = useSettledWidgetValue(assetOptionsQuery.options, {
+        identity: holdingsIdentity,
+        isError: assetOptionsQuery.isError,
+    })
+    const nftsQuery = useWidgetNftCandidatesQuery(
         addresses,
         scope,
         !privacyMode,
     )
+    const nfts = useSettledWidgetValue(nftsQuery.candidates, {
+        identity: holdingsIdentity,
+        isError: nftsQuery.isError,
+    })
 
     // Every account, not just signing ones: a rekey target can need its
     // passphrase backed up, the same as the in-app banner says.
@@ -104,15 +121,11 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     )
     const cloudBackup = useCloudBackupSummary()
     const receiveTargets = useWidgetReceiveTargets()
-    // Every account, so a shared account's sign request is labelled by name.
-    const accountNames = allAccounts.flatMap(account => {
-        const address = addressOn(account, scope)
-        return address
-            ? [{ address, name: getAccountDisplayName(account, scope.chainId) }]
-            : []
-    })
+    // Every account: a shared account isn't a signing one, yet its requests are
+    // labelled by its name and its invite is dropped once it's added.
+    const accountNames = namedAddressesOn(allAccounts, scope)
 
-    const { algoPrice, portfolio } = resolveWidgetAmounts({
+    const amounts = resolveWidgetAmounts({
         preferredCurrency: currency.preferredCurrency,
         isRatePending: currency.isRatePending,
         usdToPreferred: currency.usdToPreferred,
@@ -124,6 +137,18 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
         portfolioNativeValue: totals.portfolioNativeValue,
         isPortfolioPending: totals.isPending || totals.isError,
     })
+    const amountsIdentity = `${scopeIdentity}/${currency.preferredCurrency}`
+    const algoPrice = useSettledWidgetValue(amounts.algoPrice, {
+        identity: amountsIdentity,
+        isError: priceQuery.isError,
+        keyOf: amountKeyOf,
+    })
+    const portfolio = useSettledWidgetValue(amounts.portfolio, {
+        identity: `${amountsIdentity}/${addresses.join()}`,
+        isError: totals.isError,
+        keyOf: amountKeyOf,
+    })
+    const backendUrl = getPeraServicesConfig(scope).backendUrl
 
     return {
         locale: currentLanguage,
@@ -150,8 +175,9 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
             notifications: t('widgets.notifications'),
             inboxEmpty: t('widgets.inbox_empty'),
             notificationsEmpty: t('widgets.notifications_empty'),
-            waiting: t('widgets.waiting'),
-            toSign: t('widgets.to_sign'),
+            // The native side substitutes the number for `{count}`.
+            inboxWaiting: t('widgets.inbox_waiting', { count: '{count}' }),
+            inboxToSign: t('widgets.inbox_to_sign', { count: '{count}' }),
             inboxSign: t('widgets.inbox_sign'),
             inboxAssets: t('widgets.inbox_assets'),
             inboxInvite: t('widgets.inbox_invite'),
@@ -160,9 +186,12 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
             notAvailable: t('widgets.not_available'),
         },
         priceFeed: resolvePriceFeed({
-            backendUrl: getPeraServicesConfig(scope).backendUrl,
+            backendUrl,
             apiKey: config.backendAPIKey,
             preferredCurrency: currency.preferredCurrency,
+            pinning: backendUrl
+                ? getProvider().widgets.backendPinning(backendUrl)
+                : null,
         }),
         portfolioFeed: resolvePortfolioFeed({
             accounts: widgetAccounts,
@@ -174,7 +203,7 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
         hasAccounts: accounts.length > 0,
         algoPrice,
         portfolio,
-        nfts: candidates,
+        nfts,
         backup: resolveWidgetBackup({
             cloud: cloudBackup,
             passphrase: {
@@ -189,8 +218,8 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
             isAvailable: hasInbox,
             isPrivacyMode: privacyMode,
             deviceId: inboxDeviceId,
-            // The signing accounts, as the app's own inbox query asks about.
             addresses,
+            localAddresses: accountNames.map(account => account.address),
             accountNames,
             notificationsBackendUrl:
                 getPeraDeploymentConfig(deployment).backendUrl,

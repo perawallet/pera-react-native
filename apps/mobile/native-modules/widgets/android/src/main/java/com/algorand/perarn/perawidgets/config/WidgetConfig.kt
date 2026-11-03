@@ -14,6 +14,7 @@ package com.algorand.perarn.perawidgets.config
 import android.content.Context
 import com.algorand.perarn.perawidgets.fetch.KeyValueStore
 import com.algorand.perarn.perawidgets.fetch.SharedPreferencesStore
+import com.algorand.perarn.perawidgets.snapshot.NATIVE_ASSET_ID
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -51,7 +52,11 @@ data class ReceiveOptions(
   val accountAddress: String? = null,
 )
 
-const val NATIVE_ASSET_ID = "0"
+@Serializable
+data class TransactionsOptions(
+  // Null means every account.
+  val accountAddress: String? = null,
+)
 
 private const val PREFERENCES = "pera_widgets_config"
 
@@ -67,12 +72,17 @@ class WidgetConfig(private val store: KeyValueStore) {
   fun price(id: Int): PriceOptions = read(id, "price") ?: PriceOptions()
 
   fun receive(id: Int): ReceiveOptions = read(id, "receive") ?: ReceiveOptions()
+  fun transactions(id: Int): TransactionsOptions = read(id, "transactions") ?: TransactionsOptions()
 
   fun save(id: Int, options: PortfolioOptions) = write(id, "portfolio", options)
 
   fun save(id: Int, options: PriceOptions) = write(id, "price", options)
 
   fun save(id: Int, options: ReceiveOptions) = write(id, "receive", options)
+  fun save(id: Int, options: TransactionsOptions) = write(id, "transactions", options)
+
+  // Any saved options mean the settings screen is reconfiguring rather than adding the widget.
+  fun isConfigured(id: Int): Boolean = KINDS.any { store.get(key(id, it)) != null }
 
   fun delete(id: Int) {
     KINDS.forEach { store.remove(key(id, it)) }
@@ -94,17 +104,21 @@ class WidgetConfig(private val store: KeyValueStore) {
   private fun key(id: Int, kind: String) = "$kind.$id"
 
   companion object {
-    private val KINDS = listOf("portfolio", "price", "receive")
+    private val KINDS = listOf("portfolio", "price", "receive", "transactions")
 
-    // Holds chosen account addresses, so a wallet wipe removes the whole file.
+    // Holds chosen account addresses, so a wallet wipe removes the whole file, synchronously so it reaches disk.
     fun clearAll(context: Context) {
-      context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).edit().clear().apply()
+      context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).edit().clear().commit()
     }
   }
 }
 
-fun resolvePortfolioAccount(options: PortfolioOptions, snapshot: WidgetSnapshot?): WidgetSnapshot.PortfolioFeed.Account? {
-  val address = options.accountAddress ?: return null
+fun resolvePortfolioAccount(options: PortfolioOptions, snapshot: WidgetSnapshot?): WidgetSnapshot.PortfolioFeed.Account? =
+  resolveAccount(options.accountAddress, snapshot)
+
+// An account the app no longer shares (removed, or privacy mode) falls back to every account.
+fun resolveAccount(address: String?, snapshot: WidgetSnapshot?): WidgetSnapshot.PortfolioFeed.Account? {
+  address ?: return null
   return snapshot?.portfolioFeed?.accounts?.firstOrNull { it.address == address }
 }
 

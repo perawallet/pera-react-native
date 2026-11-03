@@ -16,10 +16,20 @@ import android.content.Context
 private const val PREFERENCES = "pera_widgets"
 private const val SNAPSHOT_KEY = "snapshot"
 
-// Reads what PeraWidgetsModule.writeSnapshot stores; change both together.
 class SnapshotStore(private val context: Context) {
-  fun load(): WidgetSnapshot? =
-    WidgetSnapshots.decode(
-      context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).getString(SNAPSHOT_KEY, null),
-    )
+  private val preferences
+    get() = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+
+  fun load(): WidgetSnapshot? = WidgetSnapshots.decode(raw())
+
+  fun raw(): String? = preferences.getString(SNAPSHOT_KEY, null)
+
+  fun write(json: String) {
+    preferences.edit().putString(SNAPSHOT_KEY, json).apply()
+  }
+
+  // commit, not apply: the user often closes the app right after a wipe, and an async write can die with it.
+  fun clear() {
+    preferences.edit().remove(SNAPSHOT_KEY).commit()
+  }
 }

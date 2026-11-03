@@ -46,10 +46,10 @@ class QrBitmapTest {
     }
 
     @Test
-    fun keepsAWhiteQuietZone() {
+    fun keepsAOneModuleQuietZone() {
         val matrix = qrMatrix("algorand://ABC")
         for (i in 0 until matrix.width) {
-            for (edge in 0 until 4) {
+            for (edge in 0 until 1) {
                 assertFalse(matrix[i, edge])
                 assertFalse(matrix[edge, i])
                 assertFalse(matrix[i, matrix.height - 1 - edge])

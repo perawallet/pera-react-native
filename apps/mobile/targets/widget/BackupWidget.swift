@@ -39,8 +39,8 @@ enum BackupKind {
 
     var url: URL? {
         switch self {
-        case .cloud: URL(string: "perawallet://app/cloud-backup/")
-        case .passphrase: URL(string: "perawallet://app/passphrase-backup/")
+        case .cloud: DeepLink.url("cloud-backup/")
+        case .passphrase: DeepLink.url("passphrase-backup/")
         }
     }
 
@@ -134,7 +134,7 @@ struct SingleBackupWidgetView: View {
         .peraEnvironment(entry.snapshot)
         .containerBackground(for: .widget) { PeraColor.background }
         // Cloud backup not offered here: open the app rather than a link it refuses.
-        .widgetURL(kind.line(entry.snapshot) == nil ? URL(string: "perawallet://app/") : kind.url)
+        .widgetURL(kind.line(entry.snapshot) == nil ? DeepLink.url("") : kind.url)
     }
 }
 
@@ -161,7 +161,7 @@ struct BackupsWidgetView: View {
         }
         .peraEnvironment(entry.snapshot)
         .containerBackground(for: .widget) { PeraColor.background }
-        .widgetURL(URL(string: "perawallet://app/"))
+        .widgetURL(DeepLink.url(""))
     }
 
     @ViewBuilder
@@ -211,6 +211,7 @@ struct BackupsWidget: Widget {
     }
 }
 
+#if DEBUG
 #Preview("Cloud", as: .systemSmall) {
     CloudBackupWidget()
 } timeline: {
@@ -232,3 +233,4 @@ struct BackupsWidget: Widget {
     BackupEntry(date: .now, snapshot: .fixtureMainnet)
     BackupEntry(date: .now, snapshot: .fixtureTestnetHidden)
 }
+#endif

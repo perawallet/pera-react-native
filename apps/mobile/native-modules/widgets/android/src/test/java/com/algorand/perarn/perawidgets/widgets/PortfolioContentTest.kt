@@ -78,7 +78,7 @@ class PortfolioContentTest {
     @Test fun usesTheQuoteAndItsFetchTime() {
         val c = content(snapshot(), quote = quote())
         assertEquals("6,500.10 ALGO", c.primary)
-        assertEquals("≈ $1,500.50", c.secondary)
+        assertEquals("≈ $ 1,500.50", c.secondary)
         assertEquals("Updated 14:05", c.updatedText)
         assertEquals(listOf(1.0, 2.0, 3.0), c.chart)
         assertTrue(c.isTrendUp)

@@ -49,14 +49,25 @@ class InMemoryStore : KeyValueStore {
 
 data class Cached<T>(val value: T)
 
-// A quote is only valid for the network, accounts or asset, period and currency it was fetched for.
+// A quote is only valid for the network, accounts or asset, period and currency it was fetched for. Each key starts
+// with its kind, which is how a widget's older entries of that kind are found and dropped.
 object QuoteKeys {
+    const val PRICE = "price"
+    const val PORTFOLIO = "portfolio"
+    const val TRANSACTIONS = "transactions"
+
     fun price(backendUrl: String?, assetId: String, period: String, quote: QuoteCurrency): String =
-        listOf("price", backendUrl.orEmpty(), assetId, period, quote.code).joinToString("|")
+        listOf(PRICE, backendUrl.orEmpty(), assetId, period, quote.code).joinToString("|")
 
     fun portfolio(backendUrl: String?, addresses: List<String>, period: String, currencyCode: String?): String =
-        listOf("portfolio", backendUrl.orEmpty(), addresses.sorted().joinToString(","), period, currencyCode.orEmpty())
+        listOf(PORTFOLIO, backendUrl.orEmpty(), addresses.sorted().joinToString(","), period, currencyCode.orEmpty())
             .joinToString("|")
+
+    // Rows hold formatted amounts, so the locale is part of the key.
+    fun transactions(backendUrl: String?, addresses: List<String>, locale: String?): String =
+        listOf(TRANSACTIONS, backendUrl.orEmpty(), addresses.sorted().joinToString(","), locale.orEmpty()).joinToString("|")
+
+    fun kind(key: String): String = key.substringBefore('|')
 }
 
 private const val QUOTE_PREFERENCES = "pera_widgets_quotes"
@@ -77,22 +88,38 @@ class QuoteCache(@PublishedApi internal val store: KeyValueStore) {
         }
     }
 
+    // One entry per kind per widget: a quote for a removed account, or an old currency, period or locale, holds
+    // addresses and balances nothing will read again.
     inline fun <reified T> put(widgetId: Int, key: String, value: T) {
-        store.put(storageKey(widgetId, key), json.encodeToString(serializer<T>(), value))
+        val stored = storageKey(widgetId, key)
+        val sameKind = storageKey(widgetId, QuoteKeys.kind(key) + "|")
+        store.keys().filter { it.startsWith(sameKind) && it != stored }.forEach { store.remove(it) }
+        store.put(stored, json.encodeToString(serializer<T>(), value))
     }
+
+    fun remove(widgetId: Int, key: String) = store.remove(storageKey(widgetId, key))
 
     fun clear(widgetId: Int) {
         val prefix = "quote.$widgetId."
         store.keys().filter { it.startsWith(prefix) }.forEach { store.remove(it) }
     }
 
+    // Privacy mode keeps no balances or rows on disk, for any widget; prices name no account and stay.
+    fun clearAccountData() {
+        val kinds = setOf(QuoteKeys.PORTFOLIO, QuoteKeys.TRANSACTIONS)
+        store.keys().filter { QuoteKeys.kind(innerKey(it)) in kinds }.forEach { store.remove(it) }
+    }
+
+    private fun innerKey(storageKey: String) = storageKey.removePrefix("quote.").substringAfter('.')
+
     @PublishedApi
     internal fun storageKey(widgetId: Int, key: String) = "quote.$widgetId.$key"
 
     companion object {
-        // Keys hold account addresses and values hold balances, so a wallet wipe removes the whole file.
+        // Keys hold account addresses and values hold balances, so a wallet wipe removes the whole file, synchronously
+        // so it reaches disk before the app can be closed.
         fun clearAll(context: Context) {
-            context.getSharedPreferences(QUOTE_PREFERENCES, Context.MODE_PRIVATE).edit().clear().apply()
+            context.getSharedPreferences(QUOTE_PREFERENCES, Context.MODE_PRIVATE).edit().clear().commit()
         }
     }
 }

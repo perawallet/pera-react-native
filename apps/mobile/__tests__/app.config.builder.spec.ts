@@ -25,6 +25,12 @@ type ResolvedConfig = {
         buildNumber: string
         appleTeamId?: string
         config: { usesNonExemptEncryption: boolean }
+        privacyManifests: {
+            NSPrivacyAccessedAPITypes: Array<{
+                NSPrivacyAccessedAPIType: string
+                NSPrivacyAccessedAPITypeReasons: string[]
+            }>
+        }
         infoPlist: Record<string, unknown>
         entitlements: Record<string, unknown>
     }
@@ -95,6 +101,22 @@ describe('buildAppConfig — refactor invariants', () => {
         const { ios } = build({ APP_ENV: 'production' })
 
         expect(ios.config.usesNonExemptEncryption).toBe(false)
+    })
+
+    // The widgets bridge reads and writes App Group UserDefaults, which only
+    // 1C8F.1 covers; a missing reason is an ITMS-91053 on upload.
+    it('declares the App Group UserDefaults reason alongside the app ones', () => {
+        const { ios } = build({ APP_ENV: 'production' })
+
+        const userDefaults =
+            ios.privacyManifests.NSPrivacyAccessedAPITypes.find(
+                type =>
+                    type.NSPrivacyAccessedAPIType ===
+                    'NSPrivacyAccessedAPICategoryUserDefaults',
+            )
+        expect(userDefaults?.NSPrivacyAccessedAPITypeReasons).toEqual(
+            expect.arrayContaining(['CA92.1', 'C56D.1', '1C8F.1']),
+        )
     })
 
     // App Review rejected 7.0.0 under guideline 5.1.1(ii) for a camera string

@@ -23,15 +23,15 @@ struct InboxEntry: TimelineEntry {
 }
 
 enum InboxLinks {
-    static let inbox = URL(string: "perawallet://app/inbox/")
-    static let notifications = URL(string: "perawallet://app/notifications/")
+    static let inbox = DeepLink.url("inbox/")
+    static let notifications = DeepLink.url("notifications/")
 
     static func open(_ item: InboxItem) -> URL? {
         switch item.kind {
         case .sign:
-            item.signRequestId.flatMap { URL(string: "perawallet://app/sign-request/?signRequestId=\($0)") } ?? inbox
+            item.signRequestId.flatMap { DeepLink.url("sign-request/", ["signRequestId": $0]) } ?? inbox
         case .assets:
-            URL(string: "perawallet://app/asset-inbox/?address=\(item.address)")
+            DeepLink.url("asset-inbox/", ["address": item.address])
         case .invite:
             inbox
         }
@@ -50,20 +50,18 @@ enum InboxContent {
 struct InboxProvider: TimelineProvider {
     let content: InboxContent
 
-    private static let refreshInterval: TimeInterval = 30 * 60
-
     func placeholder(in context: Context) -> InboxEntry {
         InboxEntry(date: .now, snapshot: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (InboxEntry) -> Void) {
-        Task { completion(await load(at: .now, isPreview: context.isPreview, family: context.family)) }
+        Task { completion(await load(at: .now, isPreview: context.isPreview, family: context.family).entry) }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<InboxEntry>) -> Void) {
         Task {
-            let first = await load(at: .now, isPreview: false, family: context.family)
-            let next = Date.now.addingTimeInterval(Self.refreshInterval)
+            let (first, didFail) = await load(at: .now, isPreview: false, family: context.family)
+            let next = WidgetRefresh.next(didFail: didFail)
             // One entry per minute so row times and "Updated" advance between fetches.
             let entries = minuteEntries(until: next) { date in
                 InboxEntry(date: date, snapshot: first.snapshot, inbox: first.inbox, notifications: first.notifications, page: first.page)
@@ -74,20 +72,23 @@ struct InboxProvider: TimelineProvider {
 
     // The gallery preview must be instant, so it fetches nothing. A medium
     // tabs widget shows both halves, so it fetches both.
-    private func load(at date: Date, isPreview: Bool, family: WidgetFamily) async -> InboxEntry {
+    // `didFail` is set when a fetch that could run came back empty-handed.
+    private func load(at date: Date, isPreview: Bool, family: WidgetFamily) async -> (entry: InboxEntry, didFail: Bool) {
         let snapshot = WidgetSnapshot.current
         let isSplit = content == .tabs && family != .systemSmall
         let page = content == .tabs && !isSplit ? WidgetPageStore.page(WidgetPageStore.inboxTabs) : 0
         var entry = InboxEntry(date: date, snapshot: snapshot, page: page)
-        guard !isPreview, let feed = snapshot?.inboxFeed else { return entry }
+        guard !isPreview, let feed = snapshot?.inboxFeed else { return (entry, false) }
 
-        let wantsNotifications = isSplit || content == .notifications || (content == .tabs && page == 1)
-        let wantsInbox = isSplit || content == .inbox || (content == .tabs && page == 0)
+        let wantsNotifications = (isSplit || content == .notifications || (content == .tabs && page == 1))
+            && feed.notifications != nil
+        let wantsInbox = (isSplit || content == .inbox || (content == .tabs && page == 0)) && snapshot?.priceFeed != nil
         async let inbox = fetchInbox(feed, snapshot, if: wantsInbox)
         async let notifications = fetchNotifications(feed, snapshot, if: wantsNotifications)
         entry.inbox = await inbox
         entry.notifications = await notifications
-        return entry
+        let didFail = (wantsInbox && entry.inbox == nil) || (wantsNotifications && entry.notifications == nil)
+        return (entry, didFail)
     }
 
     private func fetchInbox(_ feed: WidgetSnapshot.InboxFeed, _ snapshot: WidgetSnapshot?, if wanted: Bool) async -> InboxSummary? {
@@ -97,15 +98,46 @@ struct InboxProvider: TimelineProvider {
 
     private func fetchNotifications(_ feed: WidgetSnapshot.InboxFeed, _ snapshot: WidgetSnapshot?, if wanted: Bool) async -> [NotificationRow]? {
         guard wanted, let notifications = feed.notifications else { return nil }
-        return await InboxFetcher.notifications(
-            notifications,
-            apiKey: snapshot?.priceFeed?.apiKey ?? "",
-            limit: InboxContent.notificationLimit
-        )
+        return await InboxFetcher.notifications(notifications, snapshot?.priceFeed, limit: InboxContent.notificationLimit)
     }
 }
 
 // MARK: - Shared pieces
+
+/// A count and its caption from a template such as "{count} waiting": the number is drawn large where the
+/// token sits, the words around it as captions, so the sentence stays the app's in every language.
+private struct CountCaption: View {
+    let template: String?
+    let count: Int
+    let size: CGFloat
+
+    private static let token = "{count}"
+
+    var body: some View {
+        let parts = (template ?? Self.token).components(separatedBy: Self.token)
+        // A template without exactly one token can't be split; it is shown whole, the number filled in.
+        let before = parts.count == 2 ? parts[0].trimmingCharacters(in: .whitespaces) : ""
+        let after = parts.count == 2
+            ? parts[1].trimmingCharacters(in: .whitespaces)
+            : (template ?? "").replacingOccurrences(of: Self.token, with: "\(count)")
+        VStack(alignment: .leading, spacing: 0) {
+            if !before.isEmpty { caption(before) }
+            Text("\(count)")
+                .font(PeraFont.bold(size))
+                .foregroundStyle(PeraColor.textMain)
+                .contentTransition(.numericText())
+            if !after.isEmpty { caption(after) }
+        }
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(PeraFont.medium(12))
+            .foregroundStyle(PeraColor.textGray)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+    }
+}
 
 private struct InboxHeader: View {
     let symbol: String
@@ -202,13 +234,7 @@ private struct InboxCountContent: View {
                 if inbox.total == 0 {
                     caughtUp
                 } else {
-                    Text("\(inbox.total)")
-                        .font(PeraFont.bold(countSize))
-                        .foregroundStyle(PeraColor.textMain)
-                        .contentTransition(.numericText())
-                    Text(entry.snapshot?.string("waiting") ?? "")
-                        .font(PeraFont.medium(12))
-                        .foregroundStyle(PeraColor.textGray)
+                    CountCaption(template: entry.snapshot?.string("inboxWaiting"), count: inbox.total, size: countSize)
                     breakdown(inbox)
                 }
             } else {
@@ -371,13 +397,7 @@ private struct SignaturesView: View {
                         .font(PeraFont.bold(15))
                         .foregroundStyle(PeraColor.textMain)
                 } else {
-                    Text("\(count)")
-                        .font(PeraFont.bold(34))
-                        .foregroundStyle(PeraColor.textMain)
-                        .contentTransition(.numericText())
-                    Text(entry.snapshot?.string("toSign") ?? "")
-                        .font(PeraFont.medium(12))
-                        .foregroundStyle(PeraColor.textGray)
+                    CountCaption(template: entry.snapshot?.string("inboxToSign"), count: count, size: 34)
                 }
             } else {
                 Text("—").font(PeraFont.bold(34)).foregroundStyle(PeraColor.textGray)
@@ -532,6 +552,7 @@ private struct InboxTabsView: View {
     }
 }
 
+#if DEBUG
 // MARK: - Previews
 
 private extension InboxSummary {
@@ -592,3 +613,4 @@ private extension NotificationRow {
     InboxEntry(date: .now, snapshot: .fixtureMainnet, inbox: .fixture, page: 0)
     InboxEntry(date: .now, snapshot: .fixtureMainnet, notifications: NotificationRow.fixtures, page: 1)
 }
+#endif

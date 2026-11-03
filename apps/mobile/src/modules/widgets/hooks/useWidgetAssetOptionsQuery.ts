@@ -20,8 +20,9 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import type { WidgetAssetOption } from '../snapshot'
 
 export type UseWidgetAssetOptionsQueryResult = {
-    /** `undefined` while loading or disabled. */
+    /** `undefined` while loading, disabled or errored. */
     options: Optional<WidgetAssetOption[]>
+    isError: boolean
 }
 
 // Keeps the Edit Widget list usable and the snapshot small.
@@ -52,11 +53,11 @@ export const useWidgetAssetOptionsQuery = (
         kind: 'fungible',
         enabled,
     })
-    if (!enabled) return { options: undefined }
-    // A failed or empty read leaves only ALGO in the picker rather than
-    // holding back the snapshot.
-    if (addresses.length === 0 || isError) return { options: [] }
+    if (!enabled) return { options: undefined, isError: false }
+    if (addresses.length === 0) return { options: [], isError: false }
+    if (isError) return { options: undefined, isError: true }
     return {
+        isError: false,
         options: assets
             // ALGO is always offered by the widget itself.
             ?.filter(asset => asset.assetId !== NATIVE_ASSET_ID)

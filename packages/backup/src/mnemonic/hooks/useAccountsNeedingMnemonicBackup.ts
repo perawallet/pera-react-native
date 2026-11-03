@@ -11,17 +11,23 @@
  */
 
 import { useMemo } from 'react'
-import { useQueries } from '@tanstack/react-query'
+import { type QueryClient, useQueries } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainCapabilities,
+    useChainCapability,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     accountChainEntries,
     accountFundedNetworksQueryOptions,
     chainAccountOf,
+    delegationAuthoritiesOf,
+    otherRegisteredChainIds,
     useOtherRegisteredChainIds,
     useDelegationAuthorities,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useMnemonicBackupStore } from '../store'
 import { requiresMnemonicBackup } from './useRequiresMnemonicBackup'
 import { isMnemonicBackupPromptDue } from './useShouldPromptMnemonicBackup'
@@ -107,4 +113,61 @@ export const useAccountsNeedingMnemonicBackup = (
     )
 
     return { accounts: needing, isPending }
+}
+
+/**
+ * `useAccountsNeedingMnemonicBackup` resolved once, for code that acts on a tap
+ * rather than renders a count: waits for every funding read instead of
+ * reporting pending. A failed read counts as unfunded, as it does in the hook.
+ */
+export const findAccountsNeedingMnemonicBackup = async (
+    queryClient: QueryClient,
+    accounts: WalletAccount[],
+    scope: ChainScope,
+): Promise<WalletAccount[]> => {
+    const canBackUpMnemonic =
+        getProvider().chains.has(scope.chainId) &&
+        getChainCapabilities(scope.chainId).mnemonicBackup
+    if (!canBackUpMnemonic) return []
+
+    const backedUpKeyIds = useMnemonicBackupStore.getState().backedUpKeyIds
+    const addresses = accounts.map(
+        account => chainAccountOf(account, scope.chainId)?.address ?? '',
+    )
+    const authorities = delegationAuthoritiesOf(
+        addresses,
+        accounts,
+        scope.chainId,
+    )
+    const otherChainIds = otherRegisteredChainIds(scope.chainId)
+
+    const fundedFlags = await Promise.all(
+        accounts.map(async account => {
+            const lookups = await Promise.allSettled(
+                accountChainEntries(account, scope.chainId, otherChainIds).map(
+                    entry =>
+                        queryClient.fetchQuery(
+                            accountFundedNetworksQueryOptions(entry, scope),
+                        ),
+                ),
+            )
+            return lookups.some(
+                lookup =>
+                    lookup.status === 'fulfilled' && lookup.value.length > 0,
+            )
+        }),
+    )
+
+    return accounts.filter((account, index) =>
+        isMnemonicBackupPromptDue({
+            canBackUpMnemonic,
+            requiresBackup: requiresMnemonicBackup(
+                account,
+                scope.chainId,
+                backedUpKeyIds,
+            ),
+            isFunded: fundedFlags[index] ?? false,
+            isDelegatedTo: authorities.has(addresses[index] ?? ''),
+        }),
+    )
 }

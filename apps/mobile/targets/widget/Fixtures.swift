@@ -11,7 +11,8 @@
  */
 import Foundation
 
-// Preview data only.
+// Preview data only; kept out of release builds.
+#if DEBUG
 extension WidgetSnapshot {
     static let fixtureMainnet = WidgetSnapshot(
         version: 1, locale: "en", theme: "system",
@@ -19,7 +20,7 @@ extension WidgetSnapshot {
         strings: [
             "updated": "Updated", "algoPrice": "ALGO price", "portfolio": "Portfolio Value", "hidden": "Hidden", "nftsEmpty": "No NFTs yet",
             "tabPortfolio": "Portfolio", "tabTransactions": "Transactions", "inbox": "Inbox", "notifications": "Notifications",
-            "inboxEmpty": "All caught up", "notificationsEmpty": "No notifications yet", "waiting": "waiting", "toSign": "to sign",
+            "inboxEmpty": "All caught up", "notificationsEmpty": "No notifications yet", "inboxWaiting": "{count} waiting", "inboxToSign": "{count} to sign",
             "inboxSign": "Signature request", "inboxAssets": "Incoming assets", "inboxInvite": "Shared account invitation",
             "cloudBackup": "Cloud Backup", "passphraseBackup": "Passphrase Backup", "notAvailable": "Not available",
         ],
@@ -117,7 +118,7 @@ extension PortfolioQuote {
             currencyCode: "USD",
             chart: [6200, 6310, 6280, 6400, 6390, 6450, 6500.12],
             change: change,
-            fetchedAt: .now.addingTimeInterval(-300)
+            asOf: .now.addingTimeInterval(-300)
         )
     }
 }
@@ -153,3 +154,4 @@ extension TransactionRow {
         .init(id: "5", kind: .appCall, amount: nil, date: .now.addingTimeInterval(-259_200)),
     ]
 }
+#endif

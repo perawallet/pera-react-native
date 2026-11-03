@@ -11,34 +11,36 @@
  */
 
 import { useCallback } from 'react'
-import { addressOn, useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useAccountsNeedingMnemonicBackup } from '@perawallet/wallet-core-backup'
+import { useQueryClient } from '@tanstack/react-query'
+import { addressOn, getAllAccounts } from '@perawallet/wallet-core-accounts'
+import { findAccountsNeedingMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 
 export type PassphraseBackupDeeplinkHandler = (
     replaceCurrentScreen: boolean,
-) => void
+) => Promise<void>
 
 /**
- * Opens the passphrase backup of the first account that needs one, picked at
- * tap time: the widget that sent the link may be showing an older count. With
- * nothing left to back up it lands home.
+ * Opens the passphrase backup of the first account that needs one, resolved
+ * at tap time: the widget that sent the link may be showing an older count,
+ * and on a cold start the funding reads haven't run yet. With nothing left to
+ * back up it lands home.
  */
 export const usePassphraseBackupDeeplink =
     (): PassphraseBackupDeeplinkHandler => {
         const scope = useSelectedScope(useCapableChainId('mnemonicBackup'))
-        const accounts = useAccountsStore(state => state.accounts)
-        const { accounts: needing } = useAccountsNeedingMnemonicBackup(
-            accounts,
-            scope,
-        )
-        const first = needing[0]
-        const address = first ? addressOn(first, scope) : undefined
+        const queryClient = useQueryClient()
 
         return useCallback(
-            (replaceCurrentScreen: boolean) => {
+            async (replaceCurrentScreen: boolean) => {
+                const [first] = await findAccountsNeedingMnemonicBackup(
+                    queryClient,
+                    getAllAccounts(),
+                    scope,
+                )
+                const address = first ? addressOn(first, scope) : undefined
                 if (!address) {
                     navigateHome(replaceCurrentScreen)
                     return
@@ -48,6 +50,6 @@ export const usePassphraseBackupDeeplink =
                     params: { address },
                 })
             },
-            [address],
+            [queryClient, scope],
         )
     }

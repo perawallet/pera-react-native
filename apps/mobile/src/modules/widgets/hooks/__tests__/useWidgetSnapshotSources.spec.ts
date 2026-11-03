@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useWidgetSnapshotSources } from '../useWidgetSnapshotSources'
 
 const state = vi.hoisted(() => ({
@@ -22,6 +23,12 @@ const state = vi.hoisted(() => ({
     preferredCurrency: 'EUR',
     priceIsPending: false,
     priceIsError: false,
+    priceData: '0.2' as string | undefined,
+    priceUpdatedAt: 1234,
+    nftResult: { candidates: [], isError: false } as {
+        candidates: unknown
+        isError: boolean
+    },
     backendUrl: 'https://mainnet.api.example',
     assetOptionsQuery: vi.fn(),
     nftCandidatesQuery: vi.fn(),
@@ -58,13 +65,16 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
         isRatePending: false,
         usdToPreferred: (usd: Decimal | null | undefined) =>
             usd ? usd.mul(2) : null,
-        nativeUsdPrice: new Decimal('0.2'),
+        nativeUsdPrice: undefined,
     }),
     useNativeUsdPriceQuery: () => ({
-        data: new Decimal('0.2'),
+        data:
+            state.priceData === undefined
+                ? undefined
+                : new Decimal(state.priceData),
         isPending: state.priceIsPending,
         isError: state.priceIsError,
-        dataUpdatedAt: 1234,
+        dataUpdatedAt: state.priceUpdatedAt,
     }),
 }))
 
@@ -116,7 +126,13 @@ vi.mock('@hooks/useCapableChainIds', () => ({
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key, currentLanguage: 'pt-BR' }),
+    useLanguage: () => ({
+        t: (key: string, options?: { count?: unknown }) =>
+            typeof options?.count === 'string'
+                ? `${key}|${options.count}`
+                : key,
+        currentLanguage: 'pt-BR',
+    }),
 }))
 
 vi.mock('@hooks/useNetworkLabel', () => ({
@@ -135,7 +151,7 @@ vi.mock('../useWidgetAssetOptionsQuery', () => ({
 vi.mock('../useWidgetNftCandidatesQuery', () => ({
     useWidgetNftCandidatesQuery: (...args: unknown[]) => {
         state.nftCandidatesQuery(...args)
-        return { candidates: [] }
+        return state.nftResult
     },
 }))
 
@@ -151,6 +167,10 @@ describe('useWidgetSnapshotSources', () => {
         state.preferredCurrency = 'EUR'
         state.priceIsPending = false
         state.priceIsError = false
+        state.priceData = '0.2'
+        state.priceUpdatedAt = 1234
+        state.nftResult = { candidates: [], isError: false }
+        vi.mocked(getProvider().widgets.backendPinning).mockReturnValue(null)
         state.backendUrl = 'https://mainnet.api.example'
         state.assetOptionsQuery.mockClear()
         state.nftCandidatesQuery.mockClear()
@@ -217,7 +237,23 @@ describe('useWidgetSnapshotSources', () => {
             backendUrl: 'https://mainnet.api.example',
             apiKey: 'api-key',
             currencyCode: 'EUR',
+            pinning: null,
         })
+    })
+
+    it('passes the pins the app enforces on the backend to the price feed', () => {
+        const pinning = {
+            publicKeyHashes: ['pin='],
+            expiresAt: '2027-07-08T00:00:00Z',
+        }
+        vi.mocked(getProvider().widgets.backendPinning).mockReturnValue(pinning)
+
+        const { result } = renderHook(() => useWidgetSnapshotSources())
+
+        expect(getProvider().widgets.backendPinning).toHaveBeenCalledWith(
+            'https://mainnet.api.example',
+        )
+        expect(result.current.priceFeed?.pinning).toEqual(pinning)
     })
 
     it('has no price feed on a network without a Pera backend', () => {
@@ -260,13 +296,83 @@ describe('useWidgetSnapshotSources', () => {
     })
 
     // A failed price read must not hold back the snapshot like a pending one.
-    it('treats a failed price read as an unknown value, not as loading', () => {
+    it('treats a failed first price read as an unknown value, not as loading', () => {
         state.priceIsError = true
+        state.priceData = undefined
 
         const { result } = renderHook(() => useWidgetSnapshotSources())
 
         expect(result.current.algoPrice?.value).toBeNull()
         expect(result.current.portfolio?.algoValue).toEqual(new Decimal('500'))
+    })
+
+    it('keeps the last good price through a failed read', () => {
+        const { result, rerender } = renderHook(() =>
+            useWidgetSnapshotSources(),
+        )
+        const good = result.current.algoPrice
+
+        state.priceIsError = true
+        state.priceData = undefined
+        state.priceUpdatedAt = 9999
+        rerender()
+
+        expect(result.current.algoPrice).toBe(good)
+    })
+
+    // An unchanged price poll must not cost a snapshot write and a timeline reload.
+    it('keeps the price timestamp while a refetch returns the same price', () => {
+        const { result, rerender } = renderHook(() =>
+            useWidgetSnapshotSources(),
+        )
+
+        state.priceUpdatedAt = 5678
+        rerender()
+        expect(result.current.algoPrice?.asOf).toBe(1234)
+        expect(result.current.portfolio?.asOf).toBe(1234)
+
+        state.priceData = '0.3'
+        rerender()
+        expect(result.current.algoPrice).toEqual({
+            value: new Decimal('0.6'),
+            currencyCode: 'EUR',
+            asOf: 5678,
+        })
+    })
+
+    it('keeps the last good NFTs through a failed read', () => {
+        const candidates = [
+            { assetId: '7', title: 'Seven', imageUrl: 'https://x/7.png' },
+        ]
+        state.nftResult = { candidates, isError: false }
+        const { result, rerender } = renderHook(() =>
+            useWidgetSnapshotSources(),
+        )
+
+        state.nftResult = { candidates: null, isError: true }
+        rerender()
+
+        expect(result.current.nfts).toEqual(candidates)
+    })
+
+    // Null, not []: an empty list would purge every cached image.
+    it('reports NFTs as unknown when the first read fails', () => {
+        state.nftResult = { candidates: null, isError: true }
+
+        const { result } = renderHook(() => useWidgetSnapshotSources())
+
+        expect(result.current.nfts).toBeNull()
+    })
+
+    it('writes the inbox counts as whole sentences with a count token for the widget', () => {
+        const { result } = renderHook(() => useWidgetSnapshotSources())
+
+        expect(result.current.strings).toMatchObject({
+            inboxWaiting: 'widgets.inbox_waiting|{count}',
+            inboxToSign: 'widgets.inbox_to_sign|{count}',
+        })
+        expect(result.current.strings).not.toHaveProperty('waiting')
+        expect(result.current.strings).not.toHaveProperty('toSign')
     })
 
     it('reports the price as loading while its query is pending', () => {
@@ -320,6 +426,7 @@ describe('useWidgetSnapshotSources', () => {
         expect(result.current.inboxFeed).toEqual({
             deviceId: 'live-device',
             addresses: ['ADDR1', 'ADDR2'],
+            localAddresses: ['ADDR1', 'SHARED'],
             accountNames: [
                 { address: 'ADDR1', name: 'Main' },
                 { address: 'SHARED', name: 'Team Vault' },

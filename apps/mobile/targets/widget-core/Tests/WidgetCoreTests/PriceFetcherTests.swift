@@ -150,4 +150,51 @@ final class PriceFetcherTests: XCTestCase {
         XCTAssertTrue(requests.allSatisfy { $0.value(forHTTPHeaderField: "X-API-Key") == "test-key" })
         XCTAssertTrue(requests.contains { $0.url?.query?.contains("period=one-month") == true })
     }
+
+    // USDC flat in USD while ALGO rises 10%: in ALGO terms USDC fell about 9%, and the chart must show it.
+    func testAnALGOQuoteTakesItsChangeAndChartAgainstALGO() async throws {
+        let (usdcPath, usdcBody) = asset("31566704", tier: "verified", usd: "1.0", previous: "1.0")
+        let (algoPath, algoBody) = asset("0", tier: nil, usd: "0.22", previous: "0.2", unit: "")
+        StubURLProtocol.install([
+            usdcPath: usdcBody,
+            algoPath: algoBody,
+            "/v1/assets/price-chart/?asset_id=31566704": ok("[{ \"price\": 1.0 }, { \"price\": 1.0 }]"),
+            "/v1/assets/price-chart/?asset_id=0": ok("[{ \"price\": 0.2 }, { \"price\": 0.25 }]"),
+        ])
+
+        let fetched = await PriceFetcher.fetch(testFeed, assetId: "31566704", quote: .algo, period: "one-week")
+        let quote = try XCTUnwrap(fetched)
+
+        XCTAssertEqual(quote.change24h ?? 0, (1.0 / 0.22) / (1.0 / 0.2) - 1, accuracy: 1e-9)
+        XCTAssertEqual(quote.chart.count, 2)
+        XCTAssertEqual(quote.chart[0], 5, accuracy: 1e-9)
+        XCTAssertEqual(quote.chart[1], 4, accuracy: 1e-9)
+    }
+
+    func testAnALGOQuoteHasNoChartWhenTheSeriesDontPair() async throws {
+        let (usdcPath, usdcBody) = asset("31566704", tier: "verified", usd: "1.0")
+        let (algoPath, algoBody) = asset("0", tier: nil, usd: "0.2", unit: "")
+        StubURLProtocol.install([
+            usdcPath: usdcBody,
+            algoPath: algoBody,
+            "/v1/assets/price-chart/?asset_id=31566704": ok("[{ \"price\": 1.0 }, { \"price\": 1.0 }]"),
+            "/v1/assets/price-chart/?asset_id=0": ok("[{ \"price\": 0.2 }]"),
+        ])
+
+        let fetched = await PriceFetcher.fetch(testFeed, assetId: "31566704", quote: .algo, period: "one-week")
+        let quote = try XCTUnwrap(fetched)
+
+        XCTAssertEqual(quote.chart, [])
+    }
+
+    func testAnALGOQuoteHasNoChangeWithoutALGOsPreviousPrice() async throws {
+        let (usdcPath, usdcBody) = asset("31566704", tier: "verified", usd: "1.0", previous: "1.0")
+        let (algoPath, algoBody) = asset("0", tier: nil, usd: "0.2", unit: "")
+        StubURLProtocol.install([usdcPath: usdcBody, algoPath: algoBody])
+
+        let fetched = await PriceFetcher.fetch(testFeed, assetId: "31566704", quote: .algo, period: "one-week")
+        let quote = try XCTUnwrap(fetched)
+
+        XCTAssertNil(quote.change24h)
+    }
 }

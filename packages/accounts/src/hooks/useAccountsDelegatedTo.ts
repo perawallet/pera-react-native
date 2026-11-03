@@ -47,15 +47,25 @@ export const useDelegationAuthorities = (
     const accounts = useAccountsStore(state => state.accounts)
     // Reads every legacy scope, so any slice write can change the result.
     const chainStates = useAccountChainStateStore(state => state.states)
-    return useMemo(() => {
-        const authority = accountsChainAdapters.get(chainId).authority
-        if (!authority) return new Set<string>()
-        return new Set(
-            addresses.filter(
-                address =>
-                    authority.accountsDelegatedTo(address, accounts).length > 0,
-            ),
-        )
+    return useMemo(
+        () => delegationAuthoritiesOf(addresses, accounts, chainId),
         // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: accountsDelegatedTo reads the chain-state store, not its arguments
-    }, [addresses, accounts, chainId, chainStates])
+        [addresses, accounts, chainId, chainStates],
+    )
+}
+
+/** `useDelegationAuthorities` for code that can't use a hook; reads the chain-state store as it is now. */
+export const delegationAuthoritiesOf = (
+    addresses: readonly string[],
+    accounts: WalletAccount[],
+    chainId: ChainId,
+): ReadonlySet<string> => {
+    const authority = accountsChainAdapters.get(chainId).authority
+    if (!authority) return new Set<string>()
+    return new Set(
+        addresses.filter(
+            address =>
+                authority.accountsDelegatedTo(address, accounts).length > 0,
+        ),
+    )
 }

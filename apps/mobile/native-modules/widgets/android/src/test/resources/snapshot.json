@@ -4,7 +4,8 @@
   "theme": "system",
   "network": { "isMainnet": true, "label": "MainNet" },
   "strings": { "updated": "Updated", "portfolio": "Portfolio", "algoPrice": "ALGO price" },
-  "priceFeed": { "backendUrl": "https://mainnet.api.perawallet.app", "apiKey": "test-key", "currencyCode": "USD" },
+  "priceFeed": { "backendUrl": "https://mainnet.api.perawallet.app", "apiKey": "test-key", "currencyCode": "USD",
+    "pinning": { "publicKeyHashes": ["hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc="], "expiresAt": "2027-07-08" } },
   "portfolioFeed": {
     "accounts": [
       { "address": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "name": "Main" },
@@ -24,7 +25,8 @@
     "deviceId": "device-1",
     "addresses": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"],
     "accountNames": [{ "address": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "name": "Main" }],
-    "notifications": null
+    "notifications": null,
+    "localAddresses": ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
   },
   "receiveTargets": [
     { "address": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "name": "Main", "paymentUri": "algorand://AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "chain": "algorand:mainnet" }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="portfolio_name">Portafolio</string>
+  <string name="portfolio_description">El valor total de tu portafolio.</string>
+  <string name="price_name">Precio</string>
+  <string name="price_description">El precio de un activo verificado y su cambio en 24 h.</string>
+  <string name="receive_name">QR para recibir</string>
+  <string name="receive_description">Muestra el código QR de una cuenta para recibir fondos.</string>
+  <string name="transactions_name">Transacciones</string>
+  <string name="transactions_description">Tus transacciones más recientes.</string>
+  <string name="portfolio_tabs_name">Portafolio y transacciones</string>
+  <string name="portfolio_tabs_description">Tu portafolio y tus transacciones recientes, a un toque de distancia.</string>
+  <string name="scan_tile_label">Escanear con Pera</string>
+  <string name="options_chart_period">Periodo del gráfico</string>
+  <string name="options_period_default">Predeterminado</string>
+  <string name="options_period_one_day">1 día</string>
+  <string name="options_period_one_week">1 semana</string>
+  <string name="options_period_one_month">1 mes</string>
+  <string name="options_period_one_year">1 año</string>
+  <string name="options_show_chart">Mostrar gráfico</string>
+  <string name="options_account">Cuenta</string>
+  <string name="options_show_inverse">Mostrar activo por moneda</string>
+  <string name="options_asset">Activo</string>
+  <string name="options_currency">Moneda</string>
+  <string name="options_default">Predeterminado</string>
+  <string name="options_portfolio">Portafolio</string>
+  <string name="options_add_widget">Añadir widget</string>
+  <string name="options_save">Guardar</string>
+  <string name="options_hint">Se abre al añadir el widget y al mantenerlo pulsado → Personalizar</string>
+</resources>

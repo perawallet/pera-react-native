@@ -266,7 +266,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         address: string,
     ) => accounts.find(a => a.chains[chainId]?.address === address),
     hdIndexOf: (account: { hdIndex?: number }) => account.hdIndex,
-    useResolveAssetHolderAddress: () => accountsState.resolveAssetHolderAddress,
+    resolveAssetHolderAddress: (
+        _queryClient: unknown,
+        assetId: string,
+        scope: unknown,
+    ) => accountsState.resolveAssetHolderAddress(assetId, scope),
     useAllAccounts: () => [
         {
             id: 'mock',
@@ -458,6 +462,11 @@ const { mockOpenPassphraseBackup, mockIsCloudBackupAvailable } = vi.hoisted(
         mockIsCloudBackupAvailable: vi.fn(() => true),
     }),
 )
+
+vi.mock('@tanstack/react-query', async importOriginal => ({
+    ...(await importOriginal<typeof import('@tanstack/react-query')>()),
+    useQueryClient: () => ({}),
+}))
 
 vi.mock('../../handlers/usePassphraseBackupDeeplink', () => ({
     usePassphraseBackupDeeplink: () => mockOpenPassphraseBackup,
@@ -1495,6 +1504,7 @@ describe('useDeepLink', () => {
 
         expect(accountsState.resolveAssetHolderAddress).toHaveBeenCalledWith(
             '286018494',
+            expect.objectContaining({ chainId: expect.any(String) }),
         )
         expect(accountsState.setSelectedAccountId).toHaveBeenCalledWith(
             'holder',

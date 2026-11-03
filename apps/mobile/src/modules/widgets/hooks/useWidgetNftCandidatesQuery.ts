@@ -13,12 +13,13 @@
 import { useHeldAssetDetailsQuery } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { MAX_WIDGET_NFTS, type WidgetNftCandidate } from '../snapshot'
 
 export type UseWidgetNftCandidatesQueryResult = {
-    /** `undefined` while loading, disabled or errored. */
-    candidates: Optional<WidgetNftCandidate[]>
+    /** `undefined` while loading or disabled; null when the read failed. */
+    candidates: Maybe<WidgetNftCandidate[]>
+    isError: boolean
 }
 
 // Some collectibles have no image (audio, 3D), so read past the cap to still fill it.
@@ -49,11 +50,12 @@ export const useWidgetNftCandidatesQuery = (
         maxAssetIds: MAX_WIDGET_NFTS * LOOKUP_HEADROOM,
         enabled,
     })
-    if (!enabled) return { candidates: undefined }
-    // "Loading" holds back the whole snapshot, so a failed or empty read must
-    // resolve to no NFTs rather than leave every widget waiting.
-    if (addresses.length === 0 || isError) return { candidates: [] }
+    if (!enabled) return { candidates: undefined, isError: false }
+    if (addresses.length === 0) return { candidates: [], isError: false }
+    // Not `[]`: an empty list would purge every cached image.
+    if (isError) return { candidates: null, isError: true }
     return {
+        isError: false,
         candidates: assets
             ?.map(toCandidate)
             .filter((candidate): candidate is WidgetNftCandidate => !!candidate)

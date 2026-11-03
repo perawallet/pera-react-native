@@ -18,6 +18,7 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { WidgetBackendPinning } from '@perawallet/wallet-extension-platform'
 import type {
     BuildWidgetSnapshotInput,
     WidgetPortfolioFeed,
@@ -48,8 +49,10 @@ export const resolveWidgetAmounts = (
     const isAlgoPreferred = isAlgoAssetName(input.preferredCurrency)
     // A rate or price that never resolves (common on TestNet) makes fiat
     // unknown, never "loading": waiting on it would hold back the ALGO balance.
-    const hasFiat =
-        !input.isPriceError && (isAlgoPreferred || !input.isRatePending)
+    // A failed refetch keeps the price it last had, so only an error with no
+    // price at all makes fiat unknown.
+    const isPriceUnknown = input.isPriceError && input.algoUsdPrice === null
+    const hasFiat = !isPriceUnknown && (isAlgoPreferred || !input.isRatePending)
     const asOf = input.priceUpdatedAt
     const algoFiatPrice = () =>
         isAlgoPreferred
@@ -85,11 +88,13 @@ export const resolvePriceFeed = ({
     backendUrl,
     apiKey,
     preferredCurrency,
+    pinning,
 }: {
     /** Empty when the network has no Pera backend. */
     backendUrl: string
     apiKey: string
     preferredCurrency: string
+    pinning: Nullable<WidgetBackendPinning>
 }): WidgetPriceFeed =>
     backendUrl
         ? {
@@ -98,6 +103,7 @@ export const resolvePriceFeed = ({
               currencyCode: isAlgoAssetName(preferredCurrency)
                   ? USD
                   : preferredCurrency,
+              pinning,
           }
         : null
 

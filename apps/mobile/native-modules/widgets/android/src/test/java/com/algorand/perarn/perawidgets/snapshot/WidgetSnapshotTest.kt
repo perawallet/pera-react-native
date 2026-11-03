@@ -12,6 +12,8 @@
 package com.algorand.perarn.perawidgets.snapshot
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -58,5 +60,22 @@ class WidgetSnapshotTest {
     assertNull(s.backup?.cloud)
     assertEquals("Main", s.inboxFeed?.accountNames?.first()?.name)
     assertNull(s.inboxFeed?.notifications)
+    assertEquals(1, s.inboxFeed?.localAddresses?.size)
+  }
+
+  @Test fun decodesThePriceFeedPinning() {
+    val pinning = WidgetSnapshots.decode(fixture())!!.priceFeed?.pinning!!
+    assertEquals(listOf("hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc="), pinning.publicKeyHashes)
+    assertEquals("2027-07-08", pinning.expiresAt)
+  }
+
+  @Test fun pinningIsOptional() {
+    assertNull(WidgetSnapshots.decode("""{"version":1,"priceFeed":{"backendUrl":"https://x"}}""")!!.priceFeed?.pinning)
+  }
+
+  @Test fun privacyModeOrNoFeedHidesAccountData() {
+    assertTrue(WidgetSnapshots.decode("""{"version":1,"portfolio":{"state":"hidden"},"portfolioFeed":{}}""")!!.hidesAccountData)
+    assertTrue(WidgetSnapshots.decode("""{"version":1}""")!!.hidesAccountData)
+    assertFalse(WidgetSnapshots.decode(fixture())!!.hidesAccountData)
   }
 }

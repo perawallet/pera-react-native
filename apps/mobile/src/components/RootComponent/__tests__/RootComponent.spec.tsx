@@ -74,7 +74,7 @@ vi.mock('@hooks/useNotificationReceivedListener', () => ({
     useNotificationReceivedListener: vi.fn(),
 }))
 vi.mock('@modules/widgets/shell', () => ({
-    useWidgetSnapshotSync: vi.fn(),
+    WidgetSnapshotSync: () => <div data-testid='widget-snapshot-sync' />,
 }))
 vi.mock('@modules/deeplink/shell', () => ({
     useNotificationDeeplinkListener: vi.fn(),
@@ -268,5 +268,16 @@ describe('RootComponent connections provider mount point', () => {
         expect(
             provider.contains(screen.getByTestId('terms-acceptance-prompt')),
         ).toBe(true)
+    })
+
+    // A sibling, not a hook in RootComponent: its subscriptions would
+    // otherwise re-render the whole app on every refetch.
+    it('mounts the widget snapshot sync outside the app content', () => {
+        render(<RootComponent fcmToken={null} />)
+
+        const sync = screen.getByTestId('widget-snapshot-sync')
+        expect(screen.getByTestId('connections-provider').contains(sync)).toBe(
+            false,
+        )
     })
 })

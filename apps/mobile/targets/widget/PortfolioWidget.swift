@@ -68,8 +68,6 @@ let sideBySideRowLimit = 3
 struct PortfolioProvider: AppIntentTimelineProvider {
     let pager: PortfolioPager
 
-    private static let refreshInterval: TimeInterval = 30 * 60
-
     func placeholder(in context: Context) -> PortfolioEntry {
         PortfolioEntry(date: .now, snapshot: nil, quote: nil)
     }
@@ -85,7 +83,7 @@ struct PortfolioProvider: AppIntentTimelineProvider {
     func timeline(for configuration: PortfolioConfigIntent, in context: Context) async -> Timeline<PortfolioEntry> {
         let snapshot = WidgetSnapshot.current
         let content = await load(snapshot, configuration, context.family)
-        let next = Date.now.addingTimeInterval(Self.refreshInterval)
+        let next = WidgetRefresh.next(didFail: content.didFail)
         let entries = minuteEntries(until: next) {
             entry($0, snapshot, content.quote, configuration, page: content.page, rows: content.rows)
         }
@@ -97,7 +95,9 @@ struct PortfolioProvider: AppIntentTimelineProvider {
         _ snapshot: WidgetSnapshot?,
         _ configuration: PortfolioConfigIntent,
         _ family: WidgetFamily
-    ) async -> (page: Int, quote: PortfolioQuote?, rows: [TransactionRow]?) {
+    ) async -> (page: Int, quote: PortfolioQuote?, rows: [TransactionRow]?, didFail: Bool) {
+        // No feeds means privacy mode or no backend: nothing was fetched, so nothing failed.
+        let canFetch = snapshot?.portfolioFeed != nil && snapshot?.priceFeed != nil
         if pager != .none && family == .systemMedium {
             async let quote = quote(snapshot, configuration)
             async let rows = recentTransactions(
@@ -105,15 +105,17 @@ struct PortfolioProvider: AppIntentTimelineProvider {
                 account: selectedAccount(snapshot, configuration)?.address,
                 limit: sideBySideRowLimit
             )
-            return (0, await quote, await rows)
+            let (loadedQuote, loadedRows) = (await quote, await rows)
+            return (0, loadedQuote, loadedRows, canFetch && (loadedQuote == nil || loadedRows == nil))
         }
         let page = isFlippable(family) ? pager.pageKey.map(WidgetPageStore.page) ?? 0 : 0
         if page == 1 {
             let account = selectedAccount(snapshot, configuration)?.address
             let rows = await recentTransactions(snapshot, account: account, limit: pager.rowLimit(family))
-            return (page, nil, rows)
+            return (page, nil, rows, canFetch && rows == nil)
         }
-        return (page, await quote(snapshot, configuration), nil)
+        let loadedQuote = await quote(snapshot, configuration)
+        return (page, loadedQuote, nil, canFetch && loadedQuote == nil)
     }
 
     private func entry(
@@ -178,9 +180,9 @@ struct PortfolioWidgetView: View {
     // One account opens that account; all accounts open the portfolio drawer.
     private var tapURL: URL? {
         if let address = entry.accountAddress {
-            return URL(string: "perawallet://app/account-detail/?address=\(address)")
+            return DeepLink.url("account-detail/", ["address": address])
         }
-        return URL(string: "perawallet://app/portfolio/")
+        return DeepLink.url("portfolio/")
     }
 
     @ViewBuilder
@@ -360,7 +362,7 @@ struct PortfolioWidgetView: View {
         .peraChrome(network: snapshot?.network)
     }
 
-    private var title: String { entry.accountName ?? snapshot?.string("portfolio") ?? "Portfolio" }
+    private var title: String { entry.accountName ?? snapshot?.string("portfolio") ?? String(localized: "portfolio.name") }
 
     // The snapshot only holds the all-accounts total, so a single-account widget
     // without a live quote shows nothing rather than the wrong number.
@@ -374,15 +376,21 @@ struct PortfolioWidgetView: View {
         return fallback?.algoFormatted
     }
 
-    // Skipped when there is no fiat value, or the preferred currency is ALGO and
-    // both lines would match.
+    // The snapshot carries no currency setting, but the app writes both lines with the same formatter, so
+    // they match exactly when the preferred currency is ALGO. Its price feed is then USD, which the app's
+    // header doesn't show, so neither path adds a "≈ $" line.
+    private var isAlgoPreferred: Bool {
+        guard let portfolio, let formatted = portfolio.formatted else { return false }
+        return formatted == portfolio.algoFormatted
+    }
+
+    // Skipped when there is no fiat value, or the preferred currency is ALGO.
     private var secondary: String? {
-        guard !isHidden else { return nil }
+        guard !isHidden, !isAlgoPreferred else { return nil }
         let fiat = entry.quote.map { quote in
-            quote.fiat.map { PriceFormat.currency($0, code: quote.currencyCode, locale: locale) }
+            quote.fiat.map { PriceFormat.fiat($0, code: quote.currencyCode, locale: locale) }
         } ?? fallback?.formatted
-        guard let fiat, fiat != portfolio?.algoFormatted else { return nil }
-        return "≈ \(fiat)"
+        return fiat.map { "≈ \($0)" }
     }
 
     private var chart: [Double]? {
@@ -392,7 +400,7 @@ struct PortfolioWidgetView: View {
 
     private var updated: Date? {
         guard !isHidden else { return nil }
-        if let quote = entry.quote { return quote.fetchedAt }
+        if let quote = entry.quote { return quote.asOf }
         return fallback?.asOf.map { Date(timeIntervalSince1970: $0 / 1000) }
     }
 }
@@ -439,6 +447,7 @@ struct PortfolioTransactionsTabsWidget: Widget {
     }
 }
 
+#if DEBUG
 #Preview("Small", as: .systemSmall) {
     PortfolioWidget()
 } timeline: {
@@ -478,3 +487,4 @@ struct PortfolioTransactionsTabsWidget: Widget {
     PortfolioEntry(date: .now, snapshot: .fixtureWithFeeds, quote: .fixture(change: 0.041), page: 0)
     PortfolioEntry(date: .now, snapshot: .fixtureWithFeeds, quote: nil, page: 1, rows: TransactionRow.fixtures)
 }
+#endif

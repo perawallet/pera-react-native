@@ -12,12 +12,15 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'WidgetKit', 'ImageIO', 'UniformTypeIdentifiers'
+  s.frameworks = 'WidgetKit', 'ImageIO', 'UniformTypeIdentifiers', 'Security', 'CryptoKit'
 
   # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
   }
 
+  # WidgetPinning.swift is a symlink into targets/widget, so the app and the extension pin identically.
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
+  # The module reads and writes the App Group's UserDefaults, which CA92.1 in the app's own manifest excludes.
+  s.resource_bundles = { 'PeraWidgetsPrivacy' => ['PrivacyInfo.xcprivacy'] }
 end

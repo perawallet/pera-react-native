@@ -8,7 +8,7 @@
   android:targetCellHeight="2"
   android:resizeMode="horizontal|vertical"
   android:widgetCategory="home_screen"
-  android:updatePeriodMillis="1800000"
+  android:updatePeriodMillis="0"
   android:description="@string/receive_description"
   android:initialLayout="@layout/glance_default_loading_layout"
   android:previewLayout="@layout/receive_widget_preview"

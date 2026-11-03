@@ -20,8 +20,8 @@ final class PortfolioFetcherTests: XCTestCase {
 
     private let history = ok("""
     { "results": [
-        { "usd_value": "100", "algo_value": "500" },
-        { "usd_value": "120", "algo_value": "600" }
+        { "datetime": "2026-10-27T13:00:00Z", "usd_value": "100", "algo_value": "500" },
+        { "datetime": "2026-10-27T14:00:00Z", "usd_value": "120", "algo_value": "600" }
     ] }
     """)
 
@@ -36,6 +36,16 @@ final class PortfolioFetcherTests: XCTestCase {
         XCTAssertEqual(quote.fiat, 60)
         XCTAssertEqual(quote.chart, [500, 600])
         XCTAssertEqual(quote.change ?? 0, 0.2, accuracy: 1e-9)
+    }
+
+    // The last point is bucketed, so "Updated" says when it is from, not when it was fetched.
+    func testDatesTheTotalByItsPoint() async throws {
+        StubURLProtocol.install(["/v1/wallet/wealth/": history])
+
+        let fetched = await PortfolioFetcher.fetch(addresses: ["A"], period: "one-week", testFeed)
+        let quote = try XCTUnwrap(fetched)
+
+        XCTAssertEqual(quote.asOf, ISODate.parse("2026-10-27T14:00:00Z"))
     }
 
     func testKeepsTheALGOValueWhenTheRateIsUnknown() async throws {

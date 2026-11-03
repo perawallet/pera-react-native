@@ -17,10 +17,10 @@ import android.net.Uri
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -35,7 +35,6 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -46,6 +45,7 @@ import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
+import com.algorand.perarn.perawidgets.R
 import com.algorand.perarn.perawidgets.config.WidgetConfig
 import com.algorand.perarn.perawidgets.fetch.PriceQuote
 import com.algorand.perarn.perawidgets.fetch.QuoteCache
@@ -57,21 +57,19 @@ import com.algorand.perarn.perawidgets.ui.PeraChrome
 import com.algorand.perarn.perawidgets.ui.PeraColors
 import com.algorand.perarn.perawidgets.ui.PeraLogo
 import com.algorand.perarn.perawidgets.ui.PeraPlaceholder
+import com.algorand.perarn.perawidgets.ui.PeraSizeMode
 import com.algorand.perarn.perawidgets.ui.PeraText
 import com.algorand.perarn.perawidgets.ui.PeraTheme
-import com.algorand.perarn.perawidgets.ui.Sparkline
+import com.algorand.perarn.perawidgets.ui.SparklineImage
 import java.time.Instant
 import java.time.ZoneId
 
 class PriceWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Exact
+    override val sizeMode: SizeMode = PeraSizeMode
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val systemIsDark =
-            context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
 
         provideContent {
             // A live session recomposes without re-running provideGlance, so everything is read per version.
@@ -89,7 +87,7 @@ class PriceWidget : GlanceAppWidget() {
             if (snapshot == null || content == null) {
                 PeraPlaceholder(colors)
             } else {
-                PriceView(context, snapshot, content, colors, PeraTheme.isDark(snapshot.theme, systemIsDark))
+                PriceView(context, snapshot, content, colors, PeraTheme.isDark(snapshot.theme, PeraTheme.systemIsDark(context)))
             }
         }
     }
@@ -119,9 +117,15 @@ private fun PriceView(
 
     PeraChrome(colors, snapshot.network, GlanceModifier.clickable(actionStartActivity(open))) {
         Column(modifier = GlanceModifier.fillMaxSize().padding(horizontal = PADDING_DP.dp, vertical = layout.verticalPaddingDp.dp)) {
-            Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 PeraText(content.title, TITLE_SP.sp, FontWeight.Medium, colors.textGray)
-                PeraText(" ✓", 10.sp, FontWeight.Bold, colors.positive)
+                Spacer(GlanceModifier.width(3.dp))
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_verified),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(11.dp),
+                    colorFilter = ColorFilter.tint(colors.positive),
+                )
                 if (layout.isIdInline) content.assetIdLine?.let {
                     PeraText(" · $it", 9.sp, FontWeight.Normal, colors.textGray)
                 }
@@ -129,39 +133,37 @@ private fun PriceView(
                 PeraLogo(LOGO_DP.dp)
             }
             content.assetIdLine?.takeIf { !layout.isIdInline }?.let { PeraText(it, 9.sp, FontWeight.Normal, colors.textGray) }
-            Spacer(GlanceModifier.height(2.dp))
-            Row(verticalAlignment = Alignment.Top) {
+            // Figures sit at the bottom, as on iOS, so a tall widget's spare room goes above them.
+            Spacer(GlanceModifier.defaultWeight())
+            Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 Column(modifier = GlanceModifier.width(layout.figuresWidthDp.dp)) {
                     PeraText(price, layout.priceSp.sp, FontWeight.Bold, colors.textMain)
                     content.change?.takeIf { layout.showChange }?.let {
+                        Spacer(GlanceModifier.height(LINE_GAP_DP.dp))
                         PeraText(it, PRICE_CHANGE_SP.sp, FontWeight.Medium, trend)
                     }
+                    val chart = content.chart
+                    if (chart != null && layout.showChart && !layout.isWide) {
+                        Spacer(GlanceModifier.height((CHART_MARGIN_DP / 2).dp))
+                        SparklineImage(context, chart, layout.chartWidthDp, layout.chartHeightDp, content.isTrendUp, isDark)
+                        Spacer(GlanceModifier.height((CHART_MARGIN_DP / 2).dp))
+                    }
                     content.inverse?.takeIf { layout.showInverse }?.let {
+                        Spacer(GlanceModifier.height(LINE_GAP_DP.dp))
                         PeraText(it, PRICE_INVERSE_SP.sp, FontWeight.Normal, colors.textGray)
+                    }
+                    content.updatedText?.let {
+                        Spacer(GlanceModifier.height(LINE_GAP_DP.dp))
+                        PeraText(it, 10.sp, FontWeight.Normal, colors.textGray)
                     }
                 }
                 val chart = content.chart
-                if (chart != null && layout.showChart) {
+                if (chart != null && layout.showChart && layout.isWide) {
                     Spacer(GlanceModifier.width(SIDE_GAP_DP.dp))
-                    val density = context.resources.displayMetrics.density
-                    Image(
-                        provider = ImageProvider(
-                            Sparkline.bitmap(
-                                chart,
-                                (layout.chartWidthDp * density).toInt(),
-                                (layout.chartHeightDp * density).toInt(),
-                                PeraTheme.trendColor(content.isTrendUp, isDark).toArgb(),
-                                1.5f * density,
-                            ),
-                        ),
-                        contentDescription = null,
-                        modifier = GlanceModifier.size(layout.chartWidthDp.dp, layout.chartHeightDp.dp),
-                        contentScale = ContentScale.FillBounds,
-                    )
+                    SparklineImage(context, chart, layout.chartWidthDp, layout.chartHeightDp, content.isTrendUp, isDark)
                 }
             }
-            Spacer(GlanceModifier.defaultWeight())
-            content.updatedText?.let { PeraText(it, 10.sp, FontWeight.Normal, colors.textGray) }
         }
     }
 }
+

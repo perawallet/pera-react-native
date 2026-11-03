@@ -10,11 +10,21 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type WidgetImageRequest = {
     /** Stable cache key, also the file-name stem in shared storage. Digits only. */
     key: string
     /** Only https URLs are fetched. */
     url: string
+}
+
+/** The pin set the app enforces for a backend host, for the widgets' own requests to it. */
+export type WidgetBackendPinning = {
+    /** Base64 SHA-256 SPKI hashes; any one matching a certificate in the chain passes. */
+    publicKeyHashes: string[]
+    /** ISO 8601 UTC; past it the pins are ignored rather than enforced. */
+    expiresAt: string
 }
 
 export interface WidgetsService {
@@ -34,4 +44,10 @@ export interface WidgetsService {
      * a request recorded after activation isn't missed. Returns an unsubscribe.
      */
     onScanRequested(listener: () => void): () => void
+    /**
+     * The pins the widgets should apply to `backendUrl`: null unless the app
+     * pins that host itself (the Pera API pinning flag is on and the host is
+     * pinnable).
+     */
+    backendPinning(backendUrl: string): Nullable<WidgetBackendPinning>
 }

@@ -105,8 +105,8 @@ struct NftWidgetView: View {
     }
 
     private var nftURL: URL? {
-        guard let nft = entry.nft else { return URL(string: "perawallet://app/") }
-        return URL(string: "perawallet://app/nft-detail/?assetId=\(nft.assetId)")
+        guard let nft = entry.nft else { return DeepLink.url("") }
+        return DeepLink.url("nft-detail/", ["assetId": nft.assetId])
     }
 
     private func caption(_ nft: WidgetSnapshot.Nft) -> some View {
@@ -152,6 +152,7 @@ struct NftWidget: Widget {
     }
 }
 
+#if DEBUG
 #Preview("NFT", as: .systemSmall) {
     NftWidget()
 } timeline: {
@@ -160,3 +161,4 @@ struct NftWidget: Widget {
     NftEntry(date: .now, snapshot: .fixtureEmpty, nft: nil, image: nil)
     NftEntry(date: .now, snapshot: nil, nft: nil, image: nil)
 }
+#endif

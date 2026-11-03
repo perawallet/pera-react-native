@@ -12,138 +12,190 @@
 import XCTest
 @testable import WidgetCore
 
+// The same cases as the Android widget's TransactionsFetcherTest.kt: both port the app's history rules.
 final class TransactionsFetcherTests: XCTestCase {
     override func tearDown() {
         StubURLProtocol.uninstall()
         super.tearDown()
     }
 
-    private func impact(_ assetId: String, _ unit: String, _ decimals: Int, _ amount: String) -> String {
-        "{ \"asset_id\": \(assetId), \"unit_name\": \"\(unit)\", \"fraction_decimals\": \(decimals), \"amount\": \"\(amount)\" }"
-    }
-
-    private func item(
-        _ id: String,
-        type: String = "pay",
-        time: Int = 100,
-        impacts: [String] = [],
-        swap: String? = nil,
-        closeTo: String? = nil
-    ) -> String {
-        let swapField = swap.map { ", \"swap_group_detail\": \($0)" } ?? ""
-        let closeField = closeTo.map { ", \"close_to\": \"\($0)\"" } ?? ""
-        return "{ \"id\": \"\(id)\", \"tx_type\": \"\(type)\", \"round_time\": \(time), \"balance_impacts\": [\(impacts.joined(separator: ","))]\(swapField)\(closeField) }"
-    }
-
-    private func page(_ items: [String]) -> StubURLProtocol.Response {
+    private func page(_ items: String...) -> StubURLProtocol.Response {
         ok("{ \"results\": [\(items.joined(separator: ","))] }")
     }
 
-    private let fee = "{ \"asset_id\": 0, \"unit_name\": \"ALGO\", \"fraction_decimals\": 6, \"amount\": \"-1000\" }"
+    // The ALGO impact nets amount + fee for the sender, as the backend sends it.
+    private func pay(_ id: String, _ time: Int, _ sender: String, _ receiver: String, _ amount: Int, fee: Int = 1000) -> String {
+        """
+        { "id": "\(id)", "tx_type": "pay", "round_time": \(time), "sender": "\(sender)", "receiver": "\(receiver)",
+          "amount": "\(amount)", "fee": "\(fee)",
+          "balance_impacts": [{ "asset_id": 0, "unit_name": "ALGO", "fraction_decimals": 6, "amount": "-\(amount + fee)" }] }
+        """
+    }
 
-    private func rows(_ items: [String], limit: Int = 5) async throws -> [TransactionRow] {
-        StubURLProtocol.install(["/v1/accounts/A/transactions/": page(items)])
-        let fetched = await TransactionsFetcher.fetch(addresses: ["A"], limit: limit, locale: english, testFeed)
+    private func fetch(_ routes: [String: StubURLProtocol.Response], _ addresses: [String], limit: Int = 6) async -> [TransactionRow]? {
+        StubURLProtocol.install(routes)
+        return await TransactionsFetcher.fetch(addresses: addresses, limit: limit, locale: english, testFeed)
+    }
+
+    private func rows(_ item: String, account: String = "A") async throws -> [TransactionRow] {
+        let fetched = await fetch(["/v1/accounts/\(account)/transactions/": page(item)], [account])
         return try XCTUnwrap(fetched)
     }
 
-    // The ALGO impact includes the fee, so the other asset is what moved.
-    func testShowsTheReceivedAssetRatherThanTheFee() async throws {
-        let result = try await rows([item("1", type: "axfer", impacts: [fee, impact("31566704", "USDC", 6, "250000000")])])
+    func testAPaymentShowsTheAmountSentWithoutTheFee() async throws {
+        let fetchedRows = try await rows(pay("1", 100, "A", "B", 25_000_000))
+        let row = try XCTUnwrap(fetchedRows.first)
 
-        XCTAssertEqual(result.first?.kind, .receive)
-        XCTAssertEqual(result.first?.amount, "250 USDC")
+        XCTAssertEqual(row.kind, .send)
+        XCTAssertEqual(row.amount, "25 ALGO")
     }
 
-    func testShowsASentALGOAmount() async throws {
-        let result = try await rows([item("1", impacts: [impact("0", "ALGO", 6, "-25001000")])])
+    func testTheReceiverSeesAReceive() async throws {
+        let fetchedRows = try await rows(pay("1", 100, "B", "A", 1_500_000))
+        let row = try XCTUnwrap(fetchedRows.first)
 
-        XCTAssertEqual(result.first?.kind, .send)
-        XCTAssertEqual(result.first?.amount, "25.001 ALGO")
+        XCTAssertEqual(row.kind, .receive)
+        XCTAssertEqual(row.amount, "1.5 ALGO")
     }
 
-    func testNamesALGOWhenTheBackendSendsNoUnit() async throws {
-        let result = try await rows([item("1", impacts: [impact("0", "", 6, "-1000000")])])
+    func testALGOIgnoresTheBackendsPlaceholderFacts() async throws {
+        let item = """
+        { "id": "1", "tx_type": "pay", "round_time": 100, "sender": "A", "receiver": "B", "amount": "1000000",
+          "asset": { "asset_id": 0, "unit_name": "asset(0)", "fraction_decimals": 0 } }
+        """
 
-        XCTAssertEqual(result.first?.amount, "1 ALGO")
+        let fetchedRows = try await rows(item)
+
+        XCTAssertEqual(fetchedRows.first?.amount, "1 ALGO")
     }
 
-    func testShowsASwapAsFromAndToUnits() async throws {
-        let swap = "{ \"asset_in\": { \"unit_name\": \"USDC\" }, \"asset_out\": { \"unit_name\": \"ALGO\" } }"
+    func testAnAssetTransferUsesTheAssetsDecimals() async throws {
+        let item = """
+        { "id": "1", "tx_type": "axfer", "round_time": 100, "sender": "A", "receiver": "B", "amount": "120000000",
+          "asset": { "asset_id": 31566704, "unit_name": "USDC", "fraction_decimals": 6 } }
+        """
+        let fetchedRows = try await rows(item)
+        let row = try XCTUnwrap(fetchedRows.first)
 
-        let result = try await rows([item("1", type: "appl", impacts: [fee], swap: swap)])
-
-        XCTAssertEqual(result.first?.kind, .swap)
-        XCTAssertEqual(result.first?.amount, "USDC → ALGO")
+        XCTAssertEqual(row.kind, .send)
+        XCTAssertEqual(row.amount, "120 USDC")
     }
 
-    func testClassifiesAnAssetTransferThatOnlyCostsAFeeAsAnOptIn() async throws {
-        let result = try await rows([item("1", type: "axfer", impacts: [fee])])
-
-        XCTAssertEqual(result.first?.kind, .optIn)
-        XCTAssertNil(result.first?.amount)
-    }
-
-    func testClassifiesAClosingAssetTransferAsAnOptOut() async throws {
-        let result = try await rows([item("1", type: "axfer", impacts: [fee], closeTo: "CLOSE")])
-
-        XCTAssertEqual(result.first?.kind, .optOut)
-    }
-
-    func testShowsAPlainAppCallWithoutAnAmount() async throws {
-        let result = try await rows([item("1", type: "appl", impacts: [fee])])
-
-        XCTAssertEqual(result.first?.kind, .appCall)
-        XCTAssertNil(result.first?.amount)
-    }
-
-    func testShowsAnAppCallThatPaysOutAnAssetAsAReceive() async throws {
-        let result = try await rows([item("1", type: "appl", impacts: [fee, impact("31566704", "USDC", 6, "5000000")])])
-
-        XCTAssertEqual(result.first?.kind, .receive)
-        XCTAssertEqual(result.first?.amount, "5 USDC")
-    }
-
-    func testIgnoresZeroAmountImpacts() async throws {
-        let result = try await rows([item("1", type: "axfer", impacts: [fee, impact("31566704", "USDC", 6, "0")])])
-
-        XCTAssertEqual(result.first?.kind, .optIn)
-    }
-
-    func testMergesAccountsNewestFirstWithoutDuplicatesAndHonoursTheLimit() async throws {
-        StubURLProtocol.install([
-            "/v1/accounts/A/transactions/": page([item("old", time: 100), item("shared", time: 300)]),
-            "/v1/accounts/B/transactions/": page([item("middle", time: 200), item("shared", time: 300)]),
-        ])
-
-        let fetched = await TransactionsFetcher.fetch(addresses: ["A", "B"], limit: 2, locale: english, testFeed)
+    func testAZeroTransferToSelfIsAnOptInAndACloseOutIsAnOptOut() async throws {
+        let optIn = """
+        { "id": "1", "tx_type": "axfer", "round_time": 200, "sender": "A", "receiver": "A", "amount": "0",
+          "asset": { "asset_id": 5, "unit_name": "X", "fraction_decimals": 0 } }
+        """
+        let optOut = """
+        { "id": "2", "tx_type": "axfer", "round_time": 100, "sender": "A", "receiver": "A", "amount": "0",
+          "close_to": "C", "asset": { "asset_id": 5, "unit_name": "X", "fraction_decimals": 0 } }
+        """
+        let fetched = await fetch(["/v1/accounts/A/transactions/": page(optIn, optOut)], ["A"])
         let result = try XCTUnwrap(fetched)
 
-        XCTAssertEqual(result.map(\.id), ["shared", "middle"])
+        XCTAssertEqual(result.map(\.kind), [.optIn, .optOut])
+        XCTAssertTrue(result.allSatisfy { $0.amount == nil })
     }
 
-    func testReadsAtMostFiveAccounts() async {
-        StubURLProtocol.install([:])
+    func testAnIncomingZeroTransferIsAReceiveNotAnOptIn() async throws {
+        let item = """
+        { "id": "1", "tx_type": "axfer", "round_time": 100, "sender": "B", "receiver": "A", "amount": "0",
+          "asset": { "asset_id": 5, "unit_name": "X", "fraction_decimals": 0 } }
+        """
 
-        _ = await TransactionsFetcher.fetch(addresses: ["A", "B", "C", "D", "E", "F", "G"], limit: 3, locale: english, testFeed)
+        let fetchedRows = try await rows(item)
 
-        XCTAssertEqual(StubURLProtocol.requests.count, 5)
+        XCTAssertEqual(fetchedRows.first?.kind, .receive)
     }
 
-    func testKeepsTheAccountsThatLoadedWhenOthersFail() async throws {
-        StubURLProtocol.install(["/v1/accounts/A/transactions/": page([item("1")])])
+    func testConsensusAndAssetAdminRowsAreNotSends() async throws {
+        for type in ["keyreg", "hb", "acfg", "afrz", "stpf"] {
+            let item = """
+            { "id": "1", "tx_type": "\(type)", "round_time": 100, "sender": "A", "fee": "2000000",
+              "balance_impacts": [{ "asset_id": 0, "unit_name": "ALGO", "fraction_decimals": 6, "amount": "-2000000" }] }
+            """
+            let fetchedRows = try await rows(item)
+            let row = try XCTUnwrap(fetchedRows.first, type)
 
-        let fetched = await TransactionsFetcher.fetch(addresses: ["A", "B"], limit: 3, locale: english, testFeed)
+            XCTAssertEqual(row.kind, .other, type)
+            XCTAssertNil(row.amount, type)
+        }
+    }
+
+    func testACloseOutSendsTheAmountAndTheSweep() async throws {
+        let item = """
+        { "id": "1", "tx_type": "pay", "round_time": 100, "sender": "A", "receiver": "B", "close_to": "C",
+          "amount": "1000000", "fee": "1000",
+          "balance_impacts": [{ "asset_id": 0, "unit_name": "ALGO", "fraction_decimals": 6, "amount": "-5001000" }] }
+        """
+
+        let fetchedRows = try await rows(item)
+
+        XCTAssertEqual(fetchedRows.first?.amount, "5 ALGO")
+    }
+
+    func testAnAppCallHasNoAmount() async throws {
+        let item = """
+        { "id": "1", "tx_type": "appl", "round_time": 100, "sender": "A",
+          "balance_impacts": [{ "asset_id": 31566704, "unit_name": "USDC", "fraction_decimals": 6, "amount": "5000000" }] }
+        """
+        let fetchedRows = try await rows(item)
+        let row = try XCTUnwrap(fetchedRows.first)
+
+        XCTAssertEqual(row.kind, .appCall)
+        XCTAssertNil(row.amount)
+    }
+
+    func testASwapShowsBothUnits() async throws {
+        let swap = """
+        { "id": "1", "tx_type": "appl", "round_time": 100,
+          "swap_group_detail": { "asset_in": { "asset_id": 31566704, "unit_name": "USDC" }, "asset_out": { "asset_id": 0 } } }
+        """
+        let fetchedRows = try await rows(swap)
+        let row = try XCTUnwrap(fetchedRows.first)
+
+        XCTAssertEqual(row.kind, .swap)
+        XCTAssertEqual(row.amount, "USDC → ALGO")
+    }
+
+    func testATransferBetweenOwnAccountsAlwaysReadsFromTheFirstAccount() async throws {
+        let shared = pay("shared", 300, "A", "B", 1_000_000)
+        let routes = [
+            "/v1/accounts/A/transactions/": page(shared, pay("a", 100, "X", "A", 1_000_000)),
+            "/v1/accounts/B/transactions/": page(shared, pay("b", 200, "X", "B", 1_000_000)),
+        ]
+        for _ in 0..<5 {
+            let fetched = await fetch(routes, ["A", "B"], limit: 2)
+            let result = try XCTUnwrap(fetched)
+
+            XCTAssertEqual(result.map(\.id), ["shared", "b"])
+            XCTAssertEqual(result.first?.kind, .send)
+        }
+    }
+
+    func testOneFailedAccountStillShowsTheOthers() async throws {
+        let fetched = await fetch(["/v1/accounts/A/transactions/": page(pay("a", 100, "X", "A", 1_000_000))], ["A", "B"])
         let result = try XCTUnwrap(fetched)
 
-        XCTAssertEqual(result.map(\.id), ["1"])
+        XCTAssertEqual(result.map(\.id), ["a"])
     }
 
-    func testFailsWhenEveryAccountFails() async {
-        StubURLProtocol.install([:])
+    func testAMalformedRowDoesNotHideTheRest() async throws {
+        let fetched = await fetch(["/v1/accounts/A/transactions/": page("{ \"id\": \"broken\" }", pay("a", 100, "X", "A", 1))], ["A"])
+        let result = try XCTUnwrap(fetched)
 
-        let result = await TransactionsFetcher.fetch(addresses: ["A", "B"], limit: 3, locale: english, testFeed)
+        XCTAssertEqual(result.map(\.id), ["a"])
+    }
+
+    func testIsNilWhenEveryRequestFails() async {
+        let result = await fetch([:], ["A"])
 
         XCTAssertNil(result)
+    }
+
+    func testAsksAtMostFiveAccounts() async {
+        _ = await fetch([:], (1...8).map { "A\($0)" })
+
+        XCTAssertEqual(StubURLProtocol.requests.count, TransactionsFetcher.maxAccounts)
     }
 }

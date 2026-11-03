@@ -41,6 +41,10 @@ const baseInput = (): BuildWidgetSnapshotInput => ({
         backendUrl: 'https://mainnet.api.example',
         apiKey: 'key',
         currencyCode: 'EUR',
+        pinning: {
+            publicKeyHashes: ['pin='],
+            expiresAt: '2027-07-08T00:00:00Z',
+        },
     },
     portfolioFeed: {
         accounts: [{ address: 'ADDR', name: 'Main' }],
@@ -77,6 +81,7 @@ const baseInput = (): BuildWidgetSnapshotInput => ({
     inboxFeed: {
         deviceId: 'device-1',
         addresses: ['ADDR'],
+        localAddresses: ['ADDR', 'SHARED'],
         accountNames: [{ address: 'ADDR', name: 'Main' }],
         notifications: null,
     },
@@ -181,6 +186,29 @@ describe('buildWidgetSnapshot', () => {
         expect(snapshot?.nfts).toEqual({ state: 'hidden' })
     })
 
+    // A visible snapshot must not stay on the home screen while a network or
+    // currency switch re-keys the price or the backup funding reads.
+    it('writes the hidden shape in privacy mode while price and backup are pending', () => {
+        const snapshot = buildWidgetSnapshot({
+            ...baseInput(),
+            isPrivacyMode: true,
+            algoPrice: undefined,
+            backup: undefined,
+            portfolio: undefined,
+            nfts: undefined,
+        })
+
+        expect(snapshot).toMatchObject({
+            algoPrice: null,
+            backup: null,
+            portfolio: { state: 'hidden' },
+            nfts: { state: 'hidden' },
+            receiveTargets: null,
+            inboxFeed: null,
+        })
+        expect(widgetSnapshotSchema.safeParse(snapshot).success).toBe(true)
+    })
+
     it('keeps the price visible in privacy mode', () => {
         const snapshot = buildWidgetSnapshot({
             ...baseInput(),
@@ -261,7 +289,33 @@ describe('buildWidgetSnapshot', () => {
             2,
             'USD',
             'de',
+            true,
+            false,
+            undefined,
         )
+    })
+
+    // The widget's live fetch formats with the app's unit-price rule, so the
+    // fallback must too or the number changes when a fetch fails.
+    it('formats the ALGO price with the app unit-price precision', () => {
+        buildWidgetSnapshot(baseInput())
+
+        expect(formatCurrency).toHaveBeenCalledWith(
+            new Decimal('0.1923'),
+            6,
+            'USD',
+            'en',
+            true,
+            false,
+            2,
+        )
+    })
+
+    // An empty visible list would read as "no NFTs" rather than "unknown".
+    it('writes no NFT section when the NFT read failed', () => {
+        const snapshot = buildWidgetSnapshot({ ...baseInput(), nfts: null })
+
+        expect(snapshot?.nfts).toBeNull()
     })
 
     it('only includes NFTs whose image key is cached', () => {
@@ -291,6 +345,10 @@ describe('buildWidgetSnapshot', () => {
             backendUrl: 'https://mainnet.api.example',
             apiKey: 'key',
             currencyCode: 'EUR',
+            pinning: {
+                publicKeyHashes: ['pin='],
+                expiresAt: '2027-07-08T00:00:00Z',
+            },
         })
     })
 

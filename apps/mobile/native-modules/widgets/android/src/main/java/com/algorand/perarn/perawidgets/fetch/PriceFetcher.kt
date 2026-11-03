@@ -12,6 +12,7 @@
 package com.algorand.perarn.perawidgets.fetch
 
 import com.algorand.perarn.perawidgets.format.QuoteCurrency
+import com.algorand.perarn.perawidgets.snapshot.NATIVE_ASSET_ID
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot
 import java.math.BigDecimal
 import java.math.MathContext
@@ -62,50 +63,73 @@ data class PriceQuote(
     @Serializable(with = InstantSerializer::class) val fetchedAt: Instant,
 )
 
+sealed interface PriceFetch {
+    data class Fetched(val quote: PriceQuote) : PriceFetch
+
+    // The asset is no longer verified or trusted: its cached price must go, not stay as the last good one.
+    data object Untrusted : PriceFetch
+
+    data object Failed : PriceFetch
+}
+
 class PriceFetcher(private val get: HttpGet) {
     // The picker only offers verified assets, but a tier can be downgraded after the pick, so every fetch re-checks.
     private val trustedTiers = setOf("verified", "trusted")
 
-    // Null on any failure, and for an asset that is no longer verified. `period` is the backend value.
+    // What one USD is worth in the quote, now and 24h ago, and the quote's own chart when it moves against USD.
+    private class Reference(val perUsd: BigDecimal, val perUsd24hAgo: BigDecimal?, val chartPerUsd: List<Double>?)
+
+    // `period` is the backend value.
     suspend fun fetch(
         feed: WidgetSnapshot.PriceFeed,
         assetId: String,
         quote: QuoteCurrency,
         period: String,
         now: Instant = Instant.now(),
-    ): PriceQuote? = coroutineScope {
+    ): PriceFetch = coroutineScope {
         val backend = feed.backendUrl
         val apiKey = feed.apiKey.orEmpty()
         val isNative = assetId == NATIVE_ASSET_ID
 
         val asset = async { getJson(backend, "v1/public/assets/$assetId/", apiKey) }
-        val factor = async { usdFactor(backend, quote, apiKey) }
-        val chart = async { getJson(backend, "v1/assets/price-chart/?asset_id=$assetId&period=$period", apiKey) }
+        val reference = async { reference(backend, quote, period, apiKey) }
+        val chart = async { getJson(backend, chartPath(assetId, period), apiKey) }
 
-        val assetJson = asset.await() ?: return@coroutineScope null
+        val assetJson = asset.await() ?: return@coroutineScope PriceFetch.Failed
         val tier = FetchJson.string(FetchJson.field(assetJson, "verification_tier")).orEmpty()
-        if (!isNative && tier !in trustedTiers) return@coroutineScope null
-        val usd = FetchJson.decimal(FetchJson.field(assetJson, "usd_value")) ?: return@coroutineScope null
-        val rate = factor.await() ?: return@coroutineScope null
+        if (!isNative && tier !in trustedTiers) return@coroutineScope PriceFetch.Untrusted
+        val usd = FetchJson.decimal(FetchJson.field(assetJson, "usd_value")) ?: return@coroutineScope PriceFetch.Failed
+        val ref = reference.await() ?: return@coroutineScope PriceFetch.Failed
 
         val previous = FetchJson.decimal(FetchJson.field(assetJson, "usd_value_24_hour_ago"))
-        val change = if (previous != null && previous.signum() != 0) {
-            (usd - previous).divide(previous, MathContext.DECIMAL128).toDouble()
-        } else {
-            null
-        }
-        val rateValue = rate.toDouble()
-        val series = prices(chart.await()).map { it * rateValue }
-
-        PriceQuote(
-            assetId = assetId,
-            unitName = if (isNative) "ALGO" else unitName(assetJson) ?: assetId,
-            price = usd.multiply(rate),
-            change24h = change,
-            chart = series,
-            quote = quote,
-            fetchedAt = now,
+        PriceFetch.Fetched(
+            PriceQuote(
+                assetId = assetId,
+                unitName = if (isNative) "ALGO" else unitName(assetJson) ?: assetId,
+                price = usd.multiply(ref.perUsd),
+                change24h = change(usd, previous, ref),
+                chart = chartIn(prices(chart.await()), ref),
+                quote = quote,
+                fetchedAt = now,
+            ),
         )
+    }
+
+    // In ALGO the asset moves against a moving unit: (now in ALGO) / (24h ago in ALGO) - 1.
+    private fun change(usd: BigDecimal, previousUsd: BigDecimal?, ref: Reference): Double? {
+        if (previousUsd == null || previousUsd.signum() == 0) return null
+        val then = ref.perUsd24hAgo ?: return null
+        if (then.signum() == 0) return null
+        val nowInQuote = usd.multiply(ref.perUsd)
+        val thenInQuote = previousUsd.multiply(then)
+        return nowInQuote.divide(thenInQuote, MathContext.DECIMAL128).subtract(BigDecimal.ONE).toDouble()
+    }
+
+    // A fiat rate is one value for the period; an ALGO quote divides point by point, and only when both series line up.
+    private fun chartIn(usdChart: List<Double>, ref: Reference): List<Double> {
+        val perUsd = ref.chartPerUsd ?: return usdChart.map { it * ref.perUsd.toDouble() }
+        if (usdChart.isEmpty() || usdChart.size != perUsd.size) return emptyList()
+        return usdChart.zip(perUsd) { price, rate -> price * rate }
     }
 
     private fun unitName(asset: kotlinx.serialization.json.JsonElement): String? =
@@ -118,13 +142,27 @@ class PriceFetcher(private val get: HttpGet) {
         return if (values.any { it == null }) emptyList() else values.filterNotNull()
     }
 
-    private suspend fun usdFactor(backend: String?, quote: QuoteCurrency, apiKey: String): BigDecimal? =
+    private fun chartPath(assetId: String, period: String) = "v1/assets/price-chart/?asset_id=$assetId&period=$period"
+
+    private suspend fun reference(backend: String?, quote: QuoteCurrency, period: String, apiKey: String): Reference? =
         when (quote) {
-            is QuoteCurrency.Fiat -> usdRate(backend, quote.code, apiKey)
-            QuoteCurrency.Algo -> {
+            // The backend has no rate history, so a fiat quote's change and chart are the asset's USD ones.
+            is QuoteCurrency.Fiat -> usdRate(backend, quote.code, apiKey)?.let { Reference(it, it, null) }
+            QuoteCurrency.Algo -> coroutineScope {
+                val algoChart = async { getJson(backend, chartPath(NATIVE_ASSET_ID, period), apiKey) }
                 val algo = getJson(backend, "v1/public/assets/$NATIVE_ASSET_ID/", apiKey)
                 val algoUsd = FetchJson.decimal(FetchJson.field(algo, "usd_value"))
-                if (algoUsd == null || algoUsd.signum() == 0) null else BigDecimal.ONE.divide(algoUsd, MathContext.DECIMAL128)
+                if (algoUsd == null || algoUsd.signum() == 0) {
+                    algoChart.cancel()
+                    return@coroutineScope null
+                }
+                val algoUsd24hAgo = FetchJson.decimal(FetchJson.field(algo, "usd_value_24_hour_ago"))?.takeIf { it.signum() != 0 }
+                val chartAlgoUsd = prices(algoChart.await())
+                Reference(
+                    perUsd = BigDecimal.ONE.divide(algoUsd, MathContext.DECIMAL128),
+                    perUsd24hAgo = algoUsd24hAgo?.let { BigDecimal.ONE.divide(it, MathContext.DECIMAL128) },
+                    chartPerUsd = if (chartAlgoUsd.any { it == 0.0 }) emptyList() else chartAlgoUsd.map { 1.0 / it },
+                )
             }
         }
 
@@ -137,9 +175,5 @@ class PriceFetcher(private val get: HttpGet) {
     internal suspend fun getJson(backend: String?, path: String, apiKey: String): kotlinx.serialization.json.JsonElement? {
         val url = endpoint(backend, path) ?: return null
         return FetchJson.parse(withContext(Dispatchers.IO) { get(url, apiKey) })
-    }
-
-    companion object {
-        const val NATIVE_ASSET_ID = "0"
     }
 }

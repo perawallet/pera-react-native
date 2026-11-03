@@ -3,7 +3,8 @@
     <activity
       android:name="com.algorand.perarn.perawidgets.config.WidgetConfigActivity"
       android:exported="true"
-      android:theme="@android:style/Theme.Material.Light.NoActionBar">
+      android:excludeFromRecents="true"
+      android:theme="@style/PeraWidgetSettings">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
       </intent-filter>
@@ -41,5 +42,37 @@
         android:name="android.appwidget.provider"
         android:resource="@xml/receive_widget_info" />
     </receiver>
+    <receiver
+      android:name="com.algorand.perarn.perawidgets.widgets.TransactionsWidgetReceiver"
+      android:exported="true"
+      android:label="@string/transactions_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/transactions_widget_info" />
+    </receiver>
+    <receiver
+      android:name="com.algorand.perarn.perawidgets.widgets.PortfolioTabsWidgetReceiver"
+      android:exported="true"
+      android:label="@string/portfolio_tabs_name">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+      </intent-filter>
+      <meta-data
+        android:name="android.appwidget.provider"
+        android:resource="@xml/portfolio_tabs_widget_info" />
+    </receiver>
+    <service
+      android:name="com.algorand.perarn.perawidgets.tile.ScanTileService"
+      android:exported="true"
+      android:icon="@drawable/ic_pera_scan"
+      android:label="@string/scan_tile_label"
+      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+      <intent-filter>
+        <action android:name="android.service.quicksettings.action.QS_TILE" />
+      </intent-filter>
+    </service>
   </application>
 </manifest>

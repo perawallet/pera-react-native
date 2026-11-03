@@ -23,6 +23,7 @@
     "test:integration": "bash ../../tools/dev/rebuild-native.sh && vitest run --project=integration",
     "test:integration:watch": "bash ../../tools/dev/rebuild-native.sh && vitest --project=integration",
     "test:watch": "bash ../../tools/dev/rebuild-native.sh && vitest",
+    "test:widget-core": "swift test --package-path targets/widget-core",
     "build:ios:dev": "APP_ENV=development expo run:ios --configuration Debug",
     "build:ios:staging": "APP_ENV=staging DEFAULT_NETWORK=testnet expo run:ios --configuration Release",
     "build:ios:production": "APP_ENV=production expo run:ios --configuration Release",
@@ -250,6 +251,11 @@
       "android": {
         "exclude": [
           "@expensify/react-native-wallet"
+        ]
+      },
+      "ios": {
+        "exclude": [
+          "@bacons/apple-targets"
         ]
       }
     }

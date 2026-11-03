@@ -126,12 +126,21 @@ describe('useWidgetNftCandidatesQuery', () => {
         ).toBeUndefined()
     })
 
-    // An NFT failure must not hold back the price and portfolio widgets.
-    it('reports no candidates when the read fails or there are no accounts', () => {
-        heldAssets(undefined, true)
-        expect(renderQuery(['A']).result.current.candidates).toEqual([])
-
+    it('reports no candidates when there are no accounts', () => {
         heldAssets(undefined)
-        expect(renderQuery([]).result.current.candidates).toEqual([])
+        expect(renderQuery([]).result.current).toEqual({
+            candidates: [],
+            isError: false,
+        })
+    })
+
+    // An empty list would purge every cached image; null holds nothing back
+    // and tells the writer to leave the images alone.
+    it('reports a failed read as null, not as no candidates', () => {
+        heldAssets(undefined, true)
+        expect(renderQuery(['A']).result.current).toEqual({
+            candidates: null,
+            isError: true,
+        })
     })
 })

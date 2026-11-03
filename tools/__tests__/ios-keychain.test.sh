@@ -157,6 +157,25 @@ check "setup fails on a profile that does not decode" 1 "$?"
 check "the decoder's error reaches the log" yes "$(grep -q 'problem decoding' <<<"$err" && echo yes || echo no)"
 ios_keychain_teardown
 
+# The widget profile is the third one installed; a bad one must stop setup
+# before a build signs without it, and the teardown must still remove it all.
+fresh_host login
+printf '%s' "$LOGIN" >"$STATE/default"
+IOS_PROVISIONING_PROFILE_BASE64=$PROFILE
+IOS_WIDGET_PROVISIONING_PROFILE_BASE64=$(printf 'not-a-profile' | base64)
+# In this shell, not $(...): teardown reads what setup recorded.
+ios_keychain_setup 2>"$WORK/widget-err" >/dev/null
+check "setup fails on a widget profile that does not decode" 1 "$?"
+check "the widget decoder's error reaches the log" yes "$(grep -q 'problem decoding' "$WORK/widget-err" && echo yes || echo no)"
+keychain=$PERA_KEYCHAIN
+tmpdir=$PERA_TMPDIR
+installed="$HOME/Library/MobileDevice/Provisioning Profiles/test-uuid-1234.mobileprovision"
+(set -e; ios_keychain_teardown) >/dev/null 2>&1
+check "teardown deletes the keychain after a bad widget profile" no "$([ -f "$keychain" ] && echo yes || echo no)"
+check "teardown removes the app profile after a bad widget profile" no "$([ -f "$installed" ] && echo yes || echo no)"
+check "the temp dir is removed after a bad widget profile" no "$([ -d "$tmpdir" ] && echo yes || echo no)"
+IOS_WIDGET_PROVISIONING_PROFILE_BASE64=""
+
 if [ "$failures" -gt 0 ]; then
     echo "ios-keychain: ${failures} failure(s)"
     exit 1

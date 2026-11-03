@@ -159,3 +159,14 @@ struct Sparkline: View {
 func trendColor(_ change: Double?) -> Color {
     (change ?? 0) >= 0 ? PeraColor.positive : PeraColor.negative
 }
+
+enum WidgetRefresh {
+    private static let interval: TimeInterval = 30 * 60
+    // A failed fetch keeps the app's last values on screen; retry sooner than the normal cadence.
+    private static let retryInterval: TimeInterval = 5 * 60
+
+    /// When the timeline asks for its next reload.
+    static func next(didFail: Bool, now: Date = .now) -> Date {
+        now.addingTimeInterval(didFail ? retryInterval : interval)
+    }
+}

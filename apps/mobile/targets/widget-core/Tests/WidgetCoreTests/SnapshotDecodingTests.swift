@@ -109,4 +109,22 @@ final class SnapshotDecodingTests: XCTestCase {
         XCTAssertEqual(snapshot.backup?.passphrase?.title, "2 accounts need a backup")
         XCTAssertEqual(snapshot.backup?.passphrase?.detail, "Tap to back up")
     }
+
+    func testDecodesThePinsAndTheLocalAccounts() throws {
+        let snapshot = try decode("""
+        { "version": 1,
+          "priceFeed": { "backendUrl": "https://api.test", "apiKey": "k", "currencyCode": "EUR",
+                         "pinning": { "publicKeyHashes": ["pin="], "expiresAt": "2027-07-08" } },
+          "inboxFeed": { "deviceId": "DEV", "addresses": ["A"], "accountNames": [], "notifications": null,
+                         "localAddresses": ["A", "WATCH"] } }
+        """)
+        let older = try decode("""
+        { "version": 1, "priceFeed": { "backendUrl": "https://api.test", "apiKey": "k", "currencyCode": "EUR" } }
+        """)
+
+        XCTAssertEqual(snapshot.priceFeed?.pinning?.publicKeyHashes, ["pin="])
+        XCTAssertEqual(snapshot.priceFeed?.pinning?.expiresAt, "2027-07-08")
+        XCTAssertEqual(snapshot.inboxFeed?.localAddresses, ["A", "WATCH"])
+        XCTAssertNil(older.priceFeed?.pinning)
+    }
 }

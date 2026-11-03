@@ -6,6 +6,11 @@
   <string name="price_description">A verified asset’s price and its 24h change.</string>
   <string name="receive_name">Receive QR</string>
   <string name="receive_description">Show an account’s QR code to receive funds.</string>
+  <string name="transactions_name">Transactions</string>
+  <string name="transactions_description">Your latest transactions.</string>
+  <string name="portfolio_tabs_name">Portfolio &amp; Transactions</string>
+  <string name="portfolio_tabs_description">Your portfolio value and latest transactions, a tap apart.</string>
+  <string name="scan_tile_label">Scan with Pera</string>
   <string name="options_chart_period">Chart period</string>
   <string name="options_period_default">Default</string>
   <string name="options_period_one_day">1 day</string>
@@ -20,5 +25,6 @@
   <string name="options_default">Default</string>
   <string name="options_portfolio">Portfolio</string>
   <string name="options_add_widget">Add widget</string>
+  <string name="options_save">Save</string>
   <string name="options_hint">Opens when you add the widget, and from long-press → Customize</string>
 </resources>

@@ -70,6 +70,42 @@ class QuoteCacheTest {
         assert(ab != QuoteKeys.portfolio("u", listOf("A", "B"), "one-week", "USD"))
     }
 
+    @Test fun storingAQuoteDropsTheWidgetsOlderEntriesOfThatKind() {
+        val store = InMemoryStore()
+        val cache = QuoteCache(store)
+        val oldAccounts = QuoteKeys.portfolio("u", listOf("A", "GONE"), "one-week", "EUR")
+        val newAccounts = QuoteKeys.portfolio("u", listOf("A"), "one-week", "EUR")
+        val portfolio = PortfolioQuote(BigDecimal("1"), null, "EUR", emptyList(), t0)
+        cache.put(1, oldAccounts, portfolio)
+        cache.put(1, priceKey(currency = "USD"), quote())
+        cache.put(2, oldAccounts, portfolio)
+        cache.put(1, newAccounts, portfolio)
+        cache.put(1, priceKey(currency = "EUR"), quote())
+        assertNull(cache.get<PortfolioQuote>(1, oldAccounts))
+        assertNull(cache.get<PriceQuote>(1, priceKey(currency = "USD")))
+        assertEquals(portfolio, cache.get<PortfolioQuote>(1, newAccounts)!!.value)
+        assertEquals(portfolio, cache.get<PortfolioQuote>(2, oldAccounts)!!.value)
+        assertEquals(3, store.keys().size)
+    }
+
+    @Test fun removeDropsOneEntry() {
+        cache.put(1, priceKey(), quote())
+        cache.remove(1, priceKey())
+        assertNull(cache.get<PriceQuote>(1, priceKey()))
+    }
+
+    @Test fun clearingAccountDataKeepsOnlyPrices() {
+        val portfolio = QuoteKeys.portfolio("u", listOf("A"), "one-week", "EUR")
+        val rows = QuoteKeys.transactions("u", listOf("A"), "en")
+        cache.put(1, portfolio, PortfolioQuote(BigDecimal("1"), null, "EUR", emptyList(), t0))
+        cache.put(2, rows, TransactionsQuote(emptyList(), t0))
+        cache.put(3, priceKey(), quote())
+        cache.clearAccountData()
+        assertNull(cache.get<PortfolioQuote>(1, portfolio))
+        assertNull(cache.get<TransactionsQuote>(2, rows))
+        assertEquals(quote(), cache.get<PriceQuote>(3, priceKey())!!.value)
+    }
+
     @Test fun corruptEntryReadsAsMiss() {
         val store = InMemoryStore()
         store.put("quote.1.k", "garbage")

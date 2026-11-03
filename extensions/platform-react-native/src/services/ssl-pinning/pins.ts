@@ -65,3 +65,6 @@ export const PINNED_ROOT_SPKI_HASHES: readonly string[] = [
  * roughly one year out as part of every release.
  */
 export const SSL_PINNING_EXPIRATION_DATE = '2027-07-08'
+
+/** Domains eligible for backend pinning — never pin outside these. */
+export const BACKEND_PIN_DOMAINS = ['perawallet.app'] as const

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- The window behind the Compose screen, so opening it never flashes the other theme. -->
+  <style name="PeraWidgetSettings" parent="@android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@android:color/white</item>
+  </style>
+</resources>

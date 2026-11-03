@@ -16,11 +16,10 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import com.algorand.perarn.perawidgets.refresh.WidgetUpdater
 import com.algorand.perarn.perawidgets.refresh.shouldRedraw
+import com.algorand.perarn.perawidgets.snapshot.SnapshotStore
 import java.io.File
 import kotlinx.coroutines.launch
 
-private const val PREFERENCES = "pera_widgets"
-private const val SNAPSHOT_KEY = "snapshot"
 private const val IMAGES_FOLDER = "widgets"
 
 class PeraWidgetsModule : Module() {
@@ -42,15 +41,15 @@ class PeraWidgetsModule : Module() {
     Events("onScanRequested")
 
     AsyncFunction("writeSnapshot") { json: String ->
-      val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-      val previous = preferences.getString(SNAPSHOT_KEY, null)
-      preferences.edit().putString(SNAPSHOT_KEY, json).apply()
+      val store = SnapshotStore(context)
+      val previous = store.raw()
+      store.write(json)
       if (shouldRedraw(previous, json)) redrawAll()
     }
 
+    // Every clear commits before returning, so a wipe survives the app being closed straight after.
     AsyncFunction("clearSnapshot") {
-      context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-        .edit().remove(SNAPSHOT_KEY).apply()
+      SnapshotStore(context).clear()
       imagesDirectory.deleteRecursively()
       WidgetUpdater.clearWalletData(context)
       val appContext = context.applicationContext

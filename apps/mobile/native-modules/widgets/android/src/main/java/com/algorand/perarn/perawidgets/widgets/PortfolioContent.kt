@@ -35,7 +35,11 @@ data class PortfolioContent(
 )
 
 private const val HIDDEN = "••••"
-private const val FALLBACK_PERIOD = "one-week"
+fun snapshotLocale(snapshot: WidgetSnapshot): Locale =
+    snapshot.locale?.let { Locale.forLanguageTag(it.replace('_', '-')) } ?: Locale.getDefault()
+
+// The chart period when neither the widget nor the app names one.
+const val FALLBACK_PERIOD = "one-week"
 
 fun portfolioAddresses(snapshot: WidgetSnapshot, options: PortfolioOptions): List<String> {
     val account = resolvePortfolioAccount(options, snapshot)?.address

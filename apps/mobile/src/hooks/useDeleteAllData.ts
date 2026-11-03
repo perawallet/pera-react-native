@@ -32,6 +32,7 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { useWidgetWipeStore } from '@modules/widgets'
 import { destroyVault } from './destroyVault'
 
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
@@ -60,6 +61,9 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const contextRegistry = useOptionalConnectionRegistry()
 
     const wipeAllUserData = useCallback(async () => {
+        // Holds the widget writer off until the accounts are gone (step 10).
+        useWidgetWipeStore.getState().beginWipe()
+
         // 1. Abort in-flight queries before we destroy their data sources.
         // Cancellation reverts silently, so — unlike a failed refetch — it
         // never reaches the QueryCache error handler.
@@ -105,10 +109,6 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
                 })
             }
         }
-
-        // The widget snapshot and NFT images live in the App Group, outside
-        // every store below. The service never throws.
-        await getProvider().widgets.clearSnapshot()
 
         // 5. Notify peers, then drop their records. Read at wipe time: the provider
         // may not have mounted when `AutoLockGuard` first rendered. `clear()` is
@@ -170,6 +170,12 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
 
         // 10. Clear all registered stores (this will redirect to onboarding, then show the success popup)
         clearAllStores()
+
+        // The widget snapshot and NFT images live in the App Group, outside
+        // every store. After the stores, so nothing is left to write back.
+        // The service never throws.
+        await getProvider().widgets.clearSnapshot()
+        useWidgetWipeStore.getState().endWipe()
 
         // 11. Drop the React Query cache last. With the active account gone,
         // address-gated queries are disabled, so removing them can't make

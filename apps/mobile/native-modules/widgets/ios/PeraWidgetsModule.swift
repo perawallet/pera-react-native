@@ -26,6 +26,56 @@ private let pendingScanKey = "pera.widgets.pendingScan"
 private let pendingScanLifetime: TimeInterval = 60
 // Posted by OpenScannerIntent after it records a request.
 private let scanRequestedNotification = "app.perawallet.widgets.scanRequested"
+// Every App Group key the widgets write starts with this: the snapshot, page state, NFT rotation anchors
+// and the pending scan.
+private let widgetKeyPrefix = "pera.widgets."
+
+/// The Darwin observer. A C callback can't capture, so the pointer it gets is this immortal singleton, and
+/// the module behind it is weak: a module torn down without OnStopObserving (a JS reload) is simply gone.
+private final class ScanObserver {
+  static let shared = ScanObserver()
+
+  private weak var module: PeraWidgetsModule?
+  private var isRegistered = false
+
+  func start(_ module: PeraWidgetsModule) {
+    self.module = module
+    guard !isRegistered else { return }
+    isRegistered = true
+    CFNotificationCenterAddObserver(
+      CFNotificationCenterGetDarwinNotifyCenter(),
+      Unmanaged.passUnretained(self).toOpaque(),
+      { _, observer, _, _, _ in
+        guard let observer else { return }
+        Unmanaged<ScanObserver>.fromOpaque(observer).takeUnretainedValue().module?.sendEvent("onScanRequested")
+      },
+      scanRequestedNotification as CFString,
+      nil,
+      .deliverImmediately
+    )
+  }
+
+  func stop(_ module: PeraWidgetsModule) {
+    if self.module === module {
+      self.module = nil
+    }
+  }
+}
+
+/// Just what the image download needs from the snapshot the app wrote.
+private struct PinnedBackend: Decodable {
+  struct Feed: Decodable {
+    struct Pinning: Decodable {
+      let publicKeyHashes: [String]
+      let expiresAt: String
+    }
+
+    let backendUrl: String
+    let pinning: Pinning?
+  }
+
+  let priceFeed: Feed?
+}
 
 public class PeraWidgetsModule: Module {
   public func definition() -> ModuleDefinition {
@@ -33,29 +83,12 @@ public class PeraWidgetsModule: Module {
 
     Events("onScanRequested")
 
-    // A Darwin notification callback is a C function and can't capture self,
-    // so the module travels as the observer pointer.
     OnStartObserving {
-      CFNotificationCenterAddObserver(
-        CFNotificationCenterGetDarwinNotifyCenter(),
-        Unmanaged.passUnretained(self).toOpaque(),
-        { _, observer, _, _, _ in
-          guard let observer else { return }
-          Unmanaged<PeraWidgetsModule>.fromOpaque(observer).takeUnretainedValue().sendEvent("onScanRequested")
-        },
-        scanRequestedNotification as CFString,
-        nil,
-        .deliverImmediately
-      )
+      ScanObserver.shared.start(self)
     }
 
     OnStopObserving {
-      CFNotificationCenterRemoveObserver(
-        CFNotificationCenterGetDarwinNotifyCenter(),
-        Unmanaged.passUnretained(self).toOpaque(),
-        CFNotificationName(scanRequestedNotification as CFString),
-        nil
-      )
+      ScanObserver.shared.stop(self)
     }
 
     AsyncFunction("writeSnapshot") { (json: String) in
@@ -69,7 +102,11 @@ public class PeraWidgetsModule: Module {
     }
 
     AsyncFunction("clearSnapshot") {
-      Self.sharedDefaults()?.removeObject(forKey: snapshotKey)
+      if let defaults = Self.sharedDefaults() {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(widgetKeyPrefix) {
+          defaults.removeObject(forKey: key)
+        }
+      }
       if let directory = Self.imagesDirectory() {
         try? FileManager.default.removeItem(at: directory)
       }
@@ -99,12 +136,13 @@ public class PeraWidgetsModule: Module {
 
       Self.deleteStale(in: directory, keeping: Set(requested.map(\.key)))
 
+      let backend = Self.pinnedBackend()
       var cached: [String] = []
       for (key, url) in requested {
         let file = Self.imageFile(in: directory, key: key)
         if FileManager.default.fileExists(atPath: file.path) {
           cached.append(key)
-        } else if await Self.downloadThumbnail(from: url, to: file) {
+        } else if await Self.downloadThumbnail(from: url, to: file, backend: backend) {
           cached.append(key)
         }
       }
@@ -115,6 +153,20 @@ public class PeraWidgetsModule: Module {
   // Written into the app's Info.plist by the passkey-autofill config plugin.
   private static func appGroup() -> String? {
     Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
+  }
+
+  private static func pinnedBackend() -> PinnedBackend.Feed? {
+    guard let json = sharedDefaults()?.string(forKey: snapshotKey), let data = json.data(using: .utf8) else { return nil }
+    return (try? JSONDecoder().decode(PinnedBackend.self, from: data))?.priceFeed
+  }
+
+  // Images on the Pera backend's own host get the widget's pins (WidgetPinning.swift, symlinked from the
+  // widget target); NFT metadata points everywhere else, which the app doesn't pin either.
+  private static func session(for url: URL, backend: PinnedBackend.Feed?) -> URLSession? {
+    guard let backend, let pinning = backend.pinning,
+          let host = URL(string: backend.backendUrl)?.host, url.host == host
+    else { return nil }
+    return WidgetPinning.session(hashes: pinning.publicKeyHashes, expiresAt: pinning.expiresAt)
   }
 
   private static func sharedDefaults() -> UserDefaults? {
@@ -147,15 +199,15 @@ public class PeraWidgetsModule: Module {
     }
   }
 
-  // NFT metadata URLs are untrusted: cap the size, decode only as an image, and
+  // NFT metadata URLs are untrusted: cap the size while streaming, decode only as an image, and
   // downsample so the widget never holds a full-resolution bitmap (its process
   // is killed silently around 30 MB). GIFs come out as their first frame.
-  private static func downloadThumbnail(from url: URL, to file: URL) async -> Bool {
+  private static func downloadThumbnail(from url: URL, to file: URL, backend: PinnedBackend.Feed?) async -> Bool {
     var request = URLRequest(url: url)
     request.timeoutInterval = downloadTimeout
-    guard let (data, response) = try? await URLSession.shared.data(for: request),
-          (response as? HTTPURLResponse)?.statusCode == 200,
-          data.count <= maxImageBytes,
+    let pinned = session(for: url, backend: backend)
+    defer { pinned?.finishTasksAndInvalidate() }
+    guard let data = await download(request, session: pinned ?? .shared),
           let source = CGImageSourceCreateWithData(data as CFData, nil)
     else { return false }
 
@@ -171,5 +223,32 @@ public class PeraWidgetsModule: Module {
     CGImageDestinationAddImage(
       destination, image, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
     return CGImageDestinationFinalize(destination)
+  }
+
+  /// Nil on failure, or as soon as the body passes maxImageBytes, declared or not.
+  private static func download(_ request: URLRequest, session: URLSession) async -> Data? {
+    guard let (bytes, response) = try? await session.bytes(for: request),
+          (response as? HTTPURLResponse)?.statusCode == 200
+    else { return nil }
+    guard response.expectedContentLength <= Int64(maxImageBytes) else {
+      bytes.task.cancel()
+      return nil
+    }
+    var data = Data()
+    if response.expectedContentLength > 0 {
+      data.reserveCapacity(Int(response.expectedContentLength))
+    }
+    do {
+      for try await byte in bytes {
+        data.append(byte)
+        if data.count > maxImageBytes {
+          bytes.task.cancel()
+          return nil
+        }
+      }
+    } catch {
+      return nil
+    }
+    return data
   }
 }

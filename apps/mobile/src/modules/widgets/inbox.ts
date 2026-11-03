@@ -19,6 +19,7 @@ type ResolveInboxFeedParams = {
     isPrivacyMode: boolean
     deviceId: Nullable<string>
     addresses: string[]
+    localAddresses: string[]
     accountNames: { address: string; name: string }[]
     notificationsBackendUrl: string
     notificationsDeviceId: Nullable<string>
@@ -30,6 +31,7 @@ export const resolveInboxFeed = ({
     isPrivacyMode,
     deviceId,
     addresses,
+    localAddresses,
     accountNames,
     notificationsBackendUrl,
     notificationsDeviceId,
@@ -40,6 +42,7 @@ export const resolveInboxFeed = ({
     return {
         deviceId,
         addresses,
+        localAddresses,
         accountNames,
         notifications:
             notificationsBackendUrl && notificationsDeviceId

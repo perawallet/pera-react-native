@@ -23,9 +23,19 @@ struct WidgetSnapshot: Codable {
 
     /// Where the widget can refresh the ALGO price on its own.
     struct PriceFeed: Codable {
+        /// The app's SSL pins for the Pera backend. Nil where the app pins nothing.
+        struct Pinning: Codable {
+            /// Base64 SHA-256 of a certificate's SubjectPublicKeyInfo; any certificate in the chain may match.
+            let publicKeyHashes: [String]
+            /// ISO 8601. Pinning stops after it, as in the app, so an abandoned build degrades to plain TLS.
+            let expiresAt: String
+        }
+
         let backendUrl: String
         let apiKey: String
         let currencyCode: String
+        // `var` with a default so the memberwise init keeps working without it.
+        var pinning: Pinning? = nil
     }
 
     /// Lets the widget refresh balances and the chart itself. Never rendered.
@@ -105,6 +115,8 @@ struct WidgetSnapshot: Codable {
         let accountNames: [AccountName]
         /// Nil where the deployment has no notifications backend.
         let notifications: Notifications?
+        /// Every account on the device, watch accounts included; an invitation to one of them is already accepted.
+        var localAddresses: [String]? = nil
 
         func name(of address: String) -> String? {
             accountNames.first { $0.address == address }?.name
@@ -170,7 +182,9 @@ enum SnapshotStore {
     /// Records that the Scan control asked for the scanner (epoch seconds), then
     /// notifies a running app, which may already be active by the time this runs.
     static func requestScan() {
-        UserDefaults(suiteName: appGroup ?? "")?.set(Date().timeIntervalSince1970, forKey: pendingScanKey)
+        if let group = appGroup {
+            UserDefaults(suiteName: group)?.set(Date().timeIntervalSince1970, forKey: pendingScanKey)
+        }
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(scanRequestedNotification as CFString),

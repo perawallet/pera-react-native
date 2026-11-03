@@ -35,6 +35,17 @@ const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
 const mockClearPasskeyCredentials = vi.fn().mockResolvedValue(undefined)
 const mockClearWidgetSnapshot = vi.fn().mockResolvedValue(undefined)
 const mockClearConnections = vi.fn().mockResolvedValue(undefined)
+const mockBeginWidgetWipe = vi.fn()
+const mockEndWidgetWipe = vi.fn()
+
+vi.mock('@modules/widgets', () => ({
+    useWidgetWipeStore: {
+        getState: () => ({
+            beginWipe: mockBeginWidgetWipe,
+            endWipe: mockEndWidgetWipe,
+        }),
+    },
+}))
 
 const mockKeyValueStorage = { removeItem: mockRemoveItem }
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -278,6 +289,25 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockClearWidgetSnapshot).toHaveBeenCalledTimes(1)
+    })
+
+    // The accounts outlive every earlier step, so a clear before the stores
+    // reset could be rewritten from them; the guard holds the writer off.
+    it('guards the widget writer for the whole wipe and clears the widgets after the stores', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        const [begin] = mockBeginWidgetWipe.mock.invocationCallOrder
+        const [cancel] = mockCancelQueries.mock.invocationCallOrder
+        const [stores] = (clearAllStores as Mock).mock.invocationCallOrder
+        const [clear] = mockClearWidgetSnapshot.mock.invocationCallOrder
+        const [end] = mockEndWidgetWipe.mock.invocationCallOrder
+        expect(begin).toBeLessThan(cancel!)
+        expect(stores).toBeLessThan(clear!)
+        expect(clear).toBeLessThan(end!)
     })
 
     // The credential providers keep their own copy of the master key, parent

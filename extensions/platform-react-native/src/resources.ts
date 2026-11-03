@@ -52,7 +52,7 @@ export const platformServices: PlatformServices = {
     migration: new RNMigrationService(keyValueStorage),
     walletProvisioning: new RNWalletProvisioningService(),
     cloudFileStorage: new RNCloudFileStorageService(),
-    widgets: new RNWidgetsService(),
+    widgets: new RNWidgetsService(firebaseService),
     monotonicClock: new RNMonotonicClockService(),
 }
 

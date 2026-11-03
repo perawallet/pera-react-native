@@ -172,4 +172,7 @@ export class ChromeWidgetsService implements WidgetsService {
     onScanRequested(): () => void {
         return () => {}
     }
+    backendPinning(): null {
+        return null
+    }
 }

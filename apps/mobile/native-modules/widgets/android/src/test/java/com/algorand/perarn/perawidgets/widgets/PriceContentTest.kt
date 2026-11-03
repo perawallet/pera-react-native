@@ -75,13 +75,13 @@ class PriceContentTest {
     @Test fun showsTheChangeWithAnArrowAndUnsignedPercent() {
         val c = content(quote = quote(change = -0.023))
         assertEquals("▼ 2.3% 24h", c.change)
-        assertEquals("$0.2341", c.price)
+        assertEquals("$ 0.2341", c.price)
         assertEquals(false, c.isTrendUp)
         assertEquals("▲ 3.2% 24h", content(quote = quote(change = 0.032)).change)
     }
 
     @Test fun showsAssetPerCurrencyOnlyWhenChosen() {
-        assertEquals("1 USD = 4.27 ALGO", content(quote = quote()).inverse)
+        assertEquals("1 USD = 4.271679 ALGO", content(quote = quote()).inverse)
         assertNull(content(PriceOptions(showAssetPerCurrency = false), quote()).inverse)
     }
 
@@ -105,7 +105,7 @@ class PriceContentTest {
     }
 
     @Test fun priceShowsInPrivacyMode() {
-        assertEquals("$0.2341", content(quote = quote(), snapshot = snapshot(privacyHidden = true)).price)
+        assertEquals("$ 0.2341", content(quote = quote(), snapshot = snapshot(privacyHidden = true)).price)
     }
 
     @Test fun quoteCurrencyFollowsIos() {

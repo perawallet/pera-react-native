@@ -209,6 +209,11 @@ const mockMarkBackupComplete = vi.fn()
 
 const { mockEnableChain } = vi.hoisted(() => ({ mockEnableChain: vi.fn() }))
 
+vi.mock('@tanstack/react-query', async importOriginal => ({
+    ...(await importOriginal<typeof import('@tanstack/react-query')>()),
+    useQueryClient: () => ({}),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     accountsChainAdapters: { has: () => true },
     // A fixture without chain entries stands for an account already on the
@@ -230,7 +235,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
-    useResolveAssetHolderAddress: () => vi.fn().mockResolvedValue(null),
+    resolveAssetHolderAddress: vi.fn().mockResolvedValue(null),
     useAccountsStore: Object.assign(vi.fn(), {
         getState: () => ({ accounts: mockWalletAccounts }),
     }),

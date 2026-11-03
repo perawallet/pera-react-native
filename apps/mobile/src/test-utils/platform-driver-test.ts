@@ -186,6 +186,7 @@ const buildServices = (): PlatformServices => {
         syncImages: async () => [],
         consumePendingScan: async () => false,
         onScanRequested: () => () => {},
+        backendPinning: () => null,
     }
 
     const migration: MigrationService = {

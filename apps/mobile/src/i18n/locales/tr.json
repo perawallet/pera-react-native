@@ -4789,8 +4789,8 @@
         "notifications": "Bildirimler",
         "inbox_empty": "Bekleyen bir şey yok",
         "notifications_empty": "Henüz bildirim yok",
-        "waiting": "bekliyor",
-        "to_sign": "imzalanacak",
+        "inbox_waiting": "{{count}} bekliyor",
+        "inbox_to_sign": "{{count}} imzalanacak",
         "inbox_sign": "İmza isteği",
         "inbox_assets": "Gelen varlıklar",
         "inbox_invite": "Ortak hesap daveti"

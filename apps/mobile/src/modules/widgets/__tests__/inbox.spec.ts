@@ -21,6 +21,7 @@ const resolve = (
         isPrivacyMode: false,
         deviceId: 'device-1',
         addresses: ['A'],
+        localAddresses: ['A', 'SHARED'],
         accountNames: [{ address: 'A', name: 'Main' }],
         notificationsBackendUrl: 'https://api.test',
         notificationsDeviceId: 'device-2',
@@ -32,6 +33,7 @@ describe('resolveInboxFeed', () => {
         expect(resolve()).toEqual({
             deviceId: 'device-1',
             addresses: ['A'],
+            localAddresses: ['A', 'SHARED'],
             accountNames: [{ address: 'A', name: 'Main' }],
             notifications: {
                 backendUrl: 'https://api.test',

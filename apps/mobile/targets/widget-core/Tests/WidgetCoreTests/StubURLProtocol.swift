@@ -24,7 +24,8 @@ final class StubURLProtocol: URLProtocol {
     nonisolated(unsafe) private static var routes: [String: Response] = [:]
     nonisolated(unsafe) private static var recorded: [URLRequest] = []
 
-    /// Keys are URL paths ("/v1/currencies/EUR/"); unknown paths answer 404.
+    /// Keys are URL paths ("/v1/currencies/EUR/"), optionally with query items the request must carry
+    /// ("/v1/assets/price-chart/?asset_id=0"), which win over a bare path; unknown paths answer 404.
     static func install(_ table: [String: Response]) {
         lock.withLock {
             routes = table
@@ -45,7 +46,7 @@ final class StubURLProtocol: URLProtocol {
     override func startLoading() {
         let response = Self.lock.withLock { () -> Response in
             Self.recorded.append(request)
-            return Self.routes[request.url?.path ?? ""] ?? Response(status: 404, body: "")
+            return Self.route(for: request.url) ?? Response(status: 404, body: "")
         }
         let http = HTTPURLResponse(url: request.url!, statusCode: response.status, httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: http, cacheStoragePolicy: .notAllowed)
@@ -54,6 +55,18 @@ final class StubURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+
+    private static func route(for url: URL?) -> Response? {
+        guard let url else { return nil }
+        let carried = Set(URLComponents(url: url, resolvingAgainstBaseURL: true)?.queryItems ?? [])
+        let match = routes.first { key, _ in
+            let parts = key.split(separator: "?", maxSplits: 1).map(String.init)
+            guard parts.count == 2, parts[0] == url.path else { return false }
+            let wanted = URLComponents(string: "?" + parts[1])?.queryItems ?? []
+            return wanted.allSatisfy(carried.contains)
+        }
+        return match?.value ?? routes[url.path]
+    }
 }
 
 func ok(_ body: String) -> StubURLProtocol.Response { .init(status: 200, body: body) }

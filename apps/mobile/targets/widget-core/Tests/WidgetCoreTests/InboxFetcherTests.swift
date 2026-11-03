@@ -112,12 +112,51 @@ final class InboxFetcherTests: XCTestCase {
         """)])
 
         let notifications = try XCTUnwrap(feed.notifications)
-        let fetched = await InboxFetcher.notifications(notifications, apiKey: "test-key", limit: 3)
+        let fetched = await InboxFetcher.notifications(notifications, testFeed, limit: 3)
         let rows = try XCTUnwrap(fetched)
 
         XCTAssertEqual(rows.map(\.id), ["1", "3"])
         XCTAssertEqual(rows.map(\.isUnread), [true, false])
         XCTAssertEqual(StubURLProtocol.requests.first?.httpMethod, "GET")
+        XCTAssertEqual(StubURLProtocol.requests.first?.value(forHTTPHeaderField: "X-API-Key"), "test-key")
+    }
+
+    // The app's ACTIONABLE_SIGN_REQUEST_STATUSES: the user can still sign or decline both.
+    func testKeepsReadySignRequests() async throws {
+        StubURLProtocol.install(["/v1/inbox/DEV/": inbox(signs: [
+            signRequest("7", "ready", "2026-10-20T10:00:00Z"),
+            signRequest("8", "submitting", "2026-10-21T10:00:00Z"),
+        ])])
+
+        let fetched = await InboxFetcher.fetch(feed, testFeed)
+        let summary = try XCTUnwrap(fetched)
+
+        XCTAssertEqual(summary.items.map(\.id), ["sign-7"])
+    }
+
+    // An invitation to a shared account already on the device was accepted; the app's inbox hides it too.
+    func testDropsInvitationsToAccountsAlreadyOnTheDevice() async throws {
+        var withLocal = feed
+        withLocal.localAddresses = ["MAIN", "SAVINGS", "IMPORTED"]
+        StubURLProtocol.install(["/v1/inbox/DEV/": inbox(invites: [
+            "{ \"address\": \"IMPORTED\", \"creation_datetime\": \"2026-10-21T09:00:00Z\" }",
+            "{ \"address\": \"NEW\", \"creation_datetime\": \"2026-10-21T08:00:00Z\" }",
+        ])])
+
+        let fetched = await InboxFetcher.fetch(withLocal, testFeed)
+        let summary = try XCTUnwrap(fetched)
+
+        XCTAssertEqual(summary.items.map(\.id), ["invite-NEW"])
+    }
+
+    func testFallsBackToTheSigningAddressesWithoutTheLocalList() async throws {
+        StubURLProtocol.install(["/v1/inbox/DEV/": inbox(invites: [
+            "{ \"address\": \"MAIN\", \"creation_datetime\": \"2026-10-21T09:00:00Z\" }",
+        ])])
+
+        let fetched = await InboxFetcher.fetch(feed, testFeed)
+
+        XCTAssertEqual(try XCTUnwrap(fetched).inviteCount, 0)
     }
 
     func testNamesComeFromTheAppsAccounts() {

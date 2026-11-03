@@ -19,6 +19,8 @@ import {
     type ResolveWidgetAmountsInput,
 } from '../amounts'
 
+const PINNING = { publicKeyHashes: ['pin='], expiresAt: '2027-07-08T00:00:00Z' }
+
 const usdToEur = (usd: Decimal | null | undefined) => (usd ? usd.mul(2) : null)
 
 const base = (): ResolveWidgetAmountsInput => ({
@@ -81,9 +83,10 @@ describe('resolveWidgetAmounts', () => {
         })
     })
 
-    it('leaves fiat unknown, rather than loading, when the price query failed', () => {
+    it('leaves fiat unknown, rather than loading, when the price query failed with no price', () => {
         const { algoPrice, portfolio } = resolveWidgetAmounts({
             ...base(),
+            algoUsdPrice: null,
             isPriceError: true,
         })
 
@@ -92,6 +95,17 @@ describe('resolveWidgetAmounts', () => {
             value: null,
             algoValue: new Decimal('500'),
         })
+    })
+
+    // A failed refetch keeps the price it last fetched.
+    it('keeps fiat when a refetch failed but the price is still known', () => {
+        const { algoPrice, portfolio } = resolveWidgetAmounts({
+            ...base(),
+            isPriceError: true,
+        })
+
+        expect(algoPrice?.value).toEqual(new Decimal('0.4'))
+        expect(portfolio?.value).toEqual(new Decimal('200'))
     })
 
     it('reports the price as loading while the price query is pending', () => {
@@ -132,12 +146,14 @@ describe('resolvePriceFeed', () => {
             backendUrl: 'https://mainnet.api.example',
             apiKey: 'key',
             preferredCurrency: 'EUR',
+            pinning: PINNING,
         })
 
         expect(feed).toEqual({
             backendUrl: 'https://mainnet.api.example',
             apiKey: 'key',
             currencyCode: 'EUR',
+            pinning: PINNING,
         })
     })
 
@@ -146,6 +162,7 @@ describe('resolvePriceFeed', () => {
             backendUrl: 'https://mainnet.api.example',
             apiKey: 'key',
             preferredCurrency: 'ALGO',
+            pinning: null,
         })
 
         expect(feed?.currencyCode).toBe('USD')
@@ -156,6 +173,7 @@ describe('resolvePriceFeed', () => {
             backendUrl: '',
             apiKey: 'key',
             preferredCurrency: 'EUR',
+            pinning: PINNING,
         })
 
         expect(feed).toBeNull()

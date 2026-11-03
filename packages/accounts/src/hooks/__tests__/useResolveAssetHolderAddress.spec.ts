@@ -27,7 +27,10 @@ vi.mock('../../db', () => ({
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '../../store'
 import { testAccount } from '../../__tests__/accountFactory'
-import { useResolveAssetHolderAddress } from '../useResolveAssetHolderAddress'
+import {
+    resolveAssetHolderAddress,
+    useResolveAssetHolderAddress,
+} from '../useResolveAssetHolderAddress'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -109,5 +112,20 @@ describe('useResolveAssetHolderAddress', () => {
         await result.current('123')
 
         expect(mocks.getAssetHolderAddresses).toHaveBeenCalledTimes(1)
+    })
+
+    // A deep link resolves once per tap and holds no subscription.
+    it('reads the selection as it is when called', async () => {
+        mocks.getAssetHolderAddresses.mockResolvedValue([
+            'HOLDER_A',
+            'HOLDER_B',
+        ])
+        const queryClient = new QueryClient()
+
+        useAccountsStore.getState().setSelectedAccountId('HOLDER_B')
+
+        await expect(
+            resolveAssetHolderAddress(queryClient, '123', SCOPE),
+        ).resolves.toBe('HOLDER_B')
     })
 })

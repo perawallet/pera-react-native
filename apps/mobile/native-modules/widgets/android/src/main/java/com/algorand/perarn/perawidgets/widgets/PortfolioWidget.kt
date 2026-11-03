@@ -17,14 +17,11 @@ import android.net.Uri
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.Image
-import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -35,7 +32,6 @@ import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
-import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -52,31 +48,23 @@ import com.algorand.perarn.perawidgets.format.UpdatedTime
 import com.algorand.perarn.perawidgets.refresh.WidgetVersion
 import com.algorand.perarn.perawidgets.snapshot.SnapshotStore
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot
-import com.algorand.perarn.perawidgets.ui.NetworkBarHeight
 import com.algorand.perarn.perawidgets.ui.PeraChrome
 import com.algorand.perarn.perawidgets.ui.PeraColors
 import com.algorand.perarn.perawidgets.ui.PeraLogo
 import com.algorand.perarn.perawidgets.ui.PeraPlaceholder
+import com.algorand.perarn.perawidgets.ui.PeraSizeMode
 import com.algorand.perarn.perawidgets.ui.PeraText
 import com.algorand.perarn.perawidgets.ui.PeraTheme
-import com.algorand.perarn.perawidgets.ui.Sparkline
-import com.algorand.perarn.perawidgets.ui.fittedTextSize
+import com.algorand.perarn.perawidgets.ui.SparklineImage
 import java.time.Instant
 import java.time.ZoneId
-import java.util.Locale
-
-fun snapshotLocale(snapshot: WidgetSnapshot): Locale =
-    snapshot.locale?.let { Locale.forLanguageTag(it.replace('_', '-')) } ?: Locale.getDefault()
 
 class PortfolioWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Exact
+    override val sizeMode: SizeMode = PeraSizeMode
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
-        val systemIsDark =
-            context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
 
         provideContent {
             // A live session recomposes without re-running provideGlance, so everything is read per version.
@@ -94,7 +82,7 @@ class PortfolioWidget : GlanceAppWidget() {
             if (snapshot == null || content == null) {
                 PeraPlaceholder(colors)
             } else {
-                PortfolioView(context, snapshot, content, colors, PeraTheme.isDark(snapshot.theme, systemIsDark))
+                PortfolioView(context, snapshot, content, colors, PeraTheme.isDark(snapshot.theme, PeraTheme.systemIsDark(context)))
             }
         }
     }
@@ -109,57 +97,68 @@ private fun PortfolioView(
     isDark: Boolean,
 ) {
     val size = LocalSize.current
+    val open = Intent(Intent.ACTION_VIEW, Uri.parse(content.tapUrl)).setPackage(context.packageName)
+    PeraChrome(colors, snapshot.network, GlanceModifier.clickable(actionStartActivity(open))) {
+        PortfolioPage(context, snapshot, content, colors, isDark, size.width.value, size.height.value)
+    }
+}
+
+// The size is what this page gets, so the tabs widget can hand it the room above its tab bar.
+@Composable
+fun PortfolioPage(
+    context: Context,
+    snapshot: WidgetSnapshot,
+    content: PortfolioContent,
+    colors: PeraColors,
+    isDark: Boolean,
+    widthDp: Float,
+    heightDp: Float,
+    showLogo: Boolean = true,
+    topPaddingDp: Float? = null,
+    bottomPaddingDp: Float? = null,
+) {
     val primary = content.primary ?: "—"
     val layout = portfolioLayout(
-        size.width.value, size.height.value, primary,
+        widthDp, heightDp, primary,
         hasNetworkBar = snapshot.network?.isMainnet == false,
         secondary = content.secondary,
         hasChart = content.chart != null,
         hasUpdated = content.updatedText != null,
+        topPaddingDp = topPaddingDp,
+        bottomPaddingDp = bottomPaddingDp,
     )
-    val open = Intent(Intent.ACTION_VIEW, Uri.parse(content.tapUrl)).setPackage(context.packageName)
-
-    PeraChrome(colors, snapshot.network, GlanceModifier.clickable(actionStartActivity(open))) {
-        Column(modifier = GlanceModifier.fillMaxSize().padding(horizontal = PADDING_DP.dp, vertical = layout.verticalPaddingDp.dp)) {
-            Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                PeraText(content.title, TITLE_SP.sp, FontWeight.Medium, colors.textGray, GlanceModifier.defaultWeight())
-                PeraLogo(LOGO_DP.dp)
-            }
-            Spacer(GlanceModifier.height(2.dp))
-            val secondary = content.secondary?.takeIf { layout.showSecondary }
-            if (layout.isWide && secondary != null) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    PeraText(primary, layout.amountSp.sp, FontWeight.Bold, colors.textMain)
-                    Spacer(GlanceModifier.width(SIDE_GAP_DP.dp))
-                    PeraText(secondary, layout.secondarySp.sp, FontWeight.Normal, colors.textGray)
-                }
-            } else {
+    Column(
+        modifier = GlanceModifier.fillMaxSize().padding(
+            start = PADDING_DP.dp, end = PADDING_DP.dp, top = layout.topPaddingDp.dp, bottom = layout.bottomPaddingDp.dp,
+        ),
+    ) {
+        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+            PeraText(content.title, TITLE_SP.sp, FontWeight.Medium, colors.textGray, GlanceModifier.defaultWeight())
+            if (showLogo) PeraLogo(LOGO_DP.dp) else Spacer(GlanceModifier.height(LOGO_DP.dp))
+        }
+        Spacer(GlanceModifier.height(2.dp))
+        val secondary = content.secondary?.takeIf { layout.showSecondary }
+        if (layout.isWide && secondary != null) {
+            Row(verticalAlignment = Alignment.Bottom) {
                 PeraText(primary, layout.amountSp.sp, FontWeight.Bold, colors.textMain)
-                secondary?.let { PeraText(it, layout.secondarySp.sp, FontWeight.Normal, colors.textGray) }
+                Spacer(GlanceModifier.width(SIDE_GAP_DP.dp))
+                PeraText(secondary, layout.secondarySp.sp, FontWeight.Normal, colors.textGray)
             }
-            val chart = content.chart
-            if (chart != null && layout.showChart) {
-                val density = context.resources.displayMetrics.density
-                Image(
-                    provider = ImageProvider(
-                        Sparkline.bitmap(
-                            chart,
-                            (layout.chartWidthDp * density).toInt(),
-                            (layout.chartHeightDp * density).toInt(),
-                            PeraTheme.trendColor(content.isTrendUp, isDark).toArgb(),
-                            1.5f * density,
-                        ),
-                    ),
-                    contentDescription = null,
-                    modifier = GlanceModifier.fillMaxWidth().defaultWeight().padding(vertical = 3.dp),
-                    contentScale = ContentScale.FillBounds,
-                )
-            } else {
-                Spacer(GlanceModifier.defaultWeight())
-            }
-            content.updatedText?.let {
-                PeraText(it, 10.sp, FontWeight.Normal, colors.textGray)
-            }
+        } else {
+            PeraText(primary, layout.amountSp.sp, FontWeight.Bold, colors.textMain)
+            secondary?.let { PeraText(it, layout.secondarySp.sp, FontWeight.Normal, colors.textGray) }
+        }
+        val chart = content.chart
+        if (chart != null && layout.showChart) {
+            SparklineImage(
+                context, chart, layout.chartWidthDp, layout.chartHeightDp, content.isTrendUp, isDark,
+                GlanceModifier.fillMaxWidth().defaultWeight().padding(vertical = 3.dp),
+            )
+        } else {
+            Spacer(GlanceModifier.defaultWeight())
+        }
+        content.updatedText?.let {
+            PeraText(it, 10.sp, FontWeight.Normal, colors.textGray)
         }
     }
 }

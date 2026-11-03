@@ -19,6 +19,7 @@ const val PRICE_ASSET_ID_DP = 12f
 const val PRICE_CHART_SHARE = 0.4f
 const val PRICE_MIN_SP = 9f
 const val PRICE_MIN_PADDING_DP = 2f
+const val NARROW_CHART_DP = 22f
 
 data class PriceLayout(
     val isWide: Boolean,
@@ -36,11 +37,36 @@ data class PriceLayout(
     val usedDp: Float,
 )
 
+// A narrow widget has room for the chart or the per-currency line, not both, and the line wins when it's on,
+// as on iOS; the chart takes a fixed row under the change, and only when that row fits.
+fun priceLayout(
+    widthDp: Float,
+    heightDp: Float,
+    price: String,
+    hasNetworkBar: Boolean,
+    hasAssetId: Boolean,
+    hasChange: Boolean,
+    hasInverse: Boolean,
+    hasChart: Boolean,
+    hasUpdated: Boolean,
+): PriceLayout {
+    val fitted = fittedPriceLayout(widthDp, heightDp, price, hasNetworkBar, hasAssetId, hasChange, hasInverse, hasChart, hasUpdated)
+    if (fitted.isWide || !hasChart || fitted.showInverse) return fitted
+    val row = NARROW_CHART_DP + CHART_MARGIN_DP
+    if (heightDp - fitted.usedDp < row) return fitted
+    return fitted.copy(
+        showChart = true,
+        chartWidthDp = widthDp - 2 * PADDING_DP,
+        chartHeightDp = NARROW_CHART_DP,
+        usedDp = fitted.usedDp + row,
+    )
+}
+
 // Fits the rows to the real height. In order: the price shrinks to the title size, the
 // per-currency line goes, then the change, then the id moves beside the title; only then does the
 // price go below the title size (to 9sp), and last the padding shrinks. Title, price, id and
-// "Updated" always stay; the chart only exists on wide widgets.
-fun priceLayout(
+// "Updated" always stay; the chart beside the figures only exists on wide widgets.
+private fun fittedPriceLayout(
     widthDp: Float,
     heightDp: Float,
     price: String,
@@ -68,7 +94,8 @@ fun priceLayout(
     val widthFit = fittedTextSize(price, figuresWidth, if (isWide) 28f else 22f, PRICE_MIN_SP)
 
     fun build(padding: Float, idInline: Boolean, showChange: Boolean, showInverse: Boolean, floor: Float): PriceLayout? {
-        val chrome = chromeFor(padding, idInline)
+        val gaps = LINE_GAP_DP * ((if (showChange) 1 else 0) + (if (showInverse) 1 else 0) + (if (hasUpdated) 1 else 0))
+        val chrome = chromeFor(padding, idInline) + gaps
         val room = heightDp - chrome - (if (showChange) changeHeight else 0f) - (if (showInverse) inverseHeight else 0f)
         val fit = minOf(widthFit, room / AMOUNT_LINE)
         if (fit < floor) return null

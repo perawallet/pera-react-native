@@ -22,7 +22,9 @@ struct PortfolioQuote {
     let chart: [Double]
     /// Fractional change across `chart`; nil when it starts at zero.
     let change: Double?
-    let fetchedAt: Date
+    /// When the shown total is from: the history's last point, which is bucketed (hourly, or daily
+    /// over a year), so it can trail the fetch. The fetch time when the point has no date.
+    let asOf: Date
 }
 
 enum PortfolioFetcher {
@@ -45,19 +47,19 @@ enum PortfolioFetcher {
         ]
         guard let path = components.string else { return nil }
 
-        async let history: Wealth? = PriceFetcher.get(base, path, feed)
+        async let history: Wealth? = PeraBackend.get(base, path, feed)
         async let rate: Decimal? = PriceFetcher.usdRate(base, code: feed.currencyCode, feed)
 
         guard let points = await history?.results, let last = points.last,
-              let algo = PriceFetcher.decimal(last.algo_value)
+              let algo = PeraBackend.decimal(last.algo_value)
         else { return nil }
 
         var fiat: Decimal?
         let rateValue = await rate
-        if let usd = PriceFetcher.decimal(last.usd_value), let rateValue {
+        if let usd = PeraBackend.decimal(last.usd_value), let rateValue {
             fiat = usd * rateValue
         }
-        let chart = points.compactMap { PriceFetcher.decimal($0.algo_value) }
+        let chart = points.compactMap { PeraBackend.decimal($0.algo_value) }
             .map { NSDecimalNumber(decimal: $0).doubleValue }
         var change: Double?
         if let first = chart.first, let end = chart.last, first != 0 {
@@ -70,7 +72,7 @@ enum PortfolioFetcher {
             currencyCode: feed.currencyCode,
             chart: chart,
             change: change,
-            fetchedAt: .now
+            asOf: min(ISODate.parse(last.datetime) ?? .now, .now)
         )
     }
 
@@ -79,7 +81,8 @@ enum PortfolioFetcher {
     }
 
     private struct Point: Decodable {
-        let usd_value: PriceFetcher.FlexibleNumber?
-        let algo_value: PriceFetcher.FlexibleNumber?
+        let datetime: String?
+        let usd_value: FlexibleNumber?
+        let algo_value: FlexibleNumber?
     }
 }

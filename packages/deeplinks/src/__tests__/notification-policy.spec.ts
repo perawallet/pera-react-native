@@ -26,7 +26,6 @@ describe('isNotificationAllowedDeeplinkType', () => {
         DeeplinkType.ADD_WATCH_ACCOUNT,
         DeeplinkType.RECOVER_ADDRESS,
         DeeplinkType.PERA_WEB_IMPORT,
-        // A push notification has no business opening the camera.
         DeeplinkType.SCAN,
         DeeplinkType.CLOUD_BACKUP,
         DeeplinkType.PASSPHRASE_BACKUP,

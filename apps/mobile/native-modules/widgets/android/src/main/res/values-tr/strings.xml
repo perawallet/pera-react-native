@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="portfolio_name">Portföy</string>
+  <string name="portfolio_description">Portföyünün toplam değeri.</string>
+  <string name="price_name">Fiyat</string>
+  <string name="price_description">Doğrulanmış bir varlığın fiyatı ve 24 saatlik değişimi.</string>
+  <string name="receive_name">Alma QR’ı</string>
+  <string name="receive_description">Para almak için bir hesabın QR kodunu göster.</string>
+  <string name="transactions_name">İşlemler</string>
+  <string name="transactions_description">En son işlemlerin.</string>
+  <string name="portfolio_tabs_name">Portföy ve işlemler</string>
+  <string name="portfolio_tabs_description">Portföyün ve son işlemlerin, bir dokunuş uzağında.</string>
+  <string name="scan_tile_label">Pera ile tara</string>
+  <string name="options_chart_period">Grafik dönemi</string>
+  <string name="options_period_default">Varsayılan</string>
+  <string name="options_period_one_day">1 gün</string>
+  <string name="options_period_one_week">1 hafta</string>
+  <string name="options_period_one_month">1 ay</string>
+  <string name="options_period_one_year">1 yıl</string>
+  <string name="options_show_chart">Grafiği göster</string>
+  <string name="options_account">Hesap</string>
+  <string name="options_show_inverse">Para birimi başına varlığı göster</string>
+  <string name="options_asset">Varlık</string>
+  <string name="options_currency">Para birimi</string>
+  <string name="options_default">Varsayılan</string>
+  <string name="options_portfolio">Portföy</string>
+  <string name="options_add_widget">Widget ekle</string>
+  <string name="options_save">Kaydet</string>
+  <string name="options_hint">Widget’ı eklediğinde ve uzun basıp → Özelleştir’e dokunduğunda açılır</string>
+</resources>

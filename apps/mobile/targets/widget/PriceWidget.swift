@@ -26,8 +26,6 @@ struct PriceEntry: TimelineEntry {
 }
 
 struct PriceProvider: AppIntentTimelineProvider {
-    private static let refreshInterval: TimeInterval = 30 * 60
-
     func placeholder(in context: Context) -> PriceEntry {
         PriceEntry(date: .now, snapshot: nil, quote: nil)
     }
@@ -42,7 +40,8 @@ struct PriceProvider: AppIntentTimelineProvider {
     func timeline(for configuration: PriceConfigIntent, in context: Context) async -> Timeline<PriceEntry> {
         let snapshot = WidgetSnapshot.current
         let quote = await quote(snapshot, configuration)
-        let next = Date.now.addingTimeInterval(Self.refreshInterval)
+        // Without a feed there is nothing to retry; the app's next write reloads the widget.
+        let next = WidgetRefresh.next(didFail: quote == nil && snapshot?.priceFeed != nil)
         let entries = minuteEntries(until: next) { entry($0, snapshot, quote, configuration) }
         return Timeline(entries: entries, policy: .after(next))
     }
@@ -91,7 +90,7 @@ struct PriceWidgetView: View {
         content
             .peraEnvironment(snapshot)
             .containerBackground(for: .widget) { PeraColor.background }
-            .widgetURL(URL(string: "perawallet://app/"))
+            .widgetURL(DeepLink.url(""))
     }
 
     @ViewBuilder
@@ -160,7 +159,7 @@ struct PriceWidgetView: View {
                     .foregroundStyle(PeraColor.positive)
             }
             if !isNative {
-                Text("ID \(entry.asset.id)")
+                Text(String(localized: "price.assetId \(entry.asset.id)"))
                     .font(PeraFont.regular(9))
                     .foregroundStyle(PeraColor.textGray)
             }
@@ -189,7 +188,7 @@ struct PriceWidgetView: View {
     private var changeText: String? {
         guard let change = entry.quote?.change24h else { return nil }
         let arrow = change >= 0 ? "▲" : "▼"
-        return "\(arrow) \(PriceFormat.percent(change, locale: locale)) 24h"
+        return "\(arrow) \(PriceFormat.percent(change, locale: locale)) \(String(localized: "price.change24h"))"
     }
 
     private var changeColor: Color { trendColor(entry.quote?.change24h) }
@@ -222,6 +221,7 @@ struct PriceWidget: Widget {
     }
 }
 
+#if DEBUG
 #Preview("Small", as: .systemSmall) {
     PriceWidget()
 } timeline: {
@@ -237,4 +237,4 @@ struct PriceWidget: Widget {
     PriceEntry(date: .now, snapshot: .fixtureMainnet, quote: .fixture(change: 0.032))
     PriceEntry(date: .now, snapshot: .fixtureMainnet, quote: .fixtureUsdc, asset: .init(id: "31566704", unitName: "USDC", name: "USDC"))
 }
-
+#endif

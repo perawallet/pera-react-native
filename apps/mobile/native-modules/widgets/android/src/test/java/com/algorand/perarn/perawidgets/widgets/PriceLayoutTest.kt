@@ -63,4 +63,25 @@ class PriceLayoutTest {
         assertTrue(l.isIdInline)
         assertFalse(layout(170f, 170f, assetId = true).isIdInline)
     }
+
+    @Test fun aTwoByTwoWithoutThePerCurrencyLineShowsTheChartUnderTheChange() {
+        val l = priceLayout(150f, 150f, "$0.0921", false, false, hasChange = true, hasInverse = false, hasChart = true, hasUpdated = true)
+        assertTrue(l.showChart && l.showChange)
+        assertEquals(NARROW_CHART_DP, l.chartHeightDp, 0.001f)
+        assertEquals(150f - 2 * PADDING_DP, l.chartWidthDp, 0.001f)
+        assertTrue(l.usedDp <= 150f)
+    }
+
+    @Test fun aShortNarrowWidgetDropsTheChartRatherThanOverflowing() {
+        val l = priceLayout(150f, 90f, "$0.0921", false, false, hasChange = true, hasInverse = false, hasChart = true, hasUpdated = true)
+        assertFalse(l.showChart)
+        assertTrue(l.usedDp <= 90f)
+    }
+
+    @Test fun aColorOsTwoByTwoShowsEveryLineAtAReadableSize() {
+        val l = layout(140f, 130f)
+        assertTrue(l.showChange && l.showInverse)
+        assertTrue(l.priceSp >= TITLE_SP + 6f)
+        assertTrue(l.usedDp <= 130f)
+    }
 }

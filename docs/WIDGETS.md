@@ -55,8 +55,8 @@ both still embed after any change to either plugin.
 ## The snapshot
 
 One versioned JSON document, defined once as a Zod schema in TypeScript and mirrored as a Swift
-`Codable` (and later a Kotlin data class). Every field after `version` is optional on the native
-side, so an older widget never fails to decode a newer snapshot.
+`Codable` and a Kotlin data class. Every field after `version` is optional on the native side, so an
+older widget never fails to decode a newer snapshot.
 
 ```ts
 {
@@ -64,8 +64,13 @@ side, so an older widget never fails to decode a newer snapshot.
   locale: 'pt-BR',                       // the app's active locale, not the device's
   theme: 'light' | 'dark' | 'system',    // the app's theme setting
   network: { isMainnet: boolean, label: 'TestNet' },
-  strings: { updatedAgo: '…', hidden: '…', … },  // translated labels the widget renders
-  priceFeed: { backendUrl, apiKey, currencyCode: 'EUR' } | null,  // see "ALGO price widget"
+  strings: { updated: '…', hidden: '…', inboxWaiting: '{count} waiting', … },  // translated labels
+  priceFeed: {
+    backendUrl, apiKey, currencyCode: 'EUR',
+    pinning: { publicKeyHashes: string[], expiresAt: '2027-07-08T00:00:00Z' } | null,
+  } | null,
+  portfolioFeed: { accounts: [{ address, name }], period: 'one-week' } | null,
+  assetOptions: [{ assetId, name, unitName }] | null,
   algoPrice: { formatted: '€0.19', asOf: 1727600000000 } | null,
   portfolio:
     | { state: 'visible', formatted: '€1,234.56', algoFormatted: '6,500.12 ALGO', asOf: number }
@@ -79,20 +84,23 @@ side, so an older widget never fails to decode a newer snapshot.
     cloud: { state: 'notSetUp' | 'partial' | 'failed' | 'backedUp', title, detail | null } | null,
     passphrase: { state: 'needed' | 'backedUp', title, detail | null },
   } | null,
-  receiveTargets: [{ address, name, paymentUri }] | null,
+  receiveTargets: [{ address, name, paymentUri, chain }] | null,
   inboxFeed: {
-    deviceId, addresses, accountNames: [{ address, name }],
+    deviceId, addresses, localAddresses, accountNames: [{ address, name }],
     notifications: { backendUrl, deviceId } | null,
   } | null,
 }
 ```
 
-- **Values cross the bridge as formatted strings.** All money maths and formatting stay in TS
-  (`formatCurrency` with the active locale), so Swift and Kotlin never reimplement Pera's number
-  rules. No `Decimal` or `number` amount is ever serialised. The ALGO price widget is the one
-  exception: it fetches and formats its own price (see below).
-- **`asOf` is epoch milliseconds from the query's `dataUpdatedAt`**, not the write time, so "updated
-  3h ago" is honest after an offline launch.
+- **Values cross the bridge as formatted strings.** No `Decimal` or `number` amount is ever
+  serialised. The self-refreshing widgets (below) format what they fetch with Swift and Kotlin
+  ports of `formatCurrency`: fiat at the currency's digits capped at 2, half-up, `< $ 0.01` below the
+  smallest unit; unit prices at 2–6 decimals. Their tests assert strings generated from the TS
+  functions, so a live value and the app's snapshot fallback render the same.
+- **`asOf` is epoch milliseconds from the query's `dataUpdatedAt`**, not the write time, so
+  "Updated" is honest after an offline launch. It moves only when the value does.
+- **Strings with a count carry a literal `{count}`** (`inboxWaiting`, `inboxToSign`): the widget
+  substitutes the number, so the translation keeps its own word order.
 - **Asset IDs are decimal strings**; they can exceed 2^53.
 - **Addresses are stored, and rendered by one widget only.** `portfolioFeed` carries the signing
   accounts' addresses so the portfolio widget can refresh itself; they stay in the App Group, which
@@ -113,15 +121,20 @@ is public and always written. Backup status is written in privacy mode too and i
 
 ### When the app writes it
 
-`useWidgetSnapshotSync` is mounted in `RootComponent`, inside the query providers.
+`WidgetSnapshotSync`, a component that renders nothing, is mounted beside the app content in
+`RootComponent`: as a hook in the root it re-rendered the whole tree on every price or sync tick.
 
-- It writes when the serialised snapshot differs from the last one written, so an unchanged price
-  poll does not spend a timeline reload.
+- It writes when the snapshot differs from the last one written, `asOf` aside, so an unchanged
+  price poll does not spend a timeline reload.
 - It writes on the transition to background, so the widget matches what the user last saw. The
   native side reloads timelines only when the data differs from what it already holds.
 - **It never overwrites with pending or errored data.** If inputs are not ready,
-  `buildWidgetSnapshot` returns `undefined` and the previous snapshot, with its `asOf` values,
-  stays.
+  `buildWidgetSnapshot` returns `undefined` and the previous snapshot stays; a read that errors
+  keeps its last good value (`useSettledWidgetValue`), and a failed NFT read never purges images.
+- **Privacy mode is written at once**, even while price or backup status is pending, so a visible
+  snapshot can't outlive the switch.
+- **Delete all data raises a wipe guard first** (`useWidgetWipeStore`) and clears the widgets after
+  the stores reset, so no write or background re-write lands in between.
 
 ## Look and feel
 
@@ -163,9 +176,11 @@ Widgets render in the app's language, which can differ from the device's.
 
 App-pushed snapshots go stale whenever the app is not opened, and iOS suspends the app's JavaScript
 seconds after it is backgrounded, so the price and portfolio widgets fetch for themselves every 30
-minutes. "Updated" shows the data's clock time ("Updated 14:05", plus the day once not today), as
-the Watch and Android do: Android can't cheaply redraw a relative age every minute. Timelines keep
-one entry per minute until the next fetch, so row ages ("6 hr. ago") and the day still advance.
+minutes, and 5 minutes after a failed fetch, showing the last good data meanwhile. "Updated" shows
+the data's clock time ("Updated 14:05", plus the day once not today), as the Watch does. iOS
+timelines keep one entry per minute, so row ages ("6 hr. ago") advance. Android can't redraw every
+minute (Doze can hold a redraw for hours), so its transaction rows show a clock time today,
+"Yesterday", then a date, which never go stale.
 
 ### Price
 
@@ -177,8 +192,15 @@ one entry per minute until the next fetch, so row ages ("6 hr. ago") and the day
 The app supplies `priceFeed`: the selected network's backend URL, the `X-API-Key` the app already
 sends, and the preferred currency (USD when that is ALGO, since "1 ALGO = 1 ALGO" says nothing). It is
 `null` on networks without a Pera backend, and any failed fetch falls back to the app's last
-`algoPrice`. These values are formatted in Swift with the snapshot's locale, so their style can
-differ slightly from `formatCurrency`. The widget's requests are not SSL-pinned like the app's.
+`algoPrice`. Priced in ALGO, an asset's price, 24h change and chart are all ratios to ALGO's own
+(`usd_value` over ALGO's, then and 24h ago); a chart whose series doesn't line up with ALGO's is
+dropped rather than drawn wrong.
+
+`priceFeed.pinning` carries the app's root-CA pins when its Pera API pinning flag is on and the
+backend host qualifies (`buildPinningConfig`). Every widget request then requires a pinned key in
+the verified chain and is treated as a failed fetch otherwise; after `expiresAt` the pins are
+ignored, as the app's pinning library does. The flag is read on each write, so the remote kill
+switch reaches the widgets with the next snapshot.
 
 ### Portfolio
 
@@ -192,9 +214,13 @@ app's HTTP client serialises arrays.
 
 `GET /v1/accounts/{address}/transactions/?limit=N` per account, merged newest first and deduplicated
 by id (a transfer between two of the user's accounts appears in both). "Portfolio" reads at most
-five accounts so the fetch fits WidgetKit's few-second budget. Rows are classified in Swift from
-`balance_impacts`: the ALGO impact includes the fee, so another asset's movement is preferred when
-present. Labels reuse the app's `transactions.list_item.*` translations via `snapshot.strings`,
+five accounts so the fetch fits a widget refresh's few-second budget. Rows follow the app's own
+rules (`summarize.ts` and the history transformers in `chain-algorand`), on both platforms: each row
+reads from the side of the account whose page it came from, the amount is the transaction's own
+(plus a close-out sweep) rather than the fee-inclusive balance impact, ALGO is always 6 decimals even
+when the backend sends its `asset(0)` placeholder, and key registrations, heartbeats and asset
+admin rows show as a plain "Transaction". Pages stay in account order, so a transfer between two of
+the user's accounts reads from the same side on every refresh. Labels reuse the app's `transactions.list_item.*` translations via `snapshot.strings`,
 because the backend's `interpreted_meaning` is English only.
 
 ## Price widget assets
@@ -222,7 +248,9 @@ Widgets cannot scroll or take gestures, and an app cannot put its widgets in a S
 the user can build one; entries can only hint relevance). Two-page widgets therefore switch pages
 with iOS 17 interactive buttons running an `AppIntent`, and the page lives in the App Group per
 widget kind (`WidgetPageStore`), shared by every copy of that kind on screen. Only the current page's
-data is fetched.
+data is fetched. Android has the tab bar only, through a Glance `ActionCallback`; its page is kept
+per widget in Glance state, and the tab bar takes the page's bottom padding so a 2x2 page keeps its
+chart.
 
 Two controls are offered side by side so the team can compare them:
 
@@ -271,7 +299,9 @@ notification; the app checks the request on activation and on that notification,
 activate the app before the intent runs. A request older than a minute is dropped, so a missed one
 can't open the scanner later. iOS offers no way to keep a control off the lock screen, but it unlocks the
 phone before opening an app, so a locked phone still can't reach the scanner. The icon is an SF Symbols template of the Pera petals in
-`apps/mobile/targets/symbols/pera-scan.svg`. Push notifications may not open the scanner, and web
+`apps/mobile/targets/symbols/pera-scan.svg`. Android's equivalent is a Quick Settings tile
+(`ScanTileService`, the same glyph as a vector) that opens `perawallet://app/scan` directly, after
+unlocking the phone when tapped from the lock screen. Push notifications may not open the scanner, and web
 pages need the origin gate. A request is ignored while any QR scanner is open, and running the
 control briefly backgrounds Pera, so an open scanner rides out the app lock's resume check covered
 with its camera paused rather than being dismissed and re-presented.
@@ -368,6 +398,7 @@ would gain nothing.
 | A field missing                              | That element falls back; the rest renders                        |
 | `state: 'hidden'`                            | Masked value (`••••`) or the logo for NFTs                       |
 | `nfts` empty or `null`                       | Logo placeholder                                                 |
+| Transactions never fetched, or fetch failed  | `—` on iOS, a blank list on Android; never "No transactions"     |
 | Native module absent (web, tests)            | `requireOptionalNativeModule` returns `null`; the service no-ops |
 
 ## Testing
@@ -379,17 +410,20 @@ would gain nothing.
   `writeSnapshot`.
 - The extension's Foundation-only logic (fetchers, transaction classifier, snapshot decoding) has
   XCTest coverage in the Swift package at `apps/mobile/targets/widget-core`, whose sources are
-  symlinks to the shipped files. Run `swift test` there; it needs no simulator or Xcode project, and
-  CI does not run it.
+  symlinks to the shipped files. Run `pnpm --filter mobile test:widget-core`; it needs no simulator
+  or Xcode project, and CI does not run it.
+- Android's pure logic (fetchers, layouts, formatting, pinning, config) has JVM tests in the widgets
+  module: `./gradlew :<widgets-module>:testDebugUnitTest` from `apps/mobile/android` after a prebuild.
 - Swift `#Preview`s use fixture snapshots: each failure row above, both themes, RTL, non-mainnet.
 
 ## Constraints kept open for other platforms
 
-- **Android.** The bridge's Kotlin half writes the same JSON to a `pera_widgets` SharedPreferences
-  file and caches images to app storage, so the JS side is identical on both platforms. Glance has
-  fewer visual effects than SwiftUI and widgets resize on a grid, so layouts must not depend on
-  exact iOS family sizes. Android's periodic update floor is 30 minutes; app-pushed snapshots make
-  both platforms behave the same.
+- **Android.** The Glance widgets live in the widgets native module and read the same JSON from a
+  `pera_widgets` SharedPreferences file, so the JS side is identical on both platforms. They use
+  `SizeMode.Responsive` with tight steps around a 2x2: with `Exact` the launcher picks between a
+  landscape and a portrait render, and ColorOS draws the landscape one on a portrait home screen.
+  WorkManager is the only scheduler (`updatePeriodMillis` is 0, so two schedulers don't double the
+  passes).
 - **watchOS.** An App Group does not reach the Watch. `writeSnapshot` is the single sink so the
   native module can forward the same JSON over `WCSession.updateApplicationContext`, and cached
   images over `transferFile`, without any JS or schema change. Complications are WidgetKit accessory

@@ -67,7 +67,13 @@ struct TransactionsList: View {
     private var isCompact: Bool { compactOverride ?? (family == .systemSmall) }
 
     var body: some View {
-        if let rows, !rows.isEmpty {
+        if rows == nil {
+            // A failed fetch isn't an empty history.
+            Text("—")
+                .font(PeraFont.medium(12))
+                .foregroundStyle(PeraColor.textGray)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let rows, !rows.isEmpty {
             VStack(alignment: .leading, spacing: isCompact ? 4 : 8) {
                 ForEach(rows.prefix(limit)) { row in
                     TransactionRowView(row: row, label: label(row.kind), now: now, isCompact: isCompact)
@@ -76,7 +82,6 @@ struct TransactionsList: View {
             // Redacted while the phone is locked (StandBy, Mac desktop).
             .privacySensitive()
         } else {
-            // Also when the fetch failed: there is nothing to show either way.
             Text(snapshot?.string("noTransactions") ?? String(localized: "transactions.empty"))
                 .font(PeraFont.medium(12))
                 .foregroundStyle(PeraColor.textGray)
@@ -207,8 +212,6 @@ struct TransactionsEntry: TimelineEntry {
 }
 
 struct TransactionsProvider: AppIntentTimelineProvider {
-    private static let refreshInterval: TimeInterval = 30 * 60
-
     func placeholder(in context: Context) -> TransactionsEntry {
         TransactionsEntry(date: .now, snapshot: nil, rows: nil)
     }
@@ -229,7 +232,8 @@ struct TransactionsProvider: AppIntentTimelineProvider {
         let name = accountName(snapshot, configuration)
         // Only an account the app still shares; a removed one opens the portfolio.
         let address = name == nil ? nil : configuration.account?.address
-        let next = Date.now.addingTimeInterval(Self.refreshInterval)
+        let canFetch = snapshot?.portfolioFeed != nil && snapshot?.priceFeed != nil
+        let next = WidgetRefresh.next(didFail: canFetch && rows == nil)
         let entries = minuteEntries(until: next) {
             TransactionsEntry(date: $0, snapshot: snapshot, rows: rows, accountName: name, accountAddress: address)
         }
@@ -282,8 +286,8 @@ struct TransactionsWidgetView: View {
 extension TransactionsWidgetView {
     // One account opens its history; the whole portfolio opens the portfolio drawer.
     var tapURL: URL? {
-        guard let address = entry.accountAddress else { return URL(string: "perawallet://app/portfolio/") }
-        return URL(string: "perawallet://app/account-detail/?address=\(address)&tab=history")
+        guard let address = entry.accountAddress else { return DeepLink.url("portfolio/") }
+        return DeepLink.url("account-detail/", ["address": address, "tab": "history"])
     }
 }
 
@@ -299,6 +303,7 @@ struct TransactionsWidget: Widget {
     }
 }
 
+#if DEBUG
 #Preview("Medium", as: .systemMedium) {
     TransactionsWidget()
 } timeline: {
@@ -313,3 +318,4 @@ struct TransactionsWidget: Widget {
 } timeline: {
     TransactionsEntry(date: .now, snapshot: .fixtureWithFeeds, rows: TransactionRow.fixtures)
 }
+#endif

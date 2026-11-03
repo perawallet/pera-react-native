@@ -29,7 +29,7 @@ import {
 } from '@modules/multisig/shell'
 import { SwapOverlays } from '@modules/swap/shell'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
-import { useWidgetSnapshotSync } from '@modules/widgets/shell'
+import { WidgetSnapshotSync } from '@modules/widgets/shell'
 import { RootContentContainer } from './RootContentContainer'
 import { useRootComponent } from './useRootComponent'
 
@@ -59,7 +59,6 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useImageMemoryRelease()
 
     useBackupSyncLifecycle()
-    useWidgetSnapshotSync()
 
     // Called where the sync start/stop effect used to sit, after the other
     // lifecycle hooks, so this refactor doesn't change the startup order.
@@ -67,6 +66,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     return (
         <>
+            <WidgetSnapshotSync />
             <BottomSheetModalProvider>
                 {!migrationInProgress && <DeviceRegistrar />}
                 <AutoLockGuard>

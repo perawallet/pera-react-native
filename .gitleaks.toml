@@ -112,6 +112,9 @@ paths = [
 [[rules]]
 id = "baanx-client-key-in-code"
 description = "Baanx client keys come from env (TESTNET_/MAINNET_BAANX_CLIENT_KEY: Bitrise secrets in CI, .env locally), never a literal in code, so a key pasted in for local work can't be pushed"
-# Values starting lowercase or with a digit: the env-name map's 'MAINNET_BAANX_CLIENT_KEY' doesn't match.
-regex = '''(?:mainnet|testnet)BaanxClientKey:\s*['"][a-z0-9][^'"]*['"]'''
+regex = '''(?:mainnet|testnet)BaanxClientKey:\s*['"][^'"\s]+['"]'''
 keywords = ["baanxclientkey"]
+
+# The env-name map, which names the variable rather than holding a key.
+[[rules.allowlists]]
+regexes = ['''['"](?:MAINNET|TESTNET)_BAANX_CLIENT_KEY['"]$''']

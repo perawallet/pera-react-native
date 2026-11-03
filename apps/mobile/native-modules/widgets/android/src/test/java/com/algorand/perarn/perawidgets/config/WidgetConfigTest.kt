@@ -11,11 +11,14 @@
  */
 package com.algorand.perarn.perawidgets.config
 
+import com.algorand.perarn.perawidgets.fetch.FetchedCurrency
 import com.algorand.perarn.perawidgets.fetch.InMemoryStore
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot.PortfolioFeed
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot.ReceiveTarget
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -73,9 +76,27 @@ class WidgetConfigTest {
     assertNull(widgetKindFor("other.Receiver"))
   }
 
-  @Test fun currencyChoicesAreDedupedAndStartWithDefault() {
-    val snap = WidgetSnapshot(version = 1, priceFeed = WidgetSnapshot.PriceFeed(currencyCode = "USD"))
-    assertEquals(listOf(null, "USD", "EUR"), WidgetChoices.currencies(snap).map { it.value })
+  @Test fun currencyChoicesMatchIos() {
+    val loaded = listOf(FetchedCurrency("USD", "US Dollar"), FetchedCurrency("ALGO", "Algorand"), FetchedCurrency("JPY", "Yen"))
+    assertEquals(listOf(null, "ALGO", "USD", "JPY"), WidgetChoices.currencies(loaded, null).map { it.value })
+    assertEquals("JPY · Yen", WidgetChoices.currencies(loaded, null).last().label)
+  }
+
+  @Test fun currencyChoicesFallBackToAlgoAndUsd() {
+    assertEquals(listOf(null, "ALGO", "USD"), WidgetChoices.currencies(null, null).map { it.value })
+    assertEquals(listOf(null, "ALGO", "USD"), WidgetChoices.currencies(emptyList(), null).map { it.value })
+  }
+
+  @Test fun aSavedCurrencyTheListLacksStaysSelectable() {
+    assertEquals(listOf(null, "ALGO", "USD", "EUR"), WidgetChoices.currencies(null, "EUR").map { it.value })
+  }
+
+  @Test fun savedOptionsMarkTheWidgetConfigured() {
+    assertFalse(config.isConfigured(5))
+    config.save(5, TransactionsOptions())
+    assertTrue(config.isConfigured(5))
+    config.delete(5)
+    assertFalse(config.isConfigured(5))
   }
 
   @Test fun assetChoicesStartWithAlgoAndSkipDuplicates() {

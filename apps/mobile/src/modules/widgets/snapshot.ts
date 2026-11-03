@@ -13,10 +13,13 @@
 import { z } from 'zod'
 import type { Decimal } from 'decimal.js'
 import {
+    ASSET_MAX_PRECISION,
+    DEFAULT_PRECISION,
     formatCurrency,
     HISTORY_PERIODS,
     httpsUrlSchema,
     isAlgoAssetName,
+    type Maybe,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -27,8 +30,12 @@ import type { WidgetImageRequest } from '@perawallet/wallet-extension-platform'
 export const WIDGET_SNAPSHOT_VERSION = 1
 export const MAX_WIDGET_NFTS = 10
 
-const PRICE_PRECISION = 4
+// The app's `unitPrice` precision (CurrencyAmount's resolvePrecision), so the
+// fallback reads the same as the widget's own live fetch.
+const PRICE_PRECISION = ASSET_MAX_PRECISION
+const PRICE_MIN_PRECISION = DEFAULT_PRECISION
 const FIAT_PRECISION = 2
+const ALGO_PRECISION = 2
 const ASSET_ID_PATTERN = /^\d+$/
 
 const hiddenSchema = z.object({ state: z.literal('hidden') })
@@ -65,6 +72,14 @@ export const widgetSnapshotSchema = z.object({
             backendUrl: z.string(),
             apiKey: z.string(),
             currencyCode: z.string(),
+            /** The pins the app enforces on `backendUrl`; null when the app doesn't pin it. */
+            pinning: z
+                .object({
+                    publicKeyHashes: z.array(z.string()),
+                    /** ISO 8601 UTC, second precision. */
+                    expiresAt: z.string(),
+                })
+                .nullable(),
         })
         .nullable(),
     // Lets the widget refresh balances and the chart between app launches. The
@@ -131,6 +146,8 @@ export const widgetSnapshotSchema = z.object({
             deviceId: z.string(),
             /** The accounts the inbox is asked about, as the app's inbox asks. */
             addresses: z.array(z.string()),
+            /** Every local account, so an invite for a shared account already added is dropped, as in the app. */
+            localAddresses: z.array(z.string()),
             accountNames: z.array(
                 z.object({ address: z.string(), name: z.string() }),
             ),
@@ -212,7 +229,8 @@ export type BuildWidgetSnapshotInput = {
         algoValue: Nullable<Decimal>
         asOf: number
     }>
-    nfts: Optional<WidgetNftCandidate[]>
+    /** Null when the read failed with nothing earlier to fall back on. */
+    nfts: Maybe<WidgetNftCandidate[]>
     cachedImageKeys: string[]
     backup: Optional<WidgetBackup>
     receiveTargets: WidgetReceiveTarget[]
@@ -224,8 +242,17 @@ const formatAmount = (
     precision: number,
     currencyCode: string,
     locale: string,
+    minPrecision?: number,
 ) => {
-    const formatted = formatCurrency(value, precision, currencyCode, locale)
+    const formatted = formatCurrency(
+        value,
+        precision,
+        currencyCode,
+        locale,
+        true,
+        false,
+        minPrecision,
+    )
     // formatCurrency omits the symbol for ALGO, so name the unit explicitly.
     return isAlgoAssetName(currencyCode) ? `${formatted} ALGO` : formatted
 }
@@ -252,7 +279,7 @@ const portfolioSection = ({
                   ),
         algoFormatted: formatAmount(
             portfolio.algoValue,
-            FIAT_PRECISION,
+            ALGO_PRECISION,
             'ALGO',
             locale,
         ),
@@ -266,6 +293,7 @@ const nftsSection = (
 ): WidgetSnapshot['nfts'] => {
     if (!hasAccounts) return null
     if (isPrivacyMode) return { state: 'hidden' }
+    if (nfts === null) return null
     return {
         state: 'visible',
         items: (nfts ?? [])
@@ -295,10 +323,18 @@ export const buildWidgetSnapshot = (
         backup,
     } = input
 
-    if (algoPrice === undefined) return undefined
-    if (hasAccounts && backup === undefined) return undefined
-    if (hasAccounts && !isPrivacyMode) {
-        if (portfolio === undefined || nfts === undefined) return undefined
+    // Privacy mode never waits: the hidden shape must replace a visible
+    // snapshot at once, whatever is still loading.
+    if (!isPrivacyMode) {
+        if (algoPrice === undefined) return undefined
+        if (
+            hasAccounts &&
+            (backup === undefined ||
+                portfolio === undefined ||
+                nfts === undefined)
+        ) {
+            return undefined
+        }
     }
 
     const cached = new Set(input.cachedImageKeys)
@@ -313,7 +349,7 @@ export const buildWidgetSnapshot = (
         portfolioFeed: isPrivacyMode ? null : input.portfolioFeed,
         assetOptions: isPrivacyMode ? null : (input.assetOptions ?? []),
         algoPrice:
-            algoPrice.value === null
+            !algoPrice || algoPrice.value === null
                 ? null
                 : {
                       formatted: formatAmount(
@@ -321,6 +357,7 @@ export const buildWidgetSnapshot = (
                           PRICE_PRECISION,
                           algoPrice.currencyCode,
                           locale,
+                          PRICE_MIN_PRECISION,
                       ),
                       asOf: algoPrice.asOf,
                   },

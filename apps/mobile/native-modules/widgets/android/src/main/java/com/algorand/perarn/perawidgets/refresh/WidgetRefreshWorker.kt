@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit
 
 const val REFRESH_WORK_NAME = "pera-widgets-refresh"
 const val REFRESH_NOW_WORK_NAME = "pera-widgets-refresh-now"
+const val REFRESH_RETRY_WORK_NAME = "pera-widgets-refresh-retry"
 private const val REFRESH_MINUTES = 30L
+private const val RETRY_MINUTES = 5L
 
 // onDisabled fires per widget kind, so work is only cancelled once no kind has a widget placed.
 fun noWidgetsLeft(vararg idsPerKind: IntArray): Boolean = idsPerKind.all { it.isEmpty() }
@@ -49,20 +51,30 @@ object WidgetRefreshScheduler {
             .enqueueUniquePeriodicWork(REFRESH_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 
-    // Network never runs inside a receiver; onUpdate hands the fetch to this job instead.
+    // Network never runs inside a receiver; onUpdate hands the fetch to this job instead. KEEP: a pass already
+    // queued or running covers every widget, and replacing it would cancel its fetches halfway.
     fun refreshSoon(context: Context) {
         val request = OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
-        WorkManager.getInstance(context).enqueueUniqueWork(REFRESH_NOW_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
+        WorkManager.getInstance(context).enqueueUniqueWork(REFRESH_NOW_WORK_NAME, ExistingWorkPolicy.KEEP, request)
+    }
+
+    // After a failed fetch, sooner than the next 30-minute run. A failure during the retry itself finds it still
+    // running and adds nothing, so a network that stays down costs one extra pass, not a loop.
+    fun retryLater(context: Context) {
+        val request = OneTimeWorkRequestBuilder<WidgetRefreshWorker>().setInitialDelay(RETRY_MINUTES, TimeUnit.MINUTES).build()
+        WorkManager.getInstance(context).enqueueUniqueWork(REFRESH_RETRY_WORK_NAME, ExistingWorkPolicy.KEEP, request)
     }
 
     fun cancelIfNoWidgetsLeft(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
-        val ids = WidgetKinds.all.map { manager.getAppWidgetIds(ComponentName(context, it)) }
+        val ids = WidgetKinds.receivers.map { manager.getAppWidgetIds(ComponentName(context, it)) }
         if (noWidgetsLeft(*ids.toTypedArray())) {
-            WorkManager.getInstance(context).cancelUniqueWork(REFRESH_WORK_NAME)
+            val work = WorkManager.getInstance(context)
+            listOf(REFRESH_WORK_NAME, REFRESH_NOW_WORK_NAME, REFRESH_RETRY_WORK_NAME).forEach { work.cancelUniqueWork(it) }
         }
     }
 
+    // Glance deletes the widget's own state (version, page) in its onDeleted; this drops what Pera stores beside it.
     fun forget(context: Context, widgetIds: IntArray) {
         val config = WidgetConfig(context)
         val quotes = QuoteCache(context)

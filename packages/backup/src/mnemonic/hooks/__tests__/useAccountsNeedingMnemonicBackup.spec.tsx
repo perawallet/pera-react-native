@@ -31,6 +31,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: async () => {},
             removeItem: async () => {},
         },
+        chains: { has: () => true },
     }),
 }))
 
@@ -52,7 +53,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             queryFn: async () => fundedByAddress[address] ?? [],
         }),
         useDelegationAuthorities: () => authorities,
+        delegationAuthoritiesOf: () => authorities,
         useOtherRegisteredChainIds: () => [],
+        otherRegisteredChainIds: () => [],
     }
 })
 
@@ -66,12 +69,18 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
         ...original,
         useChainCapability: (...args: unknown[]) =>
             mockCanBackUpMnemonic(...args),
+        getChainCapabilities: () => ({
+            mnemonicBackup: mockCanBackUpMnemonic(),
+        }),
     }
 })
 
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 import { useMnemonicBackupStore } from '../../store'
-import { useAccountsNeedingMnemonicBackup } from '../useAccountsNeedingMnemonicBackup'
+import {
+    findAccountsNeedingMnemonicBackup,
+    useAccountsNeedingMnemonicBackup,
+} from '../useAccountsNeedingMnemonicBackup'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -133,5 +142,47 @@ describe('useAccountsNeedingMnemonicBackup', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.accounts).toEqual([])
+    })
+})
+
+describe('findAccountsNeedingMnemonicBackup', () => {
+    beforeEach(() => {
+        registerFakeBackupAdapter()
+        useMnemonicBackupStore.getState().resetState()
+        for (const key of Object.keys(fundedByAddress)) {
+            delete fundedByAddress[key]
+        }
+        authorities.clear()
+        mockCanBackUpMnemonic.mockReset()
+        mockCanBackUpMnemonic.mockReturnValue(true)
+    })
+
+    // A cold start from the Backup widget lands before any funding is cached.
+    test('waits for funding it has never read, then lists the same accounts as the hook', async () => {
+        fundedByAddress.A = ['mainnet']
+        fundedByAddress.C = ['testnet']
+        authorities.add('D')
+        useMnemonicBackupStore.getState().markBackedUp('kp-C')
+
+        const needing = await findAccountsNeedingMnemonicBackup(
+            new QueryClient(),
+            [local('A'), local('B'), local('C'), local('D')],
+            SCOPE,
+        )
+
+        expect(needing.map(account => account.id)).toEqual(['A', 'D'])
+    })
+
+    test('lists nothing when the chain has mnemonic backup off', async () => {
+        fundedByAddress.A = ['mainnet']
+        mockCanBackUpMnemonic.mockReturnValue(false)
+
+        await expect(
+            findAccountsNeedingMnemonicBackup(
+                new QueryClient(),
+                [local('A')],
+                SCOPE,
+            ),
+        ).resolves.toEqual([])
     })
 })

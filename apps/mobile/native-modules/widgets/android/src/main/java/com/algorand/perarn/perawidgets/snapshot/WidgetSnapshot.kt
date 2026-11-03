@@ -41,7 +41,12 @@ data class WidgetSnapshot(
     val backendUrl: String? = null,
     val apiKey: String? = null,
     val currencyCode: String? = null,
-  )
+    val pinning: Pinning? = null,
+  ) {
+    // publicKeyHashes are base64 SHA-256 digests of SubjectPublicKeyInfo DER; expiresAt is ISO 8601.
+    @Serializable
+    data class Pinning(val publicKeyHashes: List<String>? = null, val expiresAt: String? = null)
+  }
 
   @Serializable
   data class PortfolioFeed(
@@ -99,6 +104,7 @@ data class WidgetSnapshot(
     val addresses: List<String>? = null,
     val accountNames: List<AccountName>? = null,
     val notifications: Notifications? = null,
+    val localAddresses: List<String>? = null,
   ) {
     @Serializable
     data class AccountName(val address: String? = null, val name: String? = null)
@@ -117,6 +123,12 @@ data class WidgetSnapshot(
 }
 
 fun WidgetSnapshot.string(key: String): String? = strings?.get(key)
+
+const val NATIVE_ASSET_ID = "0"
+
+// Privacy mode, or a network the app shares no account feed for: nothing account-specific may be shown or kept.
+val WidgetSnapshot.hidesAccountData: Boolean
+  get() = portfolio?.state == "hidden" || portfolioFeed == null
 
 object WidgetSnapshots {
   const val SUPPORTED_VERSION = 1

@@ -12,10 +12,15 @@
 
 import { requireOptionalNativeModule } from 'expo'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    WidgetImageRequest,
-    WidgetsService,
+import {
+    RemoteConfigKeys,
+    type RemoteConfigService,
+    type WidgetBackendPinning,
+    type WidgetImageRequest,
+    type WidgetsService,
 } from '@perawallet/wallet-extension-platform'
+import { buildPinningConfig } from './ssl-pinning/buildPinningConfig'
+import { BACKEND_PIN_DOMAINS } from './ssl-pinning/pins'
 
 const LOG_SOURCE = 'RNWidgetsService'
 
@@ -36,6 +41,13 @@ const getNativeModule = (): Nullable<NativePeraWidgets> =>
 // Widgets are a best-effort mirror of app state: a failed write must never
 // surface to the app, so every call degrades to a no-op.
 export class RNWidgetsService implements WidgetsService {
+    constructor(
+        private readonly remoteConfig: Pick<
+            RemoteConfigService,
+            'getBooleanValue'
+        >,
+    ) {}
+
     async writeSnapshot(json: string): Promise<void> {
         try {
             await getNativeModule()?.writeSnapshot(json)
@@ -92,5 +104,40 @@ export class RNWidgetsService implements WidgetsService {
             listener,
         )
         return () => subscription?.remove()
+    }
+
+    // The same flag and host rule the app's own pinning uses, read live so the
+    // remote kill switch reaches the widgets on their next snapshot.
+    backendPinning(backendUrl: string): Nullable<WidgetBackendPinning> {
+        try {
+            if (
+                !this.remoteConfig.getBooleanValue(
+                    RemoteConfigKeys.enable_ssl_pinning_pera_api,
+                    false,
+                )
+            ) {
+                return null
+            }
+            const host = new URL(backendUrl).hostname
+            const pins = buildPinningConfig(
+                [backendUrl],
+                BACKEND_PIN_DOMAINS,
+            )?.[host]
+            if (!pins) return null
+            return {
+                publicKeyHashes: pins.publicKeyHashes,
+                // Second precision: Foundation's default ISO 8601 parser
+                // rejects fractional seconds.
+                expiresAt: new Date(pins.expirationDate)
+                    .toISOString()
+                    .replace(/\.\d{3}Z$/, 'Z'),
+            }
+        } catch (error) {
+            logger.warn('backendPinning could not resolve the pin set', {
+                source: LOG_SOURCE,
+                error,
+            })
+            return null
+        }
     }
 }

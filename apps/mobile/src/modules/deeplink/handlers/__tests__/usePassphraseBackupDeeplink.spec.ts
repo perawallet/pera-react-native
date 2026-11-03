@@ -14,23 +14,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { usePassphraseBackupDeeplink } from '../usePassphraseBackupDeeplink'
 
-const { state, mockNavigateToScreen, mockNavigateHome } = vi.hoisted(() => ({
-    state: { needing: [] as { id: string; address: string }[] },
-    mockNavigateToScreen: vi.fn(),
-    mockNavigateHome: vi.fn(),
+const { state, mockFind, mockNavigateToScreen, mockNavigateHome } = vi.hoisted(
+    () => ({
+        state: { accounts: [{ id: 'stored' }] as unknown[] },
+        mockFind: vi.fn(),
+        mockNavigateToScreen: vi.fn(),
+        mockNavigateHome: vi.fn(),
+    }),
+)
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: () => 'query-client',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: (selector: (s: { accounts: unknown[] }) => unknown) =>
-        selector({ accounts: [] }),
+    getAllAccounts: () => state.accounts,
     addressOn: (account: { address: string }) => account.address,
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useAccountsNeedingMnemonicBackup: () => ({
-        accounts: state.needing,
-        isPending: false,
-    }),
+    findAccountsNeedingMnemonicBackup: mockFind,
 }))
 
 vi.mock('@hooks/useCapableChainIds', () => ({
@@ -48,19 +51,51 @@ vi.mock('../../navigateToScreen', () => ({
 
 describe('usePassphraseBackupDeeplink', () => {
     beforeEach(() => {
+        mockFind.mockReset()
         mockNavigateToScreen.mockClear()
         mockNavigateHome.mockClear()
     })
 
-    it('opens the backup of the first account that needs one', () => {
-        state.needing = [
+    it('opens the backup of the first account that needs one', async () => {
+        mockFind.mockResolvedValue([
             { id: '1', address: 'FIRST' },
             { id: '2', address: 'SECOND' },
-        ]
+        ])
         const { result } = renderHook(() => usePassphraseBackupDeeplink())
 
-        result.current(false)
+        await result.current(false)
 
+        expect(mockFind).toHaveBeenCalledWith('query-client', state.accounts, {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        expect(mockNavigateToScreen).toHaveBeenCalledWith(
+            false,
+            'BackupWallet',
+            { screen: 'BackupInfo', params: { address: 'FIRST' } },
+        )
+    })
+
+    // On a cold start from the widget the funding reads are still running;
+    // deciding before they settle would land home with backups still due.
+    it('waits for the funding reads before deciding', async () => {
+        let settle: (accounts: unknown[]) => void = () => {}
+        mockFind.mockReturnValue(
+            new Promise(resolve => {
+                settle = resolve
+            }),
+        )
+        const { result } = renderHook(() => usePassphraseBackupDeeplink())
+
+        const handled = result.current(false)
+        await Promise.resolve()
+        expect(mockNavigateHome).not.toHaveBeenCalled()
+        expect(mockNavigateToScreen).not.toHaveBeenCalled()
+
+        settle([{ id: '1', address: 'FIRST' }])
+        await handled
+
+        expect(mockNavigateHome).not.toHaveBeenCalled()
         expect(mockNavigateToScreen).toHaveBeenCalledWith(
             false,
             'BackupWallet',
@@ -69,11 +104,11 @@ describe('usePassphraseBackupDeeplink', () => {
     })
 
     // The widget may still show a count the user has since cleared.
-    it('lands home when nothing needs a backup anymore', () => {
-        state.needing = []
+    it('lands home when nothing needs a backup anymore', async () => {
+        mockFind.mockResolvedValue([])
         const { result } = renderHook(() => usePassphraseBackupDeeplink())
 
-        result.current(true)
+        await result.current(true)
 
         expect(mockNavigateHome).toHaveBeenCalledWith(true)
         expect(mockNavigateToScreen).not.toHaveBeenCalled()

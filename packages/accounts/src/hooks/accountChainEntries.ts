@@ -45,6 +45,13 @@ export const useOtherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
     )
 }
 
+/** `useOtherRegisteredChainIds` for code that can't use a hook. */
+export const otherRegisteredChainIds = (homeChainId: ChainId): ChainId[] =>
+    getProvider()
+        .chains.list()
+        .map(({ id }) => id)
+        .filter(chainId => chainId !== homeChainId)
+
 /**
  * Every address the account holds on `homeChainId` or another registered
  * chain, home first. A record is created on one chain and gains an entry for

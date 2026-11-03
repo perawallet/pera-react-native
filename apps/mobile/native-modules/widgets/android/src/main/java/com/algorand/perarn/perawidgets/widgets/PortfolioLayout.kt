@@ -29,12 +29,15 @@ const val SIDE_GAP_DP = 8f
 const val GLYPH_EM = 0.58f
 const val MIN_AMOUNT_SP = 9f
 const val MIN_PADDING_DP = 2f
+// Between stacked lines, as iOS's VStack(spacing: 4) less the line height Glance already pads.
+const val LINE_GAP_DP = 3f
 
 data class PortfolioLayout(
     val isWide: Boolean,
     val amountSp: Float,
     val secondarySp: Float,
-    val verticalPaddingDp: Float,
+    val topPaddingDp: Float,
+    val bottomPaddingDp: Float,
     val showChart: Boolean,
     val showSecondary: Boolean,
     val chartWidthDp: Float,
@@ -44,7 +47,8 @@ data class PortfolioLayout(
 )
 
 // Fits the rows to the real height: the amount shrinks first, then the chart goes, then the
-// "≈ fiat" line. Title, amount and "Updated" always stay.
+// "≈ fiat" line. Title, amount and "Updated" always stay. A page with a tab bar under it passes its own
+// paddings, since the bar takes the place of the bottom one.
 fun portfolioLayout(
     widthDp: Float,
     heightDp: Float,
@@ -53,10 +57,14 @@ fun portfolioLayout(
     secondary: String?,
     hasChart: Boolean,
     hasUpdated: Boolean,
+    topPaddingDp: Float? = null,
+    bottomPaddingDp: Float? = null,
 ): PortfolioLayout {
     val isWide = widthDp >= WIDE_FROM_DP
     val contentWidth = widthDp - 2 * PADDING_DP
-    var verticalPadding = if (heightDp < SHORT_BELOW_DP) SHORT_PADDING_DP else PADDING_DP
+    val defaultPadding = if (heightDp < SHORT_BELOW_DP) SHORT_PADDING_DP else PADDING_DP
+    var topPadding = topPaddingDp ?: defaultPadding
+    var bottomPadding = bottomPaddingDp ?: defaultPadding
     val secondarySp = if (isWide) 14f else 12f
     var widthFit = fittedTextSize(primary, contentWidth, if (isWide) 28f else 22f, TITLE_SP)
     var sideBySideFits = true
@@ -66,7 +74,7 @@ fun portfolioLayout(
         val amountFit = beside / (primary.length * GLYPH_EM)
         if (amountFit >= TITLE_SP) widthFit = minOf(widthFit, amountFit) else sideBySideFits = false
     }
-    fun fixed() = 2 * verticalPadding + (if (hasNetworkBar) NETWORK_BAR_DP else 0f) + LOGO_DP + 2f +
+    fun fixed() = topPadding + bottomPadding + (if (hasNetworkBar) NETWORK_BAR_DP else 0f) + LOGO_DP + 2f +
         (if (hasUpdated) UPDATED_DP else 0f)
     val secondaryHeight = if (isWide) 0f else secondarySp * SECONDARY_LINE
     val chartBlock = MIN_CHART_DP + CHART_MARGIN_DP
@@ -81,14 +89,17 @@ fun portfolioLayout(
     if (amountFor(showChart, showSecondary) < TITLE_SP && showChart) showChart = false
     if (amountFor(showChart, showSecondary) < TITLE_SP && showSecondary) showSecondary = false
     // Last resorts for very short widgets: a smaller amount, then tighter padding.
-    if (amountFor(showChart, showSecondary) < MIN_AMOUNT_SP) verticalPadding = MIN_PADDING_DP
+    if (amountFor(showChart, showSecondary) < MIN_AMOUNT_SP) {
+        topPadding = minOf(topPadding, MIN_PADDING_DP)
+        bottomPadding = minOf(bottomPadding, MIN_PADDING_DP)
+    }
     val amountSp = amountFor(showChart, showSecondary).coerceAtLeast(MIN_AMOUNT_SP)
 
     val rows = fixed() + amountSp * AMOUNT_LINE + (if (showSecondary) secondaryHeight else 0f)
     val chartHeight = if (showChart) (heightDp - rows - CHART_MARGIN_DP).coerceAtLeast(MIN_CHART_DP) else 0f
     val used = rows + (if (showChart) chartHeight + CHART_MARGIN_DP else 0f)
     return PortfolioLayout(
-        isWide, amountSp, secondarySp, verticalPadding, showChart, showSecondary,
+        isWide, amountSp, secondarySp, topPadding, bottomPadding, showChart, showSecondary,
         contentWidth, chartHeight, used,
     )
 }

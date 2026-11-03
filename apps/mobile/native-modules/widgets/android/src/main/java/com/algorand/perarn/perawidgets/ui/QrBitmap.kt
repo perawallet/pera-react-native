@@ -18,12 +18,12 @@ import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
-private const val QUIET_ZONE_MODULES = 4
+// One module, as iOS's generator: the white frame the widget draws around the code makes up the rest.
+private const val QUIET_ZONE_MODULES = 1
 private const val PIXELS_PER_MODULE = 8
 private const val BLACK = 0xFF000000.toInt()
 private const val WHITE = 0xFFFFFFFF.toInt()
 
-// Includes the white quiet zone: scanners need dark modules on a light border in both themes.
 fun qrMatrix(payload: String): BitMatrix = QRCodeWriter().encode(
     payload,
     BarcodeFormat.QR_CODE,
@@ -35,6 +35,21 @@ fun qrMatrix(payload: String): BitMatrix = QRCodeWriter().encode(
         EncodeHintType.CHARACTER_SET to "UTF-8",
     ),
 )
+
+// Responsive mode composes once per listed size, each with its own remember: one encode serves them all.
+object QrBitmaps {
+    private var payload: String? = null
+    private var bitmap: Bitmap? = null
+
+    @Synchronized
+    fun forPayload(payload: String): Bitmap {
+        bitmap?.takeIf { this.payload == payload }?.let { return it }
+        return qrBitmap(payload).also {
+            this.payload = payload
+            bitmap = it
+        }
+    }
+}
 
 // Whole pixels per module and no smoothing keep the modules sharp at any widget size.
 fun qrBitmap(payload: String): Bitmap {

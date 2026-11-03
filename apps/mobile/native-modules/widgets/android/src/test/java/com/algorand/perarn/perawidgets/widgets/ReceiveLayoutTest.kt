@@ -42,6 +42,7 @@ class ReceiveLayoutTest {
     @Test
     fun theQrStaysLargeAtCommonTwoByTwoSizes() {
         assertTrue(receiveLayout(150f, 150f).sideDp >= 100f)
+        assertTrue(receiveLayout(140f, 130f).sideDp >= 80f)
         assertTrue(receiveLayout(170f, 170f).sideDp >= 100f)
     }
 

@@ -96,11 +96,20 @@ describe('useWidgetAssetOptionsQuery', () => {
         expect(renderQuery(['A'], false).result.current.options).toBeUndefined()
     })
 
-    it('reports no options when the read fails or there are no accounts', () => {
-        heldAssets(undefined, true)
-        expect(renderQuery(['A']).result.current.options).toEqual([])
-
+    it('reports no options when there are no accounts', () => {
         heldAssets(undefined)
-        expect(renderQuery([]).result.current.options).toEqual([])
+        expect(renderQuery([]).result.current).toEqual({
+            options: [],
+            isError: false,
+        })
+    })
+
+    // An empty list would replace the options the snapshot already has.
+    it('reports a failed read as an error, not as no options', () => {
+        heldAssets(undefined, true)
+        expect(renderQuery(['A']).result.current).toEqual({
+            options: undefined,
+            isError: true,
+        })
     })
 })

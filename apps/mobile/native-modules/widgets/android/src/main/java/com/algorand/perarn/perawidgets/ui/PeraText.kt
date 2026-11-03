@@ -29,12 +29,13 @@ fun PeraText(
     color: ColorProvider,
     modifier: GlanceModifier = GlanceModifier,
     align: TextAlign? = null,
+    maxLines: Int = 1,
 ) {
     Text(
         text = text,
         modifier = modifier,
         style = TextStyle(color = color, fontSize = size, fontWeight = weight, textAlign = align),
-        maxLines = 1,
+        maxLines = maxLines,
     )
 }
 

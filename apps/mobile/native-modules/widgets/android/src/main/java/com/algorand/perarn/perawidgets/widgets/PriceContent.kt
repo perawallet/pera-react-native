@@ -11,7 +11,6 @@
  */
 package com.algorand.perarn.perawidgets.widgets
 
-import com.algorand.perarn.perawidgets.config.NATIVE_ASSET_ID
 import com.algorand.perarn.perawidgets.config.Period
 import com.algorand.perarn.perawidgets.config.PriceOptions
 import com.algorand.perarn.perawidgets.config.resolvePriceAssetId
@@ -21,6 +20,7 @@ import com.algorand.perarn.perawidgets.fetch.QuoteKeys
 import com.algorand.perarn.perawidgets.format.PriceFormat
 import com.algorand.perarn.perawidgets.format.QuoteCurrency
 import com.algorand.perarn.perawidgets.format.UpdatedTime
+import com.algorand.perarn.perawidgets.snapshot.NATIVE_ASSET_ID
 import com.algorand.perarn.perawidgets.snapshot.WidgetSnapshot
 import com.algorand.perarn.perawidgets.snapshot.string
 import java.time.Instant
@@ -40,7 +40,6 @@ data class PriceContent(
     val tapUrl: String,
 )
 
-private const val FALLBACK_PERIOD = "one-week"
 private const val ALGO_CODE = "ALGO"
 
 fun pricePeriod(snapshot: WidgetSnapshot, options: PriceOptions): String =

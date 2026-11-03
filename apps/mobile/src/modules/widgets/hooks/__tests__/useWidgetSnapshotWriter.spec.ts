@@ -16,6 +16,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { BuildWidgetSnapshotInput } from '../../snapshot'
+import { useWidgetWipeStore } from '../../store'
 import {
     useWidgetSnapshotWriter,
     type WidgetSnapshotWriterInput,
@@ -63,6 +64,7 @@ const input = (
     inboxFeed: {
         deviceId: 'device-1',
         addresses: ['ADDR'],
+        localAddresses: ['ADDR'],
         accountNames: [{ address: 'ADDR', name: 'Main' }],
         notifications: null,
     },
@@ -72,8 +74,18 @@ const input = (
 const lastWritten = () =>
     JSON.parse(widgets().writeSnapshot.mock.calls.at(-1)![0])
 
+const captureAppStateListeners = () => {
+    const listeners: ((state: string) => void)[] = []
+    vi.spyOn(AppState, 'addEventListener').mockImplementation((_, listener) => {
+        listeners.push(listener as (state: string) => void)
+        return { remove: vi.fn() } as never
+    })
+    return () => listeners.forEach(listener => listener('background'))
+}
+
 describe('useWidgetSnapshotWriter', () => {
     beforeEach(() => {
+        useWidgetWipeStore.getState().resetState()
         widgets().writeSnapshot.mockClear()
         widgets().clearSnapshot.mockClear()
         widgets()
@@ -231,5 +243,127 @@ describe('useWidgetSnapshotWriter', () => {
 
         expect(widgets().clearSnapshot).toHaveBeenCalledTimes(1)
         expect(widgets().writeSnapshot).not.toHaveBeenCalled()
+    })
+
+    it('purges the images only once while privacy mode stays on', async () => {
+        const { rerender } = renderHook(
+            props => useWidgetSnapshotWriter(props),
+            { initialProps: input({ isPrivacyMode: true }) },
+        )
+        await waitFor(() =>
+            expect(widgets().syncImages).toHaveBeenCalledTimes(1),
+        )
+
+        rerender(input({ isPrivacyMode: true, locale: 'de' }))
+        await waitFor(() =>
+            expect(widgets().writeSnapshot).toHaveBeenCalledTimes(2),
+        )
+
+        expect(widgets().syncImages).toHaveBeenCalledTimes(1)
+    })
+
+    it('writes the hidden shape at once when privacy turns on while price and backup are pending', async () => {
+        const background = captureAppStateListeners()
+        const { rerender } = renderHook(
+            props => useWidgetSnapshotWriter(props),
+            { initialProps: input() },
+        )
+        await waitFor(() =>
+            expect(widgets().writeSnapshot).toHaveBeenCalledTimes(1),
+        )
+
+        rerender(
+            input({
+                isPrivacyMode: true,
+                algoPrice: undefined,
+                backup: undefined,
+                portfolio: undefined,
+                nfts: undefined,
+            }),
+        )
+        await waitFor(() =>
+            expect(widgets().writeSnapshot).toHaveBeenCalledTimes(2),
+        )
+        expect(lastWritten()).toMatchObject({
+            portfolio: { state: 'hidden' },
+            receiveTargets: null,
+        })
+
+        // The background re-write must not bring the visible snapshot back.
+        act(background)
+        await waitFor(() =>
+            expect(widgets().writeSnapshot).toHaveBeenCalledTimes(3),
+        )
+        expect(lastWritten().portfolio).toEqual({ state: 'hidden' })
+    })
+
+    // An empty list would purge every cached image after a read error.
+    it('leaves the image cache alone when the NFT read failed', async () => {
+        renderHook(() => useWidgetSnapshotWriter(input({ nfts: null })))
+
+        await waitFor(() => expect(widgets().writeSnapshot).toHaveBeenCalled())
+        expect(widgets().syncImages).not.toHaveBeenCalled()
+        expect(lastWritten().nfts).toBeNull()
+    })
+
+    it('writes nothing while a wipe is under way, not even on backgrounding', async () => {
+        const background = captureAppStateListeners()
+        const { rerender } = renderHook(
+            props => useWidgetSnapshotWriter(props),
+            { initialProps: input() },
+        )
+        await waitFor(() =>
+            expect(widgets().writeSnapshot).toHaveBeenCalledTimes(1),
+        )
+
+        act(() => useWidgetWipeStore.getState().beginWipe())
+        rerender(input({ locale: 'de' }))
+        act(background)
+        await act(async () => {})
+
+        expect(widgets().writeSnapshot).toHaveBeenCalledTimes(1)
+        expect(widgets().syncImages).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops a run whose image download a wipe overtook, and clears what it fetched', async () => {
+        let finishSync: (keys: string[]) => void = () => {}
+        widgets().syncImages.mockImplementation(
+            () =>
+                new Promise<string[]>(resolve => {
+                    finishSync = resolve
+                }),
+        )
+        renderHook(() => useWidgetSnapshotWriter(input()))
+        await waitFor(() => expect(widgets().syncImages).toHaveBeenCalled())
+
+        act(() => {
+            useWidgetWipeStore.getState().beginWipe()
+            // The stores reset before the download finishes.
+            useWidgetWipeStore.getState().resetState()
+        })
+        await act(async () => finishSync(['7']))
+
+        expect(widgets().writeSnapshot).not.toHaveBeenCalled()
+        expect(widgets().clearSnapshot).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears again once the wipe has removed the accounts', async () => {
+        const { rerender } = renderHook(
+            props => useWidgetSnapshotWriter(props),
+            { initialProps: input({ hasAccounts: false }) },
+        )
+        await waitFor(() =>
+            expect(widgets().clearSnapshot).toHaveBeenCalledTimes(1),
+        )
+
+        act(() => {
+            useWidgetWipeStore.getState().beginWipe()
+            useWidgetWipeStore.getState().endWipe()
+        })
+        rerender(input({ hasAccounts: false, locale: 'de' }))
+
+        await waitFor(() =>
+            expect(widgets().clearSnapshot).toHaveBeenCalledTimes(2),
+        )
     })
 })

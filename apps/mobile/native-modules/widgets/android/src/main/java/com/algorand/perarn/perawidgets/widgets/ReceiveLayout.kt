@@ -19,6 +19,7 @@ const val QR_GAP_DP = 6f
 const val QR_LOGO_MARGIN_DP = 8f
 const val QR_LOGO_CLEARANCE_DP = 2f
 const val QR_MAX_SHIFT_DP = 12f
+const val QR_FRAME_DP = 5f
 
 // shiftLeftDp moves the centred QR left, away from the corner logo.
 data class ReceiveLayout(val sideDp: Float, val topDp: Float, val shiftLeftDp: Float)

@@ -12,6 +12,7 @@
 
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
+import { useQueryClient } from '@tanstack/react-query'
 import {
     logger,
     type Maybe,
@@ -45,8 +46,8 @@ import {
     getAllAccounts,
     getSelectedAccount,
     hdIndexOf,
+    resolveAssetHolderAddress,
     useEnableChain,
-    useResolveAssetHolderAddress,
     useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -152,9 +153,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (account) setSelectedAccountId(account.id)
     }
     const swapChainOf = useSwapChainResolver()
-    const resolveAssetHolderAddress = useResolveAssetHolderAddress(
-        useSelectedScope(useCapableChainId('nft')),
-    )
+    const queryClient = useQueryClient()
+    const nftScope = useSelectedScope(useCapableChainId('nft'))
     // Fund's provider redirects back with the address it delivered to, on
     // whichever chain the purchase was for.
     const selectAccountByAnyChainAddress = (address: string) => {
@@ -627,7 +627,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.PASSPHRASE_BACKUP: {
-                    openPassphraseBackup(replaceCurrentScreen)
+                    await openPassphraseBackup(replaceCurrentScreen)
                     break
                 }
 
@@ -635,7 +635,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // The detail screen reads the selected account, so hand
                     // the selection to the holder first.
                     const { assetId } = parsedData.assetRef
-                    const holder = await resolveAssetHolderAddress(assetId)
+                    const holder = await resolveAssetHolderAddress(
+                        queryClient,
+                        assetId,
+                        nftScope,
+                    )
                     if (holder) {
                         selectAccountByAddress(
                             parsedData.target.chainId,

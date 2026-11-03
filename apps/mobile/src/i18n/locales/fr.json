@@ -4789,8 +4789,8 @@
         "notifications": "Notifications",
         "inbox_empty": "Tout est à jour",
         "notifications_empty": "Aucune notification pour le moment",
-        "waiting": "en attente",
-        "to_sign": "à signer",
+        "inbox_waiting": "{{count}} en attente",
+        "inbox_to_sign": "{{count}} à signer",
         "inbox_sign": "Demande de signature",
         "inbox_assets": "Actifs entrants",
         "inbox_invite": "Invitation à un compte partagé"

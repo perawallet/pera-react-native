@@ -30,7 +30,8 @@ android {
   buildFeatures {
     compose true
   }
-  lintOptions {
+  // Not yet run against this module, so a lint error doesn't fail the app build until it has been.
+  lint {
     abortOnError false
   }
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- PeraPalette.backgroundDark. -->
+  <color name="pera_widget_settings_dark">#FF18181B</color>
+</resources>

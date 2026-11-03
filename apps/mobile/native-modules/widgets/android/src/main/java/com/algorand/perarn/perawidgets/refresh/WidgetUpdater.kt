@@ -20,10 +20,15 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import com.algorand.perarn.perawidgets.config.WidgetConfig
+import com.algorand.perarn.perawidgets.fetch.Http
 import com.algorand.perarn.perawidgets.fetch.QuoteCache
 import com.algorand.perarn.perawidgets.snapshot.SnapshotStore
+import com.algorand.perarn.perawidgets.snapshot.hidesAccountData
+import com.algorand.perarn.perawidgets.widgets.PageKey
+import com.algorand.perarn.perawidgets.widgets.PortfolioTabsWidget
 import com.algorand.perarn.perawidgets.widgets.PortfolioWidget
 import com.algorand.perarn.perawidgets.widgets.PriceWidget
+import com.algorand.perarn.perawidgets.widgets.TransactionsWidget
 import com.algorand.perarn.perawidgets.widgets.WidgetKinds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -51,27 +56,40 @@ object WidgetUpdater {
     // One fetch-and-store pass at a time, so a slower, older fetch can't overwrite a newer quote.
     private val fetchLock = Mutex()
 
-    // Redraws first show the stored data, so privacy turning on is never delayed by a fetch.
+    // Redraws first show the stored data, so privacy turning on is never delayed by a fetch. A failed fetch
+    // anywhere schedules one retry.
     suspend fun updateAll(context: Context) {
+        val snapshot = SnapshotStore(context).load()
+        if (snapshot?.hidesAccountData == true) fetchLock.withLock { QuoteCache(context).clearAccountData() }
         val manager = GlanceAppWidgetManager(context)
         val placed = WidgetKinds.all.map { kind -> kind to safely { manager.getGlanceIds(kind) }.orEmpty() }
         for ((kind, ids) in placed) for (id in ids) safely { redraw(context, kind, id) }
-        for ((kind, ids) in placed) refresh(context, kind, ids.map { manager.getAppWidgetId(it) })
+        var failed = false
+        for ((kind, ids) in placed) {
+            if (refresh(context, kind, ids.map { manager.getAppWidgetId(it) })) failed = true
+        }
+        if (failed) WidgetRefreshScheduler.retryLater(context)
     }
 
-    // Saved settings reach a live session only through a version bump; the configure broadcast alone keeps the old options.
-    fun redraw(context: Context, appWidgetId: Int) {
+    // After the settings screen saves. Saved options reach a live session only through a version bump, and a pass
+    // already in flight may have read the old ones, so this widget is fetched again once that pass is done.
+    fun reconfigured(context: Context, appWidgetId: Int) {
         val appContext = context.applicationContext
         scope.launch {
             val provider = AppWidgetManager.getInstance(appContext).getAppWidgetInfo(appWidgetId)?.provider ?: return@launch
             val kind = WidgetKinds.forReceiver(provider.className) ?: return@launch
             safely { redraw(appContext, kind, GlanceAppWidgetManager(appContext).getGlanceIdBy(appWidgetId)) }
+            if (refresh(appContext, kind, listOf(appWidgetId))) WidgetRefreshScheduler.retryLater(appContext)
         }
     }
 
     // Runs under the fetch lock, so a fetch already in flight can't store a quote after the wipe.
     suspend fun forgetWalletData(context: Context) {
         fetchLock.withLock { clearWalletData(context) }
+        val manager = GlanceAppWidgetManager(context)
+        for (id in safely { manager.getGlanceIds(PortfolioTabsWidget::class.java) }.orEmpty()) {
+            safely { updateAppWidgetState(context, id) { prefs: MutablePreferences -> prefs.remove(PageKey) } }
+        }
     }
 
     fun clearWalletData(context: Context) {
@@ -79,22 +97,30 @@ object WidgetUpdater {
         WidgetConfig.clearAll(context)
     }
 
-    // Fetch, then redraw only when a quote was stored. Sessions render before this runs, so a slow network never delays a redraw.
-    suspend fun refresh(context: Context, kind: Class<out GlanceAppWidget>, appWidgetIds: List<Int>) = fetchLock.withLock {
+    // Fetch, then redraw only when something was stored. Sessions render before this runs, so a slow network never
+    // delays a redraw. True when any fetch failed.
+    suspend fun refresh(context: Context, kind: Class<out GlanceAppWidget>, appWidgetIds: List<Int>): Boolean = fetchLock.withLock {
         val manager = GlanceAppWidgetManager(context)
         val snapshot = SnapshotStore(context).load()
+        val config = WidgetConfig(context)
+        val cache = QuoteCache(context)
+        val get = Http.client(snapshot?.priceFeed)
+        var failed = false
         for (widgetId in appWidgetIds) {
-            safely {
-                val stored = when (kind) {
-                    PortfolioWidget::class.java ->
-                        refreshPortfolioQuote(context, widgetId, snapshot, WidgetConfig(context).portfolio(widgetId))
-                    PriceWidget::class.java ->
-                        refreshPriceQuote(context, widgetId, snapshot, WidgetConfig(context).price(widgetId))
-                    else -> false
+            val outcomes = safely {
+                when (kind) {
+                    PortfolioWidget::class.java -> listOf(refreshPortfolioQuote(cache, get, widgetId, snapshot, config.portfolio(widgetId)))
+                    PriceWidget::class.java -> listOf(refreshPriceQuote(cache, get, widgetId, snapshot, config.price(widgetId)))
+                    TransactionsWidget::class.java ->
+                        listOf(refreshTransactions(cache, get, widgetId, snapshot, config.transactions(widgetId).accountAddress))
+                    PortfolioTabsWidget::class.java -> refreshTabs(cache, get, widgetId, snapshot, config.portfolio(widgetId))
+                    else -> emptyList<RefreshOutcome>()
                 }
-                if (stored) redraw(context, kind, manager.getGlanceIdBy(widgetId))
-            }
+            }.orEmpty()
+            if (RefreshOutcome.Failed in outcomes) failed = true
+            if (RefreshOutcome.Stored in outcomes) safely { redraw(context, kind, manager.getGlanceIdBy(widgetId)) }
         }
+        failed
     }
 
     private suspend fun redraw(context: Context, kind: Class<out GlanceAppWidget>, id: GlanceId) {

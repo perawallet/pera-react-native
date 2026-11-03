@@ -56,27 +56,29 @@ enum InboxFetcher {
     /// The same request the app's inbox makes; nil when it fails.
     static func fetch(_ inbox: WidgetSnapshot.InboxFeed, _ feed: WidgetSnapshot.PriceFeed) async -> InboxSummary? {
         guard let base = URL(string: feed.backendUrl) else { return nil }
-        let response: InboxResponse? = await PriceFetcher.post(
+        let response: InboxResponse? = await PeraBackend.post(
             base,
             "v1/inbox/\(inbox.deviceId)/",
-            apiKey: feed.apiKey,
+            feed,
             body: ["addresses": inbox.addresses]
         )
         guard let response else { return nil }
-        return InboxSummary(items: items(response), fetchedAt: .now)
+        let local = Set(inbox.localAddresses ?? inbox.addresses)
+        return InboxSummary(items: items(response, localAddresses: local), fetchedAt: .now)
     }
 
-    /// The newest `limit` notifications; nil when the request fails.
+    /// The newest `limit` notifications; nil when the request fails. `feed` supplies the API key and pins.
     static func notifications(
         _ notifications: WidgetSnapshot.InboxFeed.Notifications,
-        apiKey: String,
+        _ feed: WidgetSnapshot.PriceFeed?,
         limit: Int
     ) async -> [NotificationRow]? {
         guard let base = URL(string: notifications.backendUrl) else { return nil }
-        let response: NotificationsResponse? = await PriceFetcher.send(
+        let response: NotificationsResponse? = await PeraBackend.send(
             base,
             "v2/devices/\(notifications.deviceId)/notifications/",
-            apiKey: apiKey,
+            apiKey: feed?.apiKey ?? "",
+            pinning: feed?.pinning,
             body: nil
         )
         guard let response else { return nil }
@@ -88,23 +90,28 @@ enum InboxFetcher {
         }
     }
 
-    // Only requests that still need something from the user: a sign request
-    // that has every signature, or has failed or expired, is history.
-    static func items(_ response: InboxResponse) -> [InboxItem] {
+    // The app's ACTIONABLE_SIGN_REQUEST_STATUSES (packages/multisig): the user can still sign or decline.
+    static let actionableSignStatuses: Set<String> = ["pending", "ready"]
+
+    /// What the app's inbox lists: actionable sign requests, invitations to shared accounts not already on
+    /// the device, and asset inboxes with something in them.
+    static func items(_ response: InboxResponse, localAddresses: Set<String>) -> [InboxItem] {
         let signs = response.joint_account_sign_requests
-            .filter { $0.status == "pending" }
+            .filter { actionableSignStatuses.contains($0.status) }
             .map {
                 InboxItem(
                     id: "sign-\($0.id.value)", kind: .sign, address: $0.joint_account.address, count: 1,
                     date: ISODate.parse($0.creation_datetime), signRequestId: $0.id.value
                 )
             }
-        let invites = response.joint_account_import_requests.map {
-            InboxItem(
-                id: "invite-\($0.address)", kind: .invite, address: $0.address, count: 1,
-                date: ISODate.parse($0.creation_datetime), signRequestId: nil
-            )
-        }
+        let invites = response.joint_account_import_requests
+            .filter { !localAddresses.contains($0.address) }
+            .map {
+                InboxItem(
+                    id: "invite-\($0.address)", kind: .invite, address: $0.address, count: 1,
+                    date: ISODate.parse($0.creation_datetime), signRequestId: nil
+                )
+            }
         let assets = response.asa_inboxes
             .filter { $0.request_count > 0 }
             .map {
@@ -149,39 +156,5 @@ enum InboxFetcher {
         let message: String?
         let creation_datetime: String?
         let is_unread: Bool?
-    }
-}
-
-/// An id the backend sends as either a string or a number.
-struct LooseString: Decodable, Equatable {
-    let value: String
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let string = try? container.decode(String.self) {
-            value = string
-        } else {
-            value = String(try container.decode(Int.self))
-        }
-    }
-}
-
-enum ISODate {
-    private static let withFraction: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-
-    private static let plain = ISO8601DateFormatter()
-
-    /// The backend writes microseconds on some rows and none on others, and
-    /// the formatter doesn't take every fraction length, so a last attempt
-    /// drops the fraction.
-    static func parse(_ value: String?) -> Date? {
-        guard let value else { return nil }
-        if let date = withFraction.date(from: value) ?? plain.date(from: value) { return date }
-        let trimmed = value.replacingOccurrences(of: #"\.\d+"#, with: "", options: .regularExpression)
-        return plain.date(from: trimmed)
     }
 }

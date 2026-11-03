@@ -80,4 +80,11 @@ class PortfolioLayoutTest {
             assertTrue("w=$w used=${l.usedDp}", l.usedDp <= 70f)
         }
     }
+
+    @Test fun aColorOsTwoByTwoKeepsTheChartAndTheFiatLine() {
+        val l = portfolioLayout(140f, 130f, "130.77 ALGO", false, "≈ \$11.99", true, true)
+        assertTrue(l.showChart)
+        assertTrue(l.showSecondary)
+        assertTrue(l.usedDp <= 130f)
+    }
 }

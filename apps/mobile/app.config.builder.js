@@ -15,14 +15,14 @@
 // variant's resolved config can be asserted without mutating process.env.
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-const bootsplashManifest = require('./assets/bootsplash/manifest.json');
-const { version: packageVersion, versionCodeBase } = require('./package.json');
+const bootsplashManifest = require('./assets/bootsplash/manifest.json')
+const { version: packageVersion, versionCodeBase } = require('./package.json')
 
 // iOS build number / Android versionCode floor. The committed base clears the
 // live store values (in-place update over the native apps); adding
 // the monotonic CI BUILD_NUMBER keeps each build unique and strictly higher.
 function resolveBuildNumber(env) {
-  return versionCodeBase + parseInt(env.BUILD_NUMBER || '0', 10);
+    return versionCodeBase + parseInt(env.BUILD_NUMBER || '0', 10)
 }
 
 // CFBundleShortVersionString / versionName. CI derives APP_VERSION from the git
@@ -31,625 +31,678 @@ function resolveBuildNumber(env) {
 // Android ships whatever prebuild bakes into build.gradle, so a static value
 // here silently pins every Play release to that number.
 function resolveMarketingVersion(env) {
-  return env.APP_VERSION || packageVersion.split('-')[0];
+    return env.APP_VERSION || packageVersion.split('-')[0]
 }
 
-const appVariantByEnv = { staging: 'staging', production: 'production' };
+const appVariantByEnv = { staging: 'staging', production: 'production' }
 
 // Determine app variant based on environment
 function getAppVariant(env) {
-  // Opt-in like E2E_FIXTURES: the on-device benchmark app wipes and reseeds its
-  // own storage, so it must never share an identity with a shipped build.
-  if (env.BENCH === '1') {
-    if (env.APP_ENV === 'production') {
-      throw new Error('BENCH=1 is refused for a production bundle');
+    // Opt-in like E2E_FIXTURES: the on-device benchmark app wipes and reseeds its
+    // own storage, so it must never share an identity with a shipped build.
+    if (env.BENCH === '1') {
+        if (env.APP_ENV === 'production') {
+            throw new Error('BENCH=1 is refused for a production bundle')
+        }
+        return 'bench'
     }
-    return 'bench';
-  }
-  // Object.hasOwn, not a bare index: APP_ENV=constructor would resolve Object.prototype's.
-  return Object.hasOwn(appVariantByEnv, env.APP_ENV) ? appVariantByEnv[env.APP_ENV] : 'dev';
+    // Object.hasOwn, not a bare index: APP_ENV=constructor would resolve Object.prototype's.
+    return Object.hasOwn(appVariantByEnv, env.APP_ENV)
+        ? appVariantByEnv[env.APP_ENV]
+        : 'dev'
 }
 
 // Bundle/Package identifiers per environment
 const bundleIdentifiers = {
-  dev: {
-    ios: 'com.algorandllc.perarn.staging',
-    android: 'com.algorand.perarn.staging',
-  },
-  // The Android id is the one placeholder google-services.json client nothing
-  // else uses, so processGoogleServices passes without a new Firebase app.
-  bench: {
-    ios: 'com.algorandllc.perarn.bench',
-    android: 'com.algorand.perarn',
-  },
-  staging: {
-    ios: 'com.algorandllc.perarn.staging',
-    android: 'com.algorand.perarn.staging',
-  },
-  production: {
-    ios: 'com.algorandllc.algorand',
-    android: 'com.algorand.android',
-  },
-};
+    dev: {
+        ios: 'com.algorandllc.perarn.staging',
+        android: 'com.algorand.perarn.staging',
+    },
+    // The Android id is the one placeholder google-services.json client nothing
+    // else uses, so processGoogleServices passes without a new Firebase app.
+    bench: {
+        ios: 'com.algorandllc.perarn.bench',
+        android: 'com.algorand.perarn',
+    },
+    staging: {
+        ios: 'com.algorandllc.perarn.staging',
+        android: 'com.algorand.perarn.staging',
+    },
+    production: {
+        ios: 'com.algorandllc.algorand',
+        android: 'com.algorand.android',
+    },
+}
 
 // App names per environment
 const appNames = {
-  dev: 'Pera 7 Dev',
-  bench: 'Pera Bench',
-  staging: 'Pera 7 Staging',
-  production: 'Pera Algo Wallet',
-};
+    dev: 'Pera 7 Dev',
+    bench: 'Pera Bench',
+    staging: 'Pera 7 Staging',
+    production: 'Pera Algo Wallet',
+}
 
 // Expo project slugs
 const slugs = {
-  dev: 'pera-dev',
-  bench: 'pera-bench',
-  staging: 'pera-staging',
-  production: 'pera',
-};
+    dev: 'pera-dev',
+    bench: 'pera-bench',
+    staging: 'pera-staging',
+    production: 'pera',
+}
 
 // The bench app uses none of the capabilities that need provisioning on a new
 // App ID, and the passkey-autofill extension target needs its own. The iCloud
 // plugin writes its entitlements through a mod that runs after
 // ios.entitlements is cleared, so it has to be left out rather than cleared.
 const BENCH_EXCLUDED_PLUGINS = [
-  'react-native-cloud-storage',
-  '@react-native-google-signin/google-signin',
-  '@algorandfoundation/react-native-passkey-autofill',
-  './plugins/withAutofillExtensionBundleId',
-  './plugins/withPasskeyAutofillFixes',
-  './plugins/withProductionAssociatedDomains',
-];
+    'react-native-cloud-storage',
+    '@react-native-google-signin/google-signin',
+    '@algorandfoundation/react-native-passkey-autofill',
+    './plugins/withAutofillExtensionBundleId',
+    './plugins/withPasskeyAutofillFixes',
+    './plugins/withProductionAssociatedDomains',
+]
 
 function withBenchOverrides(config) {
-  return {
-    ...config,
-    ios: { ...config.ios, entitlements: {} },
-    plugins: config.plugins.filter(
-      (plugin) =>
-        !BENCH_EXCLUDED_PLUGINS.includes(Array.isArray(plugin) ? plugin[0] : plugin),
-    ),
-  };
+    return {
+        ...config,
+        ios: { ...config.ios, entitlements: {} },
+        plugins: config.plugins.filter(
+            plugin =>
+                !BENCH_EXCLUDED_PLUGINS.includes(
+                    Array.isArray(plugin) ? plugin[0] : plugin,
+                ),
+        ),
+    }
 }
 
 function buildAppConfig(env) {
-  const variant = getAppVariant(env);
+    const variant = getAppVariant(env)
 
-  // Legacy native AutoFill extension suffix. Production only: it's the sole
-  // variant whose app bundle id matches the native app's, so the only one that
-  // can inherit the provider selection (the extension id is app-id + suffix, so
-  // both parts must match). Other variants → undefined → plugin no-op.
-  // See plugins/withAutofillExtensionBundleId.js.
-  const legacyAutofillExtensionSuffix = {
-    production: '.autofill-extension',
-  }[variant];
+    // Legacy native AutoFill extension suffix. Production only: it's the sole
+    // variant whose app bundle id matches the native app's, so the only one that
+    // can inherit the provider selection (the extension id is app-id + suffix, so
+    // both parts must match). Other variants → undefined → plugin no-op.
+    // See plugins/withAutofillExtensionBundleId.js.
+    const legacyAutofillExtensionSuffix = {
+        production: '.autofill-extension',
+    }[variant]
 
-  // Production ships the native App Store / Play Store app images; dev and
-  // staging keep their current (dark) icon. Production sources are generated
-  // from the native Android brand vector (see scripts/generate-production-icons.mjs).
-  const appIconIos =
-    variant === 'production'
-      ? './assets/production/icon-ios.png'
-      : './assets/icon-ios.png';
-  const androidAdaptiveForeground =
-    variant === 'production'
-      ? './assets/production/icon-android-foreground.png'
-      : './assets/icon-android.png';
+    // Production ships the native App Store / Play Store app images; dev and
+    // staging keep their current (dark) icon. Production sources are generated
+    // from the native Android brand vector (see scripts/generate-production-icons.mjs).
+    const appIconIos =
+        variant === 'production'
+            ? './assets/production/icon-ios.png'
+            : './assets/icon-ios.png'
+    const androidAdaptiveForeground =
+        variant === 'production'
+            ? './assets/production/icon-android-foreground.png'
+            : './assets/icon-android.png'
 
-  // Passkey autofill (FIDO2) configuration. The site must serve a valid
-  // /.well-known/apple-app-site-association linking back to this bundle.
-  const PASSKEY_AUTOFILL_SITE =
-    env.PASSKEY_AUTOFILL_SITE || 'https://perawallet.app';
-  const PASSKEY_AUTOFILL_HOST = (() => {
-    try {
-      return new URL(PASSKEY_AUTOFILL_SITE).host;
-    } catch {
-      return PASSKEY_AUTOFILL_SITE.replace(/^https?:\/\//, '').split('/')[0];
+    // Passkey autofill (FIDO2) configuration. The site must serve a valid
+    // /.well-known/apple-app-site-association linking back to this bundle.
+    const PASSKEY_AUTOFILL_SITE =
+        env.PASSKEY_AUTOFILL_SITE || 'https://perawallet.app'
+    const PASSKEY_AUTOFILL_HOST = (() => {
+        try {
+            return new URL(PASSKEY_AUTOFILL_SITE).host
+        } catch {
+            return PASSKEY_AUTOFILL_SITE.replace(/^https?:\/\//, '').split(
+                '/',
+            )[0]
+        }
+    })()
+
+    // Added only when the container is set: the plugin writes iCloud entitlements
+    // that an archive signed with a profile lacking the iCloud capability cannot
+    // sign.
+    const iCloudContainerId = env.IOS_ICLOUD_CONTAINER_ID?.trim()
+    const credentialStoragePlugins = [
+        ...(iCloudContainerId
+            ? [
+                  [
+                      'react-native-cloud-storage',
+                      {
+                          iCloudContainerIdentifier: iCloudContainerId,
+                          iCloudContainerEnvironment:
+                              variant === 'dev' ? 'Development' : 'Production',
+                      },
+                  ],
+              ]
+            : []),
+    ]
+
+    const config = {
+        name: appNames[variant],
+        slug: slugs[variant],
+        version: resolveMarketingVersion(env),
+        orientation: 'portrait',
+        icon: appIconIos,
+        scheme: [
+            'perawallet',
+            'algorand',
+            'wc',
+            'perawallet-wc',
+            'algorand-wc',
+            'liquid',
+            'ethereum',
+        ],
+        userInterfaceStyle: 'automatic',
+
+        // iOS-specific configuration
+        ios: {
+            bundleIdentifier: bundleIdentifiers[variant].ios,
+            buildNumber: String(resolveBuildNumber(env)),
+            appleTeamId: env.IOS_TEAM_ID,
+            supportsTablet: true,
+            config: {
+                usesNonExemptEncryption: false,
+            },
+            // Merged into the template's manifest. 1C8F.1 covers the App Group
+            // UserDefaults the widgets bridge reads and writes; CA92.1 excludes
+            // data shared with App Group members, so it doesn't cover that.
+            privacyManifests: {
+                NSPrivacyAccessedAPITypes: [
+                    {
+                        NSPrivacyAccessedAPIType:
+                            'NSPrivacyAccessedAPICategoryUserDefaults',
+                        NSPrivacyAccessedAPITypeReasons: [
+                            'CA92.1',
+                            'C56D.1',
+                            '1C8F.1',
+                        ],
+                    },
+                    {
+                        NSPrivacyAccessedAPIType:
+                            'NSPrivacyAccessedAPICategoryFileTimestamp',
+                        NSPrivacyAccessedAPITypeReasons: ['C617.1'],
+                    },
+                    {
+                        NSPrivacyAccessedAPIType:
+                            'NSPrivacyAccessedAPICategorySystemBootTime',
+                        NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+                    },
+                ],
+            },
+            infoPlist: {
+                CFBundleDisplayName: appNames[variant],
+                LSApplicationCategoryType: 'public.app-category.finance',
+                // Purpose strings are the single source of truth for every iOS
+                // permission prompt: an active, specific sentence naming the feature
+                // that needs the capability. 7.0.0 (10305) was rejected under
+                // guideline 5.1.1(ii) for "Pera needs access to your camera." — a
+                // string that says nothing about how the camera is used. Anything
+                // vaguer than "app does X so you can Y" will be rejected again, and a
+                // plugin option must never be allowed to shadow these (see the
+                // expo-image-picker entry below). No $(PRODUCT_NAME): it expands to
+                // the spaceless target name (PeraAlgoWallet), and the alert already
+                // shows the display name above the string.
+                NSCameraUsageDescription:
+                    'Pera scans QR codes with the camera to fill in a recipient address, add a contact, or connect your account to a dApp.',
+                NSBluetoothAlwaysUsageDescription:
+                    'Pera uses Bluetooth to reach your Ledger hardware wallet so you can review and approve transactions on the device.',
+                NSBluetoothPeripheralUsageDescription:
+                    'Pera uses Bluetooth to reach your Ledger hardware wallet so you can review and approve transactions on the device.',
+                NSFaceIDUsageDescription:
+                    'Pera uses Face ID to unlock your wallet and approve transactions without typing your PIN.',
+                NSPhotoLibraryAddUsageDescription:
+                    'Pera saves a collectible image to your photo library when you choose to download it.',
+                NSPhotoLibraryUsageDescription:
+                    'Pera opens your photo library so you can pick a picture for one of your contacts.',
+                // expo-sensors would otherwise inject its own placeholder here; the
+                // accelerometer is read only to notice a shake (shake-to-lock).
+                NSMotionUsageDescription:
+                    'Pera reads device motion to notice when you shake your phone, which locks the app straight away.',
+                // No NSLocationWhenInUseUsageDescription / NSMicrophoneUsageDescription
+                // on purpose: nothing reads either one. Only Android needs location for
+                // a BLE scan (ACCESS_FINE_LOCATION below) — CoreBluetooth does not, and
+                // an unbacked location string is review surface for no feature.
+                // twitter/tg/discord: Linking.canOpenURL checks for the in-app
+                // browser's social-media handoff (PWWebView navigation guard).
+                LSApplicationQueriesSchemes: [
+                    'itms-apps',
+                    'twitter',
+                    'tg',
+                    'com.hammerandchisel.discord',
+                ],
+                UIRequiredDeviceCapabilities: ['arm64'],
+                // Must stay YES: react-native-screens drives the iOS status bar per
+                // screen (the navigator's `statusBarStyle` option) and RNSScreenWindowTraits
+                // errors out without it. The cost is that RN's imperative StatusBar API
+                // — expo-status-bar's setStatusBarStyle — errors instead; the two are
+                // mutually exclusive, so nothing may call it on iOS.
+                UIViewControllerBasedStatusBarAppearance: true,
+                // Custom fonts
+                UIAppFonts: [
+                    'DMSansRegular.ttf',
+                    'DMSansMedium.ttf',
+                    'DMSansSemiBold.ttf',
+                    'DMSansBold.ttf',
+                    'DMMonoRegular.ttf',
+                    'DMMonoMedium.ttf',
+                ],
+            },
+            entitlements: {
+                'aps-environment':
+                    variant === 'production' ? 'production' : 'development',
+                'com.apple.developer.associated-domains': [
+                    'applinks:perawallet.app',
+                    // Legacy bare-host universal link — production parity with the
+                    // native app we ship over. Staging/dev never advertised it and keep
+                    // their current set (production-only scope).
+                    ...(variant === 'production'
+                        ? ['applinks:perawallet']
+                        : []),
+                    `webcredentials:${PASSKEY_AUTOFILL_HOST}`,
+                ],
+                'com.apple.developer.authentication-services.autofill-credential-provider': true,
+                // Distributed builds (staging + production) attest against Apple's
+                // production environment; only local dev builds use the sandbox.
+                'com.apple.developer.devicecheck.appattest-environment':
+                    variant === 'dev' ? 'development' : 'production',
+                'com.apple.developer.declared-age-range': true,
+            },
+            // Firebase config - stored in config/ directory (not in native folder)
+            googleServicesFile: './config/GoogleService-Info.plist',
+        },
+
+        // Android-specific configuration
+        android: {
+            package: bundleIdentifiers[variant].android,
+            versionCode: resolveBuildNumber(env),
+            adaptiveIcon: {
+                foregroundImage: androidAdaptiveForeground,
+                backgroundColor: bootsplashManifest.background,
+            },
+            permissions: [
+                'android.permission.INTERNET',
+                'android.permission.CAMERA',
+                'android.permission.ACCESS_NETWORK_STATE',
+                'android.permission.ACCESS_WIFI_STATE',
+                'android.permission.USE_BIOMETRIC',
+                'android.permission.USE_FINGERPRINT',
+                'android.permission.VIBRATE',
+                'android.permission.RECEIVE_BOOT_COMPLETED',
+                'android.permission.POST_NOTIFICATIONS',
+                // BLE permissions for Ledger hardware wallet communication
+                'android.permission.BLUETOOTH',
+                'android.permission.BLUETOOTH_ADMIN',
+                'android.permission.BLUETOOTH_SCAN',
+                'android.permission.BLUETOOTH_CONNECT',
+                'android.permission.ACCESS_FINE_LOCATION',
+            ],
+            // Permissions auto-added by linked libraries that native never requested
+            // and the RN app does not use — blocked so the merged manifest matches
+            // native (no new runtime prompts / store-review flags). Real sources:
+            // RECORD_AUDIO from expo-image-picker; READ_MEDIA_AUDIO + READ_MEDIA_VIDEO
+            // from expo-media-library; SYSTEM_ALERT_WINDOW is a debug-only react-native
+            // overlay permission (never in release — blocked defensively).
+            // Confirm the final set against the native pera-android manifest.
+            blockedPermissions: [
+                'android.permission.RECORD_AUDIO',
+                'android.permission.SYSTEM_ALERT_WINDOW',
+                'android.permission.READ_MEDIA_AUDIO',
+                'android.permission.READ_MEDIA_VIDEO',
+                // expo-sensors injects ACTIVITY_RECOGNITION for its Pedometer API,
+                // which we don't use (only the Accelerometer, for shake detection —
+                // that needs no permission). Play classifies any app requesting it as
+                // a health app and gates it behind the Health apps policy, so strip it.
+                'android.permission.ACTIVITY_RECOGNITION',
+                // READ_MEDIA_IMAGES: image pick uses the system photo picker (no
+                // permission) and NFT save uses MediaLibrary write-only, so the app
+                // needs no broad media access. Play gates this permission under its
+                // Photo & Video Permissions policy, so strip it.
+                'android.permission.READ_MEDIA_IMAGES',
+            ],
+            intentFilters: [
+                {
+                    action: 'VIEW',
+                    data: [
+                        { scheme: 'perawallet' },
+                        { scheme: 'algorand' },
+                        { scheme: 'wc' },
+                        { scheme: 'perawallet-wc' },
+                        // Native iOS parity (algorand-wc) + Liquid Auth (liquid). Registered
+                        // on Android too so there's a single source of truth.
+                        { scheme: 'algorand-wc' },
+                        { scheme: 'liquid' },
+                        // EIP-681 payment links. Other installed wallets claim it too and
+                        // the OS picks one; Pera's own surfaces issue perawallet:// with chain=.
+                        { scheme: 'ethereum' },
+                    ],
+                    category: ['DEFAULT', 'BROWSABLE'],
+                },
+                {
+                    action: 'VIEW',
+                    autoVerify: true,
+                    data: [
+                        {
+                            scheme: 'https',
+                            host: 'perawallet.app',
+                            pathPrefix: '/qr/perawallet/',
+                        },
+                        {
+                            scheme: 'https',
+                            host: 'perawallet.app',
+                            pathPrefix: '/qr/perawallet-wc/',
+                        },
+                    ],
+                    category: ['DEFAULT', 'BROWSABLE'],
+                },
+            ],
+            allowBackup: false,
+            // Firebase config - stored in config/ directory (not in native folder)
+            googleServicesFile: './config/google-services.json',
+        },
+
+        // Asset bundling
+        assetBundlePatterns: ['**/*'],
+
+        // Web configuration (for compatibility, not primary target)
+        web: {
+            bundler: 'metro',
+            output: 'single',
+            favicon: './assets/icon-ios.png',
+        },
+
+        // Extra configuration accessible at runtime via Constants.expoConfig.extra
+        extra: {
+            appVariant: variant,
+            appEnv: env.APP_ENV || 'production',
+        },
+
+        // Expo plugins configuration
+        // These modify native code during prebuild
+        plugins: [
+            // System navigation bar. `AppTheme` inherits Theme.AppCompat.DayNight,
+            // which never sets `windowLightNavigationBar`, so the buttons stay light
+            // in BOTH system themes and vanish against any light surface under
+            // edge-to-edge (targetSdk 36). `style` seeds the build-time default for
+            // the light splash; useSystemBarsAppearance then drives it from the
+            // user's in-app theme. `enforceContrast: false` is required or Android
+            // paints a scrim over that choice.
+            [
+                'expo-navigation-bar',
+                {
+                    style: 'dark',
+                    enforceContrast: false,
+                },
+            ],
+            // Expo font loading
+            [
+                'expo-font',
+                {
+                    fonts: [
+                        './assets/fonts/DMSansRegular.ttf',
+                        './assets/fonts/DMSansMedium.ttf',
+                        './assets/fonts/DMSansSemiBold.ttf',
+                        './assets/fonts/DMSansBold.ttf',
+                        './assets/fonts/DMMonoRegular.ttf',
+                        './assets/fonts/DMMonoMedium.ttf',
+                    ],
+                },
+            ],
+            // Splash screen configuration
+            [
+                'expo-splash-screen',
+                {
+                    image: './assets/bootsplash/logo@2x.png',
+                    imageWidth: bootsplashManifest.logo.width * 2, // @2x
+                    resizeMode: 'contain',
+                    backgroundColor: bootsplashManifest.background,
+                    statusBarTranslucent: true,
+                    dark: {
+                        image: './assets/bootsplash/logo@2x.png',
+                        backgroundColor: bootsplashManifest.background,
+                    },
+                },
+            ],
+            // Localization
+            'expo-localization',
+
+            // Build properties for native compilation
+            [
+                'expo-build-properties',
+                {
+                    ios: {
+                        deploymentTarget: '16.4',
+                        // Firebase Apple 13 ships only as Swift packages, which RNFB links
+                        // into each of its pods; static pods collide on those copies.
+                        useFrameworks: 'dynamic',
+                        // The passkey AutoFill extension sits outside the Podfile and links
+                        // `libMMKVCore.a` and its public headers directly; as a framework
+                        // neither exists.
+                        forceStaticLinking: ['MMKVCore'],
+                        flipper: false,
+                        // The dev-build network inspector swizzles NSURLSession and
+                        // bypasses TrustKit, silently disabling SSL pinning
+                        // (react-native-ssl-public-key-pinning requirement). Debug-only
+                        // tooling — release builds never include it.
+                        networkInspector: false,
+                        // Set by ci/jobs/lib/toolchain.sh only when the host has ccache,
+                        // so a local prebuild keeps compiling without it.
+                        ccacheEnabled: env.USE_CCACHE === '1',
+                    },
+                    android: {
+                        minSdkVersion: 29,
+                        targetSdkVersion: 36,
+                        compileSdkVersion: 37,
+                        buildToolsVersion: '37.0.0',
+                        // R8 minification + resource shrinking for release builds.
+                        // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
+                        // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`
+                        // is the deprecated alias for this flag. shrinkResources requires minify enabled
+                        // (validated by expo-build-properties, else prebuild throws).
+                        enableMinifyInReleaseBuilds: true,
+                        enableShrinkResourcesInReleaseBuilds: true,
+                        // Most RN/Expo libraries ship their own consumer ProGuard rules, so R8 respects
+                        // them automatically. This baseline only keeps JNI bindings and suppresses common
+                        // optional-dependency warnings. Add module-specific `-keep` rules from the actual
+                        // release smoke-test / R8 `missing_rules.txt` output rather than speculating —
+                        // over-keeping silently defeats both the obfuscation and the size reduction.
+                        extraProguardRules: [
+                            '# --- Release R8 keep rules (rationale in the comment above) ---',
+                            '-keepclasseswithmembernames class * { native <methods>; }',
+                            '-dontwarn okhttp3.**',
+                            '-dontwarn okio.**',
+                            '-dontwarn javax.annotation.**',
+                            '-dontwarn org.conscrypt.**',
+                            // JNA's Native reaches into desktop-Java AWT for window handles, which
+                            // Android has no classes for, so R8 fails the release minify outright.
+                            '-dontwarn com.sun.jna.**',
+                            '-dontwarn java.awt.**',
+                            // Suppressing those warnings is not enough: JNA resolves its own Java
+                            // members from native code by name (Native.initIDs looks up Pointer.peer
+                            // over JNI) and maps Structure subclasses field-by-field in declaration
+                            // order, so letting R8 rename or reorder them turns the build error into
+                            // an UnsatisfiedLinkError at launch instead. uniffi generates the
+                            // Structure subclasses the WalletConnect Pay module passes across.
+                            '-keep class com.sun.jna.** { *; }',
+                            '-keepclassmembers class * extends com.sun.jna.** { *; }',
+                            '-keep class uniffi.** { *; }',
+                            '-keep class org.bouncycastle.** { *; }',
+                            '-keepnames class org.bouncycastle.** { *; }',
+                            '-dontwarn org.bouncycastle.**',
+                        ].join('\n'),
+                        kotlinVersion: '2.2.10',
+                        // Package-visibility (API 30+) declarations so Linking.canOpenURL
+                        // can see the social apps the in-app browser hands off to
+                        // (PWWebView navigation guard).
+                        manifestQueries: {
+                            intent: [
+                                { action: 'VIEW', data: { scheme: 'twitter' } },
+                                { action: 'VIEW', data: { scheme: 'tg' } },
+                                {
+                                    action: 'VIEW',
+                                    data: {
+                                        scheme: 'com.hammerandchisel.discord',
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+            // Firebase - reads config from googleServicesFile paths above
+            '@react-native-firebase/app',
+            '@react-native-firebase/crashlytics',
+            // react-native-vision-camera v5 ships no Expo config plugin (v4 did).
+            // Camera permission is declared directly: ios.infoPlist.NSCameraUsageDescription
+            // + android.permissions 'android.permission.CAMERA' above.
+            // Image picker for contact photos
+            [
+                'expo-image-picker',
+                {
+                    // Permission copy stays in ios.infoPlist above. A truthy option here
+                    // silently overwrites it — applyPermissions resolves
+                    // `option || infoPlist[key] || pluginDefault` — which is how 7.0.0
+                    // shipped "Pera needs access to your camera." over the string this
+                    // config declares, and got rejected under 5.1.1(ii).
+                    // The picker only ever opens the photo library (there is no
+                    // launchCameraAsync call site), so it owns no camera copy; `false`
+                    // drops the microphone string and RECORD_AUDIO it would add for a
+                    // recorder the app doesn't have.
+                    microphonePermission: false,
+                },
+            ],
+            // Note: The following packages are autolinked and don't require config plugins:
+            // - expo-sqlite
+            // - react-native-mmkv
+            // - react-native-keychain
+            // - react-native-reanimated
+            // - react-native-gesture-handler
+            // - react-native-screens
+            // - react-native-safe-area-context
+
+            // Custom plugin for Ledger USB intent-filter (Android USB host)
+            './plugins/withLedgerUsbAndroidManifest',
+
+            // Ship the native white-silhouette notification icon on all lanes
+            // (Android falls back to a white box without it). See plugin header.
+            './plugins/withAndroidNotificationIcon',
+
+            // Custom plugin for local.properties SDK path (machine-specific fix)
+            './plugins/withAndroidLocalProperties',
+
+            // Wire release signing to the Bitrise-injected config/release.keystore
+            // (stock Expo template signs release with the debug keystore)
+            './plugins/withAndroidReleaseSigning',
+
+            // Emit FULL native debug symbols on release and upload them to Crashlytics
+            // so Android native (.so) crashes are symbolicated (iOS dSYM counterpart)
+            './plugins/withAndroidNativeSymbolUpload',
+
+            // Enable GWP-ASan so native heap memory-safety crashes surface with
+            // allocation stacks in Crashlytics instead of a bare abort.
+            './plugins/withAndroidGwpAsan',
+
+            // Raise the Gradle/Kotlin daemon heap — the -Xmx2048m default OOMs this
+            // monorepo's Android build. Must run after expo-build-properties so ours wins.
+            './plugins/withAndroidGradleHeap',
+
+            // Limit *debug* builds to arm64-v8a (matches native Pera Android) so local
+            // builds don't compile all four ABIs. Release keeps every ABI.
+            './plugins/withAndroidAbiFilters',
+
+            // Let the resource shrinker remove rather than stub. Must run after
+            // expo-build-properties, which owns minify/shrinkResources.
+            './plugins/withAndroidR8Optimization',
+
+            // Let large screens rotate while phones stay portrait. The manifest
+            // declares no restriction (the package parser resolves it with no
+            // configuration, so a sw600dp qualifier can never win); phones are
+            // locked at runtime by useOrientationPolicy. iPhones stay portrait via
+            // the top-level `orientation`; iPads rotate via the all-orientations
+            // `UISupportedInterfaceOrientations~ipad` that `supportsTablet` writes.
+            './plugins/withAndroidLargeScreenSupport',
+
+            // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
+            // the React host is ready) by overriding it in MainActivity.
+            './plugins/withAndroidUserLeaveHintFix',
+
+            // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
+            './plugins/withPodfileModifications.js',
+
+            // Custom plugin: drop device-only GoogleMLKit from the iOS *simulator*
+            // build so Apple Silicon arm64 simulators (iOS 26+) can build. MUST run
+            // after withPodfileModifications so its post_install edits land in the
+            // same generated Podfile.
+            './plugins/withMLKitSimulatorExclusion.js',
+
+            // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
+            './plugins/withPublicSwiftImports.js',
+
+            // On-device Falcon-1024 signing (@joe-p/react-native-falcon):
+            // pin the New Architecture flag the Nitro module requires. The native
+            // pod/Gradle module itself is picked up by RN/Nitro autolinking.
+            './plugins/withFalconNitro.js',
+
+            // Custom plugin: exclude the local data stores (MMKV + pera.db) from iOS
+            // backups (NSURLIsExcludedFromBackupKey), and on Android from cloud-backup
+            // + device-transfer via dataExtractionRules / fullBackupContent — alongside
+            // allowBackup:false.
+            './plugins/withExcludeDataFromBackup.js',
+
+            // Rename the iOS AutoFill extension bundle id back to the legacy app's
+            // suffix so the enabled-provider selection survives the native -> RN
+            // upgrade. Registered BEFORE the autofill plugin on purpose: Expo runs
+            // withXcodeProject mods in reverse order, so this runs after that plugin
+            // creates the extension target.
+            [
+                './plugins/withAutofillExtensionBundleId',
+                { legacySuffix: legacyAutofillExtensionSuffix },
+            ],
+
+            // Passkey autofill (FIDO2) — system credential provider extension
+            [
+                '@algorandfoundation/react-native-passkey-autofill',
+                {
+                    site: PASSKEY_AUTOFILL_SITE,
+                    label: appNames[variant],
+                    appGroup: `group.${bundleIdentifiers[variant].ios}`,
+                    appleTeamId: env.IOS_TEAM_ID,
+                    aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
+                    biometricRequirement: 'strongOrCredential',
+                },
+            ],
+
+            // Bundled local workarounds for the autofill plugin's WIP iOS/Android
+            // output (Android DP256 Maven repo, iOS unquoted DEVELOPMENT_TEAM, iOS
+            // missing extension target dependency + duplicate Sources). MUST run after
+            // the autofill plugin. Remove once the fixes land upstream.
+            './plugins/withPasskeyAutofillFixes',
+
+            // Restore the production universal-link (applinks) domains that the
+            // passkey-autofill plugin drops from associated-domains during prebuild.
+            // MUST run after that plugin. Production only — staging/dev keep the
+            // autofill plugin's output (production-only scope).
+            [
+                './plugins/withProductionAssociatedDomains',
+                { isProduction: variant === 'production' },
+            ],
+
+            // Home-screen widget extension, built from targets/widget. See docs/WIDGETS.md.
+            '@bacons/apple-targets',
+
+            // Match native BLE/location permission scoping (maxSdkVersion + neverForLocation).
+            './plugins/withAndroidBlePermissionScoping',
+
+            // Strip the advertising-ID permissions that Firebase Analytics injects at
+            // manifest-merge time. Pera does no ad attribution, so AD_ID collection is
+            // an unnecessary privacy exposure for a wallet (security finding AND-02).
+            './plugins/withAndroidRemoveAdIdPermissions',
+
+            ...credentialStoragePlugins,
+        ],
+
+        // Experiments (for bleeding edge features)
+        experiments: {
+            typedRoutes: false,
+        },
     }
-  })();
 
-  // Added only when the container is set: the plugin writes iCloud entitlements
-  // that an archive signed with a profile lacking the iCloud capability cannot
-  // sign.
-  const iCloudContainerId = env.IOS_ICLOUD_CONTAINER_ID?.trim();
-  const credentialStoragePlugins = [
-    ...(iCloudContainerId
-      ? [
-          [
-            'react-native-cloud-storage',
-            {
-              iCloudContainerIdentifier: iCloudContainerId,
-              iCloudContainerEnvironment:
-                variant === 'dev' ? 'Development' : 'Production',
-            },
-          ],
-        ]
-      : []),
-  ];
-
-  const config = {
-    name: appNames[variant],
-    slug: slugs[variant],
-    version: resolveMarketingVersion(env),
-    orientation: 'portrait',
-    icon: appIconIos,
-    scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc', 'algorand-wc', 'liquid', 'ethereum'],
-    userInterfaceStyle: 'automatic',
-
-    // iOS-specific configuration
-    ios: {
-      bundleIdentifier: bundleIdentifiers[variant].ios,
-      buildNumber: String(resolveBuildNumber(env)),
-      appleTeamId: env.IOS_TEAM_ID,
-      supportsTablet: true,
-      config: {
-        usesNonExemptEncryption: false,
-      },
-      infoPlist: {
-        CFBundleDisplayName: appNames[variant],
-        LSApplicationCategoryType: 'public.app-category.finance',
-        // Purpose strings are the single source of truth for every iOS
-        // permission prompt: an active, specific sentence naming the feature
-        // that needs the capability. 7.0.0 (10305) was rejected under
-        // guideline 5.1.1(ii) for "Pera needs access to your camera." — a
-        // string that says nothing about how the camera is used. Anything
-        // vaguer than "app does X so you can Y" will be rejected again, and a
-        // plugin option must never be allowed to shadow these (see the
-        // expo-image-picker entry below). No $(PRODUCT_NAME): it expands to
-        // the spaceless target name (PeraAlgoWallet), and the alert already
-        // shows the display name above the string.
-        NSCameraUsageDescription:
-          'Pera scans QR codes with the camera to fill in a recipient address, add a contact, or connect your account to a dApp.',
-        NSBluetoothAlwaysUsageDescription:
-          'Pera uses Bluetooth to reach your Ledger hardware wallet so you can review and approve transactions on the device.',
-        NSBluetoothPeripheralUsageDescription:
-          'Pera uses Bluetooth to reach your Ledger hardware wallet so you can review and approve transactions on the device.',
-        NSFaceIDUsageDescription:
-          'Pera uses Face ID to unlock your wallet and approve transactions without typing your PIN.',
-        NSPhotoLibraryAddUsageDescription:
-          'Pera saves a collectible image to your photo library when you choose to download it.',
-        NSPhotoLibraryUsageDescription:
-          'Pera opens your photo library so you can pick a picture for one of your contacts.',
-        // expo-sensors would otherwise inject its own placeholder here; the
-        // accelerometer is read only to notice a shake (shake-to-lock).
-        NSMotionUsageDescription:
-          'Pera reads device motion to notice when you shake your phone, which locks the app straight away.',
-        // No NSLocationWhenInUseUsageDescription / NSMicrophoneUsageDescription
-        // on purpose: nothing reads either one. Only Android needs location for
-        // a BLE scan (ACCESS_FINE_LOCATION below) — CoreBluetooth does not, and
-        // an unbacked location string is review surface for no feature.
-        // twitter/tg/discord: Linking.canOpenURL checks for the in-app
-        // browser's social-media handoff (PWWebView navigation guard).
-        LSApplicationQueriesSchemes: ['itms-apps', 'twitter', 'tg', 'com.hammerandchisel.discord'],
-        UIRequiredDeviceCapabilities: ['arm64'],
-        // Must stay YES: react-native-screens drives the iOS status bar per
-        // screen (the navigator's `statusBarStyle` option) and RNSScreenWindowTraits
-        // errors out without it. The cost is that RN's imperative StatusBar API
-        // — expo-status-bar's setStatusBarStyle — errors instead; the two are
-        // mutually exclusive, so nothing may call it on iOS.
-        UIViewControllerBasedStatusBarAppearance: true,
-        // Custom fonts
-        UIAppFonts: [
-          'DMSansRegular.ttf',
-          'DMSansMedium.ttf',
-          'DMSansSemiBold.ttf',
-          'DMSansBold.ttf',
-          'DMMonoRegular.ttf',
-          'DMMonoMedium.ttf',
-        ],
-      },
-      entitlements: {
-         'aps-environment': variant === 'production' ? 'production' : 'development',
-        'com.apple.developer.associated-domains': [
-          'applinks:perawallet.app',
-          // Legacy bare-host universal link — production parity with the
-          // native app we ship over. Staging/dev never advertised it and keep
-          // their current set (production-only scope).
-          ...(variant === 'production' ? ['applinks:perawallet'] : []),
-          `webcredentials:${PASSKEY_AUTOFILL_HOST}`,
-        ],
-        'com.apple.developer.authentication-services.autofill-credential-provider': true,
-        // Distributed builds (staging + production) attest against Apple's
-        // production environment; only local dev builds use the sandbox.
-        'com.apple.developer.devicecheck.appattest-environment':
-          variant === 'dev' ? 'development' : 'production',
-        'com.apple.developer.declared-age-range': true,
-      },
-      // Firebase config - stored in config/ directory (not in native folder)
-      googleServicesFile: './config/GoogleService-Info.plist',
-    },
-
-    // Android-specific configuration
-    android: {
-      package: bundleIdentifiers[variant].android,
-      versionCode: resolveBuildNumber(env),
-      adaptiveIcon: {
-        foregroundImage: androidAdaptiveForeground,
-        backgroundColor: bootsplashManifest.background,
-      },
-      permissions: [
-        'android.permission.INTERNET',
-        'android.permission.CAMERA',
-        'android.permission.ACCESS_NETWORK_STATE',
-        'android.permission.ACCESS_WIFI_STATE',
-        'android.permission.USE_BIOMETRIC',
-        'android.permission.USE_FINGERPRINT',
-        'android.permission.VIBRATE',
-        'android.permission.RECEIVE_BOOT_COMPLETED',
-        'android.permission.POST_NOTIFICATIONS',
-        // BLE permissions for Ledger hardware wallet communication
-        'android.permission.BLUETOOTH',
-        'android.permission.BLUETOOTH_ADMIN',
-        'android.permission.BLUETOOTH_SCAN',
-        'android.permission.BLUETOOTH_CONNECT',
-        'android.permission.ACCESS_FINE_LOCATION',
-      ],
-      // Permissions auto-added by linked libraries that native never requested
-      // and the RN app does not use — blocked so the merged manifest matches
-      // native (no new runtime prompts / store-review flags). Real sources:
-      // RECORD_AUDIO from expo-image-picker; READ_MEDIA_AUDIO + READ_MEDIA_VIDEO
-      // from expo-media-library; SYSTEM_ALERT_WINDOW is a debug-only react-native
-      // overlay permission (never in release — blocked defensively).
-      // Confirm the final set against the native pera-android manifest.
-      blockedPermissions: [
-        'android.permission.RECORD_AUDIO',
-        'android.permission.SYSTEM_ALERT_WINDOW',
-        'android.permission.READ_MEDIA_AUDIO',
-        'android.permission.READ_MEDIA_VIDEO',
-        // expo-sensors injects ACTIVITY_RECOGNITION for its Pedometer API,
-        // which we don't use (only the Accelerometer, for shake detection —
-        // that needs no permission). Play classifies any app requesting it as
-        // a health app and gates it behind the Health apps policy, so strip it.
-        'android.permission.ACTIVITY_RECOGNITION',
-        // READ_MEDIA_IMAGES: image pick uses the system photo picker (no
-        // permission) and NFT save uses MediaLibrary write-only, so the app
-        // needs no broad media access. Play gates this permission under its
-        // Photo & Video Permissions policy, so strip it.
-        'android.permission.READ_MEDIA_IMAGES',
-      ],
-      intentFilters: [
-        {
-          action: 'VIEW',
-          data: [
-            { scheme: 'perawallet' },
-            { scheme: 'algorand' },
-            { scheme: 'wc' },
-            { scheme: 'perawallet-wc' },
-            // Native iOS parity (algorand-wc) + Liquid Auth (liquid). Registered
-            // on Android too so there's a single source of truth.
-            { scheme: 'algorand-wc' },
-            { scheme: 'liquid' },
-            // EIP-681 payment links. Other installed wallets claim it too and
-            // the OS picks one; Pera's own surfaces issue perawallet:// with chain=.
-            { scheme: 'ethereum' },
-          ],
-          category: ['DEFAULT', 'BROWSABLE'],
-        },
-        {
-          action: 'VIEW',
-          autoVerify: true,
-          data: [
-            {
-              scheme: 'https',
-              host: 'perawallet.app',
-              pathPrefix: '/qr/perawallet/',
-            },
-            {
-              scheme: 'https',
-              host: 'perawallet.app',
-              pathPrefix: '/qr/perawallet-wc/',
-            },
-          ],
-          category: ['DEFAULT', 'BROWSABLE'],
-        },
-      ],
-      allowBackup: false,
-      // Firebase config - stored in config/ directory (not in native folder)
-      googleServicesFile: './config/google-services.json',
-    },
-
-    // Asset bundling
-    assetBundlePatterns: ['**/*'],
-
-    // Web configuration (for compatibility, not primary target)
-    web: {
-      bundler: 'metro',
-      output: 'single',
-      favicon: './assets/icon-ios.png',
-    },
-
-    // Extra configuration accessible at runtime via Constants.expoConfig.extra
-    extra: {
-      appVariant: variant,
-      appEnv: env.APP_ENV || 'production',
-    },
-
-    // Expo plugins configuration
-    // These modify native code during prebuild
-    plugins: [
-      // System navigation bar. `AppTheme` inherits Theme.AppCompat.DayNight,
-      // which never sets `windowLightNavigationBar`, so the buttons stay light
-      // in BOTH system themes and vanish against any light surface under
-      // edge-to-edge (targetSdk 36). `style` seeds the build-time default for
-      // the light splash; useSystemBarsAppearance then drives it from the
-      // user's in-app theme. `enforceContrast: false` is required or Android
-      // paints a scrim over that choice.
-      [
-        'expo-navigation-bar',
-        {
-          style: 'dark',
-          enforceContrast: false,
-        },
-      ],
-      // Expo font loading
-      [
-        'expo-font',
-        {
-          fonts: [
-            './assets/fonts/DMSansRegular.ttf',
-            './assets/fonts/DMSansMedium.ttf',
-            './assets/fonts/DMSansSemiBold.ttf',
-            './assets/fonts/DMSansBold.ttf',
-            './assets/fonts/DMMonoRegular.ttf',
-            './assets/fonts/DMMonoMedium.ttf',
-          ],
-        },
-      ],
-      // Splash screen configuration
-      [
-        'expo-splash-screen',
-        {
-          image: './assets/bootsplash/logo@2x.png',
-          imageWidth: bootsplashManifest.logo.width * 2, // @2x
-          resizeMode: 'contain',
-          backgroundColor: bootsplashManifest.background,
-          statusBarTranslucent: true,
-          dark: {
-            image: './assets/bootsplash/logo@2x.png',
-            backgroundColor: bootsplashManifest.background,
-          },
-        },
-      ],
-      // Localization
-      'expo-localization',
-
-      // Build properties for native compilation
-      [
-        'expo-build-properties',
-        {
-          ios: {
-            deploymentTarget: '16.4',
-            // Firebase Apple 13 ships only as Swift packages, which RNFB links
-            // into each of its pods; static pods collide on those copies.
-            useFrameworks: 'dynamic',
-            // The passkey AutoFill extension sits outside the Podfile and links
-            // `libMMKVCore.a` and its public headers directly; as a framework
-            // neither exists.
-            forceStaticLinking: ['MMKVCore'],
-            flipper: false,
-            // The dev-build network inspector swizzles NSURLSession and
-            // bypasses TrustKit, silently disabling SSL pinning
-            // (react-native-ssl-public-key-pinning requirement). Debug-only
-            // tooling — release builds never include it.
-            networkInspector: false,
-            // Set by ci/jobs/lib/toolchain.sh only when the host has ccache,
-            // so a local prebuild keeps compiling without it.
-            ccacheEnabled: env.USE_CCACHE === '1',
-          },
-          android: {
-            minSdkVersion: 29,
-            targetSdkVersion: 36,
-            compileSdkVersion: 37,
-            buildToolsVersion: '37.0.0',
-            // R8 minification + resource shrinking for release builds.
-            // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
-            // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`
-            // is the deprecated alias for this flag. shrinkResources requires minify enabled
-            // (validated by expo-build-properties, else prebuild throws).
-            enableMinifyInReleaseBuilds: true,
-            enableShrinkResourcesInReleaseBuilds: true,
-            // Most RN/Expo libraries ship their own consumer ProGuard rules, so R8 respects
-            // them automatically. This baseline only keeps JNI bindings and suppresses common
-            // optional-dependency warnings. Add module-specific `-keep` rules from the actual
-            // release smoke-test / R8 `missing_rules.txt` output rather than speculating —
-            // over-keeping silently defeats both the obfuscation and the size reduction.
-            extraProguardRules: [
-              '# --- Release R8 keep rules (rationale in the comment above) ---',
-              '-keepclasseswithmembernames class * { native <methods>; }',
-              '-dontwarn okhttp3.**',
-              '-dontwarn okio.**',
-              '-dontwarn javax.annotation.**',
-              '-dontwarn org.conscrypt.**',
-              // JNA's Native reaches into desktop-Java AWT for window handles, which
-              // Android has no classes for, so R8 fails the release minify outright.
-              '-dontwarn com.sun.jna.**',
-              '-dontwarn java.awt.**',
-              // Suppressing those warnings is not enough: JNA resolves its own Java
-              // members from native code by name (Native.initIDs looks up Pointer.peer
-              // over JNI) and maps Structure subclasses field-by-field in declaration
-              // order, so letting R8 rename or reorder them turns the build error into
-              // an UnsatisfiedLinkError at launch instead. uniffi generates the
-              // Structure subclasses the WalletConnect Pay module passes across.
-              '-keep class com.sun.jna.** { *; }',
-              '-keepclassmembers class * extends com.sun.jna.** { *; }',
-              '-keep class uniffi.** { *; }',
-              '-keep class org.bouncycastle.** { *; }',
-              '-keepnames class org.bouncycastle.** { *; }',
-              '-dontwarn org.bouncycastle.**',
-            ].join('\n'),
-            kotlinVersion: '2.2.10',
-            // Package-visibility (API 30+) declarations so Linking.canOpenURL
-            // can see the social apps the in-app browser hands off to
-            // (PWWebView navigation guard).
-            manifestQueries: {
-              intent: [
-                { action: 'VIEW', data: { scheme: 'twitter' } },
-                { action: 'VIEW', data: { scheme: 'tg' } },
-                { action: 'VIEW', data: { scheme: 'com.hammerandchisel.discord' } },
-              ],
-            },
-          },
-        },
-      ],
-      // Firebase - reads config from googleServicesFile paths above
-      '@react-native-firebase/app',
-      '@react-native-firebase/crashlytics',
-      // react-native-vision-camera v5 ships no Expo config plugin (v4 did).
-      // Camera permission is declared directly: ios.infoPlist.NSCameraUsageDescription
-      // + android.permissions 'android.permission.CAMERA' above.
-      // Image picker for contact photos
-      [
-        'expo-image-picker',
-        {
-          // Permission copy stays in ios.infoPlist above. A truthy option here
-          // silently overwrites it — applyPermissions resolves
-          // `option || infoPlist[key] || pluginDefault` — which is how 7.0.0
-          // shipped "Pera needs access to your camera." over the string this
-          // config declares, and got rejected under 5.1.1(ii).
-          // The picker only ever opens the photo library (there is no
-          // launchCameraAsync call site), so it owns no camera copy; `false`
-          // drops the microphone string and RECORD_AUDIO it would add for a
-          // recorder the app doesn't have.
-          microphonePermission: false,
-        },
-      ],
-      // Note: The following packages are autolinked and don't require config plugins:
-      // - expo-sqlite
-      // - react-native-mmkv
-      // - react-native-keychain
-      // - react-native-reanimated
-      // - react-native-gesture-handler
-      // - react-native-screens
-      // - react-native-safe-area-context
-
-      // Custom plugin for Ledger USB intent-filter (Android USB host)
-      './plugins/withLedgerUsbAndroidManifest',
-
-      // Ship the native white-silhouette notification icon on all lanes
-      // (Android falls back to a white box without it). See plugin header.
-      './plugins/withAndroidNotificationIcon',
-
-      // Custom plugin for local.properties SDK path (machine-specific fix)
-      './plugins/withAndroidLocalProperties',
-
-      // Wire release signing to the Bitrise-injected config/release.keystore
-      // (stock Expo template signs release with the debug keystore)
-      './plugins/withAndroidReleaseSigning',
-
-      // Emit FULL native debug symbols on release and upload them to Crashlytics
-      // so Android native (.so) crashes are symbolicated (iOS dSYM counterpart)
-      './plugins/withAndroidNativeSymbolUpload',
-
-      // Enable GWP-ASan so native heap memory-safety crashes surface with
-      // allocation stacks in Crashlytics instead of a bare abort.
-      './plugins/withAndroidGwpAsan',
-
-      // Raise the Gradle/Kotlin daemon heap — the -Xmx2048m default OOMs this
-      // monorepo's Android build. Must run after expo-build-properties so ours wins.
-      './plugins/withAndroidGradleHeap',
-
-      // Limit *debug* builds to arm64-v8a (matches native Pera Android) so local
-      // builds don't compile all four ABIs. Release keeps every ABI.
-      './plugins/withAndroidAbiFilters',
-
-      // Let the resource shrinker remove rather than stub. Must run after
-      // expo-build-properties, which owns minify/shrinkResources.
-      './plugins/withAndroidR8Optimization',
-
-      // Let large screens rotate while phones stay portrait. The manifest
-      // declares no restriction (the package parser resolves it with no
-      // configuration, so a sw600dp qualifier can never win); phones are
-      // locked at runtime by useOrientationPolicy. iPhones stay portrait via
-      // the top-level `orientation`; iPads rotate via the all-orientations
-      // `UISupportedInterfaceOrientations~ipad` that `supportsTablet` writes.
-      './plugins/withAndroidLargeScreenSupport',
-
-      // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
-      // the React host is ready) by overriding it in MainActivity.
-      './plugins/withAndroidUserLeaveHintFix',
-
-      // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
-      './plugins/withPodfileModifications.js',
-
-      // Custom plugin: drop device-only GoogleMLKit from the iOS *simulator*
-      // build so Apple Silicon arm64 simulators (iOS 26+) can build. MUST run
-      // after withPodfileModifications so its post_install edits land in the
-      // same generated Podfile.
-      './plugins/withMLKitSimulatorExclusion.js',
-
-      // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
-      './plugins/withPublicSwiftImports.js',
-
-      // On-device Falcon-1024 signing (@joe-p/react-native-falcon):
-      // pin the New Architecture flag the Nitro module requires. The native
-      // pod/Gradle module itself is picked up by RN/Nitro autolinking.
-      './plugins/withFalconNitro.js',
-
-      // Custom plugin: exclude the local data stores (MMKV + pera.db) from iOS
-      // backups (NSURLIsExcludedFromBackupKey), and on Android from cloud-backup
-      // + device-transfer via dataExtractionRules / fullBackupContent — alongside
-      // allowBackup:false.
-      './plugins/withExcludeDataFromBackup.js',
-
-      // Rename the iOS AutoFill extension bundle id back to the legacy app's
-      // suffix so the enabled-provider selection survives the native -> RN
-      // upgrade. Registered BEFORE the autofill plugin on purpose: Expo runs
-      // withXcodeProject mods in reverse order, so this runs after that plugin
-      // creates the extension target.
-      [
-        './plugins/withAutofillExtensionBundleId',
-        { legacySuffix: legacyAutofillExtensionSuffix },
-      ],
-
-      // Passkey autofill (FIDO2) — system credential provider extension
-      [
-        '@algorandfoundation/react-native-passkey-autofill',
-        {
-          site: PASSKEY_AUTOFILL_SITE,
-          label: appNames[variant],
-          appGroup: `group.${bundleIdentifiers[variant].ios}`,
-          appleTeamId: env.IOS_TEAM_ID,
-          aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
-          biometricRequirement: 'strongOrCredential'
-        },
-      ],
-
-      // Bundled local workarounds for the autofill plugin's WIP iOS/Android
-      // output (Android DP256 Maven repo, iOS unquoted DEVELOPMENT_TEAM, iOS
-      // missing extension target dependency + duplicate Sources). MUST run after
-      // the autofill plugin. Remove once the fixes land upstream.
-      './plugins/withPasskeyAutofillFixes',
-
-      // Restore the production universal-link (applinks) domains that the
-      // passkey-autofill plugin drops from associated-domains during prebuild.
-      // MUST run after that plugin. Production only — staging/dev keep the
-      // autofill plugin's output (production-only scope).
-      [
-        './plugins/withProductionAssociatedDomains',
-        { isProduction: variant === 'production' },
-      ],
-
-      // Home-screen widget extension, built from targets/widget. See docs/WIDGETS.md.
-      '@bacons/apple-targets',
-
-      // Match native BLE/location permission scoping (maxSdkVersion + neverForLocation).
-      './plugins/withAndroidBlePermissionScoping',
-
-      // Strip the advertising-ID permissions that Firebase Analytics injects at
-      // manifest-merge time. Pera does no ad attribution, so AD_ID collection is
-      // an unnecessary privacy exposure for a wallet (security finding AND-02).
-      './plugins/withAndroidRemoveAdIdPermissions',
-
-      ...credentialStoragePlugins,
-    ],
-
-    // Experiments (for bleeding edge features)
-    experiments: {
-      typedRoutes: false,
-    },
-  };
-
-  return variant === 'bench' ? withBenchOverrides(config) : config;
+    return variant === 'bench' ? withBenchOverrides(config) : config
 }
 
-module.exports = { buildAppConfig };
+module.exports = { buildAppConfig }

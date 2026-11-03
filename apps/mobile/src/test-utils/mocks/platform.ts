@@ -79,6 +79,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
                 syncImages: vi.fn().mockResolvedValue([]),
                 consumePendingScan: vi.fn().mockResolvedValue(false),
                 onScanRequested: vi.fn(() => vi.fn()),
+                backendPinning: vi.fn(() => null),
             },
             appLifecycle: {
                 getCurrentState: () => 'active',
@@ -238,6 +239,7 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
             syncImages: vi.fn().mockResolvedValue([]),
             consumePendingScan: vi.fn().mockResolvedValue(false),
             onScanRequested: vi.fn(() => vi.fn()),
+            backendPinning: vi.fn(() => null),
         },
         appLifecycle: {
             getCurrentState: () => 'active',

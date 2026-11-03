@@ -36,10 +36,23 @@ class PriceFetcherTest {
         period: String = "one-week",
         currency: String = "USD",
     ): Pair<PriceQuote?, StubGet> {
+        val (result, stub) = fetchResult(routes, assetId, quote, period, currency)
+        return (result as? PriceFetch.Fetched)?.quote to stub
+    }
+
+    private fun fetchResult(
+        routes: Map<String, String?>,
+        assetId: String,
+        quote: QuoteCurrency,
+        period: String = "one-week",
+        currency: String = "USD",
+    ): Pair<PriceFetch, StubGet> {
         val stub = StubGet(routes)
         val result = runBlocking { PriceFetcher(stub.get).fetch(feed(currency), assetId, quote, period) }
         return result to stub
     }
+
+    private fun chart(vararg prices: Double) = prices.joinToString(prefix = "[", postfix = "]") { "{ \"price\": $it }" }
 
     @Test fun pricesAVerifiedAssetInTheChosenFiatCurrency() {
         val (q, _) = fetch(
@@ -70,8 +83,13 @@ class PriceFetcherTest {
     }
 
     @Test fun refusesAnAssetNoLongerVerified() {
-        val (q, _) = fetch(mapOf("/v1/public/assets/31566704/" to asset("unverified", "1.0")), "31566704", QuoteCurrency.Fiat("USD"))
-        assertNull(q)
+        val (r, _) = fetchResult(mapOf("/v1/public/assets/31566704/" to asset("unverified", "1.0")), "31566704", QuoteCurrency.Fiat("USD"))
+        assertEquals(PriceFetch.Untrusted, r)
+    }
+
+    @Test fun aNetworkFailureIsNotADowngrade() {
+        val (r, _) = fetchResult(emptyMap(), "31566704", QuoteCurrency.Fiat("USD"))
+        assertEquals(PriceFetch.Failed, r)
     }
 
     @Test fun refusesASuspiciousAsset() {
@@ -100,6 +118,68 @@ class PriceFetcherTest {
         q!!
         assertEquals(0, BigDecimal(5).compareTo(q.price))
         assertEquals(QuoteCurrency.Algo, q.quote)
+    }
+
+    @Test fun anAlgoQuotesChangeIsAgainstAlgosOwnMove() {
+        // 1.0 / 0.2 = 5 ALGO now, 1.0 / 0.25 = 4 ALGO a day ago: +25%, though the asset is flat in USD.
+        val (q, _) = fetch(
+            mapOf(
+                "/v1/public/assets/31566704/" to asset("verified", "1.0", "1.0"),
+                "/v1/public/assets/0/" to asset(null, "0.2", "0.25", ""),
+            ),
+            "31566704", QuoteCurrency.Algo,
+        )
+        assertEquals(0.25, q!!.change24h!!, 1e-9)
+    }
+
+    @Test fun anAlgoQuoteHasNoChangeWithoutAlgosPreviousPrice() {
+        val (q, _) = fetch(
+            mapOf(
+                "/v1/public/assets/31566704/" to asset("verified", "1.0", "1.0"),
+                "/v1/public/assets/0/" to asset(null, "0.2", unit = ""),
+            ),
+            "31566704", QuoteCurrency.Algo,
+        )
+        assertNull(q!!.change24h)
+    }
+
+    @Test fun anAlgoQuotesChartDividesPointByPoint() {
+        val (q, _) = fetch(
+            mapOf(
+                "/v1/public/assets/31566704/" to asset("verified", "1.0"),
+                "/v1/public/assets/0/" to asset(null, "0.2", unit = ""),
+                "/v1/assets/price-chart/?asset_id=31566704&period=one-week" to chart(1.0, 1.2),
+                "/v1/assets/price-chart/?asset_id=0&period=one-week" to chart(0.2, 0.3),
+            ),
+            "31566704", QuoteCurrency.Algo,
+        )
+        assertEquals(listOf(5.0, 4.0), q!!.chart.map { Math.round(it * 1e9) / 1e9 })
+    }
+
+    @Test fun anAlgoQuotesChartIsEmptyWhenTheSeriesDontLineUp() {
+        val (q, _) = fetch(
+            mapOf(
+                "/v1/public/assets/31566704/" to asset("verified", "1.0"),
+                "/v1/public/assets/0/" to asset(null, "0.2", unit = ""),
+                "/v1/assets/price-chart/?asset_id=31566704&period=one-week" to chart(1.0, 1.2, 1.1),
+                "/v1/assets/price-chart/?asset_id=0&period=one-week" to chart(0.2, 0.3),
+            ),
+            "31566704", QuoteCurrency.Algo,
+        )
+        assertEquals(emptyList<Double>(), q!!.chart)
+    }
+
+    @Test fun anAlgoQuotesChartIsEmptyWithoutAlgosChart() {
+        val (q, _) = fetch(
+            mapOf(
+                "/v1/public/assets/31566704/" to asset("verified", "1.0"),
+                "/v1/public/assets/0/" to asset(null, "0.2", unit = ""),
+                "/v1/assets/price-chart/?asset_id=31566704&period=one-week" to chart(1.0, 1.2),
+                "/v1/assets/price-chart/?asset_id=0&period=one-week" to null,
+            ),
+            "31566704", QuoteCurrency.Algo,
+        )
+        assertEquals(emptyList<Double>(), q!!.chart)
     }
 
     @Test fun makesNoCurrencyRequestForUsd() {
@@ -148,8 +228,8 @@ class PriceFetcherTest {
 
     @Test fun missingBackendUrlIsNull() {
         val stub = StubGet(emptyMap())
-        val q = runBlocking { PriceFetcher(stub.get).fetch(feed("USD", backend = null), "0", QuoteCurrency.Fiat("USD"), "one-week") }
-        assertNull(q)
+        val r = runBlocking { PriceFetcher(stub.get).fetch(feed("USD", backend = null), "0", QuoteCurrency.Fiat("USD"), "one-week") }
+        assertEquals(PriceFetch.Failed, r)
         assertTrue(stub.requests.isEmpty())
     }
 }

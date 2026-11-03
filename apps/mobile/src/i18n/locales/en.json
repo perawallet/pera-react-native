@@ -4789,8 +4789,8 @@
         "notifications": "Notifications",
         "inbox_empty": "All caught up",
         "notifications_empty": "No notifications yet",
-        "waiting": "waiting",
-        "to_sign": "to sign",
+        "inbox_waiting": "{{count}} waiting",
+        "inbox_to_sign": "{{count}} to sign",
         "inbox_sign": "Signature request",
         "inbox_assets": "Incoming assets",
         "inbox_invite": "Shared account invitation"

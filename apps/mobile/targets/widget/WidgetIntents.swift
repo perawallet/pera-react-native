@@ -176,7 +176,7 @@ struct AssetEntity: AppEntity {
     var displayRepresentation: DisplayRepresentation {
         id == PriceFetcher.nativeAssetId
             ? DisplayRepresentation(title: "\(unitName)", subtitle: "\(name)")
-            : DisplayRepresentation(title: "\(unitName)", subtitle: "\(name) · ID \(id)")
+            : DisplayRepresentation(title: "\(unitName)", subtitle: "options.asset.subtitle \(name) \(id)")
     }
 }
 
@@ -235,7 +235,7 @@ struct CurrencyQuery: EntityQuery {
         guard let feed = WidgetSnapshot.current?.priceFeed, let base = URL(string: feed.backendUrl) else {
             return [.appDefault] + fallback
         }
-        let list: [CurrencyItem]? = await PriceFetcher.get(base, "v1/currencies/", feed)
+        let list: [CurrencyItem]? = await PeraBackend.get(base, "v1/currencies/", feed)
         guard let list, !list.isEmpty else { return [.appDefault] + fallback }
         return [.appDefault, fallback[0]] + list
             .filter { $0.currency_id != "ALGO" }
@@ -312,23 +312,16 @@ struct ReceiveConfigIntent: WidgetConfigurationIntent {
     init() {}
 }
 
-/// Which page the Portfolio widget shows: 0 = portfolio, 1 = recent transactions.
-/// Kept in the App Group because a widget button's intent can't reach the
-/// timeline any other way; it is shared by every Portfolio widget on screen.
-enum PortfolioPageStore {
-    static var page: Int {
-        get { WidgetPageStore.page(WidgetPageStore.portfolioButton) }
-        set { WidgetPageStore.set(newValue, WidgetPageStore.portfolioButton) }
-    }
-}
-
 /// The page-flip button on the Portfolio widget. WidgetKit reloads the widget
 /// after it runs, and the provider then reads the new page.
+/// The page (0 = portfolio, 1 = recent transactions) is shared by every Portfolio widget on screen.
 struct FlipPortfolioPageIntent: AppIntent {
     static let title: LocalizedStringResource = "options.flipPage"
+    static let isDiscoverable = false
 
     func perform() async throws -> some IntentResult {
-        PortfolioPageStore.page = PortfolioPageStore.page == 0 ? 1 : 0
+        let key = WidgetPageStore.portfolioButton
+        WidgetPageStore.set(WidgetPageStore.page(key) == 0 ? 1 : 0, key)
         return .result()
     }
 }

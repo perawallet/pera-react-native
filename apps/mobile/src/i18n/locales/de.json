@@ -4789,8 +4789,8 @@
         "notifications": "Benachrichtigungen",
         "inbox_empty": "Alles erledigt",
         "notifications_empty": "Noch keine Benachrichtigungen",
-        "waiting": "ausstehend",
-        "to_sign": "zu signieren",
+        "inbox_waiting": "{{count}} ausstehend",
+        "inbox_to_sign": "{{count}} zu signieren",
         "inbox_sign": "Signaturanfrage",
         "inbox_assets": "Eingehende Assets",
         "inbox_invite": "Einladung zum Gemeinschaftskonto"

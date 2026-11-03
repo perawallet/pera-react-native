@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RNWidgetsService } from '../widgets'
+import { PINNED_ROOT_SPKI_HASHES } from '../ssl-pinning/pins'
 
 const nativeWidgetsMock = vi.hoisted(() => ({
     current: null as Record<string, ReturnType<typeof vi.fn>> | null,
@@ -24,13 +25,16 @@ vi.mock('expo', () => ({
 
 const IMAGE = { key: '286018494', url: 'https://example.com/a.png' }
 
+const createService = (isPinningEnabled = false) =>
+    new RNWidgetsService({ getBooleanValue: () => isPinningEnabled })
+
 describe('RNWidgetsService', () => {
     beforeEach(() => {
         nativeWidgetsMock.current = null
     })
 
     it('no-ops when the native module is absent', async () => {
-        const service = new RNWidgetsService()
+        const service = createService()
 
         await expect(service.writeSnapshot('{}')).resolves.toBeUndefined()
         await expect(service.clearSnapshot()).resolves.toBeUndefined()
@@ -44,7 +48,7 @@ describe('RNWidgetsService', () => {
             syncImages: vi.fn().mockResolvedValue(['286018494']),
         }
         nativeWidgetsMock.current = native
-        const service = new RNWidgetsService()
+        const service = createService()
 
         await service.writeSnapshot('{"version":1}')
         await service.clearSnapshot()
@@ -62,7 +66,7 @@ describe('RNWidgetsService', () => {
             clearSnapshot: vi.fn().mockRejectedValue(new Error('boom')),
             syncImages: vi.fn().mockRejectedValue(new Error('boom')),
         }
-        const service = new RNWidgetsService()
+        const service = createService()
 
         await expect(service.writeSnapshot('{}')).resolves.toBeUndefined()
         await expect(service.clearSnapshot()).resolves.toBeUndefined()
@@ -72,14 +76,14 @@ describe('RNWidgetsService', () => {
     it('reads and clears a scan the Control Center control requested', async () => {
         const consumePendingScan = vi.fn().mockResolvedValue(true)
         nativeWidgetsMock.current = { consumePendingScan }
-        const service = new RNWidgetsService()
+        const service = createService()
 
         await expect(service.consumePendingScan()).resolves.toBe(true)
         expect(consumePendingScan).toHaveBeenCalledOnce()
     })
 
     it('reports no pending scan without the native module or when it throws', async () => {
-        const service = new RNWidgetsService()
+        const service = createService()
         await expect(service.consumePendingScan()).resolves.toBe(false)
 
         nativeWidgetsMock.current = {
@@ -98,7 +102,7 @@ describe('RNWidgetsService', () => {
             }),
         }
         const listener = vi.fn()
-        const service = new RNWidgetsService()
+        const service = createService()
 
         const unsubscribe = service.onScanRequested(listener)
         emit?.()
@@ -113,8 +117,34 @@ describe('RNWidgetsService', () => {
     })
 
     it('returns a no-op unsubscribe without the native module', () => {
-        const service = new RNWidgetsService()
+        const service = createService()
 
         expect(() => service.onScanRequested(vi.fn())()).not.toThrow()
+    })
+
+    it('shares the app pin set for a pinnable Pera host while pinning is on', () => {
+        const service = createService(true)
+
+        expect(
+            service.backendPinning('https://mainnet.api.perawallet.app'),
+        ).toEqual({
+            publicKeyHashes: [...PINNED_ROOT_SPKI_HASHES],
+            expiresAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T00:00:00Z$/),
+        })
+    })
+
+    it('shares no pins while the Pera API pinning flag is off', () => {
+        const service = createService(false)
+
+        expect(
+            service.backendPinning('https://mainnet.api.perawallet.app'),
+        ).toBeNull()
+    })
+
+    it('shares no pins for a host the app never pins', () => {
+        const service = createService(true)
+
+        expect(service.backendPinning('https://evil-perawallet.app')).toBeNull()
+        expect(service.backendPinning('not a url')).toBeNull()
     })
 })

@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { useWidgetSnapshotSync } from './hooks'
+export { WidgetSnapshotSync } from './components/WidgetSnapshotSync'

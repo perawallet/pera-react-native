@@ -1,0 +1,1 @@
+../../../targets/widget/WidgetPinning.swift
