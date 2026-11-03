@@ -141,10 +141,14 @@ const runTick = async (service = newService()): Promise<void> => {
 }
 
 // Every Pera route an Ethereum scope reads.
-const isEthereumPeraRequest = (url: string): boolean =>
-    url.startsWith(PERA_URL) &&
-    (url.includes('/api/v3/evm/') ||
-        url.includes('/api/v4/accounts/should-refresh/'))
+const isEthereumPeraRequest = (url: string): boolean => {
+    const { origin, pathname } = new URL(url)
+    return (
+        origin === PERA_URL &&
+        (pathname.includes('/api/v3/evm/') ||
+            pathname.includes('/api/v4/accounts/should-refresh/'))
+    )
+}
 
 // ETH_ADDRESS, checksummed, as the balance fixture keys holders.
 const HOLDER = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
