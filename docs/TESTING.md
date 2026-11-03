@@ -75,8 +75,9 @@ deliberately takes a `lanekeep-ignore-next-line` with a reason.
 
 ### Coverage
 
-`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions. The
-mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
+`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions.
+`.github/workflows/ci-coverage.yml` enforces the gate nightly on the chain packages it lists, and a
+drop below it turns that run red. The mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
 under `apps/mobile/src/modules/`, `routes/` folders, and the dev-gallery catalogs. Module hooks
 (`use*`) still count, so a gap there is a missing hook test, not a missing render test.
 
