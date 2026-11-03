@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { isPeraBackendSwitchedOff } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { setOnPeraBackendUnavailable } from '@providers/queryClient'
@@ -23,6 +24,8 @@ import { setOnPeraBackendUnavailable } from '@providers/queryClient'
  *
  * Silent for a chain's remote kill switch: it is a backend pause, which the
  * affected surfaces already show, and the wording here is about the network.
+ * The switch is read here as well as off the error, since adapters raise this
+ * error themselves for a scope that lists no services.
  *
  * Deduped per target because an ungated Pera query — the preferred-currency
  * price query behind every fiat value — fires the error once per mount, which
@@ -47,8 +50,11 @@ export const usePeraServiceUnavailableToast = (): void => {
 
     useEffect(() => {
         return setOnPeraBackendUnavailable(error => {
-            const { targetKey, isSwitchedOff } = error
-            if (isSwitchedOff) {
+            const { targetKey, scope, isSwitchedOff } = error
+            if (
+                isSwitchedOff ||
+                (scope && isPeraBackendSwitchedOff(scope.chainId))
+            ) {
                 return
             }
             if (notifiedTargetsRef.current.has(targetKey)) {
