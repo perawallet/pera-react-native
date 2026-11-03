@@ -11,6 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset, PeraCollectible } from '@perawallet/wallet-core-assets'
 import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 
@@ -29,4 +30,6 @@ export type CollectibleItemProps = {
     style?: StyleProp<ViewStyle>
     /** Marks a holding-level frozen collectible (selection contexts). */
     showFrozenBadge?: boolean
+    /** Names the NFT's network, for a gallery listing several together. */
+    networkChainId?: ChainId
 }

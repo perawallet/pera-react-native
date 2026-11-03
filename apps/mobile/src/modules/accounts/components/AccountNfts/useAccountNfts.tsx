@@ -26,7 +26,9 @@ import {
 import {
     LEGACY_CHAIN_ID,
     toScopeKey,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
@@ -37,11 +39,16 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
+import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
+import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetContent } from '@modules/assets'
+import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
+import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
+import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import { NftFilterContent } from '../NftFilterContent'
 import { NftSortContent } from '../NftSortContent'
 import { ManageNftsContent, type ManageNftsAction } from '../ManageNftsContent'
@@ -53,6 +60,17 @@ type UseAccountNftsResult = {
     isRefreshing: boolean
     hasAccount: boolean
     canOptIn: boolean
+    /** On more than one NFT network, where the copy has to say opt-in is Algorand-only. */
+    isMultiChain: boolean
+    /** No NFTs on any network: an active network chip or search doesn't count. */
+    showEmptyState: boolean
+    /** Each NFT names its network: several networks are listed together. */
+    shouldShowNetwork: boolean
+    listEmptyTitle: string
+    listEmptyBody: string
+    chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    selectedChainId: Nullable<ChainId>
+    setSelectedChainId: (chainId: Nullable<ChainId>) => void
     galleryLayout: GalleryLayout
     searchFilter: string
     debouncedSearchFilter: string
@@ -74,6 +92,7 @@ type UseAccountNftsResult = {
 }
 
 export const useAccountNfts = (): UseAccountNftsResult => {
+    const { t } = useLanguage()
     const account = useSelectedAccount()
     // The account's own chain: opt-in and acquisition order act here.
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
@@ -84,6 +103,18 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         chain: { chainId: scope.chainId, capability: 'manageAssets' },
     })
     const canOptIn = canSign && canManageAssets
+    const isMultiChain = sources.length > 1
+    // Shared with Overview and History, so a chip picked there carries here;
+    // a chain the account holds no NFTs on reads as All.
+    const selectedChainId =
+        useSelectedNetworkSource(sources)?.scope.chainId ?? null
+    const setSelectedChainId = useAssetListViewStore(
+        state => state.setSelectedChainId,
+    )
+    const chainFilterOptions = useAccountChainFilterOptions(
+        sources,
+        'nft_network_filter',
+    )
     const [searchFilter, setSearchFilter] = useState('')
 
     const sortMode = useCollectiblePreferencesStore(
@@ -97,6 +128,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
     const showWatchAccounts = useCollectiblePreferencesStore(
         state => state.showWatchAccounts,
+    )
+    const showSuspicious = useCollectiblePreferencesStore(
+        state => state.showSuspicious,
     )
     const setSortMode = useCollectiblePreferencesStore(
         state => state.setCollectibleSortMode,
@@ -120,6 +154,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
                 <AddAssetContent
                     variant='collectible'
                     chainId={scope.chainId}
+                    isMultiChain={isMultiChain}
                 />
             ),
             options: {
@@ -128,7 +163,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, scope.chainId])
+    }, [requestBottomSheet, scope.chainId, isMultiChain])
 
     const openFilterSheet = useCallback(() => {
         void requestBottomSheet<void>({
@@ -205,10 +240,21 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
         includeZeroBalance: showOptedIn,
+        includeSuspicious: showSuspicious,
     })
 
+    // Every network is read and the chip narrows in memory, so the gallery
+    // can tell "nothing on this network" apart from "no NFTs at all".
+    const networkRows = useMemo(
+        () =>
+            selectedChainId === null
+                ? rows
+                : rows.filter(row => row.scope.chainId === selectedChainId),
+        [rows, selectedChainId],
+    )
+
     const collectibles = useMemo(() => {
-        if (sortMode !== 'recentlyAdded') return rows
+        if (sortMode !== 'recentlyAdded') return networkRows
 
         // A row with no known order is newer than the chain's view: holdings
         // mirror the node, so only a just-acquired asset can be missing from
@@ -221,7 +267,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             toScopeKey(row.scope) === ownScopeKey
                 ? acquisitionOrder.get(row.assetId)
                 : undefined
-        return [...rows].sort((a, b) => {
+        return [...networkRows].sort((a, b) => {
             const aOrder = orderOf(a)
             const bOrder = orderOf(b)
             if (aOrder === bOrder) return 0
@@ -229,7 +275,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             if (bOrder === undefined) return 1
             return bOrder - aOrder
         })
-    }, [rows, sortMode, acquisitionOrder, scope])
+    }, [networkRows, sortMode, acquisitionOrder, scope])
 
     const handlePress = useCallback(
         (item: AccountCollectibleLiteRow) => {
@@ -252,9 +298,11 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     // freshly imported account dropped the user mid-list.
     const viewRequestKey = [
         sources.map(source => source.address).join(','),
+        selectedChainId ?? '',
         sortMode,
         debouncedSearchFilter,
         showOptedIn,
+        showSuspicious,
         // recentlyAdded is ordered by a separate query, whose order arrives
         // after the rows: the map landing is its own reorder.
         sortMode === 'recentlyAdded' ? acquisitionOrder.size : '',
@@ -290,6 +338,13 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         }
     }, [galleryLayout])
 
+    const isNetworkEmpty =
+        selectedChainId !== null && !debouncedSearchFilter.length
+    const selectedChainName =
+        selectedChainId === null
+            ? ''
+            : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
+
     return {
         collectibles,
         collectibleCount: collectibles.length,
@@ -297,6 +352,20 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         isRefreshing,
         hasAccount: account !== null,
         canOptIn,
+        isMultiChain,
+        showEmptyState: !isPending && rows.length === 0 && !searchFilter.length,
+        shouldShowNetwork: isMultiChain && selectedChainId === null,
+        listEmptyTitle: isNetworkEmpty
+            ? t('account_details.nfts.network_empty_title')
+            : t('account_details.nfts.nomatch_title'),
+        listEmptyBody: isNetworkEmpty
+            ? t('account_details.nfts.network_empty_body', {
+                  chain: selectedChainName,
+              })
+            : t('account_details.nfts.nomatch_body'),
+        chainFilterOptions,
+        selectedChainId,
+        setSelectedChainId,
         galleryLayout,
         searchFilter,
         debouncedSearchFilter,

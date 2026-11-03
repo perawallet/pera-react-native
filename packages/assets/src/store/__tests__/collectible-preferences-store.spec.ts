@@ -70,12 +70,14 @@ describe('useCollectiblePreferencesStore', () => {
             result.current.setGalleryLayout('list')
             result.current.setShowOptedIn(true)
             result.current.setShowWatchAccounts(true)
+            result.current.setShowSuspicious(true)
         })
 
         expect(result.current.collectibleSortMode).toBe('recentlyAdded')
         expect(result.current.galleryLayout).toBe('list')
         expect(result.current.showOptedIn).toBe(true)
         expect(result.current.showWatchAccounts).toBe(true)
+        expect(result.current.showSuspicious).toBe(true)
     })
 
     test('resetState restores the titleAsc/grid defaults with showOptedIn on', async () => {
@@ -88,6 +90,7 @@ describe('useCollectiblePreferencesStore', () => {
             result.current.setGalleryLayout('list')
             result.current.setShowOptedIn(false)
             result.current.setShowWatchAccounts(true)
+            result.current.setShowSuspicious(true)
         })
         act(() => {
             result.current.resetState()
@@ -98,6 +101,7 @@ describe('useCollectiblePreferencesStore', () => {
             galleryLayout: 'grid',
             showOptedIn: true,
             showWatchAccounts: false,
+            showSuspicious: false,
         })
     })
 

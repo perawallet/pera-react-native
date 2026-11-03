@@ -17,6 +17,9 @@ import { Decimal } from 'decimal.js'
 import type { PWFlatListRef } from '@components/core'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
+import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 import { useAccountNfts } from '../useAccountNfts'
 
 const mockNavigate = vi.fn()
@@ -99,6 +102,7 @@ const mockSetShowOptedIn = vi.fn()
 let mockSortMode = 'titleAsc'
 let mockGalleryLayout = 'grid'
 let mockShowOptedIn = false
+let mockShowSuspicious = false
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
@@ -112,6 +116,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                 collectibleSortMode: mockSortMode,
                 galleryLayout: mockGalleryLayout,
                 showOptedIn: mockShowOptedIn,
+                showSuspicious: mockShowSuspicious,
                 setCollectibleSortMode: mockSetCollectibleSortMode,
                 setGalleryLayout: mockSetGalleryLayout,
                 setShowOptedIn: mockSetShowOptedIn,
@@ -122,7 +127,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 // Filtering, searching and ordering now happen in SQL — see the
 // `getAccountCollectiblesLite` suite in the accounts package for those. These
 // tests cover what the hook still owns: query wiring and the acquisition-order sort.
-const makeRow = (assetId: string, title: string) => ({
+const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' }
+const ETHEREUM_MAINNET = { chainId: 'ethereum', networkId: 'mainnet' }
+
+const makeRow = (assetId: string, title: string, scope = ALGORAND_MAINNET) => ({
     assetId,
     amount: new Decimal(1),
     decimals: 0,
@@ -135,7 +143,7 @@ const makeRow = (assetId: string, title: string) => ({
     peraMetadataJson: null,
     title,
     collectionName: null,
-    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    scope,
 })
 
 const createDeferred = () => {
@@ -180,7 +188,9 @@ describe('useAccountNfts', () => {
         mockSortMode = 'titleAsc'
         mockGalleryLayout = 'grid'
         mockShowOptedIn = false
+        mockShowSuspicious = false
         mockUseSelectedAccount.mockReturnValue(mockAccount)
+        useAssetListViewStore.setState({ selectedChainId: null })
         mockUseCanSignWith.mockReturnValue(true)
         mockUseHoldingAcquisitionOrderQuery.mockReturnValue({
             acquisitionOrder: new Map<string, number>(),
@@ -224,6 +234,21 @@ describe('useAccountNfts', () => {
                 expect.objectContaining({ includeZeroBalance: true }),
             )
         })
+
+        it.each([false, true])(
+            'passes the suspicious preference (%s) down so SQL narrows the read',
+            showSuspicious => {
+                mockShowSuspicious = showSuspicious
+                renderHook(() => useAccountNfts())
+
+                expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
+                    expect.anything(),
+                    expect.objectContaining({
+                        includeSuspicious: showSuspicious,
+                    }),
+                )
+            },
+        )
 
         it('passes the search term down so SQL narrows the read', () => {
             const { result } = renderHook(() => useAccountNfts())
@@ -721,6 +746,111 @@ describe('useAccountNfts', () => {
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.canOptIn).toBe(false)
+        })
+    })
+
+    describe('networks', () => {
+        const ETH_ADDRESS = `0x${'a'.repeat(40)}`
+        const twoChainAccount = {
+            ...mockAccount,
+            chains: {
+                algorand: { address: ACCOUNT_ADDRESS },
+                ethereum: { address: ETH_ADDRESS },
+            },
+        }
+        const algorandRow = makeRow('100', 'Algo NFT')
+        const ethereumRow = makeRow('0xabc:1', 'Eth NFT', ETHEREUM_MAINNET)
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            mockUseSelectedAccount.mockReturnValue(twoChainAccount)
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [algorandRow, ethereumRow],
+                isPending: false,
+            })
+        })
+
+        it('keeps the Algorand-only gallery for an account on one network', () => {
+            mockUseSelectedAccount.mockReturnValue(mockAccount)
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.isMultiChain).toBe(false)
+            expect(result.current.chainFilterOptions).toEqual([])
+            expect(result.current.shouldShowNetwork).toBe(false)
+        })
+
+        it('offers a chip per network and names each NFT network on All', () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.isMultiChain).toBe(true)
+            expect(
+                result.current.chainFilterOptions.map(option => option.value),
+            ).toEqual([null, 'algorand', 'ethereum'])
+            expect(result.current.collectibles).toEqual([
+                algorandRow,
+                ethereumRow,
+            ])
+            expect(result.current.shouldShowNetwork).toBe(true)
+        })
+
+        it('narrows the gallery to the picked network and drops the badge', () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            act(() => result.current.setSelectedChainId('ethereum'))
+
+            expect(result.current.selectedChainId).toBe('ethereum')
+            expect(result.current.collectibles).toEqual([ethereumRow])
+            expect(result.current.shouldShowNetwork).toBe(false)
+        })
+
+        it('keeps the chips up on a picked network with no NFTs', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [algorandRow],
+                isPending: false,
+            })
+            const { result } = renderHook(() => useAccountNfts())
+
+            act(() => result.current.setSelectedChainId('ethereum'))
+
+            expect(result.current.collectibles).toEqual([])
+            expect(result.current.showEmptyState).toBe(false)
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.network_empty_title',
+            )
+        })
+
+        it('shows the welcome state when no network holds an NFT, whatever chip is picked', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [],
+                isPending: false,
+            })
+            const { result } = renderHook(() => useAccountNfts())
+
+            act(() => result.current.setSelectedChainId('ethereum'))
+
+            expect(result.current.showEmptyState).toBe(true)
+        })
+
+        it('reads a chip picked for a network without NFTs as All', () => {
+            mockUseSelectedAccount.mockReturnValue(mockAccount)
+            useAssetListViewStore.setState({ selectedChainId: 'ethereum' })
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.selectedChainId).toBeNull()
+        })
+
+        it('reads a search miss as a search miss, not an empty network', () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            act(() => {
+                result.current.setSelectedChainId('ethereum')
+                result.current.setSearchFilter('nothing')
+            })
+
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.nomatch_title',
+            )
         })
     })
 })

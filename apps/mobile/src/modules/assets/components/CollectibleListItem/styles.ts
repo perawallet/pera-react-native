@@ -49,4 +49,7 @@ export const useStyles = makeStyles(theme => ({
     subtitle: {
         color: theme.colors.textGray,
     },
+    network: {
+        marginTop: theme.spacing.xxs,
+    },
 }))

@@ -27,8 +27,10 @@ const h = vi.hoisted(() => ({
     state: {
         showOptedIn: false,
         showWatchAccounts: true,
+        showSuspicious: false,
         setShowOptedIn: vi.fn(),
         setShowWatchAccounts: vi.fn(),
+        setShowSuspicious: vi.fn(),
     },
 }))
 
@@ -42,6 +44,7 @@ describe('useNftFilterContent', () => {
         vi.clearAllMocks()
         h.state.showOptedIn = false
         h.state.showWatchAccounts = true
+        h.state.showSuspicious = false
         useRemoteConfigStore.getState().resetState()
         vi.mocked(useSelectedAccount).mockReturnValue(ALGORAND_ACCOUNT as never)
     })
@@ -87,5 +90,17 @@ describe('useNftFilterContent', () => {
 
         expect(h.state.setShowOptedIn).toHaveBeenCalledWith(true)
         expect(h.state.setShowWatchAccounts).toHaveBeenCalledWith(true)
+    })
+
+    it('hides suspicious NFTs until the user commits the toggle', () => {
+        const { result } = renderHook(() => useNftFilterContent())
+
+        expect(result.current.showSuspicious).toBe(false)
+
+        act(() => result.current.handleToggleSuspicious())
+        expect(h.state.setShowSuspicious).not.toHaveBeenCalled()
+
+        act(() => result.current.commitChanges())
+        expect(h.state.setShowSuspicious).toHaveBeenCalledWith(true)
     })
 })

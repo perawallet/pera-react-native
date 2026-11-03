@@ -195,6 +195,48 @@ describe('account holdings queries', () => {
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2'])
         })
 
+        describe('suspicious collectibles', () => {
+            beforeEach(async () => {
+                const suspicious = collectible('2', 'Banana', 'Fruit Club')
+                await upsertAssets({
+                    db,
+                    scope: MAINNET_SCOPE,
+                    items: [
+                        {
+                            ...suspicious,
+                            peraMetadata: {
+                                ...suspicious.peraMetadata!,
+                                verificationTier: 'suspicious',
+                            },
+                        },
+                    ],
+                })
+            })
+
+            it('keeps them by default', async () => {
+                const rows = await getAccountCollectiblesLite({
+                    db,
+                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                })
+
+                expect(rows.map(r => r.assetId).sort()).toEqual([
+                    '10',
+                    '2',
+                    '30',
+                ])
+            })
+
+            it('excludes them when they are hidden', async () => {
+                const rows = await getAccountCollectiblesLite({
+                    db,
+                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                    includeSuspicious: false,
+                })
+
+                expect(rows.map(r => r.assetId).sort()).toEqual(['10', '30'])
+            })
+        })
+
         it('surfaces title and collection name without parsing in JS', async () => {
             const rows = await getAccountCollectiblesLite({
                 db,
