@@ -2886,6 +2886,7 @@ describe('SyncService', () => {
                             chainId === 'ethereum' && status === 'confirmed'
                                 ? 1
                                 : 0,
+                        progressed: 0,
                         failed:
                             chainId === 'ethereum' && status === 'failed'
                                 ? 1
@@ -2896,6 +2897,7 @@ describe('SyncService', () => {
                 mockReconcileOpenSubmissions.mockResolvedValue({
                     probed: 0,
                     confirmed: 0,
+                    progressed: 0,
                     failed: 0,
                 })
             const startAfterFirstPass = async () => {
