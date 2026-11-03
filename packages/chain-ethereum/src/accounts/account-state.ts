@@ -16,14 +16,19 @@ import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    AccountChangeSignal,
-    AccountsChainAdapter,
-    AccountStateSnapshot,
+import {
+    getAccountHeldAssets,
+    type AccountChangeSignal,
+    type AccountsChainAdapter,
+    type AccountStateSnapshot,
+    type UnrefreshedHoldings,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
     isPeraNetworkError,
+    isPeraServiceUnavailableError,
+    logger,
+    PeraServiceUnavailableError,
     type Optional,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -69,8 +74,82 @@ type PendingRead = {
     reject: (error: unknown) => void
 }
 
-// Undefined when the scope has no NFT service: nothing to read or keep.
+// Undefined when the scope has no NFT service: nothing was read.
 type NftRead = Optional<PromiseSettledResult<NftHoldingsRead>>
+
+/**
+ * Stored rows this read had no source for: a scope without the token list
+ * can't say which tokens an account holds beyond the ones the user added, and
+ * one without the NFT service (or whose NFT read failed) can't list its NFTs.
+ * Kept as they are, so a Pera backend that is off doesn't empty the account.
+ */
+// One entry per account whose read skipped what only the token list gives.
+const backfillKey = (scope: ChainScope, address: string): string =>
+    `${scope.chainId}/${scope.networkId}/${address.toLowerCase()}`
+
+const unrefreshedOf = (
+    scope: ChainScope,
+    services: ReadonlySet<string>,
+    nativeAssetId: string,
+    readTokenIds: ReadonlySet<string>,
+    nfts: NftRead,
+): Optional<UnrefreshedHoldings> => {
+    const missed: UnrefreshedHoldings[] = []
+    if (!services.has(ASSETS_SERVICE)) {
+        missed.push({
+            includes: assetId =>
+                assetId !== nativeAssetId &&
+                !isEvmNftAssetId(assetId) &&
+                !readTokenIds.has(
+                    isAddress(assetId) ? getAddress(assetId) : assetId,
+                ),
+            error: new PeraServiceUnavailableError(scope, ASSETS_SERVICE),
+        })
+    }
+    if (!services.has(NFTS_SERVICE)) {
+        missed.push({
+            includes: isEvmNftAssetId,
+            error: new PeraServiceUnavailableError(scope, NFTS_SERVICE),
+        })
+    } else if (nfts?.status === 'rejected') {
+        // A failed NFT read keeps the stored NFTs rather than emptying the
+        // gallery; ERC-20 rows still follow this read.
+        missed.push({ includes: isEvmNftAssetId, error: nfts.reason })
+    }
+    // A genuine failure outranks a service the scope never had.
+    const cause =
+        missed.find(m => !isPeraServiceUnavailableError(m.error)) ?? missed[0]
+    return cause
+        ? {
+              includes: assetId => missed.some(m => m.includes(assetId)),
+              error: cause.error,
+          }
+        : undefined
+}
+
+// Without the token list the stored rows are the only record of which tokens an
+// account holds, and they name the contracts the RPC can read. A failed read
+// leaves them to `unrefreshedOf`, which keeps them as they are.
+const storedTokenIdsOf = async (
+    scope: ChainScope,
+    reads: readonly PendingRead[],
+    nativeAssetId: string,
+): Promise<string[]> => {
+    try {
+        const held = await getAccountHeldAssets({
+            sources: reads.map(({ address }) => ({ address, scope })),
+        })
+        return held
+            .map(row => row.assetId)
+            .filter(id => id !== nativeAssetId && !isEvmNftAssetId(id))
+    } catch (error) {
+        logger.warn('Stored token ids could not be read; keeping the rows', {
+            scope,
+            error,
+        })
+        return []
+    }
+}
 
 const toSnapshot = (
     nativeAssetId: string,
@@ -79,6 +158,7 @@ const toSnapshot = (
     pending: number,
     blockNumber: bigint,
     nfts: NftRead,
+    unrefreshedHoldings: Optional<UnrefreshedHoldings>,
 ): AccountStateSnapshot => {
     const baseUnits = new Decimal(wei.toString())
     const tokenHoldings = [...tokens]
@@ -96,14 +176,7 @@ const toSnapshot = (
             ...(nfts?.status === 'fulfilled' ? nfts.value.holdings : []),
         ],
         observedRound: Number(blockNumber),
-        // A failed NFT read keeps the stored NFTs rather than emptying the
-        // gallery; ERC-20 rows still follow this read.
-        ...(nfts?.status === 'rejected' && {
-            unrefreshedHoldings: {
-                includes: isEvmNftAssetId,
-                error: nfts.reason,
-            },
-        }),
+        ...(unrefreshedHoldings && { unrefreshedHoldings }),
     }
 }
 
@@ -140,12 +213,20 @@ const readBatch = async (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
+    backfillAccounts: Set<string>,
     scope: ChainScope,
     reads: PendingRead[],
 ): Promise<void> => {
     const client = createEvmClient(scope, ctx, chain)
     const services = ctx.getPeraBackend(scope).services
     const hasWhitelist = services.has(ASSETS_SERVICE)
+    // Reads without the token list skip what only it lists while the change
+    // cursor moves on, so each account is backfilled once the list is back.
+    if (!hasWhitelist) {
+        reads.forEach(read =>
+            backfillAccounts.add(backfillKey(scope, read.address)),
+        )
+    }
     // Settled per address, so one account's NFT outage never fails another's
     // read, nor its own balances.
     const nftReads: Promise<NftRead[]> = services.has(NFTS_SERVICE)
@@ -157,7 +238,9 @@ const readBatch = async (
         : Promise.resolve(reads.map(() => undefined))
     const [blockNumber, tokenIds] = await Promise.all([
         client.getBlockNumber(),
-        hasWhitelist ? listedTokenIds(scope) : [],
+        hasWhitelist
+            ? listedTokenIds(scope)
+            : storedTokenIdsOf(scope, reads, chain.nativeAsset.assetId),
     ])
     // Added tokens off the list need their balances read too; the syncer
     // shows them at zero. Checksummed, so a listed token that was also added
@@ -201,15 +284,29 @@ const readBatch = async (
             read.reject(nonce.reason)
             return
         }
+        // Cleared by this account's own read with the list, whatever the
+        // other accounts or batches of the scope do.
+        if (hasWhitelist)
+            backfillAccounts.delete(backfillKey(scope, read.address))
         const [latest, pending] = nonce.value
+        const holder = balances.get(getAddress(read.address))!
         read.resolve(
             toSnapshot(
                 chain.nativeAsset.assetId,
-                balances.get(getAddress(read.address))!,
+                holder,
                 latest,
                 pending,
                 blockNumber,
                 nfts[index],
+                unrefreshedOf(
+                    scope,
+                    services,
+                    chain.nativeAsset.assetId,
+                    // A token whose balance call failed is absent here, so its
+                    // stored row is kept rather than deleted as sold.
+                    new Set(holder.tokens.keys()),
+                    nfts[index],
+                ),
             ),
         )
     })
@@ -219,6 +316,7 @@ const coalescedAccountReads = (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
+    backfillAccounts: Set<string>,
     windowMs: number,
 ): EthereumAccountStateOps['fetchAccountState'] => {
     const batches = new Map<
@@ -229,11 +327,16 @@ const coalescedAccountReads = (
         const batch = batches.get(key)
         batches.delete(key)
         if (!batch) return
-        readBatch(ctx, chain, listedTokenIds, batch.scope, batch.reads).catch(
-            (error: unknown) => {
-                batch.reads.forEach(read => read.reject(error))
-            },
-        )
+        readBatch(
+            ctx,
+            chain,
+            listedTokenIds,
+            backfillAccounts,
+            batch.scope,
+            batch.reads,
+        ).catch((error: unknown) => {
+            batch.reads.forEach(read => read.reject(error))
+        })
     }
     return (address, scope, hint) =>
         new Promise<AccountStateSnapshot>((resolve, reject) => {
@@ -262,6 +365,11 @@ const coalescedAccountReads = (
 const isRefusedCredential = (error: unknown): boolean =>
     isPeraNetworkError(error) && (error.status === 401 || error.status === 403)
 
+// A full account pass on every block would hammer a public RPC on a fast chain;
+// the fallback only runs when block following is down, so a slow refresh is the
+// cheaper failure.
+const HEAD_FOLLOWING_MIN_INTERVAL_MS = 30_000
+
 const readHeadSignal = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -272,26 +380,44 @@ const readHeadSignal = async (
         await createEvmClient(scope, ctx, chain).getBlockNumber(),
     )
     if (cursor === null) return { changed: true, cursor: head }
-    // A lagging node can report a head behind the cursor; never move it back.
-    return { changed: head > cursor, cursor: Math.max(head, cursor) }
+    const minBlocks = Math.ceil(
+        HEAD_FOLLOWING_MIN_INTERVAL_MS / chain.row.blockTimeMs,
+    )
+    // The cursor stays put until the gap is due, so it keeps growing; a lagging
+    // node's head behind the cursor lands here too and never moves it back.
+    if (head - cursor < minBlocks) return { changed: false, cursor }
+    return { changed: true, cursor: head }
 }
 
 const fetchChangeSignal = (
     ctx: ChainContext,
     chain: EvmChain,
+    backfillAccounts: ReadonlySet<string>,
 ): EthereumAccountStateOps['fetchChangeSignal'] => {
     // A refused key or integrity token won't fix itself before a restart, so
     // the scope stops asking and follows the RPC head instead.
     const refusedScopes = new Set<string>()
     return async (addresses, scope, cursor) => {
         const key = `${scope.chainId}/${scope.networkId}`
-        if (
-            refusedScopes.has(key) ||
-            !ctx.getPeraBackend(scope).services.has(BLOCK_FOLLOWING_SERVICE)
-        ) {
-            // Plain JSON-RPC can't say which addresses a block touched, so
-            // any new block counts as a change.
+        // Plain JSON-RPC can't say which addresses a block touched, so the
+        // head stands in for them, paced by readHeadSignal.
+        if (refusedScopes.has(key)) {
             return readHeadSignal(ctx, chain, scope, cursor)
+        }
+        const { services } = ctx.getPeraBackend(scope)
+        if (!services.has(BLOCK_FOLLOWING_SERVICE)) {
+            return readHeadSignal(ctx, chain, scope, cursor)
+        }
+        // Reads made without the token list left holdings behind; with it
+        // back, report a change until one pass has caught them up.
+        if (
+            services.has(ASSETS_SERVICE) &&
+            cursor !== null &&
+            addresses.some(address =>
+                backfillAccounts.has(backfillKey(scope, address)),
+            )
+        ) {
+            return { changed: true, cursor }
         }
         let answer: ShouldRefreshResponse
         try {
@@ -313,10 +439,10 @@ const fetchChangeSignal = (
         if (!answer.refresh && cursor !== null) {
             return { changed: false, cursor }
         }
-        // The backend omits round when it fails open, so the cursor stays
-        // put, or seeds from the head on a never-synced scope.
-        if (cursor !== null) return { changed: true, cursor }
-        return readHeadSignal(ctx, chain, scope, null)
+        // The backend omits round when it fails open, which is as good as it
+        // being down: follow the paced head, which also seeds a never-synced
+        // scope.
+        return readHeadSignal(ctx, chain, scope, cursor)
     }
 }
 
@@ -340,17 +466,19 @@ export const createEthereumAccountStateOps = (
     } = {},
 ): EthereumAccountStateOps => {
     const tokenIds = listedTokenIds(listedTokens)
+    const backfillAccounts = new Set<string>()
     return {
         chainId: chain.row.id,
         fetchAccountState: coalescedAccountReads(
             ctx,
             chain,
             tokenIds,
+            backfillAccounts,
             readWindowMs,
         ),
         accountExists: (address, scope) =>
             readNativeFootprint(ctx, chain, address, scope),
         checkActivity: createEvmActivityCheck(ctx, chain, tokenIds),
-        fetchChangeSignal: fetchChangeSignal(ctx, chain),
+        fetchChangeSignal: fetchChangeSignal(ctx, chain, backfillAccounts),
     }
 }

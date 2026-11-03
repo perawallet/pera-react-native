@@ -18,17 +18,11 @@ import { peraLinkChainFailure } from './pera-link-chain'
 import { resolveChainDeeplink } from './resolve'
 
 /**
- * A switched-off chain, or a Pera link's unknown `chain=`, claimed the link: the
- * caller refuses it with a reason rather than calling it "not a link".
+ * A Pera link's unknown `chain=` claimed the link: the caller refuses it with
+ * a reason rather than calling it "not a link".
  */
-export const isUnsupportedChainLink = (url: string): boolean => {
-    if (peraLinkChainFailure(url)) return true
-    const resolution = resolveChainDeeplink(url)
-    return (
-        resolution.status === 'failed' &&
-        resolution.reason === 'chain-unavailable'
-    )
-}
+export const isUnsupportedChainLink = (url: string): boolean =>
+    peraLinkChainFailure(url) !== undefined
 
 /**
  * The chain that recognised the link but refuses what it asks for (an EIP-681

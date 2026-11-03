@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "Uygulama başlatılamadı",
-            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların Algorand blok zincirinde güvende.",
+            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların blok zincirinde güvende.",
             "retry": "Tekrar dene",
             "keystore": {
                 "title": "Cüzdan verisi hatası",
-                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların Algorand blok zincirinde güvende."
+                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların blok zincirinde güvende."
             }
         }
     },
@@ -208,7 +208,7 @@
     "address_actions": {
         "title": "Taranan hesap adresi",
         "send_transaction": "İşlem gönder",
-        "send_transaction_subtitle": "Bu adrese ALGO veya varlık gönder",
+        "send_transaction_subtitle": "Bu adrese varlık gönder",
         "watch_address": "Bir adresi izle",
         "watch_address_subtitle": "Yalnızca izleme hesabı olarak ekle",
         "add_contact": "Yeni kişi ekle",
@@ -425,7 +425,7 @@
         },
         "no_balance": {
             "welcome": "Pera’ya hoş geldin!",
-            "get_started": "Başlamak için ALGO yatır",
+            "get_started": "Başlamak için kripto yatır",
             "buy": "Kripto satın al",
             "receive": "Al",
             "more": "Daha fazla"
@@ -1212,6 +1212,14 @@
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
+            },
+            "timeout": {
+                "title": "Ağ yanıt vermedi",
+                "body": "Ağ zamanında yanıt vermedi. Tekrar dene."
+            },
+            "network_unreachable": {
+                "title": "Ağa ulaşılamıyor",
+                "body": "Ağa bağlanılamadı. Bağlantını kontrol et veya biraz sonra tekrar dene."
             },
             "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan.",
             "replaced_transaction_confirmed": {
@@ -2418,7 +2426,7 @@
             "recover_passphrase_title": "Passphrase ile kurtar",
             "recover_passphrase_description": "Passphrase kullanarak bir cüzdanı kurtar",
             "recover_qr_title": "QR kod ile kurtar",
-            "recover_qr_description": "QR kod kullanarak bir Algorand cüzdanını kurtar",
+            "recover_qr_description": "QR kod kullanarak bir cüzdanı kurtar",
             "private_key_title": "Özel anahtarı içe aktar",
             "private_key_description": "Özel anahtarından bir hesap ekleyin",
             "pair_ledger_title": "Ledger ile eşleştir",
@@ -3064,7 +3072,7 @@
         },
         "processing": {
             "title": "İşlem gönderiliyor",
-            "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
+            "subtitle": "İşlemin {{network}} ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
             "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
             "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
@@ -3073,7 +3081,7 @@
         "success": {
             "title": "İşlem gerçekleşti",
             "asset_transferred_title": "Varlık transfer edildi",
-            "subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "subtitle": "İşlemin {{network}} ağı tarafından başarıyla alındı",
             "pending_title": "İşlem gönderildi",
             "pending_subtitle": "İşlemin {{network}} ağına gönderildi ve onay bekliyor.",
             "view_in_explorer": "İşlem detayını Pera Explorer’da gör",

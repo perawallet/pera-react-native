@@ -22,10 +22,7 @@ import {
     type ChainFamily,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapabilityCheck,
-    useSwitchedOffChainIds,
-} from '@perawallet/wallet-core-chain-shared'
+import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
@@ -87,7 +84,6 @@ export const useAccountNetworks = ({
     const { enablingChainId: addingChainId, enableChain } =
         useEnableChainAction(t('account_options.add_network_error'))
     const checkCapability = useChainCapabilityCheck()
-    const switchedOff = useSwitchedOffChainIds()
     const accounts = useAllAccounts()
     const account = accounts.find(a => a.id === snapshot.id) ?? snapshot
 
@@ -95,13 +91,8 @@ export const useAccountNetworks = ({
 
     // Every family the custody reaches, unlike receive's picker: this sheet is where the user adds a new family on purpose.
     const options = useMemo(
-        () =>
-            accountChainOptions(
-                account,
-                chainId => !switchedOff.includes(chainId),
-                'all',
-            ),
-        [account, switchedOff],
+        () => accountChainOptions(account, () => true, 'all'),
+        [account],
     )
     const addressByChain = useMemo(
         () => new Map(options.map(option => [option.chainId, option.address])),
@@ -134,10 +125,9 @@ export const useAccountNetworks = ({
                 account,
                 getProvider()
                     .chains.list()
-                    .map(({ id }) => id)
-                    .filter(chainId => !switchedOff.includes(chainId)),
+                    .map(({ id }) => id),
             ),
-        [account, switchedOff],
+        [account],
     )
     const unreachableChainsNote = unreachableChainsNoteKey
         ? t(unreachableChainsNoteKey)

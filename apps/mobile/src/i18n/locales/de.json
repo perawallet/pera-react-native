@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "App-Start fehlgeschlagen",
-            "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher.",
+            "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Blockchain sicher.",
             "retry": "Erneut versuchen",
             "keystore": {
                 "title": "Wallet-Datenfehler",
-                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher."
+                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Blockchain sicher."
             }
         }
     },
@@ -208,7 +208,7 @@
     "address_actions": {
         "title": "Gescannte Kontoadresse",
         "send_transaction": "Transaktion senden",
-        "send_transaction_subtitle": "ALGO oder Assets an diese Adresse senden",
+        "send_transaction_subtitle": "Assets an diese Adresse senden",
         "watch_address": "Adresse beobachten",
         "watch_address_subtitle": "Als Beobachtungskonto hinzufügen",
         "add_contact": "Neuen Kontakt hinzufügen",
@@ -425,7 +425,7 @@
         },
         "no_balance": {
             "welcome": "Willkommen!",
-            "get_started": "Zahle ALGO ein, um zu starten",
+            "get_started": "Zahle Krypto ein, um zu starten",
             "buy": "Krypto kaufen",
             "receive": "Empfangen",
             "more": "Mehr"
@@ -1204,6 +1204,14 @@
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
+            },
+            "timeout": {
+                "title": "Netzwerk antwortet nicht",
+                "body": "Das Netzwerk hat nicht rechtzeitig geantwortet. Bitte versuche es erneut."
+            },
+            "network_unreachable": {
+                "title": "Netzwerk nicht erreichbar",
+                "body": "Wir konnten keine Verbindung zum Netzwerk herstellen. Prüfe deine Verbindung oder versuche es in einem Moment erneut."
             },
             "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x.",
             "replaced_transaction_confirmed": {
@@ -2410,7 +2418,7 @@
             "recover_passphrase_title": "Mit Passphrase wiederherstellen",
             "recover_passphrase_description": "Wallet mithilfe einer Passphrase wiederherstellen",
             "recover_qr_title": "Mit QR-Code wiederherstellen",
-            "recover_qr_description": "Algorand-Wallet mit einem QR-Code wiederherstellen",
+            "recover_qr_description": "Wallet mit einem QR-Code wiederherstellen",
             "private_key_title": "Privaten Schlüssel importieren",
             "private_key_description": "Konto über seinen privaten Schlüssel hinzufügen",
             "pair_ledger_title": "Mit Ledger koppeln",
@@ -3056,7 +3064,7 @@
         },
         "processing": {
             "title": "Transaktion wird gesendet",
-            "subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet.",
+            "subtitle": "Deine Transaktion wird vom Netzwerk {{network}} verarbeitet.",
             "title_hardware": "Verbindung mit deinem Ledger-Gerät wird hergestellt",
             "subtitle_hardware": "Verbindung zu {{deviceName}} wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
             "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
@@ -3065,7 +3073,7 @@
         "success": {
             "title": "Transaktion verarbeitet",
             "asset_transferred_title": "Asset übertragen",
-            "subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
+            "subtitle": "Deine Transaktion wurde erfolgreich vom Netzwerk {{network}} empfangen",
             "pending_title": "Transaktion gesendet",
             "pending_subtitle": "Deine Transaktion wurde an das Netzwerk {{network}} gesendet und wartet auf Bestätigung.",
             "view_in_explorer": "Transaktionsdetails im Pera Explorer anzeigen",

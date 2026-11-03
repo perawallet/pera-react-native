@@ -70,6 +70,48 @@ What it does not defend: a script running in the extension's own origin while th
 — a compromised dependency, XSS in an approval page, an open devtools session — which can read the
 session key from `chrome.storage.session` and use it directly.
 
+## EVM
+
+### The secp256k1 seam
+
+Only the keystore shim in `extensions/provider/src/keystore/shims/secp256k1` holds secp256k1 private
+key bytes. `pera/secp256k1-library-seam` fails any other import of `@noble/secp256k1`, `@scure/bip32`
+or `@noble/curves/secp256k1`, and `pera/single-copy-packages` keeps the lockfile to one `ox` and one
+`@noble/curves` and `@noble/hashes` per major, so a dependency bump can't slip a second implementation
+into the bundle. Chain code reaches a key only through the KMS's `sign`, in the `pera.accounts` access
+domain (`SIGNING_ACCESS_DOMAIN`).
+
+viem hashes, serializes, recovers addresses and speaks JSON-RPC. It never holds a key: nothing imports
+`viem/accounts`. A build whose `CHAINS` lists no EVM chain leaves viem out of the bundle; see
+[Chains](CHAINS.md#build-knobs).
+
+### What gets signed
+
+The key store signs only the 32 bytes Ethereum's planner hashed from the transaction or message it
+parsed out of the request (`packages/chain-ethereum/src/signing/digests.ts`), never a hash the request
+carries. Before hashing, the planner refuses a transaction whose EIP-155 chain id, or typed data whose
+domain chain id, isn't the request's network, since a signature for another chain would be valid
+there. The message signer supports `personal_sign` and `eth_signTypedData_v4` only, so `eth_sign`,
+which signs a caller's raw hash, is refused. After signing, the planner recovers the signer from the
+signature and refuses a result that doesn't recover to the sender. How a request's summary is proven
+from its calldata is in [Architecture](ARCHITECTURE.md#each-chain-reviews-its-own-requests).
+
+### RPC trust
+
+Each EVM network reads through one JSON-RPC URL fixed at build time (`<CHAIN>_<NET>_RPC_URL`), with
+no fallback and no certificate pinning: EVM chain modules declare no `pinnedHosts`. The RPC is trusted
+for what it reports (balances, nonces, gas and fee data, receipts, contract reads), so a wrong or
+malicious one can misreport balances and history, stall a send with a bad nonce, or fail it.
+
+It cannot move a signature to another chain or have the wallet sign anything but the transaction the
+review showed: the EIP-155 chain id comes from the chain table, not the RPC, and the planner hashes
+the reviewed transaction. A fee it inflates shows on the review, and the build refuses to sign past
+the max fee the user confirmed; see [EVM fees](EVM_FEES.md).
+
+A developer's endpoint override is checked before it applies: `checkEvmRpcChainId`
+(`packages/chain-ethereum/src/blockchain/utils/checkEvmRpcChainId.ts`) asks the URL for its chain id
+and rejects one serving another network, so a testnet can't be pointed at mainnet.
+
 ## Supply chain
 
 Review dependency updates carefully. Several layers of automated defence back that up.

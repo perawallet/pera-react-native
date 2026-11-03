@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+// Real English resources: these flows assert the copy the user reads, not keys.
+import '../i18n'
+
 import {
     afterAll,
     afterEach,
@@ -29,11 +32,13 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import i18n from 'i18next'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 import { useNavigation } from '@react-navigation/native'
 
 import { server } from '@test-utils/msw-server'
+import { navigationRef } from '@routes/navigationRef'
 import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -207,14 +212,17 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         // Spy on the submission so we can prove the pipeline reached
         // algod with a signed transaction.
-        const sendSpy = vi.fn(() =>
-            HttpResponse.json(
+        // The screen on show while algod receives the broadcast.
+        let screenAtBroadcast = ''
+        const sendSpy = vi.fn(() => {
+            screenAtBroadcast = document.body.textContent ?? ''
+            return HttpResponse.json(
                 {
                     txId: 'TESTTXID0000000000000000000000000000000000000000000000',
                 },
                 { status: 200 },
-            ),
-        )
+            )
+        })
         server.use(http.post('*/v2/transactions', sendSpy))
 
         renderSendConfirmationStack()
@@ -235,10 +243,18 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             },
             { timeout: 10_000 },
         )
-        expect(screen.getByText('send_funds.success.title')).toBeTruthy()
         expect(
-            screen.getByText('send_funds.success.view_in_explorer'),
+            screen.getByText(i18n.t('send_funds.success.title')),
         ).toBeTruthy()
+        expect(
+            screen.getByText(i18n.t('send_funds.success.view_in_explorer')),
+        ).toBeTruthy()
+        expect(screenAtBroadcast).toContain(
+            'Your transaction is being processed by the Algorand network.',
+        )
+        expect(screen.getByTestId('send_success').textContent).toContain(
+            'Your transaction was successfully received by the Algorand network',
+        )
 
         // Algod POST happened with the signed, grouped transaction.
         expect(sendSpy).toHaveBeenCalled()
@@ -464,8 +480,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const rejectSpy = vi.fn(() =>
             HttpResponse.json(
                 {
-                    message:
-                        'TransactionPool.Remember: transaction ABC: overspend',
+                    message: `TransactionPool.Remember: transaction ABC: overspend (account ${ALGO25_TEST_ADDRESS}, data {}, tried to spend {1000000})`,
                 },
                 { status: 400 },
             ),
@@ -504,7 +519,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         expectFlowEvents(analytics, 'sendFailed', 'algorand')
     })
 
-    it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces an error toast and returns to confirmation without reaching success', async () => {
+    it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces the status-unknown notice and leaves for History without reaching success', async () => {
         await seedAlgo25Sender()
         useSendFundsStore
             .getState()
@@ -512,6 +527,10 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
+        vi.spyOn(navigationRef, 'isReady').mockReturnValue(true)
+        const navigate = vi
+            .spyOn(navigationRef, 'navigate')
+            .mockImplementation(() => undefined)
 
         // A transport-level failure on the submit POST (dropped
         // connection, DNS, etc). The headless callback pipeline does not
@@ -546,13 +565,19 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     vi.mocked(Notifier.showNotification),
                 ).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.submission.unknown_outcome.title',
+                        title: i18n.t(
+                            'errors.submission.unknown_outcome.title',
+                        ),
                     }),
                 )
             },
             { timeout: 15_000 },
         )
         expect(screen.queryByTestId('pw-result-view')).toBeNull()
+        expect(navigate).toHaveBeenCalledWith(
+            'TabBar',
+            expect.objectContaining({ screen: 'Home' }),
+        )
     })
 
     it('Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure', async () => {
@@ -685,9 +710,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     vi.mocked(Notifier.showNotification),
                 ).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.signing.title',
+                        title: i18n.t('errors.signing.title'),
                         description: expect.stringContaining(
-                            'errors.kms.key_not_found',
+                            i18n.t('errors.kms.key_not_found'),
                         ),
                     }),
                 )
@@ -734,9 +759,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     vi.mocked(Notifier.showNotification),
                 ).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.signing.title',
+                        title: i18n.t('errors.signing.title'),
                         description: expect.stringContaining(
-                            'errors.signing.local_key_failed',
+                            i18n.t('errors.signing.local_key_failed'),
                         ),
                     }),
                 )

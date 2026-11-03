@@ -149,6 +149,18 @@ describe('useTransferFeeEstimateQuery', () => {
         expect(result.current.isPending).toBe(false)
     })
 
+    it('re-prices on refresh after a failed estimate', async () => {
+        getFeeEstimate.mockRejectedValueOnce(new Error('rpc down'))
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(result.current.data).toEqual(ESTIMATE))
+        expect(getFeeEstimate).toHaveBeenCalledTimes(2)
+    })
+
     it('reports a failed estimate', async () => {
         getFeeEstimate.mockRejectedValue(new Error('rpc down'))
 

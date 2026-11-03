@@ -281,8 +281,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         const rejectSpy = vi.fn(() =>
             HttpResponse.json(
                 {
-                    message:
-                        'TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from receiver',
+                    message: `TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from ${RECEIVER_ADDRESS}`,
                 },
                 { status: 400 },
             ),

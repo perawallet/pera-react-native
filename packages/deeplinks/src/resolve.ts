@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { deeplinkAdapters } from './chain-adapter'
 import type { ChainDeeplinkIntent, ChainDeeplinkResolution } from './models'
@@ -22,17 +21,8 @@ export const resolveChainDeeplink = (
     const text = input.trim()
     if (text === '') return { status: 'unrecognised' }
 
-    const { chains } = getProvider()
-
     const owner = deeplinkAdapters.list().find(a => a.canParse(text))
     if (owner) {
-        if (chains.isSwitchedOff(owner.chainId)) {
-            return {
-                status: 'failed',
-                chainId: owner.chainId,
-                reason: 'chain-unavailable',
-            }
-        }
         const result = owner.parse(text)
         return result.ok
             ? { status: 'resolved', intents: [result.intent] }
@@ -46,22 +36,13 @@ export const resolveChainDeeplink = (
     // A chain is never guessed from an address's shape: every codec that
     // accepts the text is a candidate and the caller decides between them.
     const candidates = addressCodecs.list().filter(c => c.isValid(text))
-    const intents: ChainDeeplinkIntent[] = candidates
-        .filter(c => !chains.isSwitchedOff(c.chainId))
-        .map(c => ({
-            kind: 'address',
-            target: { chainId: c.chainId },
-            address: text,
-        }))
+    const intents: ChainDeeplinkIntent[] = candidates.map(c => ({
+        kind: 'address',
+        target: { chainId: c.chainId },
+        address: text,
+    }))
 
     const [first, ...rest] = intents
     if (first) return { status: 'resolved', intents: [first, ...rest] }
-    if (candidates.length > 0) {
-        return {
-            status: 'failed',
-            chainId: candidates[0].chainId,
-            reason: 'chain-unavailable',
-        }
-    }
     return { status: 'unrecognised' }
 }

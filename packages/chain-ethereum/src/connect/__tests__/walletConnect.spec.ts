@@ -283,14 +283,14 @@ describe('message signing gate', () => {
         ).toEqual(REFUSED)
     })
 
-    it('fails closed while the chain kill switch is off', () => {
+    it('still routes while the chain kill switch is off, which only turns off its Pera backend', () => {
         chains.setCapabilityOverrides(() => ({
             chainEnabled: { ethereum: false },
         }))
 
         expect(
             v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedDataV4, [ADDRESS]),
-        ).toEqual(REFUSED)
+        ).toMatchObject({ kind: 'operation', type: 'sign-typed-data' })
     })
 
     it('reads each chain its own capability', () => {

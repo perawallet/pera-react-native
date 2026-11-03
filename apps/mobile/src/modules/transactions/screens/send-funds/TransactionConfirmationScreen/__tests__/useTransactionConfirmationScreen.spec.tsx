@@ -302,6 +302,7 @@ const RECIPIENT_WARNING: ChainNotice = {
 describe('useTransactionConfirmationScreen', () => {
     const mockOnNext = vi.fn()
     const mockErrorToast = vi.fn()
+    const mockRefreshFee = vi.fn()
 
     const mockAccount = {
         id: 'test-account',
@@ -563,6 +564,7 @@ describe('useTransactionConfirmationScreen', () => {
             presets: undefined,
             isPending: false,
             isError: false,
+            refresh: mockRefreshFee,
         }
 
         const confirmNativeSend = (amount: Decimal) => {
@@ -977,6 +979,7 @@ describe('useTransactionConfirmationScreen', () => {
                 expect.any(String),
                 expect.anything(),
             )
+            expect(mockRefreshFee).toHaveBeenCalledTimes(1)
         })
 
         it('reads no native balance on a chain with a send-flow adapter', () => {

@@ -319,6 +319,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             | undefined
         public readonly targetKey: string
         public readonly service: string | undefined
+        public readonly isSwitchedOff: boolean
 
         constructor(
             target:
@@ -326,6 +327,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 | { chainId: string; networkId: string }
                 | { deployment: string },
             service?: string,
+            { isSwitchedOff = false }: { isSwitchedOff?: boolean } = {},
         ) {
             const scope =
                 typeof target === 'string'
@@ -352,6 +354,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             this.scope = scope
             this.targetKey = scopeKey
             this.service = service
+            this.isSwitchedOff = isSwitchedOff
         }
     }
 

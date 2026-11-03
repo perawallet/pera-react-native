@@ -107,14 +107,16 @@ describe('Pera links with chain=', () => {
         expect(peraLinkChainFailure(url)).toBe('unsupported-network')
     })
 
-    it('reports a switched-off chain as chain-unavailable', () => {
+    it('reads a switched-off chain like any other, as only its Pera backend is off', () => {
+        const url = `perawallet://app/account-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}`
+        const switchedOn = parseDeeplink(url)
+        expect(switchedOn).not.toBeNull()
         getProvider().chains.setCapabilityOverrides(() => ({
             chainEnabled: { [EVM_LINK_CHAIN_ID]: false },
         }))
-        const url = `perawallet://app/account-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}`
 
-        expect(parseDeeplink(url)).toBeNull()
-        expect(peraLinkChainFailure(url)).toBe('chain-unavailable')
+        expect(parseDeeplink(url)).toEqual(switchedOn)
+        expect(peraLinkChainFailure(url)).toBeUndefined()
     })
 
     it.each([

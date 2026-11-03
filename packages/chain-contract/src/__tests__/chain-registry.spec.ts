@@ -226,14 +226,18 @@ describe('createChainRegistry', () => {
         })
     })
 
-    it('reports every capability false while the chain is switched off', () => {
+    it('resolves capabilities as usual while the chain is switched off', () => {
         registry.register(descriptor, build)
         registry.setCapabilityOverrides(() => ({
             developer: { algorand: { staking: true } },
             chainEnabled: { algorand: false },
         }))
 
-        expect(registry.capabilities('algorand')).toEqual(allFalse)
+        expect(registry.capabilities('algorand')).toEqual({
+            ...build,
+            staking: true,
+        })
+        expect(registry.isSwitchedOff('algorand')).toBe(true)
     })
 
     it('ignores a chain switch that is not strictly false', () => {

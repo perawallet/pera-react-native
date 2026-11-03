@@ -53,9 +53,10 @@ const CHAIN_SCOPED_PATHS: ReadonlySet<string> = new Set([
 export const isChainScopedPeraPath = (path: string): boolean =>
     CHAIN_SCOPED_PATHS.has(path)
 
-export type PeraLinkChainFailure =
-    | Extract<DeeplinkParseFailure, 'unsupported-network'>
-    | 'chain-unavailable'
+export type PeraLinkChainFailure = Extract<
+    DeeplinkParseFailure,
+    'unsupported-network'
+>
 
 export type PeraLinkTargetResolution =
     | { ok: true; target: ChainLinkTarget }
@@ -70,9 +71,6 @@ export const resolvePeraLinkTarget = (
     const { chains } = getProvider()
     const resolved = chains.byCaip2(chain)
     if (!resolved) return { ok: false, reason: 'unsupported-network' }
-    if (chains.isSwitchedOff(resolved.chainId)) {
-        return { ok: false, reason: 'chain-unavailable' }
-    }
     return {
         ok: true,
         target: { chainId: resolved.chainId, networkId: resolved.network.id },

@@ -180,11 +180,17 @@ export class SubmissionError extends PipelineError {
     readonly txIds: string[]
     readonly classification: SubmissionErrorClassification
     readonly nodeError: NodeSubmitError
+    /**
+     * No node answered at all, so the transaction may still land. Narrower than
+     * `unknown-outcome`, which also holds a reply the chain couldn't read as a verdict.
+     */
+    readonly isUnanswered: boolean
 
     constructor(
         txIds: string[],
         classification: SubmissionErrorClassification,
         nodeError: NodeSubmitError,
+        options?: { isUnanswered?: boolean },
     ) {
         super(`Submission ${classification}: ${nodeError.message}`, nodeError, {
             retryable: classification !== 'rejected-by-node',
@@ -193,6 +199,7 @@ export class SubmissionError extends PipelineError {
         this.txIds = txIds
         this.classification = classification
         this.nodeError = nodeError
+        this.isUnanswered = options?.isUnanswered ?? false
     }
 }
 
