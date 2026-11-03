@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
@@ -58,7 +58,7 @@ export const OnboardingStackNavigator = () => {
             {renderImportFlowScreens(
                 OnboardingStack as unknown as ImportFlowStack,
                 isAllowed,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )}
         </OnboardingStack.Navigator>
     )

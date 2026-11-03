@@ -28,8 +28,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain/models'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 
 import {
     createAlgo25Account,
@@ -235,7 +235,7 @@ describe('quantum fee coverage conformance', () => {
             // What the account syncer records once it reads the chain's `auth-addr`.
             useAccountChainStateStore.getState().setAccountChainState(
                 {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: config.defaultNetwork,
                 } as const,
                 rekeyed.address,

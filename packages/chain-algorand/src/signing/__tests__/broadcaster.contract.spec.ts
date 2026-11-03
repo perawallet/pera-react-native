@@ -15,6 +15,7 @@ import { generateAccount } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { broadcasterContractTests } from '@perawallet/wallet-core-signing/testing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import {
     mockAlgodPendingTransaction,
     mockAlgodSendRawTransaction,
@@ -23,7 +24,6 @@ import {
 } from '../../test-handlers'
 import { algorandBroadcasterAdapter } from '../broadcaster'
 import { makeTestAddress, makeTestPaymentTx } from './transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const SENDER = generateAccount()
 const TXN = makeTestPaymentTx(SENDER.addr, {
@@ -48,7 +48,7 @@ afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
 broadcasterContractTests(() => algorandBroadcasterAdapter, {
-    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const,
     signedTransactions: [TXN.signTxn(SENDER.sk)],
     txIds: [TX_ID],
     arrangeAccepted: () => {

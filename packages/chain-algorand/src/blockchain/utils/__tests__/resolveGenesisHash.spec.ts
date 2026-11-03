@@ -15,7 +15,7 @@ import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { setCustomNetwork } from '../../store'
 import { getExpectedGenesisHash } from '../resolveGenesisHash'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 describe('getExpectedGenesisHash', () => {
     beforeEach(() => {
@@ -32,7 +32,7 @@ describe('getExpectedGenesisHash', () => {
 
             expect(getExpectedGenesisHash(network)).toBe(
                 getAlgorandChainConfig({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: network,
                 } as const).genesisHash,
             )

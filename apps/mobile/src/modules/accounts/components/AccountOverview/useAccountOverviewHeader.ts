@@ -18,22 +18,18 @@ import {
     type AccountHoldingSource,
     type PortfolioValueHistoryItem,
     useAccountHoldingSources,
-    useAccountScope,
     useAccountSummaryQuery,
     useAccountValueTotalsQuery,
     useAllAccounts,
-    useCanSignWith,
+    useSigningAccountsOnAnyChain,
     type WalletAccount,
+    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
 import {
     isTestTierScope,
-    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useChainAvailability,
@@ -42,6 +38,7 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import type {
     HistoryPeriod,
     Nullable,
@@ -85,7 +82,7 @@ export const useAccountOverviewHeader = (
     account: WalletAccount,
     isChartShown: boolean,
 ): UseAccountOverviewHeaderResult => {
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, useHomeChainScope().chainId)
     const availability = useChainAvailability(scope.chainId)
     const sources = useAccountHoldingSources(account)
     // Test-network holdings never count as money (once a second chain is
@@ -101,9 +98,11 @@ export const useAccountOverviewHeader = (
     // An all-test-network account has no fiat total, but still charts its holdings.
     const chartSources = hasFiatTotal ? countedSources : sources
     const chainName = chainDisplayNameOf(scope.chainId)
-    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useHomeChainScope()
     const { usdToPreferred } = useCurrency(currencyScope)
-    const canSign = useCanSignWith(account, scope.chainId)
+    const canSign = useSigningAccountsOnAnyChain().some(
+        signer => signer.id === account.id,
+    )
     // Cheap SQL aggregates — no full-holdings materialization for the header.
     const { nativeAmount, isComplete } = useAccountSummaryQuery(
         addressOn(account, scope),
@@ -131,7 +130,7 @@ export const useAccountOverviewHeader = (
         [countedSources, accountValueTotals],
     )
     const allAccounts = useAllAccounts()
-    // The account's own chain is the first source (registry order), and keeps
+    // The account's first chain is the first source (registry order), and keeps
     // today's native-balance test; any other chain counts once it holds value.
     const isEmptyOnOtherChains = sources.slice(1).every(source => {
         const nativeValue = accountValueTotals.get(

@@ -23,12 +23,7 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import type { ConnectionPeerVerificationStatus } from '@perawallet/wallet-extension-connections'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -39,6 +34,7 @@ import {
     toError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     trackEvent,
     WalletConnectEvent,
@@ -55,6 +51,7 @@ import {
 } from '@modules/site-safety'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import {
     toConnectionPermissions,
     type ConnectionPermission,
@@ -193,9 +190,9 @@ export const useConnectionApprovalView = (
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const { pushWebView } = useWebView()
     const accounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     // A proposal naming no chain still logs its session event once.
-    const fallbackChainId = scope.chainId
+    const fallbackChainId = proposal.requested.chains[0] ?? scope.chainId
     const signingAccounts = useSigningAccountsOn(proposal.requested.chains)
     // Totals are keyed by address across every chain, so an Ethereum account
     // ranks by its own balance rather than as if empty.
@@ -402,7 +399,7 @@ export const useConnectionApprovalView = (
             )
             const decision = await confirmQuantumDappUsage(
                 addresses,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )
             if (decision === 'cancel') {
                 await rejectProposal()

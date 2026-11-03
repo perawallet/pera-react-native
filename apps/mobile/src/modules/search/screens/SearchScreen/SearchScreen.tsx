@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ownAddressOf } from '@perawallet/wallet-core-accounts'
 import { PWFlatList, PWIcon, PWScreen, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
@@ -26,9 +22,6 @@ import { useSearchScreenList } from './useSearchScreenList'
 import { useSearchScreen } from './useSearchScreen'
 
 const SKELETON_ROW_COUNT = 5
-
-const accountAddressOf = (account: WalletAccount) =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
 
 export const SearchScreen = () => {
     const styles = useStyles()
@@ -67,7 +60,7 @@ export const SearchScreen = () => {
         onAssetPress,
         onExpandSection,
         chainId,
-        getAccountAddress: accountAddressOf,
+        getAccountAddress: ownAddressOf,
         value,
         scopes,
     })

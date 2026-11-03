@@ -31,6 +31,7 @@ import {
 
 const SWAP_INTENT = {
     flow: 'swap',
+    chainId: 'algorand',
     accountAddress: 'ADDR',
     assetInId: '0',
     assetOutId: '31566704',

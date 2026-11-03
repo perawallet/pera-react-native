@@ -14,10 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import {
-    ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
@@ -172,7 +169,7 @@ describe('useTransactionSendFlow', () => {
     it('normal ALGO send: builds through the chain adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -189,7 +186,7 @@ describe('useTransactionSendFlow', () => {
             expect(id).toBe('tx1')
         })
         expect(mockBuildTransfer).toHaveBeenCalledWith({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             sender: 'A',
             receiver: 'B',
             assetId: '0',
@@ -212,7 +209,7 @@ describe('useTransactionSendFlow', () => {
     it('normal ASA send: passes the asset id on + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -245,7 +242,7 @@ describe('useTransactionSendFlow', () => {
         mockAccountState.mockResolvedValueOnce(accountState(0n, 100000n))
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -261,12 +258,12 @@ describe('useTransactionSendFlow', () => {
             })
         })
         expect(mockAccountState).toHaveBeenCalledWith('B', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
         // mbrAfterOptIn (200000) + receiverFee (1000) - balance (0).
         expect(mockBuildExpress).toHaveBeenCalledWith({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             sender: 'A',
             receiver: 'B',
             assetId: 99n,
@@ -291,7 +288,7 @@ describe('useTransactionSendFlow', () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -325,7 +322,7 @@ describe('useTransactionSendFlow', () => {
             // Default beforeEach resolves 1000n === suggestedMinFee.
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -347,7 +344,7 @@ describe('useTransactionSendFlow', () => {
             mockResolveMinFeeForSender.mockReturnValue(3000n)
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -379,7 +376,7 @@ describe('useTransactionSendFlow', () => {
             )
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -423,7 +420,7 @@ describe('useTransactionSendFlow', () => {
             )
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -452,7 +449,7 @@ describe('useTransactionSendFlow', () => {
             // Default beforeEach resolves 1000n for every sender/receiver.
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -482,7 +479,7 @@ describe('useTransactionSendFlow', () => {
             mockHoldingReserve.mockReturnValue(new Decimal(200000))
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -506,7 +503,7 @@ describe('useTransactionSendFlow', () => {
     it('sendAssetInbox: delegates building to the inbox adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -541,7 +538,7 @@ describe('useTransactionSendFlow', () => {
         mockResolveMinFeeForSender.mockReturnValue(3000n)
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -572,7 +569,7 @@ describe('useTransactionSendFlow', () => {
     it('claimAssetInbox: delegates building to the inbox adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -608,7 +605,7 @@ describe('useTransactionSendFlow', () => {
     it('claimAssetInbox with amount: optimistically credits the holding after submit', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -640,7 +637,7 @@ describe('useTransactionSendFlow', () => {
     it('claimAssetInbox without amount: skips the optimistic credit', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -663,7 +660,7 @@ describe('useTransactionSendFlow', () => {
         mockAddToAssetHolding.mockRejectedValueOnce(new Error('db locked'))
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -685,7 +682,7 @@ describe('useTransactionSendFlow', () => {
     it('rejectAssetInbox: delegates building to the inbox adapter + submits via pipeline', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -745,7 +742,7 @@ describe('useTransactionSendFlow', () => {
         it("hands the inbox send to the network's adapter with the quote untouched", async () => {
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -754,7 +751,7 @@ describe('useTransactionSendFlow', () => {
             })
             expect(mockBuildSendViaInbox).toHaveBeenCalledWith({
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 sender: 'A',
@@ -860,7 +857,7 @@ describe('useTransactionSendFlow', () => {
             transferChainAdapters.reset()
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -878,7 +875,7 @@ describe('useTransactionSendFlow', () => {
             sendFlowChainAdapters.reset()
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -899,7 +896,7 @@ describe('useTransactionSendFlow', () => {
             })
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -926,7 +923,7 @@ describe('useTransactionSendFlow', () => {
 
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -943,7 +940,7 @@ describe('useTransactionSendFlow', () => {
 
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -958,7 +955,7 @@ describe('useTransactionSendFlow', () => {
 
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -980,7 +977,7 @@ describe('useTransactionSendFlow', () => {
 
             const { result } = renderHook(() =>
                 useTransactionSendFlow({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             )
@@ -994,7 +991,7 @@ describe('useTransactionSendFlow', () => {
     it('throws InvalidSendParamsError for an empty assetId string', async () => {
         const { result } = renderHook(() =>
             useTransactionSendFlow({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )

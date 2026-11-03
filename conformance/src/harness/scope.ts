@@ -13,9 +13,9 @@
 import { setCustomNetwork } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 
 import {
     assertLocalNetReachable,
@@ -47,7 +47,7 @@ export const localNetScope = (): Promise<ChainScope> => {
                 genesisId,
                 genesisHash,
             })
-            return { chainId: LEGACY_CHAIN_ID, networkId: CUSTOM_NETWORK_ID }
+            return { chainId: ALGORAND_CHAIN_ID, networkId: CUSTOM_NETWORK_ID }
         },
     )
     return registered

@@ -13,10 +13,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapHandoffRecord } from '../../models'
 import {
     registerFakeBroadcaster,
@@ -178,7 +175,7 @@ describe('swaps/useSwapCosignResolver', () => {
         const descriptor = config().poll(handoff)
         expect(descriptor.queryKey).toEqual([
             'msig',
-            { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            { chainId: 'algorand', networkId: 'mainnet' } as const,
             'req-1',
         ])
         expect(descriptor.enabled).toBe(true)
@@ -288,7 +285,7 @@ describe('swaps/useSwapCosignResolver', () => {
         const bytes = [new Uint8Array([1])]
         await deps.submitGroup(bytes)
         expect(submit).toHaveBeenCalledWith(
-            { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            { chainId: 'algorand', networkId: 'mainnet' } as const,
             bytes,
         )
     })

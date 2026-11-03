@@ -23,7 +23,6 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSelectHDWalletScreenResult = {
@@ -48,7 +47,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { hdSeedGroups } = useHdSeedGroups()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(route.params.chainId)
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
     const [isSelectingWallet, setIsSelectingWallet] = useState(false)

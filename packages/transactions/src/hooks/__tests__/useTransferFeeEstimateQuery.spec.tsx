@@ -17,7 +17,6 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
-    LEGACY_CHAIN_ID,
     type FeeEstimate,
     type TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
@@ -30,7 +29,7 @@ import {
     type TransferFeeEstimateInput,
 } from '../useTransferFeeEstimateQuery'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const INTENT: TransferIntent = {
     kind: 'transfer',
     from: 'SENDER',

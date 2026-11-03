@@ -15,9 +15,9 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 /**
  * The local account that created the card. The contract only accepts
@@ -27,6 +27,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  */
 export const useCardOwnerAccount = (): Nullable<WalletAccount> => {
     const ownerAddress = useCardStore(state => state.escrowCardOwner)
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     return useFindAccountByAddress(ownerAddress ?? '', scope)
 }

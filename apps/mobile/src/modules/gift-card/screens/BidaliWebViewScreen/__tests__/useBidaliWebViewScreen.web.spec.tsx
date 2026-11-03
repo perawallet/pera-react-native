@@ -22,10 +22,7 @@
 // useBidaliWebViewScreen.ts for the fix (balances frozen at mount).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
@@ -33,6 +30,7 @@ import type {
     WalletAccount,
     AccountBalances,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useBidaliWebViewScreen } from '../useBidaliWebViewScreen'
 import { useBidali } from '../../../hooks/useBidali'
 
@@ -202,7 +200,7 @@ const balancesWith = (algo: string, usdc: string): AccountBalances =>
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         isValid: address => /^[A-Z2-7]{58}$/.test(address),
     })
 })

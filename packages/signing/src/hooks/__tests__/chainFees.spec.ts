@@ -15,7 +15,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
@@ -49,11 +48,9 @@ describe('chainFees', () => {
     })
 
     it('returns the registered planner chain value for each hook', async () => {
-        const config = renderHook(() => useFeeConfig(LEGACY_CHAIN_ID))
-        const query = renderHook(() => useSuggestedMinFeeQuery(LEGACY_CHAIN_ID))
-        const fetcher = renderHook(() =>
-            useFetchSuggestedMinFee(LEGACY_CHAIN_ID),
-        )
+        const config = renderHook(() => useFeeConfig('algorand'))
+        const query = renderHook(() => useSuggestedMinFeeQuery('algorand'))
+        const fetcher = renderHook(() => useFetchSuggestedMinFee('algorand'))
 
         expect(config.result.current).toEqual(feeConfig)
         expect(query.result.current).toEqual(suggestedMinFeeQuery)
@@ -90,7 +87,7 @@ describe('chainFees', () => {
     it('calls the same hooks when the chain changes between renders', () => {
         const { result, rerender } = renderHook(
             ({ chainId }: { chainId: ChainId }) => useFeeConfig(chainId),
-            { initialProps: { chainId: LEGACY_CHAIN_ID as ChainId } },
+            { initialProps: { chainId: 'algorand' as ChainId } },
         )
         expect(result.current).toEqual(feeConfig)
 

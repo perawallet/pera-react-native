@@ -59,15 +59,15 @@ import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 import { useWebViewStore } from '@modules/webview'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import * as Clipboard from 'expo-clipboard'
 import { closestPressable, longPress } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -192,7 +192,10 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_PAYMENT, TX_ASSET_TRANSFER],
             accountAddress: addressOf(ACCOUNT),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
         })
     })
 
@@ -474,7 +477,10 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_APP_CALL],
             accountAddress: addressOf(ACCOUNT),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
         })
         server.use(
             http.get(`*/v2/transactions/${TX_APP_CALL.id}`, () =>
@@ -588,7 +594,10 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [closeOutTx],
             accountAddress: addressOf(ACCOUNT),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
         })
 
         const lookupSpy = vi.fn(() =>
@@ -704,7 +713,10 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: fullPage,
             accountAddress: addressOf(ACCOUNT),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
         })
 
         // Pera transaction-history endpoint. The endpoint URL is
@@ -812,7 +824,10 @@ describe('Flow: View transactions → tap into details', () => {
         await upsertTransactions({
             items: [TX_STATE_PROOF],
             accountAddress: addressOf(ACCOUNT),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
         })
 
         const lookupSpy = vi.fn(() =>

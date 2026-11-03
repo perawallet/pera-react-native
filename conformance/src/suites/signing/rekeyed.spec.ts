@@ -18,7 +18,6 @@ import {
     chainAccountOf,
     useAccountChainStateStore,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
 
@@ -28,6 +27,7 @@ import type {
     SignableGroup,
     SourceMetadata,
 } from '@perawallet/wallet-core-signing/pipeline/types'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 
 import {
     createAlgo25Account,
@@ -68,7 +68,10 @@ import {
 // What the account syncer records once it reads the chain's `auth-addr`.
 const seedAuthority = (address: string, authorityAddress: string | undefined) =>
     useAccountChainStateStore.getState().setAccountChainState(
-        { chainId: LEGACY_CHAIN_ID, networkId: config.defaultNetwork } as const,
+        {
+            chainId: ALGORAND_CHAIN_ID,
+            networkId: config.defaultNetwork,
+        } as const,
         address,
         algorandAccountsAdapter.toChainState({
             authorityAddress: authorityAddress ?? null,
@@ -246,10 +249,10 @@ describe('rekeyed signer resolution conformance', () => {
             WALLETCONNECT_SOURCE,
             'transactions',
             allAccounts,
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
         )
 
-        const signer = chainAccountOf(resolved, LEGACY_CHAIN_ID)
+        const signer = chainAccountOf(resolved, ALGORAND_CHAIN_ID)
         expect(signer?.address).toBe(auth.address)
         expect(signer?.keyPairId).toBe(auth.keyId)
     })
@@ -269,9 +272,9 @@ describe('rekeyed signer resolution conformance', () => {
                     WALLETCONNECT_SOURCE,
                     'arbitrary-data',
                     allAccounts,
-                    LEGACY_CHAIN_ID,
+                    ALGORAND_CHAIN_ID,
                 ),
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )?.address,
         ).toBe(rekeyed.address)
     })
@@ -291,7 +294,7 @@ describe('rekeyed signer resolution conformance', () => {
             },
         }
 
-        const map = buildGroupSignerMap([group], allAccounts, LEGACY_CHAIN_ID)
+        const map = buildGroupSignerMap([group], allAccounts, ALGORAND_CHAIN_ID)
 
         expect(map.get(rekeyed.address)).toEqual({
             custody: 'local',

@@ -35,13 +35,11 @@ import { derivePQKeygenSeed } from '@perawallet/wallet-core-chain-algorand/block
 import { deriveQuantumAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/pq/quantumAdapter'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/addresses'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig/address'
-import {
-    CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { CUSTOM_NETWORK_ID } from '@perawallet/wallet-core-chain-contract'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 
 export type ConformanceAccountKind = 'algo25' | 'hd' | 'quantum'
 
@@ -150,8 +148,8 @@ export const createAlgo25Account = async (
         walletAccount: buildAccount({
             id,
             custody: { kind: 'local', seed: null },
-            chainId: LEGACY_CHAIN_ID,
-            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+            chainId: ALGORAND_CHAIN_ID,
+            chains: { [ALGORAND_CHAIN_ID]: { address, keyPairId: keyId } },
         }),
     }
 }
@@ -193,8 +191,8 @@ export const createQuantumAccount = async (
         walletAccount: buildAccount({
             id,
             custody: { kind: 'local', seed: 'quantum' },
-            chainId: LEGACY_CHAIN_ID,
-            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+            chainId: ALGORAND_CHAIN_ID,
+            chains: { [ALGORAND_CHAIN_ID]: { address, keyPairId: keyId } },
         }),
     }
 }
@@ -285,8 +283,8 @@ export const createHdAccount = async (
                 seed: 'bip39',
                 hd: hdIndex,
             },
-            chainId: LEGACY_CHAIN_ID,
-            chains: { [LEGACY_CHAIN_ID]: { address, keyPairId: keyId } },
+            chainId: ALGORAND_CHAIN_ID,
+            chains: { [ALGORAND_CHAIN_ID]: { address, keyPairId: keyId } },
         }),
     }
 }
@@ -313,9 +311,9 @@ export const createMultisigAccount = (
         walletAccount: buildAccount({
             id: address,
             custody: { kind: 'multisig' },
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             chains: {
-                [LEGACY_CHAIN_ID]: {
+                [ALGORAND_CHAIN_ID]: {
                     address,
                     native: {
                         family: 'algorand',

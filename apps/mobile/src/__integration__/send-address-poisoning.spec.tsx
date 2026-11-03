@@ -36,9 +36,9 @@ import {
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { EMPTY_ALGORAND_HISTORY_DATA } from '@perawallet/wallet-core-chain-algorand/transactions'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useSendFundsStore } from '@modules/transactions'
 import { SelectDestinationScreen } from '@modules/transactions/screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 
@@ -46,7 +46,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 

@@ -13,10 +13,8 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { registerLegacyAddressCodec } from '@test-utils/chain-fixtures'
 import { formatDebugValue, shouldUseStackedLayout } from '../formatDebugValue'
 
@@ -76,7 +74,7 @@ describe('formatDebugValue', () => {
 
     it("truncates an address with its chain codec's short form", () => {
         const truncate = vi
-            .spyOn(addressCodecs.get(LEGACY_CHAIN_ID), 'truncate')
+            .spyOn(addressCodecs.get(ALGORAND_CHAIN_ID), 'truncate')
             .mockReturnValueOnce('AAAA…FKQ')
 
         expect(formatDebugValue(ADDRESS)).toBe('AAAA…FKQ')
@@ -87,7 +85,7 @@ describe('formatDebugValue', () => {
         'leaves %s untouched: 58 characters, not an address',
         value => {
             const truncate = vi.spyOn(
-                addressCodecs.get(LEGACY_CHAIN_ID),
+                addressCodecs.get(ALGORAND_CHAIN_ID),
                 'truncate',
             )
 

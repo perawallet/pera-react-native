@@ -32,12 +32,12 @@ import {
     isMultisigAccount,
     useAccountChainStateStore,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     multisigChainAdapters,
     type MultisigParameters,
 } from '@perawallet/wallet-core-multisig'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandMultisigOf } from '../../../accounts/multisig-participants'
 import {
     buildWatchAccount,
@@ -73,7 +73,7 @@ beforeEach(() => {
     deriveAddress.mockClear()
     multisigChainAdapters.reset()
     multisigChainAdapters.register({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         deriveAddress,
         assembleSignedTransactions: vi.fn(),
         validateSignRequest: vi.fn(),

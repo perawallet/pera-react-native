@@ -32,7 +32,6 @@ vi.mock('../../db', () => ({
 }))
 
 import { fetchAndPersistTransactions } from '../transaction-syncer'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ADDRESS = 'ADDR'
 const NETWORK = 'mainnet' as const
@@ -53,7 +52,7 @@ describe('fetchAndPersistTransactions', () => {
         mocks.hasCachedHistoryRows.mockReturnValue(false)
 
         await fetchAndPersistTransactions(ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: NETWORK,
         } as const)
 
@@ -69,23 +68,23 @@ describe('fetchAndPersistTransactions', () => {
         })
 
         await fetchAndPersistTransactions(ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: NETWORK,
         } as const)
 
         expect(mocks.getLatestTransactionRoundTime).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: 'algorand', networkId: NETWORK } as const,
         })
         expect(mocks.fetchTransactionHistory).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: 'algorand', networkId: NETWORK } as const,
             afterTime: undefined,
         })
         expect(mocks.upsertTransactions).toHaveBeenCalledWith({
             items: [{ id: 'tx1' }],
             accountAddress: ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: 'algorand', networkId: NETWORK } as const,
         })
     })
 
@@ -97,7 +96,7 @@ describe('fetchAndPersistTransactions', () => {
         })
 
         await fetchAndPersistTransactions(ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: NETWORK,
         } as const)
 
@@ -106,13 +105,13 @@ describe('fetchAndPersistTransactions', () => {
             .split('T')[0]
         expect(mocks.fetchTransactionHistory).toHaveBeenCalledWith({
             accountAddress: ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: 'algorand', networkId: NETWORK } as const,
             afterTime: expectedAfterTime,
         })
         expect(mocks.upsertTransactions).toHaveBeenCalledWith({
             items: [{ id: 'tx2' }],
             accountAddress: ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: 'algorand', networkId: NETWORK } as const,
         })
     })
 
@@ -121,7 +120,7 @@ describe('fetchAndPersistTransactions', () => {
         mocks.fetchTransactionHistory.mockResolvedValue({ transactions: [] })
 
         await fetchAndPersistTransactions(ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: NETWORK,
         } as const)
 
@@ -130,12 +129,12 @@ describe('fetchAndPersistTransactions', () => {
 
     it("runs the chain's repair of the account's cached rows", async () => {
         await fetchAndPersistTransactions(ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: NETWORK,
         } as const)
 
         expect(mocks.healCachedRows).toHaveBeenCalledWith(ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: NETWORK,
         } as const)
     })

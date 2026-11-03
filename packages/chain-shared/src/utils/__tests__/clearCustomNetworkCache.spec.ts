@@ -22,7 +22,6 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     toScopeKey,
     type LegacyNetwork,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     shouldClearCustomCache,
@@ -83,7 +82,7 @@ describe('clearCustomNetworkCache', () => {
     })
 
     const storedValue = (network: LegacyNetwork) =>
-        toScopeKey({ chainId: LEGACY_CHAIN_ID, networkId: network } as const)
+        toScopeKey({ chainId: 'algorand', networkId: network } as const)
 
     test('lists every table that has a scope column', async () => {
         const rows = await db.values<[string]>(sql`
@@ -158,7 +157,7 @@ describe('clearCustomNetworkCache', () => {
                    ('APPROVAL_TESTNET', ${testnet}, '[]', 1)
         `)
 
-        await clearCustomNetworkCache(queryClient, db)
+        await clearCustomNetworkCache(queryClient, 'algorand', db)
 
         expect(NETWORK_PARTITIONED_TABLES).toHaveLength(13)
         for (const table of NETWORK_PARTITIONED_TABLES) {
@@ -173,6 +172,35 @@ describe('clearCustomNetworkCache', () => {
         }
     })
 
+    test("leaves another chain's custom network alone", async () => {
+        const algorandCustom = storedValue('custom')
+        const ethereumCustom = toScopeKey({
+            chainId: 'ethereum',
+            networkId: 'custom',
+        } as const)
+        await db.run(sql`
+            INSERT INTO asset_prices (asset_id, scope, usd_price, updated_at)
+            VALUES ('1', ${algorandCustom}, '1.23', 1), ('1', ${ethereumCustom}, '1.23', 1)
+        `)
+        const ethereumKey = [
+            'accounts',
+            'balance',
+            {
+                address: '0xADDR',
+                scope: { chainId: 'ethereum', networkId: 'custom' } as const,
+            },
+        ]
+        queryClient.setQueryData(ethereumKey, { value: 1 })
+
+        await clearCustomNetworkCache(queryClient, 'algorand', db)
+
+        const rows = await db.values<[string]>(
+            sql`SELECT scope FROM asset_prices`,
+        )
+        expect(rows).toEqual([[ethereumCustom]])
+        expect(queryClient.getQueryData(ethereumKey)).toEqual({ value: 1 })
+    })
+
     test('removes cached query results scoped to the custom network, leaving other networks and unrelated domains untouched', async () => {
         const customAccountKey = [
             'accounts',
@@ -180,7 +208,7 @@ describe('clearCustomNetworkCache', () => {
             {
                 address: 'ADDR',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'custom',
                 } as const,
             },
@@ -191,7 +219,7 @@ describe('clearCustomNetworkCache', () => {
             {
                 address: 'ADDR',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'testnet',
                 } as const,
             },
@@ -203,7 +231,7 @@ describe('clearCustomNetworkCache', () => {
             {
                 assetIDs: ['1'],
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'custom',
                 } as const,
             },
@@ -214,7 +242,7 @@ describe('clearCustomNetworkCache', () => {
             {
                 accountAddress: 'ADDR',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'custom',
                 } as const,
             },
@@ -225,7 +253,7 @@ describe('clearCustomNetworkCache', () => {
             {
                 address: 'ADDR',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'custom',
                 } as const,
             },
@@ -234,7 +262,7 @@ describe('clearCustomNetworkCache', () => {
             'card',
             {
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'custom',
                 } as const,
             },
@@ -247,7 +275,7 @@ describe('clearCustomNetworkCache', () => {
         queryClient.setQueryData(customNfdKey, { value: 5 })
         queryClient.setQueryData(unrelatedDomainKey, { value: 6 })
 
-        await clearCustomNetworkCache(queryClient, db)
+        await clearCustomNetworkCache(queryClient, 'algorand', db)
 
         expect(queryClient.getQueryData(customAccountKey)).toBeUndefined()
         expect(queryClient.getQueryData(customAssetKey)).toBeUndefined()

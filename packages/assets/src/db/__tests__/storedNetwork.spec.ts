@@ -22,10 +22,9 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { PeraAsset } from '../../models'
 import { updateAssetPeraMetadata, upsertAssets } from '../metadataRepository'
 import { recordPriceMisses, upsertAssetPrices } from '../pricesRepository'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'testnet',
 } as const
 

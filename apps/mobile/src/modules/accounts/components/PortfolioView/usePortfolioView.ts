@@ -15,19 +15,14 @@ import type { Decimal } from 'decimal.js'
 import {
     allChainsHaveBalanceHistory,
     useAccountValueTotalsQuery,
-    useSigningAccountsOnOwnChain,
+    useSigningAccountsOnAnyChain,
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    useChainCapabilityCheck,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useAccountDrawerControls } from '../AccountDrawer/AccountDrawerContext'
 
 export type UsePortfolioViewResult = {
@@ -56,13 +51,13 @@ export type UsePortfolioViewResult = {
 }
 
 export const usePortfolioView = (): UsePortfolioViewResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const isDrawerOpen = useAccountDrawerControls()?.isOpen ?? true
     const { usdToPreferred } = useCurrency(scope)
 
-    // Each account counts when it can sign on its own chain, so an Ethereum
-    // account joins the fiat total without an Algorand address.
-    const accounts = useSigningAccountsOnOwnChain()
+    // An account counts when it can sign on any chain it holds, so one with no
+    // Algorand address, or that signs only on another chain, joins the total.
+    const accounts = useSigningAccountsOnAnyChain()
     const {
         portfolioFiatValue,
         isPortfolioFiatValuePartial,

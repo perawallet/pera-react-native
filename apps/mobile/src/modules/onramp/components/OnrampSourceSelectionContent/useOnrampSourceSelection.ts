@@ -16,10 +16,9 @@ import {
     useRampRegionQuery,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type OnrampSourceFilter = 'all' | 'fiat' | 'crypto'
 
@@ -64,7 +63,7 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
     const { data: region } = useRampRegionQuery({ scope })
     // The preferred currency doesn't depend on the ramp's chain; a null ramp
     // scope just means Fund can't buy onto this account.
-    const selectedScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedScope = useHomeChainScope()
     const { preferredCurrency } = useCurrency(selectedScope)
     const [filter, setFilter] = useState<OnrampSourceFilter>('all')
     const [search, setSearch] = useState('')

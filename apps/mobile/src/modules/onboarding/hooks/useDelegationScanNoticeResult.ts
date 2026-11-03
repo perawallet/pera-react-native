@@ -17,13 +17,10 @@ import {
     useAccountDiscovery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    i18nKey,
-    LEGACY_CHAIN_ID,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -62,7 +59,7 @@ export type UseDelegationScanNoticeResultResult = {
  */
 export const useDelegationScanNoticeResult =
     (): UseDelegationScanNoticeResultResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
         const { discoverDelegatedAccounts } = useAccountDiscovery(scope)
         const { showToast } = useToast()
         const { t } = useLanguage()

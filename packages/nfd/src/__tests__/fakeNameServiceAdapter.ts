@@ -14,14 +14,13 @@ import {
     nameServiceChainAdapters,
     type NameServiceChainAdapter,
 } from '../chain-adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Shape-only, unlike a real chain's check: these specs cover the name
 // service's plumbing, not address validation.
 export const fakeNameServiceAdapter = (
     overrides: Partial<NameServiceChainAdapter> = {},
 ): NameServiceChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     isValidAddress: address => /^[0-9a-zA-Z]{58}$/.test(address),
     ...overrides,
 })

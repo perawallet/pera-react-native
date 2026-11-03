@@ -12,7 +12,6 @@
 
 import { fakeNameServiceAdapter } from './fakeNameServiceAdapter'
 import { nameServiceContractTests } from './adapter-contract'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The Error a fetch polyfill rejects with on abort.
 const abortError = (): Error =>
@@ -36,7 +35,7 @@ nameServiceContractTests(() => adapter, {
         params: {
             name: 'fixture.algo',
             address: 'A'.repeat(58),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         },
         arrangeUnreachable: () => {
             isReachable = false

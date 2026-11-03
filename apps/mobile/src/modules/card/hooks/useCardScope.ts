@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // The card is Algorand-only until the card can be scoped to another chain.
-export const useCardScope = (): ChainScope => useSelectedScope(LEGACY_CHAIN_ID)
+export const useCardScope = (): ChainScope =>
+    useSelectedScope(ALGORAND_CHAIN_ID)

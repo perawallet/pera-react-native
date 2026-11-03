@@ -18,10 +18,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationsStore } from '@perawallet/wallet-core-messages'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     registerAlgorandAccountsAdapter,
     registerAlgorandDeviceAdapter,
@@ -91,14 +91,14 @@ describe('useDeviceAccountRegistrations', () => {
 
         expect(result.current).toEqual([
             {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 address: 'QADDR',
                 accountType: 'quantum',
                 rank: 6,
                 receiveNotifications: true,
             },
             {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 address: 'WADDR',
                 accountType: 'watch',
                 rank: 1,
@@ -129,7 +129,7 @@ describe('useDeviceAccountRegistrations', () => {
         const { chains } = getProvider()
         chains.reset()
         chains.register(algorandDescriptor, allCapabilities(false))
-        expect(chains.capabilities(LEGACY_CHAIN_ID).notifications).toBe(false)
+        expect(chains.capabilities(ALGORAND_CHAIN_ID).notifications).toBe(false)
         seedAccounts([
             { id: '1', address: 'WADDR', custody: { kind: 'watch' } },
         ])

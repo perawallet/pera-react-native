@@ -30,7 +30,6 @@ import {
     useAccountChainStateStore,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
     mockAlgodAccountInformation,
@@ -39,6 +38,7 @@ import {
     mockIndexerSearchForAccounts,
     mockTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { UserPreferences } from '@constants/user-preferences'
 
 import { useSendFundsStore } from '@modules/transactions'
@@ -130,7 +130,7 @@ describe('Flow: Send an ASA without enough ALGO to fund the receiver inbox', () 
 
         await seedAlgo25Signer()
         useSendFundsStore.getState().setSelectedAsset({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             assetId: USDC_TEST_ASSET_ID,
         })
         useSendFundsStore.getState().setDestination(EXTERNAL_RECEIVER)

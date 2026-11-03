@@ -35,7 +35,6 @@ import {
 } from '../../__tests__/algorandAccounts'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandDappRequestAdapter as adapter } from '../dappRequestAdapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 
 const signTxns = (txns: unknown) =>
@@ -48,7 +47,7 @@ describe('algorandDappRequestAdapter', () => {
 
     describe('accountTypeOf', () => {
         const mainnet = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const
 
@@ -104,7 +103,7 @@ describe('algorandDappRequestAdapter', () => {
 
             expect(
                 adapter.accountTypeOf(rekeyed, [rekeyed], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'testnet',
                 } as const),
             ).toBe('HDWallet')
@@ -203,13 +202,19 @@ describe('algorandDappRequestAdapter', () => {
         it('passes a baked network through', () => {
             expect(
                 adapter.resolveReportedNetwork(
-                    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+                    {
+                        chainId: ALGORAND_CHAIN_ID,
+                        networkId: 'mainnet',
+                    } as const,
                     undefined,
                 ),
             ).toBe('mainnet')
             expect(
                 adapter.resolveReportedNetwork(
-                    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+                    {
+                        chainId: ALGORAND_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
                     'ignored',
                 ),
             ).toBe('testnet')
@@ -217,13 +222,16 @@ describe('algorandDappRequestAdapter', () => {
 
         it('maps a custom network onto the baked network sharing its genesis hash', () => {
             const hash = getAlgorandChainConfig({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'testnet',
             } as const).genesisHash
 
             expect(
                 adapter.resolveReportedNetwork(
-                    { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
+                    {
+                        chainId: ALGORAND_CHAIN_ID,
+                        networkId: 'custom',
+                    } as const,
                     hash,
                 ),
             ).toBe('testnet')
@@ -231,7 +239,7 @@ describe('algorandDappRequestAdapter', () => {
 
         it('refuses a custom network whose genesis hash matches no baked network', () => {
             const customScope = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'custom',
             } as const
 
@@ -248,13 +256,16 @@ describe('algorandDappRequestAdapter', () => {
 
         it("refuses a custom network carrying MainNet's genesis hash", () => {
             const mainnetHash = getAlgorandChainConfig({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'mainnet',
             } as const).genesisHash
 
             expect(
                 adapter.resolveReportedNetwork(
-                    { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
+                    {
+                        chainId: ALGORAND_CHAIN_ID,
+                        networkId: 'custom',
+                    } as const,
                     mainnetHash,
                 ),
             ).toBeUndefined()

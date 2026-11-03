@@ -17,9 +17,9 @@ import {
     useCreateNextHDAccount,
     useHdSeedGroups,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { navigationRef } from '@routes/navigationRef'
 import { useLanguage } from '@hooks/useLanguage'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -62,7 +62,7 @@ export type UseCardAddAccountResult = {
 export const useCardAddAccount = (): UseCardAddAccountResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount(scope)
     const { hasMultipleHdSeeds } = useHdSeedGroups()
@@ -74,7 +74,10 @@ export const useCardAddAccount = (): UseCardAddAccountResult => {
                     // Multiple wallets: let the user pick which one first.
                     navigateToAddAccount({
                         screen: 'SelectHDWallet',
-                        params: { returnTo: CARD_SETUP_RETURN_TARGET },
+                        params: {
+                            chainId: ALGORAND_CHAIN_ID,
+                            returnTo: CARD_SETUP_RETURN_TARGET,
+                        },
                     })
                     return
                 }
@@ -87,7 +90,10 @@ export const useCardAddAccount = (): UseCardAddAccountResult => {
                     logger.warn('[card] build returned null → SelectHDWallet')
                     navigateToAddAccount({
                         screen: 'SelectHDWallet',
-                        params: { returnTo: CARD_SETUP_RETURN_TARGET },
+                        params: {
+                            chainId: ALGORAND_CHAIN_ID,
+                            returnTo: CARD_SETUP_RETURN_TARGET,
+                        },
                     })
                     return
                 }

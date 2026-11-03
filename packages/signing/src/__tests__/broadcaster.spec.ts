@@ -11,10 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import {
-    ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import * as signing from '../index'
 import {
     broadcasterChainAdapters,
@@ -27,7 +24,7 @@ import {
 } from '../broadcaster'
 import { registerFakeBroadcaster } from './fakeBroadcaster'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'testnet' } as const
 
 describe('broadcaster wrappers', () => {
     it('forward their arguments to the adapter registered for the chain and return its result', async () => {
@@ -55,19 +52,19 @@ describe('broadcaster wrappers', () => {
         await expect(submitSignedGroup(SCOPE, bytes)).resolves.toEqual(['TX2'])
         expect(adapter.submit).toHaveBeenCalledWith(SCOPE, bytes)
 
-        await expect(reconcileOpenSubmissions(LEGACY_CHAIN_ID)).resolves.toBe(
+        await expect(reconcileOpenSubmissions('algorand')).resolves.toBe(
             summary,
         )
-        expect(deriveSubmissionAttemptFromBytes(LEGACY_CHAIN_ID, bytes)).toBe(
+        expect(deriveSubmissionAttemptFromBytes('algorand', bytes)).toBe(
             derived,
         )
         expect(adapter.deriveSubmissionAttemptFromBytes).toHaveBeenCalledWith(
             bytes,
         )
 
-        setOnConfirmedHandler(LEGACY_CHAIN_ID, handler)
+        setOnConfirmedHandler('algorand', handler)
         expect(adapter.setOnConfirmedHandler).toHaveBeenCalledWith(handler)
-        setSubmissionSettledHandler(LEGACY_CHAIN_ID, 'cosign', handler)
+        setSubmissionSettledHandler('algorand', 'cosign', handler)
         expect(adapter.setSubmissionSettledHandler).toHaveBeenCalledWith(
             'cosign',
             handler,
@@ -84,18 +81,16 @@ describe('broadcaster wrappers', () => {
             Promise.resolve().then(() => submitSignedGroup(SCOPE, [])),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
-            Promise.resolve().then(() =>
-                reconcileOpenSubmissions(LEGACY_CHAIN_ID),
-            ),
+            Promise.resolve().then(() => reconcileOpenSubmissions('algorand')),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
-        expect(() =>
-            deriveSubmissionAttemptFromBytes(LEGACY_CHAIN_ID, []),
-        ).toThrow(ChainAdapterNotRegisteredError)
-        expect(() => setOnConfirmedHandler(LEGACY_CHAIN_ID, null)).toThrow(
+        expect(() => deriveSubmissionAttemptFromBytes('algorand', [])).toThrow(
+            ChainAdapterNotRegisteredError,
+        )
+        expect(() => setOnConfirmedHandler('algorand', null)).toThrow(
             ChainAdapterNotRegisteredError,
         )
         expect(() =>
-            setSubmissionSettledHandler(LEGACY_CHAIN_ID, 'swap', null),
+            setSubmissionSettledHandler('algorand', 'swap', null),
         ).toThrow(ChainAdapterNotRegisteredError)
     })
 })

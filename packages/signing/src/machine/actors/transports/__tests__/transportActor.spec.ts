@@ -13,10 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { seedAuthority } from '../../../../__tests__/registerAlgorandAccounts'
 import { createActor, toPromise } from 'xstate'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 
 import { transportActor, type TransportActorInput } from '../transportActor'
@@ -364,7 +361,7 @@ describe('transportActor', () => {
             version: 1,
         })
         seedAuthority(J1_ADDRESS, J2_ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
         const authAccount = multisigAccount(J2_ADDRESS, {
@@ -409,7 +406,7 @@ describe('transportActor', () => {
             'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
         const rekeyedSender: WalletAccount = mockAlgo25Account
         seedAuthority(MOCK_ADDRESS, MSIG_AUTH_ADDRESS, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
         const msigAuth = multisigAccount(MSIG_AUTH_ADDRESS, {
@@ -452,7 +449,7 @@ describe('transportActor', () => {
         mockAddSignatures.mockResolvedValue({ status: 'pending' })
         const rekeyedParticipant: WalletAccount = mockAlgo25Account
         seedAuthority(MOCK_ADDRESS, 'SOMEOTHERAUTH', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
         const source: SourceMetadata = {

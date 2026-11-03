@@ -23,13 +23,13 @@ import { SetThresholdScreen } from '@modules/multisig/screens/SetThresholdScreen
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
 import { useMultisigCreationStore } from '@modules/multisig'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountsStore,
     multisigParametersOf,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/multisig'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { isElementDisabled } from '@test-utils/rnw'
 import {
@@ -191,7 +191,7 @@ describe('Flow: Create a multisig account from scratch', () => {
         expect(saved.custody).toEqual({ kind: 'multisig' })
         expect(addressOf(saved)).toBe(expectedAddress)
         expect(saved.name).toBe('Ops treasury')
-        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
+        expect(multisigParametersOf(saved, ALGORAND_CHAIN_ID)).toEqual({
             threshold,
             addresses,
             version: VERSION,
@@ -257,7 +257,7 @@ describe('Flow: Create a multisig account from scratch', () => {
         const saved = useAccountsStore.getState().accounts[0]
         expect(saved.custody).toEqual({ kind: 'multisig' })
         expect(saved.name).toBe('Team treasury')
-        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
+        expect(multisigParametersOf(saved, ALGORAND_CHAIN_ID)).toEqual({
             threshold: 2,
             addresses: PARTICIPANTS,
             version: 1,

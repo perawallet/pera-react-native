@@ -22,14 +22,13 @@ import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outsid
 import noColorLiteralsOutsideTheme from './lanekeep/rules/no-color-literals-outside-theme.js'
 import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
 import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
+import noAlgorandChainInApp from './lanekeep/rules/no-algorand-chain-in-app.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noRawErrorToast from './lanekeep/rules/no-raw-error-toast.js'
 import i18nKeyExists from './lanekeep/rules/i18n-key-exists.js'
 import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-suppressions.js'
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
 import noLegacyNetworkBridge from './lanekeep/rules/no-legacy-network-bridge.js'
-import noLegacyChainInApp from './lanekeep/rules/no-legacy-chain-in-app.js'
-import noLegacyChainInSharedAppCode from './lanekeep/rules/no-legacy-chain-in-shared-app-code.js'
 import noModuleComponentSpecs from './lanekeep/rules/no-module-component-specs.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
@@ -106,8 +105,7 @@ export default defineConfig({
         noChainIdentityInSharedPackages,
         noChainPackageImports,
         noLegacyNetworkBridge,
-        noLegacyChainInApp,
-        noLegacyChainInSharedAppCode,
+        noAlgorandChainInApp,
         noAlgorandAccountVocabulary,
         noAlgorandTermsInChainNeutralPackages,
         noDeepModuleImports,

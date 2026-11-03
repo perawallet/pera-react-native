@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import { useApplicationQuery } from '@perawallet/wallet-core-projects'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { ProjectVerificationIcon } from '../ProjectVerificationIcon'
@@ -29,7 +29,7 @@ export const ApplicationDisplay = ({
     applicationId,
     valueOnlyOnFallback = false,
 }: ApplicationDisplayProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const styles = useStyles()
     const { t } = useLanguage()
     const { data: application, isLoading } = useApplicationQuery({

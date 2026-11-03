@@ -17,7 +17,6 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
     i18nKey,
     isPostQuantumScheme,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     consumePendingImportMnemonic,
@@ -42,6 +41,7 @@ import {
     logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useClipboard } from '@hooks/useClipboard'
 import { useCapability } from '@hooks/useCapability'
 import { useModalState } from '@hooks/useModalState'
@@ -63,7 +63,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         params: { accountType },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const importAccount = useImportAccount(scope)
     const findAlternateImportKinds = useFindAlternateImportKinds(scope)
     const isQuantumEnabled = useCapability({

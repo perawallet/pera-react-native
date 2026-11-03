@@ -13,6 +13,7 @@
 import { vi } from 'vitest'
 import { toAssetInboxQuote } from '@perawallet/wallet-core-transactions'
 import { sendFlowContractTests } from '@perawallet/wallet-core-transactions/testing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 // Builders stubbed to succeed with a real mainnet transaction, so a rejection
 // can only come from the adapter's own validation of the quote.
@@ -47,9 +48,8 @@ vi.mock('../../transactions/builders', () => ({
 }))
 
 import { algorandSendFlowAdapter } from '../../transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 const claim = {
     scope,
     sender: 'SENDER',

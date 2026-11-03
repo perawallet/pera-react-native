@@ -18,11 +18,9 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -230,9 +228,10 @@ beforeEach(() => {
     vi.clearAllMocks()
     registerAlgorandAddressCodec()
     // A `!!` prefix marks the fixtures' invalid addresses.
-    vi.spyOn(addressCodecs.get(LEGACY_CHAIN_ID), 'isValid').mockImplementation(
-        address => !address.startsWith('!!'),
-    )
+    vi.spyOn(
+        addressCodecs.get(ALGORAND_CHAIN_ID),
+        'isValid',
+    ).mockImplementation(address => !address.startsWith('!!'))
     mockConnect.mockResolvedValue({
         getAddress: vi.fn(),
         signTransaction: vi.fn(),
@@ -322,7 +321,7 @@ describe('useLedgerVerifyScreen', () => {
         expect(watch?.custody.kind).toBe('watch')
         expect(
             authorityOf(watch!, {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'mainnet',
             } as const),
         ).toBe('LEDGER0')
@@ -623,7 +622,7 @@ describe('useLedgerVerifyScreen', () => {
             expect(rekeyed?.custody.kind).toBe('watch')
             expect(
                 authorityOf(rekeyed!, {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const),
             ).toBe('LEDGER0')

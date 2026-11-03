@@ -199,7 +199,11 @@ describe('useTransactionListItem against the history summary goldens', () => {
             const { summary } = golden
 
             const { result } = renderHook(
-                () => useTransactionListItem({ transaction: golden.item }),
+                () =>
+                    useTransactionListItem({
+                        transaction: golden.item,
+                        scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    }),
                 { wrapper },
             )
             const row = result.current

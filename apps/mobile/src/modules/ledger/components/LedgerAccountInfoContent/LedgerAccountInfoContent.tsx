@@ -131,6 +131,7 @@ export const LedgerAccountInfoContent = ({
                             <PWView style={styles.unknownAssetRow}>
                                 <AccountAssetItemView
                                     accountBalance={item.accountBalance}
+                                    scope={scope}
                                     showBalance={false}
                                     style={styles.unknownAssetInfo}
                                 />
@@ -147,6 +148,7 @@ export const LedgerAccountInfoContent = ({
                     return (
                         <AccountAssetItemView
                             accountBalance={item.accountBalance}
+                            scope={scope}
                             usdPrice={item.usdPrice}
                         />
                     )
@@ -168,7 +170,7 @@ export const LedgerAccountInfoContent = ({
                 }
             }
         },
-        [styles, nativeAsset, scope.chainId],
+        [styles, nativeAsset, scope],
     )
 
     return (

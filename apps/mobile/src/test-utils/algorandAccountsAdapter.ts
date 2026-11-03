@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -30,6 +29,7 @@ import { algorandDeviceAdapter } from '@perawallet/wallet-core-chain-algorand/de
 import { algorandMultisigAdapter } from '@perawallet/wallet-core-chain-algorand/multisig'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // Unit specs skip the app bootstrap, so signer resolution and account copy
 // over real accounts have no adapter unless a spec registers one.
@@ -67,7 +67,7 @@ export const registerAlgorandMultisigAdapter = (): void => {
 export const seedAuthority = (
     address: string,
     authorityAddress: string | null,
-    scope: ChainScope = getSelectedScope(LEGACY_CHAIN_ID),
+    scope: ChainScope = getSelectedScope(ALGORAND_CHAIN_ID),
 ): void =>
     useAccountChainStateStore
         .getState()

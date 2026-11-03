@@ -159,6 +159,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
     const { CHAIN_CAPABILITIES } =
         await import('@perawallet/wallet-core-chain-contract')
     return {
+        ALGORAND_CHAIN_ID: descriptorEntry.ALGORAND_CHAIN_ID,
         chainModule: {
             descriptor: descriptorEntry.algorandDescriptor,
             capabilityDefaults: descriptorEntry.algorandCapabilityDefaults,

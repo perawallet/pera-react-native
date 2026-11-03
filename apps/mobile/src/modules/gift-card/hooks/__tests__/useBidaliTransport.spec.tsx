@@ -11,16 +11,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { renderHook, act } from '@testing-library/react'
 import type {
     WalletAccount,
     AccountBalances,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     BIDALI_PAYMENT_CURRENCIES,
     useBidaliTransport,
@@ -147,7 +145,7 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         isValid: address => /^[A-Z2-7]{58}$/.test(address),
     })
 })
@@ -462,7 +460,7 @@ describe('useBidaliTransport', () => {
                 ),
             )
             expect(mockBuildTransferTxs).toHaveBeenCalledWith({
-                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+                scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
                 sender: VALID_ADDRESS,
                 receiver: VALID_ADDRESS,
                 assetId: '0',

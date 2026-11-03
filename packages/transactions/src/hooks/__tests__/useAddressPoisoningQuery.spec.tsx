@@ -15,7 +15,6 @@ import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     assessAddressPoisoning,
     type AddressPoisoningInput,
@@ -28,7 +27,7 @@ vi.mock('../../address-poisoning', () => ({
 
 const INPUT: AddressPoisoningInput = {
     recipient: 'RECEIVER',
-    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
     ownAddresses: ['OWN'],
     senders: ['OWN'],
     contactAddresses: ['CONTACT'],

@@ -24,7 +24,6 @@ import {
     getNfdsByAddresses,
     getStaleOrMissingAddresses,
 } from '../repository'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ADDR_A = 'A'.repeat(58)
 const ADDR_B = 'B'.repeat(58)
@@ -51,7 +50,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -70,7 +69,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -85,7 +84,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [{ address: ADDR_A, name: null }],
@@ -95,7 +94,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -109,7 +108,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -122,7 +121,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -140,7 +139,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -149,7 +148,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -167,7 +166,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -180,7 +179,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -197,7 +196,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'testnet',
                 } as const,
                 entries: [
@@ -216,7 +215,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -224,7 +223,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'testnet',
                 } as const,
             })
@@ -237,7 +236,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [],
@@ -246,7 +245,7 @@ describe('nfd repository', () => {
                 db,
                 address: ADDR_A,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -259,7 +258,7 @@ describe('nfd repository', () => {
     it('stores the scope key in nfd_cache', async () => {
         await upsertNfdEntries({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             entries: [{ address: ADDR_A, name: null }],
         })
 
@@ -274,7 +273,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -293,7 +292,7 @@ describe('nfd repository', () => {
                 db,
                 addresses: [ADDR_A, ADDR_C],
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -307,7 +306,7 @@ describe('nfd repository', () => {
                 db,
                 addresses: [],
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -320,7 +319,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -335,7 +334,7 @@ describe('nfd repository', () => {
                 db,
                 addresses: [ADDR_A, ADDR_B, ADDR_C],
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 ttlMs: 60_000,
@@ -350,7 +349,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -367,7 +366,7 @@ describe('nfd repository', () => {
                 db,
                 addresses: [ADDR_A],
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 ttlMs: 60_000,
@@ -380,7 +379,7 @@ describe('nfd repository', () => {
             await upsertNfdEntries({
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 entries: [
@@ -396,7 +395,7 @@ describe('nfd repository', () => {
                 db,
                 addresses: [ADDR_A, ADDR_B],
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 ttlMs: 60 * 60 * 1000,

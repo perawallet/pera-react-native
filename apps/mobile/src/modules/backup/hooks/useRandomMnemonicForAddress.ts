@@ -12,11 +12,10 @@
 
 import { useEffect, useState } from 'react'
 import {
-    chainAccountOf,
+    chainIdOfAddress,
     custodyOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     mnemonicIndexToWord,
     pickDistinctIndexes,
@@ -57,7 +56,7 @@ export const useRandomMnemonicForAddress = (
         if (
             !address ||
             !account ||
-            chainAccountOf(account, LEGACY_CHAIN_ID)?.address !== address
+            chainIdOfAddress(account, address) === undefined
         ) {
             setState({
                 picks: null,

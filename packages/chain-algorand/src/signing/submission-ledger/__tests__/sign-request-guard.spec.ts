@@ -36,7 +36,7 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const makeTestAddress = (fill: number): Address =>
     new Address(new Uint8Array(32).fill(fill))
@@ -146,7 +146,10 @@ describe('isRequestGroupAlreadySubmitted', () => {
         })
         await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txIds: submitTimeTxIds(txs),
             flow: 'generic',
         })
@@ -161,7 +164,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
             isRequestGroupAlreadySubmitted(request, {
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
             }),
@@ -186,7 +189,10 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txIds,
             flow: 'generic',
         })
@@ -196,7 +202,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
             {
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
             },
@@ -209,7 +215,10 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txIds,
             flow: 'generic',
         })
@@ -220,7 +229,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
             {
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
             },
@@ -233,7 +242,10 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txIds,
             flow: 'generic',
         })
@@ -246,7 +258,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
             {
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
             },
@@ -258,7 +270,10 @@ describe('isRequestGroupAlreadySubmitted', () => {
         const txs = makeGroup()
         await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const,
             txIds: submitTimeTxIds(txs),
             flow: 'generic',
         })
@@ -268,7 +283,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
             {
                 db,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
             },
@@ -278,11 +293,14 @@ describe('isRequestGroupAlreadySubmitted', () => {
 
     it('looks the group up on the active network when no scope is given', async () => {
         useNetworkStore.getState().setMode('developer')
-        useNetworkStore.getState().selectNetwork(LEGACY_CHAIN_ID, 'testnet')
+        useNetworkStore.getState().selectNetwork(ALGORAND_CHAIN_ID, 'testnet')
         const txs = makeGroup()
         await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const,
             txIds: submitTimeTxIds(txs),
             flow: 'generic',
         })

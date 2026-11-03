@@ -15,9 +15,9 @@ import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAccountName } from '@hooks/useAccountName'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import {
@@ -56,7 +56,7 @@ const hdAccount = (
 
 const nameOf = (account: WalletAccount | null) => {
     const { result } = renderHook(() => useAccountName())
-    return result.current.getAccountName(account, LEGACY_CHAIN_ID)
+    return result.current.getAccountName(account, ALGORAND_CHAIN_ID)
 }
 
 describe('useAccountName', () => {
@@ -106,7 +106,7 @@ describe('useAccountName', () => {
         'quantum',
     ])('shows the truncated address for an unnamed %s account', type => {
         expect(nameOf(accountForType(type, ADDRESS))).toBe(
-            addressCodecs.get(LEGACY_CHAIN_ID).truncate(ADDRESS),
+            addressCodecs.get(ALGORAND_CHAIN_ID).truncate(ADDRESS),
         )
     })
 

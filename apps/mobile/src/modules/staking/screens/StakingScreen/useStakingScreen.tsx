@@ -13,8 +13,8 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
@@ -41,7 +41,7 @@ type UseStakingScreenResult = {
 }
 
 export const useStakingScreen = (): UseStakingScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { pushWebView } = useWebView()
     // Passed through so the project list re-resolves when the user switches
     // language: the staking package can't read i18next itself (no

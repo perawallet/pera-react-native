@@ -16,10 +16,9 @@ import {
     getMultisigAccountDetailQueryKey,
     getSignRequestDetailQueryKey,
 } from '../querykeys'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
-const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
 describe('getMultisigAccountDetailQueryKey', () => {
     test('returns array with correct structure for mainnet', () => {

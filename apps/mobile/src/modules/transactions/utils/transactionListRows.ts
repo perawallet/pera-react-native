@@ -12,6 +12,7 @@
 
 import type {
     ChainId,
+    ChainScope,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -40,6 +41,8 @@ export type TransactionRow = {
     /** Transaction id; also the row key. */
     key: string
     transaction: TransactionHistoryItem
+    /** The chain and network the row's history was read on. */
+    scope: ChainScope
     /** Set on a list that mixes networks, so the row names its own. */
     networkChainId?: ChainId
 }
@@ -106,6 +109,7 @@ const groupByDate = <T>(
  */
 export const buildTransactionListRows = (
     transactions: TransactionHistoryItem[],
+    scope: ChainScope,
 ): TransactionListRow[] =>
     groupByDate(
         transactions,
@@ -114,6 +118,7 @@ export const buildTransactionListRows = (
             kind: TRANSACTION_ROW_TYPES.transaction,
             key: transaction.id,
             transaction,
+            scope,
         }),
     )
 

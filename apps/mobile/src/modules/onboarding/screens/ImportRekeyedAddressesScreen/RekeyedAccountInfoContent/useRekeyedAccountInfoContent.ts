@@ -22,10 +22,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 import { Decimal } from 'decimal.js'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 type UseRekeyedAccountInfoContentParams = {
     account: WalletAccount
@@ -45,12 +45,15 @@ export type UseRekeyedAccountInfoContentResult = {
 export function useRekeyedAccountInfoContent({
     account,
 }: UseRekeyedAccountInfoContentParams): UseRekeyedAccountInfoContentResult {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], scope, true)
     const isNativeAssetId = useIsNativeAssetId(scope)
     const address = chainAccountOf(account, scope.chainId)?.address
-    const authority = useAuthorityOf(account, useSelectedScope(LEGACY_CHAIN_ID))
+    const authority = useAuthorityOf(
+        account,
+        useSelectedScope(ALGORAND_CHAIN_ID),
+    )
 
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
         if (!authority) return undefined

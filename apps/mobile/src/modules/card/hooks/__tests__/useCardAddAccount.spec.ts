@@ -92,7 +92,7 @@ describe('useCardAddAccount', () => {
         await waitFor(() =>
             expect(mockPush).toHaveBeenCalledWith('AddAccount', {
                 screen: 'SelectHDWallet',
-                params: { returnTo: RETURN_TO },
+                params: { chainId: 'algorand', returnTo: RETURN_TO },
             }),
         )
         // Pushed (not navigated) so PeraCard stays beneath for the returnTo.
@@ -149,7 +149,7 @@ describe('useCardAddAccount', () => {
         await waitFor(() =>
             expect(mockPush).toHaveBeenCalledWith('AddAccount', {
                 screen: 'SelectHDWallet',
-                params: { returnTo: RETURN_TO },
+                params: { chainId: 'algorand', returnTo: RETURN_TO },
             }),
         )
         expect(mockShowError).not.toHaveBeenCalled()

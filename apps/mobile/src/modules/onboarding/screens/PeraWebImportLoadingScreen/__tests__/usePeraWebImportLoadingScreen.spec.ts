@@ -12,8 +12,8 @@
 
 import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { usePeraWebImportLoadingScreen } from '../usePeraWebImportLoadingScreen'
@@ -109,7 +109,7 @@ describe('usePeraWebImportLoadingScreen', () => {
             expect(mockDecryptPeraWebBackupPayload).toHaveBeenCalled()
         })
         expect(mockDecryptPeraWebBackupPayload.mock.calls[0]?.[2]).toBe(
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
         )
     })
 })

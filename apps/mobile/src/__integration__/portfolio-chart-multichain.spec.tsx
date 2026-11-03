@@ -29,6 +29,7 @@ import {
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
@@ -66,8 +67,6 @@ const { insertAssetHolding, upsertAccountChainState, useAccountsStore } =
     await import('@perawallet/wallet-core-accounts')
 const { nativeAssetFor, upsertAssetPrices, upsertAssets } =
     await import('@perawallet/wallet-core-assets')
-const { LEGACY_CHAIN_ID } =
-    await import('@perawallet/wallet-core-chain-contract')
 const { useSettingsStore } = await import('@perawallet/wallet-core-settings')
 const { useRemoteConfigStore } =
     await import('@perawallet/wallet-core-remote-config')
@@ -91,7 +90,7 @@ const { Decimal } = await import('decimal.js')
 
 const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
-const ALGO_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const ALGO_SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 const ETH_CAIP19 = 'eip155:1/slip44:60'
 
 const ALGORAND_ACCOUNT: WalletAccount = {

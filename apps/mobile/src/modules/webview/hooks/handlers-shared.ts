@@ -11,7 +11,6 @@
  */
 
 import { Linking } from 'react-native'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { dappRelayableErrorNames } from '@perawallet/wallet-core-connections/dappRequest'
 import {
     JsonRpcErrorCode,
@@ -23,6 +22,7 @@ import {
     originOf,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type WebView from 'react-native-webview'
 
 import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
@@ -35,7 +35,7 @@ export { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
 // The in-app bridge speaks ARC-0001, which only the legacy networks' chain
 // does, so it relays that chain's adapter errors on top of the codec default.
 export const sanitizeErrorForWebview = (error: Error): string =>
-    sanitizeDappError(error, dappRelayableErrorNames(LEGACY_CHAIN_ID))
+    sanitizeDappError(error, dappRelayableErrorNames(ALGORAND_CHAIN_ID))
 
 export type RequireSecureContext = {
     operation: string

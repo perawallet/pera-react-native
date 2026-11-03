@@ -60,6 +60,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 id: 'ledger-id',
                 chains: { algorand: { address: 'LEDGER_ADDR' } },
             },
+            {
+                id: 'eth-id',
+                chains: { ethereum: { address: '0xETH_ADDR' } },
+            },
         ],
         findAccountByAddressOn: (
             accounts: TestAccount[],
@@ -102,6 +106,7 @@ describe('useTabResume (web)', () => {
         swapChainState.hasSwapChain = false
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'swap',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetInId: '0',
             assetOutId: '31566704',
@@ -122,6 +127,7 @@ describe('useTabResume (web)', () => {
         capabilityState.turnOff('swap')
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'swap',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetInId: '0',
             assetOutId: '31566704',
@@ -141,6 +147,7 @@ describe('useTabResume (web)', () => {
     it('reopens the swap on the same account with its pair and amount', async () => {
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'swap',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetInId: '0',
             assetOutId: '31566704',
@@ -171,6 +178,7 @@ describe('useTabResume (web)', () => {
     it('reopens the send sheet prefilled with asset, amount, recipient and note', async () => {
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'send',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetId: '0',
             destination: 'RECEIVER',
@@ -194,11 +202,36 @@ describe('useTabResume (web)', () => {
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('ledger-id')
     })
 
+    it('reopens a send on the chain it ran on', async () => {
+        mockTakeTabResumeIntent.mockResolvedValue({
+            flow: 'send',
+            chainId: 'ethereum',
+            accountAddress: '0xETH_ADDR',
+            assetId: '0xTOKEN',
+            destination: '0xRECEIVER',
+            amount: '3',
+            createdAt: Date.now(),
+        })
+        const { result } = renderHook(() => useTabResume(vi.fn()))
+
+        result.current()
+
+        await waitFor(() =>
+            expect(mockOpenSendFunds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    asset: { chainId: 'ethereum', assetId: '0xTOKEN' },
+                }),
+            ),
+        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('eth-id')
+    })
+
     it.each([
         [
             'an expired hand-over',
             {
                 flow: 'send',
+                chainId: 'algorand',
                 accountAddress: 'LEDGER_ADDR',
                 assetId: '0',
                 destination: 'RECEIVER',
@@ -210,6 +243,7 @@ describe('useTabResume (web)', () => {
             'an account no longer in the wallet',
             {
                 flow: 'send',
+                chainId: 'algorand',
                 accountAddress: 'REMOVED_ADDR',
                 assetId: '0',
                 destination: 'RECEIVER',
@@ -218,9 +252,22 @@ describe('useTabResume (web)', () => {
             },
         ],
         [
+            'a record stored before it named a chain',
+            {
+                flow: 'send',
+                accountAddress: 'LEDGER_ADDR',
+                assetId: '0',
+                destination: 'RECEIVER',
+                amount: '1',
+                createdAt: Date.now(),
+                chainId: undefined,
+            },
+        ],
+        [
             'a malformed record',
             {
                 flow: 'swap',
+                chainId: 'algorand',
                 accountAddress: 'LEDGER_ADDR',
                 createdAt: Date.now(),
             },

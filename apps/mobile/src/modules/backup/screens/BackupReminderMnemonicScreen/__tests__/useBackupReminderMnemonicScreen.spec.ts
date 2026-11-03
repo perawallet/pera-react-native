@@ -69,11 +69,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
                 },
             ],
         }),
-    findAddressHolder: (
+    findAccountByAnyChainAddress: (
         accounts: { chains: Record<string, { address: string }> }[],
-        scope: { chainId: string },
         address: string,
-    ) => accounts.find(a => a.chains[scope.chainId]?.address === address),
+    ) =>
+        accounts.find(a =>
+            Object.values(a.chains).some(entry => entry.address === address),
+        ),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -147,6 +149,9 @@ describe('useBackupReminderMnemonicScreen', () => {
             result.current.onContinue()
         })
         expect(result.current.wordIndices).toBeNull()
+        expect(nav.navigate).toHaveBeenCalledWith('BackupVerification', {
+            address: 'ADDR',
+        })
 
         // Back to the screen: focus re-runs the loader.
         act(() => {

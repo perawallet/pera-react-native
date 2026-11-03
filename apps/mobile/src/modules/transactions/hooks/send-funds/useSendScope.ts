@@ -10,15 +10,13 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountChainId,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useSendFundsStore } from './useSendFunds'
 
 /**
@@ -32,7 +30,7 @@ export const useSendScope = (): ChainScope => {
     )
     const accountChainId = useAccountChainId(
         useSelectedAccount(),
-        LEGACY_CHAIN_ID,
+        useHomeChainScope().chainId,
     )
     return useSelectedScope(selectedChainId ?? accountChainId)
 }

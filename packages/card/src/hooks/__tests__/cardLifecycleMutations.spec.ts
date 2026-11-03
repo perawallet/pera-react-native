@@ -31,9 +31,8 @@ import { useFreezeCardMutation } from '../useFreezeCardMutation'
 import { useUnfreezeCardMutation } from '../useUnfreezeCardMutation'
 import { cardQueryKeys } from '../querykeys'
 import { CardStatus, type Card } from '../../models/card'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>

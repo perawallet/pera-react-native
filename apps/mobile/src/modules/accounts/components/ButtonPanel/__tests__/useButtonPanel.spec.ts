@@ -12,7 +12,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@test-utils/render'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountCapabilityScope,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
@@ -65,10 +68,18 @@ const onEthereumOnly: WalletAccount = {
     chains: { ethereum: { address: '0xabc' } },
 }
 
+// The global mock turns every capability on; these cases switch them.
+const actualAccounts = await vi.importActual<
+    typeof import('@perawallet/wallet-core-accounts')
+>('@perawallet/wallet-core-accounts')
+
 describe('useButtonPanel', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useRemoteConfigStore.getState().resetState()
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actualAccounts.useAccountCapabilityScope,
+        )
         overview.account = onAlgorand
     })
 
@@ -126,18 +137,25 @@ describe('useButtonPanel', () => {
         expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
     })
 
-    it('tracks swapping on ethereum for an Ethereum account', () => {
+    it('offers send and receive while another chain the account holds serves them', () => {
         registerEthereumChain()
-        overview.account = onEthereumOnly
+        setCapabilityOverrides({ send: false, receive: false }, 'algorand')
+        overview.account = {
+            ...onAlgorand,
+            chains: { ...onAlgorand.chains, ...onEthereumOnly.chains },
+        }
 
         const { result } = renderHook(() => useButtonPanel())
 
-        act(() => {
-            result.current.handleSwap()
-        })
+        expect(result.current.canSend).toBe(true)
+        expect(result.current.canReceive).toBe(true)
+    })
 
-        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Swap, {
-            [AnalyticsMetadataKey.ChainId]: 'ethereum',
-        })
+    it('removes send once no chain the account holds has it', () => {
+        setCapabilityOverrides({ send: false })
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        expect(result.current.canSend).toBe(false)
     })
 })

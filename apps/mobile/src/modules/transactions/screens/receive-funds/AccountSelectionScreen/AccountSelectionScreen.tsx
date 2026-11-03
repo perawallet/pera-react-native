@@ -21,8 +21,6 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { AccountPicker } from '@components/AccountPicker'
 import {
     needsChainSelection,
@@ -30,9 +28,10 @@ import {
 } from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '@modules/transactions/routes/receive-funds/types'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export const AccountSelectionScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const allAccounts = useAllAccounts()
     const { accountValueTotals } = useAccountValueTotalsQuery(
         allAccounts,

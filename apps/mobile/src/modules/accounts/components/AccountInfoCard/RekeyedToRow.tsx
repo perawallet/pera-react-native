@@ -17,11 +17,11 @@ import {
     getAccountDisplayName,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     dedupeSecondaryLabel,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useClipboard } from '@hooks/useClipboard'
 import { AccountIcon } from '@components/AccountIcon'
 import type { useStyles } from './styles'
@@ -46,11 +46,11 @@ export const RekeyedToRow = ({
     const { copyToClipboard } = useClipboard()
     const address =
         (authAccount &&
-            chainAccountOf(authAccount, LEGACY_CHAIN_ID)?.address) ??
+            chainAccountOf(authAccount, ALGORAND_CHAIN_ID)?.address) ??
         authAddress
     const truncated = truncateAlgorandAddress(address)
     const title = authAccount
-        ? getAccountDisplayName(authAccount, LEGACY_CHAIN_ID)
+        ? getAccountDisplayName(authAccount, ALGORAND_CHAIN_ID)
         : truncated
     const secondary = dedupeSecondaryLabel(title, truncated)
 

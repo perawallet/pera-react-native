@@ -22,7 +22,6 @@ import {
 import {
     type ChainScope,
     type SignedTransaction,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useMultisigTransportAdapters } from '../useMultisigTransportAdapters'
 import type { DraftProposeContext } from '../../chain-adapter'
@@ -36,7 +35,7 @@ import type { SigningResult } from '../../pipeline/types'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
-const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
 const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 

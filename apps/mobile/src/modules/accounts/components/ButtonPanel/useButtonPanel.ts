@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { useAccountChainId } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
+import { useAccountCapabilityScope } from '@perawallet/wallet-core-accounts'
 import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
@@ -33,15 +31,20 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     const navigation = useAppNavigation()
     const { account, openSendFunds, openReceiveFunds, openAccountOptions } =
         useAccountOverviewModal()
-    const canSwap = useSwapScope(account) !== null
-    const chainId = useAccountChainId(account, LEGACY_CHAIN_ID)
-    const canSend = useChainCapability(chainId, 'send')
-    const canReceive = useChainCapability(chainId, 'receive')
+    // Each button shows when any chain the account holds serves it; the flow
+    // it opens asks which chain when more than one does.
+    const swapChainId = useSwapScope(account)?.chainId
+    const canSwap = swapChainId !== undefined
+    const canSend = useAccountCapabilityScope(account, 'send') !== null
+    const canReceive = useAccountCapabilityScope(account, 'receive') !== null
 
     const handleSwap = useCallback(() => {
-        trackEvent(HomeEvent.Swap, { [AnalyticsMetadataKey.ChainId]: chainId })
+        if (!swapChainId) return
+        trackEvent(HomeEvent.Swap, {
+            [AnalyticsMetadataKey.ChainId]: swapChainId,
+        })
         navigation.replace('TabBar', { screen: 'Swap' })
-    }, [chainId, navigation])
+    }, [swapChainId, navigation])
 
     return {
         canSwap,

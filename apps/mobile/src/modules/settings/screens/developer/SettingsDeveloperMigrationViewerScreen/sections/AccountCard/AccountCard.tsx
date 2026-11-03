@@ -13,7 +13,7 @@
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { accountKindIdOf } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useExpandableState } from '../../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../../components/LegacyVsRnRow'
@@ -118,7 +118,7 @@ export const AccountCard = ({ account, rn }: AccountCardProps) => {
                                         rnAccount
                                             ? accountKindIdOf(
                                                   rnAccount,
-                                                  LEGACY_CHAIN_ID,
+                                                  ALGORAND_CHAIN_ID,
                                               )
                                             : '(missing)'
                                     }

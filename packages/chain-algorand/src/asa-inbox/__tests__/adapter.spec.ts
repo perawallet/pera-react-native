@@ -14,8 +14,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ZodError } from 'zod'
 import { algorandAssetInbox } from '../adapter'
 import { payloadTransactionOf } from '../../signing/__tests__/transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { toAssetInboxQuote } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const mocks = vi.hoisted(() => ({
     createWalletAlgorandClient: vi.fn(),
@@ -69,7 +69,10 @@ describe('algorandAssetInbox', () => {
         mocks.fetchArc59AssetRequests.mockResolvedValue(requests)
 
         const result = await inbox.fetchRequests({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const,
             address: 'RECEIVER',
         })
 
@@ -88,7 +91,10 @@ describe('algorandAssetInbox', () => {
         })
 
         const result = await inbox.fetchSendSummary({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             receiver: 'RECEIVER',
             assetId: '7',
         })
@@ -104,7 +110,10 @@ describe('algorandAssetInbox', () => {
 
     it("builds an inbox send with the scope's wallet client", async () => {
         const result = await inbox.buildSendTxs({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const,
             sender: 'SENDER',
             receiver: 'RECEIVER',
             assetId: 7n,
@@ -115,7 +124,7 @@ describe('algorandAssetInbox', () => {
 
         expect(result.map(payloadTransactionOf)).toEqual(TXNS)
         expect(result[0].scope).toEqual({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
         expect(mocks.createWalletAlgorandClient).toHaveBeenCalledWith('testnet')
@@ -136,7 +145,7 @@ describe('algorandAssetInbox', () => {
         await expect(
             inbox.buildSendTxs({
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
                 sender: 'SENDER',
@@ -162,7 +171,7 @@ describe('algorandAssetInbox', () => {
             senderMinFee: 1000n,
         }
         const scope = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const
 

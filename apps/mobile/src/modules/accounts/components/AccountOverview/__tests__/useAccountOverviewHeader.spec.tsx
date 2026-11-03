@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => [{ address: 'a' }]),
-        useCanSignWith: vi.fn(() => true),
+        useSigningAccountsOnAnyChain: vi.fn(() => []),
     }
 })
 
@@ -290,7 +290,11 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.chainName).toBe('Algorand')
     })
 
-    it('returns canSign true when canSignWith returns true', () => {
+    it('returns canSign true when the account signs on any chain it holds', async () => {
+        const { useSigningAccountsOnAnyChain } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useSigningAccountsOnAnyChain).mockReturnValue([mockAccount])
+
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
@@ -299,10 +303,10 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.canSign).toBe(true)
     })
 
-    it('returns canSign false when canSignWith returns false', async () => {
-        const { useCanSignWith } =
+    it('returns canSign false when the account signs on no chain', async () => {
+        const { useSigningAccountsOnAnyChain } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useCanSignWith).mockReturnValue(false)
+        vi.mocked(useSigningAccountsOnAnyChain).mockReturnValue([])
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount, false),

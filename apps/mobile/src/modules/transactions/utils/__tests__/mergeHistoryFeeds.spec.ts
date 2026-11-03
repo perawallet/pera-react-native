@@ -90,10 +90,13 @@ describe('mergeHistoryFeeds', () => {
         const merged = mergeHistoryFeeds([
             feed(
                 ALGORAND,
-                buildTransactionListRows([
-                    algoAt('algo-new', JAN_1 + 3 * HOUR),
-                    algoAt('algo-old', JAN_1 + HOUR),
-                ]),
+                buildTransactionListRows(
+                    [
+                        algoAt('algo-new', JAN_1 + 3 * HOUR),
+                        algoAt('algo-old', JAN_1 + HOUR),
+                    ],
+                    ALGORAND,
+                ),
             ),
             feed(
                 ETHEREUM,
@@ -114,7 +117,10 @@ describe('mergeHistoryFeeds', () => {
 
     it('puts an in-flight record with no timestamp above everything', () => {
         const merged = mergeHistoryFeeds([
-            feed(ALGORAND, buildTransactionListRows([algoAt('algo', JAN_1)])),
+            feed(
+                ALGORAND,
+                buildTransactionListRows([algoAt('algo', JAN_1)], ALGORAND),
+            ),
             feed(ETHEREUM, buildRecordListRows([ethAt('pending')])),
         ])
 
@@ -125,10 +131,13 @@ describe('mergeHistoryFeeds', () => {
         const merged = mergeHistoryFeeds([
             feed(
                 ALGORAND,
-                buildTransactionListRows([
-                    algoAt('algo-new', JAN_1 + 3 * HOUR),
-                    algoAt('algo-old', JAN_1),
-                ]),
+                buildTransactionListRows(
+                    [
+                        algoAt('algo-new', JAN_1 + 3 * HOUR),
+                        algoAt('algo-old', JAN_1),
+                    ],
+                    ALGORAND,
+                ),
             ),
             feed(
                 ETHEREUM,
@@ -145,9 +154,13 @@ describe('mergeHistoryFeeds', () => {
 
     it('blocks on the network whose oldest loaded row is newest', () => {
         const merged = mergeHistoryFeeds([
-            feed(ALGORAND, buildTransactionListRows([algoAt('algo', JAN_1)]), {
-                hasNextPage: true,
-            }),
+            feed(
+                ALGORAND,
+                buildTransactionListRows([algoAt('algo', JAN_1)], ALGORAND),
+                {
+                    hasNextPage: true,
+                },
+            ),
             feed(ETHEREUM, buildRecordListRows([ethAt('eth', JAN_1 + HOUR)]), {
                 hasNextPage: true,
             }),
@@ -159,7 +172,10 @@ describe('mergeHistoryFeeds', () => {
 
     it("shows nothing until every network has reported, since one that hasn't could hold the newest rows", () => {
         const merged = mergeHistoryFeeds([
-            feed(ALGORAND, buildTransactionListRows([algoAt('algo', JAN_1)])),
+            feed(
+                ALGORAND,
+                buildTransactionListRows([algoAt('algo', JAN_1)], ALGORAND),
+            ),
             undefined,
         ])
 
@@ -170,7 +186,10 @@ describe('mergeHistoryFeeds', () => {
 
     it('lets a failed or paused network stop holding the others back', () => {
         const merged = mergeHistoryFeeds([
-            feed(ALGORAND, buildTransactionListRows([algoAt('algo', JAN_1)])),
+            feed(
+                ALGORAND,
+                buildTransactionListRows([algoAt('algo', JAN_1)], ALGORAND),
+            ),
             feed(ETHEREUM, [], {
                 hasNextPage: true,
                 isSearchPaused: true,
@@ -195,10 +214,13 @@ describe('mergeHistoryFeeds', () => {
         const merged = mergeHistoryFeeds([
             feed(
                 ALGORAND,
-                buildTransactionListRows([
-                    algoAt('algo-new', JAN_1 + 3 * HOUR),
-                    algoAt('algo-old', JAN_1),
-                ]),
+                buildTransactionListRows(
+                    [
+                        algoAt('algo-new', JAN_1 + 3 * HOUR),
+                        algoAt('algo-old', JAN_1),
+                    ],
+                    ALGORAND,
+                ),
             ),
             feed(
                 ETHEREUM,
@@ -275,7 +297,10 @@ describe('mergeHistoryFeeds', () => {
             imitatedAddress: 'X',
         } as unknown as SuspectedPoisoning
         const merged = mergeHistoryFeeds([
-            feed(ALGORAND, buildTransactionListRows([algoAt('algo', JAN_1)])),
+            feed(
+                ALGORAND,
+                buildTransactionListRows([algoAt('algo', JAN_1)], ALGORAND),
+            ),
             feed(ETHEREUM, buildRecordListRows([ethAt('eth', JAN_1)]), {
                 suspectedPoisoningById: new Map([['eth', suspected]]),
             }),

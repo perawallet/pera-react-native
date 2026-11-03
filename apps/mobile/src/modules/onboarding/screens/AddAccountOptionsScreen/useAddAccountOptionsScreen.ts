@@ -82,7 +82,7 @@ export const useAddAccountOptionsScreen =
                 return
             }
             if (hasMultipleHdSeeds) {
-                navigation.push('SelectHDWallet')
+                navigation.push('SelectHDWallet', { chainId })
                 return
             }
             runCreateAccount(buildNextHDAccount)
@@ -90,6 +90,7 @@ export const useAddAccountOptionsScreen =
             hasHDWallet,
             hasMultipleHdSeeds,
             navigation,
+            chainId,
             buildHdWalletAccount,
             buildNextHDAccount,
             runCreateAccount,

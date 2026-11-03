@@ -30,7 +30,6 @@ import React from 'react'
 
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
 import * as endpoints from '../../history-adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('../../history-adapter', () => ({
     fetchTransactionHistory: vi.fn(),
@@ -114,7 +113,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -128,7 +127,7 @@ describe('useTransactionHistoryQuery', () => {
             expect.objectContaining({
                 accountAddress: mockAddress,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             }),
@@ -150,7 +149,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -185,7 +184,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -218,7 +217,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                     afterTime: '2024-01-01',
@@ -247,7 +246,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -266,7 +265,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -284,7 +283,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                     isEnabled: false,
@@ -318,7 +317,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -358,7 +357,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: address,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -406,7 +405,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -442,7 +441,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -493,7 +492,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -524,7 +523,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -574,7 +573,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -639,7 +638,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -697,7 +696,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -723,7 +722,7 @@ describe('useTransactionHistoryQuery', () => {
             expect.objectContaining({
                 url: 'CURSOR1',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 accountAddress: mockAddress,
@@ -778,7 +777,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     assetId: '31566704',
@@ -807,7 +806,7 @@ describe('useTransactionHistoryQuery', () => {
             expect.objectContaining({
                 url: 'CURSOR1',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'testnet',
                 } as const,
                 accountAddress: mockAddress,
@@ -825,7 +824,7 @@ describe('useTransactionHistoryQuery', () => {
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -870,7 +869,7 @@ describe('useTransactionHistoryQuery', () => {
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
                         scope: {
-                            chainId: LEGACY_CHAIN_ID,
+                            chainId: 'algorand',
                             networkId: 'mainnet',
                         } as const,
                     }),
@@ -899,7 +898,7 @@ describe('useTransactionHistoryQuery', () => {
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
                         scope: {
-                            chainId: LEGACY_CHAIN_ID,
+                            chainId: 'algorand',
                             networkId: 'mainnet',
                         } as const,
                     }),
@@ -924,7 +923,7 @@ describe('useTransactionHistoryQuery', () => {
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
                         scope: {
-                            chainId: LEGACY_CHAIN_ID,
+                            chainId: 'algorand',
                             networkId: 'mainnet',
                         } as const,
                     }),
@@ -937,7 +936,7 @@ describe('useTransactionHistoryQuery', () => {
             // Scoping happens in SQL, not by post-filtering every account's rows.
             expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
                 sender: mockAddress,
@@ -954,7 +953,7 @@ describe('useTransactionHistoryQuery', () => {
                     useTransactionHistoryQuery({
                         accountAddress: mockAddress,
                         scope: {
-                            chainId: LEGACY_CHAIN_ID,
+                            chainId: 'algorand',
                             networkId: 'mainnet',
                         } as const,
                         assetId: '123',

@@ -13,7 +13,6 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type AuthDataSignRequest,
@@ -30,6 +29,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
@@ -76,7 +76,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const request =
         (pipeline.currentRequest as Optional<AuthDataSignRequest>) ?? null
 
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const account = useFindAccountByAddress(
         request?.authData.signer ?? '',
         scope,
