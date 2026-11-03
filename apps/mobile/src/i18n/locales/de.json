@@ -1655,7 +1655,9 @@
             "title": "Pera Card Konto",
             "subtitle": "Gib dein Krypto aus",
             "activate": "Aktivieren",
-            "status_approved": "Genehmigt"
+            "status_frozen": "Gesperrt",
+            "status_blocked": "Deaktiviert",
+            "status_pending": "Wird eingerichtet"
         },
         "intro": {
             "navigation_title": "Pera Card",

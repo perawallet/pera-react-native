@@ -10,42 +10,39 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { PeraCardRowHeader } from './PeraCardRowHeader'
 import { useStyles } from './styles'
+import { usePeraCardConnectedRow } from './usePeraCardConnectedRow'
 
 type PeraCardConnectedRowProps = {
     /** When true, indent the card and draw the connector to the account above. */
     nested: boolean
+    scope: ChainScope
     onPress?: () => void
 }
 
 export const PeraCardConnectedRow = ({
     nested,
+    scope,
     onPress,
 }: PeraCardConnectedRowProps) => {
-    const { t } = useLanguage()
     const styles = useStyles()
+    const { statusLabel } = usePeraCardConnectedRow(scope)
 
-    // TODO(card): derive the real label from lastKnownStatus / useCardUserQuery
-    // once the on-chain link and card-status wiring lands.
     const cardContent = (
         <PeraCardRowHeader>
-            <PWView style={styles.statusRow}>
-                <PWIcon
-                    name='check'
-                    size='sm'
-                    variant='secondary'
-                />
+            {statusLabel ? (
                 <PWText
                     variant='footnoteMedium'
                     style={styles.statusLabel}
                     numberOfLines={1}
+                    testID='pera_card_connected_row_status'
                 >
-                    {t('peraCard.account_item.status_approved')}
+                    {statusLabel}
                 </PWText>
-            </PWView>
+            ) : null}
         </PeraCardRowHeader>
     )
 

@@ -80,6 +80,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     <PeraCardAccountItem
                         activated={item.activated}
                         nested={item.nested}
+                        scope={item.scope}
                         onActivate={onPeraCardActivate}
                         onOpen={onPeraCardOpen}
                     />

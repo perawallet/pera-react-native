@@ -1663,7 +1663,9 @@
             "title": "Pera Card hesabı",
             "subtitle": "Kriptonu harca",
             "activate": "Etkinleştir",
-            "status_approved": "Onaylandı"
+            "status_frozen": "Donduruldu",
+            "status_blocked": "Bloke edildi",
+            "status_pending": "Hazırlanıyor"
         },
         "intro": {
             "navigation_title": "Pera Card",
