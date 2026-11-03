@@ -101,7 +101,15 @@ vi.mock('@utils/tabResumeIntent', () => ({
     completeTabResume: mockCompleteTabResume,
 }))
 
-vi.mock('@hooks/useLanguage')
+// The shared mock drops interpolation; these specs assert which network the copy names.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key}|${JSON.stringify(params)}` : key,
+        currentLanguage: 'en',
+        changeLanguage: () => undefined,
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionSendFlow: () => ({
@@ -266,7 +274,7 @@ describe('useTransactionProcessingScreen', () => {
         )
         expect(mockCompleteTabResume).toHaveBeenCalledWith({
             title: 'send_funds.success.title',
-            body: 'send_funds.success.subtitle',
+            body: 'send_funds.success.subtitle|{"network":"Algorand"}',
         })
     })
 
@@ -284,7 +292,7 @@ describe('useTransactionProcessingScreen', () => {
         })
         expect(mockCompleteTabResume).toHaveBeenCalledWith({
             title: 'send_funds.success.pending_title',
-            body: 'send_funds.success.pending_subtitle',
+            body: 'send_funds.success.pending_subtitle|{"network":"Ethereum"}',
         })
     })
 
