@@ -31,7 +31,7 @@ const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('broadcaster wrappers', () => {
     it('forward their arguments to the adapter registered for the chain and return its result', async () => {
-        const summary = { probed: 2, confirmed: 1, failed: 1 }
+        const summary = { probed: 2, confirmed: 1, progressed: 0, failed: 1 }
         const derived = {
             txIds: ['TX1'],
             chainData: { family: 'algorand' as const, lastValid: 7 },

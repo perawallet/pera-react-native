@@ -3577,6 +3577,7 @@
             "raw_transaction": "Rohtransaktion"
         },
         "notice": {
+            "confirming": "Wird bestätigt",
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",

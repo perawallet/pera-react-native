@@ -3602,6 +3602,7 @@
             "raw_transaction": "Transação bruta"
         },
         "notice": {
+            "confirming": "Confirmando",
             "pending": "Pendente desde {{since}}",
             "failed": "Falhou",
             "replaced": "Substituída por outra transação",

@@ -476,8 +476,8 @@ export class SyncService {
         for (const { id } of this.deps.chains.list()) {
             if (!broadcasterChainAdapters.has(id)) continue
             const summary = await reconcileOpenSubmissions(id)
-            if (summary.confirmed + summary.failed > 0) {
-                // A settled row changes the pending history row's status, and
+            if (summary.confirmed + summary.failed + summary.progressed > 0) {
+                // A settled or progressed row changes the pending history row's status, and
                 // history queries are DB-cached with staleTime: Infinity, so a
                 // settle on a no-work tick would otherwise leave a stale row.
                 // Only the settled chain's: another chain's backend-read

@@ -3585,6 +3585,7 @@
             "raw_transaction": "Raw Transaction"
         },
         "notice": {
+            "confirming": "Confirming",
             "pending": "Pending since {{since}}",
             "failed": "Failed",
             "replaced": "Replaced by another transaction",

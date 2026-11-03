@@ -29,6 +29,8 @@ export {
     pruneResolvedSubmissionAttempts,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
+    setOpenSubmissionStatus,
+    type SetOpenSubmissionStatusParams,
 } from './repository'
 export { subscribeToSubmissionLedger } from './ledger-events'
 export { SubmissionAttemptsSchema, TransactionBatchesSchema } from './schema'

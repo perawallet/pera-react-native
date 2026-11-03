@@ -3585,6 +3585,7 @@
             "raw_transaction": "Ham işlem"
         },
         "notice": {
+            "confirming": "Onaylanıyor",
             "pending": "Beklemede, başlangıç zamanı: {{since}}",
             "failed": "Başarısız",
             "replaced": "Başka bir işlemle değiştirildi",

@@ -3585,6 +3585,7 @@
             "raw_transaction": "Transaction brute"
         },
         "notice": {
+            "confirming": "Confirmation en cours",
             "pending": "En attente depuis {{since}}",
             "failed": "Échouée",
             "replaced": "Remplacée par une autre transaction",

@@ -22,6 +22,7 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
+    setOpenSubmissionStatus,
     markSubmissionUnknown,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
@@ -758,6 +759,87 @@ describe('submission ledger repository', () => {
                     txId: '0xnew',
                 }),
             ).resolves.not.toBeNull()
+        })
+    })
+
+    describe('a confirming attempt', () => {
+        const record = () =>
+            recordSubmissionAttempt({
+                db,
+                scope: ETHEREUM,
+                txIds: ['0xaaa'],
+                flow: 'pipeline',
+                sender: '0xSENDER',
+                nonce: 7,
+                rawTransaction: '0x02aaa',
+            })
+
+        it('moves an open row to confirming and back to submitted, still open and unresolved', async () => {
+            const id = await record()
+
+            await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+            const [confirming] = await getOpenSubmissionAttempts({ db })
+            await setOpenSubmissionStatus({ db, id, status: 'submitted' })
+            const [submitted] = await getOpenSubmissionAttempts({ db })
+
+            expect(confirming).toMatchObject({
+                id,
+                status: 'confirming',
+                resolvedAt: null,
+            })
+            expect(submitted).toMatchObject({ status: 'submitted' })
+        })
+
+        it('notifies ledger subscribers', async () => {
+            const id = await record()
+            const listener = vi.fn()
+            const unsubscribe = subscribeToSubmissionLedger(listener)
+
+            await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+            unsubscribe()
+
+            expect(listener).toHaveBeenCalledTimes(1)
+        })
+
+        it.each(['confirmed', 'failed', 'replaced'] as const)(
+            'leaves a %s row as it is',
+            async status => {
+                const id = await record()
+                await resolveSubmissionAttempt({ db, id, status })
+
+                await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+
+                const [row] = await db.select().from(SubmissionAttemptsSchema)
+                expect(row).toMatchObject({ status })
+            },
+        )
+
+        it('stays open: held by the nonce reads, unprunable and not re-priceable', async () => {
+            const id = await record()
+            await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+            await backdate(id, 0)
+
+            expect(
+                (
+                    await getSubmissionAttemptsAtNonce({
+                        db,
+                        scope: ETHEREUM,
+                        sender: '0xSENDER',
+                        nonce: 7,
+                        statuses: ['submitted', 'unknown', 'confirming'],
+                    })
+                ).map(a => a.id),
+            ).toEqual([id])
+            await expect(
+                pruneResolvedSubmissionAttempts({ db, olderThanMs: 1 }),
+            ).resolves.toBe(0)
+            await expect(
+                getReplaceableSubmissionAttempt({
+                    db,
+                    scope: ETHEREUM,
+                    txId: '0xaaa',
+                }),
+            ).resolves.toBeNull()
         })
     })
 })
