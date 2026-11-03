@@ -46,7 +46,7 @@ export type GroupedHoldingMember<T> = {
 }
 
 export type GroupedHoldingItem<T> =
-    | { kind: 'holding'; holding: T; isGroupMember: boolean }
+    | { kind: 'holding'; holding: T }
     | {
           kind: 'group'
           group: AssetGroup
@@ -158,8 +158,8 @@ const sumUsdValue = <T>(
 
 /**
  * Folds holdings of one group into one group item at the first member's
- * sorted position, followed by its members when expanded. Only groups with two
- * or more holdings present fold; everything else stays a plain row.
+ * sorted position; the item carries its members, expanded or not. Only groups
+ * with two or more holdings present fold; everything else stays a plain row.
  */
 export const buildGroupedHoldingItems = <T extends GroupableHolding>({
     holdings,
@@ -180,7 +180,7 @@ export const buildGroupedHoldingItems = <T extends GroupableHolding>({
         const group = holdingGroups[index]
         const present = group ? (membersOf.get(group.id) ?? []) : []
         if (!group || present.length < 2) {
-            items.push({ kind: 'holding', holding, isGroupMember: false })
+            items.push({ kind: 'holding', holding })
             return
         }
         if (placed.has(group.id)) return
@@ -189,24 +189,14 @@ export const buildGroupedHoldingItems = <T extends GroupableHolding>({
         const members = present.map(member =>
             toMember(member, adapter, unreadChainIds),
         )
-        const isExpanded = expandedGroupIds.has(group.id)
         items.push({
             kind: 'group',
             group,
             members,
             amount: sumDisplayAmount(members),
             usdValue: sumUsdValue(members),
-            isExpanded,
+            isExpanded: expandedGroupIds.has(group.id),
         })
-        if (isExpanded) {
-            for (const member of present) {
-                items.push({
-                    kind: 'holding',
-                    holding: member,
-                    isGroupMember: true,
-                })
-            }
-        }
     })
     return items
 }

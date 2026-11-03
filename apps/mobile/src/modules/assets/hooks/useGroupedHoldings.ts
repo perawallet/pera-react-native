@@ -52,7 +52,6 @@ export const useGroupedHoldings = <T extends GroupableHolding>({
                 : holdings.map(holding => ({
                       kind: 'holding' as const,
                       holding,
-                      isGroupMember: false,
                   })),
         [holdings, expandedGroupIds, adapter, isEnabled, unreadChainIds],
     )

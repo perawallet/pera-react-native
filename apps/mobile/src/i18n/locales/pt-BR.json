@@ -3275,7 +3275,7 @@
             "app_integrity_clear_backoff": "Limpar backoffs",
             "refresh_cache": "Atualizar todo o cache",
             "refresh_cache_success_title": "Cache atualizado",
-            "refresh_cache_success_body": "Todas as contas foram recarregadas e as consultas invalidadas.",
+            "refresh_cache_success_body": "Dados de ativos expirados; todas as redes estão sendo ressincronizadas.",
             "refresh_cache_error_title": "Falha ao atualizar",
             "refresh_cache_error_body": "Não foi possível atualizar o cache. Consulte os logs para mais detalhes.",
             "reset_banners": "Redefinir banners",

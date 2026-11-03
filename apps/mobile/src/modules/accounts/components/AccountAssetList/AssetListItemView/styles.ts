@@ -26,4 +26,9 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         alignSelf: 'flex-end',
     },
+    groupMember: {
+        marginLeft: theme.spacing.xl,
+        marginVertical: theme.spacing.md,
+        alignItems: 'flex-start',
+    },
 }))

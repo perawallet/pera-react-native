@@ -13,6 +13,7 @@
 import { SyncService } from './service'
 export {
     useSyncCursorStore,
+    resetSyncCursors,
     type AssetSyncKind,
     type SyncCursor,
     type SyncCursors,

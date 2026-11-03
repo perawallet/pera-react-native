@@ -3259,7 +3259,7 @@
             "app_integrity_clear_backoff": "Clear backoffs",
             "refresh_cache": "Refresh full cache",
             "refresh_cache_success_title": "Cache refreshed",
-            "refresh_cache_success_body": "All accounts refetched and queries invalidated.",
+            "refresh_cache_success_body": "Asset data expired; every chain is re-syncing now.",
             "refresh_cache_error_title": "Refresh failed",
             "refresh_cache_error_body": "Could not refresh cache. Check the logs for details.",
             "reset_banners": "Reset banners",

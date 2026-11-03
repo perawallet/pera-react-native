@@ -3259,7 +3259,7 @@
             "app_integrity_clear_backoff": "Backoff’ları temizle",
             "refresh_cache": "Tüm önbelleği yenile",
             "refresh_cache_success_title": "Önbellek yenilendi",
-            "refresh_cache_success_body": "Tüm hesaplar yeniden çekildi ve sorgular geçersiz kılındı.",
+            "refresh_cache_success_body": "Varlık verileri sıfırlandı; tüm ağlar şimdi yeniden eşitleniyor.",
             "refresh_cache_error_title": "Yenileme başarısız",
             "refresh_cache_error_body": "Önbellek yenilenemedi. Ayrıntılar için logları kontrol et.",
             "reset_banners": "Banner’ları sıfırla",

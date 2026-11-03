@@ -3259,7 +3259,7 @@
             "app_integrity_clear_backoff": "Borrar backoffs",
             "refresh_cache": "Actualizar toda la caché",
             "refresh_cache_success_title": "Caché actualizada",
-            "refresh_cache_success_body": "Todas las cuentas se han vuelto a cargar y las consultas se han invalidado.",
+            "refresh_cache_success_body": "Datos de activos caducados; todas las cadenas se están resincronizando.",
             "refresh_cache_error_title": "Error al actualizar",
             "refresh_cache_error_body": "No se pudo actualizar la caché. Consulta los registros para más detalles.",
             "reset_banners": "Restablecer banners",

@@ -126,11 +126,12 @@ const AssetListItemViewBase = ({
                     <ChainLabel chainId={chainId} />
                 ) : undefined
             }
+            iconSize={isGroupMember ? 'md' : undefined}
             showFavorite
             showDeletedLabel
             copyableAssetId
             onPress={onPress}
-            style={style}
+            style={[style, isGroupMember && styles.groupMember]}
         />
     )
 }
