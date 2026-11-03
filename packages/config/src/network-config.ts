@@ -21,7 +21,7 @@ import {
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from './errors'
-import { config, evmConfigKeys } from './main'
+import { config, scopeConfigKeys } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
 export type AlgorandChainConfig = {
@@ -281,7 +281,7 @@ const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 const EVM_SCOPE_CONFIGS: readonly ScopeConfigOf<EvmChainId>[] =
     EVM_CHAIN_IDS.flatMap(chainId =>
         EVM_CHAIN_NETWORKS[chainId].networks.map(network => {
-            const keys = evmConfigKeys(chainId, network.id)
+            const keys = scopeConfigKeys(chainId, network.id)
             return evmScopeConfig(
                 chainId,
                 network.id,

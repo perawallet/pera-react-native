@@ -12,9 +12,10 @@
     // `path.resolve(webShimsRoot, ...)` string lookups (webStubs/polyfillMap),
     // not a static import fallow's graph can follow.
     "apps/browser/web-shims/**",
-    // EVM config key naming: generate-config.sh runs it with node, and the
-    // browser build loads it through createRequire.
-    "tools/dev/evm-config-keys.cjs",
+    // The chain package table: generate-config.sh runs it with node,
+    // metro-build-gates.js requires it, and the browser build loads it through
+    // createRequire.
+    "tools/dev/chain-packages.cjs",
     // Release scripts CI runs with node by path (.bitrise/bitrise.yml,
     // ci/jobs/web.sh) rather than importing them.
     "tools/release/*.mjs"

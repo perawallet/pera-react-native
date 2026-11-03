@@ -126,7 +126,10 @@ describe('stubbedChainModules', () => {
 
     it('keeps a chain package the chain list ships', () => {
         expect(
-            stubbedChainModules(['algorand', 'testchain'], [TEST_CHAIN_PACKAGE]),
+            stubbedChainModules(
+                ['algorand', 'testchain'],
+                [TEST_CHAIN_PACKAGE],
+            ),
         ).toEqual([])
     })
 
@@ -155,7 +158,12 @@ describe('isChainPackageIncluded', () => {
 })
 
 describe('chain package stubs', () => {
-    it.each(CHAIN_PACKAGES.map(chainPackage => [chainPackage.package, chainPackage]))(
+    it.each(
+        CHAIN_PACKAGES.map(chainPackage => [
+            chainPackage.package,
+            chainPackage,
+        ]),
+    )(
         'maps every %s entry module to an existing stub beside it',
         (_name, chainPackage) => {
             const stubs = toStubMap(PROJECT_ROOT, [
