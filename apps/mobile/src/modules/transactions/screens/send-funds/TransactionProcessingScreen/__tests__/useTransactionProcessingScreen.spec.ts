@@ -328,6 +328,7 @@ describe('useTransactionProcessingScreen', () => {
                 ['0xabc'],
                 'unknown-outcome',
                 new EvmError(EvmErrorCode.TIMEOUT),
+                { isUnanswered: true },
             ),
         )
 
@@ -348,6 +349,22 @@ describe('useTransactionProcessingScreen', () => {
                 [AnalyticsMetadataKey.IsRetryable]: true,
             }),
         )
+    })
+
+    it('returns to Confirm when the outcome is unknown but a node did answer', async () => {
+        mockExecute.mockRejectedValueOnce(
+            new SubmissionError(
+                ['0xabc'],
+                'unknown-outcome',
+                new EvmError(EvmErrorCode.INSUFFICIENT_FUNDS),
+            ),
+        )
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(navigateToAccountHistory).not.toHaveBeenCalled()
+        expect(mockOnFinished).not.toHaveBeenCalled()
     })
 
     it('returns to Confirm when the node rejected the send', async () => {

@@ -236,11 +236,12 @@ export const useTransactionProcessingScreen =
                             toError(error),
                         ),
                     })
-                    // No node answer: the send may still land, and Confirm would send it twice.
-                    // Chain-wide on purpose: it also catches Algorand's unparsed algod 4xx and an EVM 429.
+                    // No node answered: the send may still land, and Confirm would send it twice.
+                    // Any other unknown outcome keeps the notice and the way back to Confirm.
                     if (
                         error instanceof SubmissionError &&
-                        error.classification === 'unknown-outcome'
+                        error.classification === 'unknown-outcome' &&
+                        error.isUnanswered
                     ) {
                         showError(error)
                         onFinishedRef.current?.()
