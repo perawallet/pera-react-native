@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     hasRecentPasswordAuth: vi.fn<() => Promise<boolean>>(),
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     isPasskeyUnlockSupported: mocks.isPasskeyUnlockSupported,
     isPasskeyUnlockEnabled: mocks.isPasskeyUnlockEnabled,
     hasRecentPasswordAuth: mocks.hasRecentPasswordAuth,

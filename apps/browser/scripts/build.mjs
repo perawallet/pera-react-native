@@ -286,10 +286,10 @@ await build({
     format: 'esm',
     target: 'chrome120',
     alias: {
-        '@perawallet/wallet-extension-keystore-chrome/vault/autolock':
+        '@perawallet/wallet-extension-vault-chrome/vault/autolock':
             path.join(
                 root,
-                '../../extensions/keystore-chrome/src/vault/autolock.ts',
+                '../../extensions/vault-chrome/src/vault/autolock.ts',
             ),
         // esbuild also rewrites subpaths of an aliased package, so the
         // /messaging entry needs its own, longer key.
@@ -323,12 +323,12 @@ cpSync(
 )
 
 // 2b'. The vault's Argon2id worker, spawned by name from the extension pages
-// (ARGON2_WORKER_URL in keystore-chrome's vault/argon2.ts).
+// (ARGON2_WORKER_URL in vault-chrome's vault/argon2.ts).
 await build({
     entryPoints: [
         path.join(
             root,
-            '../../extensions/keystore-chrome/src/vault/argon2-worker.ts',
+            '../../extensions/vault-chrome/src/vault/argon2-worker.ts',
         ),
     ],
     outfile: path.join(dist, 'argon2-worker.js'),

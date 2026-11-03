@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { handleAutoLockAlarm } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
+import { handleAutoLockAlarm } from '@perawallet/wallet-extension-vault-chrome/vault/autolock'
 import {
     DB_CONTROL_SCOPE,
     ensureDeviceInstallationID,

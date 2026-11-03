@@ -11,7 +11,7 @@
  */
 
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome'
-import { isSessionUnlocked } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
+import { isSessionUnlocked } from '@perawallet/wallet-extension-vault-chrome/vault/autolock'
 import {
     DAPP_PAGE_RESPONSE_SCOPE,
     isDappHostResponseMessage,

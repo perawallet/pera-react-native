@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { lockVault as lockWallet } from '@perawallet/wallet-extension-keystore-chrome'
+export { lockVault as lockWallet } from '@perawallet/wallet-extension-vault-chrome'

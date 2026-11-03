@@ -18,7 +18,7 @@ import {
     PasskeyPrfUnsupportedError,
     VaultLockedError,
     VaultReauthRequiredError,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import {
     logger,
     type Optional,

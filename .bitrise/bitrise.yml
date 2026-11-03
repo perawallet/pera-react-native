@@ -1075,7 +1075,7 @@ workflows:
             set -ex
             # Unlike the mobile build (which only needs `packages/*`), the
             # browser extension also depends on workspace packages under
-            # `extensions/*` (platform-chrome, keystore-chrome, ledger-web-*).
+            # `extensions/*` (platform-chrome, vault-chrome, ledger-web-*).
             # `--filter=...browser` walks the real dependency graph instead
             # of a path glob, so it picks up both. `browser` is the package
             # name in apps/browser/package.json — not the directory.

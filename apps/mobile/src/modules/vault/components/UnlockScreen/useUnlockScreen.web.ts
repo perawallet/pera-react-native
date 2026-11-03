@@ -22,7 +22,7 @@ import {
     isPasskeyUnlockSupported,
     unlockVault,
     unlockWithPasskey,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 
 type UseUnlockScreenResult = {
     password: string

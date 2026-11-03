@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     setPending: vi.fn<(isPending: boolean) => Promise<void>>(),
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     createVault: mocks.createVault,
     isPasskeyUnlockSupported: mocks.isPasskeyUnlockSupported,
 }))
