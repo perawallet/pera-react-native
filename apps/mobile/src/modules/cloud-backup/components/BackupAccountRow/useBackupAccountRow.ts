@@ -18,7 +18,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { CachedRecordChain } from '@perawallet/wallet-core-backup'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useSwitchedOffChainIds } from '@perawallet/wallet-core-chain-shared'
 import type { ChainAddress } from '@components/ChainAddressList'
 import { useIsMultichain } from '@modules/accounts'
 import {
@@ -54,13 +53,11 @@ export const useBackupAccountRow = ({
 }: UseBackupAccountRowParams): UseBackupAccountRowResult => {
     const isMultichain = useIsMultichain()
     const registeredChainIds = useRegisteredChainIds()
-    const switchedOff = useSwitchedOffChainIds()
     const [isExpanded, setIsExpanded] = useState(false)
 
     const chains = useMemo((): ChainAddress[] => {
-        const isOn = (chainId: ChainId) => !switchedOff.includes(chainId)
         if (account) {
-            return accountChainOptions(account, isOn).flatMap(option =>
+            return accountChainOptions(account, () => true).flatMap(option =>
                 option.isEnabled && option.address
                     ? [toChainAddress(option.chainId, option.address)]
                     : [],
@@ -69,18 +66,11 @@ export const useBackupAccountRow = ({
         const entries = backupChains?.length
             ? backupChains
             : [{ chain: fallbackChainId, address }]
-        return registeredChainIds.filter(isOn).flatMap(chainId => {
+        return registeredChainIds.flatMap(chainId => {
             const entry = entries.find(({ chain }) => chain === chainId)
             return entry ? [toChainAddress(chainId, entry.address)] : []
         })
-    }, [
-        account,
-        backupChains,
-        address,
-        fallbackChainId,
-        registeredChainIds,
-        switchedOff,
-    ])
+    }, [account, backupChains, address, fallbackChainId, registeredChainIds])
 
     const chainIds = useMemo(() => chains.map(chain => chain.chainId), [chains])
     const canExpand = isMultichain && chains.length > 0

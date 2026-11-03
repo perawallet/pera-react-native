@@ -49,7 +49,10 @@ import {
     evmErrorCodeOf,
     toEvmError,
 } from '../blockchain/errors'
-import { hasNodeVerdict } from '../blockchain/utils/nodeVerdict'
+import {
+    hasNodeVerdict,
+    isAfterUnconfirmedAttempt,
+} from '../blockchain/utils/nodeVerdict'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
 import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
@@ -121,11 +124,18 @@ export const submitEthereumTransactions = async (
                 classification = 'unknown-outcome'
             }
             if (!accepted) {
-                throw new SubmissionError(
-                    [hash],
-                    classification,
-                    toEvmError(error, chain.row.nativeAsset.symbol),
+                const nodeError = toEvmError(
+                    error,
+                    chain.row.nativeAsset.symbol,
                 )
+                throw new SubmissionError([hash], classification, nodeError, {
+                    isUnanswered:
+                        classification === 'unknown-outcome' &&
+                        (isAfterUnconfirmedAttempt(error) ||
+                            nodeError.code === EvmErrorCode.TIMEOUT ||
+                            nodeError.code ===
+                                EvmErrorCode.NETWORK_UNREACHABLE),
+                })
             }
         }
         hashes.push(hash)

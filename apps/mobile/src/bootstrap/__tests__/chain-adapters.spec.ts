@@ -25,6 +25,10 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import {
+    isPeraBackendSwitchedOff,
+    setPeraBackendSwitch,
+} from '@perawallet/wallet-core-config'
+import {
     ethereumModule,
     evmChainModules,
 } from '@perawallet/wallet-core-chain-ethereum'
@@ -203,6 +207,7 @@ const contextGivenToEthereum = (): ChainContext => {
 
 describe('registerChainAdapters', () => {
     beforeEach(() => {
+        setPeraBackendSwitch(() => false)
         remoteConfigDefaultsRegistry.reset()
         pinnedHostRegistry.reset()
         mocks.provider.chains = createChainRegistry()
@@ -352,7 +357,7 @@ describe('registerChainAdapters', () => {
         expect(enabled).toEqual(['swap'])
     })
 
-    it('reads the remote kill switch through the installed override layers', () => {
+    it('reads the remote kill switch through the installed override layers, turning off the Pera backend and nothing else', () => {
         mocks.readCapabilityOverrides.mockReturnValue({
             chainEnabled: { algorand: false },
         })
@@ -361,9 +366,12 @@ describe('registerChainAdapters', () => {
 
         const { chains } = mocks.provider
         expect(chains.isSwitchedOff('algorand')).toBe(true)
-        expect(Object.values(chains.capabilities('algorand'))).not.toContain(
-            true,
-        )
+        expect(isPeraBackendSwitchedOff('algorand')).toBe(true)
+        expect(isPeraBackendSwitchedOff('ethereum')).toBe(false)
+        const whileOff = chains.capabilities('algorand')
+        mocks.readCapabilityOverrides.mockReturnValue({})
+        expect(chains.capabilities('algorand')).toEqual(whileOff)
+        expect(Object.values(whileOff)).toContain(true)
         expect(chains.has('algorand')).toBe(true)
     })
 
@@ -579,6 +587,20 @@ describe('registerChainAdapters', () => {
                 baseUrl: 'https://pera.test',
                 services: new Set(['blockFollowing']),
             })
+        })
+
+        it('hands over no backend URL for a scope listing no services, as a switched-off chain does', () => {
+            mocks.getPeraServicesConfig.mockReturnValue({
+                backendUrl: 'https://pera.test',
+            })
+            mocks.peraServicesFor.mockReturnValue(new Set())
+
+            const backend = contextGivenToEthereum().getPeraBackend({
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            })
+
+            expect(backend).toEqual({ baseUrl: '', services: new Set() })
         })
 
         it('hands over the KMS core as the key store', () => {

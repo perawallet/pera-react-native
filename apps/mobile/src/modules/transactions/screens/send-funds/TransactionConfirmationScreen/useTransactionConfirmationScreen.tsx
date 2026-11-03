@@ -424,6 +424,8 @@ export const useTransactionConfirmationScreen =
 
             if (isFeeCoverageChecked) {
                 if (isFeeError) {
+                    // Confirm is the retry: the next press prices against a fresh read.
+                    refreshFee()
                     errorToast(
                         t('send_funds.confirmation.fee_unavailable.title'),
                         t('send_funds.confirmation.fee_unavailable.body'),

@@ -59,6 +59,8 @@ export const classifySubmitFailure = (
                 ? 'unknown-outcome'
                 : 'rejected-by-node',
             algodError,
+            // `unknown_node_error` is a reply the parser couldn't read, so only a transport failure is silence.
+            { isUnanswered: algodError.code === 'network_unavailable' },
         ),
     }
 }

@@ -48,7 +48,7 @@ export type CrossChainTotal =
     | { kind: 'fiat'; value: Maybe<Decimal> }
     /** Every chain the account holds on is a test network, whose funds never count as money; the row shows no value. */
     | { kind: 'testOnly' }
-    /** Every chain the account is on is switched off. */
+    /** The account holds on no chain this build registers. */
     | { kind: 'unavailable' }
 
 export type UseAccountWithBalanceResult = {
@@ -124,7 +124,6 @@ export const useAccountWithBalance = (
     const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
     const isChainAgnostic = chainOverride === undefined
-    // Leaves out switched-off chains, so their last-synced values can't count.
     const sources = useAccountHoldingSources(account)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],

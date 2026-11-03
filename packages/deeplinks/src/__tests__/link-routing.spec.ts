@@ -64,11 +64,11 @@ describe('link routing', () => {
     })
 
     describe('isUnsupportedChainLink', () => {
-        it('is true for a link its switched-off chain claims', () => {
+        it('is false for a link its switched-off chain reads', () => {
             switchOff(A)
 
             expect(isUnsupportedChainLink(`fixturehex:${sharedAddress}`)).toBe(
-                true,
+                false,
             )
         })
 
@@ -100,12 +100,12 @@ describe('link routing', () => {
             ).toBeUndefined()
         })
 
-        it('is undefined when the chain is switched off', () => {
+        it('still names the chain while it is switched off', () => {
             switchOff(A)
 
             expect(
                 unsupportedActionChainOf(`fixturehex:${sharedAddress}/approve`),
-            ).toBeUndefined()
+            ).toBe(A)
         })
     })
 

@@ -27,7 +27,7 @@ export const markAfterUnconfirmedAttempt = (error: unknown): void => {
     }
 }
 
-const isAfterUnconfirmedAttempt = (error: unknown): boolean =>
+export const isAfterUnconfirmedAttempt = (error: unknown): boolean =>
     error instanceof BaseError &&
     error.walk(
         link =>

@@ -231,6 +231,13 @@ result. Swallowing it is indistinguishable from a genuine empty result in the UI
 dead probe once reported "no addresses found" during account discovery. Pera-proprietary reads have
 no fallback and should surface as unavailable.
 
+A chain's remote kill switch (`chain_<id>_overrides` with `enabled: false`) turns off only its Pera
+backend, the same way: `servicesOf` lists nothing for it and the query client refuses its Pera
+requests. Balances, sync, pending-row reconciliation, send, receive and dApp sessions keep running on
+RPC, and holdings the backend can no longer list stay at their last value, except tokens an account
+already holds, which are read over RPC. `peraServicesFor` and the query client read the switch, and
+so does onramp, which the backend brokers; feature code never hides a chain because of it.
+
 ## How a chain reaches its backends
 
 Every chain calls the Pera backend through `queryClient({ backend: 'pera', scope })`, never a client
@@ -309,8 +316,9 @@ A chain-neutral transaction is signed through its chain's `TransactionPlanner`, 
 `transactionPlanners` in chain-contract so a chain package registers it without depending on
 packages/signing. `plan` names each signature and its exact bytes, the wallet signs only those, each
 with the key of the account the request names in the scheme it names, and `assemble` builds the
-signed transaction. The key store never signs bytes a payload supplies, so a request can't have
-arbitrary bytes signed, which is what `eth_sign` would allow.
+signed transaction. The bytes the key store signs are always ones a planner computed from the
+transaction or message it parsed, never a hash the payload carries, so a request can't have arbitrary
+bytes signed. That is what `eth_sign` would allow, and Ethereum's message signer refuses it.
 
 The planner signs a local key only in the scheme it plans and assembles only a complete signature
 set. An Algorand quantum key, a Ledger, a multisig proposal and a multisig cosignature therefore sign
@@ -368,4 +376,5 @@ Platform service abstractions live in `extensions/*`, not in a package.
 - Where files go and what to call them: [Code Layout](CODE_LAYOUT.md)
 - How dApp sessions reach the wallet on native and in the extension: [Connections](CONNECTIONS.md)
 - How a web page talks to the extension without WalletConnect: [dApp bridge](DAPP_BRIDGE.md)
+- How a chain plugs in, the build and kill-switch knobs, and adding a chain: [Chains](CHAINS.md)
 - How an EVM send is priced, what MAX holds back, and why a small balance remains: [EVM fees](EVM_FEES.md)

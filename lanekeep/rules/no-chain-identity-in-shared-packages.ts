@@ -54,6 +54,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Compares a query key's scope against whichever chain the caller passes, never a named chain.",
     },
     {
+        file: 'packages/background/src/service/sync-service.ts',
+        text: 'parseScopeKey(key).chainId === id',
+        reason: 'Matches the scopes of whichever chain just settled a submission, never a named chain.',
+    },
+    {
         file: 'packages/dapp/src/handler.ts',
         text: 'scope.chainId === deps.chainId',
         reason: 'Matches whichever chain the handler was built for, never a named chain.',

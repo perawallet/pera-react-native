@@ -22,7 +22,7 @@ export type UseAccountHoldingsCountQueryResult = {
     holdingsCount: number
 }
 
-/** Holdings across every chain the account is on that isn't switched off. */
+/** Holdings across every registered chain the account is on. */
 export const useAccountHoldingsCountQuery = (
     account: Maybe<WalletAccount>,
 ): UseAccountHoldingsCountQueryResult => {

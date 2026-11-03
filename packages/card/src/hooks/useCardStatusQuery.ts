@@ -16,6 +16,7 @@ import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchCardStatus } from '../api/card'
 import type { Card } from '../models'
+import { useCardStore } from '../store'
 import { cardQueryKeys } from './querykeys'
 
 type CardStatusRefetchInterval = UseQueryOptions<
@@ -42,7 +43,23 @@ export const useCardStatusQuery = (
 ) => {
     return useQuery({
         queryKey: cardQueryKeys.status(scope),
-        queryFn: ({ signal }) => fetchCardStatus({ scope, signal }),
+        queryFn: async ({ signal }) => {
+            const card = await fetchCardStatus({ scope, signal })
+            // Persisted so screens can show the card's last digits and state
+            // before this query resolves on the next launch.
+            useCardStore.getState().setCardSnapshot(
+                card
+                    ? {
+                          cardId: card.id,
+                          status: card.status,
+                          // Readers check for null, so an empty value is
+                          // stored as missing rather than rendered.
+                          panLast4: card.panLast4 || null,
+                      }
+                    : null,
+            )
+            return card
+        },
         staleTime: config.reactQueryShortLivedStaleTime,
         enabled: options?.enabled ?? true,
         refetchInterval: options?.refetchInterval,

@@ -19,7 +19,6 @@ import {
     selectChainNetworkId,
     useNetworkStore,
     useSelectedScope,
-    useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -78,14 +77,11 @@ export const accountValueOf = <V>(
 }
 
 /**
- * Held accounts something held can sign for on the account's own chain. A
- * switched-off chain signs nothing, so its accounts drop out even though their
- * last synced balances are still stored.
+ * Held accounts something held can sign for on the account's own chain.
  */
 export const useSigningAccountsOnOwnChain = (): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)
     const registeredChainIds = useRegisteredChainIds()
-    const switchedOffChainIds = useSwitchedOffChainIds()
     // Signer resolution reads the selected network's chain state, so both a
     // state write and a network switch must re-run the filter.
     const chainStates = useAccountChainStateStore(state => state.states)
@@ -99,19 +95,12 @@ export const useSigningAccountsOnOwnChain = (): WalletAccount[] => {
             accounts.filter(account => {
                 const chainId = accountChainIdOf(account, registeredChainIds)
                 return (
-                    !switchedOffChainIds.includes(chainId) &&
                     accountsChainAdapters.has(chainId) &&
                     canSignWith(account, accounts, chainId)
                 )
             }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [
-            accounts,
-            registeredChainIds,
-            switchedOffChainIds,
-            chainStates,
-            networksKey,
-        ],
+        [accounts, registeredChainIds, chainStates, networksKey],
     )
 }
 

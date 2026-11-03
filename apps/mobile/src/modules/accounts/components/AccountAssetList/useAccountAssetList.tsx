@@ -42,10 +42,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    useIsChainSwitchedOff,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -78,9 +75,9 @@ export type AccountAssetListItem =
     | { kind: 'skeleton'; id: string }
 
 type UseAccountAssetListResult = {
-    /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
-    isChainSwitchedOff: boolean
-    /** Eight skeleton rows while the holdings read is pending; empty when every chain is switched off. */
+    /** No chain the account holds assets on is registered in this build: the header shows the notice, the list stays empty. */
+    hasNoHoldingSource: boolean
+    /** Eight skeleton rows while the holdings read is pending; empty when the account has no holding source. */
     items: AccountAssetListItem[]
     /** Empty while the account is on fewer than two chains: nothing to filter. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
@@ -127,11 +124,11 @@ const ASSET_SKELETON_ITEMS: AccountAssetListItem[] = Array.from(
 )
 
 const visibleItemsOf = (
-    isChainSwitchedOff: boolean,
+    hasNoHoldingSource: boolean,
     isPending: boolean,
     items: AccountAssetListItem[],
 ): AccountAssetListItem[] => {
-    if (isChainSwitchedOff) return EMPTY_ITEMS
+    if (hasNoHoldingSource) return EMPTY_ITEMS
     return isPending ? ASSET_SKELETON_ITEMS : items
 }
 
@@ -164,11 +161,9 @@ export const useAccountAssetList = ({
         accountChainIdOf(account, useRegisteredChainIds()),
     )
     const accountAddress = addressOn(account, scope) ?? ''
-    const isOwnChainSwitchedOff = useIsChainSwitchedOff(scope.chainId)
-    const canManageAssets =
-        useCapability({
-            chain: { chainId: scope.chainId, capability: 'manageAssets' },
-        }) && !isOwnChainSwitchedOff
+    const canManageAssets = useCapability({
+        chain: { chainId: scope.chainId, capability: 'manageAssets' },
+    })
     const { request: requestBottomSheet } = useBottomSheet()
 
     const sources = useAccountHoldingSources(account)
@@ -176,7 +171,7 @@ export const useAccountAssetList = ({
     const nftChainIds = useNftHoldingSources(account)
         .map(({ scope: { chainId } }) => chainId)
         .join()
-    const isChainSwitchedOff = sources.length === 0
+    const hasNoHoldingSource = sources.length === 0
     const setSelectedChainId = useAssetListViewStore(
         state => state.setSelectedChainId,
     )
@@ -509,8 +504,8 @@ export const useAccountAssetList = ({
     )
 
     return {
-        isChainSwitchedOff,
-        items: visibleItemsOf(isChainSwitchedOff, isPending, items),
+        hasNoHoldingSource,
+        items: visibleItemsOf(hasNoHoldingSource, isPending, items),
         chainFilterOptions,
         fundingChainId,
         selectedChainId,

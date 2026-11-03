@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PeraCardActivateRow } from './PeraCardActivateRow'
 import { PeraCardConnectedRow } from './PeraCardConnectedRow'
 
@@ -18,6 +19,8 @@ export type PeraCardAccountItemProps = {
     activated: boolean
     /** True when the activated card nests under its connected funding account. */
     nested: boolean
+    /** The card's chain and network, which the connected row reads its status on. */
+    scope: ChainScope
     /** Fired when the Activate button is tapped; the host closes the menu and navigates. */
     onActivate?: () => void
     /** Fired when an activated card row is tapped; the host closes the menu and opens the card. */
@@ -27,12 +30,14 @@ export type PeraCardAccountItemProps = {
 export const PeraCardAccountItem = ({
     activated,
     nested,
+    scope,
     onActivate,
     onOpen,
 }: PeraCardAccountItemProps) => {
     return activated ? (
         <PeraCardConnectedRow
             nested={nested}
+            scope={scope}
             onPress={onOpen}
         />
     ) : (

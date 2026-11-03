@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "Falha ao iniciar o app",
-            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema persistir, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain da Algorand.",
+            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema persistir, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain.",
             "retry": "Tentar novamente",
             "keystore": {
                 "title": "Erro nos dados da wallet",
-                "body": "A Pera não conseguiu ler parte dos dados da wallet armazenados neste dispositivo e por isso não pode iniciar com segurança. Entre em contato com o suporte antes de reinstalar o app: a reinstalação pode remover contas que existem apenas neste dispositivo.\n\nSeus fundos estão seguros na blockchain da Algorand."
+                "body": "A Pera não conseguiu ler parte dos dados da wallet armazenados neste dispositivo e por isso não pode iniciar com segurança. Entre em contato com o suporte antes de reinstalar o app: a reinstalação pode remover contas que existem apenas neste dispositivo.\n\nSeus fundos estão seguros na blockchain."
             }
         }
     },
@@ -209,7 +209,7 @@
     "address_actions": {
         "title": "Endereço de conta escaneado",
         "send_transaction": "Enviar transação",
-        "send_transaction_subtitle": "Envie ALGO ou ativos para este endereço",
+        "send_transaction_subtitle": "Envie ativos para este endereço",
         "watch_address": "Observar um endereço",
         "watch_address_subtitle": "Adicionar como conta de observação",
         "add_contact": "Adicionar novo contato",
@@ -434,7 +434,7 @@
         },
         "no_balance": {
             "welcome": "Boas-vindas à Pera!",
-            "get_started": "Para começar, deposite ALGO",
+            "get_started": "Para começar, deposite cripto",
             "buy": "Comprar cripto",
             "receive": "Receber",
             "more": "Mais"
@@ -1222,6 +1222,14 @@
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
             },
+            "timeout": {
+                "title": "A rede não respondeu",
+                "body": "A rede não respondeu a tempo. Tente novamente."
+            },
+            "network_unreachable": {
+                "title": "Não foi possível acessar a rede",
+                "body": "Não conseguimos nos conectar à rede. Verifique sua conexão ou tente novamente em instantes."
+            },
             "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x.",
             "replaced_transaction_confirmed": {
                 "title": "Transação já confirmada",
@@ -1672,7 +1680,9 @@
             "title": "Conta Pera Card",
             "subtitle": "Gaste suas criptomoedas",
             "activate": "Ativar",
-            "status_approved": "Aprovada"
+            "status_frozen": "Bloqueada",
+            "status_blocked": "Desativada",
+            "status_pending": "Configurando"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -2429,7 +2439,7 @@
             "recover_passphrase_title": "Recuperar com passphrase",
             "recover_passphrase_description": "Recupere uma wallet usando a passphrase",
             "recover_qr_title": "Recuperar com código QR",
-            "recover_qr_description": "Recupere uma wallet Algorand usando um código QR",
+            "recover_qr_description": "Recupere uma wallet usando um código QR",
             "private_key_title": "Importar uma chave privada",
             "private_key_description": "Adicione uma conta a partir da chave privada",
             "pair_ledger_title": "Parear com Ledger",
@@ -3087,7 +3097,7 @@
         },
         "processing": {
             "title": "Enviando a transação",
-            "subtitle": "Sua transação está sendo processada pela rede Algorand.",
+            "subtitle": "Sua transação está sendo processada pela rede {{network}}.",
             "title_hardware": "Conectando ao seu dispositivo Ledger",
             "subtitle_hardware": "Tentando conectar a {{deviceName}}. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto.",
             "subtitle_hardware_noDevice": "Tentando conectar ao seu dispositivo Ledger. Verifique se está desbloqueado, dentro do alcance e com o app {{appName}} aberto.",
@@ -3096,7 +3106,7 @@
         "success": {
             "title": "Transação processada",
             "asset_transferred_title": "Ativo transferido",
-            "subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
+            "subtitle": "Sua transação foi recebida com sucesso pela rede {{network}}",
             "pending_title": "Transação enviada",
             "pending_subtitle": "Sua transação foi enviada para a rede {{network}} e está aguardando confirmação.",
             "view_in_explorer": "Ver detalhes da transação no Pera Explorer",

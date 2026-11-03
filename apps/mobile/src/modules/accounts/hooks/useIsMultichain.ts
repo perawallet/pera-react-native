@@ -11,13 +11,8 @@
  */
 
 import { useRegisteredChainIds } from '@perawallet/wallet-core-accounts'
-import { useSwitchedOffChainIds } from '@perawallet/wallet-core-chain-shared'
 
-/** More than one registered chain is on: not switched off by remote config or a developer override. */
+/** More than one chain is registered. */
 export const useIsMultichain = (): boolean => {
-    const registered = useRegisteredChainIds()
-    const switchedOff = useSwitchedOffChainIds()
-    return (
-        registered.filter(chainId => !switchedOff.includes(chainId)).length > 1
-    )
+    return useRegisteredChainIds().length > 1
 }

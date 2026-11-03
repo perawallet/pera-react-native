@@ -22,6 +22,7 @@ import {
     LimitExceededRpcError,
     NonceTooLowError,
     RpcRequestError,
+    TimeoutError,
     UnknownNodeError,
     type Abi,
 } from 'viem'
@@ -42,6 +43,13 @@ const wrapped = (cause: Error): BaseError =>
 
 const rpcError = (message: string, code = -32000): RpcRequestError =>
     new RpcRequestError({ body: {}, error: { code, message }, url: URL })
+
+// What undici/Node surface for a refused or unresolvable connection: fetch
+// wraps the system error one level down.
+const fetchFailure = (message: string, code: string): TypeError =>
+    Object.assign(new TypeError('fetch failed'), {
+        cause: Object.assign(new Error(message), { code }),
+    })
 
 const ERROR_STRING_ABI: Abi = [
     {
@@ -204,6 +212,81 @@ describe('toEvmError', () => {
             code: 'rate_limited',
             params: {},
         },
+        {
+            name: 'a request that timed out',
+            error: new TimeoutError({ body: {}, url: URL }),
+            code: 'timeout',
+            params: {},
+        },
+        {
+            name: 'a timeout inside a wrapped call',
+            error: wrapped(new TimeoutError({ body: {}, url: URL })),
+            code: 'timeout',
+            params: {},
+        },
+        {
+            name: 'a refused connection',
+            error: new HttpRequestError({
+                url: URL,
+                cause: fetchFailure(
+                    'connect ECONNREFUSED 127.0.0.1:8545',
+                    'ECONNREFUSED',
+                ),
+            }),
+            code: 'network_unreachable',
+            params: {},
+        },
+        {
+            name: 'a refused connection inside a wrapped call',
+            error: wrapped(
+                new HttpRequestError({
+                    url: URL,
+                    cause: fetchFailure(
+                        'connect ECONNREFUSED 127.0.0.1:8545',
+                        'ECONNREFUSED',
+                    ),
+                }),
+            ),
+            code: 'network_unreachable',
+            params: {},
+        },
+        {
+            name: 'a DNS failure',
+            error: new HttpRequestError({
+                url: URL,
+                cause: fetchFailure(
+                    'getaddrinfo ENOTFOUND rpc.example',
+                    'ENOTFOUND',
+                ),
+            }),
+            code: 'network_unreachable',
+            params: {},
+        },
+        {
+            name: "React Native's failed fetch",
+            error: new HttpRequestError({
+                url: URL,
+                cause: new TypeError('Network request failed'),
+            }),
+            code: 'network_unreachable',
+            params: {},
+        },
+        {
+            name: 'an HTTP 503 from the gateway',
+            error: new HttpRequestError({ status: 503, url: URL }),
+            code: 'network_unreachable',
+            params: {},
+        },
+        {
+            name: 'a 500 whose body carries a node verdict',
+            error: new HttpRequestError({
+                status: 500,
+                url: URL,
+                details: 'nonce too low',
+            }),
+            code: 'nonce_too_low',
+            params: {},
+        },
     ])('maps $name to $code', ({ error, code, params }) => {
         const result = toEvmError(error, 'ETH')
 
@@ -227,6 +310,10 @@ describe('toEvmError', () => {
             error: wrapped(new UnknownNodeError({ cause: rpcError('boom') })),
         },
         { name: 'a non-Error value', error: 'kaboom' },
+        {
+            name: 'an HTTP 400 from the node',
+            error: new HttpRequestError({ status: 400, url: URL }),
+        },
     ])('keeps the generic blockchain key for $name', ({ error }) => {
         const result = toEvmError(error, 'ETH')
 
@@ -310,7 +397,7 @@ describe('toEvmError', () => {
             expect(error.metadata.reportCode).toBe('evm.reverted')
         })
 
-        it('treats a timeout as an expected unknown failure', () => {
+        it('keeps a non-viem error named TimeoutError unknown, yet expected', () => {
             const timeout = Object.assign(new Error('timed out'), {
                 name: 'TimeoutError',
             })
@@ -321,15 +408,20 @@ describe('toEvmError', () => {
             expect(isExpectedError(error)).toBe(true)
         })
 
-        it('treats an RPC 5xx as an expected unknown failure', () => {
-            const error = toEvmError(
-                new HttpRequestError({ status: 503, url: URL }),
-                'ETH',
-            )
+        it.each(['timeout', 'network_unreachable'] as const)(
+            'treats %s as an expected, retryable, unreported failure',
+            code => {
+                const error = new EvmError(code)
 
-            expect(error.code).toBe('unknown')
-            expect(isExpectedError(error)).toBe(true)
-        })
+                expect(error.metadata).toMatchObject({
+                    severity: ErrorSeverity.LOW,
+                    retryable: true,
+                    expected: true,
+                    reportCode: `evm.${code}`,
+                })
+                expect(error.shouldReport()).toBe(false)
+            },
+        )
 
         it.each([
             ['an RPC 4xx', new HttpRequestError({ status: 400, url: URL })],

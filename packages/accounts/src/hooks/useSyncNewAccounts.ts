@@ -18,7 +18,6 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters } from '../chain-adapter'
 import { chainAccountOf } from '../credentials'
 import { useAccountsStore } from '../store'
@@ -58,11 +57,8 @@ export const useSyncNewAccounts = ({
     // background sync tick), so key the effect on the joined entry set —
     // it only fires when membership actually changes.
     const entriesKey = useMemo(() => {
-        const { chains } = getProvider()
-        const chainIds = CHAIN_IDS.filter(
-            chainId =>
-                accountsChainAdapters.has(chainId) &&
-                !chains.isSwitchedOff(chainId),
+        const chainIds = CHAIN_IDS.filter(chainId =>
+            accountsChainAdapters.has(chainId),
         )
         return accounts
             .flatMap(account =>

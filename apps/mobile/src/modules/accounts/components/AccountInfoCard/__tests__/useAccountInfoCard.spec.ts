@@ -58,7 +58,6 @@ const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseCanSignWith = vi.fn<() => boolean>()
 const mockUseDelegatedTransition = vi.fn<() => DelegateTransition | null>()
 const mockOptionsFor = vi.fn<(account: WalletAccount) => ChainOption[]>()
-let mockSwitchedOff: string[] = []
 
 let mockIsMultichain = true
 vi.mock('../../../hooks/useIsMultichain', () => ({
@@ -103,7 +102,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     },
     chainDisplayNameOf: (chainId: string) =>
         ({ algorand: 'Algorand', ethereum: 'Ethereum', base: 'Base' })[chainId],
-    useSwitchedOffChainIds: () => mockSwitchedOff,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
@@ -181,7 +179,6 @@ describe('useAccountInfoCard', () => {
         vi.clearAllMocks()
         useAccountsStore.setState({ accounts: [] })
         mockOptionsFor.mockImplementation(enabledOptionsOf)
-        mockSwitchedOff = []
         mockIsMultichain = true
         mockUseHdSeedGroups.mockReturnValue({
             hdSeedGroups: [
@@ -364,17 +361,6 @@ describe('useAccountInfoCard', () => {
             ).toEqual([true, false])
         })
 
-        test('drops chains the user switched off', () => {
-            withHdGroup([hdAccount, sibling])
-            mockSwitchedOff = ['ethereum']
-
-            const { result } = render()
-
-            expect(
-                result.current.structureRows[1].chains.map(c => c.chainId),
-            ).toEqual(['algorand'])
-        })
-
         test('gives truncated and normalized addresses per chain', () => {
             withHdGroup([hdAccount, sibling])
 
@@ -457,25 +443,6 @@ describe('useAccountInfoCard', () => {
             )
         })
 
-        test('treats a name cut from a switched-off chain address as unnamed', () => {
-            const ethereumNamed = hdSibling(
-                'switched-off-name',
-                {
-                    algorand: { address: 'SIB_ADDR', keyPairId: 'key-2' },
-                    ethereum: { address: '0xabc', keyPairId: 'key-3' },
-                },
-                '0xabc',
-            )
-            withHdGroup([hdAccount, ethereumNamed])
-            mockSwitchedOff = ['ethereum']
-
-            const { result } = render()
-
-            expect(result.current.structureRows[1].name).toBe(
-                'account_info.account_number #2',
-            )
-        })
-
         test('keeps the remaining numbers when a middle account is removed', () => {
             const third = hdSibling(
                 'hd-third',
@@ -522,7 +489,9 @@ describe('useAccountInfoCard', () => {
 
         test('never opens a row with no chain shown', () => {
             withHdGroup([hdAccount, sibling])
-            mockSwitchedOff = ['algorand', 'ethereum']
+            mockOptionsFor.mockImplementation(account =>
+                account.id === 'hd-sibling' ? [] : enabledOptionsOf(account),
+            )
             const { result } = render()
 
             act(() => result.current.handleToggleRow('hd-sibling'))

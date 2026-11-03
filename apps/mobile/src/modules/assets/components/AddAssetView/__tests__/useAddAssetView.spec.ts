@@ -637,7 +637,7 @@ describe('useAddAssetView', () => {
             expect(result.current.showsNetwork).toBe(false)
         })
 
-        it('leaves a switched-off chain out and opens on the first offered chain instead', () => {
+        it('keeps a switched-off chain offered, as its capabilities are unchanged', () => {
             registerEthereumChain()
             act(() => setChainEnabled('algorand', false))
 
@@ -645,8 +645,7 @@ describe('useAddAssetView', () => {
                 useAddAssetView({ chainId: 'algorand' }),
             )
 
-            expect(result.current.chainOptions).toEqual([])
-            expect(result.current.selectedChainId).toBe('ethereum')
+            expect(result.current.selectedChainId).toBe('algorand')
         })
 
         it('offers adding on Algorand and on Ethereum, under All too, but never the native coin', () => {

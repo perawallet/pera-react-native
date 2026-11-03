@@ -12,12 +12,7 @@
 
 import { bytesToHex } from 'viem'
 import type { Signature } from 'viem'
-import type { ChainKeyStore } from '@perawallet/wallet-core-chain-contract'
-import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
-import { openTaggedDigest, type TaggedDigest } from './digests'
-
-/** How the user authorised this signature; signing rides the app unlock today. */
-export type AuthContext = { method: 'app-unlock' }
+import type { EvmDigestKind } from './digests'
 
 const SIGNATURE_LENGTH = 65
 const COMPONENT_LENGTH = 32
@@ -48,25 +43,11 @@ const decodeSignature = (
  */
 export const toViemSignature = (
     bytes: Uint8Array,
-    tag: TaggedDigest['tag'],
+    kind: EvmDigestKind,
 ): Signature => {
     const { r, s, recovery } = decodeSignature(bytes)
     const components = { r: bytesToHex(r), s: bytesToHex(s) }
-    return tag === 'eip155-tx'
+    return kind === 'eip155-tx'
         ? { ...components, yParity: recovery }
         : { ...components, v: BigInt(27 + recovery) }
-}
-
-/** `_auth` is inert so a per-signature prompt can be added without touching callers. */
-export const signTagged = async (
-    kms: Pick<ChainKeyStore, 'sign'>,
-    keyPairId: string,
-    digest: TaggedDigest,
-    _auth?: AuthContext,
-): Promise<Signature> => {
-    const { tag, digest: bytes } = openTaggedDigest(digest)
-    return toViemSignature(
-        await kms.sign(keyPairId, bytes, SIGNING_ACCESS_DOMAIN),
-        tag,
-    )
 }

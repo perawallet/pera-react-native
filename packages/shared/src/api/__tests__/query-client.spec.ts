@@ -52,6 +52,7 @@ const {
     backendUrlByNetwork,
     servicesByScopeKey,
     extraScopes,
+    switchedOffChainIds,
     resetMockScopeConfig,
 } = vi.hoisted(() => {
     const mockNetworks = {
@@ -83,8 +84,12 @@ const {
         deployment: 'live' | 'developer'
     }> = []
 
+    // Chains whose remote kill switch is on; resetMockScopeConfig clears it.
+    const switchedOffChainIds = new Set<string>()
+
     const resetMockScopeConfig = () => {
         extraScopes.length = 0
+        switchedOffChainIds.clear()
         for (const key of Object.keys(servicesByScopeKey)) {
             delete servicesByScopeKey[key]
         }
@@ -107,6 +112,7 @@ const {
         backendUrlByNetwork,
         servicesByScopeKey,
         extraScopes,
+        switchedOffChainIds,
         resetMockScopeConfig,
     }
 })
@@ -153,6 +159,8 @@ vi.mock('@perawallet/wallet-core-config', () => {
                       scope.networkId as 'mainnet' | 'testnet'
                   ]
                 : findExtraScope(scope)?.deployment,
+        isPeraBackendSwitchedOff: (chainId: string) =>
+            switchedOffChainIds.has(chainId),
         hasPeraService: (scope: Scope, service: string) =>
             servicesByScopeKey[`${scope.chainId}/${scope.networkId}`]?.includes(
                 service,
@@ -590,6 +598,7 @@ describe('queryClient', () => {
         )
         await expect(refused).rejects.toMatchObject({
             targetKey: 'algorand/betanet',
+            isSwitchedOff: false,
         })
 
         expect(mockKy).not.toHaveBeenCalled()
@@ -627,6 +636,68 @@ describe('queryClient', () => {
         })
 
         expect(mockKy).toHaveBeenCalled()
+    })
+
+    describe('a chain whose remote kill switch is on', () => {
+        test.each([[undefined], ['prices']] as const)(
+            'its scope request is refused before ky (service: %s), while a deployment request still goes out',
+            async service => {
+                vi.resetModules()
+                mockKy.mockClear()
+                switchedOffChainIds.add('algorand')
+                const { queryClient } = await import('../query-client')
+                const {
+                    PeraServiceUnavailableError:
+                        FreshPeraServiceUnavailableError,
+                } = await import('../../errors/pera-service')
+
+                const refused = queryClient({
+                    backend: 'pera',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    service,
+                    method: 'GET',
+                    url: '/v1/assets/',
+                })
+
+                await expect(refused).rejects.toBeInstanceOf(
+                    FreshPeraServiceUnavailableError,
+                )
+                await expect(refused).rejects.toMatchObject({
+                    isSwitchedOff: true,
+                })
+                expect(mockKy).not.toHaveBeenCalled()
+
+                mockJson.mockResolvedValue({ results: [] })
+                await queryClient({
+                    backend: 'pera',
+                    deployment: 'live',
+                    method: 'GET',
+                    url: '/v1/currencies/',
+                })
+                expect(mockKy).toHaveBeenCalledTimes(1)
+            },
+        )
+
+        test('the next request goes through once the switch is off again', async () => {
+            vi.resetModules()
+            mockKy.mockClear()
+            mockJson.mockResolvedValue({ results: [] })
+            const { queryClient } = await import('../query-client')
+            const request = () =>
+                queryClient({
+                    backend: 'pera',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    method: 'GET',
+                    url: '/v1/assets/',
+                })
+
+            switchedOffChainIds.add('algorand')
+            await expect(request()).rejects.toThrow()
+            switchedOffChainIds.delete('algorand')
+            await request()
+
+            expect(mockKy).toHaveBeenCalledTimes(1)
+        })
     })
 
     describe('Pera deployments', () => {

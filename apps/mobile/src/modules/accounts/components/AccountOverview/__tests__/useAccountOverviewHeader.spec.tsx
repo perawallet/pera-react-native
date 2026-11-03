@@ -276,7 +276,7 @@ describe('useAccountOverviewHeader', () => {
         vi.mocked(findNativeAsset).mockReset()
     })
 
-    it("swaps balances and actions for a notice when the chain's kill switch is off", () => {
+    it("keeps balances and actions while the chain's kill switch is on, as it only turns off the Pera backend", () => {
         act(() => setChainEnabled('algorand', false))
 
         const { result } = renderHook(
@@ -284,7 +284,9 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.availability).toEqual({ isAvailable: false })
+        expect(result.current.availability).toMatchObject({
+            isAvailable: true,
+        })
         expect(result.current.chainName).toBe('Algorand')
     })
 
@@ -344,7 +346,7 @@ describe('useAccountOverviewHeader', () => {
         ).toEqual(['algorand', 'ethereum'])
     })
 
-    it("leaves a switched-off chain's last-synced value out of the total", async () => {
+    it("counts a switched-off chain's synced value in the total, as its RPC balance keeps syncing", async () => {
         registerEthereumChain()
         await twoChainTotals(
             { nativeValue: new Decimal('1000'), fiatValue: new Decimal('300') },
@@ -357,10 +359,10 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.portfolioPreferredValue?.toString()).toBe('300')
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
         expect(
             result.current.chartSources.map(({ scope }) => scope.chainId),
-        ).toEqual(['algorand'])
+        ).toEqual(['algorand', 'ethereum'])
     })
 
     it('sums every listed chain into one fiat total', async () => {

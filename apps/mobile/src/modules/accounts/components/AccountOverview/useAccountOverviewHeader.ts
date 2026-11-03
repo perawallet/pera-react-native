@@ -116,8 +116,7 @@ export const useAccountOverviewHeader = (
         availability.isAvailable,
     )
     // Summed over the chains the list reads, not every chain the account has
-    // an entry on: a switched-off chain's last-synced value would otherwise
-    // inflate the headline. One unknown value makes the total unknown.
+    // an entry on. One unknown value makes the total unknown.
     const portfolioFiatValue = useMemo(
         () =>
             countedSources.reduce<Nullable<Decimal>>((total, source) => {
