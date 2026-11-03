@@ -17,14 +17,14 @@ import {
     EVM_CHAIN_NETWORKS,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { type Config, evmConfigKeys, overrideEnvironmentMap } from '../main'
+import { type Config, scopeConfigKeys, overrideEnvironmentMap } from '../main'
 
 const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
 const unconfiguredEvmScopes = Object.fromEntries(
     EVM_CHAIN_IDS.flatMap(chainId =>
         EVM_CHAIN_NETWORKS[chainId].networks.flatMap(network => {
-            const keys = evmConfigKeys(chainId, network.id)
+            const keys = scopeConfigKeys(chainId, network.id)
             return [
                 [keys.rpcUrl, []],
                 [keys.peraServices, []],

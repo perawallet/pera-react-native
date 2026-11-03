@@ -61,15 +61,15 @@ const evmRpcUrlsSchema = z.preprocess(
     z.array(z.url()).max(2),
 )
 
-export type EvmRpcUrlConfigKey = `${EvmChainId}${string}RpcUrl`
-export type EvmPeraServicesConfigKey = `${EvmChainId}${string}PeraServices`
-
-export type EvmConfigKeys = {
-    rpcUrl: EvmRpcUrlConfigKey
-    peraServices: EvmPeraServicesConfigKey
+export type ScopeConfigKeys<C extends ChainId = ChainId> = {
+    rpcUrl: `${C}${string}RpcUrl`
+    peraServices: `${C}${string}PeraServices`
     rpcUrlEnv: string
     peraServicesEnv: string
 }
+
+type EvmRpcUrlConfigKey = ScopeConfigKeys<EvmChainId>['rpcUrl']
+type EvmPeraServicesConfigKey = ScopeConfigKeys<EvmChainId>['peraServices']
 
 const pascalCase = (id: string): string =>
     id
@@ -78,18 +78,20 @@ const pascalCase = (id: string): string =>
         .join('')
 
 /**
- * Must name what tools/dev/evm-config-keys.cjs names, which the config
- * generator and the browser allowlist read; generate-config.spec pins both.
+ * Must follow the naming tools/dev/chain-packages.cjs gives a chain package's
+ * per-network fields, which the config generator and the browser allowlist
+ * read; generate-config.spec pins both.
  */
-export const evmConfigKeys = (
-    chainId: EvmChainId,
+export const scopeConfigKeys = <C extends ChainId>(
+    chainId: C,
     networkId: NetworkId,
-): EvmConfigKeys => {
+): ScopeConfigKeys<C> => {
     const key = `${chainId}${pascalCase(networkId)}`
     const env = `${chainId}_${networkId}`.toUpperCase().replaceAll('-', '_')
     return {
-        rpcUrl: `${key}RpcUrl` as EvmRpcUrlConfigKey,
-        peraServices: `${key}PeraServices` as EvmPeraServicesConfigKey,
+        rpcUrl: `${key}RpcUrl` as ScopeConfigKeys<C>['rpcUrl'],
+        peraServices:
+            `${key}PeraServices` as ScopeConfigKeys<C>['peraServices'],
         rpcUrlEnv: `${env}_RPC_URL`,
         peraServicesEnv: `${env}_PERA_SERVICES`,
     }
@@ -97,12 +99,12 @@ export const evmConfigKeys = (
 
 const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
-const EVM_SCOPE_CONFIG_KEYS: readonly EvmConfigKeys[] = EVM_CHAIN_IDS.flatMap(
-    chainId =>
+const EVM_SCOPE_CONFIG_KEYS: readonly ScopeConfigKeys<EvmChainId>[] =
+    EVM_CHAIN_IDS.flatMap(chainId =>
         EVM_CHAIN_NETWORKS[chainId].networks.map(network =>
-            evmConfigKeys(chainId, network.id),
+            scopeConfigKeys(chainId, network.id),
         ),
-)
+    )
 
 // JSON-RPC endpoints: the main node, which may carry its provider's API key in
 // its URL, then a public fallback. Empty in builds that

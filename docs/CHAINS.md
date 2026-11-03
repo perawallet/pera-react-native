@@ -142,18 +142,21 @@ The build bakes these into `packages/config/src/generated-env.ts` through
 | `<CHAIN>_<NET>_RPC_URL`       | The one JSON-RPC URL for an EVM network. No default and no fallback; a network without one is left out.         | `CHAINS` lists the chain and any of its networks has no URL.       |
 | `<CHAIN>_<NET>_PERA_SERVICES` | Comma list of the Pera services the backend serves for the network. Empty means no Pera backend for that scope. | A service outside `EVM_PERA_SERVICES`.                             |
 
-The EVM variable names come from `packages/chain-contract/src/models/evm-networks.json`, through
-`tools/dev/evm-config-keys.cjs` for the build script and `evmConfigKeys` in
-`packages/config/src/main.ts` for the app. `packages/config/README.md` covers the schema and how each
-CI channel sets `CHAINS`; `tools/__tests__/bitrise-chains.test.sh` pins the CI values.
+The per-network variable names come from the chain package table, `tools/dev/chain-packages.cjs`,
+whose EVM entry reads `packages/chain-contract/src/models/evm-networks.json`. The build script reads
+the table, and `scopeConfigKeys` in `packages/config/src/main.ts` names the same keys for the app.
+`packages/config/README.md` covers the schema and how each CI channel sets `CHAINS`;
+`tools/__tests__/bitrise-chains.test.sh` pins the CI values.
 
-`CHAINS` also decides what Metro bundles: unless it lists an EVM chain, the EVM modules in
-`apps/mobile/metro-build-gates.js` resolve to their `.stub.ts` twins and viem stays out of the build.
+`CHAINS` also decides what Metro bundles: unless it lists one of a chain package's chains, that
+package's `mobileStubbedModules` in the table resolve to their `.stub.ts` twins, so for EVM viem stays
+out of the build.
 See [Architecture: Keeping code out of a build](ARCHITECTURE.md#keeping-code-out-of-a-build).
 
 Chain ids must be one word. `chainCapabilitiesEnvKey` in `packages/config/src/main.ts` capitalises
-only the first letter, while `evm-config-keys.cjs` PascalCases each hyphen-separated part, so a
-hyphenated id would bake its capability list under a key the app never reads.
+only the first letter, while `chain-packages.cjs` PascalCases each hyphen-separated part, so a
+hyphenated id would bake its capability list under a key the app never reads. The table's
+`validateChainPackages` fails the build on one.
 
 ## Adding an EVM chain
 
@@ -220,7 +223,10 @@ and `registerChain`, and everything else is a `package.json` subpath export.
 - [ ] `packages/config/src/network-config.ts`: the family's chain config type, its
       `ChainConfigByChain` entry and its `CHAIN_ENDPOINTS` entry.
 - [ ] `packages/config/src/main.ts`: a `chainRequestTimeouts` default and any family-specific fields.
-- [ ] `tools/dev/generate-config.sh`: `CHAIN_<ID>_CAPABILITIES` and the family's endpoint variables.
+- [ ] `tools/dev/chain-packages.cjs`: an entry with the package's chains and networks, its stubbed
+      mobile entry modules (each with a `.stub.ts` beside it) and its per-network config fields.
+      `generate-config.sh` bakes `CHAIN_<ID>_CAPABILITIES` and every field from it, and fails a build
+      whose `CHAINS` lists the chain without a required one.
 - [ ] `turbo.json`: the family's env prefix in `globalEnv`.
 
 **App wiring**
@@ -229,8 +235,8 @@ and `registerChain`, and everything else is a `package.json` subpath export.
       workspace dependency.
 - [ ] `apps/mobile/tsconfig.json`: a path for the package's `test-handlers`.
 - [ ] `apps/mobile/src/bootstrap/chain-adapters.ts`: the module in the `buildChainSetup` map. To keep
-      it out of builds that don't list it, gate it like `evm-chain-modules.ts` and its `.stub.ts`, in
-      `apps/mobile/metro-build-gates.js` and `apps/mobile/metro.config.js`.
+      it out of builds that don't list it, gate it like `evm-chain-modules.ts` and its `.stub.ts`,
+      listed in the package's table entry.
 - [ ] `apps/mobile/src/modules/<family>/chain-ui.ts` and `chain-icons.ts`, registered in
       `modules/chain-ui/registry.ts`, `modules/chain-ui/nativeAsset.ts` and
       `modules/chain-ui/components/ChainIcon/useChainIcon.ts`; the logo in

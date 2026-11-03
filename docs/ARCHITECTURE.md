@@ -205,8 +205,9 @@ menu) is left out of production builds and kept in development and staging; the 
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
 `modules/settings/routes/developer-gallery.ts`, which the oxlint rule
-`pera/dev-gallery-entry-points` enforces. The Ethereum chain module ships only when the baked `CHAINS`
-lists `ethereum`, and the extension build fails if viem reaches a bundle anyway. Metro logs each
+`pera/dev-gallery-entry-points` enforces. A chain package's entry modules ship only when the baked
+`CHAINS` lists one of its chains (`tools/dev/chain-packages.cjs`), and the extension build fails if
+viem reaches a bundle without an EVM chain. Metro logs each
 decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend

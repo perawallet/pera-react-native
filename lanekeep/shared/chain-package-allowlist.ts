@@ -25,7 +25,7 @@ export const COMPOSITION_ROOTS: ExemptPath[] = [
     },
     {
         glob: '**/apps/mobile/src/bootstrap/evm-chain-modules.ts',
-        reason: 'build-gated EVM chain modules for the mobile composition root; metro.config.js stubs them out of builds whose CHAINS lists no EVM chain',
+        reason: "build-gated EVM chain modules for the mobile composition root; metro.config.js stubs them out of builds whose CHAINS lists none of chain-ethereum's chains in tools/dev/chain-packages.cjs",
     },
     {
         glob: '**/apps/mobile/src/bootstrap/keystore-maintenance.ts',
@@ -52,7 +52,7 @@ export const CHAIN_UI_MODULES: ChainUiModule[] = [
     {
         path: 'apps/mobile/src/modules/ethereum/',
         pkg: ETHEREUM,
-        reason: "Ethereum's review and detail UI: renders TransactionNative's evm member with chain-ethereum's EthereumTransactionView; metro stubs its chain-ui entry out of builds whose CHAINS omits ethereum",
+        reason: "Ethereum's review and detail UI: renders TransactionNative's evm member with chain-ethereum's EthereumTransactionView; metro stubs its chain-ui entry out of builds whose CHAINS lists none of chain-ethereum's chains in tools/dev/chain-packages.cjs",
     },
 ]
 

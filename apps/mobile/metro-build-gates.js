@@ -24,27 +24,31 @@ const DEVELOPER_GALLERY_MODULES = [
     'src/modules/settings/routes/developer-gallery',
 ]
 
-// Every app entry into the chain-ethereum package: the bootstrap module, which
-// chain-adapters.ts reaches it through, and the EVM chain UI, which the
-// chain-UI registry reaches it through. Swapping them drops viem.
-const EVM_CHAIN_MODULES = [
-    'src/bootstrap/evm-chain-modules',
-    'src/modules/ethereum/chain-ui',
-]
-
-// The chains chain-ethereum serves, from the network table the app registers.
-const EVM_CHAIN_IDS = Object.keys(
-    require('../../packages/chain-contract/src/models/evm-networks.json'),
-)
+const { CHAIN_PACKAGES, chainIdsOf } = require('../../tools/dev/chain-packages.cjs')
 
 /**
- * Whether a build's chain list ships any EVM chain, and so needs viem.
+ * Whether a build's chain list ships any chain the package serves, and so
+ * needs the package's code.
  *
+ * @param {import('../../tools/dev/chain-packages.cjs').ChainPackage} chainPackage
  * @param {readonly string[]} chainIds
  * @returns {boolean}
  */
-const listsEvmChain = chainIds =>
-    chainIds.some(chainId => EVM_CHAIN_IDS.includes(chainId))
+const isChainPackageIncluded = (chainPackage, chainIds) =>
+    chainIdsOf(chainPackage).some(chainId => chainIds.includes(chainId))
+
+/**
+ * The mobile entry modules of every chain package the chain list leaves out.
+ * Swapping them for their stubs drops the package and its SDK from the bundle.
+ *
+ * @param {readonly string[]} chainIds
+ * @param {readonly import('../../tools/dev/chain-packages.cjs').ChainPackage[]} [packages]
+ * @returns {string[]}
+ */
+const stubbedChainModules = (chainIds, packages = CHAIN_PACKAGES) =>
+    packages
+        .filter(chainPackage => !isChainPackageIncluded(chainPackage, chainIds))
+        .flatMap(chainPackage => chainPackage.mobileStubbedModules)
 
 // The E2E fixture deeplink's only entry points. It rewrites wallet state on
 // command, so it ships only in a bundle built for a device test run.
@@ -148,12 +152,12 @@ const toStubMap = (projectRoot, modulePaths) =>
 module.exports = {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
-    EVM_CHAIN_MODULES,
+    isChainPackageIncluded,
     isDeveloperGalleryIncluded,
     isBenchBuild,
     isE2eFixturesIncluded,
-    listsEvmChain,
     readBakedAppEnvironment,
     readBakedChainIds,
+    stubbedChainModules,
     toStubMap,
 }
