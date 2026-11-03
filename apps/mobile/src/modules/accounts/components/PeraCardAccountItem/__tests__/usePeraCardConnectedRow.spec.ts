@@ -23,16 +23,14 @@ vi.mock('@perawallet/wallet-core-card', async importOriginal => ({
     useCardStatusQuery: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'testnet' }),
-}))
-
 // `t` echoes the key so assertions read the resolved key, not English copy.
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
 import { usePeraCardConnectedRow } from '../usePeraCardConnectedRow'
+
+const SCOPE = { chainId: 'algorand', networkId: 'testnet' } as const
 
 const cardWith = (partial: Partial<Card>): Card => ({
     id: 'card-1',
@@ -59,7 +57,7 @@ describe('usePeraCardConnectedRow', () => {
         mockStatusQuery(cardWith({ status: CardStatus.Active }))
 
         // Act
-        const { result } = renderHook(() => usePeraCardConnectedRow())
+        const { result } = renderHook(() => usePeraCardConnectedRow(SCOPE))
 
         // Assert
         expect(result.current.statusLabel).toBe('•••• 4821')
@@ -74,7 +72,7 @@ describe('usePeraCardConnectedRow', () => {
         mockStatusQuery(cardWith({ status }))
 
         // Act
-        const { result } = renderHook(() => usePeraCardConnectedRow())
+        const { result } = renderHook(() => usePeraCardConnectedRow(SCOPE))
 
         // Assert
         expect(result.current.statusLabel).toBe(key)
@@ -88,7 +86,7 @@ describe('usePeraCardConnectedRow', () => {
         mockStatusQuery(data)
 
         // Act
-        const { result } = renderHook(() => usePeraCardConnectedRow())
+        const { result } = renderHook(() => usePeraCardConnectedRow(SCOPE))
 
         // Assert
         expect(result.current.statusLabel).toBeNull()
@@ -99,23 +97,20 @@ describe('usePeraCardConnectedRow', () => {
         mockStatusQuery(cardWith({ status: CardStatus.Active, panLast4: '' }))
 
         // Act
-        const { result } = renderHook(() => usePeraCardConnectedRow())
+        const { result } = renderHook(() => usePeraCardConnectedRow(SCOPE))
 
         // Assert
         expect(result.current.statusLabel).toBeNull()
     })
 
-    it('reads the status for the selected Algorand network', () => {
+    it('reads the status for the scope it is given', () => {
         // Arrange
         mockStatusQuery(null)
 
         // Act
-        renderHook(() => usePeraCardConnectedRow())
+        renderHook(() => usePeraCardConnectedRow(SCOPE))
 
         // Assert
-        expect(useCardStatusQuery).toHaveBeenCalledWith({
-            chainId: 'algorand',
-            networkId: 'testnet',
-        })
+        expect(useCardStatusQuery).toHaveBeenCalledWith(SCOPE)
     })
 })

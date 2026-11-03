@@ -98,6 +98,9 @@ vi.mock('@perawallet/wallet-core-card', () => ({
 
 import { useAccountMenu } from '../useAccountMenu'
 
+// The card row reads its status on the menu's Algorand scope.
+const CARD_SCOPE = expect.objectContaining({ chainId: 'algorand' })
+
 const baseProps = () => ({
     onSelected: vi.fn(),
     onAddAccount: vi.fn(),
@@ -200,6 +203,7 @@ describe('useAccountMenu pera card row', () => {
             kind: 'pera-card',
             activated: false,
             nested: false,
+            scope: CARD_SCOPE,
         })
         expect(items[2]).toEqual({ kind: 'account', account: ACCT_B })
     })
@@ -219,6 +223,7 @@ describe('useAccountMenu pera card row', () => {
             kind: 'pera-card',
             activated: true,
             nested: true,
+            scope: CARD_SCOPE,
         })
     })
 
@@ -238,6 +243,7 @@ describe('useAccountMenu pera card row', () => {
             kind: 'pera-card',
             activated: true,
             nested: false,
+            scope: CARD_SCOPE,
         })
     })
 
@@ -254,6 +260,7 @@ describe('useAccountMenu pera card row', () => {
             kind: 'pera-card',
             activated: true,
             nested: false,
+            scope: CARD_SCOPE,
         })
     })
 

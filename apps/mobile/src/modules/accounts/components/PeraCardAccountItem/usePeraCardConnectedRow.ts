@@ -13,10 +13,9 @@
 import { CardStatus, useCardStatusQuery } from '@perawallet/wallet-core-card'
 import {
     i18nKey,
-    LEGACY_CHAIN_ID,
+    type ChainScope,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -39,9 +38,10 @@ export type UsePeraCardConnectedRowResult = {
     statusLabel: Nullable<string>
 }
 
-export const usePeraCardConnectedRow = (): UsePeraCardConnectedRowResult => {
+export const usePeraCardConnectedRow = (
+    scope: ChainScope,
+): UsePeraCardConnectedRowResult => {
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: card } = useCardStatusQuery(scope)
 
     if (!card) return { statusLabel: null }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { PeraCardRowHeader } from './PeraCardRowHeader'
 import { useStyles } from './styles'
@@ -18,15 +19,17 @@ import { usePeraCardConnectedRow } from './usePeraCardConnectedRow'
 type PeraCardConnectedRowProps = {
     /** When true, indent the card and draw the connector to the account above. */
     nested: boolean
+    scope: ChainScope
     onPress?: () => void
 }
 
 export const PeraCardConnectedRow = ({
     nested,
+    scope,
     onPress,
 }: PeraCardConnectedRowProps) => {
     const styles = useStyles()
-    const { statusLabel } = usePeraCardConnectedRow()
+    const { statusLabel } = usePeraCardConnectedRow(scope)
 
     const cardContent = (
         <PeraCardRowHeader>
