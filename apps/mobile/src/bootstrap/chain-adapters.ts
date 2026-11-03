@@ -35,6 +35,7 @@ import {
     chainEndpointsFor,
     config,
     getPeraServicesConfig,
+    isPeraScopeRefused,
     peraServicesFor,
     setPeraBackendSwitch,
 } from '@perawallet/wallet-core-config'
@@ -73,6 +74,7 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
                     ? ''
                     : getPeraServicesConfig(scope).backendUrl,
             services,
+            isChainRefused: isPeraScopeRefused(scope),
         }
     },
     timeouts: config.chainRequestTimeouts[entry.chainId],

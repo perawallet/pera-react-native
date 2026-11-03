@@ -518,7 +518,9 @@ const search =
         // An empty page would read as "No assets found" on a network that
         // can't be searched at all.
         if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
-            throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
+            throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE, {
+                isChainRefused: ctx.getPeraBackend(scope).isChainRefused,
+            })
         }
         // The list's native row carries the backend's name for it; every
         // other screen names it from the chain table.

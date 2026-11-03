@@ -22,7 +22,6 @@ import ky, {
 } from 'ky'
 import {
     WALLET_MODES,
-    type ChainScope,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {

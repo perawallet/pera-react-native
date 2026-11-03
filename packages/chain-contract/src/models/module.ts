@@ -40,6 +40,11 @@ export interface ChainPeraBackend {
     baseUrl: string
     /** Pera service names, such as `blockFollowing`, the scope's backend offers. */
     services: ReadonlySet<string>
+    /**
+     * True when the deployment doesn't serve the scope's chain, so `services`
+     * is empty because of it. Absent means false.
+     */
+    isChainRefused?: boolean
 }
 
 /**
