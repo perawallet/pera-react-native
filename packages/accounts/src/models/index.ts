@@ -223,11 +223,12 @@ export type AccountsState = BaseStoreState & {
     ) => Promise<WalletAccount>
     /**
      * Adds `chainId`'s entry for the device position at `details` to the
-     * hardware account `joinId`, or creates an account (named `name`) for it
-     * when `joinId` is absent or isn't at that Bluetooth position free of
-     * `chainId`. A USB id names a model and passphrase seeds share a Bluetooth
-     * id, so name `joinId` only once the device has read that account's
-     * address on a chain it holds. Returns the position's account untouched
+     * hardware account `joinId`, binding it to `details`' device, or creates
+     * an account (named `name`) for it when `joinId` is absent or isn't at
+     * that position free of `chainId`. A position can hold several seeds
+     * (passphrase seeds share a Bluetooth id, and every USB device shares a
+     * USB position), so name `joinId` only once the device has read that
+     * account's address on a chain it holds. Returns the position's account untouched
      * when it already holds `address` there. Throws `InvalidChainAddressError`
      * for an address not on the chain's selected network, and
      * `DuplicateAccountError` naming the holder when another account holds the
@@ -273,8 +274,9 @@ export type AccountsState = BaseStoreState & {
      * `hardwareDetails`, preserving its id, name and chain addresses;
      * `chainId` is the chain the device proved the address on. When `joinId`
      * names the hardware account at that device position, holding none of the
-     * watch account's chains, the entries join it instead and the watch
-     * account goes (name it as `addHardwareChainAccount` says). Returns whether
+     * watch account's chains, the entries join it instead, it binds to
+     * `hardwareDetails`' device, and the watch account goes (name it as
+     * `addHardwareChainAccount` says). Returns whether
      * an upgrade happened; refuses (false) when the account is missing or not
      * a watch account. Callers own the user confirmation.
      */
@@ -289,7 +291,8 @@ export type AccountsState = BaseStoreState & {
      * OS forget/re-pair rotated the BLE device id — an address match on
      * `chainId` proves it is the same key). When `joinId` names the hardware
      * account at the new device position, holding none of `id`'s chains,
-     * `id`'s entries join it and `id` goes. Returns whether anything changed;
+     * `id`'s entries join it, it binds to `hardwareDetails`' device, and `id`
+     * goes. Returns whether anything changed;
      * refuses (false) for non-hardware accounts.
      */
     updateHardwareDetails: (

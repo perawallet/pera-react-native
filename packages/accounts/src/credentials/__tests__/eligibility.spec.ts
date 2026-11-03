@@ -426,6 +426,15 @@ describe('findHardwareHolder', () => {
         ).toBe('index-1')
     })
 
+    test('finds no Bluetooth account stored under another device id', () => {
+        expect(
+            findHardwareHolder([ledger('other-device', 0, 'device-2')], {
+                ...device,
+                accountIndex: 0,
+            }),
+        ).toBeUndefined()
+    })
+
     test('finds the USB account at the index whatever its stored id', () => {
         const usb = { ...device, transportType: 'usb' as const }
         const accounts = [
@@ -458,7 +467,10 @@ describe('findHardwareHolder', () => {
         )
 
         expect(
-            findHardwareHolder([ledger('ble', 0)], { ...usb, accountIndex: 0 }),
+            findHardwareHolder([ledger('ble-account', 0)], {
+                ...usb,
+                accountIndex: 0,
+            }),
         ).toBeUndefined()
         expect(
             findHardwareHolder([usbLedger], { ...device, accountIndex: 0 }),
@@ -520,6 +532,22 @@ describe('hardwareJoinCandidates', () => {
                 ({ id }) => id,
             ),
         ).toEqual(['algorand-only'])
+    })
+
+    test('excludes a Bluetooth account stored under another device id', () => {
+        const otherDevice = buildTestAccount(
+            {
+                kind: 'hardware',
+                device: { ...device, deviceId: 'device-2' },
+                accountIndex: 0,
+            },
+            { [ALGORAND]: { address: ALGORAND_ADDRESS } },
+            { id: 'other-device' },
+        )
+
+        expect(
+            hardwareJoinCandidates([otherDevice], position, [ETHEREUM]),
+        ).toEqual([])
     })
 
     test('excludes an account holding any of the chains', () => {

@@ -164,6 +164,16 @@ describe('addHardwareChainAccount', () => {
             expect(result.id).toBe('usb-ledger')
             expect(result.chains[ALGORAND]?.address).toBe(ALGORAND_ADDRESS)
             expect(result.chains[ETHEREUM]?.address).toBe(EVM_KEY_ADDRESS)
+            expect(result.custody).toEqual({
+                kind: 'hardware',
+                device: {
+                    manufacturer: 'ledger',
+                    deviceId: 'replugged',
+                    deviceName: USB_DEVICE.deviceName,
+                    transportType: 'usb',
+                },
+                accountIndex: 0,
+            })
         })
 
         test('keeps a USB import apart when no account is proven', () => {
@@ -484,6 +494,9 @@ describe('a device position stays one account', () => {
         expect(only.id).toBe('usb-ledger')
         expect(only.chains[ALGORAND]?.address).toBe(ALGORAND_ADDRESS)
         expect(only.chains[ETHEREUM]?.address).toBe(EVM_KEY_ADDRESS)
+        expect(only.custody).toMatchObject({
+            device: { deviceId: 'replugged', transportType: 'usb' },
+        })
         expect(state().selectedAccountId).toBe('usb-ledger')
     })
 
