@@ -26,9 +26,11 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
         hideZeroBalance,
         displayNfts,
         displayOptedInNfts,
+        showSuspicious,
         handleToggleHideZeroBalance,
         handleToggleDisplayNfts,
         handleToggleDisplayOptedInNfts,
+        handleToggleShowSuspicious,
         commitChanges,
     } = useAssetFilterContent()
 
@@ -78,6 +80,13 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                 onToggle={handleToggleDisplayOptedInNfts}
                 testID='asset_filter_display_opted_in_nfts'
                 disabled={!displayNfts}
+            />
+            <FilterRow
+                label={t('asset_filter.show_suspicious')}
+                description={t('asset_filter.show_suspicious_description')}
+                value={showSuspicious}
+                onToggle={handleToggleShowSuspicious}
+                testID='asset_filter_show_suspicious'
             />
         </PWSheetLayout>
     )

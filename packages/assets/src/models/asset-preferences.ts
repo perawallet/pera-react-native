@@ -26,8 +26,11 @@ export type AssetPreferencesState = BaseStoreState & {
     hideZeroBalance: boolean
     displayNfts: boolean
     displayOptedInNfts: boolean
+    /** Lists tokens Pera flags suspicious on networks where anyone can send one unasked; they never count toward totals. */
+    showSuspicious: boolean
     setAssetSortMode: (mode: AssetSortMode) => void
     setHideZeroBalance: (hide: boolean) => void
     setDisplayNfts: (display: boolean) => void
     setDisplayOptedInNfts: (display: boolean) => void
+    setShowSuspicious: (show: boolean) => void
 }

@@ -34,6 +34,7 @@ import {
     type ChainScope,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
+import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 import { refreshAccountHoldings } from '../holdingsRepository'
 import {
     getAccountPortfolioTotals,
@@ -154,6 +155,58 @@ describe('account portfolio queries', () => {
             expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(5, 6)
             // All four assets have metadata.
             expect(totals.missingMetadataCount).toBe(0)
+        })
+
+        it('leaves a suspicious token out of the USD value', async () => {
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...richAsset('100', 'Banana'),
+                        peraMetadata: {
+                            ...richAsset('100', 'Banana').peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            // Only '200' counts now: 1 * $3.
+            expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(3, 6)
+            expect(totals.holdingsCount).toBe(4)
+        })
+
+        it('counts a suspicious token on a chain where the user opts in to each asset', async () => {
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...richAsset('100', 'Banana'),
+                        peraMetadata: {
+                            ...richAsset('100', 'Banana').peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            // '100' counts again: 2 * $1 + 1 * $3.
+            expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(5, 6)
         })
 
         it('reports no native amount or price for an account with no native row', async () => {

@@ -95,7 +95,9 @@
         "display_nfts": "Afficher les NFT dans la liste des actifs",
         "display_nfts_description": "Les NFT apparaîtront dans la liste des actifs de votre compte",
         "display_opted_in_nfts": "Afficher les NFT ajoutés",
-        "display_opted_in_nfts_description": "Vous pouvez afficher ou masquer les NFT ajoutés mais non détenus"
+        "display_opted_in_nfts_description": "Vous pouvez afficher ou masquer les NFT ajoutés mais non détenus",
+        "show_suspicious": "Afficher les actifs suspects",
+        "show_suspicious_description": "Affiche les tokens que Pera a signalés comme du spam ou une arnaque probable. Ils ne sont jamais comptés dans votre solde"
     },
     "add_asset": {
         "title": "Ajouter un actif",

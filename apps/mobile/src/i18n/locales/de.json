@@ -95,7 +95,9 @@
         "display_nfts": "NFTs in der Asset-Liste anzeigen",
         "display_nfts_description": "NFT-Assets werden in der Asset-Liste deines Kontos angezeigt",
         "display_opted_in_nfts": "Angemeldete NFTs anzeigen",
-        "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt"
+        "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt",
+        "show_suspicious": "Verdächtige Assets anzeigen",
+        "show_suspicious_description": "Zeigt Tokens an, die Pera als wahrscheinlichen Spam oder Betrug markiert hat. Sie zählen nie zu deinem Guthaben"
     },
     "add_asset": {
         "title": "Asset hinzufügen",

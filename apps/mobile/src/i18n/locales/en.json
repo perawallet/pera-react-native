@@ -95,7 +95,9 @@
         "display_nfts": "Display NFTs in asset list",
         "display_nfts_description": "NFTs assets will be shown in the asset list of your account",
         "display_opted_in_nfts": "Display opted-in NFTs",
-        "display_opted_in_nfts_description": "You can show/hide NFTs that are opted-in but not owned"
+        "display_opted_in_nfts_description": "You can show/hide NFTs that are opted-in but not owned",
+        "show_suspicious": "Show suspicious assets",
+        "show_suspicious_description": "Lists tokens Pera has flagged as likely spam or scams. They are never counted in your balance"
     },
     "add_asset": {
         "title": "Add Asset",

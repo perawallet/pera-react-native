@@ -291,6 +291,8 @@ export const createEthereumBalanceHistoryOps = (
                         accountAddress,
                         scope,
                         hideZeroBalance: true,
+                        // The total leaves suspicious tokens out, so the chart does too.
+                        hideSuspicious: true,
                     }),
                 ),
             )
