@@ -112,7 +112,9 @@ export const useTabResume = (
             // changes, and Send signs with the selected account.
             setSelectedAccountId(account.id)
 
-            if (intent.flow === 'swap' && swapChainId !== undefined) {
+            if (intent.flow === 'swap') {
+                // Already guaranteed above; repeated so the type narrows.
+                if (swapChainId === undefined) return
                 navigate('TabBar', {
                     screen: 'Swap',
                     params: {
@@ -129,7 +131,6 @@ export const useTabResume = (
                 })
                 return
             }
-            if (intent.flow === 'swap') return
             // The intent's account is looked up on the legacy chain above.
             openSendFunds({
                 asset: { chainId: LEGACY_CHAIN_ID, assetId: intent.assetId },

@@ -42,10 +42,9 @@ export type SwapAlgoShortfallInput = {
 }
 
 /**
- * Mirror of the backend's prepare-time ALGO balance validation
- * (`PrepareTransactionsV2Serializer._validate_account_balance`), so a
- * shortfall fails before prepare with actionable copy instead of a generic
- * 400. Two deliberate backend quirks are preserved: the post-swap balance is
+ * Mirror of the backend's ALGO balance validation on order creation, so a
+ * shortfall fails before the order is placed with actionable copy instead of
+ * a generic 400. Two deliberate backend quirks are preserved: the post-swap balance is
  * checked BEFORE crediting an ALGO output (algod evaluates group slots
  * sequentially, so the balance can dip mid-group), and the output credit
  * only counts toward the pera fee.

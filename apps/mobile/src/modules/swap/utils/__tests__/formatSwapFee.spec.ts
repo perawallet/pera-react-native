@@ -21,6 +21,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         amount: { toString: () => string },
         asset: { unitName: string },
     ) => `${amount.toString()} ${asset.unitName}`,
+    nativeAssetFor: () => ({ assetId: '0', unitName: 'ALGO' }),
 }))
 
 const refOf = (assetId: string) => ({
@@ -66,6 +67,15 @@ describe('formatSwapFee', () => {
 
     it('is null when the quote carries no such fee', () => {
         expect(formatSwapFee(quoteWith([]), 'pera')).toBeNull()
+    })
+
+    it("formats a fee in the chain's native coin when neither leg is it", () => {
+        const quote = {
+            ...quoteWith([feeIn('0')]),
+            assetIn: { assetId: '7', ref: refOf('7'), unitName: 'GOLD' },
+        } as SwapQuote
+
+        expect(formatSwapFee(quote, 'pera')).toBe('1500 ALGO')
     })
 
     it('is null when the fee is in an asset neither leg describes', () => {

@@ -10,7 +10,10 @@
  limitations under the License
  */
 import { assetRefKey } from '@perawallet/wallet-core-chain-contract'
-import { formatAssetAmount } from '@perawallet/wallet-core-assets'
+import {
+    formatAssetAmount,
+    nativeAssetFor,
+} from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     swapFeeOf,
@@ -18,7 +21,10 @@ import {
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 
-/** Null when the quote has no such fee, or charges it in an asset neither leg describes. */
+/**
+ * Null when the quote has no such fee, or charges it in an asset that is
+ * neither a leg nor the chain's native coin, whose decimals aren't known here.
+ */
 export const formatSwapFee = (
     quote: SwapQuote,
     kind: SwapFeeKind,
@@ -29,7 +35,11 @@ export const formatSwapFee = (
     const asset = [quote.assetIn, quote.assetOut].find(
         leg => assetRefKey(leg.ref) === feeKey,
     )
-    return asset ? formatAssetAmount(fee.amount, asset) : null
+    if (asset) return formatAssetAmount(fee.amount, asset)
+    const native = nativeAssetFor(fee.asset.chainId)
+    return native.assetId === fee.asset.assetId
+        ? formatAssetAmount(fee.amount, native)
+        : null
 }
 
 /** The slippage the quote was requested with, in percent; '-' when the router chose it. */

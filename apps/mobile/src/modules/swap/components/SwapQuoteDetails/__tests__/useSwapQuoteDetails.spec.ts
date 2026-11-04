@@ -54,6 +54,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     formatAssetAmount: mockFormatAssetAmount,
+    nativeAssetFor: () => ({ assetId: '0', unitName: 'ALGO' }),
 }))
 
 const refOf = (assetId: string) => ({
