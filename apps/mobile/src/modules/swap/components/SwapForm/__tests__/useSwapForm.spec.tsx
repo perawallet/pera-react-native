@@ -23,7 +23,6 @@ const mockSetToAsset = vi.fn()
 const mockSetSlippage = vi.fn()
 const mockResetQuoteMutation = vi.fn()
 const mockCreateQuotes = vi.fn()
-const mockCalculateSwapAmount = vi.fn()
 const mockSetIsLocalCurrencyInput = vi.fn()
 const mockResetAssetPair = vi.fn()
 const mockInfoToast = vi.fn()
@@ -93,12 +92,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         isError: false,
         reset: mockResetQuoteMutation,
     }),
-    useCalculateSwapAmountMutation: () => ({
-        mutateAsync: mockCalculateSwapAmount,
-    }),
-    usePrefetchProviders: () => vi.fn(),
-    percentToApiSlippage: (percent: string) =>
-        new Decimal(percent).div(100).toString(),
+    swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(100000) }),
 }))
 
 const accountAt = (address: string) => ({
@@ -108,6 +102,18 @@ let mockSelectedAccount = accountAt('TESTADDRESS123')
 let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
 let mockIsPayBalanceFetched = true
 let mockIsPayBalanceError = false
+let mockSpendableMax: Nullable<Decimal> = new Decimal('5000000')
+const mockUseSpendableBalanceQuery = vi.fn()
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useSpendableBalanceQuery: (input: unknown) => {
+        mockUseSpendableBalanceQuery(input)
+        return {
+            data: mockSpendableMax ? { max: mockSpendableMax } : undefined,
+            isPending: false,
+        }
+    },
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
@@ -234,6 +240,7 @@ describe('useSwapForm', () => {
         mockSlippage = null
         mockSelectedAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
+        mockSpendableMax = new Decimal('5000000')
         mockIsPayBalanceFetched = true
         mockIsPayBalanceError = false
         focusEffectCleanup = null
@@ -503,48 +510,44 @@ describe('useSwapForm', () => {
         expect(mockSetToAsset).not.toHaveBeenCalled()
     })
 
-    it('handleMaxPress calls calculateSwapAmount with 100% percentage', async () => {
-        mockCalculateSwapAmount.mockResolvedValueOnce({
-            amount: new Decimal('5000000'),
-        })
-
+    it('fills MAX with everything spendable after the chain fee reserve', () => {
+        mockSpendableMax = new Decimal('4900000')
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
-        await act(async () => {
+        act(() => {
             result.current.handleMaxPress()
         })
 
-        expect(mockCalculateSwapAmount).toHaveBeenCalledWith(
+        expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                percentage: '1',
-                address: 'TESTADDRESS123',
+                fee: new Decimal(100000),
+                scope: SCOPE,
             }),
         )
+        expect(result.current.payAmount).toEqual(new Decimal('4.9'))
     })
 
-    it('tells the user instead of filling 0 when the calculated max is zero', async () => {
-        mockCalculateSwapAmount.mockResolvedValueOnce({
-            amount: new Decimal(0),
+    it('fills a picked percentage of the spendable amount, rounded down to base units', async () => {
+        mockSpendableMax = new Decimal('4900001')
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            slippageTolerance: null,
+            balancePercentage: 50,
+            useLocalCurrency: false,
         })
-
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
-            result.current.handleMaxPress()
+            await result.current.handleOpenConfig()
         })
 
-        expect(mockCalculateSwapAmount).toHaveBeenCalled()
-        expect(result.current.payAmount).toBeNull()
-        expect(mockInfoToast).toHaveBeenCalled()
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(result.current.payAmount).toEqual(new Decimal('2.45'))
     })
 
-    it('tells the user instead of filling 0 when the response has no amount', async () => {
-        mockCalculateSwapAmount.mockResolvedValueOnce({})
-
+    it('tells the user instead of filling 0 when the fee reserve takes the whole balance', () => {
+        mockSpendableMax = new Decimal(0)
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
-        await act(async () => {
+        act(() => {
             result.current.handleMaxPress()
         })
 
@@ -554,9 +557,6 @@ describe('useSwapForm', () => {
     })
 
     it('clears the amounts and the asset pair when the selected account changes', async () => {
-        mockCalculateSwapAmount.mockResolvedValueOnce({
-            amount: new Decimal('5000000'),
-        })
         const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
@@ -592,19 +592,19 @@ describe('useSwapForm', () => {
         mockPayBalance = null
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
-        await act(async () => {
+        act(() => {
             result.current.handleMaxPress()
         })
 
-        expect(mockCalculateSwapAmount).not.toHaveBeenCalled()
+        expect(result.current.payAmount).toBeNull()
         expect(mockInfoToast).toHaveBeenCalled()
     })
 
-    it('surfaces an error toast when the percentage calculation fails', async () => {
-        mockCalculateSwapAmount.mockRejectedValueOnce(new Error('boom'))
+    it('surfaces an error toast when the spendable amount is not known yet', () => {
+        mockSpendableMax = null
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
-        await act(async () => {
+        act(() => {
             result.current.handleMaxPress()
         })
 
@@ -684,7 +684,7 @@ describe('useSwapForm', () => {
         expect(mockSetIsLocalCurrencyInput).not.toHaveBeenCalled()
     })
 
-    it('converts stored slippage percent to decimal fraction', async () => {
+    it('sends the stored slippage to the router as a percent', async () => {
         mockSlippage = '1'
         mockCreateQuotes.mockResolvedValueOnce([])
 
@@ -695,11 +695,11 @@ describe('useSwapForm', () => {
         })
 
         expect(mockCreateQuotes).toHaveBeenCalledWith(
-            expect.objectContaining({ slippage: '0.01' }),
+            expect.objectContaining({ slippage: '1' }),
         )
     })
 
-    it('omits slippage when none is set', async () => {
+    it('leaves slippage to the router when none is set', async () => {
         mockSlippage = null
         mockCreateQuotes.mockResolvedValueOnce([])
 
@@ -710,7 +710,7 @@ describe('useSwapForm', () => {
         })
 
         expect(mockCreateQuotes).toHaveBeenCalledWith(
-            expect.objectContaining({ slippage: undefined }),
+            expect.objectContaining({ slippage: null }),
         )
     })
 

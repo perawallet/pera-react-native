@@ -39,7 +39,6 @@ import { TransactionListItem } from '@modules/transactions/components/Transactio
 import { TransactionStatusBadge } from '@modules/signing'
 
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
-import { SwapScopePreview } from './SwapScopePreview'
 import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'
 import { SwapQuoteDetails } from '@modules/swap/components/SwapQuoteDetails'
 
@@ -101,7 +100,7 @@ import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { GallerySection } from './types'
-import { mockDexAssetAlgo, mockDexAssetUsdc } from './mockDexAssets'
+import { mockSwapAssetAlgo, mockSwapAssetUsdc } from './mockSwapAssets'
 import { SwapAssetPairIconPreview } from './SwapAssetPairIconPreview'
 import { AssetsCollectibleThumbnailPreview } from './AssetsCollectibleThumbnailPreview'
 
@@ -415,16 +414,35 @@ registerPreview({
 })
 
 const mockSwapQuote: SwapQuote = {
-    provider: 'Tinyman',
-    providerDisplayName: 'Tinyman',
-    assetIn: mockDexAssetAlgo,
-    assetOut: mockDexAssetUsdc,
+    quoteId: 'gallery-quote',
+    request: {
+        sourceAsset: mockSwapAssetAlgo.ref,
+        destinationAsset: mockSwapAssetUsdc.ref,
+        sourceAmount: new Decimal('5000000'),
+        sourceAddress: '',
+        destinationAddress: '',
+        slippage: '0.5',
+    },
+    provider: 'tinyman',
+    routeKind: 'single-chain',
+    assetIn: mockSwapAssetAlgo,
+    assetOut: mockSwapAssetUsdc,
     amountIn: new Decimal('5000000'),
     amountOut: new Decimal('4850000'),
-    price: new Decimal('0.97'),
-    priceImpact: new Decimal('0.01'),
-    peraFeeAmount: new Decimal('50000'),
-    slippage: new Decimal('0.005'),
+    minimumAmountOut: new Decimal('4825750'),
+    amountInUsdValue: null,
+    amountOutUsdValue: null,
+    fees: [
+        {
+            kind: 'pera',
+            asset: mockSwapAssetAlgo.ref,
+            amount: new Decimal('50000'),
+            usdValue: null,
+        },
+    ],
+    priceImpact: new Decimal('1'),
+    expiresAt: null,
+    fetchedAt: 0,
 }
 
 registerPreview({
@@ -435,31 +453,18 @@ registerPreview({
 registerPreview({
     id: 'comp-swap-provider-display',
     render: () => (
-        <SwapScopePreview>
-            {scope => (
-                <SwapProviderDisplay
-                    scope={scope}
-                    providerName='Tinyman'
-                    providerDisplayName='Tinyman'
-                />
-            )}
-        </SwapScopePreview>
+        <SwapProviderDisplay provider='tinyman' />
     ),
 })
 
 registerPreview({
     id: 'comp-swap-provider-row',
     render: () => (
-        <SwapScopePreview>
-            {scope => (
-                <SwapProviderRow
-                    scope={scope}
-                    quote={mockSwapQuote}
-                    selectionMode='auto'
-                    onPress={() => undefined}
-                />
-            )}
-        </SwapScopePreview>
+        <SwapProviderRow
+            quote={mockSwapQuote}
+            selectionMode='auto'
+            onPress={() => undefined}
+        />
     ),
 })
 
@@ -1042,11 +1047,6 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-swap-to-asset-selection-list',
                 label: 'SwapToAssetSelectionList (needs live state)',
-                launch: { kind: 'action', run: () => undefined },
-            },
-            {
-                id: 'comp-swap-top-pairs',
-                label: 'SwapTopPairs (needs live state)',
                 launch: { kind: 'action', run: () => undefined },
             },
         ],

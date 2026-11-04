@@ -13,20 +13,17 @@
 import { useMemo } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { formatSwapRate, type SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { useStyles } from './styles'
 
 export type SwapProviderRowProps = {
-    scope: ChainScope
     quote: SwapQuote
     selectionMode: 'auto' | 'manual'
     onPress: () => void
 }
 
 export const SwapProviderRow = ({
-    scope,
     quote,
     selectionMode,
     onPress,
@@ -56,9 +53,7 @@ export const SwapProviderRow = ({
                 testID='swap-provider-row'
             >
                 <SwapProviderDisplay
-                    scope={scope}
-                    providerName={quote.provider}
-                    providerDisplayName={quote.providerDisplayName}
+                    provider={quote.provider}
                 />
                 <PWView style={styles.right}>
                     <PWText

@@ -9,21 +9,24 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
-
-export const mockDexAssetAlgo: DexSwapAsset = {
+export const mockSwapAssetAlgo: SwapAsset = {
     assetId: '0',
+    ref: { chainId: 'algorand', networkId: 'mainnet', assetId: '0' },
     name: 'Algorand',
     unitName: 'ALGO',
     decimals: 6,
     verificationTier: 'verified',
+    crossChainAssetGroup: null,
 }
 
-export const mockDexAssetUsdc: DexSwapAsset = {
+export const mockSwapAssetUsdc: SwapAsset = {
     assetId: '31566704',
+    ref: { chainId: 'algorand', networkId: 'mainnet', assetId: '31566704' },
     name: 'USD Coin',
     unitName: 'USDC',
     decimals: 6,
     verificationTier: 'verified',
+    crossChainAssetGroup: null,
 }

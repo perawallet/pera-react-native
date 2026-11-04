@@ -83,13 +83,19 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-swaps', async () => {
-    const { Decimal } = await import('decimal.js')
+    // Pure quote helpers stay real, by path: the barrel pulls in stores.
+    const { formatSwapRate, swapRate } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
+    >('@packages/swaps/src/utils/swapQuoteHelpers')
+    const { swapFeeOf } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapFees')
+    >('@packages/swaps/src/utils/swapFees')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
-        apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
-            slippage.mul(100).toString(),
-        useProvidersQuery: vi.fn(() => ({ data: [] })),
+        formatSwapRate,
+        swapRate,
+        swapFeeOf,
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
         // An account on Algorand swaps there, as it does at the build defaults.
         useSwapScope: vi.fn(

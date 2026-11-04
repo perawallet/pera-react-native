@@ -15,7 +15,6 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
-import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import {
     DEFAULT_PRECISION,
     formatDatetime,
@@ -23,18 +22,20 @@ import {
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
+import type { ListedSwapHistoryItem } from './useSwapHistoryList'
 import { useStyles } from './styles'
 
 export type SwapHistoryListItemProps = {
-    item: SwapHistoryItem
+    item: ListedSwapHistoryItem
     chainId: ChainId
-    onPress: (item: SwapHistoryItem) => void
+    onPress: (item: ListedSwapHistoryItem) => void
 }
 
 const formatAmount = (
-    amountBaseUnits: SwapHistoryItem['amountIn'],
+    amountBaseUnits: ListedSwapHistoryItem['amountIn'],
     decimals: number,
 ): string => {
+    if (!amountBaseUnits) return '-'
     const display = baseUnitsToDisplayUnits(amountBaseUnits, decimals)
     const { sign, integer, fraction } = formatNumber(
         display,
@@ -61,15 +62,17 @@ export const SwapHistoryListItem = ({
 
     const amountInLabel = `${formatAmount(item.amountIn, inDecimals)} ${inUnit}`
     const amountOutLabel = `${formatAmount(item.amountOut, outDecimals)} ${outUnit}`
-    const dateLabel = item.completedDatetime
-        ? formatDatetime(item.completedDatetime, undefined, 'medium')
-        : ''
+    // A completed order is last updated when it completes.
+    const dateLabel =
+        item.status === 'completed'
+            ? formatDatetime(item.updatedAt, undefined, 'medium')
+            : ''
 
     return (
         <PWTouchableOpacity
             style={styles.item}
             onPress={() => onPress(item)}
-            testID={`swap-history-item-${item.id}`}
+            testID={`swap-history-item-${item.orderId}`}
         >
             <SwapAssetPairIcon
                 assetIn={item.assetIn}

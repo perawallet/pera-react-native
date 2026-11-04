@@ -641,8 +641,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Swap',
                         params: {
-                            assetInId: parsedData.assetInRef?.assetId,
-                            assetOutId: parsedData.assetOutRef?.assetId,
+                            assetIn: parsedData.assetInRef,
+                            assetOut: parsedData.assetOutRef,
                         },
                     })
                     break

@@ -9,30 +9,29 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-// @vitest-environment node
-
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
-import { dexSwapAssetToDisplayable } from '../dexSwapAssetToDisplayable'
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
+import { swapAssetToDisplayable } from '../swapAssetToDisplayable'
 
-const dexAsset = (overrides: Partial<DexSwapAsset> = {}): DexSwapAsset =>
-    ({
-        assetId: 31_566_704,
-        name: 'USD Coin',
-        unitName: 'USDC',
-        decimals: 6,
-        logo: 'https://cdn/usdc.png',
-        ...overrides,
-    }) as unknown as DexSwapAsset
+const swapAsset = (overrides: Partial<SwapAsset> = {}): SwapAsset => ({
+    assetId: '31566704',
+    ref: { chainId: 'algorand', networkId: 'mainnet', assetId: '31566704' },
+    name: 'USD Coin',
+    unitName: 'USDC',
+    decimals: 6,
+    logo: 'https://cdn/usdc.png',
+    verificationTier: 'verified',
+    crossChainAssetGroup: null,
+    ...overrides,
+})
 
-describe('dexSwapAssetToDisplayable', () => {
+describe('swapAssetToDisplayable', () => {
     it('maps the core asset fields through unchanged', () => {
-        const result = dexSwapAssetToDisplayable(dexAsset())
+        const result = swapAssetToDisplayable(swapAsset())
         expect(result).toMatchObject({
-            assetId: 31_566_704,
+            assetId: '31566704',
             name: 'USD Coin',
             unitName: 'USDC',
             decimals: 6,
@@ -40,12 +39,12 @@ describe('dexSwapAssetToDisplayable', () => {
     })
 
     it('carries the logo into peraMetadata when present', () => {
-        const result = dexSwapAssetToDisplayable(dexAsset())
+        const result = swapAssetToDisplayable(swapAsset())
         expect(result.peraMetadata).toEqual({ logo: 'https://cdn/usdc.png' })
     })
 
     it('leaves peraMetadata undefined when there is no logo', () => {
-        const result = dexSwapAssetToDisplayable(dexAsset({ logo: undefined }))
+        const result = swapAssetToDisplayable(swapAsset({ logo: undefined }))
         expect(result.peraMetadata).toBeUndefined()
     })
 })

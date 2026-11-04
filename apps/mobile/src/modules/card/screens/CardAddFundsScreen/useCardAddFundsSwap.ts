@@ -122,7 +122,7 @@ export const useCardAddFundsSwap = ({
 
     const executeSwap =
         useCallback(async (): Promise<CardAddFundsSwapOutcome> => {
-            if (!quote?.quoteIdStr) {
+            if (!quote) {
                 return { kind: 'error', message: '' }
             }
             const outcome = await execute(quote)

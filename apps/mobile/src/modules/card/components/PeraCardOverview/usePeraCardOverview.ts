@@ -185,8 +185,13 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
             navigation.navigate('TabBar', {
                 screen: 'Swap',
                 params: {
-                    assetInId: nativeAsset.assetId,
-                    assetOutId: usdcAssetId ?? undefined,
+                    assetIn: {
+                        chainId: scope.chainId,
+                        assetId: nativeAsset.assetId,
+                    },
+                    assetOut: usdcAssetId
+                        ? { chainId: scope.chainId, assetId: usdcAssetId }
+                        : undefined,
                 },
             })
             return

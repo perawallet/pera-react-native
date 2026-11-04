@@ -156,8 +156,8 @@ describe('useTabResume (web)', () => {
             expect(navigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Swap',
                 params: {
-                    assetInId: '0',
-                    assetOutId: '31566704',
+                    assetIn: { chainId: 'algorand', assetId: '0' },
+                    assetOut: { chainId: 'algorand', assetId: '31566704' },
                     payAmount: '2.5',
                 },
             }),

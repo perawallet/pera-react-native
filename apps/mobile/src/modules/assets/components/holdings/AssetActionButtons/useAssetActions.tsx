@@ -109,7 +109,10 @@ export const useAssetActions = ({
             screen: 'Swap',
             params: isAlgo
                 ? undefined
-                : { assetInId: nativeAsset.assetId, assetOutId: asset.assetId },
+                : {
+                      assetIn: { chainId, assetId: nativeAsset.assetId },
+                      assetOut: { chainId, assetId: asset.assetId },
+                  },
         })
     }, [asset.assetId, chainId, navigation])
 

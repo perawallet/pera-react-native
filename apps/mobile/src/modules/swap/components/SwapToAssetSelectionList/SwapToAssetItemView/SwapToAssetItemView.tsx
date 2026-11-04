@@ -20,7 +20,7 @@ import {
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { AccountAssetItemView } from '@modules/assets'
 
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWTouchableOpacityProps } from '@components/core'
 
@@ -34,47 +34,46 @@ const isVerificationTier = (
     typeof value === 'string' && VERIFICATION_TIERS.has(value)
 
 export type SwapToAssetItemViewProps = {
-    dexAsset: DexSwapAsset
+    swapAsset: SwapAsset
     balance: Nullable<Decimal>
 } & PWTouchableOpacityProps
 
 export const SwapToAssetItemView = ({
-    dexAsset,
+    swapAsset,
     balance,
     ...rest
 }: SwapToAssetItemViewProps) => {
     const accountBalance = useMemo<AssetWithAccountBalance>(() => {
         const asset: PeraAsset = {
-            assetId: dexAsset.assetId,
-            name: dexAsset.name,
-            unitName: dexAsset.unitName,
-            decimals: dexAsset.decimals ?? 0,
+            assetId: swapAsset.assetId,
+            name: swapAsset.name,
+            unitName: swapAsset.unitName,
+            decimals: swapAsset.decimals ?? 0,
             creator: { address: '' },
-            totalSupply: dexAsset.total
-                ? new Decimal(dexAsset.total)
-                : new Decimal(0),
+            // The router gives no supply, and the row never shows one.
+            totalSupply: new Decimal(0),
             peraMetadata: {
                 ...DEFAULT_ASSET_METADATA,
-                verificationTier: isVerificationTier(dexAsset.verificationTier)
-                    ? dexAsset.verificationTier
+                verificationTier: isVerificationTier(swapAsset.verificationTier)
+                    ? swapAsset.verificationTier
                     : DEFAULT_ASSET_METADATA.verificationTier,
             },
         }
 
         return {
-            assetId: dexAsset.assetId,
+            assetId: swapAsset.assetId,
             asset,
             amount: balance ?? new Decimal(0),
             nativeValue: null,
             fiatValue: null,
             restriction: null,
         }
-    }, [dexAsset, balance])
+    }, [swapAsset, balance])
 
     return (
         <AccountAssetItemView
             accountBalance={accountBalance}
-            logoUrl={dexAsset.logo}
+            logoUrl={swapAsset.logo}
             showBalance={balance !== null}
             {...rest}
         />

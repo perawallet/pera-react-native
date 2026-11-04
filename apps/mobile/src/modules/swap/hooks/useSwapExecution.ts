@@ -131,12 +131,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const describeFailure = useCallback(
         (failure: SwapExecutionFailure): DisplayedFailure => {
             switch (failure.reason) {
-                case 'missing-quote-id': {
-                    return { message: 'Swap quote is missing its id' }
-                }
-                case 'no-transaction-groups': {
-                    return { message: 'No transaction groups returned' }
-                }
                 case 'asset-frozen': {
                     const copy = resolveErrorCopy(
                         new AssetFrozenError(failure.assetId),
@@ -196,6 +190,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                     return { message: copy.body, title: copy.title }
                 }
+                case 'no-signable-steps':
+                case 'unsupported-steps':
                 case 'quote-mismatch':
                 case 'signing-failed': {
                     return { message: t('swap.execution.error_body') }

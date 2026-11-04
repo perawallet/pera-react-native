@@ -10,18 +10,28 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import {
     swapExplorerUrlFor,
     useSwapHistoryInfiniteQuery,
+    type SwapAsset,
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
+
+/** A row the list can draw: rows naming an asset this wallet can't resolve are left out. */
+export type ListedSwapHistoryItem = SwapHistoryItem & {
+    assetIn: SwapAsset
+    assetOut: SwapAsset
+}
+
+const isListable = (item: SwapHistoryItem): item is ListedSwapHistoryItem =>
+    item.assetIn !== null && item.assetOut !== null
 
 export type UseSwapHistoryListParams = {
     scope: ChainScope
@@ -30,12 +40,12 @@ export type UseSwapHistoryListParams = {
 }
 
 export type UseSwapHistoryListResult = {
-    swaps: SwapHistoryItem[]
+    swaps: ListedSwapHistoryItem[]
     isLoading: boolean
     isError: boolean
     isFetchingNextPage: boolean
-    keyExtractor: (item: SwapHistoryItem) => string
-    handleItemPress: (item: SwapHistoryItem) => void
+    keyExtractor: (item: ListedSwapHistoryItem) => string
+    handleItemPress: (item: ListedSwapHistoryItem) => void
     handleEndReached: () => void
     shouldShowErrorState: boolean
     shouldShowEmptyState: boolean
@@ -49,21 +59,22 @@ export const useSwapHistoryList = ({
     const { pushWebView } = useWebView()
 
     const {
-        swaps,
+        swaps: loaded,
         isLoading,
         isError,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
     } = useSwapHistoryInfiniteQuery(address, scope, VISIBLE_SWAP_STATUSES)
+    const swaps = useMemo(() => loaded.filter(isListable), [loaded])
 
     const keyExtractor = useCallback(
-        (item: SwapHistoryItem) => item.idStr ?? String(item.id),
+        (item: ListedSwapHistoryItem) => item.orderId,
         [],
     )
 
     const handleItemPress = useCallback(
-        (item: SwapHistoryItem) => {
+        (item: ListedSwapHistoryItem) => {
             const url = swapExplorerUrlFor(scope, item)
             if (!url) return
             trackEvent(SwapEvent.SelectHistoryInSeeAll, {

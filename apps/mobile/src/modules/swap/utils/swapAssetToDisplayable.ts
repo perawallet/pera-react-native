@@ -9,5 +9,13 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 
-export { SwapTopPairs } from './SwapTopPairs'
+export const swapAssetToDisplayable = (asset: SwapAsset): DisplayableAsset => ({
+    assetId: asset.assetId,
+    name: asset.name,
+    unitName: asset.unitName,
+    decimals: asset.decimals,
+    peraMetadata: asset.logo ? { logo: asset.logo } : undefined,
+})

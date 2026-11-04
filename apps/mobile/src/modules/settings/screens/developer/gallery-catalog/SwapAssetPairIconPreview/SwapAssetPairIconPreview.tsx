@@ -16,7 +16,7 @@ import { useTheme } from '@rneui/themed'
 
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 
-import { mockDexAssetAlgo, mockDexAssetUsdc } from '../mockDexAssets'
+import { mockSwapAssetAlgo, mockSwapAssetUsdc } from '../mockSwapAssets'
 
 export type SwapAssetPairIconPreviewProps = { chainId: ChainId }
 
@@ -26,8 +26,8 @@ export const SwapAssetPairIconPreview = ({
     const { theme } = useTheme()
     return (
         <SwapAssetPairIcon
-            assetIn={mockDexAssetAlgo}
-            assetOut={mockDexAssetUsdc}
+            assetIn={mockSwapAssetAlgo}
+            assetOut={mockSwapAssetUsdc}
             chainId={chainId}
             surfaceColor={theme.colors.background}
         />

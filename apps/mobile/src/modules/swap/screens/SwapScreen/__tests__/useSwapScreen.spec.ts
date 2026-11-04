@@ -29,7 +29,7 @@ const {
     mockMarkIntroductionSeen,
     state,
 } = vi.hoisted(() => ({
-    routeParams: { current: undefined as Record<string, string> | undefined },
+    routeParams: { current: undefined as Record<string, unknown> | undefined },
     mockSetFromAsset: vi.fn(),
     mockSetToAsset: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
@@ -160,8 +160,8 @@ describe('useSwapScreen', () => {
 
     it('hands a resumed amount to the form, tied to the route pay asset', () => {
         routeParams.current = {
-            assetInId: '123',
-            assetOutId: '31566704',
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
             payAmount: '2.5',
         }
 
@@ -176,8 +176,8 @@ describe('useSwapScreen', () => {
 
     it('returns the same resumed amount across renders', () => {
         routeParams.current = {
-            assetInId: '123',
-            assetOutId: '31566704',
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
             payAmount: '2.5',
         }
 
@@ -189,7 +189,10 @@ describe('useSwapScreen', () => {
     })
 
     it('has no amount to restore for an ordinary visit', () => {
-        routeParams.current = { assetInId: '123', assetOutId: '31566704' }
+        routeParams.current = {
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
+        }
 
         const { result } = renderHook(() => useSwapScreen())
 

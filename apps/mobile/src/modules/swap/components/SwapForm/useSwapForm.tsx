@@ -22,17 +22,16 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
+import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import {
     pickBestByAmountOut,
-    useCalculateSwapAmountMutation,
-    usePrefetchProviders,
+    swapAdapterFor,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import {
     isDecimalEqual,
-    uint64IdToNumber,
     type Nullable,
     baseUnitsToDisplayUnits,
     type Optional,
@@ -118,16 +117,17 @@ export const useSwapForm = (
         ? addressOn(selectedAccount, scope)
         : undefined
     const nativeAssetId = nativeAssetFor(scope.chainId).assetId
-    const prefetchProviders = usePrefetchProviders(scope)
-
-    useEffect(() => {
-        prefetchProviders()
-    }, [prefetchProviders])
-
-    const { mutateAsync: calculateSwapAmount } =
-        useCalculateSwapAmountMutation(scope)
-    const calculateSwapAmountRef = useRef(calculateSwapAmount)
-    calculateSwapAmountRef.current = calculateSwapAmount
+    // A percentage of what the account can spend, less the chain's fee reserve.
+    const { data: spendable } = useSpendableBalanceQuery(
+        selectedAccount
+            ? {
+                  account: selectedAccount,
+                  asset: { chainId: scope.chainId, assetId: fromAsset },
+                  scope,
+                  fee: swapAdapterFor(scope).maxAmountFeeReserve,
+              }
+            : undefined,
+    )
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
@@ -335,7 +335,7 @@ export const useSwapForm = (
     ])
 
     const applyPercentageAmount = useCallback(
-        async (percentage: number) => {
+        (percentage: number) => {
             if (!selectedAddress) return
             // Every silent return here reads as a dead button, so say why.
             if (!payAssetBalance?.amount || payAssetBalance.amount.isZero()) {
@@ -347,45 +347,35 @@ export const useSwapForm = (
                 )
                 return
             }
-            try {
-                const result = await calculateSwapAmountRef.current!({
-                    address: selectedAddress,
-                    asset_in_id: uint64IdToNumber(fromAsset),
-                    asset_out_id: uint64IdToNumber(toAsset),
-                    percentage: String(percentage / 100),
-                })
-                if (result.amount && !result.amount.isZero()) {
-                    const displayAmount = baseUnitsToDisplayUnits(
-                        result.amount,
-                        payAsset?.decimals ?? 0,
-                    )
-                    setPayAmount(displayAmount)
-                } else {
-                    // The backend clamps the swappable amount at zero when
-                    // fee reserves consume the balance; filling the field
-                    // with 0 would read as a dead button too.
-                    infoToast(
-                        t('swap.form.balance_too_low_title'),
-                        t('swap.form.balance_too_low_body', {
-                            unit: payAsset?.unitName ?? fromAsset,
-                        }),
-                    )
-                }
-            } catch {
-                // Already logged by the query client; the user needs to know the
-                // tap did something.
+            if (!spendable) {
                 errorToast(
                     t('swap.form.percentage_error_title'),
                     t('swap.form.percentage_error_body'),
                 )
+                return
             }
+            const amount = spendable.max.mul(percentage).div(100).floor()
+            if (amount.isZero()) {
+                // Fee reserves can consume the whole balance; filling the
+                // field with 0 would read as a dead button too.
+                infoToast(
+                    t('swap.form.balance_too_low_title'),
+                    t('swap.form.balance_too_low_body', {
+                        unit: payAsset?.unitName ?? fromAsset,
+                    }),
+                )
+                return
+            }
+            setPayAmount(
+                baseUnitsToDisplayUnits(amount, payAsset?.decimals ?? 0),
+            )
         },
         [
             selectedAddress,
             fromAsset,
-            toAsset,
             payAsset,
             payAssetBalance,
+            spendable,
             infoToast,
             errorToast,
             t,
@@ -393,7 +383,7 @@ export const useSwapForm = (
     )
 
     const handleMaxPress = useCallback(() => {
-        void applyPercentageAmount(100)
+        applyPercentageAmount(100)
     }, [applyPercentageAmount])
 
     const handleOpenPayAssetSelection = useCallback(async () => {
@@ -614,7 +604,7 @@ export const useSwapForm = (
         setIsLocalCurrencyInput(result.useLocalCurrency)
 
         if (result.balancePercentage !== null) {
-            void applyPercentageAmount(result.balancePercentage)
+            applyPercentageAmount(result.balancePercentage)
         }
     }, [
         requestBottomSheet,

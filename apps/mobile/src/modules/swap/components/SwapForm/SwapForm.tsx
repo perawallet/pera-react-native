@@ -16,7 +16,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderRow } from '../SwapProviderRow'
-import { SwapTopPairs } from '../SwapTopPairs'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm, type SwapFormInitialPayAmount } from './useSwapForm'
 import { useSwapLocalCurrency } from '../../hooks'
@@ -95,7 +94,6 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
 
             {selectedQuote && (
                 <SwapProviderRow
-                    scope={scope}
                     quote={selectedQuote}
                     selectionMode={providerSelectionMode}
                     onPress={handleOpenProvider}
@@ -142,7 +140,6 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
             )}
 
             <SwapPairHistoryWidget scope={scope} />
-            <SwapTopPairs scope={scope} />
         </PWScrollView>
     )
 }

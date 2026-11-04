@@ -44,11 +44,11 @@ vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-swaps', async () => ({
-    apiSlippageToPercent: (
+    swapFeeOf: (
         await vi.importActual<
-            typeof import('@packages/swaps/src/utils/slippage')
-        >('@packages/swaps/src/utils/slippage')
-    ).apiSlippageToPercent,
+            typeof import('@packages/swaps/src/utils/swapFees')
+        >('@packages/swaps/src/utils/swapFees')
+    ).swapFeeOf,
     formatSwapRate: mockFormatSwapRate,
 }))
 
@@ -56,12 +56,38 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     formatAssetAmount: mockFormatAssetAmount,
 }))
 
-const ALGO = { assetId: '0', unitName: 'ALGO', decimals: 6 }
-const USDC = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
-const PERA = { assetId: '99', unitName: 'PERA', decimals: 6 }
+const refOf = (assetId: string) => ({
+    chainId: 'algorand' as const,
+    networkId: 'mainnet' as const,
+    assetId,
+})
+const ALGO = { assetId: '0', ref: refOf('0'), unitName: 'ALGO', decimals: 6 }
+const USDC = {
+    assetId: '31566704',
+    ref: refOf('31566704'),
+    unitName: 'USDC',
+    decimals: 6,
+}
 
 const makeQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote =>
-    ({ assetIn: ALGO, assetOut: USDC, ...overrides }) as SwapQuote
+    ({
+        assetIn: ALGO,
+        assetOut: USDC,
+        provider: 'tinyman',
+        request: { slippage: null },
+        fees: [],
+        priceImpact: null,
+        ...overrides,
+    }) as unknown as SwapQuote
+
+const peraFeeIn = (assetId: string): SwapQuote['fees'] => [
+    {
+        kind: 'pera',
+        asset: refOf(assetId),
+        amount: new Decimal('1500'),
+        usdValue: null,
+    },
+]
 
 describe('useSwapQuoteDetails', () => {
     beforeEach(() => {
@@ -71,7 +97,7 @@ describe('useSwapQuoteDetails', () => {
     })
 
     it('formats the rate from the quote', () => {
-        const quote = makeQuote({ price: new Decimal('0.25') })
+        const quote = makeQuote()
 
         const { result } = renderHook(() => useSwapQuoteDetails(quote))
 
@@ -95,7 +121,6 @@ describe('useSwapQuoteDetails', () => {
             priceImpactLevel: 'none',
             slippageDisplay: '-',
             peraFeeDisplay: '-',
-            providerDisplay: '-',
         })
         expect(mockFormatAssetAmount).not.toHaveBeenCalled()
     })
@@ -124,41 +149,35 @@ describe('useSwapQuoteDetails', () => {
         expect(result.current.priceImpactLevel).toBe('high')
     })
 
-    it('shows the slippage fraction as a percent', () => {
-        const quote = makeQuote({ slippage: new Decimal('0.005') })
+    it('shows the requested slippage as a percent', () => {
+        const quote = makeQuote({
+            request: { slippage: '0.5' } as SwapQuote['request'],
+        })
 
         const { result } = renderHook(() => useSwapQuoteDetails(quote))
 
         expect(result.current.slippageDisplay).toBe('0.5%')
     })
 
-    it('formats the Pera fee in the fee asset', () => {
-        const quote = makeQuote({
-            peraFeeAmount: new Decimal('1500'),
-            peraFeeAsset: PERA as SwapQuote['assetIn'],
-        })
+    it('formats the Pera fee in the leg asset it is charged in', () => {
+        const quote = makeQuote({ fees: peraFeeIn('31566704') })
 
         const { result } = renderHook(() => useSwapQuoteDetails(quote))
 
-        expect(result.current.peraFeeDisplay).toBe('1500 PERA')
+        expect(result.current.peraFeeDisplay).toBe('1500 USDC')
     })
 
-    it('formats the Pera fee in the input asset when no fee asset is given', () => {
-        const quote = makeQuote({ peraFeeAmount: new Decimal('1500') })
+    it('shows no Pera fee when it is charged in an asset neither leg describes', () => {
+        const quote = makeQuote({ fees: peraFeeIn('99') })
 
         const { result } = renderHook(() => useSwapQuoteDetails(quote))
 
-        expect(result.current.peraFeeDisplay).toBe('1500 ALGO')
+        expect(result.current.peraFeeDisplay).toBe('-')
     })
 
-    it.each([
-        [{ provider: 'tinyman', providerDisplayName: 'Tinyman' }, 'Tinyman'],
-        [{ provider: 'tinyman' }, 'tinyman'],
-    ] as const)('names the provider from %o', (fields, expected) => {
-        const { result } = renderHook(() =>
-            useSwapQuoteDetails(makeQuote(fields as Partial<SwapQuote>)),
-        )
+    it('names the provider by the router id', () => {
+        const { result } = renderHook(() => useSwapQuoteDetails(makeQuote()))
 
-        expect(result.current.providerDisplay).toBe(expected)
+        expect(result.current.providerDisplay).toBe('tinyman')
     })
 })

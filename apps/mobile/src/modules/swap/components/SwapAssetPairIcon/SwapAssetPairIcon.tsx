@@ -12,14 +12,14 @@
 
 import { PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
-import { dexSwapAssetToDisplayable } from '@modules/swap/utils/dexSwapAssetToDisplayable'
+import { swapAssetToDisplayable } from '@modules/swap/utils/swapAssetToDisplayable'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'
 
 export type SwapAssetPairIconProps = {
-    assetIn: DexSwapAsset
-    assetOut: DexSwapAsset
+    assetIn: SwapAsset
+    assetOut: SwapAsset
     chainId: ChainId
     surfaceColor: string
 }
@@ -36,14 +36,14 @@ export const SwapAssetPairIcon = ({
         <PWView style={styles.container}>
             <AssetIcon
                 chainId={chainId}
-                asset={dexSwapAssetToDisplayable(assetIn)}
+                asset={swapAssetToDisplayable(assetIn)}
                 size='md'
                 style={styles.assetInIcon}
             />
             <PWView style={styles.assetOutIcon}>
                 <AssetIcon
                     chainId={chainId}
-                    asset={dexSwapAssetToDisplayable(assetOut)}
+                    asset={swapAssetToDisplayable(assetOut)}
                     size='md'
                 />
             </PWView>

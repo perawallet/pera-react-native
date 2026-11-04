@@ -16,7 +16,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
 import { SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
-import { VISIBLE_SWAP_STATUSES } from '../../../constants'
 import { useSwapPairHistoryWidget } from '../useSwapPairHistoryWidget'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -67,11 +66,24 @@ vi.mock('@modules/swap/components/SwapHistoryContent', () => ({
 
 const ADDRESS = 'TESTADDRESS123'
 
+const assetOn = (chainId: string, assetId: string, unitName: string) => ({
+    assetId,
+    ref: { chainId, networkId: 'mainnet', assetId },
+    unitName,
+})
+
 const PAIR = {
-    assetIn: { assetId: 0, unitName: 'ALGO' },
-    assetOut: { assetId: 31_566_704, unitName: 'USDC' },
+    assetIn: assetOn('algorand', '0', 'ALGO'),
+    assetOut: assetOn('algorand', '31566704', 'USDC'),
     swapDatetime: '2026-10-01T00:00:00Z',
-    pairKey: '0-31566704',
+    pairKey: 'algorand/0|algorand/31566704',
+} as unknown as SwapDistinctPairItem
+
+const CROSS_CHAIN_PAIR = {
+    assetIn: assetOn('algorand', '0', 'ALGO'),
+    assetOut: assetOn('ethereum', '0x0', 'ETH'),
+    swapDatetime: '2026-10-02T00:00:00Z',
+    pairKey: 'algorand/0|ethereum/0x0',
 } as unknown as SwapDistinctPairItem
 
 describe('useSwapPairHistoryWidget', () => {
@@ -85,17 +97,12 @@ describe('useSwapPairHistoryWidget', () => {
         })
     })
 
-    it('queries the visible swap pairs for the selected account', () => {
+    it('queries the swap pairs for the selected account', () => {
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         expect(result.current.address).toBe(ADDRESS)
         expect(result.current.isEnabled).toBe(true)
-        expect(mockHistoryQuery).toHaveBeenCalledWith(
-            ADDRESS,
-            SCOPE,
-            VISIBLE_SWAP_STATUSES,
-            true,
-        )
+        expect(mockHistoryQuery).toHaveBeenCalledWith(ADDRESS, SCOPE)
     })
 
     it('disables the query when no account is selected', () => {
@@ -105,12 +112,7 @@ describe('useSwapPairHistoryWidget', () => {
 
         expect(result.current.address).toBe('')
         expect(result.current.isEnabled).toBe(false)
-        expect(mockHistoryQuery).toHaveBeenCalledWith(
-            '',
-            SCOPE,
-            VISIBLE_SWAP_STATUSES,
-            false,
-        )
+        expect(mockHistoryQuery).toHaveBeenCalledWith('', SCOPE)
     })
 
     it('disables the query when the account has no address on the scope', () => {
@@ -142,6 +144,18 @@ describe('useSwapPairHistoryWidget', () => {
             isLoading: true,
             isError: true,
         })
+    })
+
+    it('leaves out a pair with a leg on another chain', () => {
+        mockHistoryQuery.mockReturnValue({
+            data: [CROSS_CHAIN_PAIR, PAIR],
+            isLoading: false,
+            isError: false,
+        })
+
+        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
+
+        expect(result.current.pairs).toEqual([PAIR])
     })
 
     it('selects and tracks the pressed pair', () => {

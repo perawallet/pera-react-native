@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { skipToken, useInfiniteQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { fetchSwapPairs, type SwapPairsPage } from '../api'
@@ -81,19 +81,22 @@ export const useSwapPairsInfiniteQuery = ({
 }: UseSwapPairsInfiniteQueryParams): UseSwapPairsInfiniteQueryResult => {
     const query = useInfiniteQuery({
         queryKey: swapQueryKeys.pairs(anchor, q, scope),
-        queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
-            // `enabled` keeps a null anchor from ever reaching here.
-            fetchVisiblePage(anchor as SwapAssetRef, scope, q, pageParam),
+        queryFn:
+            isEnabled && anchor
+                ? ({ pageParam }: { pageParam: Optional<string> }) =>
+                      fetchVisiblePage(anchor, scope, q, pageParam)
+                : skipToken,
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: SwapPairsPage) =>
             lastPage.next ?? undefined,
-        enabled: isEnabled && anchor !== null,
     })
 
     return {
         assets: query.data?.pages.flatMap(page => page.assets) ?? [],
         isLoading: query.isLoading,
         hasNextPage: query.hasNextPage,
-        fetchNextPage: () => void query.fetchNextPage(),
+        // A list fires onEndReached repeatedly; without this a second call
+        // would cancel the page already loading.
+        fetchNextPage: () => void query.fetchNextPage({ cancelRefetch: false }),
     }
 }

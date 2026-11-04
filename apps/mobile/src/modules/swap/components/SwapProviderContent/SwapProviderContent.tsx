@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { useTheme } from '@rneui/themed'
 import {
     PWIcon,
-    PWImage,
     PWSheetLayout,
     PWText,
     PWTouchableOpacity,
@@ -47,7 +45,6 @@ export const SwapProviderContent = ({
 }: SwapProviderContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { theme } = useTheme()
     const { resolve } = useBottomSheetResult<SwapProviderResult>()
 
     const { userSelection, rows, handleSelect } = useSwapProviderContent({
@@ -101,19 +98,8 @@ export const SwapProviderContent = ({
                 />
                 {rows.map((row, index) => (
                     <ProviderSelectionItem
-                        key={`${row.quote.provider ?? 'unknown'}-${index}`}
-                        left={
-                            row.iconUrl ? (
-                                <PWImage
-                                    source={{ uri: row.iconUrl }}
-                                    width={theme.spacing.xxl}
-                                    height={theme.spacing.xxl}
-                                    containerStyle={styles.logo}
-                                />
-                            ) : (
-                                <PWView style={styles.logo} />
-                            )
-                        }
+                        key={`${row.quote.provider}-${index}`}
+                        left={<PWView style={styles.logo} />}
                         label={row.displayName}
                         right={
                             <PWView style={styles.rightTextColumn}>
@@ -134,8 +120,8 @@ export const SwapProviderContent = ({
                             </PWView>
                         }
                         isSelected={userSelection === row.quote.provider}
-                        onPress={() => handleSelect(row.quote.provider ?? null)}
-                        testID={`swap-provider-option-${row.quote.provider ?? 'unknown'}`}
+                        onPress={() => handleSelect(row.quote.provider)}
+                        testID={`swap-provider-option-${row.quote.provider}`}
                     />
                 ))}
             </PWView>

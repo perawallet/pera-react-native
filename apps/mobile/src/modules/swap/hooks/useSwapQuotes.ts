@@ -14,17 +14,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Keyboard } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import {
-    percentToApiSlippage,
     useCreateQuotesMutation,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { deploymentOf } from '@perawallet/wallet-core-config'
-import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import {
     isDecimalEqual,
     isNotFoundError,
-    uint64IdToNumber,
     useDebouncedValue,
     type Nullable,
     displayUnitsToBaseUnits,
@@ -85,14 +81,12 @@ export const useSwapQuotes = ({
     payDecimals,
     slippage,
 }: UseSwapQuotesParams): UseSwapQuotesResult => {
-    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
-
     const {
         mutateAsync: createQuotes,
         isPending: isQuoteLoading,
         isError: isQuoteMutationError,
         reset: resetQuoteMutation,
-    } = useCreateQuotesMutation(scope)
+    } = useCreateQuotesMutation()
     const createQuotesRef = useRef(createQuotes)
     createQuotesRef.current = createQuotes
 
@@ -122,6 +116,7 @@ export const useSwapQuotes = ({
     // State (not a ref) so the error surfaces in render as isQuoteError.
     const [notFoundPair, setNotFoundPair] = useState<Nullable<string>>(null)
     const pairKey = `${toScopeKey(scope)}:${fromAssetId}:${toAssetId}`
+    const { chainId, networkId } = scope
 
     const debouncedPayAmount = useDebouncedValue(
         payAmount,
@@ -183,19 +178,14 @@ export const useSwapQuotes = ({
 
         const fetchQuotes = async () => {
             try {
+                // Same-chain only: the swapper receives on the scope it pays from.
                 const result = await createQuotesRef.current({
-                    swapper_address: swapperAddress,
-                    swap_type: 'fixed-input',
-                    // uint64IdToNumber (not Number()): throws on ids above
-                    // 2^53 - 1 instead of silently quoting a different asset.
-                    asset_in_id: uint64IdToNumber(fromAssetId),
-                    asset_out_id: uint64IdToNumber(toAssetId),
-                    amount: amountInBaseUnits.toFixed(0),
-                    slippage:
-                        slippage != null
-                            ? percentToApiSlippage(slippage)
-                            : undefined,
-                    device: deviceId ?? null,
+                    sourceAsset: { chainId, networkId, assetId: fromAssetId },
+                    destinationAsset: { chainId, networkId, assetId: toAssetId },
+                    sourceAmount: amountInBaseUnits,
+                    sourceAddress: swapperAddress,
+                    destinationAddress: swapperAddress,
+                    slippage: slippage ?? null,
                 })
 
                 if (cancelled) return
@@ -227,7 +217,8 @@ export const useSwapQuotes = ({
         toAssetId,
         payDecimals,
         slippage,
-        deviceId,
+        chainId,
+        networkId,
         isPairChecked,
         isPairOnNetwork,
         notFoundPair,
