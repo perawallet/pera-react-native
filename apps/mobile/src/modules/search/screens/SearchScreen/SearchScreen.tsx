@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ownAddressOf } from '@perawallet/wallet-core-accounts'
 import { PWFlatList, PWIcon, PWScreen, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
@@ -29,16 +28,18 @@ export const SearchScreen = () => {
     const {
         value,
         setValue,
+        query,
         rows,
         hasResults,
         isLoading,
         scopes,
+        selectedChainId,
         onAccountPress,
         onContactPress,
         onAssetPress,
         onExpandSection,
+        shouldShowAssetNetwork,
         openFilterSheet,
-        chainId,
     } = useSearchScreen()
 
     useNavigationHeader({
@@ -52,15 +53,15 @@ export const SearchScreen = () => {
         ),
     })
 
-    const listKey = `${scopes.join(',')}:${value}`
+    const listKey = `${scopes.join(',')}:${selectedChainId ?? 'all'}:${value}`
 
     const { listRef, renderItem, keyExtractor } = useSearchScreenList({
         onAccountPress,
         onContactPress,
         onAssetPress,
         onExpandSection,
-        chainId,
-        getAccountAddress: ownAddressOf,
+        query,
+        shouldShowAssetNetwork,
         value,
         scopes,
     })

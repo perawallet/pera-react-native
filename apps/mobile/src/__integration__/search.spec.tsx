@@ -34,6 +34,7 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     resetTestDatabase,
     seedAlgoAsset,
+    seedAlgorandAccountState,
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
@@ -183,6 +184,14 @@ describe('Flow: Global search', () => {
         useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
         await seedAlgoAsset()
         await seedAssets([NFT_TEST_ASSET])
+        // A synced account is read as it is; an unsynced one is fetched first.
+        for (const account of [SEARCH_ACCOUNT, nftHolder]) {
+            await seedAlgorandAccountState({
+                accountAddress: addressOf(account),
+                scope: MAINNET_SCOPE,
+                nativeBalance: new Decimal(1_000_000),
+            })
+        }
         await insertAssetHolding({
             accountAddress: addressOf(nftHolder),
             assetId: NFT_TEST_ASSET_ID,
@@ -195,7 +204,7 @@ describe('Flow: Global search', () => {
         typeQuery('Test Collectible')
 
         const assetRow = await screen.findByTestId(
-            `search_result_asset_${NFT_TEST_ASSET_ID}`,
+            `search_result_asset_algorand_${NFT_TEST_ASSET_ID}`,
         )
         fireEvent.click(assetRow)
 

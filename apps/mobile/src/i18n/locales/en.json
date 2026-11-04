@@ -2920,7 +2920,7 @@
         "empty_prompt_body": "Search across your accounts, contacts, and assets",
         "show_more": "Show {{count}} more",
         "no_results_title": "No Results",
-        "no_results_body": "Try a different search term",
+        "no_results_body": "Try searching by account name, address or network",
         "sections": {
             "accounts": "Accounts",
             "contacts": "Contacts",
@@ -2930,7 +2930,8 @@
             "title": "Search Options",
             "accounts": "Include accounts",
             "contacts": "Include contacts",
-            "assets": "Include assets"
+            "assets": "Include assets",
+            "network": "Network"
         }
     },
     "security": {
