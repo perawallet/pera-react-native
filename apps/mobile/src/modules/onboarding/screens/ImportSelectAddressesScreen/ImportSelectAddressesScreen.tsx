@@ -59,12 +59,15 @@ export const ImportSelectAddressesScreen = () => {
     return (
         <>
             <PWScreen
-                scroll='never'
+                // The list scrolls itself; the untruncated empty-state copy needs the body to.
+                scroll={areAllImported ? 'auto' : 'never'}
                 footer={
                     <PWButton
                         testID='import_select_addresses_continue_button'
                         title={t(
-                            'onboarding.import_select_addresses.import_button',
+                            areAllImported
+                                ? 'onboarding.import_select_addresses.go_to_wallet'
+                                : 'onboarding.import_select_addresses.import_button',
                         )}
                         onPress={handleContinue}
                         variant='primary'
@@ -120,6 +123,7 @@ export const ImportSelectAddressesScreen = () => {
                             body={t(
                                 'onboarding.import_select_addresses.all_imported_body',
                             )}
+                            shouldTruncateBody={false}
                         />
                     ) : (
                         <>

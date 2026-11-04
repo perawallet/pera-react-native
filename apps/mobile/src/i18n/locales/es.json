@@ -2375,9 +2375,10 @@
             "select_all": "Seleccionar todo",
             "already_imported": "ya importada",
             "import_button": "Importar cuentas",
+            "go_to_wallet": "Ir a la wallet",
             "total_value": "<0/> en total",
             "all_imported_title": "Ya están en tu wallet",
-            "all_imported_body": "Todas las direcciones que deriva tu wallet ya están en Pera, incluidas las que solo estás observando. Elimina una dirección para volver a añadirla con su clave privada.",
+            "all_imported_body": "Todas las cuentas de esta wallet ya están en Pera. Si alguna está añadida como cuenta de observación, elimínala primero y vuelve a importarla para añadirla con acceso completo.",
             "unchecked_networks_title": "No se pudo comprobar: {{networks}}",
             "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde."
         },
