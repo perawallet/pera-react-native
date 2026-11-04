@@ -77,8 +77,8 @@ export const EIP1193_ERROR_CODE = {
     internal: -32_603,
 } as const
 
-/** What the user grants at connect, as the approval and Connections settings list it. */
+/** What the user grants at connect: reading accounts plus everything a connected site may queue for approval. */
 export const EIP1193_PERMISSION_METHODS: readonly string[] = [
     EIP1193_METHOD.accounts,
-    EIP1193_METHOD.switchChain,
+    ...EIP1193_QUEUED_METHODS,
 ]

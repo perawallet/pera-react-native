@@ -375,7 +375,15 @@ describe('createEip1193ConnectionHandler', () => {
             expect(proposal.requested).toEqual({
                 networks: ['mainnet'],
                 chains: ['ethereum'],
-                methods: [...EIP1193_PERMISSION_METHODS],
+                methods: [
+                    'eth_accounts',
+                    'eth_sendTransaction',
+                    'personal_sign',
+                    'eth_signTypedData_v4',
+                    'eth_signTypedData',
+                    'wallet_switchEthereumChain',
+                    'wallet_addEthereumChain',
+                ],
             })
 
             const connection = await proposal.approve([ADDR_Y, ADDR_GONE])
