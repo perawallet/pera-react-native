@@ -539,7 +539,7 @@ describe('fetchAssetPriceHistory deadline', () => {
         vi.useRealTimers()
     })
 
-    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+    const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
 
     it('rejects with a TimeoutError once the chain has not answered in time, and not before', async () => {
         vi.useFakeTimers()
