@@ -58,7 +58,7 @@ export type SwapExecutionFailure =
     | { phase: 'submission'; reason: 'submission-failed'; error: unknown }
 
 export type ExecuteSwapResult =
-    | { kind: 'success'; txIds: string[] }
+    | { kind: 'success'; orderId: string; txIds: string[] }
     // Abandoned through `isCancelled` before anything was signed.
     | { kind: 'cancelled' }
     // The user declined the signing request (on screen or on a Ledger).

@@ -30,7 +30,7 @@ const adapter = fakeSwapAdapter({
                 failure: { phase: 'prepare', reason: 'unsupported-steps' },
             }
         }
-        return { kind: 'success', txIds: [] }
+        return { kind: 'success', orderId: order.orderId, txIds: [] }
     },
 })
 

@@ -13,7 +13,7 @@
 import type { Query } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import type { SwapAssetRef, SwapStatus } from '../models'
+import type { SwapAccountAddress, SwapAssetRef, SwapStatus } from '../models'
 
 const MODULE_PREFIX = 'swaps'
 
@@ -22,17 +22,26 @@ export const swapQueryKeys = {
         anchor: Nullable<SwapAssetRef>,
         q: Optional<string>,
         scope: ChainScope,
-    ) => [MODULE_PREFIX, 'pairs', { anchor, q, scope }] as const,
+        destinationScopes: ChainScope[] = [scope],
+    ) =>
+        [
+            MODULE_PREFIX,
+            'pairs',
+            { anchor, q, scope, destinationScopes },
+        ] as const,
+    // The first account's scope rides at the top level so scope-wide
+    // invalidation still finds the key.
     historyInfinite: (
-        address: string,
-        scope: ChainScope,
+        accounts: SwapAccountAddress[],
         statuses?: SwapStatus[],
     ) =>
         [
             MODULE_PREFIX,
             'history-infinite',
-            { address, scope, statuses },
+            { accounts, scope: accounts.at(0)?.scope ?? null, statuses },
         ] as const,
+    order: (orderId: string, scope: ChainScope) =>
+        [MODULE_PREFIX, 'order', { orderId, scope }] as const,
     distinctPairsHistory: (address: string, scope: ChainScope) =>
         [MODULE_PREFIX, 'distinct-pairs-history', { address, scope }] as const,
 }

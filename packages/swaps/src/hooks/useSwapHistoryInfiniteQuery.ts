@@ -11,12 +11,12 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory, routerAccountId, type SwapHistoryPage } from '../api'
-import type { SwapHistoryItem, SwapStatus } from '../models'
+import type { SwapAccountAddress, SwapHistoryItem, SwapStatus } from '../models'
+import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
 import { swapQueryKeys } from './querykeys'
 
 const PAGE_SIZE = 20
@@ -41,9 +41,11 @@ const fetchVisiblePage = async (
     cursor: Optional<string>,
 ): Promise<SwapHistoryPage> => {
     const visibleOf = (page: SwapHistoryPage): SwapHistoryPage => ({
-        results: statuses
-            ? page.results.filter(item => statuses.includes(item.status))
-            : page.results,
+        results: page.results.filter(
+            item =>
+                isSwapHistoryRow(item) &&
+                (!statuses || statuses.includes(item.status)),
+        ),
         next: page.next,
     })
     let page = await fetchPage(cursor)
@@ -57,36 +59,44 @@ const fetchVisiblePage = async (
 
 /**
  * The router has no status filter, so `statuses` narrows each page, reading
- * ahead past pages it empties.
+ * ahead past pages it empties. The device and request scope come from the
+ * first account; every account's address is asked for in one list, so an
+ * order whose legs sit on two of them shows once.
  */
 export const useSwapHistoryInfiniteQuery = (
-    address: string,
-    scope: ChainScope,
+    accounts: SwapAccountAddress[],
     statuses?: SwapStatus[],
     isEnabled: boolean = true,
 ): UseSwapHistoryInfiniteQueryResult => {
-    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
+    const requestScope = accounts.at(0)?.scope ?? null
+    const deviceId = useDeviceIdLookup()(
+        requestScope ? deploymentOf(requestScope) : null,
+    )
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.historyInfinite(address, scope, statuses),
-        queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
-            fetchVisiblePage(
+        queryKey: swapQueryKeys.historyInfinite(accounts, statuses),
+        queryFn: ({ pageParam }: { pageParam: Optional<string> }) => {
+            if (!requestScope) throw new Error('No swap account to read')
+            return fetchVisiblePage(
                 cursor =>
                     fetchSwapHistory(
                         {
                             deviceId: deviceId ?? '',
-                            accounts: [routerAccountId(scope, address)],
+                            accounts: accounts.map(account =>
+                                routerAccountId(account.scope, account.address),
+                            ),
                             cursor,
                             limit: PAGE_SIZE,
                         },
-                        scope,
+                        requestScope,
                     ),
                 statuses,
                 pageParam,
-            ),
+            )
+        },
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: SwapHistoryPage) =>
             lastPage.next ?? undefined,
-        enabled: isEnabled && address.length > 0 && !!deviceId,
+        enabled: isEnabled && requestScope !== null && !!deviceId,
     })
 
     const swaps = query.data?.pages.flatMap(page => page.results) ?? []

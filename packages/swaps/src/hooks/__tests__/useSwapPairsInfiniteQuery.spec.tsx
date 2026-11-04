@@ -15,7 +15,10 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSwapPairsInfiniteQuery } from '../useSwapPairsInfiniteQuery'
 import { fetchSwapPairs } from '../../api'
 import type { SwapAsset } from '../../models'
@@ -25,8 +28,14 @@ vi.mock('../../api', () => ({ fetchSwapPairs: vi.fn() }))
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const ANCHOR = { ...SCOPE, assetId: 'native' }
 
-const asset = (assetId: string, networkId = 'mainnet'): SwapAsset => ({
-    ref: { chainId: 'algorand', networkId, assetId },
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+
+const asset = (
+    assetId: string,
+    networkId = 'mainnet',
+    chainId: ChainId = 'algorand',
+): SwapAsset => ({
+    ref: { chainId, networkId, assetId },
     assetId,
     verificationTier: 'verified',
     crossChainAssetGroup: null,
@@ -117,5 +126,47 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
         )
 
         expect(fetchSwapPairs).not.toHaveBeenCalled()
+    })
+
+    test('keeps a pair on any destination scope it is given', async () => {
+        vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+            assets: [
+                asset('7'),
+                asset('native', 'mainnet', 'ethereum'),
+                asset('8', 'testnet'),
+            ],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapPairsInfiniteQuery({
+                    anchor: ANCHOR,
+                    scope: SCOPE,
+                    destinationScopes: [SCOPE, ETH_SCOPE],
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.assets.map(a => a.ref.chainId)).toEqual([
+            'algorand',
+            'ethereum',
+        ])
+    })
+
+    test('drops a pair on another chain by default', async () => {
+        vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+            assets: [asset('7'), asset('native', 'mainnet', 'ethereum')],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useSwapPairsInfiniteQuery({ anchor: ANCHOR, scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.assets.map(a => a.assetId)).toEqual(['7'])
     })
 })

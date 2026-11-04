@@ -30,8 +30,10 @@ import {
     SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
 } from '../chain-adapter'
+import { scopeOfSwapAsset } from '../api/router-ids'
 import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
-import { useSwapHandoffStore } from '../store'
+import type { SwapAsset, SwapQuote, SwapTrackedOrder } from '../models'
+import { useSwapHandoffStore, useSwapTrackingStore } from '../store'
 import { useCreateSwapOrderMutation } from './useCreateSwapOrderMutation'
 import { useReportSwapOrderMutation } from './useReportSwapOrderMutation'
 import { useSwapScope } from './useSwapScope'
@@ -43,6 +45,28 @@ type ExecuteSwapMutationVariables = ExecuteSwapVariables & {
     account: Nullable<WalletAccount>
     scope: Nullable<ChainScope>
 }
+
+const trackedAsset = (asset: SwapAsset) => ({
+    ref: asset.ref,
+    unitName: asset.unitName ?? null,
+})
+
+const toTrackedOrder = (
+    quote: SwapQuote,
+    orderId: string,
+    now: number,
+): SwapTrackedOrder => ({
+    orderId,
+    sourceScope: scopeOfSwapAsset(quote.request.sourceAsset),
+    destinationScope: scopeOfSwapAsset(quote.request.destinationAsset),
+    sourceAddress: quote.request.sourceAddress,
+    destinationAddress: quote.request.destinationAddress,
+    assetIn: trackedAsset(quote.assetIn),
+    assetOut: trackedAsset(quote.assetOut),
+    status: 'pending',
+    createdAt: now,
+    checkedAt: now,
+})
 
 export type UseExecuteSwapMutationResult = {
     mutateAsync: (variables: ExecuteSwapVariables) => Promise<ExecuteSwapResult>
@@ -56,6 +80,7 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     const scope = useSwapScope(account)
     const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
+    const trackOrder = useSwapTrackingStore(s => s.trackOrder)
     // Mutations rather than bare calls, so a failure reaches the app's
     // mutation-cache logging.
     const { mutateAsync: createOrderOnScope } = useCreateSwapOrderMutation()
@@ -82,7 +107,7 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                       scope.chainId,
                   )
                 : null
-            return adapter.executeSwap(
+            const result = await adapter.executeSwap(
                 { ...variables, account, signer },
                 {
                     scope,
@@ -95,6 +120,17 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                     registerHandoff,
                 },
             )
+            // Only a cross-chain order outlives the broadcast: its payout
+            // lands later, on another chain.
+            if (
+                result.kind === 'success' &&
+                variables.quote.routeKind === 'cross-chain'
+            ) {
+                trackOrder(
+                    toTrackedOrder(variables.quote, result.orderId, Date.now()),
+                )
+            }
+            return result
         },
         // A retry would re-sign and re-broadcast a group the user approved once.
         retry: false,
