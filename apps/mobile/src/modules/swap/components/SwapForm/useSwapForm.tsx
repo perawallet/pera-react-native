@@ -483,7 +483,7 @@ export const useSwapForm = (
                 <SwapAssetSelectionContent
                     scope={scope}
                     variant='from'
-                    excludeAssetId={toAsset}
+                    excludeAssetId={isCrossChain ? undefined : toAsset}
                 />
             ),
             options: {
@@ -504,6 +504,7 @@ export const useSwapForm = (
         requestBottomSheet,
         scope,
         toAsset,
+        isCrossChain,
         setFromAsset,
         fromAsset,
         resetAmounts,

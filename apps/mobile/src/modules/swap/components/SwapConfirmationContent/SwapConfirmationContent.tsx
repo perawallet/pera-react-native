@@ -127,7 +127,7 @@ export const SwapConfirmationContent = ({
 
                 <SwapAssetSection
                     asset={outAsset}
-                    chainId={scope.chainId}
+                    chainId={quote.assetOut.ref.chainId}
                     amountDisplay={receiveDisplay}
                     fiatValue={receiveFiatValue}
                     unitName={quote.assetOut.unitName}

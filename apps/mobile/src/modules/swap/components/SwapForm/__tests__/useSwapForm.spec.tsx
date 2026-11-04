@@ -316,6 +316,18 @@ describe('useSwapForm', () => {
             expect(mockSetFromAsset).not.toHaveBeenCalled()
         })
 
+        it('leaves the pay picker whole, since the receive id means nothing on the pay chain', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                await result.current.handleOpenPayAssetSelection()
+            })
+
+            const { contents } = mockRequestBottomSheet.mock.calls[0][0]
+            expect(contents.props.excludeAssetId).toBeUndefined()
+        })
+
         it('keeps the scope of a receive asset picked on another chain', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce({
                 assetId: '0',

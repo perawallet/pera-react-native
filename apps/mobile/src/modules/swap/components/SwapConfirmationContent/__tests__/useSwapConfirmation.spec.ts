@@ -94,6 +94,30 @@ describe('useSwapConfirmation', () => {
         } as unknown as ReturnType<typeof formatNumber>)
     })
 
+    it('reads the receive asset on the chain it pays out on', () => {
+        const ethRef = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+            assetId: '0',
+        } as const
+
+        renderConfirmation(
+            makeQuote({
+                assetOut: {
+                    assetId: '0',
+                    ref: ethRef,
+                    unitName: 'ETH',
+                    decimals: 18,
+                } as unknown as SwapQuote['assetOut'],
+            }),
+        )
+
+        expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            { chainId: 'ethereum', networkId: 'mainnet' },
+            ['0'],
+        )
+    })
+
     it('exposes the selected account', () => {
         const account = { id: 'acc-1' }
         vi.mocked(useSelectedAccount).mockReturnValueOnce(

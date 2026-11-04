@@ -72,8 +72,11 @@ export const useSwapConfirmation = ({
         scope,
         assetInId ? [assetInId] : [],
     )
+    const assetOutRef = quote?.assetOut.ref
     const { data: outAssets } = useAssetsQuery(
-        scope,
+        assetOutRef
+            ? { chainId: assetOutRef.chainId, networkId: assetOutRef.networkId }
+            : scope,
         assetOutId ? [assetOutId] : [],
     )
     const inAsset = assetInId ? inAssets?.get(assetInId) : undefined
