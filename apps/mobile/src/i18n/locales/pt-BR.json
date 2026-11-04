@@ -3649,7 +3649,6 @@
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
             "function_selector": "Seletor de função",
             "call_data": "Dados da chamada",
-            "advanced": "Avançado",
             "unchecked_warning": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar em {{domain}}.",
             "unchecked_warning_no_source": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar no app que a enviou."
         },
@@ -4835,6 +4834,13 @@
             "fee_share": "{{percent}} do resultado da conversão",
             "fee_recipient": "Paga para",
             "base_units": "unidades base"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Limite de gas",
+            "max_fee_per_gas": "Taxa máxima por gas",
+            "max_priority_fee_per_gas": "Taxa de prioridade máxima por gas"
         },
         "known_contract": {
             "title": "Contrato",

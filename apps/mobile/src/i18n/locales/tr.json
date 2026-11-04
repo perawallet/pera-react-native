@@ -3632,7 +3632,6 @@
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
-            "advanced": "Gelişmiş",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },
@@ -4807,6 +4806,13 @@
             "fee_share": "Swap çıktısının {{percent}} kadarı",
             "fee_recipient": "Alıcı",
             "base_units": "temel birim"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas limiti",
+            "max_fee_per_gas": "Gas başına maks. ücret",
+            "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
         },
         "known_contract": {
             "title": "Sözleşme",

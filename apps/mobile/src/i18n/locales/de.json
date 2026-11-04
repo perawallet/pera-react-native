@@ -3624,7 +3624,6 @@
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
-            "advanced": "Erweitert",
             "unchecked_warning": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du {{domain}} vertraust.",
             "unchecked_warning_no_source": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du der App vertraust, die sie gesendet hat."
         },
@@ -4807,6 +4806,13 @@
             "fee_share": "{{percent}} der Ausgabe des Tauschs",
             "fee_recipient": "Gezahlt an",
             "base_units": "Basiseinheiten"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas-Limit",
+            "max_fee_per_gas": "Max. Gebühr pro Gas",
+            "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
         },
         "known_contract": {
             "title": "Smart Contract",

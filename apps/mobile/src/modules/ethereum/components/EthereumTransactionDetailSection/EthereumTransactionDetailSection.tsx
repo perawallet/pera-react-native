@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { PWText } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -21,18 +22,24 @@ import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 
+const GWEI_DECIMALS = 9
+
 type EthereumTransactionDetailSectionProps = {
     presentation: EthereumTransactionPresentation
     /** Whether the hero already carries the amount; the presentation's own when unset. */
     isAmountInHero?: boolean
 }
 
-/** What only an EVM transaction has: the token or NFT moved, the call and approval it made, and the most it can cost before it is mined. */
+/** What only an EVM transaction has: the token or NFT moved, the call and approval it made, its nonce, gas limit and per-gas fees, and the most it can cost before it is mined. */
 export const EthereumTransactionDetailSection = ({
     presentation,
     isAmountInHero = !!presentation.amount?.asset,
 }: EthereumTransactionDetailSectionProps) => {
     const { t } = useLanguage()
+    const gwei = {
+        decimals: GWEI_DECIMALS,
+        unitName: t('ethereum.pricing.gwei'),
+    }
     const {
         view,
         scope,
@@ -101,6 +108,42 @@ export const EthereumTransactionDetailSection = ({
     return (
         <TransactionDetailCard>
             {callDetails}
+
+            {'fee' in view && (
+                <>
+                    <KeyValueRow
+                        testID='ethereum_nonce'
+                        title={t('ethereum.pricing.nonce')}
+                    >
+                        <PWText>{String(view.nonce)}</PWText>
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_gas_limit'
+                        title={t('ethereum.pricing.gas_limit')}
+                    >
+                        <PWText>{view.gas.toString()}</PWText>
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_max_fee_per_gas'
+                        title={t('ethereum.pricing.max_fee_per_gas')}
+                    >
+                        <PWText>
+                            {formatAssetAmount(view.fee.maxFeePerGas, gwei)}
+                        </PWText>
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_max_priority_fee_per_gas'
+                        title={t('ethereum.pricing.max_priority_fee_per_gas')}
+                    >
+                        <PWText>
+                            {formatAssetAmount(
+                                view.fee.maxPriorityFeePerGas,
+                                gwei,
+                            )}
+                        </PWText>
+                    </KeyValueRow>
+                </>
+            )}
 
             {!isMined && (
                 <KeyValueRow
