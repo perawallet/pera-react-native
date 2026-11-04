@@ -162,6 +162,7 @@ describe('useExecuteSwapMutation', () => {
                 createOrder: expect.any(Function),
                 reportOrder: expect.any(Function),
                 registerHandoff: mockRegisterHandoff,
+                onOrderSubmitting: expect.any(Function),
             },
         )
     })
@@ -292,7 +293,7 @@ describe('useExecuteSwapMutation', () => {
         )
     })
 
-    test('tracks a cross-chain order once it is broadcast', async () => {
+    test('tracks a cross-chain order before its broadcast, so one that dies mid-submit is still followed', async () => {
         vi.useFakeTimers({ now: 1_700_000_000_000, toFake: ['Date'] })
         const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
         const quote = makeSwapQuote({
@@ -306,10 +307,16 @@ describe('useExecuteSwapMutation', () => {
             assetIn: { ref: { ...SCOPE, assetId: '0' }, unitName: 'ALGO' },
             assetOut: { ref: { ...ETH, assetId: 'native' }, unitName: 'ETH' },
         })
-        vi.mocked(executeSwap).mockResolvedValue({
-            kind: 'success',
-            orderId: 'O',
-            txIds: ['T'],
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderSubmitting('O')
+            return {
+                kind: 'failed',
+                failure: {
+                    phase: 'submission',
+                    reason: 'submission-failed',
+                    error: new Error('unknown outcome'),
+                },
+            }
         })
         const { result } = renderHook(() => useExecuteSwapMutation(), {
             wrapper,
@@ -335,10 +342,9 @@ describe('useExecuteSwapMutation', () => {
     })
 
     test('leaves a single-chain order untracked', async () => {
-        vi.mocked(executeSwap).mockResolvedValue({
-            kind: 'success',
-            orderId: 'O',
-            txIds: ['T'],
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderSubmitting('O')
+            return { kind: 'success', orderId: 'O', txIds: ['T'] }
         })
         const { result } = renderHook(() => useExecuteSwapMutation(), {
             wrapper,

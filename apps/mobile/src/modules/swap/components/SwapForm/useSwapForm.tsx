@@ -72,7 +72,6 @@ type UseSwapFormResult = {
     /** Where the receive asset lives: the swap scope, or another chain's. */
     receiveScope: ChainScope
     receivingAccount: Nullable<WalletAccount>
-    isCrossChain: boolean
     isDirectionDisabled: boolean
     isChainShown: boolean
     payAmount: Nullable<Decimal>
@@ -742,7 +741,6 @@ export const useSwapForm = (
         receiveAssetId: toAsset,
         receiveScope,
         receivingAccount,
-        isCrossChain,
         isDirectionDisabled: isCrossChain,
         isChainShown: isCrossChainEnabled && isCrossChain,
         payAmount,

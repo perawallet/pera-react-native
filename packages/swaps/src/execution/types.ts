@@ -101,4 +101,6 @@ export type SwapExecutionContext = {
     createOrder: (quoteId: string) => Promise<SwapOrder>
     reportOrder: ReportSwapOrderFn
     registerHandoff: (record: SwapHandoffRecord) => void
+    /** Called before the first broadcast: past it, a killed app or a failed submit can't say whether funds left. */
+    onOrderSubmitting: (orderId: string) => void
 }

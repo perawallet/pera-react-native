@@ -11,7 +11,11 @@
  */
 
 import { useMemo } from 'react'
-import { addressOn, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    addressOn,
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { CHAIN_IDS } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -29,7 +33,8 @@ export const useSwapAccountAddresses = (
             account
                 ? CHAIN_IDS.filter(
                       chainId =>
-                          isSwapChain(chainId) && !!account.chains[chainId],
+                          isSwapChain(chainId) &&
+                          !!chainAccountOf(account, chainId),
                   )
                 : [],
         [account],

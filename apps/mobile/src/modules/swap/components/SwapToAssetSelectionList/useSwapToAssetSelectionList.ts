@@ -29,6 +29,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    scopeOfSwapAsset,
     useSwapPairsInfiniteQuery,
     type SwapAsset,
 } from '@perawallet/wallet-core-swaps'
@@ -125,8 +126,8 @@ export const useSwapToAssetSelectionList = ({
 
     const items = useMemo((): AvailableAssetWithBalance[] => {
         const scopeKey = toScopeKey(scope)
-        // Asset ids are only unique within a scope: Algorand's and Ethereum's
-        // native assets can share one.
+        // Asset ids are only unique within a scope: every EVM chain's native
+        // asset is 'native'.
         return availableAssets
             .map(swapAsset => ({
                 swapAsset,
@@ -147,10 +148,7 @@ export const useSwapToAssetSelectionList = ({
     const handleAssetSelected = useCallback(
         (item: AvailableAssetWithBalance) => {
             const assetId = item.swapAsset.assetId
-            const assetScope: ChainScope = {
-                chainId: item.swapAsset.ref.chainId,
-                networkId: item.swapAsset.ref.networkId,
-            }
+            const assetScope = scopeOfSwapAsset(item.swapAsset.ref)
             // Seed the AssetSelector's cache entry so the selection renders
             // without waiting on the network fetch for an unowned asset.
             const queryKey = getAssetsQueryKey([assetId], assetScope, {

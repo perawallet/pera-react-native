@@ -16,6 +16,7 @@ import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { fetchSwapHistory, routerAccountId } from '../api'
 import { distinctSwapPairs } from '../utils/distinctSwapPairs'
+import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
 import { swapQueryKeys } from './querykeys'
 
 const DISTINCT_PAIRS_LIMIT = 10
@@ -38,7 +39,10 @@ export const useDistinctPairsHistoryQuery = (
                 },
                 scope,
             )
-            return distinctSwapPairs(page.results, DISTINCT_PAIRS_LIMIT)
+            return distinctSwapPairs(
+                page.results.filter(isSwapHistoryRow),
+                DISTINCT_PAIRS_LIMIT,
+            )
         },
         enabled: address.length > 0 && !!deviceId,
     })

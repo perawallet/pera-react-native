@@ -4034,8 +4034,8 @@
             "completed": "Completed. Your {{toAsset}} has arrived.",
             "failed": "The swap couldn't complete. If your funds were sent, the provider returns them to your account.",
             "refunded": "The swap was refunded. Your {{fromAsset}} is back in your account.",
-            "expired": "The swap expired before it started. Nothing was swapped.",
-            "cancelled": "The swap was cancelled before it started. Nothing was swapped.",
+            "expired": "The swap expired before it started. If your funds left your account, the status can still change for up to 7 days.",
+            "cancelled": "The swap was cancelled before it started. If your funds left your account, the status can still change for up to 7 days.",
             "dismiss": "Dismiss"
         },
         "receiving_account": {

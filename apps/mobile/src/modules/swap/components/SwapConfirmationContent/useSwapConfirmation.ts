@@ -21,7 +21,11 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { formatSwapRate, type SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    formatSwapRate,
+    scopeOfSwapAsset,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
 import { useStyles } from './styles'
@@ -74,9 +78,7 @@ export const useSwapConfirmation = ({
     )
     const assetOutRef = quote?.assetOut.ref
     const { data: outAssets } = useAssetsQuery(
-        assetOutRef
-            ? { chainId: assetOutRef.chainId, networkId: assetOutRef.networkId }
-            : scope,
+        assetOutRef ? scopeOfSwapAsset(assetOutRef) : scope,
         assetOutId ? [assetOutId] : [],
     )
     const inAsset = assetInId ? inAssets?.get(assetInId) : undefined

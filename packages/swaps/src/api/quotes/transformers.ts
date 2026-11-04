@@ -78,7 +78,8 @@ export const transformSwapQuote = (
         quoteId: offer.quote_id,
         request,
         provider: offer.provider,
-        routeKind: routeKindOf(assetIn.ref, assetOut.ref),
+        // From the request, not the offer: this decides which checks the router's own transactions face.
+        routeKind: routeKindOf(request.sourceAsset, request.destinationAsset),
         assetIn,
         assetOut,
         amountIn: new Decimal(offer.source_amount),

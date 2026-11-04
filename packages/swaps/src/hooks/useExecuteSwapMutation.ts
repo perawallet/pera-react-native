@@ -118,18 +118,20 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                     reportOrder: ({ orderId, report }) =>
                         reportOrderOnScope({ orderId, report, scope }),
                     registerHandoff,
+                    // Only a cross-chain order outlives the broadcast: its
+                    // payout lands later, on another chain.
+                    onOrderSubmitting: orderId => {
+                        if (variables.quote.routeKind !== 'cross-chain') return
+                        trackOrder(
+                            toTrackedOrder(
+                                variables.quote,
+                                orderId,
+                                Date.now(),
+                            ),
+                        )
+                    },
                 },
             )
-            // Only a cross-chain order outlives the broadcast: its payout
-            // lands later, on another chain.
-            if (
-                result.kind === 'success' &&
-                variables.quote.routeKind === 'cross-chain'
-            ) {
-                trackOrder(
-                    toTrackedOrder(variables.quote, result.orderId, Date.now()),
-                )
-            }
             return result
         },
         // A retry would re-sign and re-broadcast a group the user approved once.

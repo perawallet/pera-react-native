@@ -49,6 +49,13 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapPairsInfiniteQuery: mockUseSwapPairsInfiniteQuery,
+    scopeOfSwapAsset: ({
+        chainId,
+        networkId,
+    }: {
+        chainId: string
+        networkId: string
+    }) => ({ chainId, networkId }),
 }))
 
 const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const

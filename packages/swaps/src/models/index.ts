@@ -205,7 +205,7 @@ export interface SwapTrackedOrder {
     status: SwapStatus
     /** Epoch ms. */
     createdAt: number
-    /** Epoch ms of the last status read. */
+    /** Epoch ms of the last status change. */
     checkedAt: number
 }
 

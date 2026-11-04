@@ -45,5 +45,6 @@ swapContractTests(() => adapter, {
         createOrder: vi.fn(),
         reportOrder: vi.fn(),
         registerHandoff: vi.fn(),
+        onOrderSubmitting: vi.fn(),
     }),
 })

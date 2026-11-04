@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
@@ -27,7 +26,6 @@ import { useStyles } from './styles'
 
 export type SwapHistoryListItemProps = {
     item: ListedSwapHistoryItem
-    chainId: ChainId
     onPress: (item: ListedSwapHistoryItem) => void
 }
 
@@ -48,7 +46,6 @@ const formatAmount = (
 
 export const SwapHistoryListItem = ({
     item,
-    chainId,
     onPress,
 }: SwapHistoryListItemProps) => {
     const styles = useStyles()
@@ -77,7 +74,6 @@ export const SwapHistoryListItem = ({
             <SwapAssetPairIcon
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
-                chainId={chainId}
                 surfaceColor={theme.colors.background}
             />
             <PWView style={styles.itemBody}>

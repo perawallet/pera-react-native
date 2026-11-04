@@ -124,6 +124,7 @@ export const executeAlgorandSwap = async (
         createOrder,
         reportOrder,
         registerHandoff,
+        onOrderSubmitting,
     }: AlgorandSwapExecutionContext,
 ): Promise<ExecuteSwapResult> => {
     const accountAddress = account ? algorandAddressOf(account) : undefined
@@ -402,6 +403,7 @@ export const executeAlgorandSwap = async (
     }))
     const txIds: string[] = []
     const reported: SwapReportedTransaction[] = []
+    onOrderSubmitting(orderId)
     try {
         onProgress('submitting')
         for (const [index, signedGroup] of allSignedGroups.entries()) {

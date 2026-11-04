@@ -4034,8 +4034,8 @@
             "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés.",
             "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",
             "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
-            "expired": "Le swap a expiré avant de commencer. Aucun échange n’a eu lieu.",
-            "cancelled": "Le swap a été annulé avant de commencer. Aucun échange n’a eu lieu.",
+            "expired": "Le swap a expiré avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
+            "cancelled": "Le swap a été annulé avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
             "dismiss": "Masquer"
         },
         "receiving_account": {

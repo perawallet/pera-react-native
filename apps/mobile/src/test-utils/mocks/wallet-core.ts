@@ -100,6 +100,13 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         swapRate,
         swapFeeOf,
         isSwapOrderSettled,
+        scopeOfSwapAsset: ({
+            chainId,
+            networkId,
+        }: {
+            chainId: string
+            networkId: string
+        }) => ({ chainId, networkId }),
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
         // An account on Algorand swaps there, as it does at the build defaults.
         useSwapScope: vi.fn(

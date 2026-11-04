@@ -4034,8 +4034,8 @@
             "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
             "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",
             "refunded": "Swap iade edildi. {{fromAsset}} varlığın hesabına geri döndü.",
-            "expired": "Swap başlamadan süresi doldu. Hiçbir işlem yapılmadı.",
-            "cancelled": "Swap başlamadan iptal edildi. Hiçbir işlem yapılmadı.",
+            "expired": "Swap başlamadan süresi doldu. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
+            "cancelled": "Swap başlamadan iptal edildi. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
             "dismiss": "Kapat"
         },
         "receiving_account": {

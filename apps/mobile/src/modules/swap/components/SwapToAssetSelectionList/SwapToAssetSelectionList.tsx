@@ -16,6 +16,7 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets'
 import {
@@ -73,7 +74,7 @@ export const SwapToAssetSelectionList = ({
                 <SwapToAssetItemView
                     swapAsset={item.swapAsset}
                     balance={item.balance}
-                    scope={{ chainId: ref.chainId, networkId: ref.networkId }}
+                    scope={scopeOfSwapAsset(ref)}
                     isChainShown={!isOnScope}
                     onPress={() => handleAssetSelected(item)}
                     style={styles.item}
@@ -92,7 +93,7 @@ export const SwapToAssetSelectionList = ({
         <AssetSelectionList
             data={items}
             renderItem={renderItem}
-            // Ids repeat across chains (both native assets can be '0').
+            // Ids repeat across chains: every EVM chain's native asset is 'native'.
             keyExtractor={item =>
                 `${toScopeKey(item.swapAsset.ref)}/${item.swapAsset.assetId}`
             }

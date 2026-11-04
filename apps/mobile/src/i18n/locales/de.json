@@ -4026,8 +4026,8 @@
             "completed": "Abgeschlossen. Dein {{toAsset}} ist angekommen.",
             "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",
             "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
-            "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Es wurde nichts getauscht.",
-            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Es wurde nichts getauscht.",
+            "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
             "dismiss": "Ausblenden"
         },
         "receiving_account": {

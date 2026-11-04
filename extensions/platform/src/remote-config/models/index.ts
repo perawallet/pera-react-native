@@ -75,8 +75,7 @@ export const RemoteConfigDefaults: Readonly<
     // keep the flow dormant regardless until Pera is accredited, so the flag
     // can stay on in dev/staging via the hook fallback.
     enable_card_push_provisioning: false,
-    // Off in prod (the hook keeps it on in dev/staging) until the backend
-    // serves cross-chain routes from an Algorand source.
+    // Off in prod; the hook's fallback keeps it on in dev and staging.
     enable_cross_chain_swap: false,
     // SSL public-key pinning for perawallet.app API hosts. getBooleanValue only
     // trusts genuinely fetched values, so pinning stays OFF until Firebase has

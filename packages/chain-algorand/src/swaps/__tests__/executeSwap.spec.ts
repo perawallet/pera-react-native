@@ -53,6 +53,7 @@ const mockSendRawTransaction = vi.fn()
 const mockCreateOrder = vi.fn()
 const mockReportOrder = vi.fn()
 const mockRegisterHandoff = vi.fn()
+const mockOnOrderSubmitting = vi.fn()
 const mockOnProgress = vi.fn()
 const mockIsMultisigAccount = vi.fn()
 const mockGetHoldingRestriction = vi.fn()
@@ -168,6 +169,7 @@ const makeContext = (
     createOrder: mockCreateOrder,
     reportOrder: mockReportOrder,
     registerHandoff: mockRegisterHandoff,
+    onOrderSubmitting: mockOnOrderSubmitting,
 })
 
 type RunOptions = {
@@ -353,6 +355,23 @@ describe('executeAlgorandSwap', () => {
             assets: [],
         })
         mockComputeShortfall.mockReturnValue(null)
+    })
+
+    it('announces the order before broadcasting, and not at all when nothing is signed', async () => {
+        await run(makeQuote('quote-123'))
+
+        expect(mockOnOrderSubmitting).toHaveBeenCalledWith('12345')
+        expect(mockOnOrderSubmitting.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSendRawTransaction.mock.invocationCallOrder[0],
+        )
+
+        mockOnOrderSubmitting.mockClear()
+        mockValidate.mockImplementationOnce(() => {
+            throw new Error('refused')
+        })
+        await run(makeQuote('quote-124'))
+
+        expect(mockOnOrderSubmitting).not.toHaveBeenCalled()
     })
 
     it('executes full flow: order → pipeline sign → submit → order report', async () => {
