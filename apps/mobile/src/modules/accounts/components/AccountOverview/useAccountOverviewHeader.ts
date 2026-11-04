@@ -26,7 +26,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    isTestTierScope,
+    countsTowardFiatTotals,
     LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -58,9 +58,9 @@ export type UseAccountOverviewHeaderResult = {
     /** Converts the total and the chart alike. */
     currencyScope: ChainScope
     /**
-     * Across every chain the account is on, leaving out test-network holdings
-     * once a second chain is registered. `null` while any counted value or the
-     * preferred-currency rate is unknown — renders as a placeholder, not 0.
+     * Across every chain the account is on, leaving out holdings that don't
+     * count toward a fiat total (test networks). `null` while any counted value
+     * or the preferred-currency rate is unknown — renders as a placeholder, not 0.
      */
     portfolioPreferredValue: Nullable<Decimal>
     /** False when every chain the account is on is a test network: there's no fiat total to show. */
@@ -88,12 +88,11 @@ export const useAccountOverviewHeader = (
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const availability = useChainAvailability(scope.chainId)
     const sources = useAccountHoldingSources(account)
-    // Test-network holdings never count as money (once a second chain is
-    // registered), so they stay out of the total.
+    // Test-network holdings never count as money, so they stay out of the total.
     const countedSources = useMemo(
         () =>
-            sources.filter(
-                source => !isTestTierScope(getProvider().chains, source.scope),
+            sources.filter(source =>
+                countsTowardFiatTotals(getProvider().chains, source.scope),
             ),
         [sources],
     )

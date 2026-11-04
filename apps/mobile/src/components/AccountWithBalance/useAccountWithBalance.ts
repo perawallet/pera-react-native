@@ -26,7 +26,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    isTestTierScope,
+    countsTowardFiatTotals,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -91,7 +91,7 @@ export const crossChainTotalOf = (
 ): CrossChainTotal => {
     if (sources.length === 0) return { kind: 'unavailable' }
     const counted = sources.filter(
-        source => !isTestTierScope(getProvider().chains, source.scope),
+        source => countsTowardFiatTotals(getProvider().chains, source.scope),
     )
     if (counted.length === 0) return { kind: 'testOnly' }
     const values = counted.map(source =>

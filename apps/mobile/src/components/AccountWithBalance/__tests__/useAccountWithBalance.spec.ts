@@ -17,7 +17,10 @@ import type {
     AccountValueBasis,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import {
     crossChainTotalOf,
     useAccountWithBalance,
@@ -457,6 +460,28 @@ describe('useAccountWithBalance', () => {
             expect(result.current.crossChainTotal).toEqual({
                 kind: 'testOnly',
             })
+        })
+
+        it('shows no value for an Algorand-only build on a test network', () => {
+            restoreAlgorandOnlyChains()
+            mockHoldingSources.mockReturnValue([
+                {
+                    address: ALGO_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                },
+            ])
+
+            try {
+                const { result } = renderHook(() =>
+                    useAccountWithBalance(ALGO_ACCOUNT),
+                )
+
+                expect(result.current.crossChainTotal).toEqual({
+                    kind: 'testOnly',
+                })
+            } finally {
+                registerEthereumChain()
+            }
         })
 
         it('shows no value for an Algorand-only wallet on a test network, as for any other wallet', () => {
