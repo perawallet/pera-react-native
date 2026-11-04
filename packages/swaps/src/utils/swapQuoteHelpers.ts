@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 
 import {
+    baseUnitsToDisplayUnits,
     DEFAULT_PRECISION,
     formatNumber,
     type Nullable,
@@ -45,9 +46,9 @@ export const swapRate = (quote: SwapQuote): Nullable<Decimal> => {
     const outDecimals = quote.assetOut.decimals
     if (inDecimals === undefined || outDecimals === undefined) return null
     if (quote.amountIn.isZero()) return null
-    return quote.amountOut
-        .div(quote.amountIn)
-        .mul(new Decimal(10).pow(inDecimals - outDecimals))
+    return baseUnitsToDisplayUnits(quote.amountOut, outDecimals).div(
+        baseUnitsToDisplayUnits(quote.amountIn, inDecimals),
+    )
 }
 
 export const formatSwapRate = (quote: SwapQuote): string => {

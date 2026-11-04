@@ -205,6 +205,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         canFundLinkedAccount,
         canSwapToUsdc,
         nativeAsset.assetId,
+        scope.chainId,
         usdcAssetId,
         setSelectedAccountId,
         navigation,

@@ -92,7 +92,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         isError: false,
         reset: mockResetQuoteMutation,
     }),
-    swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(100000) }),
+    swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(100_000) }),
 }))
 
 const accountAt = (address: string) => ({
@@ -520,7 +520,7 @@ describe('useSwapForm', () => {
 
         expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
             expect.objectContaining({
-                fee: new Decimal(100000),
+                fee: new Decimal(100_000),
                 scope: SCOPE,
             }),
         )
