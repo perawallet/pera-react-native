@@ -27,7 +27,7 @@ import type {
     SignableGroup,
     SourceMetadata,
 } from '@perawallet/wallet-core-signing/pipeline/types'
-import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     createAlgo25Account,

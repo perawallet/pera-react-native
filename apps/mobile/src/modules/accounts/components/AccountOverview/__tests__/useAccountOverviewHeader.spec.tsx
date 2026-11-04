@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => [{ address: 'a' }]),
-        useSigningAccountsOnAnyChain: vi.fn(() => []),
+        useCanSignOnAnyChain: vi.fn(() => false),
     }
 })
 
@@ -291,9 +291,9 @@ describe('useAccountOverviewHeader', () => {
     })
 
     it('returns canSign true when the account signs on any chain it holds', async () => {
-        const { useSigningAccountsOnAnyChain } =
+        const { useCanSignOnAnyChain } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useSigningAccountsOnAnyChain).mockReturnValue([mockAccount])
+        vi.mocked(useCanSignOnAnyChain).mockReturnValue(true)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount, false),
@@ -304,9 +304,9 @@ describe('useAccountOverviewHeader', () => {
     })
 
     it('returns canSign false when the account signs on no chain', async () => {
-        const { useSigningAccountsOnAnyChain } =
+        const { useCanSignOnAnyChain } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useSigningAccountsOnAnyChain).mockReturnValue([])
+        vi.mocked(useCanSignOnAnyChain).mockReturnValue(false)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount, false),

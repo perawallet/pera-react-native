@@ -29,7 +29,7 @@ import {
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
 import type { PeraTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain/models'
 import { config } from '@perawallet/wallet-core-config'
-import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     createAlgo25Account,

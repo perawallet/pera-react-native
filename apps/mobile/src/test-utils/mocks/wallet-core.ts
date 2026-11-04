@@ -655,6 +655,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         multisigParametersOf: vi.fn(() => undefined),
         useCanSignWith: vi.fn((account: any) => hasSigningKeys(account)),
+        useCanSignWithCheck: vi.fn(
+            () => (account: any) => hasSigningKeys(account),
+        ),
+        useCanSignOnAnyChain: vi.fn((account: any) => hasSigningKeys(account)),
+        useAccountChainOptionsResolver: vi.fn(() => () => []),
         useDelegatedAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({

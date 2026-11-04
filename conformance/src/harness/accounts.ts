@@ -39,7 +39,7 @@ import { CUSTOM_NETWORK_ID } from '@perawallet/wallet-core-chain-contract'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
 import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
-import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 export type ConformanceAccountKind = 'algo25' | 'hd' | 'quantum'
 

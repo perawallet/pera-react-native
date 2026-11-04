@@ -15,7 +15,7 @@ import {
     CUSTOM_NETWORK_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     assertLocalNetReachable,

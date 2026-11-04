@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
-import { useAccountCapabilityScope } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountCapabilityScope,
+    useAccountChainOptionsResolver,
+    useCanSignWithCheck,
+} from '@perawallet/wallet-core-accounts'
 import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
@@ -31,11 +35,21 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     const navigation = useAppNavigation()
     const { account, openSendFunds, openReceiveFunds, openAccountOptions } =
         useAccountOverviewModal()
-    // Each button shows when any chain the account holds serves it; the flow
-    // it opens asks which chain when more than one does.
+    // Each button shows when any chain the account holds serves it (and, for
+    // a signing flow, something held signs for it there); the flow it opens
+    // asks which chain when more than one does.
+    const canSignOn = useCanSignWithCheck()
     const swapChainId = useSwapScope(account)?.chainId
-    const canSwap = swapChainId !== undefined
-    const canSend = useAccountCapabilityScope(account, 'send') !== null
+    const canSwap = swapChainId !== undefined && canSignOn(account, swapChainId)
+    const sendOptionsOf = useAccountChainOptionsResolver('send')
+    const canSend = useMemo(
+        () =>
+            sendOptionsOf(account).some(
+                option =>
+                    option.isEnabled && canSignOn(account, option.chainId),
+            ),
+        [sendOptionsOf, canSignOn, account],
+    )
     const canReceive = useAccountCapabilityScope(account, 'receive') !== null
 
     const handleSwap = useCallback(() => {

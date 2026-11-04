@@ -14,6 +14,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@test-utils/render'
 import {
     useAccountCapabilityScope,
+    useAccountChainOptionsResolver,
+    useCanSignWithCheck,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -59,13 +61,13 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
 const onAlgorand: WalletAccount = {
     id: 'algo',
     custody: { kind: 'local', seed: null },
-    chains: { algorand: { address: 'ALGO-ADDR' } },
+    chains: { algorand: { address: 'ALGO-ADDR', keyPairId: 'algo-key' } },
 }
 
 const onEthereumOnly: WalletAccount = {
     id: 'eth',
     custody: { kind: 'local', seed: null },
-    chains: { ethereum: { address: '0xabc' } },
+    chains: { ethereum: { address: '0xabc', keyPairId: 'eth-key' } },
 }
 
 // The global mock turns every capability on; these cases switch them.
@@ -79,6 +81,9 @@ describe('useButtonPanel', () => {
         useRemoteConfigStore.getState().resetState()
         vi.mocked(useAccountCapabilityScope).mockImplementation(
             actualAccounts.useAccountCapabilityScope,
+        )
+        vi.mocked(useAccountChainOptionsResolver).mockImplementation(
+            actualAccounts.useAccountChainOptionsResolver,
         )
         overview.account = onAlgorand
     })
@@ -157,5 +162,14 @@ describe('useButtonPanel', () => {
         const { result } = renderHook(() => useButtonPanel())
 
         expect(result.current.canSend).toBe(false)
+    })
+
+    it('removes send and swap on a chain nothing held signs for the account on', () => {
+        vi.mocked(useCanSignWithCheck).mockReturnValue(() => false)
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        expect(result.current.canSend).toBe(false)
+        expect(result.current.canSwap).toBe(false)
     })
 })

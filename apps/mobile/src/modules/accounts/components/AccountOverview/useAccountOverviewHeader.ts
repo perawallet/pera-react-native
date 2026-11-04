@@ -21,7 +21,7 @@ import {
     useAccountSummaryQuery,
     useAccountValueTotalsQuery,
     useAllAccounts,
-    useSigningAccountsOnAnyChain,
+    useCanSignOnAnyChain,
     type WalletAccount,
     useAccountScope,
 } from '@perawallet/wallet-core-accounts'
@@ -100,9 +100,7 @@ export const useAccountOverviewHeader = (
     const chainName = chainDisplayNameOf(scope.chainId)
     const currencyScope = useHomeChainScope()
     const { usdToPreferred } = useCurrency(currencyScope)
-    const canSign = useSigningAccountsOnAnyChain().some(
-        signer => signer.id === account.id,
-    )
+    const canSign = useCanSignOnAnyChain(account)
     // Cheap SQL aggregates — no full-holdings materialization for the header.
     const { nativeAmount, isComplete } = useAccountSummaryQuery(
         addressOn(account, scope),

@@ -15,7 +15,7 @@ import nacl from 'tweetnacl'
 import { describe, expect, it } from 'vitest'
 
 import { algorandMultisigNative } from '@perawallet/wallet-core-chain-algorand/accounts/multisig-native'
-import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     createAlgo25Account,

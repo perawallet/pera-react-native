@@ -386,7 +386,9 @@ describe('Flow: Account overview fiat total', () => {
             })
             const account = await seedTwoWallets()
 
-            renderWithNavigation(SelectHDWalletScreen, 'SelectHDWallet')
+            renderWithNavigation(SelectHDWalletScreen, 'SelectHDWallet', {
+                initialParams: { chainId: ALGORAND_CHAIN_ID },
+            })
 
             const row = await screen.findByTestId('select_hd_wallet_item_0')
             await waitFor(() => {
