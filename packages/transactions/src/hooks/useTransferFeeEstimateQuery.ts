@@ -89,11 +89,8 @@ export const useTransferFeeEstimateQuery = (
     // belongs to this key, so a new key never inherits another's failure.
     const isRetrying =
         query.isFetching && query.isPending && query.errorUpdateCount > 0
-    const error = query.isLoadingError
-        ? query.error
-        : isRetrying
-          ? lastError
-          : null
+    const heldError = isRetrying ? lastError : null
+    const error = query.isLoadingError ? query.error : heldError
 
     return {
         data: query.data,
