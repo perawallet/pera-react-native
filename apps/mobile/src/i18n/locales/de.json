@@ -3421,7 +3421,15 @@
             "spender_label": "Berechtigte Adresse",
             "unlimited": "Unbegrenzt",
             "deadline_label": "Frist",
-            "never": "Nie"
+            "never": "Nie",
+            "known_title": "Über diese Freigabe",
+            "known_description": "{{name}} ist ein bekannter Smart Contract",
+            "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
+            "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
+            "allow_title_assets": "{{spender}} erlauben, deine Assets zu verwenden",
+            "allow_title_unknown": "Einer anderen Adresse erlauben, deine {{asset}} zu verwenden",
+            "allow_title_unknown_assets": "Einer anderen Adresse erlauben, deine Assets zu verwenden"
         },
         "collection_approval": {
             "warning": "Damit kann der Operator jedes Objekt dieser Sammlung übertragen, das du besitzt, auch künftige, bis du die Freigabe widerrufst.",

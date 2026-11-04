@@ -871,6 +871,47 @@ describe("a dApp's standard token calls", () => {
         })
     })
 
+    it('name a well-known spender on the view, on mainnet only', () => {
+        const toPermit2: TransactionSerializableEIP1559 = {
+            ...APPROVE,
+            data: encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'approve',
+                args: [
+                    '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+                    maxUint256,
+                ],
+            }),
+        }
+
+        expect(
+            ethereumViewOf(unsigned(toPermit2), ETHEREUM)?.knownSpender,
+        ).toEqual({ name: 'Permit2', projectDomain: 'uniswap.org' })
+        expect(
+            ethereumViewOf(
+                unsigned(
+                    { ...toPermit2, chainId: 11155111 },
+                    { scope: SEPOLIA },
+                ),
+                ETHEREUM,
+            ),
+        ).not.toHaveProperty('knownSpender')
+        const toUnlisted: TransactionSerializableEIP1559 = {
+            ...APPROVE,
+            data: encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'approve',
+                args: [
+                    '0x1111111111111111111111111111111111111111',
+                    maxUint256,
+                ],
+            }),
+        }
+        expect(
+            ethereumViewOf(unsigned(toUnlisted), ETHEREUM),
+        ).not.toHaveProperty('knownSpender')
+    })
+
     describe('under the shipped capability defaults', () => {
         it('reviews an unlimited approve as an approval with a danger warning, behind review', async () => {
             const { reviewed, summary } = await reviewOne(

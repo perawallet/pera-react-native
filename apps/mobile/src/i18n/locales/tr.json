@@ -3429,7 +3429,15 @@
             "spender_label": "Yetkili adres",
             "unlimited": "Sınırsız",
             "deadline_label": "Son tarih",
-            "never": "Hiçbir zaman"
+            "never": "Hiçbir zaman",
+            "known_title": "Bu onay hakkında",
+            "known_description": "{{name}} bilinen bir sözleşme",
+            "known_spend_note": "{{name}} bilinen bir sözleşme. Bu tokeni yalnızca onayladığın bir işlem veya imza kapsamında hareket ettirebilir.",
+            "known_unlimited_note": "Tutar sınırsız, bu yüzden bu token için {{name}} sözleşmesine tekrar onay vermen gerekmez.",
+            "allow_title": "{{spender}} sözleşmesinin {{asset}} bakiyeni kullanmasına izin ver",
+            "allow_title_assets": "{{spender}} sözleşmesinin varlıklarını kullanmasına izin ver",
+            "allow_title_unknown": "Başka bir adresin {{asset}} bakiyeni kullanmasına izin ver",
+            "allow_title_unknown_assets": "Başka bir adresin varlıklarını kullanmasına izin ver"
         },
         "collection_approval": {
             "warning": "Bu, operatörün bu koleksiyonda sahip olduğun tüm öğeleri, sonradan alacakların dahil, iptal edene kadar transfer etmesine izin verir.",

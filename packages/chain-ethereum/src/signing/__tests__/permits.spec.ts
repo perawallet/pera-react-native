@@ -85,6 +85,23 @@ describe('spend approval recognition', () => {
         ])
     })
 
+    it('names a well-known spender, such as the Uniswap Universal Router', () => {
+        const typed = edit(PERMIT2_SINGLE_TYPED_DATA, copy => {
+            copy.message.spender = '0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85'
+        })
+
+        expect(describeTyped(typed).spendApproval?.knownSpender).toEqual({
+            name: 'Uniswap Universal Router',
+            projectDomain: 'uniswap.org',
+        })
+    })
+
+    it('leaves knownSpender off a spender outside the registry', () => {
+        expect(
+            describeTyped(PERMIT2_SINGLE_TYPED_DATA).spendApproval,
+        ).not.toHaveProperty('knownSpender')
+    })
+
     it('leaves the amount off an unlimited PermitSingle', () => {
         const approval = describeTyped(
             PERMIT2_SINGLE_UNLIMITED_TYPED_DATA,

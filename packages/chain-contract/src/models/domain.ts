@@ -433,9 +433,16 @@ export interface SpendAllowance {
     nft?: { collection: string; tokenId: string }
 }
 
+/** A spender in the chain's well-known contract registry; `name` is a proper noun, never translated. */
+export interface KnownSpender {
+    name: string
+    projectDomain?: string
+}
+
 export interface SpendApproval {
     /** Requester-supplied, in the chain's address format. */
     spender: string
+    knownSpender?: KnownSpender
     /** One per asset, in message order; never empty. */
     allowances: SpendAllowance[]
     /** Unix ms after which the approval can't be used; absent when it never lapses. */

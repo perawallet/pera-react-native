@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type {
     ChainScope,
+    KnownSpender,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -130,8 +131,10 @@ const collectionNameOf = (asset: Nullable<PeraAsset>): Optional<string> =>
 const zeroGrantOf = (
     call: Extract<EvmStandardCall, { kind: 'approve' | 'increase-allowance' }>,
     chainId: ChainScope['chainId'],
+    knownSpender: Optional<KnownSpender>,
 ): SpendApproval => ({
     spender: call.spender,
+    ...(knownSpender && { knownSpender }),
     allowances: [
         {
             assetRef: { chainId, assetId: call.contract },
@@ -146,6 +149,7 @@ const present = (
     chainId: ChainScope['chainId'],
     token: EthereumAmount,
     nft: Nullable<PeraAsset>,
+    knownSpender: Optional<KnownSpender>,
 ): EthereumStandardCallPresentation => {
     switch (call.kind) {
         case 'transfer':
@@ -208,8 +212,8 @@ const present = (
                 spender: call.spender,
                 ...(!isRevocation && {
                     spendApproval:
-                        spendApprovalOfCall(call, chainId) ??
-                        zeroGrantOf(call, chainId),
+                        spendApprovalOfCall(call, chainId, knownSpender) ??
+                        zeroGrantOf(call, chainId, knownSpender),
                 }),
             }
         }
@@ -219,8 +223,8 @@ const present = (
                 contract: call.contract,
                 spender: call.spender,
                 spendApproval:
-                    spendApprovalOfCall(call, chainId) ??
-                    zeroGrantOf(call, chainId),
+                    spendApprovalOfCall(call, chainId, knownSpender) ??
+                    zeroGrantOf(call, chainId, knownSpender),
             }
         }
         case 'set-approval-for-all': {
@@ -274,11 +278,18 @@ export const useEthereumStandardCall = (
         }
         const nft = nftAssetId ? (nftData ?? null) : null
         return {
-            standardCall: present(call, scope.chainId, token, nft),
+            standardCall: present(
+                call,
+                scope.chainId,
+                token,
+                nft,
+                view?.knownSpender,
+            ),
             isLoading: fungible.isLoading || isNftLoading,
         }
     }, [
         call,
+        view?.knownSpender,
         scope.chainId,
         fungible.asset,
         fungible.value,
