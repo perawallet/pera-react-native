@@ -75,6 +75,8 @@ export const TransactionConfirmationScreen = () => {
         total,
         feeShortfall,
         isFeeCoveragePending,
+        feeError,
+        retryFee,
     } = useTransactionConfirmationScreen()
     const { canSaveRecipient, saveRecipient } = useSaveRecipientContact(
         destination,
@@ -117,6 +119,24 @@ export const TransactionConfirmationScreen = () => {
                             testID='send_fee_shortfall'
                         />
                     )}
+                    {feeError && (
+                        <InfoCallout
+                            title={feeError.title}
+                            body={feeError.body}
+                            icon='error-circle'
+                            iconVariant='error'
+                            testID='send_fee_error'
+                        />
+                    )}
+                    {feeError?.canRetry && (
+                        <PWButton
+                            variant='secondary'
+                            title={t('common.retry.label')}
+                            onPress={retryFee}
+                            isLoading={feeError.isRetrying}
+                            testID='send_fee_retry_button'
+                        />
+                    )}
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
@@ -126,7 +146,8 @@ export const TransactionConfirmationScreen = () => {
                             isRecipientInfoPending ||
                             recipientSafety.isConfirmBlocked ||
                             isFeeCoveragePending ||
-                            !!feeShortfall
+                            !!feeShortfall ||
+                            !!feeError
                         }
                         testID='send_confirm_button'
                     />

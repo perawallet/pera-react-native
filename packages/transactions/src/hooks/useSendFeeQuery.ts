@@ -18,7 +18,7 @@ import type {
     FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { sendFlowChainAdapters } from '../chain-adapter'
 import { useTransferFeeEstimateQuery } from './useTransferFeeEstimateQuery'
 
@@ -45,6 +45,10 @@ export type UseSendFeeQueryResult = {
     isPending: boolean
     /** The estimate failed: the fee is unknown, never zero. */
     isError: boolean
+    /** Why the estimate failed; set exactly when `isError` is. */
+    error: Nullable<Error>
+    /** A failed estimate is being re-priced; `isError` holds until it lands. */
+    isRetrying: boolean
     /** Re-prices now; a no-op on a chain with a flat fee. */
     refresh: () => void
 }
@@ -93,6 +97,8 @@ export const useSendFeeQuery = ({
         data: estimate,
         isPending: isEstimatePending,
         isError: isEstimateError,
+        error: estimateError,
+        isRetrying: isEstimateRetrying,
         refresh,
     } = useTransferFeeEstimateQuery(estimateInput, { isLive })
 
@@ -108,6 +114,8 @@ export const useSendFeeQuery = ({
                 presets: undefined,
                 isPending: isMinFeePending,
                 isError: false,
+                error: null,
+                isRetrying: false,
                 refresh: NO_REFRESH,
             }
         }
@@ -118,6 +126,8 @@ export const useSendFeeQuery = ({
             presets: estimate?.presets,
             isPending: isEstimatePending,
             isError: isEstimateError,
+            error: estimateError,
+            isRetrying: isEstimateRetrying,
             refresh,
         }
     }, [
@@ -128,6 +138,8 @@ export const useSendFeeQuery = ({
         feePreset,
         isEstimatePending,
         isEstimateError,
+        estimateError,
+        isEstimateRetrying,
         refresh,
     ])
 }

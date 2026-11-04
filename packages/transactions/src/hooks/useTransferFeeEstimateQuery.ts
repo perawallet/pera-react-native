@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query'
 import type {
     ChainScope,
     FeeEstimate,
     TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { transferChainAdapters } from '../transfer-adapter'
 import { MODULE_PREFIX, transactionQueryKeys } from './querykeys'
 
@@ -36,6 +36,10 @@ export type UseTransferFeeEstimateQueryResult = {
     isPending: boolean
     /** No estimate is held: a later poll that fails behind a held one is not an error. */
     isError: boolean
+    /** Why the estimate failed; set exactly when `isError` is. */
+    error: Nullable<Error>
+    /** A failed estimate is being read again; it stays an error until the read lands. */
+    isRetrying: boolean
     /** Re-reads now; a no-op while there is no input. */
     refresh: () => void
 }
@@ -75,11 +79,29 @@ export const useTransferFeeEstimateQuery = (
         void refetch()
     }, [refetch])
 
+    const [lastError, setLastError] = useState<Nullable<Error>>(null)
+    useEffect(() => {
+        if (query.isLoadingError) setLastError(query.error)
+    }, [query.isLoadingError, query.error])
+
+    // A re-read with no data resets TanStack to pending and clears the error, so a
+    // failing live poll would blink the error off every interval. `errorUpdateCount`
+    // belongs to this key, so a new key never inherits another's failure.
+    const isRetrying =
+        query.isFetching && query.isPending && query.errorUpdateCount > 0
+    const error = query.isLoadingError
+        ? query.error
+        : isRetrying
+          ? lastError
+          : null
+
     return {
         data: query.data,
         // TanStack reports a skipped query as pending.
         isPending: !!input && query.isPending,
-        isError: query.isLoadingError,
+        isError: error !== null,
+        error,
+        isRetrying: isRetrying && error !== null,
         refresh,
     }
 }

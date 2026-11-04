@@ -36,6 +36,7 @@ import {
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { addressCodecs, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { AppError } from '@perawallet/wallet-core-shared'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     sendFlowChainAdapters,
@@ -180,11 +181,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         >('@packages/shared/src/utils/unit-conversion')
     const { Decimal: ActualDecimal } = await import('decimal.js')
     // The provider's extension graph reads AppError off this package.
-    const { AppError: ActualAppError } = await vi.importActual<
-        typeof import('@perawallet/wallet-core-shared')
-    >('@perawallet/wallet-core-shared')
+    const { AppError: ActualAppError, isRetryableError } =
+        await vi.importActual<typeof import('@perawallet/wallet-core-shared')>(
+            '@perawallet/wallet-core-shared',
+        )
     return {
         AppError: ActualAppError,
+        isRetryableError,
         DEFAULT_PRECISION: 2,
         ASSET_MAX_PRECISION: 6,
         ZERO_DECIMAL: new ActualDecimal(0),
@@ -564,8 +567,25 @@ describe('useTransactionConfirmationScreen', () => {
             presets: undefined,
             isPending: false,
             isError: false,
+            error: null,
+            isRetrying: false,
             refresh: mockRefreshFee,
         }
+
+        const failedFee = (error: Error) => ({
+            ...ETH_FEE,
+            maxFeeAmount: undefined,
+            isError: true,
+            error,
+        })
+
+        const namedError = (retryable: boolean) =>
+            new AppError('[evm:insufficient_funds]', {
+                titleKey: i18nKey('errors.evm.insufficient_funds.title'),
+                messageKey: i18nKey('errors.evm.insufficient_funds.body'),
+                params: { symbol: 'ETH' },
+                retryable,
+            })
 
         const confirmNativeSend = (amount: Decimal) => {
             ;(sendFlowChainAdapters.has as Mock).mockReturnValue(false)
@@ -912,16 +932,80 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.isFeeCoveragePending).toBe(false)
         })
 
-        it('keeps Confirm slidable when the fee could not be estimated, so it can say why', () => {
+        it('holds Confirm while the fee could not be estimated', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(new Error('fetch failed')),
+            )
+
+            const result = confirmNativeSend(new Decimal(1))
+
+            expect(result.current.isFeeCoveragePending).toBe(true)
+            expect(result.current.feeError).toBeDefined()
+        })
+
+        it('reads an unclassified estimate failure as the network not answering, with a retry', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(new Error('fetch failed')),
+            )
+
+            const result = confirmNativeSend(new Decimal(1))
+
+            expect(result.current.feeError).toEqual({
+                title: 'send_funds.confirmation.fee_unavailable.title',
+                body: 'send_funds.confirmation.fee_unavailable.body',
+                canRetry: true,
+                isRetrying: false,
+            })
+        })
+
+        it('shows the copy of an error that names its situation, with no retry when retrying cannot help', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(namedError(false)),
+            )
+
+            const result = confirmNativeSend(new Decimal(1))
+
+            expect(result.current.feeError).toEqual({
+                title: 'errors.evm.insufficient_funds.title',
+                body: 'errors.evm.insufficient_funds.body',
+                canRetry: false,
+                isRetrying: false,
+            })
+        })
+
+        it('offers a retry for a named error that may pass on a second read', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(namedError(true)),
+            )
+
+            const result = confirmNativeSend(new Decimal(1))
+
+            expect(result.current.feeError?.canRetry).toBe(true)
+        })
+
+        it('reports a retry in flight so Retry can show it is working', () => {
             ;(useSendFeeQuery as Mock).mockReturnValue({
-                ...ETH_FEE,
-                maxFeeAmount: undefined,
-                isError: true,
+                ...failedFee(new Error('fetch failed')),
+                isRetrying: true,
             })
 
             const result = confirmNativeSend(new Decimal(1))
 
-            expect(result.current.isFeeCoveragePending).toBe(false)
+            expect(result.current.feeError?.isRetrying).toBe(true)
+        })
+
+        it('re-prices the fee on retry', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(new Error('fetch failed')),
+            )
+            const result = confirmNativeSend(new Decimal(1))
+            mockRefreshFee.mockClear()
+
+            act(() => {
+                result.current.retryFee()
+            })
+
+            expect(mockRefreshFee).toHaveBeenCalledTimes(1)
         })
 
         it('totals the send with the fee it will be charged', () => {
@@ -964,22 +1048,15 @@ describe('useTransactionConfirmationScreen', () => {
             expect(mockNavigate).not.toHaveBeenCalled()
         })
 
-        it('blocks the send when the fee could not be estimated', () => {
-            ;(useSendFeeQuery as Mock).mockReturnValue({
-                ...ETH_FEE,
-                maxFeeAmount: undefined,
-                isError: true,
-            })
+        it('blocks the send without a toast when the fee could not be estimated', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue(
+                failedFee(new Error('fetch failed')),
+            )
 
             confirmNativeSend(new Decimal(1))
 
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'send_funds.confirmation.fee_unavailable.title',
-                expect.any(String),
-                expect.anything(),
-            )
-            expect(mockRefreshFee).toHaveBeenCalledTimes(1)
+            expect(mockErrorToast).not.toHaveBeenCalled()
         })
 
         it('reads no native balance on a chain with a send-flow adapter', () => {

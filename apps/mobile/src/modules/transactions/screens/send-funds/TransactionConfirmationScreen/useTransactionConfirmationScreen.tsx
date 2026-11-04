@@ -37,10 +37,12 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    AppError,
     type Maybe,
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
+    isRetryableError,
     formatCurrency,
     ZERO_DECIMAL,
 } from '@perawallet/wallet-core-shared'
@@ -121,6 +123,16 @@ type useTransactionConfirmationScreenResult = {
     feeShortfall: Optional<{ title: string; body: string }>
     /** True while the fee coverage check still waits on the fee or the native balance. */
     isFeeCoveragePending: boolean
+    /** Set while the fee couldn't be estimated; Confirm stays disabled meanwhile. */
+    feeError: Optional<FeeErrorNotice>
+    retryFee: () => void
+}
+
+type FeeErrorNotice = {
+    title: string
+    body: string
+    canRetry: boolean
+    isRetrying: boolean
 }
 
 export const useTransactionConfirmationScreen =
@@ -180,6 +192,8 @@ export const useTransactionConfirmationScreen =
             presets: feePresets,
             isPending: isFeePending,
             isError: isFeeError,
+            error: feeEstimateError,
+            isRetrying: isFeeRetrying,
             refresh: refreshFee,
         } = useSendFeeQuery({
             scope,
@@ -371,11 +385,39 @@ export const useTransactionConfirmationScreen =
             currentLanguage,
         ])
 
-        // A failed estimate stays slidable so Confirm can explain it in a toast.
         const isFeeCoveragePending =
             isFeeCoverageChecked &&
-            !isFeeError &&
             (!maxFeeAmount || !nativeSpendable || !baseUnitAmount)
+
+        // An error that names its situation (a node refusing the send for its balance, a revert)
+        // shows its own copy; anything else reads as the network not answering.
+        const feeError = useMemo((): Optional<FeeErrorNotice> => {
+            if (!isFeeCoverageChecked || !isFeeError) return undefined
+            const { titleKey, messageKey, params } =
+                feeEstimateError instanceof AppError
+                    ? feeEstimateError.metadata
+                    : {}
+            if (titleKey && messageKey) {
+                return {
+                    title: t(titleKey, params),
+                    body: t(messageKey, params),
+                    canRetry: isRetryableError(feeEstimateError),
+                    isRetrying: isFeeRetrying,
+                }
+            }
+            return {
+                title: t('send_funds.confirmation.fee_unavailable.title'),
+                body: t('send_funds.confirmation.fee_unavailable.body'),
+                canRetry: true,
+                isRetrying: isFeeRetrying,
+            }
+        }, [
+            isFeeCoverageChecked,
+            isFeeError,
+            feeEstimateError,
+            isFeeRetrying,
+            t,
+        ])
 
         const sendTotal = useSendTotal({
             scope,
@@ -423,19 +465,7 @@ export const useTransactionConfirmationScreen =
             }
 
             if (isFeeCoverageChecked) {
-                if (isFeeError) {
-                    // Confirm is the retry: the next press prices against a fresh read.
-                    refreshFee()
-                    errorToast(
-                        t('send_funds.confirmation.fee_unavailable.title'),
-                        t('send_funds.confirmation.fee_unavailable.body'),
-                        {
-                            notifier: bottomSheetNotifier.current ?? undefined,
-                        },
-                    )
-                    return
-                }
-                // The screen shows the shortfall and disables Confirm.
+                // The screen shows the shortfall or the fee error and disables Confirm.
                 if (
                     !maxFeeAmount ||
                     !nativeSpendable ||
@@ -517,5 +547,7 @@ export const useTransactionConfirmationScreen =
             total: isFeeCoverageChecked ? sendTotal : undefined,
             feeShortfall,
             isFeeCoveragePending,
+            feeError,
+            retryFee: refreshFee,
         }
     }
