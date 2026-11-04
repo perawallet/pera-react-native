@@ -12,6 +12,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { assertOnline } from '@perawallet/wallet-core-shared'
 import { createSwapOrder } from '../api'
 
 export type CreateSwapOrderVariables = {
@@ -21,7 +22,11 @@ export type CreateSwapOrderVariables = {
 
 export const useCreateSwapOrderMutation = () =>
     useMutation({
-        mutationFn: ({ quoteId, scope }: CreateSwapOrderVariables) =>
-            createSwapOrder(quoteId, scope),
+        // Fails fast offline, so the order is never placed on reconnect for a
+        // quote the user may no longer want.
+        mutationFn: ({ quoteId, scope }: CreateSwapOrderVariables) => {
+            assertOnline()
+            return createSwapOrder(quoteId, scope)
+        },
         throwOnError: false,
     })
