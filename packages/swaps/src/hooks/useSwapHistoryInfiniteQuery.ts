@@ -20,6 +20,9 @@ import type { SwapHistoryItem, SwapStatus } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 const PAGE_SIZE = 20
+// Bounds the read-ahead over pages the status filter empties, so a history of
+// only hidden rows can't loop the query forever.
+const MAX_SKIPPED_PAGES = 10
 
 export type UseSwapHistoryInfiniteQueryResult = {
     swaps: SwapHistoryItem[]
@@ -32,7 +35,30 @@ export type UseSwapHistoryInfiniteQueryResult = {
     refetch: () => void
 }
 
-/** The router has no status filter, so `statuses` narrows the loaded rows. */
+const fetchVisiblePage = async (
+    fetchPage: (cursor: Optional<string>) => Promise<SwapHistoryPage>,
+    statuses: Optional<SwapStatus[]>,
+    cursor: Optional<string>,
+): Promise<SwapHistoryPage> => {
+    const visibleOf = (page: SwapHistoryPage): SwapHistoryPage => ({
+        results: statuses
+            ? page.results.filter(item => statuses.includes(item.status))
+            : page.results,
+        next: page.next,
+    })
+    let page = await fetchPage(cursor)
+    for (let skipped = 0; skipped < MAX_SKIPPED_PAGES; skipped++) {
+        const visible = visibleOf(page)
+        if (visible.results.length > 0 || page.next === null) return visible
+        page = await fetchPage(page.next)
+    }
+    return visibleOf(page)
+}
+
+/**
+ * The router has no status filter, so `statuses` narrows each page, reading
+ * ahead past pages it empties.
+ */
 export const useSwapHistoryInfiniteQuery = (
     address: string,
     scope: ChainScope,
@@ -41,16 +67,21 @@ export const useSwapHistoryInfiniteQuery = (
 ): UseSwapHistoryInfiniteQueryResult => {
     const deviceId = useDeviceIdLookup()(deploymentOf(scope))
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.historyInfinite(address, scope),
+        queryKey: swapQueryKeys.historyInfinite(address, scope, statuses),
         queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
-            fetchSwapHistory(
-                {
-                    deviceId: deviceId ?? '',
-                    accounts: [routerAccountId(scope, address)],
-                    cursor: pageParam,
-                    limit: PAGE_SIZE,
-                },
-                scope,
+            fetchVisiblePage(
+                cursor =>
+                    fetchSwapHistory(
+                        {
+                            deviceId: deviceId ?? '',
+                            accounts: [routerAccountId(scope, address)],
+                            cursor,
+                            limit: PAGE_SIZE,
+                        },
+                        scope,
+                    ),
+                statuses,
+                pageParam,
             ),
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: SwapHistoryPage) =>
@@ -58,10 +89,7 @@ export const useSwapHistoryInfiniteQuery = (
         enabled: isEnabled && address.length > 0 && !!deviceId,
     })
 
-    const loaded = query.data?.pages.flatMap(page => page.results) ?? []
-    const swaps = statuses
-        ? loaded.filter(item => statuses.includes(item.status))
-        : loaded
+    const swaps = query.data?.pages.flatMap(page => page.results) ?? []
 
     return {
         swaps,

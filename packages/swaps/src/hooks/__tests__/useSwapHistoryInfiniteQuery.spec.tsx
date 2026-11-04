@@ -104,6 +104,50 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         ])
     })
 
+    test('reads past a page the status filter empties', async () => {
+        vi.mocked(fetchSwapHistory)
+            .mockResolvedValueOnce({
+                results: [
+                    makeSwapHistoryItem({ orderId: 'a', status: 'cancelled' }),
+                ],
+                next: 'cursor-2',
+            })
+            .mockResolvedValueOnce({
+                results: [
+                    makeSwapHistoryItem({ orderId: 'b', status: 'completed' }),
+                ],
+                next: 'cursor-3',
+            })
+
+        const { result } = renderHook(
+            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE, ['completed']),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.swaps.map(item => item.orderId)).toEqual(['b'])
+        expect(vi.mocked(fetchSwapHistory).mock.calls[1][0].cursor).toBe(
+            'cursor-2',
+        )
+        expect(result.current.hasNextPage).toBe(true)
+    })
+
+    test('stops reading ahead after a bounded number of emptied pages', async () => {
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: [makeSwapHistoryItem({ status: 'cancelled' })],
+            next: 'more',
+        })
+
+        const { result } = renderHook(
+            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE, ['completed']),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.swaps).toEqual([])
+        expect(fetchSwapHistory).toHaveBeenCalledTimes(11)
+    })
+
     test('fetchNextPage passes the next cursor', async () => {
         vi.mocked(fetchSwapHistory)
             .mockResolvedValueOnce({

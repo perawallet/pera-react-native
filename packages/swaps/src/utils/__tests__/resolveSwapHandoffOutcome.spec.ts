@@ -389,4 +389,30 @@ describe('resolveSwapHandoffOutcome', () => {
             report: { status: 'cancelled' },
         })
     })
+
+    test('onFailed reports nothing once an earlier group reached the chain', async () => {
+        const record = makeRecord({
+            plan: [
+                { slots: [{ kind: 'toSign', flatIndex: 0 }] },
+                { slots: [{ kind: 'toSign', flatIndex: 1 }] },
+            ],
+        })
+        deps.submitGroup
+            .mockResolvedValueOnce(['first-group'])
+            .mockRejectedValueOnce(
+                new SubmissionError(
+                    ['second-group'],
+                    'rejected-by-node',
+                    nodeError('overspend'),
+                ),
+            )
+        const completionDeps = await resolve(record)
+        await expect(
+            completionDeps.submit([new Uint8Array([1]), new Uint8Array([2])]),
+        ).rejects.toBeInstanceOf(SubmissionError)
+
+        await completionDeps.onFailed()
+
+        expect(deps.reportOrder).not.toHaveBeenCalled()
+    })
 })

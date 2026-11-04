@@ -163,6 +163,8 @@ export const resolveSwapHandoffOutcome = async ({
     deps: SwapHandoffResolutionDeps
 }): Promise<void> => {
     const { signRequestId, swapIdStr, deviceId, plan } = record
+    // After any group lands, the router settles the order from the chain.
+    let hasBroadcast = false
 
     await completeMultisigHandoff(record.scope.chainId, {
         outcome,
@@ -205,6 +207,7 @@ export const resolveSwapHandoffOutcome = async ({
                     }
                     try {
                         const ids = await deps.submitGroup(groupBytes)
+                        hasBroadcast = true
                         txIds.push(...ids)
                     } catch (error) {
                         await markAttemptOutcome(attemptId, error, deps)
@@ -242,7 +245,6 @@ export const resolveSwapHandoffOutcome = async ({
                     await deps.reportOrder({ orderId: swapIdStr, report })
                 }
             },
-            // Nothing reached the chain on any of these.
             onSoftRejected: async () => {
                 await deps.reportOrder({
                     orderId: swapIdStr,
@@ -250,6 +252,7 @@ export const resolveSwapHandoffOutcome = async ({
                 })
             },
             onFailed: async () => {
+                if (hasBroadcast) return
                 await deps.reportOrder({
                     orderId: swapIdStr,
                     report: { status: 'cancelled' },
