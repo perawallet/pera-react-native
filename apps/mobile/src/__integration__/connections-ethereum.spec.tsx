@@ -1099,7 +1099,9 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText('transactions.list_item.approval'),
+                        screen.getAllByText(
+                            /^signing\.spend_approval\.allow_title/,
+                        ),
                     ).not.toHaveLength(0)
                     expect(
                         screen.getAllByText('signing.spend_approval.unlimited'),

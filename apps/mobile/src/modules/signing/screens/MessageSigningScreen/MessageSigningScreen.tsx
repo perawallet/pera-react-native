@@ -46,7 +46,10 @@ export const MessageSigningScreen = () => {
     if (!summary) return null
 
     // A recognised permit is titled by what it grants; its type name means nothing to a reader.
-    const spendApproval = scope ? summary.spendApproval : undefined
+    const spendReview =
+        scope && summary.spendApproval
+            ? { approval: summary.spendApproval, scope }
+            : undefined
 
     return (
         <PWScreen
@@ -84,10 +87,10 @@ export const MessageSigningScreen = () => {
                 />
             )}
             <PWView style={styles.bodyContainer}>
-                {spendApproval && scope ? (
+                {spendReview ? (
                     <SpendApprovalTitle
-                        approval={spendApproval}
-                        scope={scope}
+                        approval={spendReview.approval}
+                        scope={spendReview.scope}
                     />
                 ) : (
                     <PWText variant='h2'>
@@ -96,7 +99,7 @@ export const MessageSigningScreen = () => {
                 )}
 
                 <PWView style={styles.section}>
-                    {!spendApproval && (
+                    {!spendReview && (
                         <PWText
                             variant='captionMedium'
                             style={styles.sectionLabel}
@@ -104,35 +107,34 @@ export const MessageSigningScreen = () => {
                             {t('signing.arbitrary_data_view.data_label')}
                         </PWText>
                     )}
-                    {!spendApproval && !!summary.preview && (
+                    {!spendReview && !!summary.preview && (
                         <PWView style={styles.dataBox}>
                             <PWText variant='mono'>{summary.preview}</PWText>
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
-                    {!!summary.spendApproval && !!scope && (
+                    {spendReview && (
                         <SpendApprovalWarning
-                            approval={summary.spendApproval}
-                            scope={scope}
+                            approval={spendReview.approval}
+                            scope={spendReview.scope}
                         />
                     )}
                     <RequestSiteWarning />
                     <RequestAddressWarning addresses={reviewedAddresses} />
-                    {summary.kind === 'typed-data' &&
-                        (!summary.spendApproval || !scope) && (
-                            <InfoCallout
-                                icon='warning'
-                                iconSize='sm'
-                                titleVariant='bodySemibold'
-                                title={t(
-                                    'signing.arbitrary_data_view.typed_data_warning_title',
-                                )}
-                                body={t(
-                                    'signing.arbitrary_data_view.typed_data_warning_body',
-                                )}
-                                testID='message-signing-typed-data-warning'
-                            />
-                        )}
+                    {summary.kind === 'typed-data' && !spendReview && (
+                        <InfoCallout
+                            icon='warning'
+                            iconSize='sm'
+                            titleVariant='bodySemibold'
+                            title={t(
+                                'signing.arbitrary_data_view.typed_data_warning_title',
+                            )}
+                            body={t(
+                                'signing.arbitrary_data_view.typed_data_warning_body',
+                            )}
+                            testID='message-signing-typed-data-warning'
+                        />
+                    )}
                     {!!summary.tree && <MessageTreeView nodes={summary.tree} />}
                 </PWView>
 

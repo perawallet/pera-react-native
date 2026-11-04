@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import { maxUint160 } from 'viem'
 import type {
     ChainId,
+    KnownSpender,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -36,7 +37,7 @@ export const toAllowanceAmount = (baseUnits: bigint): Optional<Decimal> =>
 export const spendApprovalOfCall = (
     call: EvmStandardCall,
     chainId: ChainId,
-    knownSpender?: SpendApproval['knownSpender'],
+    knownSpender?: KnownSpender,
 ): Optional<SpendApproval> => {
     if (
         (call.kind !== 'approve' && call.kind !== 'increase-allowance') ||

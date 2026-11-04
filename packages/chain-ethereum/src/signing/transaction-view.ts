@@ -16,7 +16,7 @@ import type { Address, Hex } from 'viem'
 import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
 import type {
     FeePreset,
-    SpendApproval,
+    KnownSpender,
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmNftStandard } from '../blockchain/utils/caip19'
@@ -106,7 +106,7 @@ type EthereumTransactionViewBase = {
      */
     knownContract?: EvmContractLabel
     /** Only with an `approve` or `increase-allowance` `call` whose spender is in the registry. */
-    knownSpender?: SpendApproval['knownSpender']
+    knownSpender?: KnownSpender
     /** Only with `knownContract`: what the calldata proves the call does. */
     action?: EvmContractAction
 }

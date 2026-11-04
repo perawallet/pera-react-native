@@ -3450,10 +3450,10 @@
             "known_description": "{{name}} é um contrato conhecido",
             "known_spend_note": "{{name}} é um contrato conhecido. Ele só pode movimentar este token como parte de uma transação ou assinatura que você aprovar.",
             "known_unlimited_note": "O valor é ilimitado, então você não vai precisar autorizar este token para {{name}} de novo.",
-            "permit_title": "Permitir que {{spender}} use seus {{asset}}",
-            "permit_title_assets": "Permitir que {{spender}} use seus ativos",
-            "permit_title_unknown": "Permitir que outro endereço use seus {{asset}}",
-            "permit_title_unknown_assets": "Permitir que outro endereço use seus ativos"
+            "allow_title": "Permitir que {{spender}} use seus {{asset}}",
+            "allow_title_assets": "Permitir que {{spender}} use seus ativos",
+            "allow_title_unknown": "Permitir que outro endereço use seus {{asset}}",
+            "allow_title_unknown_assets": "Permitir que outro endereço use seus ativos"
         },
         "collection_approval": {
             "warning": "Isso permite que o operador transfira todos os itens que você tem nesta coleção, inclusive os que receber depois, até você revogar.",

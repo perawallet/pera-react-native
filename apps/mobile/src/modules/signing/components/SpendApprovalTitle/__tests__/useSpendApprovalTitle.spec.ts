@@ -68,7 +68,7 @@ describe('useSpendApprovalTitle', () => {
 
     it('names the known spender and the one token it may use', () => {
         expect(titleOf(approval({ knownSpender: ROUTER }))).toBe(
-            'signing.spend_approval.permit_title|{"spender":"Uniswap Universal Router","asset":"TSLAx"}',
+            'signing.spend_approval.allow_title|{"spender":"Uniswap Universal Router","asset":"TSLAx"}',
         )
         expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith(
             TOKEN,
@@ -78,7 +78,7 @@ describe('useSpendApprovalTitle', () => {
 
     it('says another address when the spender is not in the registry', () => {
         expect(titleOf(approval())).toBe(
-            'signing.spend_approval.permit_title_unknown|{"asset":"TSLAx"}',
+            'signing.spend_approval.allow_title_unknown|{"asset":"TSLAx"}',
         )
     })
 
@@ -97,19 +97,35 @@ describe('useSpendApprovalTitle', () => {
                 }),
             ),
         ).toBe(
-            'signing.spend_approval.permit_title_assets|{"spender":"Uniswap Universal Router"}',
+            'signing.spend_approval.allow_title_assets|{"spender":"Uniswap Universal Router"}',
         )
         expect(mockUseSingleAssetDetailsQuery).toHaveBeenLastCalledWith(
             '',
             SCOPE,
         )
         expect(titleOf(approval({ allowances: [nft] }))).toBe(
-            'signing.spend_approval.permit_title_unknown_assets|{}',
+            'signing.spend_approval.allow_title_unknown_assets|{}',
         )
 
         mockUseSingleAssetDetailsQuery.mockReturnValue({ data: undefined })
         expect(titleOf(approval())).toBe(
-            'signing.spend_approval.permit_title_unknown_assets|{}',
+            'signing.spend_approval.allow_title_unknown_assets|{}',
+        )
+    })
+})
+
+describe('useSpendApprovalTitle without an approval', () => {
+    it('is undefined and looks nothing up', () => {
+        mockUseSingleAssetDetailsQuery.mockReturnValue({ data: undefined })
+
+        const { result } = renderHook(() =>
+            useSpendApprovalTitle(undefined, SCOPE),
+        )
+
+        expect(result.current).toBeUndefined()
+        expect(mockUseSingleAssetDetailsQuery).toHaveBeenLastCalledWith(
+            '',
+            SCOPE,
         )
     })
 })

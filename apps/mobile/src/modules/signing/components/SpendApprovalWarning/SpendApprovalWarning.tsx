@@ -41,26 +41,31 @@ export const SpendApprovalWarning = ({
         useSpendApprovalWarning(approval)
     const { request: requestBottomSheet } = useBottomSheet()
 
+    const title = knownSpenderName
+        ? t('signing.spend_approval.known_title')
+        : t('transactions.warning.title')
+
     const handleOpen = useCallback(() => {
         void requestBottomSheet({
-            contents: <SpendApprovalWarningContent rows={rows} />,
+            contents: (
+                <SpendApprovalWarningContent
+                    title={title}
+                    rows={rows}
+                />
+            ),
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, rows])
+    }, [requestBottomSheet, rows, title])
 
     return (
         <PWView style={styles.container}>
             <PanelButton
                 onPress={handleOpen}
-                title={
-                    knownSpenderName
-                        ? t('signing.spend_approval.known_title')
-                        : t('transactions.warning.title')
-                }
+                title={title}
                 titleWeight='h4'
                 description={
                     knownSpenderName

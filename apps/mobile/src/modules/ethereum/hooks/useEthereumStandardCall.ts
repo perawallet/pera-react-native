@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type {
     ChainScope,
+    KnownSpender,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -130,8 +131,10 @@ const collectionNameOf = (asset: Nullable<PeraAsset>): Optional<string> =>
 const zeroGrantOf = (
     call: Extract<EvmStandardCall, { kind: 'approve' | 'increase-allowance' }>,
     chainId: ChainScope['chainId'],
+    knownSpender: Optional<KnownSpender>,
 ): SpendApproval => ({
     spender: call.spender,
+    ...(knownSpender && { knownSpender }),
     allowances: [
         {
             assetRef: { chainId, assetId: call.contract },
@@ -146,7 +149,7 @@ const present = (
     chainId: ChainScope['chainId'],
     token: EthereumAmount,
     nft: Nullable<PeraAsset>,
-    knownSpender: SpendApproval['knownSpender'],
+    knownSpender: Optional<KnownSpender>,
 ): EthereumStandardCallPresentation => {
     switch (call.kind) {
         case 'transfer':
@@ -210,7 +213,7 @@ const present = (
                 ...(!isRevocation && {
                     spendApproval:
                         spendApprovalOfCall(call, chainId, knownSpender) ??
-                        zeroGrantOf(call, chainId),
+                        zeroGrantOf(call, chainId, knownSpender),
                 }),
             }
         }
@@ -221,7 +224,7 @@ const present = (
                 spender: call.spender,
                 spendApproval:
                     spendApprovalOfCall(call, chainId, knownSpender) ??
-                    zeroGrantOf(call, chainId),
+                    zeroGrantOf(call, chainId, knownSpender),
             }
         }
         case 'set-approval-for-all': {

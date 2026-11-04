@@ -15,34 +15,38 @@ import type {
     ChainScope,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
-/** Names the one token a fungible approval covers; anything else reads as "your assets". */
+/**
+ * Names the one token a fungible approval covers; anything else reads as "your
+ * assets". Undefined without an approval, so a caller can fall back to its own title.
+ */
 export const useSpendApprovalTitle = (
-    approval: SpendApproval,
+    approval: Optional<SpendApproval>,
     scope: ChainScope,
-): string => {
+): Optional<string> => {
     const { t } = useLanguage()
-    const [only] = approval.allowances
+    const allowances = approval?.allowances ?? []
+    const [only] = allowances
     const singleTokenId =
-        approval.allowances.length === 1 && !only.nft
-            ? only.assetRef.assetId
-            : ''
+        allowances.length === 1 && !only.nft ? only.assetRef.assetId : ''
     const { data: asset } = useSingleAssetDetailsQuery(singleTokenId, scope)
+    if (!approval) return undefined
     const unitName = singleTokenId ? asset?.unitName : undefined
     const name = approval.knownSpender?.name
 
     if (name) {
         return unitName
-            ? t('signing.spend_approval.permit_title', {
+            ? t('signing.spend_approval.allow_title', {
                   spender: name,
                   asset: unitName,
               })
-            : t('signing.spend_approval.permit_title_assets', {
+            : t('signing.spend_approval.allow_title_assets', {
                   spender: name,
               })
     }
     return unitName
-        ? t('signing.spend_approval.permit_title_unknown', { asset: unitName })
-        : t('signing.spend_approval.permit_title_unknown_assets')
+        ? t('signing.spend_approval.allow_title_unknown', { asset: unitName })
+        : t('signing.spend_approval.allow_title_unknown_assets')
 }

@@ -3434,10 +3434,10 @@
             "known_description": "{{name}} es un contrato conocido",
             "known_spend_note": "{{name}} es un contrato conocido. Solo puede mover este token como parte de una transacción o firma que apruebes.",
             "known_unlimited_note": "La cantidad es ilimitada, así que no tendrás que volver a autorizar este token para {{name}}.",
-            "permit_title": "Permitir que {{spender}} use tus {{asset}}",
-            "permit_title_assets": "Permitir que {{spender}} use tus activos",
-            "permit_title_unknown": "Permitir que otra dirección use tus {{asset}}",
-            "permit_title_unknown_assets": "Permitir que otra dirección use tus activos"
+            "allow_title": "Permitir que {{spender}} use tus {{asset}}",
+            "allow_title_assets": "Permitir que {{spender}} use tus activos",
+            "allow_title_unknown": "Permitir que otra dirección use tus {{asset}}",
+            "allow_title_unknown_assets": "Permitir que otra dirección use tus activos"
         },
         "collection_approval": {
             "warning": "Esto permite al operador transferir todos los artículos que tienes en esta colección, incluidos los que recibas después, hasta que lo revoques.",

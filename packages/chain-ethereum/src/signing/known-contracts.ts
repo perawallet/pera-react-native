@@ -12,6 +12,7 @@
 
 import { isAddress } from 'viem'
 import type { Address } from 'viem'
+import type { KnownSpender } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 
@@ -207,7 +208,7 @@ export const findKnownEvmContract = (
 export const knownSpenderOf = (
     eip155ChainId: Optional<number>,
     spender: string,
-): Optional<{ name: string; projectDomain?: string }> => {
+): Optional<KnownSpender> => {
     const known =
         eip155ChainId === undefined || !isAddress(spender)
             ? undefined
