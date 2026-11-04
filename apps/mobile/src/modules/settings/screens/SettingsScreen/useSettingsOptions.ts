@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCapability } from '@hooks/useCapability'
 import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
@@ -45,7 +45,7 @@ export const useSettingsOptions = () => {
     const isCloudBackupConfigured = useCloudBackupStore(state =>
         state.isConfigured(),
     )
-    const canRekey = useCapability(rekeyRequirementFor(LEGACY_CHAIN_ID))
+    const canRekey = useCapability(rekeyRequirementFor(ALGORAND_CHAIN_ID))
 
     const settingsOptions = useMemo<SettingsOptionSection[]>(() => {
         const connectionsEntriesOf = (): SettingsOptionItem[] => {

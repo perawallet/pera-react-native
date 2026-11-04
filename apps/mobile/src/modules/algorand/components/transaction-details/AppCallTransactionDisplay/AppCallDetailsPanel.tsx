@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailAddress } from '@modules/signing'
@@ -31,7 +31,7 @@ export const AppCallDetailsPanel = ({
 }: AppCallDetailsPanelProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
     const appCall = transaction.applicationTransaction
     if (!appCall) {

@@ -95,7 +95,9 @@
         "display_nfts": "Display NFTs in asset list",
         "display_nfts_description": "NFTs assets will be shown in the asset list of your account",
         "display_opted_in_nfts": "Display opted-in NFTs",
-        "display_opted_in_nfts_description": "You can show/hide NFTs that are opted-in but not owned"
+        "display_opted_in_nfts_description": "You can show/hide NFTs that are opted-in but not owned",
+        "show_suspicious": "Show suspicious assets",
+        "show_suspicious_description": "Lists tokens Pera has flagged as likely spam or scams. They are never counted in your balance"
     },
     "add_asset": {
         "title": "Add Asset",
@@ -266,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Deleted)"
+        "deleted_label": "(Deleted)",
+        "unverified_label": "Unverified"
     },
     "asset_details": {
         "about": {
@@ -3629,7 +3632,6 @@
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
             "call_data": "Call Data",
-            "advanced": "Advanced",
             "unchecked_warning": "Pera couldn't check what this transaction does. Only continue if you trust {{domain}}.",
             "unchecked_warning_no_source": "Pera couldn't check what this transaction does. Only continue if you trust the app that sent it."
         },
@@ -4799,6 +4801,13 @@
             "fee_share": "{{percent}} of the swap output",
             "fee_recipient": "Paid to",
             "base_units": "base units"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas limit",
+            "max_fee_per_gas": "Max fee per gas",
+            "max_priority_fee_per_gas": "Max priority fee per gas"
         },
         "known_contract": {
             "title": "Contract",

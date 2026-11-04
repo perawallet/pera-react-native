@@ -14,10 +14,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { algorandAddressCodec } from '@packages/chain-algorand/src/accounts/address-codec'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
@@ -39,7 +39,7 @@ vi.mock('@hooks/useToast', () => ({
 const ALGORAND_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 const ETHEREUM_ADDRESS = '0x52908400098527886E0F7030069857D2E4169EE7'
-const CHAIN_IDS: ChainId[] = [LEGACY_CHAIN_ID]
+const CHAIN_IDS: ChainId[] = [ALGORAND_CHAIN_ID]
 
 beforeEach(() => {
     addressCodecs.register(algorandAddressCodec)

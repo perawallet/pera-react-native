@@ -20,7 +20,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { sendMessageToWebview } from '../handlers'
@@ -35,7 +35,7 @@ type UseSettingsHandlersResult = {
 export const useSettingsHandlers = (
     webview: Nullable<WebView>,
 ): UseSettingsHandlersResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const network = scope.networkId
     const deviceID = useDeploymentDeviceID(useWalletDeployment())
     const theme = useIsDarkMode() ? 'dark' : 'light'

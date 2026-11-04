@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    queryKeyReferencesScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { describe, test, expect, vi } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 
@@ -96,7 +93,7 @@ describe('getAssetsQueryKey', () => {
     test('keeps the ids out of the key so hashing it stays O(1)', () => {
         const key = getAssetsQueryKey(
             Array.from({ length: 20_000 }, (_, i) => String(i)),
-            { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            { chainId: 'algorand', networkId: 'mainnet' } as const,
         )
 
         expect(JSON.stringify(key).length).toBeLessThan(100)
@@ -105,23 +102,23 @@ describe('getAssetsQueryKey', () => {
     test('is derivable from the ids alone, so cache seeding still matches', () => {
         expect(
             getAssetsQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toEqual(
             getAssetsQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
         expect(
             getAssetsQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).not.toEqual(
             getAssetsQueryKey(['456'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -129,7 +126,7 @@ describe('getAssetsQueryKey', () => {
 
     test('gives fetchMissing reads their own entry under the DB-only prefix', () => {
         const scope = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const
         const dbOnly = getAssetsQueryKey(['123'], scope)
@@ -144,12 +141,12 @@ describe('getAssetsQueryKey', () => {
     test('partitions by scope', () => {
         expect(
             getAssetsQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).not.toEqual(
             getAssetsQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const),
         )
@@ -162,7 +159,7 @@ describe('isAssetQuery', () => {
         expect(
             isAssetQuery(
                 getAssetPricesQueryKey(['123'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             ),
@@ -180,27 +177,27 @@ describe('isAssetQuery', () => {
     test('every key factory in this module is reachable by the invalidator', () => {
         const keys = [
             getAssetPricesQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
             getAssetPriceHistoryQueryKey('123', '7d', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
             getAssetDetailsQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
             getRemoteAssetDetailsQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
             getAssetAuthoritiesQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
             getAssetsQueryKey(['123'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ]
@@ -234,7 +231,7 @@ describe('detail query keys', () => {
     test('getAssetDetailsQueryKey includes id and scope', () => {
         expect(
             getAssetDetailsQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toEqual([
@@ -243,7 +240,7 @@ describe('detail query keys', () => {
             {
                 assetId: '123',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             },
@@ -253,7 +250,7 @@ describe('detail query keys', () => {
     test('getRemoteAssetDetailsQueryKey is distinct from the canonical entry', () => {
         expect(
             getRemoteAssetDetailsQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toEqual([
@@ -262,19 +259,19 @@ describe('detail query keys', () => {
             {
                 assetId: '123',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             },
         ])
         expect(
             getRemoteAssetDetailsQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).not.toEqual(
             getAssetDetailsQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         )
@@ -286,12 +283,12 @@ describe('detail query keys', () => {
     ])('%s partitions the same asset id by scope', (_, getKey) => {
         expect(
             getKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).not.toEqual(
             getKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const),
         )
@@ -300,7 +297,7 @@ describe('detail query keys', () => {
     test('getAssetAuthoritiesQueryKey includes the authorities namespace', () => {
         expect(
             getAssetAuthoritiesQueryKey('123', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toEqual([
@@ -309,7 +306,7 @@ describe('detail query keys', () => {
             {
                 assetId: '123',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             },
@@ -319,7 +316,7 @@ describe('detail query keys', () => {
     test('getAssetPriceHistoryQueryKey includes asset id, period, and scope', () => {
         expect(
             getAssetPriceHistoryQueryKey('123', '7d', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toEqual([
@@ -330,7 +327,7 @@ describe('detail query keys', () => {
                 assetID: '123',
                 period: '7d',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             },
@@ -341,7 +338,7 @@ describe('detail query keys', () => {
 describe('isAssetPriceHistoryQuery', () => {
     test('matches the asset price-history key', () => {
         const key = getAssetPriceHistoryQueryKey('123', 'one-week', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -353,7 +350,7 @@ describe('isAssetPriceHistoryQuery', () => {
         expect(
             isAssetPriceHistoryQuery(
                 getAssetPricesQueryKey(['123'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             ),
@@ -361,7 +358,7 @@ describe('isAssetPriceHistoryQuery', () => {
         expect(
             isAssetPriceHistoryQuery(
                 getAssetsQueryKey(['123'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const),
             ),
@@ -375,7 +372,7 @@ describe('isAssetPriceHistoryQuery', () => {
 describe('custom-network sweep', () => {
     test('every network-scoped key references its scope, which clearCustomNetworkCache matches on', () => {
         const custom = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'custom',
         } as const
         const keys = [

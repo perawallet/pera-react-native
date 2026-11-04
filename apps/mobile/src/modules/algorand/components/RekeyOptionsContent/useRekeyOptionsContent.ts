@@ -16,12 +16,9 @@ import {
     useAuthorityTargetCategories,
     type AuthorityTargetCategory,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import type { IconName } from '@components/core'
 import { useCapability } from '@hooks/useCapability'
 
@@ -78,7 +75,7 @@ export type UseRekeyOptionsContentResult = {
 }
 
 export const useRekeyOptionsContent = (): UseRekeyOptionsContentResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const categories = useAuthorityTargetCategories(scope)
     const canUseLedger = useCapability({ anyChain: 'ledger' })
     const isQuantumEnabled = useCapability({

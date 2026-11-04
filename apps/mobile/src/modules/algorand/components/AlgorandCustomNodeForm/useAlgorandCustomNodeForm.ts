@@ -200,7 +200,7 @@ export const useAlgorandCustomNodeForm = (
         // write. `shouldClear` reads `previous`, so nothing needs the store
         // updated first.
         if (shouldClear) {
-            await clearCustomNetworkCache(queryClient)
+            await clearCustomNetworkCache(queryClient, chainId)
         }
 
         customNode.save(next)

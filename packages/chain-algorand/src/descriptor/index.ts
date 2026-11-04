@@ -138,6 +138,7 @@ export const isAlgorandNativeAssetId = (
 
 // A subpath free of the adapter graph, so a consumer's tests can read the
 // descriptor without resolving the native modules the adapters pull in.
+export { ALGORAND_CHAIN_ID }
 export {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,

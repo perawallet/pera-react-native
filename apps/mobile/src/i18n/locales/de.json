@@ -95,7 +95,9 @@
         "display_nfts": "NFTs in der Asset-Liste anzeigen",
         "display_nfts_description": "NFT-Assets werden in der Asset-Liste deines Kontos angezeigt",
         "display_opted_in_nfts": "Angemeldete NFTs anzeigen",
-        "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt"
+        "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt",
+        "show_suspicious": "Verdächtige Assets anzeigen",
+        "show_suspicious_description": "Zeigt Tokens an, die Pera als wahrscheinlichen Spam oder Betrug markiert hat. Sie zählen nie zu deinem Guthaben"
     },
     "add_asset": {
         "title": "Asset hinzufügen",
@@ -266,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Gelöscht)"
+        "deleted_label": "(Gelöscht)",
+        "unverified_label": "Nicht verifiziert"
     },
     "asset_details": {
         "about": {
@@ -3621,7 +3624,6 @@
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
-            "advanced": "Erweitert",
             "unchecked_warning": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du {{domain}} vertraust.",
             "unchecked_warning_no_source": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du der App vertraust, die sie gesendet hat."
         },
@@ -4799,6 +4801,13 @@
             "fee_share": "{{percent}} der Ausgabe des Tauschs",
             "fee_recipient": "Gezahlt an",
             "base_units": "Basiseinheiten"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas-Limit",
+            "max_fee_per_gas": "Max. Gebühr pro Gas",
+            "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
         },
         "known_contract": {
             "title": "Smart Contract",

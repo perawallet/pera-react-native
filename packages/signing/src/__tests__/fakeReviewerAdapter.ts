@@ -11,10 +11,7 @@
  */
 
 import { vi } from 'vitest'
-import {
-    type TransactionNative,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import {
     reviewerChainAdapters,
     type ReviewerChainAdapter,
@@ -23,7 +20,7 @@ import {
 export const fakeReviewerAdapter = (
     overrides: Partial<ReviewerChainAdapter> = {},
 ): ReviewerChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     decoder: {
         decode: vi.fn(async () => ({
             totalFees: 0n,

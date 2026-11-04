@@ -15,17 +15,19 @@ import {
     accountKindGlyph,
     getAccountDisplayName,
     type WalletAccount,
+    accountChainIdOf,
+    useRegisteredChainIds,
 } from '@perawallet/wallet-core-accounts'
 import {
     backupItemKindId,
     type BackupItemKind,
     type CachedRecordChain,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     PWIcon,
     PWRoundIcon,
@@ -69,20 +71,21 @@ export const BackupAccountRow = ({
     testID,
 }: BackupAccountRowProps) => {
     const styles = useStyles()
+    const registeredChainIds = useRegisteredChainIds()
     const { isMultichain, chainIds, chains, canExpand, isExpanded, onToggle } =
         useBackupAccountRow({
             address,
             account,
             backupChains,
-            fallbackChainId: LEGACY_CHAIN_ID,
+            fallbackChainId: ALGORAND_CHAIN_ID,
         })
 
     const backupKindId =
         !account && accountType != null
-            ? backupItemKindId(accountType, LEGACY_CHAIN_ID)
+            ? backupItemKindId(accountType, ALGORAND_CHAIN_ID)
             : undefined
     const backupGlyphId = backupKindId
-        ? accountKindGlyph(backupKindId, LEGACY_CHAIN_ID)
+        ? accountKindGlyph(backupKindId, ALGORAND_CHAIN_ID)
         : undefined
     const backupGlyph = backupGlyphId ? accountGlyphFor(backupGlyphId) : null
 
@@ -96,7 +99,10 @@ export const BackupAccountRow = ({
                     style={styles.title}
                 >
                     {account
-                        ? getAccountDisplayName(account, LEGACY_CHAIN_ID)
+                        ? getAccountDisplayName(
+                              account,
+                              accountChainIdOf(account, registeredChainIds),
+                          )
                         : truncateAlgorandAddress(address)}
                 </PWText>
                 <PWIcon

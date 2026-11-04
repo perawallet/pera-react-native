@@ -13,7 +13,7 @@
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
@@ -31,7 +31,7 @@ export type PaymentTransactionDisplayProps = {
 export const PaymentTransactionDisplay = ({
     transaction,
 }: PaymentTransactionDisplayProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
     const { closeToAddress, closeAmountValue } =

@@ -11,11 +11,13 @@
  */
 
 import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
-import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
+import {
+    ALGORAND_CHAIN_ID,
+    chainModule as algorandChainModule,
+} from '@perawallet/wallet-core-chain-algorand'
 import {
     buildChainSetup,
     CHAIN_IDS,
-    LEGACY_CHAIN_ID,
     registerChainSetup,
     type ChainCapabilityOverrides,
     type ChainContext,
@@ -129,5 +131,5 @@ export const registerChainAdapters = (): void => {
     void rehydrateAccountsStore()
     // Sign requests persisted before requests named their chain were all
     // Algorand ones.
-    void rehydrateSigningStore({ unstampedRequestChainId: LEGACY_CHAIN_ID })
+    void rehydrateSigningStore({ unstampedRequestChainId: ALGORAND_CHAIN_ID })
 }

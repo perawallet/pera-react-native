@@ -27,15 +27,12 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/card-sensitive', () => api)
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardPinViewMutation } from '../useCardPinViewMutation'
 import { useSetCardPinMutation } from '../useSetCardPinMutation'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'algorand', networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

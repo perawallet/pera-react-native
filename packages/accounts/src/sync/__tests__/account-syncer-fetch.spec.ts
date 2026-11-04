@@ -144,7 +144,11 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined, addedTokenIds: [] },
+            {
+                priorChainState: undefined,
+                addedTokenIds: [],
+                isPersisted: true,
+            },
         )
         expect(mockUpsertAccountChainState).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
@@ -240,7 +244,7 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState, addedTokenIds: [] },
+            { priorChainState, addedTokenIds: [], isPersisted: true },
         )
     })
 
@@ -376,7 +380,11 @@ describe('ensureAccountFetched', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined, addedTokenIds: [] },
+            {
+                priorChainState: undefined,
+                addedTokenIds: [],
+                isPersisted: true,
+            },
         )
     })
 

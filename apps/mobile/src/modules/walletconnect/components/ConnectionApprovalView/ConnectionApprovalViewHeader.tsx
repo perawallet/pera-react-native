@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWIcon,
@@ -30,6 +27,7 @@ import {
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { ProjectVerificationIcon } from '@modules/projects'
 import type { ConnectionPermission } from '../../utils/connectionPermissions'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
@@ -74,7 +72,7 @@ export const ConnectionApprovalViewHeader = ({
     verifiedOriginLabel,
     hasSiteWarning = false,
 }: ConnectionApprovalViewHeaderProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const styles = useStyles()
     const { t } = useLanguage()
 

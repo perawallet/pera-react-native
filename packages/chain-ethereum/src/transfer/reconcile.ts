@@ -43,6 +43,10 @@ import {
     type SubmissionSettledHandler,
 } from '@perawallet/wallet-core-signing'
 import type { EvmChain, EvmChainRow } from '../chains/types'
+import {
+    receivedTokenIdsOf,
+    type TokenSightings,
+} from '../accounts/token-detection'
 import { readReceipt } from './receipt'
 import { isTransactionKnownToNode } from './submission'
 
@@ -266,6 +270,8 @@ export type ReconcileEthereumSubmissionsParams = {
     settleHandlers: SubmissionSettledHandlers
     probeFailures: ProbeFailureStreaks
     getClient: (scope: ChainScope) => PublicClient
+    /** Told which tokens a mined send's receipt delivered back to the sender, so the next account read includes them. */
+    tokenSightings?: TokenSightings
     db?: Database
     limit?: number
 }
@@ -279,6 +285,7 @@ export const reconcileEthereumSubmissions = async ({
     settleHandlers,
     probeFailures,
     getClient,
+    tokenSightings,
     db,
     limit = DEFAULT_PASS_LIMIT,
 }: ReconcileEthereumSubmissionsParams): Promise<ReconcileSummary> => {
@@ -344,6 +351,23 @@ export const reconcileEthereumSubmissions = async ({
                 }
                 summary.probed++
                 let verdict = await probe(attempt, context)
+                if (
+                    tokenSightings &&
+                    attempt.sender !== null &&
+                    (verdict === 'confirming' || verdict === 'confirmed')
+                ) {
+                    // Cached by the probe, so this reads nothing more.
+                    const receipt = await context.receiptOf(
+                        attempt.txIds[0] as Hex,
+                    )
+                    if (receipt) {
+                        tokenSightings.record(
+                            scope,
+                            attempt.sender,
+                            receivedTokenIdsOf(receipt.logs, attempt.sender),
+                        )
+                    }
+                }
                 if (verdict === null) {
                     probeFailures.delete(attempt.id)
                     return

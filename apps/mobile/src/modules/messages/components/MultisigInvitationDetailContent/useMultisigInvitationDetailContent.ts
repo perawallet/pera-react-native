@@ -19,8 +19,8 @@ import {
     chainAccountOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
@@ -48,7 +48,7 @@ export const useMultisigInvitationDetailContent = ({
 }: UseMultisigInvitationDetailContentParams): UseMultisigInvitationDetailContentResult => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const accounts = useAllAccounts()
     const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
@@ -65,7 +65,7 @@ export const useMultisigInvitationDetailContent = ({
     const isUserIncluded = useMemo(() => {
         const participantSet = new Set(renderedInvitation.participantAddresses)
         return accounts.some(a => {
-            const address = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+            const address = chainAccountOf(a, ALGORAND_CHAIN_ID)?.address
             return address !== undefined && participantSet.has(address)
         })
     }, [accounts, renderedInvitation])

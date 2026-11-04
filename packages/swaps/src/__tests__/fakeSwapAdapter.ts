@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { Decimal } from 'decimal.js'
 import { swapChainAdapters, type SwapChainAdapter } from '../chain-adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { fakeCaip2Of, fakeRouterAssetId } from './fakeRouterChains'
 
 export const FAKE_NATIVE_ASSET_ID = 'native'
@@ -26,7 +25,7 @@ export const FAKE_RECEIVE_ASSET_ID = 'receive'
 export const fakeSwapAdapter = (
     overrides: Partial<SwapChainAdapter> = {},
 ): SwapChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     nativeAssetId: FAKE_NATIVE_ASSET_ID,
     defaultReceiveAssetId: FAKE_RECEIVE_ASSET_ID,
     swapExplorerUrl: vi.fn(),
@@ -66,7 +65,7 @@ export const registerFakeBroadcaster = (
 ): BroadcasterChainAdapter['submit'] => {
     broadcasterChainAdapters.reset()
     broadcasterChainAdapters.register({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: 'algorand',
         submit,
     } as BroadcasterChainAdapter)
     return submit

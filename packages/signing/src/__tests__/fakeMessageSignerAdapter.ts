@@ -11,7 +11,6 @@
  */
 
 import { vi } from 'vitest'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { messageSignerChainAdapters } from '../chain-adapter'
 import type {
     AuthDataSigner,
@@ -45,7 +44,7 @@ export const fakeMessageSignerAdapter = ({
     authData,
     ...overrides
 }: FakeMessageSignerOverrides = {}): MessageSignerChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     canSign: vi.fn(() => true),
     signsVerifiably: vi.fn(() => true),
     supports: vi.fn(() => true),

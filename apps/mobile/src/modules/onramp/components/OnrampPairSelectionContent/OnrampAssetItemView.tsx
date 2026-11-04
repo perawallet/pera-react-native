@@ -42,6 +42,7 @@ export const OnrampAssetItemView = ({
     return (
         <AccountAssetItemView
             accountBalance={accountBalance}
+            scope={scope}
             logoUrl={token.logo ?? undefined}
             showBalance={balance !== null}
             {...rest}

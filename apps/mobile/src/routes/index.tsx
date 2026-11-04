@@ -13,7 +13,7 @@
 import { NavigationContainer } from '@react-navigation/native'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
@@ -76,7 +76,7 @@ export const MainRoutes = () => {
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
-    const rekeyRequirement = rekeyRequirementFor(LEGACY_CHAIN_ID)
+    const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
 
     return (
         <NavigationContainer

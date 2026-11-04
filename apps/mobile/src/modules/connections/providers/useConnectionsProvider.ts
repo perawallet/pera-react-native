@@ -12,10 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { signingAccountAddressesOn } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -33,6 +30,7 @@ import { isAppLocked, whenAppUnlocked } from '@perawallet/wallet-core-security'
 import { assessSiteSafety } from '@perawallet/wallet-core-site-safety'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     clearActiveWalletConnectV1Delivery,
     setActiveWalletConnectV1Delivery,
@@ -69,7 +67,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         // blockchain package into every importer's graph, `apps/browser`
         // included.
         const v1Handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             getNetworkId,
         })
         registry.register(v1Handler)
@@ -112,7 +110,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
 
     const confirmNetworkSwitch = useNetworkSwitchPrompt()
     const showTransaction = useShowDappTransaction()
-    useConnectionSigningAdapter(registry, LEGACY_CHAIN_ID, {
+    useConnectionSigningAdapter(registry, ALGORAND_CHAIN_ID, {
         confirmNetworkSwitch,
         showTransaction,
     })

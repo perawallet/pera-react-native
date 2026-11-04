@@ -17,7 +17,6 @@
 import {
     CUSTOM_NETWORK_ID,
     isLegacyNetwork,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type NetworkId,
     type WalletMode,
@@ -25,6 +24,11 @@ import {
 import { isCustomNetworkConfig } from '@perawallet/wallet-core-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
+// chain-shared can't import a chain package. The pre-mode blobs held a single
+// network, Algorand's, and Algorand's override is the one hydrate checks.
+// lanekeep-ignore-next-line pera/no-algorand-terms-in-chain-neutral-packages reason: the pre-mode blobs persisted this chain's selection under this value
+export const PRE_MODE_CHAIN_ID = 'algorand' satisfies ChainId
 
 // Folded in on hydrate, never written. Kept on disk so a crash mid-migration
 // or a downgraded build still finds the config.
@@ -48,10 +52,10 @@ export const withLegacyOverride = (
     overrides: Overrides,
     legacyOverride: Optional<NetworkId>,
 ): Overrides => {
-    const { [LEGACY_CHAIN_ID]: _dropped, ...rest } = overrides
+    const { [PRE_MODE_CHAIN_ID]: _dropped, ...rest } = overrides
     return legacyOverride === undefined
         ? rest
-        : { ...rest, [LEGACY_CHAIN_ID]: legacyOverride }
+        : { ...rest, [PRE_MODE_CHAIN_ID]: legacyOverride }
 }
 
 /**
@@ -90,10 +94,10 @@ export const readLegacyCustomNetworks = (): unknown[] => {
 
 const migrateV1 = (persisted: unknown): unknown => ({
     selectedNetworkByChain: {
-        [LEGACY_CHAIN_ID]: (persisted as Nullable<{ network?: unknown }>)
+        [PRE_MODE_CHAIN_ID]: (persisted as Nullable<{ network?: unknown }>)
             ?.network,
     },
-    customNetworksByChain: { [LEGACY_CHAIN_ID]: readLegacyCustomNetworks() },
+    customNetworksByChain: { [PRE_MODE_CHAIN_ID]: readLegacyCustomNetworks() },
 })
 
 /**
@@ -105,7 +109,7 @@ const migrateV2 = (persisted: unknown): unknown => {
         selectedNetworkByChain?: Record<string, unknown>
         customNetworksByChain?: unknown
     }
-    const entry = state.selectedNetworkByChain?.[LEGACY_CHAIN_ID]
+    const entry = state.selectedNetworkByChain?.[PRE_MODE_CHAIN_ID]
     if (typeof entry !== 'string') {
         return {
             selectedNetworkByChain: state.selectedNetworkByChain,

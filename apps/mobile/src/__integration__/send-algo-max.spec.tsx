@@ -39,7 +39,6 @@ import {
     useAccountChainStateStore,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
     mockAlgodAccountInformation,
@@ -49,6 +48,7 @@ import {
     mockIndexerSearchForAccounts,
     mockTransactionHistory,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { UserPreferences } from '@constants/user-preferences'
 
 import { useSendFundsStore } from '@modules/transactions'
@@ -134,7 +134,7 @@ describe('Flow: Send the maximum ALGO amount', () => {
         await seedAlgo25Signer()
         useSendFundsStore
             .getState()
-            .setSelectedAsset({ chainId: LEGACY_CHAIN_ID, assetId: '0' })
+            .setSelectedAsset({ chainId: ALGORAND_CHAIN_ID, assetId: '0' })
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
 
         server.use(

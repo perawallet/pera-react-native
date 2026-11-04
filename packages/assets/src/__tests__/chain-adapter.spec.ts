@@ -13,7 +13,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -52,7 +51,7 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
 
         expect(
             assetsAdapterFor({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const),
         ).toBe(adapter)
@@ -86,7 +85,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ syncAssets })
 
         await fetchAndPersistAssets(['1', '2'], {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
 
@@ -104,7 +103,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ getAssetMetadata })
 
         const asset = await fetchAssetMetadata('7', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -126,7 +125,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ fetchAssetAuthorities: member })
 
         const result = await fetchAssetAuthorities('7', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -142,7 +141,7 @@ describe('scope wrappers', () => {
 
         await expect(
             fetchAssetAuthorities('7', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).resolves.toEqual({
@@ -159,7 +158,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ search })
 
         const result = await searchAssets({ query: 'usdc', cursor: 'C1' }, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -174,7 +173,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ search: undefined })
 
         const rejection = searchAssets({ query: 'usdc' }, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -189,7 +188,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ fetchOnChainAsset: fetchOnChain })
 
         const asset = await fetchOnChainAsset('7', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -206,7 +205,7 @@ describe('searchAssetsAcrossScopes', () => {
         useAssetSearchAvailabilityStore.getState().resetState()
     })
 
-    const ALGORAND = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+    const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
     const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
     const asset = (assetId: string): DisplayableAsset => ({ assetId })
     const registerBoth = (
@@ -495,37 +494,37 @@ describe('with no adapter registered', () => {
 
         await expect(
             fetchAndPersistAssets(['1'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchOnChainAsset('1', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAssetMetadata('1', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAssetAuthorities('1', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             searchAssets({ query: 'a' }, {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAndPersistPrices(['1'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)

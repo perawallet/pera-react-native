@@ -19,8 +19,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     queryClient: queryClientMock,
 }))
 
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { fetchAlgorandChangeSignal } from '../change-signal'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 describe('fetchAlgorandChangeSignal', () => {
     beforeEach(() => {
@@ -40,7 +40,10 @@ describe('fetchAlgorandChangeSignal', () => {
 
         expect(queryClientMock).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const,
             method: 'POST',
             url: '/v1/accounts/should-refresh/',
             data: {

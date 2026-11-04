@@ -61,6 +61,13 @@ export class EvmRpcErrorFixture {
     ) {}
 }
 
+/** A call that burns the gas of any Multicall3 aggregate naming it, so the aggregate fails as a whole even where the call allows failure. */
+export class EvmCallBurnsGas extends EvmRpcErrorFixture {
+    constructor() {
+        super(-32_000, 'out of gas')
+    }
+}
+
 type Outcome<M extends EvmRpcMethod> = EvmRpcResults[M] | EvmRpcErrorFixture
 
 export type EvmRpcResponder<M extends EvmRpcMethod> =
@@ -229,6 +236,7 @@ const answerAggregate3 = (
                 blockTag,
             ])
         }
+        if (outcome instanceof EvmCallBurnsGas) return outcome
         if (outcome instanceof EvmRpcErrorFixture) {
             if (!allowFailure) return revert()
             results.push({ success: false, returnData: '0x' })

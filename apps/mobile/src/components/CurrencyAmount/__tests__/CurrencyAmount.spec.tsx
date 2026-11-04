@@ -16,8 +16,8 @@ import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { CurrencyAmount, getAlgoSymbolWeight } from '../CurrencyAmount'
 import { PREFERRED_MAX_PRECISION } from '../precision'
 import { Decimal } from 'decimal.js'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSettings } from '@perawallet/wallet-core-settings'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { TypographyVariant } from '@theme/typography'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import {
@@ -74,7 +74,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('0.5')}
                 currency='ALGO'
                 assetId='0'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='preferredFull'
                 sign='-'
             />,
@@ -90,7 +90,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal(1000)}
                 currency='HIPO'
                 assetId='123456'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
                 sign='+'
             />,
@@ -106,7 +106,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('0.001')}
                 currency='ALGO'
                 assetId='0'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='preferredFull'
             />,
         )
@@ -121,7 +121,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('8.817812345')}
                 currency='USDC'
                 assetId='31566704'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='assetFull'
                 assetDecimals={6}
             />,
@@ -278,7 +278,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.004')}
                 currency='ALGO'
                 assetId='0'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -342,7 +342,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='ALGO'
                 assetId='987654321'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -357,7 +357,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='ALGO'
                 assetId='987654321'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
                 symbolPosition='end'
             />,
@@ -372,7 +372,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='USD'
                 assetId='987654321'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -401,7 +401,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1)}
                 currency='ALGO'
                 assetId=''
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -458,7 +458,7 @@ describe('CurrencyAmount isInline', () => {
             value: new Decimal('1234.5'),
             currency: 'USDC',
             assetId: '31566704',
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             precision: 'assetFull',
             assetDecimals: 6,
             symbolPosition: 'end',
@@ -482,7 +482,7 @@ describe('CurrencyAmount isInline', () => {
             value: new Decimal('1234.5'),
             currency: 'ALGO',
             assetId: '0',
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             precision: 'assetFull',
             assetDecimals: 6,
         } as const
@@ -508,7 +508,7 @@ describe('CurrencyAmount isInline', () => {
                 value={new Decimal(1)}
                 currency='USDC'
                 assetId='31566704'
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 precision='compact'
                 isLoading
                 isInline

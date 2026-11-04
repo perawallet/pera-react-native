@@ -39,9 +39,8 @@ import {
     EMPTY_ALGORAND_HISTORY_DATA,
     type AlgorandHistoryData,
 } from '../history-data'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const testnet = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('algorandSendFlowAdapter', () => {
     it('serves the Algorand chain with every optional feature', () => {

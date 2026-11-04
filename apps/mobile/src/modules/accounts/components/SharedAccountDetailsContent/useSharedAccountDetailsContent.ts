@@ -15,8 +15,8 @@ import {
     chainAccountOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
@@ -43,7 +43,7 @@ export const useSharedAccountDetailsContent = (
         () =>
             new Set(
                 accounts.flatMap(
-                    a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address ?? [],
+                    a => chainAccountOf(a, ALGORAND_CHAIN_ID)?.address ?? [],
                 ),
             ),
         [accounts],

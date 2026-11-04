@@ -25,7 +25,7 @@ import {
     pickBestByAmountOut,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useSwapExecution, useSwapQuotes } from '@modules/swap'
 import { useCardScope } from '../../hooks/useCardScope'
 
@@ -99,7 +99,7 @@ export const useCardAddFundsSwap = ({
         scope: cardScope,
         enabled,
         swapperAddress:
-            (account && chainAccountOf(account, LEGACY_CHAIN_ID)?.address) ??
+            (account && chainAccountOf(account, ALGORAND_CHAIN_ID)?.address) ??
             null,
         fromAssetId: sourceAssetId,
         toAssetId: usdcAssetId,

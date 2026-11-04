@@ -311,6 +311,9 @@ patchedDependencies:
   '@react-native-firebase/crashlytics@27.0.0':
     hash: cd7e7789f13515bad2f44c54f500e6349cfbb823cee67abec6537eb4e6043206
     path: patches/@react-native-firebase__crashlytics@27.0.0.patch
+  '@walletconnect/jsonrpc-provider@1.0.14':
+    hash: 2ef4eedc2eabcd66ab6069b87154f335141fe1ed2861fadb60274d13e0360145
+    path: patches/@walletconnect__jsonrpc-provider@1.0.14.patch
   falcon-1024@0.2.0:
     hash: 98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a
     path: patches/falcon-1024@0.2.0.patch
@@ -14718,7 +14721,7 @@ snapshots:
   '@reown/walletkit@1.6.0(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@walletconnect/core': 2.25.0(typescript@7.0.2)(zod@4.6.7)
-      '@walletconnect/jsonrpc-provider': 1.0.14
+      '@walletconnect/jsonrpc-provider': 1.0.14(patch_hash=2ef4eedc2eabcd66ab6069b87154f335141fe1ed2861fadb60274d13e0360145)
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/logger': 3.0.2
       '@walletconnect/pay': 1.1.0(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(typescript@7.0.2)(zod@4.6.7)
@@ -15275,7 +15278,7 @@ snapshots:
   '@walletconnect/core@2.25.0(typescript@7.0.2)(zod@4.6.7)':
     dependencies:
       '@walletconnect/heartbeat': 1.2.2
-      '@walletconnect/jsonrpc-provider': 1.0.14
+      '@walletconnect/jsonrpc-provider': 1.0.14(patch_hash=2ef4eedc2eabcd66ab6069b87154f335141fe1ed2861fadb60274d13e0360145)
       '@walletconnect/jsonrpc-types': 1.0.4
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/jsonrpc-ws-connection': 1.0.16
@@ -15331,7 +15334,7 @@ snapshots:
       '@walletconnect/time': 1.0.2
       events: 3.3.0
 
-  '@walletconnect/jsonrpc-provider@1.0.14':
+  '@walletconnect/jsonrpc-provider@1.0.14(patch_hash=2ef4eedc2eabcd66ab6069b87154f335141fe1ed2861fadb60274d13e0360145)':
     dependencies:
       '@walletconnect/jsonrpc-utils': 1.0.8
       '@walletconnect/safe-json': 1.0.2

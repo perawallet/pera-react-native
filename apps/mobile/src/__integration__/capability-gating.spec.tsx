@@ -39,7 +39,7 @@ import { RekeyOptionsContent } from '@modules/algorand/components/RekeyOptionsCo
 const ACCOUNT = {
     id: 'a1',
     custody: { kind: 'local', seed: null },
-    chains: { algorand: { address: 'A'.repeat(58) } },
+    chains: { algorand: { address: 'A'.repeat(58), keyPairId: 'a1-key' } },
 } as WalletAccount
 
 const PanelScreen = () => (

@@ -11,12 +11,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { render, screen } from '@test-utils/render'
 import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AssetIcon } from '../AssetIcon'
 
 describe('AssetIcon', () => {
@@ -32,7 +32,7 @@ describe('AssetIcon', () => {
         render(
             <AssetIcon
                 asset={{ assetId: '0', name: 'Algo', unitName: 'ALGO' }}
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 testID='icon'
             />,
         )

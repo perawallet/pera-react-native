@@ -42,7 +42,6 @@ import {
 } from '../../connection/connectorRegistry'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
 import { toPeer } from '../../shared/peer'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Spied, not replaced: the point is proving the handler reaches the one
 // shared implementation rather than carrying its own.
@@ -226,7 +225,7 @@ const V1_URI =
 const testGetNetworkId = () => 'mainnet' as const
 
 const algorandScope = (networkId: string) =>
-    ({ chainId: LEGACY_CHAIN_ID, networkId }) as const
+    ({ chainId: 'algorand', networkId }) as const
 
 const SIGN_TXN_FRAME = { id: 7, params: [[{ txn: 'dHhu' }]] }
 
@@ -256,7 +255,7 @@ describe('walletconnect v1 handler contract', () => {
         'walletconnect-v1',
         () =>
             createWalletConnectV1Handler({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
@@ -308,7 +307,7 @@ describe('walletconnect v1 handler specifics', () => {
     it('declines a v1 URI with no bridge — the v1 client throws on those', () => {
         expect(
             createWalletConnectV1Handler({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 getNetworkId: testGetNetworkId,
                 sessionKeys,
             }).canHandleUri('wc:topic@1?key=beef'),
@@ -317,7 +316,7 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('accepts only https/wss bridges — the client turns any other bridge into an attacker-chosen socket', () => {
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })
@@ -365,7 +364,7 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('reports the topic and bridge origin but never the key', () => {
         const described = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         }).describeUri(V1_URI)
@@ -378,7 +377,7 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('treats the 4160 wildcard as matching every network', () => {
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })
@@ -410,7 +409,7 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('binds a specific chainId to exactly one network', () => {
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })
@@ -445,7 +444,7 @@ describe('walletconnect v1 handler specifics', () => {
         // silently mislabels betanet and custom, which is why matchesChainScope
         // delegates to getExpectedChainId, which lists every network.
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })
@@ -481,7 +480,7 @@ describe('walletconnect v1 handler specifics', () => {
 
     it('rejects a request whose chain id is missing rather than guessing', () => {
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })
@@ -567,7 +566,7 @@ describe('walletconnect v1 handler behaviour', () => {
             onError,
         }
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
             answeredRequests,
@@ -857,7 +856,7 @@ describe('walletconnect v1 handler behaviour', () => {
         const store = memoryStore()
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
         })
         await handler.initialize({
@@ -1063,7 +1062,7 @@ describe('walletconnect v1 handler behaviour', () => {
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
@@ -1233,7 +1232,7 @@ describe('walletconnect v1 handler behaviour', () => {
     it('answers algo_getEmptySignatures for the session accounts without prompting', async () => {
         keys.set('c1', 'restored-key')
         const adapter = dappRequestAdapterFor({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: testGetNetworkId(),
         } as const)
         if (!adapter) throw new Error('no Algorand adapter registered')
@@ -1421,7 +1420,7 @@ describe('walletconnect v1 handler behaviour', () => {
         // connector's own listener and escapes as an unhandled rejection —
         // which vitest fails the file for, so this test is the guard.
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })
@@ -1575,7 +1574,7 @@ describe('walletconnect v1 handler behaviour', () => {
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
@@ -1602,7 +1601,7 @@ describe('walletconnect v1 handler behaviour', () => {
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
             createWalletConnectV1Handler({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 getNetworkId: testGetNetworkId,
                 sessionKeys,
             }),
@@ -1670,7 +1669,7 @@ describe('walletconnect v1 handler behaviour', () => {
 
     it('re-initialising without a teardown replaces the sweep instead of stacking it', async () => {
         const handler = createWalletConnectV1Handler({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             getNetworkId: testGetNetworkId,
             sessionKeys,
         })

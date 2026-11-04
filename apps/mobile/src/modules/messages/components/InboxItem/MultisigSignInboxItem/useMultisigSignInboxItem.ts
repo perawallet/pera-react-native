@@ -11,11 +11,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { deploymentOf } from '@perawallet/wallet-core-config'
@@ -30,6 +26,7 @@ import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { IconName } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getSignedResponseCount } from '@modules/multisig'
@@ -75,7 +72,7 @@ export const useMultisigSignInboxItem = (
     item: MultisigSignItem,
 ): UseMultisigSignInboxItemResult => {
     const isDark = useIsDarkMode()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
 
     const avatarIcon: IconName = isDark

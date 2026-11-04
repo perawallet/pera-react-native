@@ -13,16 +13,13 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { CardChainAdapter } from '../../chain-adapter'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { useEscrowWithdrawal } from '../useEscrowWithdrawal'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'algorand', networkId: 'testnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 const CARD = 'CARD'

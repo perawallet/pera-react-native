@@ -15,7 +15,7 @@ import { Trans } from 'react-i18next'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { config } from '@perawallet/wallet-core-config'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
@@ -26,7 +26,7 @@ import { useStyles } from './styles'
 import { useUndoRekeyConfirmScreen } from './useUndoRekeyConfirmScreen'
 
 export const UndoRekeyConfirmScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()

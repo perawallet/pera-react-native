@@ -21,7 +21,6 @@ import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandDescriptor } from '../../descriptor'
 import { algorandSwapAdapter } from '../adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     explorerUrl: 'https://explorer.test' as string | undefined,
@@ -53,7 +52,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
 
 const params = { quote: { quoteId: 'q' } } as unknown as ExecuteSwapParams
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 
 const context: SwapExecutionContext = {
     scope,
@@ -136,7 +135,7 @@ describe('algorandSwapAdapter', () => {
 
     it('has no router id on a network the router does not name', () => {
         const custom = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'custom',
         } as const
 

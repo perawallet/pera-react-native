@@ -22,9 +22,9 @@ import {
     useAllAccounts,
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
+import { isChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSendFundsDeeplink } from '@modules/deeplink'
 import { useCapability } from '@hooks/useCapability'
 import { useToast } from '@hooks/useToast'
@@ -48,7 +48,9 @@ const toFreshIntent = (value: unknown, now: number): Nullable<StoredIntent> => {
     const record = value as Nullable<Partial<Record<string, unknown>>>
     if (!record || typeof record.createdAt !== 'number') return null
     if (now - record.createdAt > TAB_RESUME_MAX_AGE_MS) return null
-    if (!isString(record.accountAddress)) return null
+    if (!isString(record.accountAddress) || !isChainId(record.chainId)) {
+        return null
+    }
     if (
         record.flow === 'swap' &&
         isString(record.assetInId) &&
@@ -95,7 +97,7 @@ export const useTabResume = (
             if (!intent) return
             const account = findAccountByAddressOn(
                 accounts,
-                LEGACY_CHAIN_ID,
+                intent.chainId,
                 intent.accountAddress,
             )
             if (!account) return
@@ -131,9 +133,9 @@ export const useTabResume = (
                 })
                 return
             }
-            // The intent's account is looked up on the legacy chain above.
+            // The intent's account is looked up on the chain the flow ran on.
             openSendFunds({
-                asset: { chainId: LEGACY_CHAIN_ID, assetId: intent.assetId },
+                asset: { chainId: intent.chainId, assetId: intent.assetId },
                 destination: intent.destination,
                 amount: new Decimal(intent.amount),
                 note: intent.note,

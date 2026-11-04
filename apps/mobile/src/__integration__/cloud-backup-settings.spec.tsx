@@ -18,7 +18,6 @@ import {
     useNetworkStore,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     SETTINGS_ITEM_ID,
     deriveBackupKeys,
@@ -43,6 +42,7 @@ import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import {
     BACKUP_MNEMONIC,
@@ -75,18 +75,18 @@ const setupSyncedBackup = async () => {
     server.use(...handlers)
 
     const importHook = renderQueryHook(() =>
-        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+        useCloudBackupImport(useSelectedScope(ALGORAND_CHAIN_ID)),
     )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
     const mnemonicHook = renderQueryHook(() =>
-        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+        useResolveMnemonicForBackup(ALGORAND_CHAIN_ID),
     )
 
     const manager = initializeBackupSyncManager({
-        chainId: LEGACY_CHAIN_ID,
-        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
+        chainId: ALGORAND_CHAIN_ID,
+        sources: createBackupSyncStoreSources(ALGORAND_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,

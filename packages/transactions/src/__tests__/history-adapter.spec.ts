@@ -13,7 +13,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
     type ChainScope,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
@@ -60,7 +59,7 @@ describe('history adapter wrappers', () => {
 
         const result = await fetchTransactionHistory({
             accountAddress: 'ADDR',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             afterTime: '2026-01-01',
         })
 
@@ -68,7 +67,7 @@ describe('history adapter wrappers', () => {
         expect(adapter.fetchHistory).toHaveBeenCalledWith({
             accountAddress: 'ADDR',
             afterTime: '2026-01-01',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
         })
     })
 
@@ -78,12 +77,12 @@ describe('history adapter wrappers', () => {
 
         await fetchMoreTransactions({
             url: 'NEXT',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         })
 
         expect(adapter.fetchMoreHistory).toHaveBeenCalledWith({
             url: 'NEXT',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         })
     })
 
@@ -138,12 +137,12 @@ describe('history adapter wrappers', () => {
         historyChainAdapters.register(makeAdapter({ healCachedRows: repair }))
 
         await healCachedRows('ADDR', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
 
         expect(repair).toHaveBeenCalledWith({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             accountAddress: 'ADDR',
         })
     })
@@ -157,7 +156,7 @@ describe('history adapter wrappers', () => {
 
         await expect(
             healCachedRows('ADDR', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).resolves.toBeUndefined()
@@ -168,7 +167,7 @@ describe('history adapter wrappers', () => {
 
         await expect(
             healCachedRows('ADDR', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).resolves.toBeUndefined()
@@ -179,7 +178,7 @@ describe('history adapter wrappers', () => {
             fetchTransactionHistory({
                 accountAddress: 'A',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             }),

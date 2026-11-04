@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => [],
-        useSigningAccounts: () => mockSigningAccounts.current,
+        useSigningAccountsOnAnyChain: () => mockSigningAccounts.current,
     }
 })
 
@@ -156,7 +156,7 @@ describe('useFundPicker', () => {
 })
 
 describe('useSigningPicker', () => {
-    it('only lists the accounts useSigningAccounts returns', () => {
+    it('only lists the accounts useSigningAccountsOnAnyChain returns', () => {
         mockSigningAccounts.current = [{ id: 'A' }]
 
         const { result } = renderHook(() => useSigningPicker())

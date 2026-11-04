@@ -21,7 +21,7 @@ export const CHAIN_IDS = [
     'polygon',
 ] as const
 
-// An app pins the legacy chain at its own call sites, so a chain id literal
+// An app names a chain at its own call sites, so a chain id literal
 // there is fine; branching on one is not.
 const APP_SOURCE = /(^|\/)apps\/[^/]+\/src\//
 
@@ -109,9 +109,14 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Drops whichever chain was added most recently, never a named chain.',
     },
     {
-        file: 'packages/accounts/src/credentials/accessors.ts',
-        text: 'scope.chainId !== LEGACY_CHAIN_ID',
-        reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
+        file: 'packages/chain-shared/src/store/legacy-network.ts',
+        text: "'algorand'",
+        reason: "The pre-mode network blobs held only Algorand's selection, and Algorand's override is the one hydrate checks.",
+    },
+    {
+        file: 'packages/assets/src/models/assets.ts',
+        text: "'algorand'",
+        reason: "USDC's known ids are Algorand ASA ids, keyed by Algorand's scope.",
     },
     {
         file: 'packages/signing/src/hooks/usePlannerHook.ts',
@@ -192,6 +197,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/search/src/hooks/useGlobalSearch.ts',
         text: "'base'",
         reason: "Intl.Collator's sensitivity option, not a ChainId.",
+    },
+    {
+        file: 'apps/mobile/src/modules/dapp/screens/WcConnectScreen/useWcConnectScreen.ts',
+        text: 'chainId === home.chainId',
+        reason: "Asks whether the proposal is on the wallet's home chain, whose network the testnet indicator already names; compares two passed values, never a named chain.",
     },
     {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',

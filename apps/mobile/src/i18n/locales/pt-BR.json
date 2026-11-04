@@ -95,7 +95,9 @@
         "display_nfts": "Exibir NFTs na lista de ativos",
         "display_nfts_description": "Os NFTs serão exibidos na lista de ativos da sua conta",
         "display_opted_in_nfts": "Exibir NFTs adicionados",
-        "display_opted_in_nfts_description": "Você pode exibir ou ocultar NFTs que foram adicionados, mas que você não possui"
+        "display_opted_in_nfts_description": "Você pode exibir ou ocultar NFTs que foram adicionados, mas que você não possui",
+        "show_suspicious": "Exibir ativos suspeitos",
+        "show_suspicious_description": "Exibe os tokens que a Pera marcou como possível spam ou golpe. Eles nunca entram no seu saldo"
     },
     "add_asset": {
         "title": "Adicionar um ativo",
@@ -266,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Excluído)"
+        "deleted_label": "(Excluído)",
+        "unverified_label": "Não verificado"
     },
     "asset_details": {
         "about": {
@@ -3646,7 +3649,6 @@
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
             "function_selector": "Seletor de função",
             "call_data": "Dados da chamada",
-            "advanced": "Avançado",
             "unchecked_warning": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar em {{domain}}.",
             "unchecked_warning_no_source": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar no app que a enviou."
         },
@@ -4827,6 +4829,13 @@
             "fee_share": "{{percent}} do resultado da conversão",
             "fee_recipient": "Paga para",
             "base_units": "unidades base"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Limite de gas",
+            "max_fee_per_gas": "Taxa máxima por gas",
+            "max_priority_fee_per_gas": "Taxa de prioridade máxima por gas"
         },
         "known_contract": {
             "title": "Contrato",

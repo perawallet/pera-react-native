@@ -13,7 +13,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
     EVM_CHAIN_NETWORKS,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
     type NetworkId,
@@ -39,7 +38,7 @@ import {
 } from '../network-config'
 
 const algorandScope = (networkId: NetworkId) =>
-    ({ chainId: LEGACY_CHAIN_ID, networkId }) as const
+    ({ chainId: 'algorand', networkId }) as const
 
 // A chain id outside the compiled-in union, standing in for a chain package
 // that is not built in.

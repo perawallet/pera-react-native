@@ -30,14 +30,12 @@ import {
     type WalletDiscoveryProgress,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useDelegationScanNoticeResult,
@@ -78,7 +76,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { errorToast } = useToast()
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { discoverImportAccounts, cancelImport } = useHDImportSession(scope)
     const { scanRekeyed } = useDelegationScanNoticeResult()
     const { rescanHdWallet } = useHdWalletRescan()

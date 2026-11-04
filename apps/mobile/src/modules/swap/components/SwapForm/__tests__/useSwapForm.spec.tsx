@@ -771,6 +771,7 @@ describe('useSwapForm', () => {
             mockRequestBottomSheet.mockImplementationOnce(async () => {
                 expect(mockRegisterTabResume).toHaveBeenCalledWith({
                     flow: 'swap',
+                    chainId: 'algorand',
                     accountAddress: 'TESTADDRESS123',
                     assetInId: '0',
                     assetOutId: '31566704',

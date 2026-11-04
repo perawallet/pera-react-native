@@ -70,7 +70,7 @@ export type ImportFlowParamList = {
         account?: WalletAccount
         /** Override the post-naming destination (defaults to exit-to-Home). */
         returnTo?: PostCreateReturnTarget
-        /** The chain whose address names the account; defaults to the legacy chain. */
+        /** The chain whose address names the account; defaults to the home chain. */
         chainId?: ChainId
     }>
     ImportSelectAddresses: ImportSelectAddressesParams
@@ -158,10 +158,12 @@ export type OnboardingStackParamList = ImportFlowParamList & {
 export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
     AddAccountOptions: { chainId: ChainId }
-    SelectHDWallet: Optional<{
+    SelectHDWallet: {
+        /** The chain the new account is created on. */
+        chainId: ChainId
         /** Forwarded to NameAccount so the caller's flow can resume after naming. */
         returnTo?: PostCreateReturnTarget
-    }>
+    }
     WatchInfo: undefined
     WatchAccount: Optional<{
         // Set by the watch-account / register-watch-account deeplinks so the

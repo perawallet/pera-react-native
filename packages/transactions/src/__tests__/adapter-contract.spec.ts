@@ -12,7 +12,6 @@
 
 import { toAssetInboxQuote, type SendFlowChainAdapter } from '../chain-adapter'
 import { sendFlowContractTests } from './adapter-contract'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const isQuote = (quote: object): boolean => 'fee' in quote
 
@@ -33,7 +32,7 @@ const adapter: SendFlowChainAdapter = {
 describe('an adapter with an asset inbox', () => {
     sendFlowContractTests(() => adapter, {
         inboxSend: {
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             sender: 'SENDER',
             receiver: 'RECEIVER',
             assetId: 1n,

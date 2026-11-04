@@ -16,11 +16,9 @@ import {
     getAssetTransferType,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useMemo } from 'react'
 
 export const useAssetTransferSummaryHeader = (
@@ -60,7 +58,7 @@ export const useAssetTransferSummaryHeader = (
         return transaction.assetTransferTransaction?.amount ?? 0n
     }, [transaction])
 
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { data: asset } = useSingleAssetDetailsQuery(assetId, scope)
 
     const amount = useMemo(() => {

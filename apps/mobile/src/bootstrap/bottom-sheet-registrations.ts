@@ -80,7 +80,7 @@ declare module '@modules/bottom-sheet' {
         }
         'asset-opt-in-account-selection': {
             highlightedAddress?: string
-            chainId?: ChainId
+            chainId: ChainId
         }
         'account-actions': {
             address: string

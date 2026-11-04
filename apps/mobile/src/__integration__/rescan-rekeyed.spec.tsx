@@ -36,9 +36,9 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { DelegatedSweepSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/DelegatedSweepSelectScreen'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -174,7 +174,7 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
         imported.forEach(account => {
             expect(account.custody).toEqual({ kind: 'watch' })
             expect(
-                authorityOf(account, getSelectedScope(LEGACY_CHAIN_ID)),
+                authorityOf(account, getSelectedScope(ALGORAND_CHAIN_ID)),
             ).toBe(ALGO25_TEST_ADDRESS)
         })
     })
@@ -222,9 +222,9 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
             .getState()
             .accounts.find(a => addressOf(a) === HD_TEST_ADDRESS)
         expect(imported?.custody).toEqual({ kind: 'watch' })
-        expect(authorityOf(imported!, getSelectedScope(LEGACY_CHAIN_ID))).toBe(
-            ALGO25_TEST_ADDRESS,
-        )
+        expect(
+            authorityOf(imported!, getSelectedScope(ALGORAND_CHAIN_ID)),
+        ).toBe(ALGO25_TEST_ADDRESS)
     })
 
     it('Given the indexer reports no rekeyed accounts, when the screen scans, then the empty state renders', async () => {

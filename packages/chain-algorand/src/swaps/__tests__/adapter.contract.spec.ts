@@ -13,8 +13,8 @@
 import { vi } from 'vitest'
 import type { ExecuteSwapParams } from '@perawallet/wallet-core-swaps'
 import { swapContractTests } from '@perawallet/wallet-core-swaps/testing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandSwapAdapter } from '../adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The adapter resolves these from remote config, which this suite doesn't set up.
 vi.mock('../quantumSwapGate', () => ({
@@ -47,7 +47,7 @@ swapContractTests(() => algorandSwapAdapter, {
         isCancelled: () => false,
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const,
         deviceId: null,
         addSignRequest: vi.fn(),
         createOrder: vi.fn(),

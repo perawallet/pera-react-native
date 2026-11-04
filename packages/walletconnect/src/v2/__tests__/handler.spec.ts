@@ -65,7 +65,6 @@ import {
     type FakeWalletKit,
     type RequestOverrides,
 } from './fakeWalletKit'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Same stand-in as the v1 handler spec: the connections barrel reaches the
 // provider, whose keystore migration ledger imports react-native-mmkv at
@@ -938,7 +937,7 @@ describe('session requests', () => {
 describe('empty signatures', () => {
     const stubEmptySignatures = () => {
         const adapter = dappRequestAdapterFor({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
         if (!adapter) throw new Error('no Algorand adapter registered')

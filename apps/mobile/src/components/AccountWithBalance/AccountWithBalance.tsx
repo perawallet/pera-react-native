@@ -25,7 +25,7 @@ import { useAccountWithBalance } from './useAccountWithBalance'
 export type AccountWithBalanceProps = {
     account: WalletAccount
     isHighlighted?: boolean
-    /** The chain whose address, balance and native asset to show; defaults to the account's own chain. */
+    /** The chain whose address, balance and native asset to show; defaults to the account's first registered chain. */
     chainId?: ChainId
 } & PWViewProps
 

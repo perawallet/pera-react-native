@@ -95,7 +95,9 @@
         "display_nfts": "Afficher les NFT dans la liste des actifs",
         "display_nfts_description": "Les NFT apparaîtront dans la liste des actifs de votre compte",
         "display_opted_in_nfts": "Afficher les NFT ajoutés",
-        "display_opted_in_nfts_description": "Vous pouvez afficher ou masquer les NFT ajoutés mais non détenus"
+        "display_opted_in_nfts_description": "Vous pouvez afficher ou masquer les NFT ajoutés mais non détenus",
+        "show_suspicious": "Afficher les actifs suspects",
+        "show_suspicious_description": "Affiche les tokens que Pera a signalés comme du spam ou une arnaque probable. Ils ne sont jamais comptés dans votre solde"
     },
     "add_asset": {
         "title": "Ajouter un actif",
@@ -266,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Supprimé)"
+        "deleted_label": "(Supprimé)",
+        "unverified_label": "Non vérifié"
     },
     "asset_details": {
         "about": {
@@ -3629,7 +3632,6 @@
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
             "function_selector": "Sélecteur de fonction",
             "call_data": "Données de l’appel",
-            "advanced": "Avancé",
             "unchecked_warning": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à {{domain}}.",
             "unchecked_warning_no_source": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à l’application qui l’a envoyée."
         },
@@ -4799,6 +4801,13 @@
             "fee_share": "{{percent}} du résultat de l’échange",
             "fee_recipient": "Versés à",
             "base_units": "unités de base"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Limite de gas",
+            "max_fee_per_gas": "Frais max. par gas",
+            "max_priority_fee_per_gas": "Frais de priorité max. par gas"
         },
         "known_contract": {
             "title": "Contrat",

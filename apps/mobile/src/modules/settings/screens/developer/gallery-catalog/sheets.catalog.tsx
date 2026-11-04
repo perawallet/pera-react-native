@@ -80,6 +80,7 @@ import { ImportAccountSupportOptionsContent } from '@modules/onboarding/screens/
 import { PreviousRekeyWarningSheet } from '@modules/rekey/components/PreviousRekeyWarningSheet'
 import { InfoButtonContent } from '@components/InfoButton/InfoButtonContent'
 import { PWText } from '@components/core'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { GallerySheetBoundary } from './GallerySheetBoundary'
 
@@ -937,7 +938,7 @@ export const getSheetSections = (): GallerySection[] => [
                             <GallerySheetBoundary>
                                 <ExportShareAccountContent
                                     accountAddress={A}
-                                    chainId='algorand'
+                                    chainId={ALGORAND_CHAIN_ID}
                                 />
                             </GallerySheetBoundary>
                         ),
@@ -1242,7 +1243,9 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <ImportOptionsContent chainId='algorand' />
+                                <ImportOptionsContent
+                                    chainId={ALGORAND_CHAIN_ID}
+                                />
                             </GallerySheetBoundary>
                         ),
                         options: {

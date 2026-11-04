@@ -11,7 +11,6 @@
  */
 
 import { vi } from 'vitest'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     cardChainAdapters,
     type CardAutoDrawOperations,
@@ -37,7 +36,7 @@ export const fakeCardAdapter = ({
         ...autoDraw,
     }
     return {
-        chainId: LEGACY_CHAIN_ID,
+        chainId: 'algorand',
         settlementAsset: vi.fn(() => '31566704'),
         delegationApprovalRequest: vi.fn(params => ({
             path: '/v1/delegation/chain/post-approval',

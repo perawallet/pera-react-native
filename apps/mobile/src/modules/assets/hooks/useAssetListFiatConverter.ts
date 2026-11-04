@@ -19,11 +19,10 @@ import {
 import { findNativeAsset, useNativeAsset } from '@perawallet/wallet-core-assets'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import {
-    LEGACY_CHAIN_ID,
     type AssetRef,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type AssetFiatValue = {
     displayCurrency: string
@@ -52,7 +51,7 @@ const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
 export const useAssetListFiatConverter = (
     unreadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
 ): AssetFiatConverter => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const nativeAsset = useNativeAsset(scope)
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency(scope)

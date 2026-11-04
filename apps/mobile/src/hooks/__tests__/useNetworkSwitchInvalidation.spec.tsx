@@ -70,11 +70,9 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 })
 
 import { getAssetsQueryKey } from '@perawallet/wallet-core-assets'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { transactionQueryKeys } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useNetworkSwitchInvalidation } from '../useNetworkSwitchInvalidation'
 
 // The hook must act on the client it is rendered under (useQueryClient), not a
@@ -147,11 +145,11 @@ describe('useNetworkSwitchInvalidation', () => {
 
         // Keys derive from each scope; the factories that are public build them.
         const MAINNET = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const
         const TESTNET = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const
         const ETH_MAINNET = {

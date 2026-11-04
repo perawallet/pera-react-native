@@ -19,7 +19,6 @@ import {
     type ChainScope,
 } from '../models/identity'
 import {
-    LEGACY_CHAIN_ID,
     LEGACY_SCOPES,
     parseScopeKey,
     queryKeyReferencesChain,
@@ -107,7 +106,7 @@ describe('network column encoding', () => {
         network => {
             expect(
                 toScopeKey({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: network,
                 } as const),
             ).toBe(`algorand/${network}`)
@@ -118,7 +117,7 @@ describe('network column encoding', () => {
         'decodes a bare %s value to the Algorand scope',
         network => {
             expect(scopeFromNetworkColumn(network)).toEqual({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: network,
             } as const)
         },
@@ -148,7 +147,7 @@ describe('LEGACY_SCOPES', () => {
     it('holds the Algorand scope of every legacy network', () => {
         expect(LEGACY_SCOPES).toEqual(
             LEGACY_NETWORKS.map(networkId => ({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId,
             })),
         )
@@ -156,7 +155,7 @@ describe('LEGACY_SCOPES', () => {
 })
 
 describe('queryKeyReferencesScope', () => {
-    const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+    const testnet = { chainId: 'algorand', networkId: 'testnet' } as const
 
     it('matches the scope in the scope field of an object element', () => {
         const key = ['assets', { assetId: '1', scope: testnet }]
@@ -172,7 +171,7 @@ describe('queryKeyReferencesScope', () => {
 
     it('does not match a key for another scope', () => {
         const mainnet = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const
         const key = ['assets', { assetId: '1', scope: mainnet }, mainnet]

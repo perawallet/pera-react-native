@@ -18,7 +18,7 @@ import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
 import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
@@ -91,7 +91,7 @@ export const WebMainRoutes = ({
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
-    const rekeyRequirement = rekeyRequirementFor(LEGACY_CHAIN_ID)
+    const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
     // Native mounts these in RootComponent, which the web shell replaces; without
     // them devices register with no push token and notification-tap deeplinks drop.
     useTokenListener(fcmToken)

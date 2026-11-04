@@ -22,7 +22,16 @@ import {
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import { hexToBytes, keccak256, type Hex, type RpcTransaction } from 'viem'
+import {
+    encodeAbiParameters,
+    encodeEventTopics,
+    erc20Abi,
+    getAddress,
+    hexToBytes,
+    keccak256,
+    type Hex,
+    type RpcTransaction,
+} from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
@@ -51,6 +60,10 @@ import {
     VIEM_TRANSFER_NONCE_2,
 } from '../../signing/__tests__/fixtures'
 import { allocateEthereumNonce } from '../nonce-pool'
+import {
+    createTokenSightings,
+    type TokenSightings,
+} from '../../accounts/token-detection'
 import {
     DROPPED_GRACE_MS,
     PROBE_FAILURE_ESCALATION_STREAK,
@@ -1027,5 +1040,104 @@ describe('reconcileEthereumSubmissions', () => {
                 expect(errorReports()).toEqual([])
             },
         )
+    })
+
+    describe('tokens a mined send delivered', () => {
+        const TSLAX = '0x8aD3c73F833d3F9A523aB01476625F269aEb7Cf0'
+        const deliveryLog = {
+            address: TSLAX.toLowerCase(),
+            topics: encodeEventTopics({
+                abi: erc20Abi,
+                eventName: 'Transfer',
+                args: {
+                    from: '0x00000000000000000000000000000000000000bb',
+                    to: SENDER,
+                },
+            }),
+            data: encodeAbiParameters([{ type: 'uint256' }], [5n]),
+            blockHash: `0x${'11'.repeat(32)}`,
+            blockNumber: '0x1',
+            logIndex: '0x0',
+            transactionHash: HASH,
+            transactionIndex: '0x0',
+            removed: false,
+        } as const
+
+        const reconcileWithSightings = (tokenSightings: TokenSightings) =>
+            reconcileEthereumSubmissions({
+                chain: ETHEREUM,
+                settleHandlers,
+                probeFailures,
+                getClient,
+                tokenSightings,
+                db,
+            })
+
+        it('records them against the sender once the receipt is final', async () => {
+            await record()
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [deliveryLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+
+            expect(tokenSightings.of(SCOPE, SENDER)).toEqual([
+                getAddress(TSLAX),
+            ])
+        })
+
+        it('records them while the receipt is still short of depth', async () => {
+            await record()
+            node({
+                head: 5,
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [deliveryLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+
+            expect(await statuses()).toEqual(['confirming'])
+            expect(tokenSightings.of(SCOPE, SENDER)).toEqual([
+                getAddress(TSLAX),
+            ])
+        })
+
+        it('records nothing for a reverted transaction', async () => {
+            await record()
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    status: '0x0',
+                    logs: [deliveryLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+
+            expect(tokenSightings.of(SCOPE, SENDER)).toEqual([])
+        })
+
+        it('records nothing for a row with no sender', async () => {
+            await record({ sender: null, nonce: null })
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [deliveryLog],
+                }),
+            })
+            const tokenSightings = createTokenSightings()
+
+            await reconcileWithSightings(tokenSightings)
+
+            expect(tokenSightings.of(SCOPE, SENDER)).toEqual([])
+        })
     })
 })

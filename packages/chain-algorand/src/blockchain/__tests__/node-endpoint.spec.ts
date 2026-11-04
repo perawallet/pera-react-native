@@ -11,12 +11,10 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest'
-import {
-    CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { CUSTOM_NETWORK_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandNodeEndpoint } from '../node-endpoint'
 import '../store/custom-network'
 
@@ -38,7 +36,7 @@ describe('algorandNodeEndpoint', () => {
     })
 
     it('reports the saved custom node', () => {
-        useNetworkStore.getState().setCustomNetwork(LEGACY_CHAIN_ID, {
+        useNetworkStore.getState().setCustomNetwork(ALGORAND_CHAIN_ID, {
             id: CUSTOM_NETWORK_ID,
             algodUrl: 'http://192.168.1.50:4001',
             indexerUrl: 'http://192.168.1.50:8980',

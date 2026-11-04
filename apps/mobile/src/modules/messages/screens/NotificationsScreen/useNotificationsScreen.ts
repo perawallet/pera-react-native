@@ -12,7 +12,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     type PeraNotification,
@@ -24,6 +23,7 @@ import {
     isIntegrityRequiredError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { PWFlatListRef } from '@components/core'
 import { useNotificationPress } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
@@ -46,7 +46,7 @@ export type UseNotificationsScreenResult = {
 }
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { hasUnreadNotifications } = useInboxStatus(scope)
     const {
         data,

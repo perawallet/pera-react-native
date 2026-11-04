@@ -113,7 +113,12 @@ const renderRow = (
         chains: { algorand: { address: account } },
     } as unknown as ReturnType<typeof useSelectedAccount>)
     return renderHook(
-        () => useTransactionListItem({ transaction: item, onPress }),
+        () =>
+            useTransactionListItem({
+                transaction: item,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                onPress,
+            }),
         { wrapper },
     ).result.current
 }

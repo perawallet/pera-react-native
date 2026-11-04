@@ -30,8 +30,8 @@ import { createQueryClientWrapper } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useAssetSearchAcrossScopesQuery } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { AddAssetView } from '@modules/assets/components/AddAssetView'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -49,7 +49,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const MAINNET = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 describe('Flow: Asset discovery (search)', () => {
     it('Given the search endpoint returns mixed-tier results, when the hook resolves, then all three verification tiers (verified, unverified, suspicious) round-trip onto the results so the UI can decorate them', async () => {
@@ -279,7 +279,7 @@ describe('Flow: Asset discovery (search)', () => {
             )
 
             renderWithNavigation(
-                () => <AddAssetView chainId={LEGACY_CHAIN_ID} />,
+                () => <AddAssetView chainId={ALGORAND_CHAIN_ID} />,
                 'AddAsset',
             )
 

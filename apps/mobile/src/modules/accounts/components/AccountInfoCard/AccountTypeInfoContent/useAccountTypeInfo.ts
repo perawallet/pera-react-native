@@ -11,11 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     addressOn,
     authorityTransitionLabel,
@@ -24,8 +20,10 @@ import {
     useCanSignWith,
     useDelegatedTransition,
     type WalletAccount,
+    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { splitAccountTypeLabel } from '@utils/rekeyLabels'
@@ -60,7 +58,7 @@ export const useAccountTypeInfo = ({
 }: UseAccountTypeInfoParams): UseAccountTypeInfoResult => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, useHomeChainScope().chainId)
     const canSign = useCanSignWith(account, scope.chainId)
     const delegateTransition = useDelegatedTransition(
         addressOn(account, scope),

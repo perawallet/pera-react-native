@@ -21,10 +21,8 @@ import {
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable, toError } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useAutoDrawSwitch,
@@ -76,7 +74,8 @@ export const useCardAutoFundingSigningScreen =
         const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
+            () =>
+                findCardAccount(accounts, connectedAddress, ALGORAND_CHAIN_ID),
             [accounts, connectedAddress],
         )
 

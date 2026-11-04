@@ -20,10 +20,8 @@ import {
     addressOn,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import type { RekeyToQuantumStackParamList } from '@modules/rekey/routes/rekey-to-quantum/types'
@@ -47,7 +45,7 @@ export const useRekeyToQuantumSelectTargetScreen =
                 >
             >()
         const sourceAddress = route.params.sourceAddress
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
         const source = useFindAccountByAddress(sourceAddress, scope)
         const targets = useAuthorityTargets(
             source,

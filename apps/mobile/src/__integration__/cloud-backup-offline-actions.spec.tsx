@@ -28,7 +28,6 @@ import {
     useSelectedScope,
     getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
@@ -52,6 +51,7 @@ import {
     createItemKeyHasher,
     type ItemKeyHasher,
 } from '@perawallet/wallet-core-backup/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -72,7 +72,7 @@ import {
     seedAlgo25Account,
 } from './__fixtures__/cloudBackup'
 
-const NETWORK = getSelectedScope(LEGACY_CHAIN_ID).networkId
+const NETWORK = getSelectedScope(ALGORAND_CHAIN_ID).networkId
 
 const REMOTE_ONLY_ADDRESS =
     'ZZZ7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
@@ -108,18 +108,18 @@ const setupBackup = async () => {
     server.use(...handlers)
 
     const importHook = renderQueryHook(() =>
-        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+        useCloudBackupImport(useSelectedScope(ALGORAND_CHAIN_ID)),
     )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
     const mnemonicHook = renderQueryHook(() =>
-        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+        useResolveMnemonicForBackup(ALGORAND_CHAIN_ID),
     )
 
     initializeBackupSyncManager({
-        chainId: LEGACY_CHAIN_ID,
-        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
+        chainId: ALGORAND_CHAIN_ID,
+        sources: createBackupSyncStoreSources(ALGORAND_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,

@@ -128,6 +128,7 @@ const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
         assetSortMode: 'balanceDesc',
         hideZeroBalance: false,
         displayNfts: true,
+        showSuspicious: false,
     },
 }))
 
@@ -204,6 +205,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                 selector({
                     hideZeroBalance: mockPreferences.hideZeroBalance,
                     displayNfts: mockPreferences.displayNfts,
+                    showSuspicious: mockPreferences.showSuspicious,
                     displayOptedInNfts: true,
                     assetSortMode: mockPreferences.assetSortMode,
                 }),
@@ -247,6 +249,7 @@ describe('useAccountAssetList', () => {
         mockPreferences.assetSortMode = 'balanceDesc'
         mockPreferences.hideZeroBalance = false
         mockPreferences.displayNfts = true
+        mockPreferences.showSuspicious = false
         mockCanSign.current = false
         useHoldingsRefreshStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
@@ -655,6 +658,33 @@ describe('useAccountAssetList', () => {
             expect(
                 vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]?.filters,
             ).toEqual(expect.objectContaining({ keepZeroNative: false }))
+        })
+    })
+
+    describe('suspicious assets', () => {
+        const queriedFilters = () =>
+            vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]?.filters
+
+        it('leaves suspicious tokens out of the read by default', () => {
+            renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(queriedFilters()).toEqual(
+                expect.objectContaining({ hideSuspicious: true }),
+            )
+        })
+
+        it('reads them once the preference is on', () => {
+            mockPreferences.showSuspicious = true
+
+            renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(queriedFilters()).toEqual(
+                expect.objectContaining({ hideSuspicious: false }),
+            )
         })
     })
 

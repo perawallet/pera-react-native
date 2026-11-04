@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const mockUseAllAccounts = vi.fn<() => WalletAccount[]>()
 const mockUseAnyDelegatedAddressesQuery = vi.fn()
@@ -114,7 +114,7 @@ describe('useLegacyQuantumPrompt', () => {
         expect(result.current.isDue).toBe(true)
         expect(mockUseAnyDelegatedAddressesQuery).toHaveBeenCalledWith(
             ['ADDR1'],
-            expect.objectContaining({ chainId: LEGACY_CHAIN_ID }),
+            expect.objectContaining({ chainId: ALGORAND_CHAIN_ID }),
         )
     })
 

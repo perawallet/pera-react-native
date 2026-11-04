@@ -23,6 +23,7 @@ import {
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { Decimal } from 'decimal.js'
+import { getAccountHoldings } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     createEthereumBalanceHistoryOps,
@@ -376,6 +377,25 @@ describe('the adapter methods', () => {
             ['1001', '0.5005'],
             ['2002', '1.001'],
         ])
+    })
+
+    it('reads only holdings that count toward the total', async () => {
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '2000000' }]
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: { results: [] } as BalanceHistoryResponse,
+            }),
+        )
+
+        await ops().fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+        expect(getAccountHoldings).toHaveBeenCalledWith(
+            expect.objectContaining({
+                hideZeroBalance: true,
+                hideSuspicious: true,
+            }),
+        )
     })
 
     describe('when a price chart fails', () => {

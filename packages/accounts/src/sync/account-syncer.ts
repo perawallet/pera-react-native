@@ -226,6 +226,7 @@ async function doFetchAndPersistAccount(
         .fetchAccountState(address, scope, {
             priorChainState: prior?.chainData,
             addedTokenIds,
+            isPersisted: true,
         })
         .catch(async (error: unknown) => {
             if (!prior) {

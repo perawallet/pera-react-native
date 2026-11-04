@@ -12,10 +12,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const mocks = vi.hoisted(() => ({
     fetchAssetDetails: vi.fn(),
@@ -93,7 +91,7 @@ describe('fetchAssetFromApis', () => {
 
     it('pera metadata wins on testnet, preserving current behaviour', async () => {
         const asset = await fetchAssetFromApis('10458941', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
 
@@ -103,7 +101,7 @@ describe('fetchAssetFromApis', () => {
 
     it('indexer wins on chain-intrinsics for a network with no Pera deployment', async () => {
         const asset = await fetchAssetFromApis('10458941', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'betanet',
         } as const)
 
@@ -121,7 +119,7 @@ describe('fetchAssetFromApis', () => {
 
     it('pera still supplies its own metadata on a network with no Pera deployment', async () => {
         const asset = await fetchAssetFromApis('10458941', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'betanet',
         } as const)
 
@@ -157,7 +155,7 @@ describe('fetchAssetFromApis', () => {
         })
 
         const asset = await fetchAssetFromApis('123', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const)
 
@@ -168,7 +166,7 @@ describe('fetchAssetFromApis', () => {
 
     it('persists the chain-intrinsics half so the next read is DB-local', async () => {
         await fetchAssetFromApis('10458941', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
 
@@ -177,7 +175,7 @@ describe('fetchAssetFromApis', () => {
         expect(items).toHaveLength(1)
         expect(items[0].assetId).toBe('10458941')
         expect(scope).toEqual({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
     })
@@ -187,7 +185,7 @@ describe('fetchAssetFromApis', () => {
         mocks.fetchIndexerAssetDetails.mockRejectedValue(new Error('down'))
 
         const asset = await fetchAssetFromApis('10458941', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
 
@@ -199,7 +197,7 @@ describe('fetchAssetFromApis', () => {
         mocks.upsertNodeAssets.mockRejectedValue(new Error('db locked'))
 
         const asset = await fetchAssetFromApis('10458941', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
 

@@ -32,16 +32,13 @@ vi.mock('../../api/user', async () => ({
     fetchUser,
 }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardIssuance, CardIssuanceState } from '../useCardIssuance'
 import { CardStatus, CardType, VerificationState } from '../../models'
 import type { Card } from '../../models'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+    { chainId: 'algorand', networkId: 'testnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

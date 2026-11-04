@@ -22,7 +22,6 @@ import { getAccountCleanupRegistry } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '../models/types'
 import { upsertTransactions, getTransactionHistory } from '../db/repository'
 import { cleanupTransactionsForAccount } from '../register-account-cleanup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { historyChainAdapters } from '../history-adapter'
 import { fixtureHistoryAdapter } from './fixture-chain-data'
 
@@ -71,7 +70,7 @@ describe('register-account-cleanup', () => {
                 items: [makeTx('TX1')],
                 accountAddress: 'ACCT1',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'mainnet',
                 } as const,
             })
@@ -83,7 +82,7 @@ describe('register-account-cleanup', () => {
                     db,
                     accountAddress: 'ACCT1',
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),

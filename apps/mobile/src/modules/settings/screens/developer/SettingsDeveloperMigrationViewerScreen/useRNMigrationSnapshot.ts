@@ -17,7 +17,6 @@ import {
     type AccountSortMode,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAssetPreferencesStore,
     useCollectiblePreferencesStore,
@@ -49,6 +48,7 @@ import {
 } from '@perawallet/wallet-core-settings'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 export type RNAuthSnapshot = {
     hasPin: boolean
@@ -181,7 +181,7 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
         auth,
         accountsByAddress: new Map(
             accounts.flatMap(a => {
-                const address = chainAccountOf(a, LEGACY_CHAIN_ID)?.address
+                const address = chainAccountOf(a, ALGORAND_CHAIN_ID)?.address
                 return address === undefined ? [] : [[address, a] as const]
             }),
         ),

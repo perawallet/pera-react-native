@@ -11,13 +11,10 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
-    queryKeyReferencesScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { getStakingProjectsQueryKey } from '../queryKeys'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('getStakingProjectsQueryKey', () => {
     it('carries the scope object', () => {
@@ -33,7 +30,7 @@ describe('getStakingProjectsQueryKey', () => {
         expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
         expect(
             queryKeyReferencesScope(key, {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const),
         ).toBe(false)

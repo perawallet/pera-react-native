@@ -22,14 +22,16 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { accountsChainAdapters } from '../../chain-adapter'
 import { accountValueKey, type WalletAccount } from '../../models'
 import { useAccountsStore } from '../../store'
 import { testAccount } from '../../__tests__/accountFactory'
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import {
     accountChainIdOf,
     accountValueOf,
     ownAddressOf,
-    useSigningAccountsOnOwnChain,
+    useSigningAccountsOnAnyChain,
 } from '../useAccountChain'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -111,20 +113,20 @@ describe('accountValueOf', () => {
     })
 })
 
-describe('useSigningAccountsOnOwnChain', () => {
+describe('useSigningAccountsOnAnyChain', () => {
     beforeEach(() => {
         vi.restoreAllMocks()
         useAccountsStore.getState().resetState()
         useNetworkStore.getState().setMode('live')
     })
 
-    it('checks each account on its own chain, skipping a chain with no accounts adapter', () => {
-        register('ethereum')
+    it('skips a chain with no accounts adapter', () => {
+        register('algorand', 'ethereum')
         useAccountsStore
             .getState()
             .setAccounts([algorandAccount, ethereumAccount])
 
-        const { result } = renderHook(() => useSigningAccountsOnOwnChain())
+        const { result } = renderHook(() => useSigningAccountsOnAnyChain())
 
         expect(result.current).toEqual([algorandAccount])
     })
@@ -136,8 +138,36 @@ describe('useSigningAccountsOnOwnChain', () => {
             chainId => chainId === 'algorand',
         )
 
-        const { result } = renderHook(() => useSigningAccountsOnOwnChain())
+        const { result } = renderHook(() => useSigningAccountsOnAnyChain())
 
         expect(result.current).toEqual([algorandAccount])
+    })
+
+    it('keeps an account on two chains that signs only on its second', () => {
+        register('algorand', 'ethereum')
+        if (!accountsChainAdapters.has('ethereum' as ChainId)) {
+            accountsChainAdapters.register({
+                ...fakeAccountsChain().adapter,
+                chainId: 'ethereum' as ChainId,
+            })
+        }
+        const both: WalletAccount = {
+            ...algorandAccount,
+            chains: {
+                ...algorandAccount.chains,
+                ethereum: { address: ETH_ADDRESS, keyPairId: 'eth-key' },
+            },
+        }
+        useAccountsStore.getState().setAccounts([both])
+        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockImplementation(
+            (account, _accounts, scope) =>
+                scope.chainId === 'ethereum'
+                    ? { kind: 'ok', signer: account }
+                    : { kind: 'watch', account },
+        )
+
+        const { result } = renderHook(() => useSigningAccountsOnAnyChain())
+
+        expect(result.current).toEqual([both])
     })
 })

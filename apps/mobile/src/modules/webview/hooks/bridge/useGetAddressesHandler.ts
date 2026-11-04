@@ -17,19 +17,19 @@ import {
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { sendMessageToWebview } from '../handlers'
 import type { BridgeHandler } from './types'
 
 export const useGetAddressesHandler = (
     webview: Nullable<WebView>,
 ): BridgeHandler => {
-    const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
+    const signingAccounts = useSigningAccounts(ALGORAND_CHAIN_ID)
     const allAccounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
     return useCallback(
         message => {
@@ -38,11 +38,11 @@ export const useGetAddressesHandler = (
             // truncated-address fallback, and sending that as both name and
             // address made its rows render the same string twice. Ordering is
             // the consumer's responsibility.
-            const adapter = dappRequestChainAdapters.get(LEGACY_CHAIN_ID)
+            const adapter = dappRequestChainAdapters.get(ALGORAND_CHAIN_ID)
             const payload = signingAccounts.flatMap(account => {
                 const address = chainAccountOf(
                     account,
-                    LEGACY_CHAIN_ID,
+                    ALGORAND_CHAIN_ID,
                 )?.address
                 return address === undefined
                     ? []
