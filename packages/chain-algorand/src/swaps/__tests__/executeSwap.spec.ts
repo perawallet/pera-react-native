@@ -239,8 +239,8 @@ const makeQuote = (quoteId: string): SwapQuote =>
             destinationAddress: 'SWAPPER',
             slippage: null,
         },
-        assetIn: { assetId: '0' },
-        assetOut: { assetId: '999' },
+        assetIn: { assetId: '0', ref: { ...SCOPE, assetId: '0' } },
+        assetOut: { assetId: '999', ref: { ...SCOPE, assetId: '999' } },
         fees: [],
         expiresAt: null,
         // Freshly stamped: the confirm-time freshness guard refuses
@@ -358,7 +358,11 @@ describe('executeAlgorandSwap', () => {
     it('executes full flow: order → pipeline sign → submit → order report', async () => {
         const result = await run(makeQuote('quote-123'))
 
-        expect(result).toEqual({ kind: 'success', txIds: ['submitted-tx-id'] })
+        expect(result).toEqual({
+            kind: 'success',
+            orderId: '12345',
+            txIds: ['submitted-tx-id'],
+        })
         expect(mockOnProgress.mock.calls.map(([p]) => p)).toEqual([
             'preparing',
             'signing',
@@ -505,6 +509,7 @@ describe('executeAlgorandSwap', () => {
 
         expect(result).toEqual({
             kind: 'success',
+            orderId: '12345',
             txIds: ['group-1-id', 'group-2-id'],
         })
         expect(mockSendRawTransaction).toHaveBeenCalledTimes(2)
@@ -776,11 +781,37 @@ describe('executeAlgorandSwap', () => {
         expect(input.optInMbr).toBeUndefined()
     })
 
+    it('leaves an output paid out on another chain out of the holding checks', async () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const quote = {
+            ...makeQuote('quote-cross-chain'),
+            routeKind: 'cross-chain',
+            assetOut: { assetId: '0', ref: { ...ETH, assetId: '0' } },
+        } as unknown as SwapQuote
+        mockAccountInformation.mockResolvedValue({
+            amount: 700_000n,
+            minBalance: 200_000n,
+            assets: [],
+        })
+
+        await run(quote, { account: senderAccount })
+
+        expect(
+            mockGetHoldingRestriction.mock.calls.map(
+                ([args]) => (args as { assetId: string }).assetId,
+            ),
+        ).toEqual(['0'])
+        const input = mockComputeShortfall.mock.calls[0][0] as {
+            optInMbr?: Decimal
+        }
+        expect(input.optInMbr).toBeUndefined()
+    })
+
     it('skips the opt-in reserve when the receive asset is ALGO', async () => {
         const quote = {
             ...makeQuote('quote-to-algo'),
-            assetIn: { assetId: '999' },
-            assetOut: { assetId: '0' },
+            assetIn: { assetId: '999', ref: { ...SCOPE, assetId: '999' } },
+            assetOut: { assetId: '0', ref: { ...SCOPE, assetId: '0' } },
         } as unknown as SwapQuote
 
         await run(quote, { account: senderAccount })

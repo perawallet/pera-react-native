@@ -18,6 +18,7 @@ import {
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isAlgorandNativeAssetId } from '../descriptor'
 
@@ -66,7 +67,11 @@ export const computeSwapAlgoShortfall = ({
     const peraFee = swapFeeOf(quote, 'pera')
 
     const isAlgoIn = isAlgorandNativeAssetId(quote.request.sourceAsset.assetId)
-    const isAlgoOut = isAlgorandNativeAssetId(quote.assetOut.assetId)
+    // A cross-chain output pays out on another chain, where an id of "0" isn't ALGO.
+    const isAlgoOut =
+        toScopeKey(quote.assetOut.ref) ===
+            toScopeKey(quote.request.sourceAsset) &&
+        isAlgorandNativeAssetId(quote.assetOut.assetId)
     const peraFeeInAlgo = peraFee && isAlgoFee(peraFee) ? peraFee.amount : ZERO
 
     const required = minBalance.plus(optInMbr ?? ZERO)

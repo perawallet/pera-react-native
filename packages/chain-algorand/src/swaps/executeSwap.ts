@@ -11,7 +11,10 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     mapToDisplayableTransaction,
     type getAlgorandClient,
@@ -124,6 +127,11 @@ export const executeAlgorandSwap = async (
     }: AlgorandSwapExecutionContext,
 ): Promise<ExecuteSwapResult> => {
     const accountAddress = account ? algorandAddressOf(account) : undefined
+    // A cross-chain output lands on another chain: this account never holds
+    // it, so neither its freeze state nor its opt-in applies here.
+    const isAssetOutOnScope =
+        accountAddress !== undefined &&
+        toScopeKey(quote.assetOut.ref) === toScopeKey(scope)
 
     const [inRestriction, outRestriction] = accountAddress
         ? await Promise.all([
@@ -132,11 +140,13 @@ export const executeAlgorandSwap = async (
                   assetId: quote.assetIn.assetId,
                   scope,
               }),
-              getHoldingRestriction({
-                  accountAddress,
-                  assetId: quote.assetOut.assetId,
-                  scope,
-              }),
+              isAssetOutOnScope
+                  ? getHoldingRestriction({
+                        accountAddress,
+                        assetId: quote.assetOut.assetId,
+                        scope,
+                    })
+                  : null,
           ])
         : [null, null]
     const isInFrozen = inRestriction !== null
@@ -173,6 +183,7 @@ export const executeAlgorandSwap = async (
                 .accountInformation(accountAddress)
                 .do()
             const holdsAssetOut =
+                !isAssetOutOnScope ||
                 isAlgorandNativeAssetId(quote.assetOut.assetId) ||
                 (info.assets ?? []).some(
                     holding =>
@@ -435,5 +446,5 @@ export const executeAlgorandSwap = async (
         )
     }
 
-    return { kind: 'success', txIds }
+    return { kind: 'success', orderId, txIds }
 }

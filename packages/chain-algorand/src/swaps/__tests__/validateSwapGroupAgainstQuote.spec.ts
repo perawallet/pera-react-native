@@ -75,9 +75,12 @@ const axfer = (
         receiver: string
         closeTo: string
         rekeyTo: string
+        fee: bigint
     }> = {},
 ): PeraDisplayableTransaction =>
     ({
+        txType: 'axfer',
+        fee: overrides.fee ?? 1_000n,
         sender: overrides.sender ?? SWAPPER,
         rekeyTo: overrides.rekeyTo,
         assetTransferTransaction: {
@@ -95,9 +98,12 @@ const payment = (
         receiver: string
         closeRemainderTo: string
         rekeyTo: string
+        fee: bigint
     }> = {},
 ): PeraDisplayableTransaction =>
     ({
+        txType: 'pay',
+        fee: overrides.fee ?? 1_000n,
         sender: overrides.sender ?? SWAPPER,
         rekeyTo: overrides.rekeyTo,
         paymentTransaction: {
@@ -348,5 +354,98 @@ describe('validateSwapGroupAgainstQuote', () => {
                 quoteWith({ sourceChainId: 'ethereum' }),
             ),
         ).toThrow(SwapQuoteMismatchError)
+    })
+
+    describe('a cross-chain source leg', () => {
+        const DEPOSIT = 'DEPOSIT_ADDRESS'
+
+        const crossChain = (
+            depositAddress: string | null,
+            shape: QuoteShape = {},
+        ): SwapQuote => ({
+            ...quoteWith(shape),
+            routeKind: 'cross-chain',
+            depositAddress,
+        })
+
+        const appCall = (): PeraDisplayableTransaction =>
+            ({
+                txType: 'appl',
+                fee: 1_000n,
+                sender: SWAPPER,
+                applicationTransaction: { applicationId: 1n },
+            }) as unknown as PeraDisplayableTransaction
+
+        it('accepts a single transfer to the deposit address within the request', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: DEPOSIT })],
+                    crossChain(DEPOSIT),
+                ),
+            ).not.toThrow()
+        })
+
+        it('rejects a transfer to anything but the deposit address', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: 'ATTACKER' })],
+                    crossChain(DEPOSIT),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('rejects transfers to two receivers when the router names no deposit address', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [
+                        axfer({ receiver: 'FIRST', amount: 2_500_000n }),
+                        axfer({ receiver: 'SECOND', amount: 2_500_000n }),
+                    ],
+                    crossChain(null),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('ignores a zero-amount payment when counting receivers', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [
+                        axfer({ receiver: 'ONLY' }),
+                        payment({ receiver: 'ANYONE', amount: 0n }),
+                    ],
+                    crossChain(null),
+                ),
+            ).not.toThrow()
+        })
+
+        it('rejects an application call', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: DEPOSIT }), appCall()],
+                    crossChain(DEPOSIT),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('rejects fees summing above 0.1 ALGO', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [
+                        axfer({ receiver: DEPOSIT, fee: 60_000n }),
+                        payment({ receiver: DEPOSIT, fee: 40_001n }),
+                    ],
+                    crossChain(DEPOSIT),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('rejects an input above the request even when the router claims more', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: DEPOSIT, amount: 5_000_001n })],
+                    crossChain(DEPOSIT, { amountIn: 9_000_000 }),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
     })
 })
