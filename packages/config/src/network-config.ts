@@ -67,6 +67,7 @@ export const PERA_SERVICES = [
     'notifications',
     'blockFollowing',
     'nfts',
+    'contracts',
 ] as const
 
 export type PeraService = (typeof PERA_SERVICES)[number]
