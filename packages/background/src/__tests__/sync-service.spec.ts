@@ -666,7 +666,10 @@ describe('SyncService', () => {
             // reading a never-synced one.
             service = new SyncService({
                 queryClient,
-                stores: { ...createSyncStorePorts(), getChangeCursor: () => 42 },
+                stores: {
+                    ...createSyncStorePorts(),
+                    getChangeCursor: () => 42,
+                },
                 chains: chainsDep(),
             })
             const { fetchAndPersistAccount } =
@@ -690,7 +693,9 @@ describe('SyncService', () => {
         it('reads a scope whose signal keeps answering unchanged once the ceiling elapses', async () => {
             const accountReads = await startAfterFirstPass()
 
-            await vi.advanceTimersByTimeAsync(MAX_UNREAD_SCOPE_MS + POLL_INTERVAL)
+            await vi.advanceTimersByTimeAsync(
+                MAX_UNREAD_SCOPE_MS + POLL_INTERVAL,
+            )
 
             expect(accountReads).toHaveBeenCalled()
         })

@@ -184,7 +184,11 @@ export const useAccountOverview = ({
     // Every network the account holds, as the overview shows them all.
     const sources = useAccountHoldingSources(account)
     const refreshTargets = useMemo(
-        () => sources.map(({ address, scope }) => ({ addresses: [address], scope })),
+        () =>
+            sources.map(({ address, scope }) => ({
+                addresses: [address],
+                scope,
+            })),
         [sources],
     )
     const { isRefreshing, refresh: handleRefresh } =
