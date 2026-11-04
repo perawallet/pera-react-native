@@ -18,7 +18,10 @@ import {
     type SwapDistinctPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
@@ -56,14 +59,14 @@ export const useSwapPairHistoryWidget = (
         scope,
     )
     // A chip refills this scope's pair, so a pair with a leg elsewhere can't be one.
+    const scopeKey = toScopeKey(scope)
     const pairs = useMemo(() => {
         const isOnScope = (asset: SwapAsset) =>
-            asset.ref.chainId === scope.chainId &&
-            asset.ref.networkId === scope.networkId
+            toScopeKey(asset.ref) === scopeKey
         return (data ?? []).filter(
             pair => isOnScope(pair.assetIn) && isOnScope(pair.assetOut),
         )
-    }, [data, scope.chainId, scope.networkId])
+    }, [data, scopeKey])
 
     const handlePairPress = useCallback(
         (pair: SwapDistinctPairItem) => {

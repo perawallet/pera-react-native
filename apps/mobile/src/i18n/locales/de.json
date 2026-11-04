@@ -4002,11 +4002,6 @@
                     "body": "Wir konnten deinen Tauschverlauf nicht laden. Bitte versuche es erneut."
                 }
             }
-        },
-        "top_pairs": {
-            "title": "Top 5 Tauschpaare",
-            "volume_24h": "Volumen (24H)",
-            "error": "Top-Tauschpaare konnten nicht geladen werden"
         }
     },
     "onramp": {

@@ -4010,11 +4010,6 @@
                     "body": "No pudimos cargar tu historial de swaps. Vuelve a intentarlo."
                 }
             }
-        },
-        "top_pairs": {
-            "title": "Top 5 swaps",
-            "volume_24h": "Volumen (24 h)",
-            "error": "No se pudieron cargar los swaps destacados"
         }
     },
     "onramp": {

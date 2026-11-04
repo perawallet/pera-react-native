@@ -12,6 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     SwapAsset,
@@ -27,9 +28,7 @@ import type { ResolveSwapAssetRef } from '../router-ids'
 import type { SwapOfferApiResponse } from './schema'
 
 const routeKindOf = (from: SwapAssetRef, to: SwapAssetRef): SwapRouteKind =>
-    from.chainId === to.chainId && from.networkId === to.networkId
-        ? 'single-chain'
-        : 'cross-chain'
+    toScopeKey(from) === toScopeKey(to) ? 'single-chain' : 'cross-chain'
 
 export const toEpochMs = (iso: Nullable<string>): Nullable<number> => {
     if (iso === null) return null

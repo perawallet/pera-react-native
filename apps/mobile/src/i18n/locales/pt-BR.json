@@ -4032,11 +4032,6 @@
                     "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
                 }
             }
-        },
-        "top_pairs": {
-            "title": "Top 5 conversões",
-            "volume_24h": "Volume (24h)",
-            "error": "Não foi possível carregar as principais conversões"
         }
     },
     "onramp": {

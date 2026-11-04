@@ -102,8 +102,8 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const makeQuote = (quoteIdStr: string): SwapQuote =>
-    ({ quoteIdStr }) as unknown as SwapQuote
+const makeQuote = (quoteId: string): SwapQuote =>
+    ({ quoteId }) as unknown as SwapQuote
 
 const resolveWith = (result: ExecuteSwapResult) =>
     mockExecuteSwap.mockResolvedValue(result)

@@ -198,6 +198,16 @@ const ALLOWED: readonly Allowed[] = [
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
     },
+    {
+        file: 'packages/swaps/src/execution/steps.ts',
+        text: 'step.scope.chainId !== chainId',
+        reason: "Keeps an order's steps on whichever chain the caller passes, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/swap/screens/SwapScreen/resolveSwapRouteAssets.ts',
+        text: 'ref.chainId === scope.chainId',
+        reason: "Drops a route asset that isn't on whichever swap scope the caller passes, never a named chain.",
+    },
 ]
 
 const reportMessageOf = (m: Match, text: string, where: string): string => {

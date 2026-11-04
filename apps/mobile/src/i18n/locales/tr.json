@@ -4010,11 +4010,6 @@
                     "body": "Swap geçmişin yüklenemedi. Lütfen tekrar dene."
                 }
             }
-        },
-        "top_pairs": {
-            "title": "En popüler 5 swap",
-            "volume_24h": "Hacim (24s)",
-            "error": "En popüler swap’lar yüklenemedi"
         }
     },
     "onramp": {

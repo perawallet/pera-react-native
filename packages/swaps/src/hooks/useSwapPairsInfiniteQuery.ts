@@ -11,7 +11,10 @@
  */
 
 import { skipToken, useInfiniteQuery } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { fetchSwapPairs, type SwapPairsPage } from '../api'
 import type { SwapAsset, SwapAssetRef } from '../models'
@@ -37,8 +40,7 @@ export type UseSwapPairsInfiniteQueryResult = {
 }
 
 const isOnScope = (asset: SwapAsset, scope: ChainScope): boolean =>
-    asset.ref.chainId === scope.chainId &&
-    asset.ref.networkId === scope.networkId
+    toScopeKey(asset.ref) === toScopeKey(scope)
 
 const fetchVisiblePage = async (
     anchor: SwapAssetRef,

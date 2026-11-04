@@ -67,14 +67,12 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     notifications: 'persist',
     projects: 'persist',
     staking: 'persist',
-    // `onramp` and `swaps` are mixed: their history keys carry an address, but
-    // their catalogs are the same global content as the block above. A longer
-    // entry overrides the module, so the catalog keeps persisting while the
-    // module stays closed by default.
+    // `onramp` is mixed: its history keys carry an address, but its catalog is
+    // the same global content as the block above. A longer entry overrides the
+    // module, so the catalog keeps persisting while the module stays closed by
+    // default.
     'onramp/pairs': 'persist',
     'onramp/region': 'persist',
-    'swaps/providers': 'persist',
-    'swaps/top-pairs': 'persist',
     // Chart snapshots live under otherwise-never modules. They are
     // network-only (no SQLite history table backs them) and carry no PII, so
     // persisting the last successful snapshot is what lets charts render
