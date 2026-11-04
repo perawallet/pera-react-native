@@ -16,7 +16,6 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
@@ -76,12 +75,11 @@ private val LightSettings = SettingsColors(PeraPalette.backgroundLight, PeraPale
 private val DarkSettings = SettingsColors(PeraPalette.backgroundDark, PeraPalette.textMainDark, PeraPalette.textGrayDark, PeraPalette.layerDark)
 private val LocalSettingsColors = staticCompositionLocalOf { LightSettings }
 
-// Exported because launchers start it; any app could too, so the screen stays out of screenshots and Recents and
-// ignores taps that pass through an overlay, which could otherwise re-point a widget at another of the user's accounts.
+// Exported because launchers start it; any app could too, so the screen stays out of Recents and ignores taps that
+// pass through an overlay, which could otherwise re-point a widget at another of the user's accounts.
 class WidgetConfigActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
     window.decorView.filterTouchesWhenObscured = true
     setResult(Activity.RESULT_CANCELED)
 
