@@ -66,10 +66,11 @@ export const createSwapQuotes = async (
     for (const offer of parsed.results) {
         if (
             offer.source_asset.asset_id !== body.source_asset_id ||
+            offer.destination_asset.asset_id !== body.destination_asset_id ||
             offer.source_amount !== body.source_amount
         ) {
             throw new SwapQuoteMismatchError(
-                'Quote does not match the requested source asset and amount',
+                'Quote does not match the requested assets and amount',
             )
         }
     }

@@ -39,6 +39,7 @@ export const fakeSwapAdapter = (
             : null
     },
     maxAmountFeeReserve: new Decimal(1000),
+    holdingReserve: () => new Decimal(0),
     ...overrides,
 })
 

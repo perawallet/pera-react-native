@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useSwapForm } from '../useSwapForm'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -70,6 +70,11 @@ let mockSlippage: Nullable<string> = null
 vi.mock('@perawallet/wallet-core-swaps', async () => ({
     // The real selection rule, by path: the package barrel drags in stores
     // the global shared mock can't satisfy.
+    peraFeeInSourceAsset: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/swaps/src/utils/swapFees')
+        >('../../../../../../../../packages/swaps/src/utils/swapFees')
+    ).peraFeeInSourceAsset,
     pickBestByAmountOut: (
         await vi.importActual<
             typeof import('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
@@ -92,7 +97,10 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         isError: false,
         reset: mockResetQuoteMutation,
     }),
-    swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(100_000) }),
+    swapAdapterFor: () => ({
+        maxAmountFeeReserve: new Decimal(100_000),
+        holdingReserve: () => new Decimal(100_000),
+    }),
 }))
 
 const accountAt = (address: string) => ({
@@ -102,14 +110,16 @@ let mockSelectedAccount = accountAt('TESTADDRESS123')
 let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
 let mockIsPayBalanceFetched = true
 let mockIsPayBalanceError = false
+let mockUnheldAssetId: Nullable<string> = null
 let mockSpendableMax: Nullable<Decimal> = new Decimal('5000000')
+let mockIsSpendablePending = false
 const mockUseSpendableBalanceQuery = vi.fn()
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useSpendableBalanceQuery: (input: unknown) => {
         mockUseSpendableBalanceQuery(input)
         return {
             data: mockSpendableMax ? { max: mockSpendableMax } : undefined,
-            isPending: false,
+            isPending: mockIsSpendablePending,
         }
     },
 }))
@@ -118,8 +128,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
     useSelectedAccount: () => mockSelectedAccount,
-    useAccountAssetBalanceQuery: () => ({
-        data: mockPayBalance ? { amount: mockPayBalance } : null,
+    useAccountAssetBalanceQuery: (_account: unknown, assetId: string) => ({
+        data:
+            mockPayBalance && assetId !== mockUnheldAssetId
+                ? { amount: mockPayBalance }
+                : null,
         isFetched: mockIsPayBalanceFetched,
         isError: mockIsPayBalanceError,
     }),
@@ -241,6 +254,8 @@ describe('useSwapForm', () => {
         mockSelectedAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
         mockSpendableMax = new Decimal('5000000')
+        mockIsSpendablePending = false
+        mockUnheldAssetId = null
         mockIsPayBalanceFetched = true
         mockIsPayBalanceError = false
         focusEffectCleanup = null
@@ -556,6 +571,133 @@ describe('useSwapForm', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it('reserves the first holding of a receive asset the account does not hold', () => {
+        mockUnheldAssetId = '31566704'
+
+        renderHook(() => useSwapForm(SCOPE))
+
+        expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ fee: new Decimal(200_000) }),
+        )
+    })
+
+    describe('a Pera fee charged in the pay asset', () => {
+        const SOURCE_ASSET = { chainId: 'algorand', assetId: '0' }
+        const quoteFor = (
+            { sourceAmount }: { sourceAmount: Decimal },
+            feeAsset = SOURCE_ASSET,
+        ) => ({
+            provider: 'tinyman',
+            amountOut: new Decimal('7000000'),
+            assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+            assetOut: { assetId: '31566704', unitName: 'USDC', decimals: 6 },
+            request: { sourceAsset: SOURCE_ASSET, sourceAmount },
+            fees: [
+                {
+                    kind: 'pera',
+                    asset: feeAsset,
+                    amount: sourceAmount.mul('0.003').floor(),
+                },
+            ],
+        })
+
+        beforeEach(() => {
+            mockSpendableMax = new Decimal('1000000')
+            mockCreateQuotes.mockImplementation(
+                async (request: { sourceAmount: Decimal }) => [
+                    quoteFor(request),
+                ],
+            )
+        })
+
+        afterEach(() => {
+            mockCreateQuotes.mockResolvedValue([])
+        })
+
+        it('takes the fee off MAX once and re-quotes the smaller amount', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handleMaxPress()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal('0.997'))
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+            expect(mockCreateQuotes.mock.calls[1][0].sourceAmount).toEqual(
+                new Decimal('997000'),
+            )
+        })
+
+        it('leaves a percentage with room for the fee alone', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                slippageTolerance: null,
+                balancePercentage: 50,
+                useLocalCurrency: false,
+            })
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                await result.current.handleOpenConfig()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal('0.5'))
+            expect(mockCreateQuotes).toHaveBeenCalledOnce()
+        })
+
+        it('leaves a typed amount as typed', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(1))
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(1))
+        })
+
+        it('ignores a fee charged in another asset', async () => {
+            mockCreateQuotes.mockImplementation(
+                async (request: { sourceAmount: Decimal }) => [
+                    quoteFor(request, {
+                        chainId: 'algorand',
+                        assetId: '31566704',
+                    }),
+                ],
+            )
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handleMaxPress()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(1))
+        })
+
+        it('clears the amount and says why when the fee takes all of it', async () => {
+            mockCreateQuotes.mockImplementation(
+                async (request: { sourceAmount: Decimal }) => [
+                    {
+                        ...quoteFor(request),
+                        fees: [
+                            {
+                                kind: 'pera',
+                                asset: SOURCE_ASSET,
+                                amount: request.sourceAmount,
+                            },
+                        ],
+                    },
+                ],
+            )
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handleMaxPress()
+            })
+
+            expect(result.current.payAmount).toBeNull()
+            expect(mockInfoToast).toHaveBeenCalled()
+        })
+    })
+
     it('clears the amounts and the asset pair when the selected account changes', async () => {
         const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
 
@@ -602,6 +744,18 @@ describe('useSwapForm', () => {
 
     it('surfaces an error toast when the spendable amount is not known yet', () => {
         mockSpendableMax = null
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        act(() => {
+            result.current.handleMaxPress()
+        })
+
+        expect(result.current.payAmount).toBeNull()
+        expect(mockErrorToast).toHaveBeenCalled()
+    })
+
+    it('refuses MAX while the spendable amount still answers the previous pay asset', () => {
+        mockIsSpendablePending = true
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {

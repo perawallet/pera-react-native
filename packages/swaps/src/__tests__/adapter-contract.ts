@@ -80,6 +80,12 @@ export const swapContractTests = (
             expect(makeAdapter().maxAmountFeeReserve.isNegative()).toBe(false)
         })
 
+        it('reports a non-negative holding reserve', () => {
+            const { scope } = fixtures.makeContext()
+
+            expect(makeAdapter().holdingReserve(scope).isNegative()).toBe(false)
+        })
+
         it('returns a stale quote without ordering or signing', async () => {
             const { result, context } = await run({ fetchedAt: undefined })
 

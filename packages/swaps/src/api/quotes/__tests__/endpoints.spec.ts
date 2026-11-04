@@ -107,4 +107,14 @@ describe('createSwapQuotes', () => {
             SwapQuoteMismatchError,
         )
     })
+
+    test('refuses an offer for another destination asset', async () => {
+        respondWith([
+            routerOffer({ destination_asset: routerAsset(SCOPE_A, '7') }),
+        ])
+
+        await expect(createSwapQuotes(request)).rejects.toBeInstanceOf(
+            SwapQuoteMismatchError,
+        )
+    })
 })

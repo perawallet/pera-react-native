@@ -24,6 +24,7 @@ import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import {
+    peraFeeInSourceAsset,
     pickBestByAmountOut,
     swapAdapterFor,
     useSwaps,
@@ -34,6 +35,7 @@ import {
     isDecimalEqual,
     type Nullable,
     baseUnitsToDisplayUnits,
+    displayUnitsToBaseUnits,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -117,17 +119,9 @@ export const useSwapForm = (
         ? addressOn(selectedAccount, scope)
         : undefined
     const nativeAssetId = nativeAssetFor(scope.chainId).assetId
-    // A percentage of what the account can spend, less the chain's fee reserve.
-    const { data: spendable } = useSpendableBalanceQuery(
-        selectedAccount
-            ? {
-                  account: selectedAccount,
-                  asset: { chainId: scope.chainId, assetId: fromAsset },
-                  scope,
-                  fee: swapAdapterFor(scope).maxAmountFeeReserve,
-              }
-            : undefined,
-    )
+    // Only a MAX or percentage fill follows the balance and the quote's fee; a
+    // typed amount stays as typed and fails at the balance checks instead.
+    const isPercentageFillRef = useRef(false)
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
@@ -151,6 +145,27 @@ export const useSwapForm = (
         toAsset,
         scope,
     )
+
+    // A percentage of what the account can spend, less the chain's fee reserve
+    // and, for a first holding of the receive asset, the reserve it locks. An
+    // unsettled receive balance reserves too: short of MAX beats failing at
+    // confirm.
+    const swapAdapter = swapAdapterFor(scope)
+    const { data: spendable, isPending: isSpendablePending } =
+        useSpendableBalanceQuery(
+            selectedAccount
+                ? {
+                      account: selectedAccount,
+                      asset: { chainId: scope.chainId, assetId: fromAsset },
+                      scope,
+                      fee: receiveAssetBalance
+                          ? swapAdapter.maxAmountFeeReserve
+                          : swapAdapter.maxAmountFeeReserve.add(
+                                swapAdapter.holdingReserve(scope),
+                            ),
+                  }
+                : undefined,
+        )
 
     const {
         allQuotes,
@@ -210,6 +225,7 @@ export const useSwapForm = (
     }, [selectedQuote])
 
     const resetAmounts = useCallback(() => {
+        isPercentageFillRef.current = false
         setPayAmount(null)
         setReceiveAmount(null)
         setSelectedProviderName(null)
@@ -301,6 +317,7 @@ export const useSwapForm = (
         (amount: Nullable<Decimal>) => {
             // Editing takes over from a resume: no confirmation over a change.
             shouldReopenConfirmRef.current = false
+            isPercentageFillRef.current = false
             setPayAmount(amount)
             if (!isDecimalEqual(amount, quotedAmount)) {
                 resetQuotes()
@@ -318,6 +335,7 @@ export const useSwapForm = (
 
     const handleSwapDirection = useCallback(() => {
         previousFromAssetRef.current = toAsset
+        isPercentageFillRef.current = false
         setFromAsset(toAsset)
         setToAsset(fromAsset)
         setPayAmount(receiveAmount)
@@ -334,6 +352,15 @@ export const useSwapForm = (
         resetQuotes,
     ])
 
+    const showBalanceTooLow = useCallback(() => {
+        infoToast(
+            t('swap.form.balance_too_low_title'),
+            t('swap.form.balance_too_low_body', {
+                unit: payAsset?.unitName ?? fromAsset,
+            }),
+        )
+    }, [infoToast, t, payAsset, fromAsset])
+
     const applyPercentageAmount = useCallback(
         (percentage: number) => {
             if (!selectedAddress) return
@@ -347,7 +374,8 @@ export const useSwapForm = (
                 )
                 return
             }
-            if (!spendable) {
+            // Pending includes the previous pay asset's max, kept as placeholder.
+            if (!spendable || isSpendablePending) {
                 errorToast(
                     t('swap.form.percentage_error_title'),
                     t('swap.form.percentage_error_body'),
@@ -358,14 +386,10 @@ export const useSwapForm = (
             if (amount.isZero()) {
                 // Fee reserves can consume the whole balance; filling the
                 // field with 0 would read as a dead button too.
-                infoToast(
-                    t('swap.form.balance_too_low_title'),
-                    t('swap.form.balance_too_low_body', {
-                        unit: payAsset?.unitName ?? fromAsset,
-                    }),
-                )
+                showBalanceTooLow()
                 return
             }
+            isPercentageFillRef.current = true
             setPayAmount(
                 baseUnitsToDisplayUnits(amount, payAsset?.decimals ?? 0),
             )
@@ -376,11 +400,46 @@ export const useSwapForm = (
             payAsset,
             payAssetBalance,
             spendable,
+            isSpendablePending,
             infoToast,
             errorToast,
+            showBalanceTooLow,
             t,
         ],
     )
+
+    // The Pera fee is known only once a quote answers, and it is charged on top
+    // of the amount, so a fill with no room left for it shrinks and re-quotes.
+    // Shrink only: the smaller amount's lower fee must not grow it back into
+    // another request.
+    useEffect(() => {
+        if (!isPercentageFillRef.current) return
+        if (!payAmount || !spendable || isSpendablePending) return
+        const decimals = payAsset?.decimals ?? 0
+        const amount = displayUnitsToBaseUnits(payAmount, decimals)
+        const peraFee = selectedQuote?.request.sourceAmount.equals(amount)
+            ? peraFeeInSourceAsset(selectedQuote)
+            : new Decimal(0)
+        const ceiling = spendable.max.sub(peraFee)
+        if (amount.lessThanOrEqualTo(ceiling)) return
+        if (ceiling.lessThanOrEqualTo(0)) {
+            resetAmounts()
+            showBalanceTooLow()
+            return
+        }
+        setPayAmount(baseUnitsToDisplayUnits(ceiling.floor(), decimals))
+        setReceiveAmount(null)
+        resetQuotes()
+    }, [
+        payAmount,
+        payAsset?.decimals,
+        selectedQuote,
+        spendable,
+        isSpendablePending,
+        resetAmounts,
+        resetQuotes,
+        showBalanceTooLow,
+    ])
 
     const handleMaxPress = useCallback(() => {
         applyPercentageAmount(100)

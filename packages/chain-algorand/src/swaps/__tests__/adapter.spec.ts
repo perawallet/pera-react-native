@@ -153,6 +153,12 @@ describe('algorandSwapAdapter', () => {
         )
     })
 
+    it('reserves the configured asset minimum balance for a first holding', () => {
+        expect(algorandSwapAdapter.holdingReserve(scope)).toEqual(
+            new Decimal(250_000),
+        )
+    })
+
     it('links a history item to its swap transaction on the explorer', () => {
         expect(
             algorandSwapAdapter.swapExplorerUrl(

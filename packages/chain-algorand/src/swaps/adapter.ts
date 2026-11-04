@@ -73,6 +73,7 @@ export const algorandSwapAdapter: SwapChainAdapter = {
         return match ? match[1] : null
     },
     maxAmountFeeReserve: new Decimal(MAX_AMOUNT_FEE_RESERVE_MICRO_ALGO),
+    holdingReserve: algorandHoldingReserve,
     // The router keeps no group id, so the link opens the swap transaction.
     swapExplorerUrl: (scope, item) => {
         const { explorerUrl } = getAlgorandChainConfig(scope)
