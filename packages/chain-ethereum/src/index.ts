@@ -38,6 +38,19 @@ export {
     type EvmNftStandard,
 } from './blockchain'
 export { ETHEREUM_CHAIN_ID, EVM_CHAINS, evmChainOf } from './chains/table'
+export {
+    useEvmContractAbiQuery,
+    type UseEvmContractAbiQueryParams,
+    type UseEvmContractAbiQueryResult,
+} from './contracts/hooks/useEvmContractAbiQuery'
+export type {
+    EvmAbiArgument,
+    EvmAbiValue,
+    EvmContractAbiAnswer,
+    EvmVerifiedAbi,
+    EvmVerifiedCall,
+} from './contracts/types'
+export { decodeEvmVerifiedCall } from './contracts/verified-calls'
 export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'
 export { createEvmChainModule, ethereumModule, evmChainModules } from './module'
 export { spendApprovalOfCall } from './signing/allowance'
