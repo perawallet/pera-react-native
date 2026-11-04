@@ -94,6 +94,21 @@ describe('discoverAccounts', () => {
         expect(hdIndexOf(accounts[1])?.keyIndex).toBe(2)
     })
 
+    it('probes no batch once aborted, and offers nothing as no probe answered', async () => {
+        const controller = new AbortController()
+        controller.abort()
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+            signal: controller.signal,
+        })
+
+        expect(mockFetchAccountFastLookup).not.toHaveBeenCalled()
+        expect(accounts).toEqual([])
+    })
+
     it('finds every account of a seed holding more than fifty, with no cap on the search', async () => {
         const ACTIVE_ACCOUNTS = 60
         const isActive = (address: string) => {
@@ -280,6 +295,7 @@ describe('discoverAccounts', () => {
         expect(fakeAccountsChain().adapter.checkActivity).toHaveBeenCalledWith(
             expect.any(Array),
             TESTNET_SCOPE,
+            undefined,
         )
         const calls = mockFetchAccountFastLookup.mock.calls
         expect(calls.length).toBeGreaterThan(0)

@@ -51,6 +51,8 @@ type DiscoverAccountsParams = {
     walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
+    /** Once aborted, no further batch is probed. */
+    signal?: AbortSignal
 }
 
 export async function discoverAccounts({
@@ -59,6 +61,7 @@ export async function discoverAccounts({
     walletKeyId,
     accountGapLimit,
     keyIndexGapLimit,
+    signal,
 }: DiscoverAccountsParams): Promise<LocalAccount[]> {
     const adapter = accountsChainAdapters.get(scope.chainId)
     const codec = addressCodecs.get(scope.chainId)
@@ -91,6 +94,7 @@ export async function discoverAccounts({
         const activity = await adapter.checkActivity(
             accounts.map(addressOf),
             scope,
+            signal,
         )
         hasProbeResolved = true
         return accounts.map(
@@ -102,6 +106,7 @@ export async function discoverAccounts({
         probe,
         accountGapLimit,
         keyIndexGapLimit,
+        signal,
     })
 
     // With no probe answered, "no activity" is unknown, not empty: return

@@ -379,6 +379,7 @@ describe('useHDImportSession', () => {
         expect(adapter.checkActivity).toHaveBeenCalledWith(
             expect.any(Array),
             TESTNET_SCOPE,
+            undefined,
         )
         // Nothing is active, so discovery falls back to the first account.
         expect(found.map(account => account.custody)).toEqual([
@@ -388,6 +389,29 @@ describe('useHDImportSession', () => {
             useHDImportSessionStore.getState().pending?.discoveredIndexes,
         ).toEqual([{ account: 0, keyIndex: 0 }])
         expect(kmsMock.persistHDMasterKey).not.toHaveBeenCalled()
+    })
+
+    test('discoverImportAccounts stops a single-chain search once its signal aborts', async () => {
+        const { adapter } = fakeAccountsChain()
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const controller = new AbortController()
+        controller.abort()
+
+        let walked: Awaited<
+            ReturnType<typeof result.current.discoverImportAccounts>
+        >
+        await act(async () => {
+            walked = await result.current.discoverImportAccounts({
+                walletKeyId: 'w-1',
+                signal: controller.signal,
+            })
+        })
+
+        expect(adapter.checkActivity).not.toHaveBeenCalled()
+        expect(walked!).toEqual({ accounts: [], failedChainIds: [] })
     })
 
     test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {

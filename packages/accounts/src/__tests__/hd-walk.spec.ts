@@ -756,11 +756,11 @@ describe('discoverWalletActivity', () => {
                 keyIndexGapLimit: 1,
                 onProbeSettled,
             })
-            await vi.advanceTimersByTimeAsync(4000)
+            await vi.advanceTimersByTimeAsync(8000)
             return { probed: await walk, hungProbe, families, onProbeSettled }
         }
 
-        it('is reported failed after four seconds, keeps the other chains walking and is not probed again', async () => {
+        it('is reported failed after eight silent seconds, keeps the other chains walking and is not probed again', async () => {
             const { probed, hungProbe, onProbeSettled } =
                 await walkWithHungChain()
 
@@ -797,7 +797,7 @@ describe('discoverWalletActivity', () => {
                                     resolve(
                                         new Map(probed.map(a => [a, false])),
                                     ),
-                                ++call * 3000,
+                                ++call * 5000,
                             ),
                         ),
                 )
@@ -805,16 +805,18 @@ describe('discoverWalletActivity', () => {
             const walk = discoverWalletActivity({
                 walletId: 'seed',
                 chainIds: [ETHEREUM],
-                accountGapLimit: 2,
+                accountGapLimit: 3,
                 keyIndexGapLimit: 1,
                 onProbeSettled,
             })
 
-            // The second batch answers at 6s, more than 4s after it started.
-            await vi.advanceTimersByTimeAsync(6000)
+            // Answers at 5s, 10s and 15s: the third comes more than 8s after
+            // the first armed the window, so only the answer at 10s keeps it.
+            await vi.advanceTimersByTimeAsync(15000)
             await walk
 
             expect(onProbeSettled.mock.calls).toEqual([
+                [ETHEREUM, 'answered'],
                 [ETHEREUM, 'answered'],
                 [ETHEREUM, 'answered'],
             ])
@@ -833,11 +835,12 @@ describe('discoverWalletActivity', () => {
                         ),
                     )
             }
-            // Algorand answers at 2s, 4s and 6s. Ethereum, waiting its turn
-            // behind it, first answers at 6s: more than 4s after the walk began.
+            // Algorand answers at 4s, 8s and 12s. Ethereum, waiting its turn
+            // behind it, first answers at 13s: more than 8s after Algorand's
+            // first answer armed the window, so only the later ones keep it.
             families.checkActivity
                 .get(ALGORAND)!
-                .mockImplementation(answerAfter(2000))
+                .mockImplementation(answerAfter(4000))
             families.checkActivity
                 .get(ETHEREUM)!
                 .mockImplementation(
@@ -848,7 +851,7 @@ describe('discoverWalletActivity', () => {
                                     resolve(
                                         new Map(probed.map(a => [a, false])),
                                     ),
-                                6000,
+                                13000,
                             ),
                         ),
                 )
@@ -861,7 +864,7 @@ describe('discoverWalletActivity', () => {
                 onProbeSettled,
             })
 
-            await vi.advanceTimersByTimeAsync(6000)
+            await vi.advanceTimersByTimeAsync(13000)
             await walk
 
             expect(onProbeSettled).not.toHaveBeenCalledWith(
@@ -889,11 +892,13 @@ describe('discoverWalletActivity', () => {
             families.checkActivity
                 .get(ALGORAND)!
                 .mockImplementation(
-                    firstAnswerAfter(6000, [familyHdAddress('algorand', 0, 0)]),
+                    firstAnswerAfter(10000, [
+                        familyHdAddress('algorand', 0, 0),
+                    ]),
                 )
             families.checkActivity
                 .get(ETHEREUM)!
-                .mockImplementation(firstAnswerAfter(7000, []))
+                .mockImplementation(firstAnswerAfter(11000, []))
             const onProbeSettled = vi.fn()
             const walk = discoverWalletActivity({
                 walletId: 'seed',
@@ -903,7 +908,7 @@ describe('discoverWalletActivity', () => {
                 onProbeSettled,
             })
 
-            await vi.advanceTimersByTimeAsync(7000)
+            await vi.advanceTimersByTimeAsync(11000)
             const probed = await walk
 
             expect(onProbeSettled).not.toHaveBeenCalledWith(
@@ -913,6 +918,33 @@ describe('discoverWalletActivity', () => {
             expect(activeIndexes(probed)).toEqual([
                 [{ account: 0, keyIndex: 0 }, [ALGORAND]],
             ])
+        })
+
+        it('reports no chain failed when the walk is cancelled while one is still silent', async () => {
+            vi.useFakeTimers()
+            const families = registerChainFamilies([ALGORAND, ETHEREUM])
+            activeOn(families, ALGORAND, [])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockImplementation(neverAnswers)
+            const controller = new AbortController()
+            const onProbeSettled = vi.fn()
+            const walk = discoverWalletActivity({
+                walletId: 'seed',
+                chainIds: [ALGORAND, ETHEREUM],
+                accountGapLimit: 1,
+                keyIndexGapLimit: 1,
+                signal: controller.signal,
+                onProbeSettled,
+            })
+
+            await vi.advanceTimersByTimeAsync(1000)
+            controller.abort()
+            // Ethereum's idle timer still fires, long after the user stopped.
+            await vi.advanceTimersByTimeAsync(8000)
+            await walk
+
+            expect(onProbeSettled.mock.calls).toEqual([[ALGORAND, 'answered']])
         })
 
         it('adds nothing when it answers after being cut', async () => {
@@ -935,7 +967,7 @@ describe('discoverWalletActivity', () => {
                 keyIndexGapLimit: 1,
             })
 
-            await vi.advanceTimersByTimeAsync(4000)
+            await vi.advanceTimersByTimeAsync(8000)
             answerLate(new Map())
 
             expect(activeIndexes(await walk)).toEqual([])

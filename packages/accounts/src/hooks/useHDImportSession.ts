@@ -59,6 +59,7 @@ export type UseHDImportSessionResult = {
         walletKeyId: string
         /** Once aborted, no further batch is probed. */
         signal?: AbortSignal
+        /** Reported only when more than one chain is discovered; a single chain has no networks to tell apart. */
         onProgress?: (progress: WalletDiscoveryProgress) => void
     }) => Promise<WalletCandidates>
     commitImport: (params: {
@@ -181,6 +182,7 @@ export const useHDImportSession = (
                     scope,
                     getPublicKey,
                     walletKeyId: pending.walletKeyId,
+                    signal,
                 })
             }
             // Only the indexes the user can pick: one the wallet already holds

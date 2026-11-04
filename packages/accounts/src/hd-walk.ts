@@ -48,7 +48,10 @@ const WALLET_KEY_INDEX_LIMIT = 20
 // chains: a healthy chain waiting its turn must not read as a dead one. It
 // doesn't run before the first answer: on a slow link that answer is slow for
 // every chain, and cutting them all would fail an import that only needed time.
-const CHAIN_PROBE_IDLE_TIMEOUT_MS = 4000
+// Keep it above one lookup's own timeout (`DISCOVERY_LOOKUP_BOUNDS` in
+// chain-ethereum): a chain can't answer before its lookups settle, so a
+// shorter window cuts a lookup that was about to succeed.
+const CHAIN_PROBE_IDLE_TIMEOUT_MS = 8000
 
 /** One answer per index, in order: `true` when the index has activity. */
 export type HdBatchProbe = (indices: readonly HdIndex[]) => Promise<boolean[]>
@@ -261,10 +264,11 @@ type DiscoverWalletActivityParams = {
     keyIndexGapLimit?: number
     /**
      * Called once per chain for each probed batch. A batch whose probe
-     * rejects is asked once more; a chain that answers no batch for
-     * `CHAIN_PROBE_IDLE_TIMEOUT_MS` also `failed`. A chain whose batch `failed`, or
-     * was `refused`, is not probed again for the rest of the walk, and its
-     * pending lookups are aborted.
+     * rejects is asked once more; a chain still pending when no chain has
+     * answered for `CHAIN_PROBE_IDLE_TIMEOUT_MS` also `failed`. A chain whose
+     * batch `failed`, or was `refused`, is not probed again for the rest of the
+     * walk, and its pending lookups are aborted. A batch still in flight when
+     * `signal` aborts settles nothing.
      */
     onProbeSettled?: (chainId: ChainId, outcome: HdProbeOutcome) => void
     /** Called with each batch's indexes once every chain's probe of it resolves. */
@@ -496,6 +500,9 @@ export async function discoverWalletActivity({
             answered.lastAnswerMs = Date.now() - startedAt
             answeredBy.set(chainId, answered)
         } catch (error) {
+            // A cancel leaves batches in flight, and their idle timers still
+            // fire: that is the user stopping the walk, not a chain failing.
+            if (signal?.aborted) return entries.map(() => undefined)
             const cutOutcome =
                 cutOutcomes.get(chainId) ??
                 (isChainRefusedError(error) ? 'refused' : 'failed')
