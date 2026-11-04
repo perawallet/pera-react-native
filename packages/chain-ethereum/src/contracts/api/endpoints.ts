@@ -25,10 +25,11 @@ import { evmContractAbiResponseSchema } from './schema'
 
 export const CONTRACTS_SERVICE = 'contracts'
 
-// A signing screen reads this, so a slow backend must give up fast rather
-// than leave the review without an answer.
+// The backend's uncached lookup asks the chain and then two registries in
+// turn, which can take 8 s. Nothing waits on the answer, but the review shows
+// a spinner until it settles, so give up soon after that.
 export const CONTRACT_ABI_LOOKUP_BOUNDS = {
-    timeout: 5000,
+    timeout: 10_000,
     retry: { limit: 0 },
 } satisfies Pick<RequestConfiguration, 'timeout' | 'retry'>
 
@@ -68,12 +69,14 @@ export const fetchEvmContractAbi = async (
         throw error
     }
     const response = evmContractAbiResponseSchema.parse(data)
-    if (response.status === 'unverified') return { status: 'unverified' }
+    if (response.status !== 'verified') return { status: 'unverified' }
     return {
         status: 'verified',
         abi: response.abi,
-        ...(response.is_proxy && {
-            proxy: { implementation: getAddress(response.implementation) },
+        ...(response.proxy && {
+            proxy: {
+                implementation: getAddress(response.proxy.implementation),
+            },
         }),
     }
 }

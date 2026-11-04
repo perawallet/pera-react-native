@@ -14,26 +14,29 @@ import { z } from 'zod'
 
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/)
 
-// ABI items are left raw: the decoder reads only well-formed function items,
-// so one odd entry never costs the whole answer.
-const verifiedSchema = z.discriminatedUnion('is_proxy', [
-    z.object({
-        status: z.literal('verified'),
-        abi: z.array(z.unknown()),
-        is_proxy: z.literal(false),
-        implementation: z.null().optional(),
-    }),
-    z.object({
-        status: z.literal('verified'),
-        abi: z.array(z.unknown()),
-        is_proxy: z.literal(true),
-        implementation: address,
-    }),
-])
+// Registry and proxy standard are left as strings, since the app never reads
+// them and a new one must not fail the lookup. ABI items are left raw: the
+// decoder reads only well-formed function items, so one odd entry never costs
+// the whole answer.
+const proxySchema = z
+    .object({ standard: z.string(), implementation: address })
+    .nullable()
 
 export const evmContractAbiResponseSchema = z.union([
-    verifiedSchema,
-    z.object({ status: z.literal('unverified') }),
+    z.object({
+        status: z.literal('verified'),
+        abi: z.array(z.unknown()),
+        registry: z.string(),
+        proxy: proxySchema,
+    }),
+    // `unresolved_proxy`: a proxy whose implementation the backend can't read,
+    // so there is no ABI to name the call with.
+    z.object({
+        status: z.enum(['not_verified', 'unresolved_proxy']),
+        abi: z.null(),
+        registry: z.null(),
+        proxy: proxySchema,
+    }),
 ])
 
 export type EvmContractAbiResponse = z.infer<

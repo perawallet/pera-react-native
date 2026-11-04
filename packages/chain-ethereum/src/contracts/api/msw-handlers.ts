@@ -21,7 +21,7 @@ export type PeraEvmContractAbiFixtures = {
     baseUrl?: string
     /**
      * Answers keyed by lowercase contract address; an address left out is
-     * unverified. A number fails every lookup with that status.
+     * not verified. A number fails every lookup with that status.
      */
     contractAbis?: Record<string, EvmContractAbiResponse> | number
 }
@@ -29,15 +29,21 @@ export type PeraEvmContractAbiFixtures = {
 export const verifiedAbiResponse = (
     abi: readonly unknown[],
     implementation?: Address,
-): EvmContractAbiResponse =>
-    implementation
-        ? { status: 'verified', abi: [...abi], is_proxy: true, implementation }
-        : {
-              status: 'verified',
-              abi: [...abi],
-              is_proxy: false,
-              implementation: null,
-          }
+): EvmContractAbiResponse => ({
+    status: 'verified',
+    abi: [...abi],
+    registry: 'sourcify',
+    proxy: implementation
+        ? { standard: 'eip1967', implementation: implementation.toLowerCase() }
+        : null,
+})
+
+const NOT_VERIFIED: EvmContractAbiResponse = {
+    status: 'not_verified',
+    abi: null,
+    registry: null,
+    proxy: null,
+}
 
 /** The Pera backend's verified-ABI endpoint. */
 export const peraEvmContractAbiHandlers = ({
@@ -53,9 +59,8 @@ export const peraEvmContractAbiHandlers = ({
                 return HttpResponse.json({}, { status: contractAbis })
             }
             return HttpResponse.json(
-                contractAbis[String(params.address).toLowerCase()] ?? {
-                    status: 'unverified',
-                },
+                contractAbis[String(params.address).toLowerCase()] ??
+                    NOT_VERIFIED,
             )
         },
     ),

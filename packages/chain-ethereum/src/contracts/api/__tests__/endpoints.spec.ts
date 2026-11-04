@@ -122,6 +122,50 @@ describe('fetchEvmContractAbi', () => {
         ).resolves.toEqual({ status: 'unverified' })
     })
 
+    it.each(['not_verified', 'unresolved_proxy'])(
+        'returns unverified when the backend answers %s, proxy or not',
+        async status => {
+            server.use(
+                http.get(
+                    `${PERA_URL}${contractAbiPath(':chainId', ':address')}`,
+                    () =>
+                        HttpResponse.json({
+                            status,
+                            abi: null,
+                            registry: null,
+                            proxy: {
+                                standard: 'eip1967',
+                                implementation: IMPLEMENTATION.toLowerCase(),
+                            },
+                        }),
+                ),
+            )
+
+            await expect(
+                fetchEvmContractAbi(MAINNET, ETHEREUM, ROUTER),
+            ).resolves.toEqual({ status: 'unverified' })
+        },
+    )
+
+    it('rejects a verified answer without an ABI', async () => {
+        server.use(
+            http.get(
+                `${PERA_URL}${contractAbiPath(':chainId', ':address')}`,
+                () =>
+                    HttpResponse.json({
+                        status: 'verified',
+                        abi: null,
+                        registry: 'sourcify',
+                        proxy: null,
+                    }),
+            ),
+        )
+
+        await expect(
+            fetchEvmContractAbi(MAINNET, ETHEREUM, ROUTER),
+        ).rejects.toThrow()
+    })
+
     it('rejects when the backend fails, never answering unverified', async () => {
         server.use(
             ...peraEvmContractAbiHandlers({
@@ -156,8 +200,8 @@ describe('fetchEvmContractAbi', () => {
                     HttpResponse.json({
                         status: 'verified',
                         abi: ABI,
-                        is_proxy: true,
-                        implementation: null,
+                        registry: 'sourcify',
+                        proxy: { standard: 'eip1967', implementation: null },
                     }),
             ),
         )
