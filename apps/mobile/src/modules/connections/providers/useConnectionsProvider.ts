@@ -29,7 +29,7 @@ import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconn
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
 import { createEip1193ConnectionHandler } from '@perawallet/wallet-core-dapp'
-import { whenAppUnlocked } from '@perawallet/wallet-core-security'
+import { isAppLocked, whenAppUnlocked } from '@perawallet/wallet-core-security'
 import { assessSiteSafety } from '@perawallet/wallet-core-site-safety'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -88,6 +88,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 startWhen: whenAppUnlocked,
             }),
         )
+        webViewDappTransport.bindLockState(isAppLocked)
         registry.register(
             createEip1193ConnectionHandler({
                 transport: webViewDappTransport,

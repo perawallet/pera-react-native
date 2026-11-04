@@ -265,6 +265,46 @@ its error unchanged, and everything else answers 4200. The handler queues only
 the methods `EIP1193_SIGNING_METHODS` names, so a chain that adds a signing
 method answers 4200 until that list names it too.
 
+### Node reads
+
+Before the route table, a method in the site's chain adapter's
+`nodeReads.methods` goes to that chain's node and the answer comes back (Ethereum:
+`ETHEREUM_NODE_READ_METHODS` in `connect/nodeReads.ts`, through `createEvmClient`,
+so reads share sync's timeouts and failover). The chain owns the list and refuses
+any other method itself, so nothing that signs, broadcasts or holds state on one
+node (filters, subscriptions) can pass.
+
+- Only a connected site reads. The nodes are keyed and metered, so a site with
+  no grant gets 4100, as for signing, rather than a free RPC proxy.
+- A node's own JSON-RPC error (revert data included) reaches the page as is. Any
+  other failure answers -32603 with a fixed message, because a transport error's
+  text names the node URL and the request.
+- A read never records activity, so a page polling `eth_blockNumber` does not
+  reorder the Connections list.
+- An origin may hold `MAX_CONCURRENT_NODE_READS_PER_ORIGIN` reads open and send
+  `MAX_NODE_READS_PER_ORIGIN_PER_WINDOW` per `NODE_READ_WINDOW_MS`; past either a
+  read answers -32005, which viem retries. The nodes and their quota are shared
+  with the wallet's own sync, so one page can't starve it.
+
+### Permissions and the locked wallet
+
+`wallet_getPermissions` returns the site's EIP-2255 grant: one `eth_accounts`
+permission whose `restrictReturnedAccounts` caveat lists the accounts it may see.
+`wallet_requestPermissions` accepts only `eth_accounts` and runs the same connect
+flow as `eth_requestAccounts`, but always opens the approval, even for a connected
+site: dApps use it to change which accounts they hold.
+
+The transport stamps `isWalletLocked` on every request: the extension's service
+worker reads the vault's `SESSION_UNLOCKED_KEY` flag from session storage, which
+the offscreen document cannot reach, and the in-app browser reads the app lock.
+The flag is written and removed with the master key, so the worker never reads
+the key: every page request triggers the check, and a read would copy the key
+into the worker's heap. A state that can't be read counts as locked. While locked, `eth_accounts` and `wallet_getPermissions` return
+nothing and a reconnect goes through the approval; reads still answer, since they
+reveal no account. Nothing is pushed on lock or unlock: a page sees the change on
+its next `eth_accounts`, so a dApp that doesn't poll stays disconnected until it
+reloads.
+
 ### Approval queue
 
 Signing requests and chain switches from one site, across all its tabs, wait in

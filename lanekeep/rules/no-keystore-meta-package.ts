@@ -17,7 +17,7 @@ export default defineRule({
     card: {
         message: 'the @algorandfoundation/keystore meta-package is imported',
         remediation:
-            'Import the specific package instead: @algorandfoundation/react-native-keystore, keystore-core or keystore-web. Nothing in the workspace depends on the meta-package; extensions/keystore-chrome vendors the key types it needs.',
+            'Import the specific package instead: @algorandfoundation/react-native-keystore, keystore-core or keystore-web. Nothing in the workspace depends on the meta-package; its key types and errors come from keystore-core.',
         examples: {
             bad: "import type { Key } from '@algorandfoundation/keystore/types'",
             good: "import type { Key } from '@algorandfoundation/keystore-core'",

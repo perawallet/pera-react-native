@@ -9,7 +9,7 @@ import { productionSource } from '../shared/scope.js'
 // Importing one for its VALUE pulls that code into the importer's bundle.
 const CHROME_ONLY = [
     '@perawallet/wallet-extension-platform-chrome',
-    '@perawallet/wallet-extension-keystore-chrome',
+    '@perawallet/wallet-extension-vault-chrome',
     '@perawallet/wallet-core-browser-runtime',
 ]
 

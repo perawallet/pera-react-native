@@ -55,7 +55,7 @@ vi.mock('@perawallet/wallet-core-passkeys', () => ({
     SecurityError: mocks.SecurityError,
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     createKeystoreSigner: mocks.createKeystoreSigner,
 }))
 

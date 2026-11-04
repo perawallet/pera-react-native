@@ -174,7 +174,9 @@ These are app behaviours the suite pins against a real node, each a bug class a 
     - The predeploys are pinned to Base Sepolia block 50,996,000. Re-capturing with
       `tools/dev/capture-op-predeploys.sh` at a past block needs an archive RPC.
 - **Real L2 execution semantics** beyond the fee oracle (Arbitrum's L1 calldata gas, OP deposits),
-  and reorgs and finality depth. Anvil is a single-node L1 simulator.
+  and reorgs. Anvil is a single-node L1 simulator, so the reconcile suite proves finality gating
+  at a short configured depth, and a block being replaced is only pinned by the reconcile unit
+  specs.
 - **dApp gas.** `validateEthereumSendCalls` drops per-call `gas`, so every `wallet_sendCalls` call
   is estimated. An `eth_sendTransaction` `gas` is signed as given with no ceiling, so a too-low
   value is mined as an out-of-gas revert the user pays for.

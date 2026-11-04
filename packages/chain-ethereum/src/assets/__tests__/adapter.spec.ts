@@ -533,6 +533,31 @@ describe('syncAssets', () => {
         expect(node).toEqual([])
     })
 
+    it("stores a backend-known token with the backend's total supply", async () => {
+        server.use(
+            ...rpc({ [USDC]: usdcOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: {
+                        ...usdcFromPera,
+                        total: '61234567890000000',
+                    },
+                },
+            }),
+        )
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([ref(USDC)], SCOPE)
+
+        expect(full).toHaveLength(1)
+        expect(full[0]!.totalSupply.toFixed()).toBe('61234567890000000')
+    })
+
     it("stores a contract's 0 decimals over the backend's", async () => {
         server.use(
             ...rpc({ [USDC]: { ...usdcOnChain, decimals: 0 } }),

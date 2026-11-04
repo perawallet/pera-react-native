@@ -12,10 +12,22 @@
 
 import { createRequire } from 'node:module'
 
-// The Metro gate's own test, so both builds agree on which chains need viem.
-export const { listsEvmChain } = createRequire(import.meta.url)(
-    '../../mobile/metro-build-gates.js',
-)
+const { EVM_CHAIN_PACKAGE, chainIdsOf, chainPackageNamed } = createRequire(
+    import.meta.url,
+)('../../../tools/dev/chain-packages.cjs')
+
+// The chains chain-ethereum serves, from the table the Metro gate reads, so
+// both builds agree on which chains need viem.
+const EVM_CHAIN_IDS = chainIdsOf(chainPackageNamed(EVM_CHAIN_PACKAGE))
+
+/**
+ * Whether a build's chain list ships any EVM chain, and so needs viem.
+ *
+ * @param {readonly string[]} chainIds
+ * @returns {boolean}
+ */
+export const listsEvmChain = chainIds =>
+    chainIds.some(chainId => EVM_CHAIN_IDS.includes(chainId))
 
 // viem's BaseError embeds `viem@<version>` in every message, and a string
 // literal survives minification.

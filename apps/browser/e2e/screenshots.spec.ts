@@ -151,7 +151,10 @@ test('captures the key screens', async () => {
     // --- Lock -> unlock screen ---
     const [serviceWorker] = context.serviceWorkers()
     await serviceWorker.evaluate(async () => {
-        await chrome.storage.session.remove('vault:master-key')
+        await chrome.storage.session.remove([
+            'vault:master-key',
+            'vault:unlocked',
+        ])
     })
     await page.reload()
     await expect(page.getByTestId('unlock-password-input')).toBeVisible({

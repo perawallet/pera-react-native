@@ -26,6 +26,7 @@ import { getChainCapabilities } from '@perawallet/wallet-core-chain-shared'
 import { historyChainAdapters } from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
 import {
+    confirmingNotice,
     replacementNotNeededNotice,
     transactionStatusNotice,
 } from './utils/statusNotice'
@@ -38,10 +39,12 @@ import {
 export const MAX_PENDING_HISTORY_ROWS = 50
 
 const historyStatusOf = (status: SubmissionStatus): TransactionHistoryStatus =>
-    status === 'submitted' || status === 'unknown' ? 'pending' : status
+    status === 'confirmed' || status === 'failed' || status === 'replaced'
+        ? status
+        : 'pending'
 
-// A failed replacement whose chain of re-priced attempts ends in a confirmed one
-// failed only because that transaction landed first.
+// A failed replacement whose chain of re-priced attempts ends in one that has
+// landed, confirming or confirmed, failed only because that transaction landed first.
 const isReplacementNotNeeded = (
     attempt: SubmissionAttemptWithHistoryEntry,
     byId: ReadonlyMap<string, SubmissionAttemptWithHistoryEntry>,
@@ -53,11 +56,24 @@ const isReplacementNotNeeded = (
         visited.add(replaced)
         const ancestor = byId.get(replaced)
         if (!ancestor) return false
-        if (ancestor.status === 'confirmed') return true
+        if (
+            ancestor.status === 'confirmed' ||
+            ancestor.status === 'confirming'
+        ) {
+            return true
+        }
         replaced = ancestor.replacesAttemptId
     }
     return false
 }
+
+const noticeOf = (
+    { status: attemptStatus, createdAt }: SubmissionAttemptWithHistoryEntry,
+    status: TransactionHistoryStatus,
+) =>
+    attemptStatus === 'confirming'
+        ? confirmingNotice()
+        : transactionStatusNotice(status, createdAt)
 
 export type GetPendingTransactionRecordsParams = {
     address: string
@@ -98,7 +114,7 @@ export const getPendingTransactionRecords = async ({
         const status = historyStatusOf(attempt.status)
         const notice = isReplacementNotNeeded(attempt, byId)
             ? replacementNotNeededNotice()
-            : transactionStatusNotice(status, attempt.createdAt)
+            : noticeOf(attempt, status)
         records.push({
             id: txIds[0],
             scope,

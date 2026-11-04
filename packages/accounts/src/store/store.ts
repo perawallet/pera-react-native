@@ -19,6 +19,7 @@ import {
     type AccountSortMode,
     type ChainAccount,
     type EnableChainOptions,
+    type HardwareWalletAccount,
     type HardwareWalletDetails,
     type HdIndex,
     type LaunchAccountMode,
@@ -491,6 +492,25 @@ const rebindToHardware = (
     })
 }
 
+// The device that just proved the seed is the one a later connect can reach:
+// a web USB id names a model, so a joined account keeping another model's id
+// would not find it.
+const boundToDevice = (
+    holder: HardwareWalletAccount,
+    {
+        manufacturer,
+        deviceId,
+        deviceName,
+        transportType,
+    }: HardwareWalletDetails,
+): HardwareWalletAccount => ({
+    ...holder,
+    custody: {
+        ...holder.custody,
+        device: { manufacturer, deviceId, deviceName, transportType },
+    },
+})
+
 /** `holder` with `source`'s entries, keyless, on the chains it has none of. */
 const withEntriesOf = (
     holder: WalletAccount,
@@ -808,11 +828,12 @@ export const withDefaultChains = async <A extends WalletAccount>(
 
 /**
  * Binds `current` to the device at `details`. Its entries join the hardware
- * account `joinId` when that account sits at the Bluetooth device position on
- * none of `current`'s chains, and `current` goes, so one device position stays
- * one account. Otherwise `current` rebinds in place, as it always does over
- * USB: passphrase seeds share a device id, so only a caller that read the
- * joined account's address off the device may name it.
+ * account `joinId` when that account is a join candidate at `details`'
+ * position on none of `current`'s chains, that account binds to `details`'
+ * device, and `current` goes, so one device position stays one account.
+ * Otherwise `current` rebinds in place: a position
+ * can hold several seeds, so only a caller that read the joined account's
+ * address off the device may name it.
  */
 const moveToHardware = (
     get: StoreApi<AccountsState>['getState'],
@@ -833,7 +854,7 @@ const moveToHardware = (
                   Object.keys(current.chains) as ChainId[],
               ).find(account => account.id === joinId)
     if (holder) {
-        const merged = withEntriesOf(holder, current)
+        const merged = withEntriesOf(boundToDevice(holder, details), current)
         get().setAccounts(
             accounts.flatMap(account =>
                 account.id === current.id
@@ -1562,7 +1583,7 @@ export const useAccountsStore: UseBoundStore<
                     return account
                 }
                 const updated = {
-                    ...holder,
+                    ...boundToDevice(holder, details),
                     chains: { ...holder.chains, [chainId]: entry },
                 }
                 get().setAccounts(

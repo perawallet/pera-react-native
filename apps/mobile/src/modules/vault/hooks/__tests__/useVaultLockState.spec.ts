@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
     listeners: [] as Array<(unlocked: boolean) => void>,
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     isVaultInitialized: mocks.isVaultInitialized,
     isUnlocked: mocks.isUnlocked,
     onLockStateChanged: (listener: (unlocked: boolean) => void) => {

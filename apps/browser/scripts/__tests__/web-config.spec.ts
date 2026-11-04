@@ -28,22 +28,14 @@ import {
 
 const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 
-const evmTooling = createRequire(import.meta.url)(
-    '../../../../tools/dev/evm-config-keys.cjs',
+const chainPackages = createRequire(import.meta.url)(
+    '../../../../tools/dev/chain-packages.cjs',
 ) as {
-    evmChainConfigKeys: () => {
-        capabilitiesEnv: string
-        capabilitiesKey: string
-    }[]
-    evmScopeConfigKeys: () => {
-        rpcUrlEnv: string
-        rpcUrlKey: string
-        peraServicesEnv: string
-        peraServicesKey: string
-    }[]
+    chainPackageCapabilityConfigKeys: () => { env: string; key: string }[]
+    chainPackageScopeConfigKeys: () => { env: string; key: string }[]
 }
 
-// The literal lines, plus the EVM lines the script generates from the table.
+// The literal lines, plus the chain package lines the script generates from the table.
 const emittable = (): Map<string, string> => {
     const source = readFileSync(SCRIPT, 'utf8')
     return new Map([
@@ -55,18 +47,10 @@ const emittable = (): Map<string, string> => {
             key,
             `${envVar}=${type === 'boolean' ? 'true' : type === 'number' ? '1' : 'value'}`,
         ]),
-        ...evmTooling
-            .evmChainConfigKeys()
-            .map((keys): [string, string] => [
-                keys.capabilitiesKey,
-                `${keys.capabilitiesEnv}=value`,
-            ]),
-        ...evmTooling
-            .evmScopeConfigKeys()
-            .flatMap((keys): [string, string][] => [
-                [keys.rpcUrlKey, `${keys.rpcUrlEnv}=value`],
-                [keys.peraServicesKey, `${keys.peraServicesEnv}=value`],
-            ]),
+        ...[
+            ...chainPackages.chainPackageCapabilityConfigKeys(),
+            ...chainPackages.chainPackageScopeConfigKeys(),
+        ].map((keys): [string, string] => [keys.key, `${keys.env}=value`]),
     ])
 }
 

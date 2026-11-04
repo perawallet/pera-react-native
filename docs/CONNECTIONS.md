@@ -144,6 +144,8 @@ name another. A target no chain serves, or one a session lacks whose chain has `
 answered with the namespace's unrecognized-chain code and the user is told; a target that is not its
 chain's selected network is refused. The selected network is answered at once if the session holds it,
 since approval was consent to it; otherwise the user is asked before it is added to the session.
+Either way a session that listed `chainChanged` is then sent it for the target, best effort: the
+switch is answered whether or not the event is delivered.
 
 ## The `dapp` handler
 

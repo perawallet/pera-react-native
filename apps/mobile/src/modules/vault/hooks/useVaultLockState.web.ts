@@ -15,7 +15,7 @@ import {
     isUnlocked as readIsUnlocked,
     isVaultInitialized,
     onLockStateChanged,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseVaultLockStateResult = {

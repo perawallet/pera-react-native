@@ -33,9 +33,18 @@
 
 import { createRequire } from 'node:module'
 
-const { evmScopeConfigKeys } = createRequire(import.meta.url)(
-    './dev/evm-config-keys.cjs',
-)
+const { EVM_CHAIN_PACKAGE, chainPackageFieldConfigKeys } = createRequire(
+    import.meta.url,
+)('./dev/chain-packages.cjs')
+
+// Every chain-ethereum network, with the env carrying its RPC URLs.
+const evmRpcScopes = () =>
+    chainPackageFieldConfigKeys(EVM_CHAIN_PACKAGE, 'rpcUrl').map(keys => ({
+        chainId: keys.chainId,
+        tier: keys.network.tier,
+        eip155ChainId: keys.network.eip155ChainId,
+        rpcUrlEnv: keys.env,
+    }))
 
 const ATTEMPTS = 3
 const RETRY_DELAY_MS = 1_000
@@ -123,7 +132,7 @@ const main = async () => {
     let checked = 0
     let failed = false
 
-    for (const scope of evmScopeConfigKeys()) {
+    for (const scope of evmRpcScopes()) {
         for (const url of urlsOf(process.env[scope.rpcUrlEnv])) {
             checked += 1
             const problem = await problemWith(url, scope, isProduction)

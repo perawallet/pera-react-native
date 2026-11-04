@@ -1,0 +1,38 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// Single source of truth for every chrome.storage key the keystore owns.
+// Extracted because passkey/vault key literals were duplicated inline
+// (vault.ts createVault) to dodge a circular import.
+
+/** chrome.storage.local — password-wrapped master key blob. */
+export const VAULT_STORAGE_KEY = 'vault:wrapped-master-key'
+/** chrome.storage.local — PRF-wrapped master key blob (passkey unlock). */
+export const PRF_BLOB_KEY = 'vault:wrapped-master-key-prf'
+/** chrome.storage.local — WebAuthn credential id for passkey unlock. */
+export const PRF_CRED_ID_KEY = 'vault:prf-credential-id'
+/** chrome.storage.session — raw unlocked master key (memory-only). */
+export const SESSION_MASTER_KEY = 'vault:master-key'
+/**
+ * chrome.storage.session: `true` while SESSION_MASTER_KEY is held. Written and
+ * removed with the key in the same call, so the lock state is readable without
+ * reading the key.
+ */
+export const SESSION_UNLOCKED_KEY = 'vault:unlocked'
+/** chrome.storage.local — persisted auto-lock preference (minutes). */
+export const AUTO_LOCK_MINUTES_KEY = 'vault:auto-lock-minutes'
+/** chrome.storage.local — unlock lockout bookkeeping (failed attempts, lockout end time). */
+export const LOCKOUT_STORAGE_KEY = 'vault:lockout'
+/** chrome.storage.session: epoch ms of the last proven password. */
+export const PASSWORD_AUTH_AT_KEY = 'vault:password-auth-at'
+/** chrome.storage.session: the onboarding passkey step is still owed. */
+export const PASSKEY_SETUP_PENDING_KEY = 'vault:passkey-setup-pending'

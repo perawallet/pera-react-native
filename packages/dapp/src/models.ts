@@ -95,6 +95,8 @@ export const eip1193ConnectionIdOf = (origin: string): ConnectionId =>
 export type DappRequestContext = {
     origin: string
     hasUserActivation: boolean
+    /** Read by the transport's privileged side, never taken from the page. */
+    isWalletLocked: boolean
     /** Browser-supplied tab favicon; only a fallback when the page sends no usable icon. */
     faviconUrl?: string
 }

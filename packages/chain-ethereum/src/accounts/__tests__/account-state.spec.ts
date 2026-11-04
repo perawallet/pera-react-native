@@ -33,7 +33,8 @@ import {
     evmRpcHandlers,
 } from '../../blockchain/msw-handlers'
 import { PERA_URL } from '../../__tests__/pera-backend'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { testChainContext } from '../../__tests__/context'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -332,6 +333,74 @@ describe('createEthereumAccountStateOps', () => {
         })
     })
 
+    describe('fetchChangeSignal pacing without block following', () => {
+        const BASE_SCOPE = evmScopeOf(BASE)
+        const headAt = (head: () => number) =>
+            evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_blockNumber: () => `0x${head().toString(16)}`,
+                },
+            })
+        const baseOps = () =>
+            createEthereumAccountStateOps(
+                testChainContext({ chain: BASE }),
+                BASE,
+            )
+
+        it('runs one account pass for two ticks 3 seconds apart on a 2-second chain', async () => {
+            let head = 115
+            server.use(...headAt(() => head))
+            const ops = baseOps()
+
+            const first = await ops.fetchChangeSignal(
+                [ADDRESS],
+                BASE_SCOPE,
+                100,
+            )
+            // 3 seconds later: one or two more blocks.
+            head = 117
+            const second = await ops.fetchChangeSignal(
+                [ADDRESS],
+                BASE_SCOPE,
+                first.cursor,
+            )
+
+            expect(first).toEqual({ changed: true, cursor: 115 })
+            expect(second).toEqual({ changed: false, cursor: 115 })
+        })
+
+        it('keeps the cursor on a 2-second chain until the head is 30 seconds of blocks past it', async () => {
+            let head = 114
+            server.use(...headAt(() => head))
+            const ops = baseOps()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], BASE_SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+
+            head = 115
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], BASE_SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 115 })
+        })
+
+        it('waits 30 seconds of blocks on a 12-second chain too, rounding up to 3 blocks', async () => {
+            let head = 12
+            server.use(...headAt(() => head))
+            const ops = createEthereumAccountStateOps(contextWith(), ETHEREUM)
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 10),
+            ).resolves.toEqual({ changed: false, cursor: 10 })
+
+            head = 13
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 10),
+            ).resolves.toEqual({ changed: true, cursor: 13 })
+        })
+    })
+
     describe('fetchChangeSignal over Pera block following', () => {
         const signalWith = (
             cursor: number | null,
@@ -402,14 +471,32 @@ describe('createEthereumAccountStateOps', () => {
             })
         })
 
-        it('keeps the cursor on a fail-open refresh without a round', async () => {
-            server.use(
-                ...peraEvmHandlers({ blockFollowing: { refresh: true } }),
-            )
+        describe('on a fail-open refresh without a round', () => {
+            const failOpenAtHead = (head: Hex) =>
+                server.use(
+                    ...peraEvmHandlers({ blockFollowing: { refresh: true } }),
+                    ...evmRpcHandlers({
+                        rpcUrl: RPC_URL,
+                        responses: { eth_blockNumber: head },
+                    }),
+                )
 
-            await expect(signalWith(40)).resolves.toEqual({
-                changed: true,
-                cursor: 40,
+            it('keeps the cursor until the head is far enough past it', async () => {
+                failOpenAtHead('0x2a')
+
+                await expect(signalWith(40)).resolves.toEqual({
+                    changed: false,
+                    cursor: 40,
+                })
+            })
+
+            it('reports a change and takes the head once it is far enough past the cursor', async () => {
+                failOpenAtHead('0x2b')
+
+                await expect(signalWith(40)).resolves.toEqual({
+                    changed: true,
+                    cursor: 43,
+                })
             })
         })
 

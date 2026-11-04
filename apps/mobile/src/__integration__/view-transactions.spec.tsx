@@ -198,9 +198,8 @@ describe('Flow: View transactions → tap into details', () => {
 
     it('Given an account with an empty history, the History tab shows its title and empty view', async () => {
         // Clear the transactions seeded in beforeEach so the selected
-        // account has an empty history — the brand-new "deposit ALGO to
-        // get started" state, which must render an empty view, not a blank
-        // History tab.
+        // account has an empty history — the brand-new "get started"
+        // state, which must render an empty view, not a blank History tab.
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
 

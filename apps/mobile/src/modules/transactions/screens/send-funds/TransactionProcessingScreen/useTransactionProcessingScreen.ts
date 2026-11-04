@@ -218,7 +218,9 @@ export const useTransactionProcessingScreen =
                               }
                             : {
                                   title: t('send_funds.success.title'),
-                                  body: t('send_funds.success.subtitle'),
+                                  body: t('send_funds.success.subtitle', {
+                                      network: descriptor.displayName,
+                                  }),
                               },
                     )
                 })

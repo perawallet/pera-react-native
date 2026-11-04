@@ -15,7 +15,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 /**
  * Supplies the raw 32-byte vault master key, or throws when the vault is
  * locked. Registered by the web shell rather than imported: this package
- * cannot depend on the vault (`keystore-chrome → passkeys → provider` would
+ * cannot depend on the vault (`vault-chrome → passkeys → provider` would
  * close a cycle), so the dependency runs the other way. Platform-neutral file
  * on purpose — a `.web.ts`-only export does not typecheck through the
  * package index, which `tsc` resolves against the non-platform files.

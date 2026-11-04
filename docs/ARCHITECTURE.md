@@ -24,7 +24,7 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 ┌─────────────────────────────────────────────────────┐
 │                   extensions/*                       │
 │   provider · drivers (platform-chrome,               │
-│   platform-react-native, keystore-chrome) ·          │
+│   platform-react-native, vault-chrome) ·             │
 │   Ledger transports → hardware-wallet                │
 │                         ▼                            │
 │   platform  (the PlatformServices contract)          │
@@ -112,7 +112,7 @@ entry, so the contract carries no React or React Query.
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
 to miss when tracing: the keystore engine and the Ledger transports (the `.web.ts` twin of the
 app's `bootstrap/hardware-wallet-transports.ts`). On web
-`@algorandfoundation/react-native-keystore` resolves to `extensions/keystore-chrome`, but only so
+`@algorandfoundation/react-native-keystore` resolves to `extensions/vault-chrome`, but only so
 static imports of it resolve; the engine comes from `@algorandfoundation/keystore-web`.
 
 ### Where browser-specific code lives
@@ -129,7 +129,7 @@ when `platform === 'web'`.
 
 A lint rule (`pera/no-chrome-imports-outside-web`, enforced by `pnpm lint:lanekeep`) checks the
 boundary in the direction that actually matters: a file that is not `.web.*` may not import
-`platform-chrome`, `keystore-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
+`platform-chrome`, `vault-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
 would fail at runtime on the missing `chrome` global.
 
 `pera/no-react-native-imports-in-packages` holds the other direction: `packages/*/src` may not
@@ -205,8 +205,9 @@ menu) is left out of production builds and kept in development and staging; the 
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
 `modules/settings/routes/developer-gallery.ts`, which the oxlint rule
-`pera/dev-gallery-entry-points` enforces. The Ethereum chain module ships only when the baked `CHAINS`
-lists `ethereum`, and the extension build fails if viem reaches a bundle anyway. Metro logs each
+`pera/dev-gallery-entry-points` enforces. A chain package's entry modules ship only when the baked
+`CHAINS` lists one of its chains (`tools/dev/chain-packages.cjs`), and the extension build fails if
+viem reaches a bundle without an EVM chain. Metro logs each
 decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend
