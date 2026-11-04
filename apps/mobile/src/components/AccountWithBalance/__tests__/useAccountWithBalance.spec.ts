@@ -27,6 +27,7 @@ const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
 const mockTotalsQuery = vi.fn()
 const mockMultisigParameters = vi.fn()
+const mockAuthority = vi.fn()
 const mockAccountValueTotals = new Map<
     string,
     {
@@ -73,6 +74,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             account.custody.kind === 'watch',
         multisigParametersOf: (account: WalletAccount, chainId: string) =>
             mockMultisigParameters(account, chainId),
+        useAuthorityOf: () => mockAuthority(),
     }
 })
 
@@ -122,6 +124,7 @@ describe('useAccountWithBalance', () => {
         mockAccountValueTotals.clear()
         mockTotalsQuery.mockReset()
         mockMultisigParameters.mockReset().mockReturnValue(undefined)
+        mockAuthority.mockReset().mockReturnValue(null)
         mockHoldingSources
             .mockReset()
             .mockImplementation((account: WalletAccount) =>
@@ -575,6 +578,20 @@ describe('useAccountWithBalance', () => {
                 JOINT,
                 'algorand',
             )
+        })
+
+        it('drops the signers line once the account is rekeyed, as its members no longer sign, but keeps the member count', () => {
+            mockMultisigParameters.mockReturnValue({
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B', 'C'],
+            })
+            mockAuthority.mockReturnValue('AUTH')
+
+            const { result } = renderHook(() => useAccountWithBalance(JOINT))
+
+            expect(result.current.jointSignersLabel).toBeUndefined()
+            expect(result.current.jointParticipantCount).toBe(3)
         })
 
         it('is unset on a row scoped to one chain', () => {

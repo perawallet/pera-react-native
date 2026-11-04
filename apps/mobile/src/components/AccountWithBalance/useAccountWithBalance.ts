@@ -18,6 +18,7 @@ import {
     isWatchAccount,
     multisigParametersOf,
     useAccountChainId,
+    useAuthorityOf,
     useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
@@ -77,7 +78,7 @@ export type UseAccountWithBalanceResult = {
     singleNetworkChainId: Optional<ChainId>
     /** The member count of a joint account, which the avatar badge shows. */
     jointParticipantCount: Optional<number>
-    /** A joint account's required approvals out of its members, e.g. "Shared · 2 of 3 signers". */
+    /** A joint account's required approvals out of its members, e.g. "Shared · 2 of 3 signers"; unset once it is rekeyed, as its members no longer sign. */
     jointSignersLabel: Optional<string>
     /** A whole-account row names only a watch account's type or network under it; the name and value say the rest. */
     shouldShowSecondaryLabel: boolean
@@ -151,16 +152,18 @@ export const useAccountWithBalance = (
             ? sources[0]?.scope.chainId
             : undefined
     const { t } = useLanguage()
+    const authority = useAuthorityOf(account, scope)
     const multisig = isChainAgnostic
         ? multisigParametersOf(account, accountChainId)
         : undefined
     const jointParticipantCount = multisig?.addresses.length
-    const jointSignersLabel = multisig
-        ? t('account_info.type_multisig_signers', {
-              threshold: multisig.threshold,
-              total: multisig.addresses.length,
-          })
-        : undefined
+    const jointSignersLabel =
+        multisig && authority === null
+            ? t('account_info.type_multisig_signers', {
+                  threshold: multisig.threshold,
+                  total: multisig.addresses.length,
+              })
+            : undefined
 
     return {
         scope,
