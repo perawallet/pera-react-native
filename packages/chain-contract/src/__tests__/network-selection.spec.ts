@@ -17,6 +17,7 @@ import type { ChainDescriptor } from '../models/descriptor'
 import type { ChainId, ChainNetwork, NetworkTier } from '../models/identity'
 import {
     chainModeFor,
+    countsTowardFiatTotals,
     isTestTierScope,
     networkIdForMode,
     networkTierForMode,
@@ -133,17 +134,6 @@ describe('isTestTierScope', () => {
         chains.reset()
     })
 
-    it('is false with one chain registered, whatever its network', () => {
-        chains.register(algorandLike, build)
-
-        expect(
-            isTestTierScope(chains, {
-                chainId: 'algorand',
-                networkId: 'testnet',
-            }),
-        ).toBe(false)
-    })
-
     it('is false while no chain is registered', () => {
         expect(
             isTestTierScope(chains, {
@@ -153,6 +143,33 @@ describe('isTestTierScope', () => {
         ).toBe(false)
     })
 
+    it('is true for a test network with one chain registered', () => {
+        chains.register(algorandLike, build)
+
+        expect(
+            isTestTierScope(chains, {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe(true)
+    })
+
+    describe('with one chain registered', () => {
+        beforeEach(() => {
+            chains.register(algorandLike, build)
+        })
+
+        it.each([
+            ['algorand', 'mainnet', false],
+            ['algorand', 'testnet', true],
+            ['algorand', 'my-node', true],
+        ] as const)('%s/%s is %s', (chainId, networkId, expected) => {
+            expect(isTestTierScope(chains, { chainId, networkId })).toBe(
+                expected,
+            )
+        })
+    })
+
     describe('with a second chain registered', () => {
         beforeEach(() => {
             chains.register(algorandLike, build)
@@ -160,32 +177,90 @@ describe('isTestTierScope', () => {
         })
 
         it.each([
-            ['algorand', 'mainnet', false],
             ['ethereum', 'mainnet', false],
-            ['algorand', 'testnet', true],
             ['ethereum', 'sepolia', true],
             ['ethereum', 'goerli', true],
-            ['algorand', 'my-node', true],
         ] as const)('%s/%s is %s', (chainId, networkId, expected) => {
             expect(isTestTierScope(chains, { chainId, networkId })).toBe(
                 expected,
             )
         })
+    })
 
-        it('is false for a chain that is not registered', () => {
-            chains.reset()
+    it('is false for a chain that is not registered', () => {
+        chains.register(algorandLike, build)
+        chains.register(
+            descriptor('fixture', [network('mainnet', 'mainnet', true)]),
+            build,
+        )
+
+        expect(
+            isTestTierScope(chains, {
+                chainId: 'ethereum',
+                networkId: 'sepolia',
+            }),
+        ).toBe(false)
+    })
+})
+
+describe('countsTowardFiatTotals', () => {
+    const chains = createChainRegistry()
+    const build = {} as ChainCapabilities
+
+    const scopes = [
+        ['algorand', 'mainnet', true],
+        ['algorand', 'testnet', false],
+        ['algorand', 'my-node', false],
+    ] as const
+
+    beforeEach(() => {
+        chains.reset()
+    })
+
+    it.each(scopes)(
+        'with one chain registered, %s/%s counts: %s',
+        (chainId, networkId, expected) => {
             chains.register(algorandLike, build)
-            chains.register(
-                descriptor('fixture', [network('mainnet', 'mainnet', true)]),
-                build,
-            )
 
-            expect(
-                isTestTierScope(chains, {
-                    chainId: 'ethereum',
-                    networkId: 'sepolia',
-                }),
-            ).toBe(false)
-        })
+            expect(countsTowardFiatTotals(chains, { chainId, networkId })).toBe(
+                expected,
+            )
+        },
+    )
+
+    it.each([
+        ...scopes,
+        ['ethereum', 'mainnet', true],
+        ['ethereum', 'sepolia', false],
+    ] as const)(
+        'with two chains registered, %s/%s counts: %s',
+        (chainId, networkId, expected) => {
+            chains.register(algorandLike, build)
+            chains.register(ethereumLike, build)
+
+            expect(countsTowardFiatTotals(chains, { chainId, networkId })).toBe(
+                expected,
+            )
+        },
+    )
+
+    it('counts a chain that is not registered', () => {
+        chains.register(algorandLike, build)
+
+        expect(
+            countsTowardFiatTotals(chains, {
+                chainId: 'ethereum',
+                networkId: 'sepolia',
+            }),
+        ).toBe(true)
+    })
+
+    it('counts every scope while no chain is registered', () => {
+        expect(
+            countsTowardFiatTotals(chains, {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }),
+        ).toBe(true)
     })
 })
