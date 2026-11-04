@@ -3638,6 +3638,13 @@
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
+            "function": "Funktion",
+            "arguments": "Argumente",
+            "argument_index": "Argument {{index}}",
+            "implementation": "Implementierung",
+            "verified_source": "Benannt nach dem verifizierten Quellcode des Smart Contracts.",
+            "verified_source_proxy": "Dieser Smart Contract ist ein Proxy. Benannt nach dem verifizierten Quellcode des Smart Contracts, an den er weiterleitet.",
+            "lookup_failed": "Pera konnte den Funktionsnamen dieses Smart Contracts nicht abrufen.",
             "unchecked_warning": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du {{domain}} vertraust.",
             "unchecked_warning_no_source": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du der App vertraust, die sie gesendet hat."
         },

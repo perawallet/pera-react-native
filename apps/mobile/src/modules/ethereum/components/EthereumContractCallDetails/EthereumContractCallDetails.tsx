@@ -14,6 +14,7 @@ import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethere
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import {
     bottomSheetNotifier,
+    PWLoadingIndicator,
     PWText,
     PWTouchableIcon,
     PWView,
@@ -26,8 +27,10 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
 import { contractCallNoticeOf } from './contractCallNotice'
+import { EthereumVerifiedCallRows } from './EthereumVerifiedCallRows'
 import { useStyles } from './styles'
 
 // '0x', the 4-byte selector and the first 32-byte argument word, in hex.
@@ -62,6 +65,8 @@ export const EthereumContractCallDetails = ({
     const notice = isReview
         ? contractCallNoticeOf(source, verifiedOrigin)
         : undefined
+    // Only a review looks the name up; a transaction already made shows its call as recorded.
+    const verifiedCall = useEthereumVerifiedCall(view, scope, isReview)
     const isExplained =
         !!standardCall ||
         (!!contractAction && hidesUnknownContractNotice(view.action))
@@ -156,6 +161,32 @@ export const EthereumContractCallDetails = ({
                     ignorePrivacyMode
                 />
             </KeyValueRow>
+
+            {verifiedCall.status === 'loading' && (
+                <KeyValueRow
+                    testID='ethereum_verified_call_loading'
+                    title={t('transactions.contract_call.function')}
+                >
+                    <PWLoadingIndicator size='sm' />
+                </KeyValueRow>
+            )}
+
+            {verifiedCall.status === 'decoded' && (
+                <EthereumVerifiedCallRows
+                    call={verifiedCall.call}
+                    scope={scope}
+                />
+            )}
+
+            {verifiedCall.status === 'lookup-failed' && (
+                <PWText
+                    testID='ethereum_verified_call_lookup_failed'
+                    variant='caption'
+                    style={styles.caption}
+                >
+                    {t('transactions.contract_call.lookup_failed')}
+                </PWText>
+            )}
 
             {!isReview && (
                 <>
