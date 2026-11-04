@@ -3623,7 +3623,10 @@
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
-            "transaction_id": "ID de transaction"
+            "transaction_id": "ID de transaction",
+            "quantity": "Quantité",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · ID du token {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",

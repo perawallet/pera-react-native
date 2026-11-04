@@ -16,9 +16,11 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { TransactionDetailLayout } from '@modules/signing'
 import { useEthereumRecordLayout } from '@modules/ethereum/hooks/useEthereumRecordLayout'
+import { useEthereumRecordNft } from '@modules/ethereum/hooks/useEthereumRecordNft'
 import { useEthereumTransactionPresentation } from '@modules/ethereum/hooks/useEthereumTransactionPresentation'
 import { EthereumTransactionDetailSection } from '../../EthereumTransactionDetailSection'
 import { EthereumRecordAmountCard } from '../EthereumRecordAmountCard'
+import { EthereumRecordNftCard } from '../EthereumRecordNftCard'
 
 type EthereumRecordReadBodyProps = {
     record: TransactionRecord
@@ -39,13 +41,15 @@ export const EthereumRecordReadBody = ({
         record,
         presentation,
     )
+    const { nft, handleOpen } = useEthereumRecordNft(record)
 
     return (
         <TransactionDetailLayout
             summary={summary}
             chainSection={
                 <>
-                    {!!presentation && (
+                    {/* A read NFT transfer's own rows name only what the card already shows. */}
+                    {!!presentation && !(nft && presentation.isTransfer) && (
                         <EthereumTransactionDetailSection
                             presentation={presentation}
                             isAmountInHero={
@@ -53,10 +57,18 @@ export const EthereumRecordReadBody = ({
                             }
                         />
                     )}
-                    <EthereumRecordAmountCard
-                        changes={amountRows}
-                        scope={record.scope}
-                    />
+                    {nft ? (
+                        <EthereumRecordNftCard
+                            nft={nft}
+                            scope={record.scope}
+                            onPress={handleOpen}
+                        />
+                    ) : (
+                        <EthereumRecordAmountCard
+                            changes={amountRows}
+                            scope={record.scope}
+                        />
+                    )}
                 </>
             }
         />

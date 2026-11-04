@@ -3623,7 +3623,10 @@
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
-            "transaction_id": "ID de transacción"
+            "transaction_id": "ID de transacción",
+            "quantity": "Cantidad",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · ID del token {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",

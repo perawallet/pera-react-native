@@ -50,7 +50,7 @@ vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
-    ).withEthereumPeraBackend(importOriginal)
+    ).withEthereumPeraBackend(importOriginal, ['nfts'])
     return {
         ...withBackend,
         // An entry's calldata is read from the node, which the test build has no URL for.
@@ -60,6 +60,20 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             chainId === 'ethereum'
                 ? { mainnet: ['https://mainnet.rpc.test/'] }
                 : withBackend.chainEndpointsFor(chainId),
+        // The chain context reads its services here, not from `hasPeraService`;
+        // an opened NFT reads its metadata from the NFT service.
+        peraServicesFor: (
+            scope: Parameters<typeof withBackend.peraServicesFor>[0],
+        ) =>
+            scope.chainId === 'ethereum'
+                ? new Set([
+                      'blockFollowing',
+                      'assets',
+                      'prices',
+                      'history',
+                      'nfts',
+                  ] as const)
+                : withBackend.peraServicesFor(scope),
         config: {
             ...withBackend.config,
             chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
@@ -99,6 +113,8 @@ const { useWebViewStore } = await import('@modules/webview')
 const { closestPressable } = await import('@test-utils/rnw')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
+const { evmNftItem, peraEvmAssetHandlers } =
+    await import('@packages/chain-ethereum/src/assets/api/msw-handlers')
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')
 const { createTestQueryClient, getTestTheme } =
@@ -507,8 +523,7 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toBeTruthy()
             })
 
-            it('Given an NFT received, when its row is opened, then it still reads as a receive from the sender and the node is not asked', async () => {
-                const RECEIVE_HASH = hashOf(13)
+            const serveNftReceive = (hash: string) => {
                 nodeReads.length = 0
                 server.use(
                     ...peraEvmHistoryHandlers({
@@ -516,7 +531,7 @@ describe('Flow: History on an Ethereum account', () => {
                             [ETH_ADDRESS]: [
                                 [
                                     evmHistoryItem({
-                                        hash: RECEIVE_HASH,
+                                        hash,
                                         block_time: '2026-01-07T00:00:00Z',
                                         from: COUNTERPARTY,
                                         to: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
@@ -542,6 +557,19 @@ describe('Flow: History on an Ethereum account', () => {
                         },
                     }),
                 )
+            }
+
+            it('Given an NFT received, when its row is opened, then it reads as a receive from the sender, named and pictured by its metadata, with no fee and no node read', async () => {
+                const RECEIVE_HASH = hashOf(13)
+                serveNftReceive(RECEIVE_HASH)
+                server.use(
+                    ...peraEvmAssetHandlers({
+                        nfts: {
+                            'eip155:1/erc721:0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d/1234':
+                                evmNftItem(),
+                        },
+                    }),
+                )
                 renderHistory()
 
                 await openRow(RECEIVE_HASH)
@@ -558,6 +586,66 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toBeGreaterThan(0)
                 expect(
                     screen.queryByText('transactions.list_item.send'),
+                ).toBeNull()
+
+                const title = await screen.findByText(
+                    'Bored Ape #1234',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(title.getAttribute('data-testid')).toBe(
+                    'ethereum_record_nft_title',
+                )
+                const card = screen.getByTestId('ethereum_record_nft')
+                expect(
+                    card
+                        .querySelector('[data-testid="expo-image"]')
+                        ?.getAttribute('recyclingkey'),
+                ).toContain('bayc/1234-preview.png')
+                const quantity = screen.getByTestId(
+                    'ethereum_record_nft_quantity',
+                ).textContent
+                expect(quantity).toContain('1')
+                expect(quantity).not.toContain('BAYC')
+                expect(
+                    screen.getByTestId('ethereum_record_nft_token_id'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId('ethereum_record_nft_contract'),
+                ).toBeTruthy()
+                expect(screen.queryByTestId('ethereum_record_asset')).toBeNull()
+                expect(
+                    screen.queryByTestId('ethereum_record_amount_0'),
+                ).toBeNull()
+                expect(
+                    screen.queryByTestId('transaction_detail_fee'),
+                ).toBeNull()
+                expect(nodeReads).toEqual([])
+            })
+
+            it('Given an NFT received that has no metadata, when its row is opened, then it reads by its collection and token id with a placeholder image', async () => {
+                const RECEIVE_HASH = hashOf(15)
+                serveNftReceive(RECEIVE_HASH)
+                server.use(...peraEvmAssetHandlers({ nfts: {} }))
+                renderHistory()
+
+                await openRow(RECEIVE_HASH)
+
+                const title = await screen.findByTestId(
+                    'ethereum_record_nft_title',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(title.textContent).toBe(
+                    'transactions.record_detail.nft_fallback',
+                )
+                expect(
+                    screen
+                        .getByTestId('ethereum_record_nft')
+                        .querySelector('[data-testid="expo-image"]'),
+                ).toBeNull()
+                expect(
+                    screen.queryByTestId('ethereum_record_nft_subtitle'),
                 ).toBeNull()
                 expect(nodeReads).toEqual([])
             })
