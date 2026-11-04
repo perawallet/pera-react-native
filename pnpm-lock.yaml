@@ -3217,6 +3217,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-app-integrity':
+        specifier: workspace:*
+        version: link:../app-integrity
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -3947,6 +3950,12 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
+      '@perawallet/wallet-core-chain-contract':
+        specifier: workspace:*
+        version: link:../chain-contract
+      '@perawallet/wallet-core-chain-shared':
+        specifier: workspace:*
+        version: link:../chain-shared
       '@perawallet/wallet-core-contacts':
         specifier: workspace:*
         version: link:../contacts

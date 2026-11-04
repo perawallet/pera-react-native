@@ -576,6 +576,88 @@ describe('ethereum scopes', () => {
     })
 })
 
+describe('chains the Pera backend refuses', () => {
+    const withBothEthereumNetworks = () =>
+        withEthereumConfig({
+            ethereumMainnetPeraServices: ['assets', 'history'],
+            ethereumSepoliaPeraServices: ['assets', 'history'],
+        })
+
+    afterEach(() => {
+        vi.doUnmock('../main')
+        vi.resetModules()
+    })
+
+    test('a chain list without a scope of its deployment leaves that scope no services, and keeps the listed ones', async () => {
+        const fresh = await withBothEthereumNetworks()
+        const algorand = algorandScope('mainnet')
+
+        fresh.setPeraServedScopes('live', [algorand])
+
+        expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(true)
+        expect(fresh.peraServicesFor(ETHEREUM_MAINNET).size).toBe(0)
+        expect(fresh.hasPeraBackend(ETHEREUM_MAINNET)).toBe(false)
+        expect(fresh.isPeraScopeRefused(algorand)).toBe(false)
+        expect(fresh.hasPeraService(algorand, 'prices')).toBe(true)
+    })
+
+    test("one deployment's list leaves the other deployment's scopes alone", async () => {
+        const fresh = await withBothEthereumNetworks()
+
+        fresh.setPeraServedScopes('developer', [algorandScope('testnet')])
+
+        expect(fresh.isPeraScopeRefused(ETHEREUM_SEPOLIA)).toBe(true)
+        expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(false)
+        expect(fresh.hasPeraService(ETHEREUM_MAINNET, 'assets')).toBe(true)
+    })
+
+    test('a later list replaces the earlier one for its deployment', async () => {
+        const fresh = await withBothEthereumNetworks()
+
+        fresh.setPeraServedScopes('live', [algorandScope('mainnet')])
+        fresh.setPeraServedScopes('live', [
+            algorandScope('mainnet'),
+            ETHEREUM_MAINNET,
+        ])
+
+        expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(false)
+    })
+
+    test('a refused request refuses its scope only', async () => {
+        const fresh = await withBothEthereumNetworks()
+
+        fresh.markPeraScopeRefused(ETHEREUM_MAINNET)
+
+        expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(true)
+        expect(fresh.hasPeraBackend(ETHEREUM_MAINNET)).toBe(false)
+        expect(fresh.isPeraScopeRefused(ETHEREUM_SEPOLIA)).toBe(false)
+        expect(fresh.isPeraScopeRefused(algorandScope('mainnet'))).toBe(false)
+    })
+
+    test('a scope no deployment holds is never refused', async () => {
+        const fresh = await withBothEthereumNetworks()
+
+        fresh.setPeraServedScopes('live', [algorandScope('mainnet')])
+        fresh.markPeraScopeRefused(algorandScope('betanet'))
+
+        expect(fresh.isPeraScopeRefused(algorandScope('betanet'))).toBe(false)
+        expect(fresh.isPeraScopeRefused(algorandScope('custom'))).toBe(false)
+    })
+
+    test('nothing is refused before a list or a refusal arrives, or after a reset', async () => {
+        const fresh = await withBothEthereumNetworks()
+
+        expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(false)
+
+        fresh.setPeraServedScopes('live', [])
+        fresh.markPeraScopeRefused(ETHEREUM_SEPOLIA)
+        fresh.resetPeraScopeRefusals()
+
+        expect(fresh.isPeraScopeRefused(ETHEREUM_MAINNET)).toBe(false)
+        expect(fresh.isPeraScopeRefused(ETHEREUM_SEPOLIA)).toBe(false)
+    })
+})
+
 describe('a scope generated from the EVM table', () => {
     afterEach(() => {
         vi.doUnmock('../main')

@@ -36,6 +36,20 @@ namespace.
 create, and as the family's fallback when an import or watch finds no activity. A new EVM chain
 starts at `false`.
 
+## Test networks in totals
+
+Value held on a test-tier network never counts toward a fiat total: the portfolio header, an
+account's overview total, or an account-list row. A test-tier network is any network whose
+descriptor tier isn't `mainnet`, plus a saved custom network. The account still shows its native
+balance.
+
+This holds in every build, whatever `CHAINS` lists. Test funds have no market value, and what a
+total means must not change when a build adds a chain.
+
+The decision is `TEST_NETWORK_VALUE_COUNTS_IN_FIAT_TOTALS` in
+`packages/chain-contract/src/fiat-totals-policy.ts`, read only through `countsTowardFiatTotals`.
+Totals code asks that function, never `isTestTierScope`, which answers the tier fact alone.
+
 ## Registration
 
 `apps/mobile/src/bootstrap/chain-adapters.ts` is the composition root. Generic packages define the

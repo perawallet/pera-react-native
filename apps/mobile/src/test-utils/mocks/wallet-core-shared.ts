@@ -263,12 +263,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
-    // Mirrors packages/shared/src/errors/network.ts.
-    const isChainRefusedError = (error: unknown): boolean =>
-        isPeraNetworkError(error) &&
-        error.status === 422 &&
-        (error.backendCode === 'unknown_chain' ||
-            error.backendCode === 'chain_not_enabled')
+    // Mirrors packages/shared/src/errors/network.ts. A function declaration so
+    // it can reach PeraServiceUnavailableError, declared further down.
+    function isChainRefusedError(error: unknown): boolean {
+        return (
+            (error instanceof PeraServiceUnavailableError &&
+                error.isChainRefused) ||
+            (isPeraNetworkError(error) &&
+                error.status === 422 &&
+                (error.backendCode === 'unknown_chain' ||
+                    error.backendCode === 'chain_not_enabled'))
+        )
+    }
 
     // Mirrors packages/shared/src/errors/integrity.ts: a sibling of
     // PeraNetworkError, never an instance of it.
@@ -320,6 +326,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         public readonly targetKey: string
         public readonly service: string | undefined
         public readonly isSwitchedOff: boolean
+        public readonly isChainRefused: boolean
 
         constructor(
             target:
@@ -327,7 +334,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 | { chainId: string; networkId: string }
                 | { deployment: string },
             service?: string,
-            { isSwitchedOff = false }: { isSwitchedOff?: boolean } = {},
+            {
+                isSwitchedOff = false,
+                isChainRefused = false,
+            }: { isSwitchedOff?: boolean; isChainRefused?: boolean } = {},
         ) {
             const scope =
                 typeof target === 'string'
@@ -355,6 +365,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             this.targetKey = scopeKey
             this.service = service
             this.isSwitchedOff = isSwitchedOff
+            this.isChainRefused = isChainRefused
         }
     }
 

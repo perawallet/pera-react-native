@@ -2276,6 +2276,7 @@
             "button": "Wiederherstellen",
             "failed_title": "Import fehlgeschlagen",
             "failed_body": "Beim Importieren deines Wallets ist ein Fehler aufgetreten",
+            "failed_networks_body": "Nicht geprüft werden konnten: {{networks}}. Prüfe deine Verbindung und versuche es erneut.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Dieses Konto befindet sich bereits in deinem Wallet.",
             "invalid_mnemonic_title": "Ungültige Passphrase",
@@ -2369,7 +2370,9 @@
             "go_to_wallet": "Zum Wallet",
             "total_value": "<0/> insgesamt",
             "all_imported_title": "Bereits in deinem Wallet",
-            "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen."
+            "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
+            "unchecked_networks_title": "Nicht geprüft: {{networks}}",
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",
@@ -2913,7 +2916,7 @@
         "empty_prompt_body": "Durchsuche deine Konten, Kontakte und Assets",
         "show_more": "{{count}} weitere anzeigen",
         "no_results_title": "Keine Ergebnisse",
-        "no_results_body": "Versuche einen anderen Suchbegriff",
+        "no_results_body": "Suche nach Kontoname, Adresse oder Netzwerk",
         "sections": {
             "accounts": "Konten",
             "contacts": "Kontakte",
@@ -2923,7 +2926,8 @@
             "title": "Suchoptionen",
             "accounts": "Konten einschließen",
             "contacts": "Kontakte einschließen",
-            "assets": "Assets einschließen"
+            "assets": "Assets einschließen",
+            "network": "Netzwerk"
         }
     },
     "security": {

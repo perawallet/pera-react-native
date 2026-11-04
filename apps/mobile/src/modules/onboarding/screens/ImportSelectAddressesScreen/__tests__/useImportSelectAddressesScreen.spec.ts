@@ -54,6 +54,9 @@ const {
 }))
 
 vi.mock('@hooks/useLanguage')
+vi.mock('@modules/chain-ui', () => ({
+    networkListOf: (chainIds: string[]) => chainIds.join(' & '),
+}))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         replace: mockReplace,
@@ -161,6 +164,31 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         }
         mockCommitImport.mockResolvedValue([sampleDiscovered[0]])
         mockDiscoverDelegatedAccounts.mockResolvedValue([])
+    })
+
+    test('names the networks the search could not check', () => {
+        mockRouteParams.current = {
+            ...mockRouteParams.current,
+            failedChainIds: ['ethereum', 'base'],
+        }
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        expect(result.current.uncheckedNetworks).toBe('ethereum & base')
+    })
+
+    test.each([
+        ['it was not given any', undefined],
+        ['it was given an empty list', []],
+    ])('names no network when %s', (_, failedChainIds) => {
+        mockRouteParams.current = {
+            ...mockRouteParams.current,
+            failedChainIds,
+        }
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        expect(result.current.uncheckedNetworks).toBeUndefined()
     })
 
     test('Continue commits the import with selected accounts and marks backup', async () => {

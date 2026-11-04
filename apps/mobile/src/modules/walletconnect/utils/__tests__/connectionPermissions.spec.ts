@@ -33,6 +33,13 @@ describe('toConnectionPermissions', () => {
         ])
     })
 
+    it('lists adding a network as switching networks', () => {
+        expect(toConnectionPermissions(['wallet_addEthereumChain'])).toEqual([
+            'view-accounts',
+            'switch-networks',
+        ])
+    })
+
     it('lists signing messages for unversioned eth_signTypedData alone', () => {
         expect(toConnectionPermissions(['eth_signTypedData'])).toEqual([
             'view-accounts',

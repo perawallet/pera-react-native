@@ -15,6 +15,7 @@ import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
+import { networkListOf } from '@modules/chain-ui'
 import {
     type RouteProp,
     useNavigation,
@@ -118,8 +119,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const hasSearched = useRef(false)
     const isImportMode = 'mode' in params && params.mode === 'import'
     const isSearchingImportRef = useRef(false)
+    // Read by the failure path: when nothing could be offered, the networks
+    // that couldn't be checked are why.
+    const uncheckedChainIdsRef = useRef<ChainId[]>([])
     const hasLeftRef = useRef(false)
-    const [rescanAbort] = useState(() => new AbortController())
+    const [searchAbort] = useState(() => new AbortController())
     const [progress, setProgress] = useState<WalletDiscoveryProgress>()
     const [isCancelling, setIsCancelling] = useState(false)
 
@@ -131,19 +135,20 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 if (isImportMode) {
                     if (!isSearchingImportRef.current) return
                     hasLeftRef.current = true
+                    searchAbort.abort()
                     cancelImport()
                     return
                 }
                 hasLeftRef.current = true
-                rescanAbort.abort()
+                searchAbort.abort()
             }),
-        [isImportMode, reactNavigation, cancelImport, rescanAbort],
+        [isImportMode, reactNavigation, cancelImport, searchAbort],
     )
 
     const handleCancel = useCallback(() => {
         setIsCancelling(true)
-        rescanAbort.abort()
-    }, [rescanAbort])
+        searchAbort.abort()
+    }, [searchAbort])
 
     const searchAccounts = useCallback(async () => {
         if (hasSearched.current) return
@@ -154,11 +159,15 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             // picks the account(s) to import.
             if ('mode' in params && params.mode === 'import') {
                 isSearchingImportRef.current = true
-                const discovered = await discoverImportAccounts({
-                    walletKeyId: params.walletKeyId,
-                })
+                const { accounts: discovered, failedChainIds } =
+                    await discoverImportAccounts({
+                        walletKeyId: params.walletKeyId,
+                        signal: searchAbort.signal,
+                        onProgress: setProgress,
+                    })
                 isSearchingImportRef.current = false
                 if (hasLeftRef.current) return
+                uncheckedChainIdsRef.current = failedChainIds
                 if (discovered.length === 0) {
                     throw new Error('HD discovery returned no accounts')
                 }
@@ -166,6 +175,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     mode: 'import',
                     walletKeyId: params.walletKeyId,
                     accounts: discovered,
+                    failedChainIds,
                 })
                 return
             }
@@ -179,7 +189,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             if (hdIndexOf(account) !== undefined) {
                 await rescanHdWallet(account, {
                     chainIds,
-                    signal: rescanAbort.signal,
+                    signal: searchAbort.signal,
                     onProgress: setProgress,
                     hasLeft: () => hasLeftRef.current,
                 })
@@ -226,9 +236,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 cancelImport()
             }
             // Not showError: an unrecognised error would fall through to generic copy instead of this step's.
+            const unchecked = uncheckedChainIdsRef.current
             errorToast(
                 t('onboarding.import_account.failed_title'),
-                t('onboarding.import_account.failed_body'),
+                unchecked.length > 0
+                    ? t('onboarding.import_account.failed_networks_body', {
+                          networks: networkListOf(unchecked, t),
+                      })
+                    : t('onboarding.import_account.failed_body'),
             )
             navigation.goBack()
         }
@@ -243,7 +258,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         errorToast,
         setSelectedAccountId,
         scope.chainId,
-        rescanAbort,
+        searchAbort,
     ])
 
     useEffect(() => {
@@ -279,7 +294,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         dotOpacities,
         progressLabel,
         networks,
-        canCancel: progress !== undefined,
+        canCancel: !isImportMode && progress !== undefined,
         isCancelling,
         handleCancel,
     }

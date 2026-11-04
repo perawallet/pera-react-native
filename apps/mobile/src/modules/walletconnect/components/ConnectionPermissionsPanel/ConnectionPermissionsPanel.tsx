@@ -30,6 +30,7 @@ export const ConnectionPermissionsPanel = ({
     return (
         <TitledExpandablePanel
             startExpanded
+            hasVerticalChevron
             containerStyle={styles.permissionsContainer}
             title={
                 <PWText

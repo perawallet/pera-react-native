@@ -2284,6 +2284,7 @@
             "button": "Recover",
             "failed_title": "Import failed",
             "failed_body": "There was an error trying to import your wallet",
+            "failed_networks_body": "We couldn't check {{networks}}. Check your connection and try again.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "This account is already in your wallet.",
             "invalid_mnemonic_title": "Invalid Passphrase",
@@ -2377,7 +2378,9 @@
             "go_to_wallet": "Go to wallet",
             "total_value": "<0/> total",
             "all_imported_title": "Already in your wallet",
-            "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access."
+            "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
+            "unchecked_networks_title": "Couldn't check {{networks}}",
+            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",
@@ -2921,7 +2924,7 @@
         "empty_prompt_body": "Search across your accounts, contacts, and assets",
         "show_more": "Show {{count}} more",
         "no_results_title": "No Results",
-        "no_results_body": "Try a different search term",
+        "no_results_body": "Try searching by account name, address or network",
         "sections": {
             "accounts": "Accounts",
             "contacts": "Contacts",
@@ -2931,7 +2934,8 @@
             "title": "Search Options",
             "accounts": "Include accounts",
             "contacts": "Include contacts",
-            "assets": "Include assets"
+            "assets": "Include assets",
+            "network": "Network"
         }
     },
     "security": {
@@ -3830,7 +3834,7 @@
             "origin_unverified": "Pera couldn't verify this app's website."
         },
         "permissions": {
-            "heading": "This app will be able to",
+            "heading": "This app can",
             "view_accounts": "See your address and balances",
             "approve_transactions": "Ask you to approve transactions",
             "sign_messages": "Ask you to sign messages",

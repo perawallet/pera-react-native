@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 
 import {
     chainAccountOf,
@@ -53,6 +54,14 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             ...actual.config,
             chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
         },
+        // Ethereum is read from its node alone, whatever a local .env lists:
+        // the chain context takes its services from here.
+        peraServicesFor: (
+            scope: Parameters<typeof actual.peraServicesFor>[0],
+        ) =>
+            scope.chainId === 'ethereum'
+                ? (new Set() as ReturnType<typeof actual.peraServicesFor>)
+                : actual.peraServicesFor(scope),
         chainEndpointsFor: (
             chainId: Parameters<typeof actual.chainEndpointsFor>[0],
         ) =>
@@ -206,6 +215,36 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         expect(chainAccountOf(accounts[0], 'algorand')?.address).toBe(
             HD_TEST_ADDRESS,
         )
+    })
+
+    it('Given Ethereum is unreachable, when the user imports the seed, then the selection lists the Algorand account and says Ethereum could not be checked', async () => {
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+
+        await importMnemonic({
+            onAddressesListed: () => {
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_unchecked_networks',
+                    ),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${HD_TEST_ADDRESS}`,
+                    ),
+                ).toBeTruthy()
+            },
+        })
     })
 
     it('Given a seed used on Ethereum alone at a later account, when the user selects every listed account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {

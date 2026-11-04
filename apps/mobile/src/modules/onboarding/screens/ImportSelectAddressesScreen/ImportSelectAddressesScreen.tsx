@@ -23,6 +23,7 @@ import {
     PWScreen,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { InfoCallout } from '@components/InfoCallout'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { DiscoveredAccountRow } from './DiscoveredAccountRow'
 import { useStyles } from './styles'
@@ -38,6 +39,7 @@ export const ImportSelectAddressesScreen = () => {
         canContinue,
         isProcessing,
         importedAccountIds,
+        uncheckedNetworks,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
@@ -89,6 +91,20 @@ export const ImportSelectAddressesScreen = () => {
                                 : undefined
                         }
                     />
+
+                    {uncheckedNetworks !== undefined && (
+                        <InfoCallout
+                            style={styles.uncheckedNetworks}
+                            testID='import_select_addresses_unchecked_networks'
+                            title={t(
+                                'onboarding.import_select_addresses.unchecked_networks_title',
+                                { networks: uncheckedNetworks },
+                            )}
+                            body={t(
+                                'onboarding.import_select_addresses.unchecked_networks_body',
+                            )}
+                        />
+                    )}
 
                     {areAllImported ? (
                         // Distinct from `searching_accounts.no_new_addresses`,

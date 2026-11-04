@@ -41,11 +41,19 @@ export class PeraServiceUnavailableError extends AppError {
     public readonly service: PeraService | undefined
     /** The chain's remote kill switch refused it, not a network without a backend. */
     public readonly isSwitchedOff: boolean
+    /**
+     * The deployment doesn't serve the scope's chain: its chain list left the
+     * chain out, or it answered 422 `chain_not_enabled` or `unknown_chain`.
+     */
+    public readonly isChainRefused: boolean
 
     constructor(
         target: ChainScope | { deployment: WalletMode },
         service?: PeraService,
-        { isSwitchedOff = false }: { isSwitchedOff?: boolean } = {},
+        {
+            isSwitchedOff = false,
+            isChainRefused = false,
+        }: { isSwitchedOff?: boolean; isChainRefused?: boolean } = {},
     ) {
         const scope = 'deployment' in target ? undefined : target
         // Plain interpolation, not toScopeKey: building this error must never throw.
@@ -71,6 +79,7 @@ export class PeraServiceUnavailableError extends AppError {
         this.targetKey = targetKey
         this.service = service
         this.isSwitchedOff = isSwitchedOff
+        this.isChainRefused = isChainRefused
     }
 }
 

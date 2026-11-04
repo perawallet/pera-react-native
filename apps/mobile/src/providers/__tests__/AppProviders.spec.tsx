@@ -16,6 +16,9 @@ import { render, waitFor } from '@testing-library/react'
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { AppProviders } from '../AppProviders'
 
+// Its query reads the backend's chain list; this spec only checks the layering.
+vi.mock('../PeraServedChainsSync', () => ({ PeraServedChainsSync: () => null }))
+
 const createPersister = (): Persister => ({
     persistClient: vi.fn(),
     restoreClient: vi.fn(async () => undefined),

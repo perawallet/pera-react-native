@@ -2288,6 +2288,7 @@
             "button": "Recuperar",
             "failed_title": "Falha na importação",
             "failed_body": "Ocorreu um erro ao tentar importar sua wallet",
+            "failed_networks_body": "Não foi possível verificar: {{networks}}. Verifique sua conexão e tente novamente.",
             "duplicate_account_title": "Conta já adicionada",
             "duplicate_account_body": "Esta conta já está na sua wallet.",
             "invalid_mnemonic_title": "Passphrase inválida",
@@ -2381,7 +2382,9 @@
             "go_to_wallet": "Ir para a wallet",
             "total_value": "<0/> no total",
             "all_imported_title": "Já está na sua wallet",
-            "all_imported_body": "Todas as contas desta wallet já estão na Pera. Se alguma foi adicionada como conta de observação, remova-a primeiro e importe novamente para adicioná-la com acesso completo."
+            "all_imported_body": "Todas as contas desta wallet já estão na Pera. Se alguma foi adicionada como conta de observação, remova-a primeiro e importe novamente para adicioná-la com acesso completo.",
+            "unchecked_networks_title": "Não foi possível verificar: {{networks}}",
+            "unchecked_networks_body": "As contas das outras redes estão listadas. Você pode buscar novas contas novamente mais tarde."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} contas com rekey encontradas",
@@ -2937,7 +2940,7 @@
         "empty_prompt_body": "Busque em suas contas, contatos e ativos",
         "show_more": "Mostrar {{count}} mais",
         "no_results_title": "Nenhum resultado",
-        "no_results_body": "Tente outro termo de busca",
+        "no_results_body": "Tente buscar por nome da conta, endereço ou rede",
         "sections": {
             "accounts": "Contas",
             "contacts": "Contatos",
@@ -2947,7 +2950,8 @@
             "title": "Opções de busca",
             "accounts": "Incluir contas",
             "contacts": "Incluir contatos",
-            "assets": "Incluir ativos"
+            "assets": "Incluir ativos",
+            "network": "Rede"
         }
     },
     "security": {
@@ -3852,7 +3856,7 @@
             "origin_unverified": "A Pera não conseguiu verificar o site deste app."
         },
         "permissions": {
-            "heading": "Este app poderá",
+            "heading": "Este app pode",
             "view_accounts": "Ver seu endereço e saldos",
             "approve_transactions": "Pedir que você aprove transações",
             "sign_messages": "Pedir que você assine mensagens",

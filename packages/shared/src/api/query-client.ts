@@ -22,7 +22,6 @@ import ky, {
 } from 'ky'
 import {
     WALLET_MODES,
-    type ChainScope,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -30,6 +29,8 @@ import {
     getPeraDeploymentConfig,
     hasPeraService,
     isPeraBackendSwitchedOff,
+    isPeraScopeRefused,
+    markPeraScopeRefused,
     peraDeploymentOf,
 } from '@perawallet/wallet-core-config'
 import type {
@@ -182,7 +183,7 @@ const logError = ({ request, options, error }: BeforeErrorState): Error => {
     // A chain the backend hasn't switched on yet is an expected state, and the
     // query client stops asking about that scope once it has seen one.
     if (isHTTPError(error) && isChainRefusalBody(error)) {
-        logger.warn('Request refused chain', {
+        logger.info('Request refused chain', {
             url: request?.url,
             status: error.response?.status,
             durationMs,
@@ -247,10 +248,6 @@ const createFetchClient = () => {
         // PeraNetworkError('unknown'), the outcome this typed error exists to
         // avoid.
         const client = clientFor(requestConfig)
-        const refusal = requestConfig.scope
-            ? refusedChains.get(refusalKeyOf(requestConfig.scope))
-            : undefined
-        if (refusal) throw refusal
 
         if (shouldWaitForIntegrityToken(requestConfig)) {
             await waitForIntegrityToken()
@@ -340,21 +337,21 @@ const createFetchClient = () => {
                 throw integrityRefusal
             }
             const normalized = await PeraNetworkError.fromKyErrorWithBody(error)
-            if (requestConfig.scope && isChainRefusedError(normalized)) {
-                refusedChains.set(refusalKeyOf(requestConfig.scope), normalized)
+            const { scope } = requestConfig
+            if (scope && isChainRefusedError(normalized)) {
+                // From here on the scope has no Pera services, so its adapters
+                // take their Pera-off path and this request fails the same way.
+                markPeraScopeRefused(scope)
+                throw new PeraServiceUnavailableError(
+                    scope,
+                    requestConfig.service,
+                    { isChainRefused: true },
+                )
             }
             throw normalized
         }
     }
 }
-
-// Until relaunch: the backend switches a chain on without an app release, and
-// asking again on every sync only repeats the 422.
-const refusedChains = new Map<string, PeraNetworkError>()
-
-// Not toScopeKey: that validates the chain id, and a request path must not throw on one.
-const refusalKeyOf = ({ chainId, networkId }: ChainScope): string =>
-    `${chainId}/${networkId}`
 
 // One per deployment, not per scope: every chain of a tier shares its host.
 const peraClients = new Map<WalletMode, KyInstance>()
@@ -519,16 +516,22 @@ const clientFor = (
     const { scope } = requestConfig
 
     // A scope reaches the deployment holding its chain's data, and must list
-    // any service it names. A chain whose remote kill switch is on reaches none.
+    // any service it names. A chain whose remote kill switch is on, or that its
+    // deployment refuses, reaches none.
     const { service } = requestConfig
     const isSwitchedOff = isPeraBackendSwitchedOff(scope.chainId)
+    const isChainRefused = isPeraScopeRefused(scope)
     const client =
         !isSwitchedOff &&
+        !isChainRefused &&
         (service === undefined || hasPeraService(scope, service))
             ? servedPeraClient(peraDeploymentOf(scope))
             : undefined
     if (!client) {
-        throw new PeraServiceUnavailableError(scope, service, { isSwitchedOff })
+        throw new PeraServiceUnavailableError(scope, service, {
+            isSwitchedOff,
+            isChainRefused,
+        })
     }
     return client
 }
