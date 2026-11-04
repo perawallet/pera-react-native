@@ -20,6 +20,7 @@ import {
     createConcurrencyLimit,
     isChainRefusedError,
     logger,
+    PeraServiceUnavailableError,
     type ConcurrencyLimit,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -112,6 +113,12 @@ export const createEvmActivityCheck =
         listedTokenIds: ListedTokenIds,
     ): AccountsChainAdapter['checkActivity'] =>
     async (addresses, scope) => {
+        // Answering over RPC alone would list a network the backend refuses.
+        if (ctx.getPeraBackend(scope).isChainRefused === true) {
+            throw new PeraServiceUnavailableError(scope, undefined, {
+                isChainRefused: true,
+            })
+        }
         const errors: unknown[] = []
         // One entry per source that applies; undefined when it could not answer.
         const answers = addresses.map((): Optional<boolean>[] => [])

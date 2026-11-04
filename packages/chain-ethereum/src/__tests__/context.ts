@@ -25,7 +25,12 @@ export const TEST_PERA_URL = PERA_URL
 export const testChainContext = ({
     services = [],
     chain,
-}: { services?: readonly string[]; chain?: EvmChain } = {}): ChainContext => ({
+    isChainRefused = false,
+}: {
+    services?: readonly string[]
+    chain?: EvmChain
+    isChainRefused?: boolean
+} = {}): ChainContext => ({
     // Every EVM chain names its mainnet `mainnet`.
     getScope: () => ({
         chainId: chain?.row.id ?? 'ethereum',
@@ -35,6 +40,7 @@ export const testChainContext = ({
     getPeraBackend: () => ({
         baseUrl: services.length > 0 ? TEST_PERA_URL : '',
         services: new Set(services),
+        isChainRefused,
     }),
     timeouts: { readMs: 1_000, submitMs: 1_000 },
     kms: {} as ChainContext['kms'],

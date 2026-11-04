@@ -25,6 +25,7 @@ import {
 } from './query-persistence'
 import { queryClient } from './queryClient'
 import { PeraServiceUnavailableToast } from './PeraServiceUnavailableToast'
+import { PeraServedChainsSync } from './PeraServedChainsSync'
 
 export type QueryProviderProps = OmitKeyof<
     PersistQueryClientRootOptions,
@@ -55,6 +56,7 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
             }}
         >
             <PeraServiceUnavailableToast />
+            <PeraServedChainsSync />
             {children}
         </PersistQueryClientProvider>
     )

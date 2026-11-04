@@ -328,6 +328,28 @@ describe('createEvmActivityCheck', () => {
 
             expect(isChainRefusedError(error)).toBe(true)
         })
+
+        it('rejects a scope its deployment refuses as refused, asking nothing', async () => {
+            const requested: string[] = []
+            server.events.on('request:start', ({ request }) => {
+                requested.push(request.url)
+            })
+
+            const error = await createEthereumAccountStateOps(
+                testChainContext({ isChainRefused: true }),
+                ETHEREUM,
+                { listedTokens: cachedWhitelist(ETHEREUM) },
+            )
+                .checkActivity([QUIET], {
+                    chainId: 'ethereum',
+                    networkId: 'mainnet',
+                })
+                .catch((rejected: unknown) => rejected)
+            server.events.removeAllListeners('request:start')
+
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(requested).toEqual([])
+        })
     })
 
     describe('without a history service', () => {
