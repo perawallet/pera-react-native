@@ -445,6 +445,7 @@ const mockSwapQuote: SwapQuote = {
     priceImpact: new Decimal('1'),
     expiresAt: null,
     fetchedAt: 0,
+    depositAddress: null,
 }
 
 registerPreview({

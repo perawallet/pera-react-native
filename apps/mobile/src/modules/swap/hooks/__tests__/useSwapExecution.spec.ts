@@ -141,7 +141,7 @@ const holdExecution = () => {
 describe('useSwapExecution', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        resolveWith({ kind: 'success', txIds: ['tx-1'] })
+        resolveWith({ kind: 'success', orderId: '1', txIds: ['tx-1'] })
     })
 
     it('starts with idle status', () => {
@@ -169,7 +169,11 @@ describe('useSwapExecution', () => {
     })
 
     it('reports success with the submitted txIds', async () => {
-        resolveWith({ kind: 'success', txIds: ['group-1-id', 'group-2-id'] })
+        resolveWith({
+            kind: 'success',
+            orderId: '1',
+            txIds: ['group-1-id', 'group-2-id'],
+        })
         const { result } = renderHook(() => useSwapExecution())
 
         const outcome = await executeOnce(result.current.execute)
@@ -202,7 +206,7 @@ describe('useSwapExecution', () => {
         }
 
         await act(async () => {
-            held.release({ kind: 'success', txIds: [] })
+            held.release({ kind: 'success', orderId: '1', txIds: [] })
             await outcomePromise
         })
         expect(result.current.status).toBe('success')
@@ -574,7 +578,7 @@ describe('useSwapExecution', () => {
         expect(result.current.error).toBeNull()
 
         await act(async () => {
-            held.release({ kind: 'success', txIds: [] })
+            held.release({ kind: 'success', orderId: '1', txIds: [] })
             await outcomePromise
         })
     })

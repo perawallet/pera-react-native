@@ -21,7 +21,7 @@ type UseSwapsResult = {
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
-    setToAsset: (toAsset: string) => void
+    setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
     /** Restores the default pay/receive pair, keeping the user's settings. */

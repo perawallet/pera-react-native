@@ -4027,6 +4027,20 @@
                     "body": "Swap geçmişin yüklenemedi. Lütfen tekrar dene."
                 }
             }
+        },
+        "tracking": {
+            "started": "Zincirler arası swap gönderildi",
+            "in_progress": "Devam ediyor. Varlıkların yolda.",
+            "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
+            "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",
+            "refunded": "Swap iade edildi. {{fromAsset}} varlığın hesabına geri döndü.",
+            "expired": "Swap başlamadan süresi doldu. Hiçbir işlem yapılmadı.",
+            "cancelled": "Swap başlamadan iptal edildi. Hiçbir işlem yapılmadı.",
+            "dismiss": "Kapat"
+        },
+        "receiving_account": {
+            "title": "Alıcı hesap",
+            "label": "Alınacak hesap"
         }
     },
     "onramp": {

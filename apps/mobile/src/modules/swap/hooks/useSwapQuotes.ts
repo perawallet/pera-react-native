@@ -42,6 +42,10 @@ type UseSwapQuotesParams = {
     swapperAddress: Nullable<string>
     fromAssetId: string
     toAssetId: string
+    /** Where `toAssetId` lives; null or omitted means `scope`. */
+    toAssetScope?: Nullable<ChainScope>
+    /** Who receives the output; omitted means the swapper. */
+    destinationAddress?: Nullable<string>
     /** Pay amount in display units (live value — the hook debounces it). */
     payAmount: Nullable<Decimal>
     payDecimals: Nullable<number>
@@ -77,10 +81,15 @@ export const useSwapQuotes = ({
     swapperAddress,
     fromAssetId,
     toAssetId,
+    toAssetScope,
+    destinationAddress,
     payAmount,
     payDecimals,
     slippage,
 }: UseSwapQuotesParams): UseSwapQuotesResult => {
+    const receiveScope = toAssetScope ?? scope
+    const receiver =
+        destinationAddress === undefined ? swapperAddress : destinationAddress
     const {
         mutateAsync: createQuotes,
         isPending: isQuoteLoading,
@@ -99,24 +108,29 @@ export const useSwapQuotes = ({
     // hold through the per-network API, so absence is authoritative. Empty
     // ids while disabled so a caller that isn't quoting doesn't pay the
     // lookup (useAssetsQuery has no enabled option of its own).
-    const pairAssets = useAssetsQuery(
-        scope,
-        enabled ? [fromAssetId, toAssetId] : [],
-        {
-            fetchMissing: true,
-        },
+    // Each asset is checked on its own scope: a cross-chain receive asset
+    // lives on another chain.
+    const payAssets = useAssetsQuery(scope, enabled ? [fromAssetId] : [], {
+        fetchMissing: true,
+    })
+    const receiveAssets = useAssetsQuery(
+        receiveScope,
+        enabled ? [toAssetId] : [],
+        { fetchMissing: true },
     )
-    const isPairChecked = pairAssets.isFetched
+    const isPairChecked = payAssets.isFetched && receiveAssets.isFetched
     const isPairOnNetwork =
-        pairAssets.data.has(fromAssetId) && pairAssets.data.has(toAssetId)
+        payAssets.data.has(fromAssetId) && receiveAssets.data.has(toAssetId)
     const isPairUnsupported = enabled && isPairChecked && !isPairOnNetwork
 
     // Pair the server said it can't quote (404) — don't re-fire on every
     // amount/dep change; only a pair/network change or reset() clears it.
     // State (not a ref) so the error surfaces in render as isQuoteError.
     const [notFoundPair, setNotFoundPair] = useState<Nullable<string>>(null)
-    const pairKey = `${toScopeKey(scope)}:${fromAssetId}:${toAssetId}`
+    const pairKey = `${toScopeKey(scope)}:${fromAssetId}:${toScopeKey(receiveScope)}:${toAssetId}`
     const { chainId, networkId } = scope
+    const { chainId: receiveChainId, networkId: receiveNetworkId } =
+        receiveScope
 
     const debouncedPayAmount = useDebouncedValue(
         payAmount,
@@ -148,6 +162,7 @@ export const useSwapQuotes = ({
         if (
             !enabled ||
             !swapperAddress ||
+            !receiver ||
             !debouncedPayAmount ||
             debouncedPayAmount.isZero() ||
             debouncedPayAmount.isNeg() ||
@@ -178,17 +193,16 @@ export const useSwapQuotes = ({
 
         const fetchQuotes = async () => {
             try {
-                // Same-chain only: the swapper receives on the scope it pays from.
                 const result = await createQuotesRef.current({
                     sourceAsset: { chainId, networkId, assetId: fromAssetId },
                     destinationAsset: {
-                        chainId,
-                        networkId,
+                        chainId: receiveChainId,
+                        networkId: receiveNetworkId,
                         assetId: toAssetId,
                     },
                     sourceAmount: amountInBaseUnits,
                     sourceAddress: swapperAddress,
-                    destinationAddress: swapperAddress,
+                    destinationAddress: receiver,
                     slippage: slippage ?? null,
                 })
 
@@ -215,6 +229,7 @@ export const useSwapQuotes = ({
     }, [
         enabled,
         swapperAddress,
+        receiver,
         debouncedPayAmount,
         pairKey,
         fromAssetId,
@@ -223,6 +238,8 @@ export const useSwapQuotes = ({
         slippage,
         chainId,
         networkId,
+        receiveChainId,
+        receiveNetworkId,
         isPairChecked,
         isPairOnNetwork,
         notFoundPair,

@@ -237,4 +237,56 @@ describe('useSwapQuotes', () => {
         expect(mockCreateQuotes).not.toHaveBeenCalled()
         expect(result.current.isQuoteError).toBe(false)
     })
+
+    describe('a receive asset on another chain', () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        beforeEach(() => {
+            mockUseAssetsQuery.mockImplementation(
+                (scope: { chainId: string }) =>
+                    makeAssetsResult(
+                        scope.chainId === 'ethereum' ? ['native'] : ['0'],
+                    ),
+            )
+        })
+
+        it('asks for the asset on its own chain, paid out to the receiving address', async () => {
+            renderHook(() =>
+                useSwapQuotes({
+                    ...baseParams,
+                    toAssetId: 'native',
+                    toAssetScope: ETH,
+                    destinationAddress: '0xETH',
+                }),
+            )
+
+            await waitFor(() =>
+                expect(mockCreateQuotes).toHaveBeenCalledTimes(1),
+            )
+            expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+                ETH,
+                ['native'],
+                expect.objectContaining({ fetchMissing: true }),
+            )
+            expect(mockCreateQuotes.mock.calls[0][0]).toMatchObject({
+                sourceAsset: { ...baseParams.scope, assetId: '0' },
+                destinationAsset: { ...ETH, assetId: 'native' },
+                sourceAddress: 'SWAPPER',
+                destinationAddress: '0xETH',
+            })
+        })
+
+        it('waits for a receiving address', () => {
+            renderHook(() =>
+                useSwapQuotes({
+                    ...baseParams,
+                    toAssetId: 'native',
+                    toAssetScope: ETH,
+                    destinationAddress: null,
+                }),
+            )
+
+            expect(mockCreateQuotes).not.toHaveBeenCalled()
+        })
+    })
 })

@@ -4027,6 +4027,20 @@
                     "body": "No pudimos cargar tu historial de swaps. Vuelve a intentarlo."
                 }
             }
+        },
+        "tracking": {
+            "started": "Swap entre cadenas enviado",
+            "in_progress": "En curso. Tus fondos están en camino.",
+            "completed": "Completado. Tu {{toAsset}} ha llegado.",
+            "failed": "El swap no se pudo completar. Si se enviaron tus fondos, el proveedor los devolverá a tu cuenta.",
+            "refunded": "El swap fue reembolsado. Tu {{fromAsset}} ha vuelto a tu cuenta.",
+            "expired": "El swap caducó antes de empezar. No se intercambió nada.",
+            "cancelled": "El swap se canceló antes de empezar. No se intercambió nada.",
+            "dismiss": "Descartar"
+        },
+        "receiving_account": {
+            "title": "Cuenta receptora",
+            "label": "Recibir en"
         }
     },
     "onramp": {

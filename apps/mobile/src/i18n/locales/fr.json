@@ -4027,6 +4027,20 @@
                     "body": "Nous n’avons pas pu charger votre historique de swaps. Veuillez réessayer."
                 }
             }
+        },
+        "tracking": {
+            "started": "Swap inter-chaînes envoyé",
+            "in_progress": "En cours. Vos fonds sont en route.",
+            "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés.",
+            "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",
+            "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
+            "expired": "Le swap a expiré avant de commencer. Aucun échange n’a eu lieu.",
+            "cancelled": "Le swap a été annulé avant de commencer. Aucun échange n’a eu lieu.",
+            "dismiss": "Masquer"
+        },
+        "receiving_account": {
+            "title": "Compte de réception",
+            "label": "Recevoir sur"
         }
     },
     "onramp": {

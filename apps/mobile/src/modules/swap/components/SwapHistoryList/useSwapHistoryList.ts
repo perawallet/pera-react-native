@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import {
     swapExplorerUrlFor,
@@ -20,9 +24,11 @@ import {
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
+import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useWebView } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
+import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
 
 /** A row the list can draw: rows naming an asset this wallet can't resolve are left out. */
 export type ListedSwapHistoryItem = SwapHistoryItem & {
@@ -57,6 +63,21 @@ export const useSwapHistoryList = ({
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
     const { pushWebView } = useWebView()
+    const isCrossChainEnabled = useIsCrossChainSwapEnabled()
+    const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
+
+    // The request runs on the first entry's scope, so the swap scope leads.
+    const accounts = useMemo(
+        () => [
+            { scope, address },
+            ...(isCrossChainEnabled
+                ? accountAddresses.filter(
+                      entry => toScopeKey(entry.scope) !== toScopeKey(scope),
+                  )
+                : []),
+        ],
+        [scope, address, isCrossChainEnabled, accountAddresses],
+    )
 
     const {
         swaps: loaded,
@@ -65,7 +86,7 @@ export const useSwapHistoryList = ({
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
-    } = useSwapHistoryInfiniteQuery(address, scope, VISIBLE_SWAP_STATUSES)
+    } = useSwapHistoryInfiniteQuery(accounts, VISIBLE_SWAP_STATUSES)
     const swaps = useMemo(() => loaded.filter(isListable), [loaded])
 
     const keyExtractor = useCallback(
