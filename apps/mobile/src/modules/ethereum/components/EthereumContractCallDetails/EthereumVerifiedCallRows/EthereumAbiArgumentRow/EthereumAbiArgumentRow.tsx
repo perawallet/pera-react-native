@@ -19,7 +19,7 @@ import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { ExpandableText } from '@components/ExpandableText'
 import { useLanguage } from '@hooks/useLanguage'
-import { abiValueText } from '../../../../utils/abiValueText'
+import { abiValueText } from '@modules/ethereum/utils/abiValueText'
 import { useEthereumAbiArgumentRowStyles } from './styles'
 
 // Enough for a full address or a uint256's digits before "read more".
@@ -48,7 +48,7 @@ export const EthereumAbiArgumentRow = ({
     const nestedOf = (children: EvmAbiArgument[]) =>
         children.map((child, childIndex) => (
             <EthereumAbiArgumentRow
-                key={`${childIndex}:${child.name ?? ""}`}
+                key={`${childIndex}:${child.name ?? ''}`}
                 argument={child}
                 index={childIndex}
                 scope={scope}

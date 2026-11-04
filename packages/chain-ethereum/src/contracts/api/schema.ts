@@ -36,4 +36,6 @@ export const evmContractAbiResponseSchema = z.union([
     z.object({ status: z.literal('unverified') }),
 ])
 
-export type EvmContractAbiResponse = z.infer<typeof evmContractAbiResponseSchema>
+export type EvmContractAbiResponse = z.infer<
+    typeof evmContractAbiResponseSchema
+>

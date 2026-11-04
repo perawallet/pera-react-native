@@ -128,7 +128,10 @@ describe('decodeEvmVerifiedCall', () => {
                 {
                     name: 'deadline',
                     type: 'uint256',
-                    value: { kind: 'integer', value: new Decimal(1_800_000_000) },
+                    value: {
+                        kind: 'integer',
+                        value: new Decimal(1_800_000_000),
+                    },
                 },
             ],
         })
@@ -144,14 +147,19 @@ describe('decodeEvmVerifiedCall', () => {
     })
 
     test('reads nothing when no function in the ABI has the selector', () => {
-        expect(decodeEvmVerifiedCall(swapData, verified([DEPOSIT]))).toBeUndefined()
+        expect(
+            decodeEvmVerifiedCall(swapData, verified([DEPOSIT])),
+        ).toBeUndefined()
     })
 
     test('reads nothing when bytes trail the encoded arguments', () => {
         const padded = concat([swapData, `0x${'00'.repeat(32)}`])
 
         expect(
-            decodeEvmVerifiedCall(padded, verified([SWAP_EXACT_ETH_FOR_TOKENS])),
+            decodeEvmVerifiedCall(
+                padded,
+                verified([SWAP_EXACT_ETH_FOR_TOKENS]),
+            ),
         ).toBeUndefined()
     })
 
@@ -204,7 +212,10 @@ describe('decodeEvmVerifiedCall', () => {
         expect(
             decodeEvmVerifiedCall(
                 swapData,
-                verified([SWAP_EXACT_ETH_FOR_TOKENS, SWAP_EXACT_ETH_FOR_TOKENS]),
+                verified([
+                    SWAP_EXACT_ETH_FOR_TOKENS,
+                    SWAP_EXACT_ETH_FOR_TOKENS,
+                ]),
             )?.functionName,
         ).toBe('swapExactETHForTokens')
     })
@@ -217,7 +228,11 @@ describe('decodeEvmVerifiedCall', () => {
                 'transfer(address,uint256)',
                 { type: 'function', name: 7, inputs: [] },
                 { type: 'function', name: 'broken', inputs: 'nope' },
-                { type: 'function', name: 'badType', inputs: [{ type: 'uint7' }] },
+                {
+                    type: 'function',
+                    name: 'badType',
+                    inputs: [{ type: 'uint7' }],
+                },
                 SWAP_EXACT_ETH_FOR_TOKENS,
             ]),
         )
@@ -226,7 +241,9 @@ describe('decodeEvmVerifiedCall', () => {
     })
 
     test('reads a function that takes no arguments', () => {
-        expect(decodeEvmVerifiedCall('0xd0e30db0', verified([DEPOSIT]))).toEqual({
+        expect(
+            decodeEvmVerifiedCall('0xd0e30db0', verified([DEPOSIT])),
+        ).toEqual({
             functionName: 'deposit',
             signature: 'deposit()',
             arguments: [],
@@ -234,7 +251,9 @@ describe('decodeEvmVerifiedCall', () => {
     })
 
     test('reads nothing from calldata shorter than a selector', () => {
-        expect(decodeEvmVerifiedCall('0xd0e3', verified([DEPOSIT]))).toBeUndefined()
+        expect(
+            decodeEvmVerifiedCall('0xd0e3', verified([DEPOSIT])),
+        ).toBeUndefined()
     })
 
     test('reads nested tuples, fixed arrays, bytes and signed integers', () => {
@@ -326,8 +345,14 @@ describe('decodeEvmVerifiedCall', () => {
             args: ['gm', true],
         })
 
-        expect(decodeEvmVerifiedCall(data, verified([SET_MEMO]))?.arguments).toEqual([
-            { name: 'memo', type: 'string', value: { kind: 'string', value: 'gm' } },
+        expect(
+            decodeEvmVerifiedCall(data, verified([SET_MEMO]))?.arguments,
+        ).toEqual([
+            {
+                name: 'memo',
+                type: 'string',
+                value: { kind: 'string', value: 'gm' },
+            },
             { type: 'bool', value: { kind: 'bool', value: true } },
         ])
     })

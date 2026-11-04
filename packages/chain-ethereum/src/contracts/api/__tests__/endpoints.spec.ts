@@ -25,7 +25,10 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 import { PERA_URL } from '../../../__tests__/pera-backend'
 import { contractAbiPath, fetchEvmContractAbi } from '../endpoints'
-import { peraEvmContractAbiHandlers, verifiedAbiResponse } from '../msw-handlers'
+import {
+    peraEvmContractAbiHandlers,
+    verifiedAbiResponse,
+} from '../msw-handlers'
 
 const offered = vi.hoisted(() => ({ contracts: true }))
 
@@ -77,7 +80,9 @@ describe('fetchEvmContractAbi', () => {
         server.use(
             ...peraEvmContractAbiHandlers({
                 baseUrl: PERA_URL,
-                contractAbis: { [ROUTER.toLowerCase()]: verifiedAbiResponse(ABI) },
+                contractAbis: {
+                    [ROUTER.toLowerCase()]: verifiedAbiResponse(ABI),
+                },
             }),
         )
 
@@ -132,8 +137,9 @@ describe('fetchEvmContractAbi', () => {
 
     it('rejects a body it cannot read', async () => {
         server.use(
-            http.get(`${PERA_URL}${contractAbiPath(':chainId', ':address')}`, () =>
-                HttpResponse.json({ status: 'verified', abi: 'nope' }),
+            http.get(
+                `${PERA_URL}${contractAbiPath(':chainId', ':address')}`,
+                () => HttpResponse.json({ status: 'verified', abi: 'nope' }),
             ),
         )
 
@@ -144,13 +150,15 @@ describe('fetchEvmContractAbi', () => {
 
     it('rejects a proxy answer without a readable implementation', async () => {
         server.use(
-            http.get(`${PERA_URL}${contractAbiPath(':chainId', ':address')}`, () =>
-                HttpResponse.json({
-                    status: 'verified',
-                    abi: ABI,
-                    is_proxy: true,
-                    implementation: null,
-                }),
+            http.get(
+                `${PERA_URL}${contractAbiPath(':chainId', ':address')}`,
+                () =>
+                    HttpResponse.json({
+                        status: 'verified',
+                        abi: ABI,
+                        is_proxy: true,
+                        implementation: null,
+                    }),
             ),
         )
 

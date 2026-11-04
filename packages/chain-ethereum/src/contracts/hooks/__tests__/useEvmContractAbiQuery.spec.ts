@@ -61,11 +61,7 @@ afterAll(() => server.close())
 
 const wrapperWith = (client: QueryClient) =>
     function Wrapper({ children }: { children: React.ReactNode }) {
-        return React.createElement(
-            QueryClientProvider,
-            { client },
-            children,
-        )
+        return React.createElement(QueryClientProvider, { client }, children)
     }
 
 const newClient = () =>
@@ -76,7 +72,9 @@ describe('useEvmContractAbiQuery', () => {
         server.use(
             ...peraEvmContractAbiHandlers({
                 baseUrl: PERA_URL,
-                contractAbis: { [ROUTER.toLowerCase()]: verifiedAbiResponse(ABI) },
+                contractAbis: {
+                    [ROUTER.toLowerCase()]: verifiedAbiResponse(ABI),
+                },
             }),
         )
 
@@ -91,7 +89,10 @@ describe('useEvmContractAbiQuery', () => {
         )
 
         await waitFor(() => {
-            expect(result.current.data).toEqual({ status: 'verified', abi: ABI })
+            expect(result.current.data).toEqual({
+                status: 'verified',
+                abi: ABI,
+            })
         })
         expect(result.current.isPending).toBe(false)
         expect(result.current.isError).toBe(false)

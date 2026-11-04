@@ -32,7 +32,12 @@ export const verifiedAbiResponse = (
 ): EvmContractAbiResponse =>
     implementation
         ? { status: 'verified', abi: [...abi], is_proxy: true, implementation }
-        : { status: 'verified', abi: [...abi], is_proxy: false, implementation: null }
+        : {
+              status: 'verified',
+              abi: [...abi],
+              is_proxy: false,
+              implementation: null,
+          }
 
 /** The Pera backend's verified-ABI endpoint. */
 export const peraEvmContractAbiHandlers = ({

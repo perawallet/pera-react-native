@@ -43,8 +43,7 @@ export const useEvmContractAbiQuery = ({
     address,
     isEnabled,
 }: UseEvmContractAbiQueryParams): UseEvmContractAbiQueryResult => {
-    const isQueryEnabled =
-        isEnabled && !!address && isEvmChainId(scope.chainId)
+    const isQueryEnabled = isEnabled && !!address && isEvmChainId(scope.chainId)
     const query = useQuery({
         queryKey: contractAbiQueryKey(scope, address ?? ''),
         queryFn: () => {

@@ -74,7 +74,7 @@ export const EthereumVerifiedCallRows = ({
                     </PWText>
                     {call.arguments.map((argument, index) => (
                         <EthereumAbiArgumentRow
-                            key={`${index}:${argument.name ?? ""}`}
+                            key={`${index}:${argument.name ?? ''}`}
                             argument={argument}
                             index={index}
                             scope={scope}

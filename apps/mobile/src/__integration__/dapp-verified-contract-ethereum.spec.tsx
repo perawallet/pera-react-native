@@ -331,7 +331,9 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
                 (row.textContent ?? '').includes('2400000000000000000'),
             ),
         ).toBe(true)
-        expect(screen.getByTestId('ethereum_contract_call_warning')).toBeTruthy()
+        expect(
+            screen.getByTestId('ethereum_contract_call_warning'),
+        ).toBeTruthy()
         expect(
             screen.getByTestId('ethereum_contract_call_signature').textContent,
         ).toContain('swapExactETHForTokens(uint256,address[],address,uint256)')
@@ -374,7 +376,9 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         expect(
             screen.queryByTestId('ethereum_verified_call_lookup_failed'),
         ).toBeNull()
-        expect(screen.getByTestId('ethereum_contract_call_warning')).toBeTruthy()
+        expect(
+            screen.getByTestId('ethereum_contract_call_warning'),
+        ).toBeTruthy()
     })
 
     it("Given calldata that doesn't re-encode exactly under the verified ABI, when it is reviewed, then it stays an unrecognised contract call", async () => {
@@ -391,19 +395,22 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             ).toBeNull(),
         )
         expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
-        expect(screen.getByTestId('ethereum_contract_call_warning')).toBeTruthy()
+        expect(
+            screen.getByTestId('ethereum_contract_call_warning'),
+        ).toBeTruthy()
     })
 
     it("Given the backend can't answer, when a call is reviewed, then it stays unrecognised, says the name couldn't be looked up, and the user can still confirm", async () => {
         await review(ROUTER, SWAP_DATA, 503)
 
         await waitFor(
-            () =>
-                screen.getByTestId('ethereum_verified_call_lookup_failed'),
+            () => screen.getByTestId('ethereum_verified_call_lookup_failed'),
             { timeout: 15_000 },
         )
         expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
-        expect(screen.getByTestId('ethereum_contract_call_warning')).toBeTruthy()
+        expect(
+            screen.getByTestId('ethereum_contract_call_warning'),
+        ).toBeTruthy()
         await waitFor(() =>
             expect(
                 isElementDisabled(screen.getByTestId(TRANSACTION_SLIDE)),
@@ -423,7 +430,9 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             ]),
         })
 
-        expect(screen.getByTestId('ethereum_contract_call_warning')).toBeTruthy()
+        expect(
+            screen.getByTestId('ethereum_contract_call_warning'),
+        ).toBeTruthy()
         expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
         expect(
             screen.queryByTestId('ethereum_verified_call_loading'),

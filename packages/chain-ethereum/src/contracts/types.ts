@@ -26,7 +26,10 @@ export type EvmContractAbiAnswer =
     /** The scope offers no lookup; nothing failed. */
     | { status: 'unavailable' }
 
-export type EvmVerifiedAbi = Extract<EvmContractAbiAnswer, { status: 'verified' }>
+export type EvmVerifiedAbi = Extract<
+    EvmContractAbiAnswer,
+    { status: 'verified' }
+>
 
 export type EvmAbiValue =
     | { kind: 'address'; value: Address }
