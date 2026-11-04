@@ -28,6 +28,7 @@ import {
     usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type WealthChartProps = {
     /** Plotted as one summed series. */
@@ -61,6 +62,8 @@ export const WealthChart = memo(function WealthChart({
 }: WealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
+    const { preferredCurrency, isRateUnavailable, refetchRate } =
+        useCurrency(currencyScope)
 
     const {
         data,
@@ -94,12 +97,22 @@ export const WealthChart = memo(function WealthChart({
                 getDatetime={getDatetime}
                 onSelectionChanged={onSelectionChanged}
                 isPending={isPending}
-                isError={isError}
+                isError={isError || isRateUnavailable}
                 isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
                 isPaused={isPaused}
                 isUnavailableOnNetwork={isUnavailableOnNetwork}
-                onRetry={() => void refetch()}
+                onRetry={() => {
+                    if (isRateUnavailable) refetchRate()
+                    if (isError) void refetch()
+                }}
                 emptyBody={t('common.wealth_chart.empty_body')}
+                errorBody={
+                    isRateUnavailable
+                        ? t('common.wealth_chart.currency_unavailable_body', {
+                              currency: preferredCurrency,
+                          })
+                        : undefined
+                }
                 style={themeStyle.container}
             />
             {shouldShowExcludedNetworks && excludedNetworks !== '' && (

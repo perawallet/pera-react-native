@@ -1071,7 +1071,8 @@
         "wealth_chart": {
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
-            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor"
+            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",

@@ -27,6 +27,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type AssetWealthChartProps = {
     account: WalletAccount
@@ -55,6 +56,8 @@ export const AssetWealthChart = memo(function AssetWealthChart({
 }: AssetWealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
+    const { preferredCurrency, isRateUnavailable, refetchRate } =
+        useCurrency(scope)
 
     const {
         data,
@@ -85,12 +88,22 @@ export const AssetWealthChart = memo(function AssetWealthChart({
             getDatetime={getDatetime}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
-            isError={isError}
+            isError={isError || isRateUnavailable}
             isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
             isPaused={isPaused}
             isUnavailableOnNetwork={isUnavailableOnNetwork}
-            onRetry={() => void refetch()}
+            onRetry={() => {
+                if (isRateUnavailable) refetchRate()
+                if (isError) void refetch()
+            }}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
+            errorBody={
+                isRateUnavailable
+                    ? t('common.wealth_chart.currency_unavailable_body', {
+                          currency: preferredCurrency,
+                      })
+                    : undefined
+            }
             style={themeStyle.container}
         />
     )

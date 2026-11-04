@@ -837,6 +837,8 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             setCurrencyPreference: vi.fn(),
             portfolioPreferredValue: '0',
             usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+            isRateUnavailable: false,
+            refetchRate: vi.fn(),
         })),
         usePreferredCurrencyPriceQuery: vi.fn(() => ({
             data: { usdPrice: new Decimal(1) },
