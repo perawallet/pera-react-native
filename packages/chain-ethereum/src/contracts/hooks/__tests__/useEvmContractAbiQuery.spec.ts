@@ -22,7 +22,11 @@ import {
     vi,
 } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PERA_URL } from '../../../__tests__/pera-backend'
@@ -56,6 +60,7 @@ beforeAll(() => {
 afterEach(() => {
     server.resetHandlers()
     requests = 0
+    onlineManager.setOnline(true)
 })
 afterAll(() => server.close())
 
@@ -158,6 +163,26 @@ describe('useEvmContractAbiQuery', () => {
             expect(result.current.isError).toBe(true)
         })
         expect(result.current.isPending).toBe(false)
+        expect(requests).toBe(1)
+    })
+
+    it('asks even while the device reads as offline, so a review never waits on a paused lookup', async () => {
+        onlineManager.setOnline(false)
+        server.use(...peraEvmContractAbiHandlers({ baseUrl: PERA_URL }))
+
+        const { result } = renderHook(
+            () =>
+                useEvmContractAbiQuery({
+                    scope: SCOPE,
+                    address: ROUTER,
+                    isEnabled: true,
+                }),
+            { wrapper: wrapperWith(newClient()) },
+        )
+
+        await waitFor(() => {
+            expect(result.current.data).toEqual({ status: 'unverified' })
+        })
         expect(requests).toBe(1)
     })
 

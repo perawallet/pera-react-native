@@ -64,6 +64,15 @@ const selectorOf = (item: AbiFunction): Optional<string> => {
 const isPrintable = (text: string): boolean =>
     !hasUnprintableChars(text) && !FORMAT_CHARS.test(text)
 
+// Names come from the backend, not the calldata, so they get the same
+// scrutiny a string argument does before reaching a signing screen.
+const hasPrintableNames = (params: readonly AbiParameter[]): boolean =>
+    params.every(
+        param =>
+            isPrintable(param.name ?? '') &&
+            (!('components' in param) || hasPrintableNames(param.components)),
+    )
+
 const valueOf = (param: AbiParameter, value: unknown): EvmAbiValue => {
     const { type } = param
     if (ARRAY_SUFFIX.test(type)) {
@@ -129,7 +138,15 @@ export const decodeEvmVerifiedCall = (
     const signatures = new Set(candidates.map(signatureOf))
     const [signature] = signatures
     const [item] = candidates
-    if (signatures.size !== 1 || !signature || !item) return undefined
+    if (
+        signatures.size !== 1 ||
+        !signature ||
+        !item ||
+        !isPrintable(item.name) ||
+        !hasPrintableNames(item.inputs)
+    ) {
+        return undefined
+    }
     try {
         const { args = [] } = decodeFunctionData({ abi: [item], data })
         const reencoded = encodeFunctionData({

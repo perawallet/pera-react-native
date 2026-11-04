@@ -57,6 +57,9 @@ export const useEvmContractAbiQuery = ({
             )
         },
         enabled: isQueryEnabled,
+        // A paused query would hold the review's spinner until the device
+        // reads as online; failing fast shows the call as not looked up.
+        networkMode: 'always',
         retry: false,
         staleTime: STALE_TIME_MS,
     })

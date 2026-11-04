@@ -12,7 +12,13 @@
 
 import { describe, expect, test } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { concat, encodeFunctionData, maxUint256, stringToHex } from 'viem'
+import {
+    concat,
+    encodeFunctionData,
+    maxUint256,
+    stringToHex,
+    toFunctionSelector,
+} from 'viem'
 import type { Address, Hex } from 'viem'
 import { decodeEvmVerifiedCall } from '../verified-calls'
 import type { EvmVerifiedAbi } from '../types'
@@ -205,6 +211,41 @@ describe('decodeEvmVerifiedCall', () => {
 
         expect(
             decodeEvmVerifiedCall(data, verified([burn, collision])),
+        ).toBeUndefined()
+    })
+
+    test('reads nothing when the function name hides format characters', () => {
+        const disguised = { ...DEPOSIT, name: 'depo\u200Dsit' }
+
+        expect(
+            decodeEvmVerifiedCall(
+                '0xd0e30db0',
+                verified([{ ...disguised, name: 'deposit' }]),
+            )?.functionName,
+        ).toBe('deposit')
+        // The selector is the hash of the disguised name, so build it from that.
+        const selector = toFunctionSelector(disguised)
+        expect(
+            decodeEvmVerifiedCall(selector, verified([disguised])),
+        ).toBeUndefined()
+    })
+
+    test('reads nothing when a parameter name hides bidi characters', () => {
+        const disguised = {
+            ...SET_MEMO,
+            inputs: [
+                { name: 'memo\u202E', type: 'string' },
+                { name: '', type: 'bool' },
+            ],
+        } as const
+        const data = encodeFunctionData({
+            abi: [SET_MEMO],
+            functionName: 'setMemo',
+            args: ['gm', true],
+        })
+
+        expect(
+            decodeEvmVerifiedCall(data, verified([disguised])),
         ).toBeUndefined()
     })
 
