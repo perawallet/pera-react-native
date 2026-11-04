@@ -28,7 +28,6 @@ import {
     getAccountSummaryQueryKey,
     getAssetHoldersQueryKey,
     getOnChainAccountStateQueryKey,
-    getOwnedAssetIdsQueryKey,
     getDelegatedAddressesQueryKey,
     isAccountBalancesHistoryQuery,
 } from '../querykeys'
@@ -72,7 +71,6 @@ describe('query keys', () => {
             'delegated-addresses',
             getDelegatedAddressesQueryKey('ADDR1', MAINNET),
         ],
-        ['owned-asset-ids', getOwnedAssetIdsQueryKey(MAINNET)],
         ['asset-holders', getAssetHoldersQueryKey('123', MAINNET)],
         [
             'assets balance-history',
@@ -264,17 +262,6 @@ describe('removeAccountQueriesForAddresses', () => {
         removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
 
         expect(queryClient.getQueryData(key)).toEqual({ value: 1 })
-    })
-
-    test('leaves network-scoped owned-asset-ids intact (search still works)', () => {
-        const queryClient = new QueryClient()
-        queryClient.setQueryData(getOwnedAssetIdsQueryKey(MAINNET), ['1', '2'])
-
-        removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
-
-        expect(
-            queryClient.getQueryData(getOwnedAssetIdsQueryKey(MAINNET)),
-        ).toEqual(['1', '2'])
     })
 
     test('is a no-op for an empty address list', () => {
