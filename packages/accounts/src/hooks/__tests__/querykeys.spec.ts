@@ -84,7 +84,6 @@ describe('query keys', () => {
                 'ADDR1',
                 '123',
                 'one-day',
-                'USD',
             ),
         ],
     ])('%s carries the scope, not a bare network', (_, key) => {
@@ -236,7 +235,6 @@ describe('removeAccountQueriesForAddresses', () => {
             'ADDR1',
             '123',
             'one-day',
-            'USD',
         )
         queryClient.setQueryData(key, { value: 1 })
 
@@ -317,7 +315,6 @@ describe('isAccountBalancesHistoryQuery', () => {
                     'ADDR1',
                     '123',
                     'one-day',
-                    'USD',
                 ),
             ),
         ).toBe(false)

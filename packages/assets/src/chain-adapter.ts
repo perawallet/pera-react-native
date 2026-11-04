@@ -21,10 +21,13 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
+    CHART_QUERY_TIMEOUT_MS,
     ErrorCategory,
     isAlgoAssetName,
     isChainRefusedError,
     isPeraServiceUnavailableError,
+    timeoutErrorOf,
+    withTimeout,
     type HistoryPeriod,
     type Nullable,
     type Optional,
@@ -407,5 +410,12 @@ export const fetchAssetPriceHistory = async (
     if (!adapter.getPriceHistory) {
         throw new AssetPriceHistoryUnsupportedError(adapter.chainId)
     }
-    return adapter.getPriceHistory(assetRefOn(scope, assetId), period, scope)
+    // One request, already bounded by its own timeout: unlike the account
+    // histories, no fan-out is left running when this deadline fires.
+    return withTimeout(
+        adapter.getPriceHistory(assetRefOn(scope, assetId), period, scope),
+        CHART_QUERY_TIMEOUT_MS,
+        'asset price history',
+        timeoutErrorOf,
+    )
 }

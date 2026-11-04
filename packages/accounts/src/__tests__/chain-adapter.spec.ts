@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { CHART_QUERY_TIMEOUT_MS } from '@perawallet/wallet-core-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
     deriveHdAccount,
@@ -88,13 +89,7 @@ describe('operations a chain may leave out', () => {
             fetchPortfolioHistory(['ADDR'], 'one-day', MAINNET_SCOPE),
         ).resolves.toBeNull()
         await expect(
-            fetchHoldingBalanceHistory(
-                'ADDR',
-                '1',
-                'one-day',
-                'USD',
-                MAINNET_SCOPE,
-            ),
+            fetchHoldingBalanceHistory('ADDR', '1', 'one-day', MAINNET_SCOPE),
         ).resolves.toEqual([])
     })
 
@@ -125,5 +120,128 @@ describe('operations a chain may leave out', () => {
         expect(
             describeHolding('algorand', { family: 'algorand', isFrozen: true }),
         ).toEqual({ restriction: 'transferBlocked' })
+    })
+})
+
+describe('history deadlines', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    const settle = async (promise: Promise<unknown>) => {
+        const outcome = promise.catch((error: Error) => error)
+        await vi.advanceTimersByTimeAsync(CHART_QUERY_TIMEOUT_MS - 1)
+        return outcome
+    }
+
+    it.each([
+        [
+            'portfolio history',
+            () => fetchPortfolioHistory(['ADDR'], 'one-day', MAINNET_SCOPE),
+            { fetchPortfolioHistory: () => new Promise<never>(() => {}) },
+        ],
+        [
+            'holding balance history',
+            () =>
+                fetchHoldingBalanceHistory(
+                    'ADDR',
+                    '1',
+                    'one-day',
+                    MAINNET_SCOPE,
+                ),
+            { fetchHoldingBalanceHistory: () => new Promise<never>(() => {}) },
+        ],
+    ])(
+        'rejects %s with a TimeoutError once the chain has not answered in time, and not before',
+        async (operation, call, override) => {
+            vi.useFakeTimers()
+            registerFakeAccountsChain(override)
+            const rejection = call().catch((error: Error) => error)
+            let isSettled = false
+            void rejection.then(() => {
+                isSettled = true
+            })
+
+            await vi.advanceTimersByTimeAsync(CHART_QUERY_TIMEOUT_MS - 1)
+            expect(isSettled).toBe(false)
+            await vi.advanceTimersByTimeAsync(1)
+
+            const error = await rejection
+            expect(error).toMatchObject({ name: 'TimeoutError' })
+            expect((error as Error).message).toContain(operation)
+        },
+    )
+
+    it('aborts the signal the chain was handed when the deadline fires, so its requests stop', async () => {
+        vi.useFakeTimers()
+        let handed: AbortSignal | undefined
+        registerFakeAccountsChain({
+            fetchPortfolioHistory: (_a, _p, _s, signal) => {
+                handed = signal
+                return new Promise<never>(() => {})
+            },
+        })
+        const rejection = fetchPortfolioHistory(
+            ['ADDR'],
+            'one-day',
+            MAINNET_SCOPE,
+        ).catch((error: Error) => error)
+
+        await vi.advanceTimersByTimeAsync(CHART_QUERY_TIMEOUT_MS - 1)
+        expect(handed?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(handed?.aborted).toBe(true)
+        expect(await rejection).toMatchObject({ name: 'TimeoutError' })
+    })
+
+    it("aborts the chain's signal when the caller cancels, and rejects with the chain's own error", async () => {
+        const cancelled = new Error('cancelled')
+        cancelled.name = 'AbortError'
+        registerFakeAccountsChain({
+            fetchHoldingBalanceHistory: (_a, _i, _p, _s, signal) =>
+                new Promise<never>((_, reject) =>
+                    signal?.addEventListener('abort', () => reject(cancelled)),
+                ),
+        })
+        const caller = new AbortController()
+        const rejection = fetchHoldingBalanceHistory(
+            'ADDR',
+            '1',
+            'one-day',
+            MAINNET_SCOPE,
+            caller.signal,
+        ).catch((error: Error) => error)
+
+        caller.abort()
+
+        expect(await rejection).toBe(cancelled)
+    })
+
+    it('passes a history that answers in time through untouched', async () => {
+        vi.useFakeTimers()
+        registerFakeAccountsChain({
+            fetchPortfolioHistory: vi.fn(async () => []),
+        })
+
+        const outcome = await settle(
+            fetchPortfolioHistory(['ADDR'], 'one-day', MAINNET_SCOPE),
+        )
+
+        expect(outcome).toEqual([])
+    })
+
+    it('forwards the address, asset, period and scope to the holding history', async () => {
+        const { adapter } = registerFakeAccountsChain()
+
+        await fetchHoldingBalanceHistory('ADDR', '7', 'one-week', MAINNET_SCOPE)
+
+        expect(adapter.fetchHoldingBalanceHistory).toHaveBeenCalledWith(
+            'ADDR',
+            '7',
+            'one-week',
+            MAINNET_SCOPE,
+            expect.any(AbortSignal),
+        )
     })
 })

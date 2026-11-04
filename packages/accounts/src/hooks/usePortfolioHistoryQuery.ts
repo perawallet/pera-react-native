@@ -150,8 +150,8 @@ export const usePortfolioHistoryQuery = (
             enabled: enabled && !isCapabilityOff,
             // A chain the backend hasn't switched on has no priced value in
             // the total either, so it adds nothing rather than failing.
-            queryFn: (): Promise<Nullable<PortfolioHistoryPoint[]>> =>
-                fetchPortfolioHistory(addresses, period, scope).catch(
+            queryFn: ({ signal }): Promise<Nullable<PortfolioHistoryPoint[]>> =>
+                fetchPortfolioHistory(addresses, period, scope, signal).catch(
                     (error: unknown) => {
                         if (isChainRefusedError(error)) return []
                         throw error
