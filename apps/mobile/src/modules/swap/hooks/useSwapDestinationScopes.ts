@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import {
     canSignWith,
+    chainAccountOf,
     isMultisigAccount,
     useAllAccounts,
     type WalletAccount,
@@ -48,8 +49,11 @@ export const useSwapDestinationScopes = (
                 ? CHAIN_IDS.filter(
                       chainId =>
                           isSwapChain(chainId) &&
-                          accounts.some(candidate =>
-                              canSignWith(candidate, accounts, chainId),
+                          accounts.some(
+                              // canSignWith can pass with no entry on the chain, leaving no address to pay.
+                              candidate =>
+                                  !!chainAccountOf(candidate, chainId) &&
+                                  canSignWith(candidate, accounts, chainId),
                           ),
                   )
                 : [],

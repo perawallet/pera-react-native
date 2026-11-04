@@ -68,6 +68,17 @@ describe('useSwapDestinationScopes', () => {
         expect(result.current).toEqual([ALGO_SCOPE])
     })
 
+    it('skips a chain the accounts have no address on, even where their custody could sign', () => {
+        vi.mocked(canSignWith).mockReturnValue(true)
+        vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY])
+
+        const { result } = renderHook(() =>
+            useSwapDestinationScopes(ALGO_ONLY, ALGO_SCOPE),
+        )
+
+        expect(result.current).toEqual([ALGO_SCOPE])
+    })
+
     it('keeps the swap scope alone when no account can receive on another chain', () => {
         vi.mocked(useAllAccounts).mockReturnValue([ALGO_ONLY])
 
