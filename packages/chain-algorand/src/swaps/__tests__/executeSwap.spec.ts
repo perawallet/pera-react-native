@@ -21,9 +21,11 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ExecuteSwapResult,
-    PrepareTransactionsResult,
+    SwapOrder,
     SwapQuote,
+    SwapSignTransactionsStep,
 } from '@perawallet/wallet-core-swaps'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     executeAlgorandSwap,
     type AlgorandSwapExecutionContext,
@@ -48,8 +50,8 @@ const mockDecodeTransaction = vi.fn()
 const mockDecodeSignedTransaction = vi.fn()
 const mockEncodeSignedTransactions = vi.fn()
 const mockSendRawTransaction = vi.fn()
-const mockPrepareTransactions = vi.fn()
-const mockUpdateSwapStatus = vi.fn()
+const mockCreateOrder = vi.fn()
+const mockReportOrder = vi.fn()
 const mockRegisterHandoff = vi.fn()
 const mockOnProgress = vi.fn()
 const mockIsMultisigAccount = vi.fn()
@@ -163,8 +165,8 @@ const makeContext = (
     decodeTransaction: mockDecodeTransaction,
     decodeSignedTransaction: mockDecodeSignedTransaction,
     encodeSignedTransactions: mockEncodeSignedTransactions,
-    prepareTransactions: mockPrepareTransactions,
-    updateSwapStatus: mockUpdateSwapStatus,
+    createOrder: mockCreateOrder,
+    reportOrder: mockReportOrder,
     registerHandoff: mockRegisterHandoff,
 })
 
@@ -198,27 +200,49 @@ const run = (
         makeContext(isQuantumSwapEnabled),
     )
 
-const makePrepareResult = (
-    overrides: Partial<PrepareTransactionsResult> = {},
-): PrepareTransactionsResult => ({
-    transactionGroups: [
-        {
-            purpose: 'swap',
-            transactions: ['dHhuMQ==', 'dHhuMg=='], // base64 for 'txn1', 'txn2'
-        },
-    ],
-    swapId: '12345',
-    swapIdStr: '12345',
-    swapVersion: 'v2',
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
+
+const signStep = (
+    transactions: string[],
+    presignedTransactions: Nullable<Nullable<string>[]> = null,
+    scope: SwapSignTransactionsStep['scope'] = SCOPE,
+): SwapSignTransactionsStep => ({
+    kind: 'sign-transactions',
+    scope,
+    purpose: 'swap',
+    transactions,
+    presignedTransactions,
+})
+
+const makeOrder = (overrides: Partial<SwapOrder> = {}): SwapOrder => ({
+    orderId: '12345',
+    status: 'pending',
+    expiresAt: null,
+    // base64 for 'txn1', 'txn2'
+    steps: [signStep(['dHhuMQ==', 'dHhuMg=='])],
     ...overrides,
 })
 
-const makeQuote = (quoteIdStr: string): SwapQuote =>
+const cancelledReport = (orderId = '12345') => ({
+    orderId,
+    report: { status: 'cancelled' },
+})
+
+const makeQuote = (quoteId: string): SwapQuote =>
     ({
-        quoteIdStr,
-        swapperAddress: 'SWAPPER',
+        quoteId,
+        request: {
+            sourceAsset: { ...SCOPE, assetId: '0' },
+            destinationAsset: { ...SCOPE, assetId: '999' },
+            sourceAmount: new Decimal(1_000_000),
+            sourceAddress: 'SWAPPER',
+            destinationAddress: 'SWAPPER',
+            slippage: null,
+        },
         assetIn: { assetId: '0' },
         assetOut: { assetId: '999' },
+        fees: [],
+        expiresAt: null,
         // Freshly stamped: the confirm-time freshness guard refuses
         // unstamped or expired quotes before prepare.
         fetchedAt: Date.now(),
@@ -316,10 +340,10 @@ describe('executeAlgorandSwap', () => {
             new Uint8Array([30, 40]),
         ])
         mockSendRawTransaction.mockResolvedValue({ txid: 'submitted-tx-id' })
-        mockPrepareTransactions.mockResolvedValue(makePrepareResult())
+        mockCreateOrder.mockResolvedValue(makeOrder())
         // No open ledger row for this sender — the retry guard passes.
         mockGetOpenSubmissionAttempts.mockResolvedValue([])
-        mockUpdateSwapStatus.mockResolvedValue({ status: 'in_progress' })
+        mockReportOrder.mockResolvedValue({ status: 'in_progress' })
         mockIsMultisigAccount.mockReturnValue(false)
         freezeHoldings()
         // A healthy, funded account — the balance preflight passes.
@@ -331,7 +355,7 @@ describe('executeAlgorandSwap', () => {
         mockComputeShortfall.mockReturnValue(null)
     })
 
-    it('executes full flow: prepare → pipeline sign → submit → update status', async () => {
+    it('executes full flow: order → pipeline sign → submit → order report', async () => {
         const result = await run(makeQuote('quote-123'))
 
         expect(result).toEqual({ kind: 'success', txIds: ['submitted-tx-id'] })
@@ -341,9 +365,7 @@ describe('executeAlgorandSwap', () => {
             'submitting',
             'updating-status',
         ])
-        expect(mockPrepareTransactions).toHaveBeenCalledWith({
-            quote: 'quote-123',
-        })
+        expect(mockCreateOrder).toHaveBeenCalledWith('quote-123')
 
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         const request = mockAddSignRequest.mock
@@ -366,25 +388,66 @@ describe('executeAlgorandSwap', () => {
         expect(request.chainData?.algorand?.groupContext).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: {
-                status: 'in_progress',
-                submitted_transaction_ids: ['submitted-tx-id'],
-                swap_version: 'v2',
+        expect(mockReportOrder).toHaveBeenCalledWith({
+            orderId: '12345',
+            report: {
+                status: 'sent',
+                transactions: [
+                    {
+                        scope: SCOPE,
+                        txHash: 'submitted-tx-id',
+                        purpose: 'swap',
+                    },
+                ],
             },
         })
     })
 
+    it('re-quotes when the router has forgotten or spent the quote', async () => {
+        for (const backendCode of ['quote_not_found', 'quote_already_used']) {
+            mockCreateOrder.mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 409, backendCode }),
+            )
+
+            const result = await run(makeQuote('quote-gone'))
+
+            expect(result).toEqual({ kind: 'stale-quote' })
+        }
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockReportOrder).not.toHaveBeenCalled()
+    })
+
+    it('refuses an order with a step on another chain, cancelling it unsigned', async () => {
+        mockCreateOrder.mockResolvedValue(
+            makeOrder({
+                steps: [
+                    signStep(['dHhuMQ==']),
+                    signStep(['0xabc'], null, {
+                        chainId: 'ethereum',
+                        networkId: 'mainnet',
+                    }),
+                ],
+            }),
+        )
+
+        const result = await run(makeQuote('quote-cross-chain'))
+
+        expect(result).toEqual({
+            kind: 'failed',
+            failure: { phase: 'prepare', reason: 'unsupported-steps' },
+        })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
+    })
+
     it('merges pre-signed and user-signed txns in original order within a group', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({
-                transactionGroups: [
-                    {
-                        purpose: 'swap',
-                        signedTransactions: ['cHJlMQ==', null, 'cHJlMg=='],
-                        transactions: [null, 'dHhuMg==', null],
-                    },
+        mockCreateOrder.mockResolvedValue(
+            makeOrder({
+                steps: [
+                    signStep(
+                        ['cHJlMQ==', 'dHhuMg==', 'cHJlMg=='],
+                        ['cHJlMQ==', null, 'cHJlMg=='],
+                    ),
                 ],
             }),
         )
@@ -423,18 +486,10 @@ describe('executeAlgorandSwap', () => {
     })
 
     it('submits multiple groups independently and aggregates txIds', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({
-                transactionGroups: [
-                    {
-                        purpose: 'opt-in',
-                        transactions: ['ZzE='], // 'g1'
-                    },
-                    {
-                        purpose: 'swap',
-                        transactions: ['ZzI='], // 'g2'
-                    },
-                ],
+        mockCreateOrder.mockResolvedValue(
+            makeOrder({
+                // 'g1', 'g2'
+                steps: [signStep(['ZzE=']), signStep(['ZzI='])],
             }),
         )
 
@@ -461,14 +516,10 @@ describe('executeAlgorandSwap', () => {
     })
 
     it('handles fully pre-signed groups without invoking the pipeline', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({
-                transactionGroups: [
-                    {
-                        purpose: 'fee',
-                        signedTransactions: ['c2lnbmVk'], // 'signed'
-                    },
-                ],
+        mockCreateOrder.mockResolvedValue(
+            makeOrder({
+                // 'signed'
+                steps: [signStep(['c2lnbmVk'], ['c2lnbmVk'])],
             }),
         )
 
@@ -493,19 +544,8 @@ describe('executeAlgorandSwap', () => {
         const result = await run(staleQuote)
 
         expect(result).toEqual({ kind: 'stale-quote' })
-        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        expect(mockCreateOrder).not.toHaveBeenCalled()
         expect(mockOnProgress).not.toHaveBeenCalled()
-    })
-
-    it('fails a quote with no id before any lookup', async () => {
-        const result = await run(makeQuote(''), { account: senderAccount })
-
-        expect(result).toEqual({
-            kind: 'failed',
-            failure: { phase: 'prepare', reason: 'missing-quote-id' },
-        })
-        expect(mockGetHoldingRestriction).not.toHaveBeenCalled()
-        expect(mockPrepareTransactions).not.toHaveBeenCalled()
     })
 
     // makeQuote trades assetIn '0' for assetOut '999'.
@@ -520,7 +560,7 @@ describe('executeAlgorandSwap', () => {
             kind: 'failed',
             failure: { phase: 'prepare', reason: 'asset-frozen', assetId: '0' },
         })
-        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        expect(mockCreateOrder).not.toHaveBeenCalled()
     })
 
     it('refuses a frozen OUTPUT asset — a frozen holding cannot receive either', async () => {
@@ -538,7 +578,7 @@ describe('executeAlgorandSwap', () => {
                 assetId: '999',
             },
         })
-        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        expect(mockCreateOrder).not.toHaveBeenCalled()
     })
 
     it('reads holdings at execute time rather than from a balances subscription', async () => {
@@ -556,9 +596,7 @@ describe('executeAlgorandSwap', () => {
     })
 
     it('refuses to broadcast while an open swap attempt exists', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({ swapIdStr: 'SWAP1' }),
-        )
+        mockCreateOrder.mockResolvedValue(makeOrder({ orderId: 'SWAP1' }))
         mockGetOpenSubmissionAttempts.mockResolvedValue([{}])
 
         const result = await run(makeQuote('quote-guard'))
@@ -575,13 +613,11 @@ describe('executeAlgorandSwap', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockSendRawTransaction).not.toHaveBeenCalled()
         expect(mockSubmitAndAutoRefreshOptions).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport('SWAP1'))
     })
 
     it('proceeds once the previous attempt resolved', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({ swapIdStr: 'SWAP1' }),
-        )
+        mockCreateOrder.mockResolvedValue(makeOrder({ orderId: 'SWAP1' }))
         mockGetOpenSubmissionAttempts.mockResolvedValue([])
 
         const result = await run(makeQuote('quote-clear'))
@@ -598,16 +634,14 @@ describe('executeAlgorandSwap', () => {
         })
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         expect(mockSendRawTransaction).toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalled()
     })
 
     it('refuses a re-quoted retry whose swapId no longer matches the open row', async () => {
         // A refused retry goes stale, the form re-quotes, and prepare returns
         // a NEW swap_id — why the guard is sender-wide rather than keyed on
         // the swapId.
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({ swapIdStr: 'SWAP2' }),
-        )
+        mockCreateOrder.mockResolvedValue(makeOrder({ orderId: 'SWAP2' }))
         mockGetOpenSubmissionAttempts.mockResolvedValue([
             { intentKey: { kind: 'swap', swapId: 'SWAP1' } },
         ])
@@ -620,9 +654,7 @@ describe('executeAlgorandSwap', () => {
     })
 
     it('fails closed when the guard lookup itself errors', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({ swapIdStr: 'SWAP1' }),
-        )
+        mockCreateOrder.mockResolvedValue(makeOrder({ orderId: 'SWAP1' }))
         mockGetOpenSubmissionAttempts.mockRejectedValue(new Error('db closed'))
 
         const result = await run(makeQuote('quote-db-error'))
@@ -643,32 +675,9 @@ describe('executeAlgorandSwap', () => {
         )
     })
 
-    it('still runs the retry guard when prepareResult carries no swapId', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({ swapIdStr: '' }),
-        )
-
-        const result = await run(makeQuote('quote-no-swap-id'))
-
-        expect(result.kind).toBe('success')
-        expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            sender: 'SWAPPER',
-            flows: ['swap', 'cosign'],
-            unevaluatableBefore: expect.any(Number),
-        })
-        // A blank swapId is no identity at all — recording `{swap:''}` would
-        // put unrelated swaps under one intent key.
-        expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith(
-            expect.objectContaining({ intentKey: undefined }),
-        )
-        // Nothing to report the status against.
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
-    })
-
     it('abandons a cancelled execution after prepare settles, before signing', async () => {
         let releasePrepare: (value: unknown) => void = () => {}
-        mockPrepareTransactions.mockImplementationOnce(
+        mockCreateOrder.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     releasePrepare = resolve
@@ -679,24 +688,21 @@ describe('executeAlgorandSwap', () => {
         const resultPromise = run(makeQuote('quote-cancel'), {
             isCancelled: () => isCancelled,
         })
-        await vi.waitFor(() =>
-            expect(mockPrepareTransactions).toHaveBeenCalled(),
-        )
+        await vi.waitFor(() => expect(mockCreateOrder).toHaveBeenCalled())
 
         // The user closes the sheet while prepare is still in flight; when the
         // response lands, nothing may proceed to the signing pipeline.
         isCancelled = true
-        releasePrepare({
-            transactionGroups: [{ transactions: ['AA=='], purpose: 'swap' }],
-        })
+        releasePrepare(makeOrder())
 
         expect(await resultPromise).toEqual({ kind: 'cancelled' })
         expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
     it('reports a prepare rejection with its error for the display layer', async () => {
         const prepareError = new Error('Prepare failed')
-        mockPrepareTransactions.mockRejectedValue(prepareError)
+        mockCreateOrder.mockRejectedValue(prepareError)
 
         const result = await run(makeQuote('quote-789'))
 
@@ -710,7 +716,7 @@ describe('executeAlgorandSwap', () => {
         })
         // No swap exists yet, so there is nothing to report to the backend.
         expect(mockAddSignRequest).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(mockReportOrder).not.toHaveBeenCalled()
     })
 
     it('refuses a swap the account cannot fund before prepare, naming the shortfall', async () => {
@@ -729,8 +735,8 @@ describe('executeAlgorandSwap', () => {
                 shortfall: new Decimal(5000),
             },
         })
-        expect(mockPrepareTransactions).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(mockCreateOrder).not.toHaveBeenCalled()
+        expect(mockReportOrder).not.toHaveBeenCalled()
     })
 
     it('feeds fresh chain state to the shortfall check and reserves the opt-in MBR when the receive asset is not held', async () => {
@@ -813,7 +819,7 @@ describe('executeAlgorandSwap', () => {
         })
 
         expect(await resultPromise).toEqual({ kind: 'cancelled' })
-        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        expect(mockCreateOrder).not.toHaveBeenCalled()
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 
@@ -855,21 +861,21 @@ describe('executeAlgorandSwap', () => {
 
         expect(result.kind).toBe('success')
         expect(mockComputeShortfall).not.toHaveBeenCalled()
-        expect(mockPrepareTransactions).toHaveBeenCalled()
+        expect(mockCreateOrder).toHaveBeenCalled()
     })
 
-    it('treats user rejection as a non-fatal cancellation (no failure report)', async () => {
+    it('cancels the order when the user rejects signing', async () => {
         autoReject()
 
         const result = await run(makeQuote('quote-reject'))
 
         expect(result).toEqual({ kind: 'user-rejected' })
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
     it('classifies an on-device Ledger reject arriving via the error callback as a cancellation', async () => {
         // Defense-in-depth: a device reject leaking through `error` instead of
-        // `reject` must never post a phantom blockchain_error to the backend.
+        // `reject` is still the user's own cancellation.
         const deviceReject = new Error(
             'Operation was rejected on the Ledger device',
         )
@@ -879,10 +885,10 @@ describe('executeAlgorandSwap', () => {
         const result = await run(makeQuote('quote-device-reject'))
 
         expect(result).toEqual({ kind: 'user-rejected' })
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
-    it('reports failure to backend when the pipeline errors', async () => {
+    it('cancels the order when the pipeline errors before broadcast', async () => {
         autoError(new Error('Pipeline boom'))
 
         const result = await run(makeQuote('quote-pipeline-error'))
@@ -892,14 +898,7 @@ describe('executeAlgorandSwap', () => {
             kind: 'failed',
             failure: { phase: 'signing', reason: 'signing-failed' },
         })
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: {
-                status: 'failed',
-                reason: 'blockchain_error',
-                swap_version: 'v2',
-            },
-        })
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
     it('rejects a quantum swap on the backend fee contract, not on the signing layer', async () => {
@@ -920,14 +919,8 @@ describe('executeAlgorandSwap', () => {
             },
         })
         expect(mockAddSignRequest).not.toHaveBeenCalled()
-        // Not a user cancellation, so the backend must still be told.
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: expect.objectContaining({
-                status: 'failed',
-                reason: 'blockchain_error',
-            }),
-        })
+        // Nothing was signed, so the order is cancelled.
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
     it('rejects a swap for a standard account rekeyed to a quantum auth account', async () => {
@@ -959,7 +952,7 @@ describe('executeAlgorandSwap', () => {
 
         expect(result.kind).toBe('success')
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalledWith(
+        expect(mockReportOrder).not.toHaveBeenCalledWith(
             expect.objectContaining({
                 data: expect.objectContaining({ status: 'failed' }),
             }),
@@ -1030,7 +1023,7 @@ describe('executeAlgorandSwap', () => {
         expect(submitted).toHaveLength(2)
     })
 
-    it('reports a submission failure with its error and a failed status', async () => {
+    it('reports a submission failure with its error, leaving the order to the router', async () => {
         const submitError = new Error('Submission failed')
         mockSendRawTransaction.mockRejectedValue(submitError)
 
@@ -1044,16 +1037,12 @@ describe('executeAlgorandSwap', () => {
                 error: submitError,
             },
         })
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: expect.objectContaining({ status: 'failed' }),
-        })
+        // A group may already be on chain: the router settles it from there.
+        expect(mockReportOrder).not.toHaveBeenCalled()
     })
 
     it('still succeeds if status update fails (non-fatal)', async () => {
-        mockUpdateSwapStatus.mockRejectedValue(
-            new Error('Status update failed'),
-        )
+        mockReportOrder.mockRejectedValue(new Error('Status update failed'))
 
         const result = await run(makeQuote('quote-status-fail'))
 
@@ -1062,7 +1051,7 @@ describe('executeAlgorandSwap', () => {
 
     it('swallows a failed failure report', async () => {
         autoError(new Error('Pipeline boom'))
-        mockUpdateSwapStatus.mockRejectedValue(new Error('backend down'))
+        mockReportOrder.mockRejectedValue(new Error('backend down'))
 
         const result = await run(makeQuote('quote-report-fail'))
 
@@ -1073,15 +1062,13 @@ describe('executeAlgorandSwap', () => {
     })
 
     it('returns an error when no transaction groups are returned', async () => {
-        mockPrepareTransactions.mockResolvedValue(
-            makePrepareResult({ transactionGroups: [] }),
-        )
+        mockCreateOrder.mockResolvedValue(makeOrder({ steps: [] }))
 
         const result = await run(makeQuote('quote-empty'))
 
         expect(result).toEqual({
             kind: 'failed',
-            failure: { phase: 'prepare', reason: 'no-transaction-groups' },
+            failure: { phase: 'prepare', reason: 'no-signable-steps' },
         })
     })
 
@@ -1097,11 +1084,7 @@ describe('executeAlgorandSwap', () => {
             failure: { phase: 'prepare', reason: 'quote-mismatch' },
         })
         expect(mockAddSignRequest).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith(
-            expect.objectContaining({
-                data: expect.objectContaining({ status: 'failed' }),
-            }),
-        )
+        expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
     })
 
     describe('shared-account (multisig) swaps', () => {
@@ -1174,6 +1157,7 @@ describe('executeAlgorandSwap', () => {
                             { kind: 'toSign', flatIndex: 0 },
                             { kind: 'toSign', flatIndex: 1 },
                         ],
+                        purpose: 'swap',
                     },
                 ],
                 expectedRawTransactionsBase64: ['cmF3MQ==', 'cmF3Mg=='],
@@ -1192,7 +1176,7 @@ describe('executeAlgorandSwap', () => {
             expect(mockSendRawTransaction).toHaveBeenCalled()
         })
 
-        it('treats a rejected proposal as a cancellation (no failure report)', async () => {
+        it('cancels the order when the proposal is rejected', async () => {
             autoReject()
 
             const result = await run(makeQuote('quote-msig-reject'), {
@@ -1201,7 +1185,7 @@ describe('executeAlgorandSwap', () => {
 
             expect(result).toEqual({ kind: 'user-rejected' })
             expect(mockRegisterHandoff).not.toHaveBeenCalled()
-            expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+            expect(mockReportOrder).toHaveBeenCalledWith(cancelledReport())
         })
 
         it('guards the propose path when the multisig account is itself rekeyed to a quantum auth account', async () => {

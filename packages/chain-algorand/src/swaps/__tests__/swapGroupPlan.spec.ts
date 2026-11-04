@@ -11,8 +11,12 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
-import { buildGroupPlans, scatterSigned } from '../swapGroupPlan'
+import type { SwapSignTransactionsStep } from '@perawallet/wallet-core-swaps'
+import {
+    buildGroupPlans,
+    scatterSigned,
+    serializeGroupPlans,
+} from '../swapGroupPlan'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
@@ -34,6 +38,18 @@ const makeSignedTxn = (tag: string): PeraSignedTransaction =>
         txn: makeUnsignedTxn(`inner-${tag}`),
     }) as unknown as PeraSignedTransaction
 
+const step = (
+    purpose: string,
+    transactions: string[],
+    presignedTransactions: SwapSignTransactionsStep['presignedTransactions'] = null,
+): SwapSignTransactionsStep => ({
+    kind: 'sign-transactions',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    purpose,
+    transactions,
+    presignedTransactions,
+})
+
 const decoders = {
     decodeTransaction: (bytes: Uint8Array) =>
         makeUnsignedTxn(new TextDecoder().decode(bytes)),
@@ -43,9 +59,7 @@ const decoders = {
 
 describe('buildGroupPlans', () => {
     it('produces a plan with all unsigned slots for a single all-unsigned group', () => {
-        const groups: TransactionGroup[] = [
-            { purpose: 'swap', transactions: ['a', 'b'] },
-        ]
+        const groups: SwapSignTransactionsStep[] = [step('swap', ['a', 'b'])]
 
         const { plans, unsignedTxs, groupContext } = buildGroupPlans(
             groups,
@@ -62,8 +76,8 @@ describe('buildGroupPlans', () => {
     })
 
     it('produces a plan with all pre-signed slots for a single all-pre-signed group', () => {
-        const groups: TransactionGroup[] = [
-            { purpose: 'fee', signedTransactions: ['x', 'y'] },
+        const groups: SwapSignTransactionsStep[] = [
+            step('swap', ['ux', 'uy'], ['x', 'y']),
         ]
 
         const { plans, unsignedTxs, groupContext } = buildGroupPlans(
@@ -82,12 +96,8 @@ describe('buildGroupPlans', () => {
 
     it('interleaves pre-signed and user-signed slots inside a single mixed group', () => {
         // 3 slots: pre, user, pre.
-        const groups: TransactionGroup[] = [
-            {
-                purpose: 'swap',
-                signedTransactions: ['p1', null, 'p2'],
-                transactions: [null, 'u1', null],
-            },
+        const groups: SwapSignTransactionsStep[] = [
+            step('swap', ['up1', 'u1', 'up2'], ['p1', null, 'p2']),
         ]
 
         const { plans, unsignedTxs, groupContext } = buildGroupPlans(
@@ -109,13 +119,9 @@ describe('buildGroupPlans', () => {
     })
 
     it('produces one plan per group and concatenates groupContext across groups', () => {
-        const groups: TransactionGroup[] = [
-            { purpose: 'opt-in', transactions: ['a'] },
-            {
-                purpose: 'swap',
-                signedTransactions: ['p', null],
-                transactions: [null, 'b'],
-            },
+        const groups: SwapSignTransactionsStep[] = [
+            step('opt_in', ['a']),
+            step('swap', ['up', 'b'], ['p', null]),
         ]
 
         const { plans, unsignedTxs, groupContext } = buildGroupPlans(
@@ -124,19 +130,41 @@ describe('buildGroupPlans', () => {
         )
 
         expect(plans).toHaveLength(2)
+        expect(plans.map(plan => plan.purpose)).toEqual(['opt_in', 'swap'])
         expect(unsignedTxs).toHaveLength(2)
         expect(groupContext).toHaveLength(3) // 1 + 2 slots
     })
 })
 
+describe('serializeGroupPlans', () => {
+    it("keeps each group's step label for the order report", () => {
+        const { plans } = buildGroupPlans(
+            [step('swap', ['up', 'b'], ['p', null])],
+            decoders,
+        )
+
+        const serialized = serializeGroupPlans(
+            plans,
+            () => [new Uint8Array([7])],
+            () => 'Bw==',
+        )
+
+        expect(serialized).toEqual([
+            {
+                slots: [
+                    { kind: 'preSigned', signedTxnBase64: 'Bw==' },
+                    { kind: 'toSign', flatIndex: 0 },
+                ],
+                purpose: 'swap',
+            },
+        ])
+    })
+})
+
 describe('scatterSigned', () => {
     it('reassembles signed txns back into their original group slots', () => {
-        const groups: TransactionGroup[] = [
-            {
-                purpose: 'swap',
-                signedTransactions: ['p1', null, 'p2'],
-                transactions: [null, 'u1', null],
-            },
+        const groups: SwapSignTransactionsStep[] = [
+            step('swap', ['up1', 'u1', 'up2'], ['p1', null, 'p2']),
         ]
 
         const { plans } = buildGroupPlans(groups, decoders)

@@ -17,7 +17,14 @@ import {
     encodeSignedTransactions,
     getAlgorandClient,
 } from '../blockchain'
-import { toBigInt } from '@perawallet/wallet-core-shared'
+import { Decimal } from 'decimal.js'
+
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    PeraServiceUnavailableError,
+    toBigInt,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
@@ -34,16 +41,48 @@ import type {
 // defaulted to.
 const DEFAULT_RECEIVE_ASSET_ID = '31566704'
 
+// Held back from a percentage amount for the group's network fees, in
+// microAlgos: the same margin the group validator allows for them.
+const MAX_AMOUNT_FEE_RESERVE_MICRO_ALGO = 100_000
+
+const caip2Of = (scope: ChainScope): Nullable<string> =>
+    algorandDescriptor.networks.find(
+        network => network.id === algorandNetworkOf(scope),
+    )?.caip2 ?? null
+
+// CAIP-19 for an ASA; ALGO is `asa:0`, and a leading zero is not an id.
+const ROUTER_ASSET_REFERENCE = /^asa:(0|[1-9]\d*)$/
+
 // Swap groups arrive fully built from the backend, so the client only reads
 // account state and submits; it never builds or signs with its own defaults.
 export const algorandSwapAdapter: SwapChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     nativeAssetId: algorandDescriptor.nativeAsset.ref.assetId,
     defaultReceiveAssetId: DEFAULT_RECEIVE_ASSET_ID,
+    toRouterAssetId: (assetId, scope) => {
+        const caip2 = caip2Of(scope)
+        if (!caip2) throw new PeraServiceUnavailableError(scope)
+        return `${caip2}/asa:${assetId}`
+    },
+    fromRouterAssetId: (routerAssetId, scope) => {
+        const caip2 = caip2Of(scope)
+        if (!caip2 || !routerAssetId.startsWith(`${caip2}/`)) return null
+        const match = ROUTER_ASSET_REFERENCE.exec(
+            routerAssetId.slice(caip2.length + 1),
+        )
+        return match ? match[1] : null
+    },
+    maxAmountFeeReserve: new Decimal(MAX_AMOUNT_FEE_RESERVE_MICRO_ALGO),
+    // The router keeps no group id, so the link opens the swap transaction.
     swapExplorerUrl: (scope, item) => {
         const { explorerUrl } = getAlgorandChainConfig(scope)
-        return item.transactionGroupId && explorerUrl
-            ? `${explorerUrl}/tx-group/${item.transactionGroupId}/`
+        const swapTransaction = item.transactions.find(
+            transaction =>
+                transaction.role === 'swap' &&
+                transaction.scope?.chainId === ALGORAND_CHAIN_ID,
+        )
+        return swapTransaction && explorerUrl
+            ? `${explorerUrl}/tx/${swapTransaction.txHash}/`
             : undefined
     },
     executeSwap: (params, { scope, ...context }) =>

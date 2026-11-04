@@ -18,7 +18,7 @@ import {
 import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     SerializedGroupPlan,
-    TransactionGroup,
+    SwapSignTransactionsStep,
 } from '@perawallet/wallet-core-swaps'
 import type {
     PeraSignedTransaction,
@@ -36,6 +36,8 @@ export type GroupSlot =
 
 export type GroupPlan = {
     slots: GroupSlot[]
+    /** The router step's label, echoed back when reporting the group's hashes. */
+    purpose: string
 }
 
 export type BuildGroupPlansResult = {
@@ -54,24 +56,23 @@ type GroupDecoders = {
 }
 
 /**
- * Decode every group up-front into a merge plan and collect the unsigned
- * transactions the user must sign into a single flat array.
- *
- * signed_transactions and transactions are parallel arrays:
- * - signed_transactions[i] is a pre-signed base64 string, or null if user must sign
- * - transactions[i] is an unsigned base64 string, or null if already signed
+ * Decode every step (one atomic group each) up-front into a merge plan and
+ * collect the unsigned transactions the user must sign into a single flat
+ * array. A step's `presignedTransactions` is positional with its
+ * `transactions`: a base64 signed transaction where the provider already
+ * signed, null where the user signs.
  */
 export const buildGroupPlans = (
-    groups: TransactionGroup[],
+    steps: SwapSignTransactionsStep[],
     { decodeTransaction, decodeSignedTransaction }: GroupDecoders,
 ): BuildGroupPlansResult => {
     const plans: GroupPlan[] = []
     const unsignedTxs: PeraTransaction[] = []
     const groupContext: PeraTransaction[] = []
 
-    for (const group of groups) {
-        const signed = group.signedTransactions ?? []
-        const unsigned = group.transactions ?? []
+    for (const step of steps) {
+        const signed = step.presignedTransactions ?? []
+        const unsigned = step.transactions
         const length = Math.max(signed.length, unsigned.length)
         const slots: GroupSlot[] = []
 
@@ -93,7 +94,7 @@ export const buildGroupPlans = (
             }
         }
 
-        plans.push({ slots })
+        plans.push({ slots, purpose: step.purpose })
     }
 
     return { plans, unsignedTxs, groupContext }
@@ -138,6 +139,7 @@ export const serializeGroupPlans = (
                   }
                 : { kind: 'toSign' as const, flatIndex: slot.flatIndex },
         ),
+        purpose: plan.purpose,
     }))
 
 /**

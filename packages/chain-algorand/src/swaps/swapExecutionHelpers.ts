@@ -26,7 +26,7 @@ import type {
     TransactionSignRequest,
     UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
+import type { ReportSwapOrderFn } from '@perawallet/wallet-core-swaps'
 import {
     AppError,
     ErrorCategory,
@@ -263,24 +263,16 @@ export const requestSwapProposal = (
 
 /**
  * Best-effort: a failed report is logged and swallowed, since the caller has
- * already surfaced the real failure. NOT for user cancellations — only genuine
- * blockchain or pipeline errors.
+ * already surfaced the real outcome. Only for an order nothing was broadcast
+ * for: after a broadcast the router settles the order from the chain.
  */
-export const reportSwapFailure = async (
-    updateSwapStatus: UpdateSwapStatusFn,
-    swapIdStr: Optional<string>,
+export const reportSwapCancelled = async (
+    reportOrder: ReportSwapOrderFn,
+    orderId: string,
 ): Promise<void> => {
-    if (!swapIdStr) return
     try {
-        await updateSwapStatus({
-            swapId: swapIdStr,
-            data: {
-                status: 'failed',
-                reason: 'blockchain_error',
-                swap_version: 'v2',
-            },
-        })
+        await reportOrder({ orderId, report: { status: 'cancelled' } })
     } catch {
-        logger.warn('Failed to report swap failure to backend')
+        logger.warn('Failed to report swap cancellation to backend')
     }
 }

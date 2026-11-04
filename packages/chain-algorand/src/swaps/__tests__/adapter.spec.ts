@@ -16,7 +16,10 @@ import type {
     SwapExecutionContext,
     SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
+import { Decimal } from 'decimal.js'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { algorandDescriptor } from '../../descriptor'
 import { algorandSwapAdapter } from '../adapter'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
@@ -48,7 +51,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
     getAlgorandChainConfig: () => ({ explorerUrl: mocks.explorerUrl }),
 }))
 
-const params = { quote: { quoteIdStr: 'q' } } as unknown as ExecuteSwapParams
+const params = { quote: { quoteId: 'q' } } as unknown as ExecuteSwapParams
 
 const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
 
@@ -56,10 +59,22 @@ const context: SwapExecutionContext = {
     scope,
     deviceId: 'device-1',
     addSignRequest: vi.fn(),
-    prepareTransactions: vi.fn(),
-    updateSwapStatus: vi.fn(),
+    createOrder: vi.fn(),
+    reportOrder: vi.fn(),
     registerHandoff: vi.fn(),
 }
+
+const caip2Of = (networkId: string): string => {
+    const caip2 = algorandDescriptor.networks.find(
+        network => network.id === networkId,
+    )?.caip2
+    if (!caip2) throw new Error(`no CAIP-2 for ${networkId}`)
+    return caip2
+}
+
+const historyItem = (
+    transactions: SwapHistoryItem['transactions'],
+): SwapHistoryItem => ({ transactions }) as SwapHistoryItem
 
 describe('algorandSwapAdapter', () => {
     beforeEach(() => {
@@ -77,26 +92,91 @@ describe('algorandSwapAdapter', () => {
         expect(algorandSwapAdapter.defaultReceiveAssetId).toBe('31566704')
     })
 
-    it('links a history item to its transaction group on the explorer', () => {
-        expect(
-            algorandSwapAdapter.swapExplorerUrl(scope, {
-                transactionGroupId: 'GROUP',
-            } as SwapHistoryItem),
-        ).toBe('https://explorer.test/tx-group/GROUP/')
+    it('writes ALGO and an ASA as router ids on the scope network', () => {
+        const caip2 = caip2Of('testnet')
+
+        expect(algorandSwapAdapter.toRouterAssetId('0', scope)).toBe(
+            `${caip2}/asa:0`,
+        )
+        expect(algorandSwapAdapter.toRouterAssetId('31566704', scope)).toBe(
+            `${caip2}/asa:31566704`,
+        )
     })
 
-    it('has no history link without a group id or an explorer', () => {
+    it('reads back ALGO and an ASA on the scope network', () => {
+        const caip2 = caip2Of('testnet')
+
         expect(
-            algorandSwapAdapter.swapExplorerUrl(scope, {
-                transactionGroupId: null,
-            } as SwapHistoryItem),
+            algorandSwapAdapter.fromRouterAssetId(`${caip2}/asa:0`, scope),
+        ).toBe('0')
+        expect(
+            algorandSwapAdapter.fromRouterAssetId(
+                `${caip2}/asa:31566704`,
+                scope,
+            ),
+        ).toBe('31566704')
+    })
+
+    it("refuses a leading-zero id, another network's id and another namespace", () => {
+        const caip2 = caip2Of('testnet')
+
+        expect(
+            algorandSwapAdapter.fromRouterAssetId(`${caip2}/asa:007`, scope),
+        ).toBeNull()
+        expect(
+            algorandSwapAdapter.fromRouterAssetId(
+                `${caip2Of('mainnet')}/asa:7`,
+                scope,
+            ),
+        ).toBeNull()
+        expect(
+            algorandSwapAdapter.fromRouterAssetId(`${caip2}/slip44:283`, scope),
+        ).toBeNull()
+    })
+
+    it('has no router id on a network the router does not name', () => {
+        const custom = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'custom',
+        } as const
+
+        expect(() => algorandSwapAdapter.toRouterAssetId('0', custom)).toThrow(
+            PeraServiceUnavailableError,
+        )
+        expect(
+            algorandSwapAdapter.fromRouterAssetId('x/asa:0', custom),
+        ).toBeNull()
+    })
+
+    it('holds back 0.1 ALGO from a percentage amount', () => {
+        expect(algorandSwapAdapter.maxAmountFeeReserve).toEqual(
+            new Decimal(100_000),
+        )
+    })
+
+    it('links a history item to its swap transaction on the explorer', () => {
+        expect(
+            algorandSwapAdapter.swapExplorerUrl(
+                scope,
+                historyItem([
+                    { scope, txHash: 'OPTIN', role: 'opt_in' },
+                    { scope, txHash: 'SWAP', role: 'swap' },
+                ]),
+            ),
+        ).toBe('https://explorer.test/tx/SWAP/')
+    })
+
+    it('has no history link without a swap transaction or an explorer', () => {
+        expect(
+            algorandSwapAdapter.swapExplorerUrl(scope, historyItem([])),
         ).toBeUndefined()
 
         mocks.explorerUrl = undefined
         expect(
-            algorandSwapAdapter.swapExplorerUrl(scope, {
-                transactionGroupId: 'GROUP',
-            } as SwapHistoryItem),
+            algorandSwapAdapter.swapExplorerUrl(
+                scope,
+                historyItem([{ scope, txHash: 'SWAP', role: 'swap' }]),
+            ),
         ).toBeUndefined()
     })
 
@@ -119,8 +199,8 @@ describe('algorandSwapAdapter', () => {
                 isQuantumSwapEnabled: true,
                 deviceId: 'device-1',
                 addSignRequest: context.addSignRequest,
-                prepareTransactions: context.prepareTransactions,
-                updateSwapStatus: context.updateSwapStatus,
+                createOrder: context.createOrder,
+                reportOrder: context.reportOrder,
                 registerHandoff: context.registerHandoff,
                 encodeSignedTransactions: mocks.encodeSignedTransactions,
             }),

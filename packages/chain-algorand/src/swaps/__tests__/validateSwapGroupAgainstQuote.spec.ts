@@ -12,27 +12,60 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import {
-    validateSwapGroupAgainstQuote,
     SwapQuoteMismatchError,
-} from '../validateSwapGroupAgainstQuote'
+    type SwapFee,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
+import { validateSwapGroupAgainstQuote } from '../validateSwapGroupAgainstQuote'
 import type { PeraDisplayableTransaction } from '../../blockchain/models/algosdk-shapes'
 
 const SWAPPER = 'SWAPPER_ADDRESS'
 const POOL = 'POOL_ADDRESS'
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+type QuoteShape = {
+    sourceAddress?: string
+    sourceAssetId?: string
+    sourceAmount?: number
+    amountIn?: number
+    fees?: SwapFee[]
+    sourceChainId?: string
+}
+
 // ASA 31566704 (USDC) → ASA 999 swap, fixed-input.
-const baseQuote = {
-    quoteIdStr: 'q1',
-    swapperAddress: SWAPPER,
-    assetIn: { assetId: '31566704', decimals: 6 },
-    assetOut: { assetId: '999', decimals: 6 },
-    amountIn: new Decimal(5_000_000),
-    amountInWithSlippage: new Decimal(5_000_000),
-    amountOut: new Decimal(4_000_000),
-    amountOutWithSlippage: new Decimal(3_900_000),
-} as unknown as SwapQuote
+const quoteWith = ({
+    sourceAddress = SWAPPER,
+    sourceAssetId = '31566704',
+    sourceAmount = 5_000_000,
+    amountIn = sourceAmount,
+    fees = [],
+    sourceChainId = 'algorand',
+}: QuoteShape = {}): SwapQuote =>
+    ({
+        quoteId: 'q1',
+        request: {
+            sourceAsset: {
+                chainId: sourceChainId,
+                networkId: 'mainnet',
+                assetId: sourceAssetId,
+            },
+            destinationAsset: { ...SCOPE, assetId: '999' },
+            sourceAmount: new Decimal(sourceAmount),
+            sourceAddress,
+            destinationAddress: sourceAddress,
+            slippage: '0.5',
+        },
+        assetIn: { assetId: sourceAssetId, decimals: 6 },
+        assetOut: { assetId: '999', decimals: 6 },
+        amountIn: new Decimal(amountIn),
+        amountOut: new Decimal(4_000_000),
+        minimumAmountOut: new Decimal(3_900_000),
+        fees,
+    }) as unknown as SwapQuote
+
+const baseQuote = quoteWith()
 
 const axfer = (
     overrides: Partial<{
@@ -74,12 +107,15 @@ const payment = (
         },
     }) as unknown as PeraDisplayableTransaction
 
+const peraFee = (assetId: string, amount: number): SwapFee => ({
+    kind: 'pera',
+    asset: { ...SCOPE, assetId },
+    amount: new Decimal(amount),
+    usdValue: null,
+})
+
 const withPeraFeeAsset = (assetId: string, amount: number): SwapQuote =>
-    ({
-        ...baseQuote,
-        peraFeeAsset: { assetId, decimals: 6 },
-        peraFeeAmount: new Decimal(amount),
-    }) as unknown as SwapQuote
+    quoteWith({ fees: [peraFee(assetId, amount)] })
 
 describe('validateSwapGroupAgainstQuote', () => {
     it('passes a swap that spends exactly the quoted input', () => {
@@ -157,10 +193,9 @@ describe('validateSwapGroupAgainstQuote', () => {
     it('rejects a drain when the quote swapper does not match the group (Variant A no-op guard)', () => {
         // `outflow` counts only the quote's swapper, so a mismatched swapper
         // would otherwise leave the spend ceiling unchecked.
-        const wrongSwapperQuote = {
-            ...baseQuote,
-            swapperAddress: 'WRONG_SWAPPER_ADDRESS',
-        } as unknown as SwapQuote
+        const wrongSwapperQuote = quoteWith({
+            sourceAddress: 'WRONG_SWAPPER_ADDRESS',
+        })
         expect(() =>
             validateSwapGroupAgainstQuote(
                 [axfer({ amount: 999_999_999n })],
@@ -249,13 +284,69 @@ describe('validateSwapGroupAgainstQuote', () => {
     })
 
     it('rejects a quote with no swapper address', () => {
-        const quote = {
-            ...baseQuote,
-            swapperAddress: undefined,
-        } as unknown as SwapQuote
+        const quote = quoteWith({ sourceAddress: '' })
 
         expect(() => validateSwapGroupAgainstQuote([axfer()], quote)).toThrow(
             SwapQuoteMismatchError,
         )
+    })
+
+    describe('bounds the input by the request, not the router', () => {
+        // The app asked to spend 5 ALGO; the router's quote claims 500.
+        const inflatedQuote = quoteWith({
+            sourceAssetId: '0',
+            sourceAmount: 5_000_000,
+            amountIn: 500_000_000,
+        })
+
+        it('rejects a group spending what the router claims', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [payment({ amount: 500_000_000n })],
+                    inflatedQuote,
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('passes a group spending exactly the requested amount', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [payment({ amount: 5_000_000n })],
+                    inflatedQuote,
+                ),
+            ).not.toThrow()
+        })
+
+        it('adds the Pera fee in the input asset on top of the request', () => {
+            const quote = quoteWith({
+                sourceAssetId: '0',
+                sourceAmount: 5_000_000,
+                amountIn: 500_000_000,
+                fees: [peraFee('0', 30_000)],
+            })
+
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [payment({ amount: 5_030_000n })],
+                    quote,
+                ),
+            ).not.toThrow()
+            // Request + fee + the 0.1 ALGO network allowance, and no further.
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [payment({ amount: 5_130_001n })],
+                    quote,
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+    })
+
+    it('rejects a request to spend an asset on another chain', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer()],
+                quoteWith({ sourceChainId: 'ethereum' }),
+            ),
+        ).toThrow(SwapQuoteMismatchError)
     })
 })

@@ -12,10 +12,21 @@
 
 import { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    swapFeeOf,
+    type SwapFee,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isAlgorandNativeAssetId } from '../descriptor'
 
 const ZERO = new Decimal(0)
+
+const isAlgoFee = (fee: Optional<SwapFee>): boolean =>
+    fee !== undefined &&
+    fee.asset.chainId === ALGORAND_CHAIN_ID &&
+    isAlgorandNativeAssetId(fee.asset.assetId)
 
 export type SwapAlgoShortfallInput = {
     quote: SwapQuote
@@ -49,23 +60,22 @@ export const computeSwapAlgoShortfall = ({
     minBalance,
     optInMbr,
 }: SwapAlgoShortfallInput): Nullable<Decimal> => {
-    const fees = quote.transactionFees ?? ZERO
-    const amountIn = quote.amountInWithSlippage ?? quote.amountIn ?? ZERO
-    const amountOut = quote.amountOutWithSlippage ?? quote.amountOut ?? ZERO
-    const peraFee = quote.peraFeeAmount ?? ZERO
+    const networkFee = swapFeeOf(quote, 'network')
+    const fees = isAlgoFee(networkFee) ? (networkFee?.amount ?? ZERO) : ZERO
+    const amountIn = quote.request.sourceAmount
+    const amountOut = quote.minimumAmountOut ?? quote.amountOut
+    const peraFee = swapFeeOf(quote, 'pera')
 
-    const isAlgoIn = isAlgorandNativeAssetId(quote.assetIn.assetId)
+    const isAlgoIn = isAlgorandNativeAssetId(quote.request.sourceAsset.assetId)
     const isAlgoOut = isAlgorandNativeAssetId(quote.assetOut.assetId)
-    const isPeraFeeInAlgo =
-        quote.peraFeeAsset == null ||
-        isAlgorandNativeAssetId(quote.peraFeeAsset.assetId)
+    const peraFeeInAlgo = peraFee && isAlgoFee(peraFee) ? peraFee.amount : ZERO
 
     const required = minBalance.plus(optInMbr ?? ZERO)
 
     const afterSwap = algoBalance.minus(fees).minus(isAlgoIn ? amountIn : ZERO)
     const afterPeraFee = afterSwap
         .plus(isAlgoOut ? amountOut : ZERO)
-        .minus(isPeraFeeInAlgo ? peraFee : ZERO)
+        .minus(peraFeeInAlgo)
 
     const shortfall = Decimal.max(
         required.minus(afterSwap),
