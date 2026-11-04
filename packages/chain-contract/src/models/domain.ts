@@ -122,6 +122,8 @@ export type AccountChainState =
           family: 'evm'
           /** Transaction count; `pending` includes transactions still in the mempool. */
           nonce: { latest: number; pending: number }
+          /** Newest block a received-token history scan has read up to; absent until a scan finishes. */
+          tokenScanBlock?: number
       }
 
 export interface AccountState {

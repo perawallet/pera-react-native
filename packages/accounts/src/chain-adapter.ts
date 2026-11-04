@@ -235,6 +235,8 @@ export type AccountStateReadHint = {
     priorChainState: Optional<AccountChainState>
     /** Tokens the user added on this scope, whose balances a chain without opt-in reads too; absent means none. */
     addedTokenIds?: readonly string[]
+    /** The syncer persists this read, so a chain may do work that only pays off for an account the wallet holds, such as discovering what it received. */
+    isPersisted?: boolean
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>

@@ -24,6 +24,9 @@ import { delay, http, HttpResponse } from 'msw'
 import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
+    encodeAbiParameters,
+    encodeEventTopics,
+    erc20Abi,
     getAddress,
     hexToBytes,
     keccak256,
@@ -69,6 +72,7 @@ import {
     VIEM_TRANSFER_NONCE_0_UNDERPRICED,
 } from '../../signing/__tests__/fixtures'
 import { ethereumCallSummary } from '../../signing/review'
+import { createTokenSightings } from '../../accounts/token-detection'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
 import {
     SubmissionLedgerUnreadableError,
@@ -270,6 +274,62 @@ describe('Ethereum broadcaster adapter', () => {
 
             expect(txIds).toEqual([HASH])
             expect(await rows()).toMatchObject([{ scope: 'ethereum/mainnet' }])
+        })
+    })
+
+    describe('tokens a mined send delivered', () => {
+        it('tells the sightings the reconciler was given', async () => {
+            const tokenSightings = createTokenSightings()
+            const withSightings = createEvmBroadcasterAdapter(
+                testChainContext(),
+                ETHEREUM,
+                { confirmationTimeoutMs: 200, tokenSightings },
+            )
+            const token = '0x8aD3c73F833d3F9A523aB01476625F269aEb7Cf0'
+            await recordSubmissionAttempt({
+                db,
+                scope: SCOPE,
+                txIds: [HASH],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 0,
+            })
+            useRpc({
+                eth_blockNumber: '0x3e8',
+                eth_getTransactionCount: '0x1',
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                    logs: [
+                        {
+                            address: token.toLowerCase() as Hex,
+                            topics: encodeEventTopics({
+                                abi: erc20Abi,
+                                eventName: 'Transfer',
+                                args: {
+                                    from: '0x00000000000000000000000000000000000000bb',
+                                    to: SENDER,
+                                },
+                            }),
+                            data: encodeAbiParameters(
+                                [{ type: 'uint256' }],
+                                [5n],
+                            ),
+                            blockHash: `0x${'11'.repeat(32)}`,
+                            blockNumber: '0x1',
+                            logIndex: '0x0',
+                            transactionHash: HASH,
+                            transactionIndex: '0x0',
+                            removed: false,
+                        },
+                    ],
+                }),
+            })
+
+            await withSightings.reconcileOpenSubmissions()
+
+            expect(tokenSightings.of(SCOPE, SENDER)).toEqual([
+                getAddress(token),
+            ])
         })
     })
 

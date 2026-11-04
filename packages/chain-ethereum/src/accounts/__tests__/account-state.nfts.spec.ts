@@ -50,6 +50,13 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     upsertAssets: vi.fn().mockResolvedValue(undefined),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    getAccountHeldAssets: vi.fn().mockResolvedValue([]),
+}))
+
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const HINT = { priorChainState: undefined }
 const FIRST: Hex = '0x00000000000000000000000000000000000000aa'
