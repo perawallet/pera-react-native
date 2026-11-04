@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { SyncService } from '../service/sync-service'
+import { MAX_UNREAD_SCOPE_MS, SyncService } from '../service/sync-service'
 import { createSyncStorePorts } from '../service/store-ports'
 import type { SyncServiceDeps } from '../models'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
@@ -655,8 +655,6 @@ describe('SyncService', () => {
     })
 
     describe('reading past an unchanged change signal', () => {
-        const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
-
         const startAfterFirstPass = async () => {
             mockSendShouldRefreshRequest.mockResolvedValue({
                 refresh: false,
@@ -710,15 +708,48 @@ describe('SyncService', () => {
             expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
         })
 
-        it('reads every scope when started again, as on a return to the foreground', async () => {
+        it('reads every scope on a reconnect that lands mid-tick', async () => {
+            const accountReads = await startAfterFirstPass()
+            let releaseSignal: () => void = () => {}
+            mockSendShouldRefreshRequest.mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        releaseSignal = () =>
+                            resolve({ refresh: false, round: null })
+                    }),
+            )
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+            onlineManager.setOnline(false)
+            onlineManager.setOnline(true)
+            releaseSignal()
+            await flushMicrotasks()
+            mockSendShouldRefreshRequest.mockClear()
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+
+        it('reads every scope on the tick after markAllScopesStale', async () => {
+            const accountReads = await startAfterFirstPass()
+
+            service.markAllScopesStale()
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+
+        it('keeps trusting the signal when started again, as after an iOS inactive blip', async () => {
             const accountReads = await startAfterFirstPass()
             service.stop()
 
             service.start()
             await flushMicrotasks()
 
-            expect(accountReads).toHaveBeenCalled()
-            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+            expect(accountReads).not.toHaveBeenCalled()
         })
     })
 
@@ -1193,6 +1224,28 @@ describe('SyncService', () => {
         vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
             Promise.resolve(),
         )
+    })
+
+    describe('refreshSources', () => {
+        it('reads every source and invalidates the account queries once', async () => {
+            const { fetchAndPersistAccount, invalidateAccountQueries } =
+                await import('@perawallet/wallet-core-accounts')
+
+            await service.refreshSources([
+                { addresses: ['ADDR1'], scope: MAINNET },
+                { addresses: ['ADDR2'], scope: TESTNET },
+            ])
+
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR1',
+                MAINNET,
+            )
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR2',
+                TESTNET,
+            )
+            expect(invalidateAccountQueries).toHaveBeenCalledTimes(1)
+        })
     })
 
     describe('refreshAccounts', () => {

@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-export { SyncService } from './sync-service'
+export { SyncService, type RefreshSource } from './sync-service'
 export { releaseNetworkScopedQueries } from './query-cache'
 export { createSyncStorePorts } from './store-ports'

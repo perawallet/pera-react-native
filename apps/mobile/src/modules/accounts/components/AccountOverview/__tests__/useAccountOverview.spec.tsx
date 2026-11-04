@@ -42,7 +42,9 @@ const {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (_req: any) => Promise.resolve(undefined) as Promise<unknown>,
     ),
-    mockRefreshAccounts: vi.fn(() => Promise.resolve()),
+    mockRefreshAccounts: vi.fn((_addresses: string[], _scope: unknown) =>
+        Promise.resolve(),
+    ),
     mockInvalidateQueries: vi.fn(),
     mockTrackEvent: vi.fn(),
 }))
@@ -55,6 +57,12 @@ vi.mock('@analytics', async () => ({
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => ({
         refreshAccounts: mockRefreshAccounts,
+        refreshSources: (sources: { addresses: string[]; scope: unknown }[]) =>
+            Promise.all(
+                sources.map(({ addresses, scope }) =>
+                    mockRefreshAccounts(addresses, scope),
+                ),
+            ),
         invalidateQueries: mockInvalidateQueries,
     }),
 }))

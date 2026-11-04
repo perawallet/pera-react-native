@@ -87,10 +87,9 @@ const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
 // Must stay above PRICE_CACHE_TTL_MS in packages/assets price-syncer, or the
 // TTL gate would classify every periodic pass as fresh and stop re-pricing.
 const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
-// A change signal can miss activity (an EVM block follower blind to internal
-// transfers), and every "unchanged" answer would keep the balance as it is
-// indefinitely. A scope not read for this long is read anyway.
-const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
+// A change signal can miss activity, and every "unchanged" answer would keep
+// the balance as it is indefinitely. A scope not read for this long is read anyway.
+export const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
 
 type ScopeSyncOutcome = {
     hadTotalFailure: boolean
@@ -112,6 +111,9 @@ const isFailedOutcome = (outcome: ScopeSyncOutcome): boolean =>
     outcome.hadAccountFailure ||
     outcome.isRateLimited
 
+/** Addresses on one network, refreshed together. */
+export type RefreshSource = { addresses: string[]; scope: ChainScope }
+
 type ChangeDecision = { changed: boolean; cursor: Nullable<number> }
 
 const isRefusedCredential = (error: unknown): boolean =>
@@ -120,12 +122,8 @@ const isRefusedCredential = (error: unknown): boolean =>
 export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
-    // When each scope's accounts were last read (epoch ms). A scope absent
-    // here skips its change signal: on its first sync of a session the
-    // persisted cursor may predate a relaunch and the DB must be populated.
-    // Entries are dropped to force a read: on start (the app returning to the
-    // foreground), on reconnect, and when a submission settles on the chain,
-    // since a paced signal may not report the sender's new balance for blocks.
+    // When each scope's accounts were last read (epoch ms); a scope absent
+    // here is read without asking its change signal.
     private scopeReadAt = new Map<ChainScopeKey, number>()
     // A scope whose change signal got a 401/403: the key is wrong/missing, a
     // config-level problem retrying every tick can't fix. Reset on
@@ -200,9 +198,6 @@ export class SyncService {
             ),
         )
         this.authRefusedScopes.clear()
-        // The app calls start() on every return to the foreground; balances
-        // may have moved while it was away, whatever the signal says.
-        this.scopeReadAt.clear()
         void this.tick()
     }
 
@@ -243,18 +238,30 @@ export class SyncService {
      * offline-scheduled timer so the reconnect tick isn't duplicated.
      */
     private handleReconnect(): void {
-        if (!this.running || this.syncInProgress) return
+        if (!this.running) return
+        // Ahead of the in-progress guard, so a reconnect mid-tick still has
+        // the next tick read past the signal.
+        this.scopeReadAt.clear()
+        if (this.syncInProgress) return
         if (this.timer !== null) {
             clearTimeout(this.timer)
             this.timer = null
         }
         this.scopeBackoffs.clear()
-        this.scopeReadAt.clear()
         void this.tick()
+    }
+
+    /**
+     * Has the next tick read every scope without asking its change signal, for
+     * a return from the background: balances may have moved while it was away.
+     */
+    markAllScopesStale(): void {
+        this.scopeReadAt.clear()
     }
 
     restart(): void {
         this.stop()
+        this.scopeReadAt.clear()
         this.scopeBackoffs.clear()
         this.currentInterval = this.baseInterval
         this.start()
@@ -750,8 +757,65 @@ export class SyncService {
         addresses: string[],
         scope: ChainScope,
     ): Promise<void> {
-        if (addresses.length === 0) return
+        return this.refreshSources([{ addresses, scope }])
+    }
 
+    /**
+     * `refreshAccounts` over several networks at once, as one pull on an
+     * account holding several chains. Each network reads on its own, so a
+     * failing one never holds back the rest; the app-wide invalidations fire
+     * once for the lot. Rejects with the first failure after the others land.
+     */
+    async refreshSources(sources: readonly RefreshSource[]): Promise<void> {
+        const targets = sources.filter(({ addresses }) => addresses.length > 0)
+        if (targets.length === 0) return
+
+        const reads = await Promise.allSettled(
+            targets.map(({ addresses, scope }) =>
+                this.readRefreshSource(addresses, scope),
+            ),
+        )
+        const landed = targets.flatMap((target, index) => {
+            const read = reads[index]!
+            return read.status === 'fulfilled'
+                ? [{ ...target, ...read.value }]
+                : []
+        })
+
+        if (landed.some(read => read.hasAssetsRefreshed)) {
+            invalidateAssetQueries(this.deps.queryClient)
+        }
+        // A holdings change ripples beyond the refreshed addresses (any
+        // mounted account read joins in the just-fetched asset metadata and
+        // prices), so match the tick's broad accounts pass in that case.
+        // Otherwise scope to the refreshed addresses — including the
+        // multi-account wealth chart, which must reflect the send immediately.
+        if (landed.some(read => read.hasHoldingsChanged)) {
+            invalidateAccountQueries(this.deps.queryClient)
+        } else if (landed.length > 0) {
+            invalidateAccountQueriesForAddresses(
+                this.deps.queryClient,
+                landed.flatMap(({ addresses }) => addresses),
+                { includeMultiAccountKeys: true },
+            )
+        }
+        landed.forEach(({ addresses, scope }) =>
+            invalidateTransactionQueriesForAddresses(
+                this.deps.queryClient,
+                addresses,
+                scope,
+                { shouldRefetchAllPages: true },
+            ),
+        )
+
+        const failed = reads.find(read => read.status === 'rejected')
+        if (failed) throw failed.reason
+    }
+
+    private async readRefreshSource(
+        addresses: string[],
+        scope: ChainScope,
+    ): Promise<{ hasHoldingsChanged: boolean; hasAssetsRefreshed: boolean }> {
         const accountPass = await syncAccountsPhase(
             addresses,
             scope,
@@ -764,48 +828,29 @@ export class SyncService {
         // coarse tick, which by then sees the holding already persisted
         // (holdingsChanged === false) and won't fetch until the interval elapses.
         const { hasHoldingsChanged } = accountPass
-        if (hasHoldingsChanged) {
-            // Self-contained so a read failure here can't skip the invalidations
-            // below. refreshAccounts logs but never throws.
-            try {
-                const assetPass = await syncAssetsPhase(
-                    scope,
-                    ['assets', 'prices'],
-                    'refresh-asset-metadata-or-prices',
-                )
-                if (assetPass.hasSuccess) {
-                    invalidateAssetQueries(this.deps.queryClient)
-                }
-            } catch (error) {
-                logger.warn('Refresh asset enrichment failed', {
-                    scope,
-                    error:
-                        error instanceof Error
-                            ? { message: error.message, stack: error.stack }
-                            : error,
-                })
-            }
+        if (!hasHoldingsChanged) {
+            return { hasHoldingsChanged, hasAssetsRefreshed: false }
         }
-
-        // A holdings change ripples beyond the refreshed addresses (any
-        // mounted account read joins in the just-fetched asset metadata and
-        // prices), so match the tick's broad accounts pass in that case.
-        // Otherwise scope to the refreshed addresses — including the
-        // multi-account wealth chart, which must reflect the send immediately.
-        if (hasHoldingsChanged) {
-            invalidateAccountQueries(this.deps.queryClient)
-        } else {
-            invalidateAccountQueriesForAddresses(
-                this.deps.queryClient,
-                addresses,
-                { includeMultiAccountKeys: true },
+        // Self-contained so a read failure here can't skip the invalidations.
+        try {
+            const assetPass = await syncAssetsPhase(
+                scope,
+                ['assets', 'prices'],
+                'refresh-asset-metadata-or-prices',
             )
+            return {
+                hasHoldingsChanged,
+                hasAssetsRefreshed: assetPass.hasSuccess,
+            }
+        } catch (error) {
+            logger.warn('Refresh asset enrichment failed', {
+                scope,
+                error:
+                    error instanceof Error
+                        ? { message: error.message, stack: error.stack }
+                        : error,
+            })
+            return { hasHoldingsChanged, hasAssetsRefreshed: false }
         }
-        invalidateTransactionQueriesForAddresses(
-            this.deps.queryClient,
-            addresses,
-            scope,
-            { shouldRefetchAllPages: true },
-        )
     }
 }

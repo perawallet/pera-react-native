@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useState } from 'react'
-import { getSyncService } from '@perawallet/wallet-core-background'
+import {
+    getSyncService,
+    type RefreshSource,
+} from '@perawallet/wallet-core-background'
 import {
     toScopeKey,
     type ChainScope,
@@ -38,16 +41,14 @@ const buildRefreshKey = (addresses: string[], scope: ChainScope) =>
     `${toScopeKey(scope)}:${[...addresses].sort().join(',')}`
 
 const refreshOnce = async (
-    addresses: string[],
-    scope: ChainScope,
+    key: string,
+    start: () => Promise<void>,
 ): Promise<void> => {
-    const key = buildRefreshKey(addresses, scope)
     const pending = inFlightRefreshes.get(key)
     if (pending) return pending
-    // refreshAccounts owns the invalidation fan-out; a second call here would
+    // The sync service owns the invalidation fan-out; a second call here would
     // re-fire it un-debounced for no new data.
-    const work = (async () =>
-        getSyncService().refreshAccounts(addresses, scope))()
+    const work = (async () => start())()
     inFlightRefreshes.set(key, work)
     try {
         await work
@@ -56,9 +57,7 @@ const refreshOnce = async (
     }
 }
 
-const useRefreshRunner = (
-    run: () => Promise<unknown>,
-): UseSyncRefreshResult => {
+const useRefreshRunner = (run: () => Promise<void>): UseSyncRefreshResult => {
     const isMounted = useIsMounted()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -79,30 +78,45 @@ const useRefreshRunner = (
     return { isRefreshing, refresh }
 }
 
+/**
+ * Pull-to-refresh for DB-first screens. Their queries hold
+ * `staleTime: Infinity` over SQLite, so `refetch()` only re-reads the same
+ * local rows — only the sync service pulls fresh chain state, persists it,
+ * and then invalidates.
+ *
+ * No connectivity gate here: PWRefreshControl short-circuits offline pulls
+ * (pulsing the offline banner) before `onRefresh` ever fires.
+ */
 export const useSyncRefresh = ({
     addresses,
     scope,
 }: UseSyncRefreshParams): UseSyncRefreshResult =>
     useRefreshRunner(
-        useCallback(() => refreshOnce(addresses, scope), [addresses, scope]),
+        useCallback(
+            () =>
+                refreshOnce(buildRefreshKey(addresses, scope), () =>
+                    getSyncService().refreshAccounts(addresses, scope),
+                ),
+            [addresses, scope],
+        ),
     )
 
-/**
- * One pull over several networks, as an account holding more than one chain
- * shows them all at once; each network refreshes on its own, so a slow or
- * failing one never holds back the rest.
- */
+/** `useSyncRefresh` over every network a screen shows, in one pull. */
 export const useSyncRefreshAll = (
-    targets: readonly UseSyncRefreshParams[],
+    sources: readonly RefreshSource[],
 ): UseSyncRefreshResult =>
     useRefreshRunner(
         useCallback(
             () =>
-                Promise.allSettled(
-                    targets.map(({ addresses, scope }) =>
-                        refreshOnce(addresses, scope),
-                    ),
+                refreshOnce(
+                    sources
+                        .map(({ addresses, scope }) =>
+                            buildRefreshKey(addresses, scope),
+                        )
+                        .sort()
+                        .join('|'),
+                    () => getSyncService().refreshSources(sources),
                 ),
-            [targets],
+            [sources],
         ),
     )

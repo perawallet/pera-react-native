@@ -35,13 +35,16 @@ const createDeferred = () => {
 
 describe('useSyncRefresh', () => {
     const refreshAccounts = vi.fn()
+    const refreshSources = vi.fn()
     const invalidateQueries = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         refreshAccounts.mockResolvedValue(undefined)
+        refreshSources.mockResolvedValue(undefined)
         ;(getSyncService as Mock).mockReturnValue({
             refreshAccounts,
+            refreshSources,
             invalidateQueries,
         })
     })
@@ -285,37 +288,50 @@ describe('useSyncRefresh', () => {
     })
 
     describe('useSyncRefreshAll', () => {
-        it('refreshes every network in one pull', async () => {
-            const targets = [
-                { addresses: ['ALGO1'], scope: ALGORAND },
-                { addresses: ['0xabc'], scope: ETHEREUM },
-            ]
-            const { result } = renderHook(() => useSyncRefreshAll(targets))
+        const SOURCES = [
+            { addresses: ['ALGO1'], scope: ALGORAND },
+            { addresses: ['0xabc'], scope: ETHEREUM },
+        ]
+
+        it('refreshes every network in one sync service call', async () => {
+            const { result } = renderHook(() => useSyncRefreshAll(SOURCES))
 
             await act(async () => {
                 result.current.refresh()
             })
 
-            expect(refreshAccounts).toHaveBeenCalledWith(['ALGO1'], ALGORAND)
-            expect(refreshAccounts).toHaveBeenCalledWith(['0xabc'], ETHEREUM)
+            expect(refreshSources).toHaveBeenCalledWith(SOURCES)
             expect(result.current.isRefreshing).toBe(false)
         })
 
-        it('still refreshes the other networks when one fails', async () => {
-            refreshAccounts.mockImplementation(async (_addresses, scope) => {
-                if (scope.chainId === 'algorand') throw new Error('down')
+        it('joins a pull already in flight for the same networks', async () => {
+            const deferred = createDeferred()
+            refreshSources.mockReturnValue(deferred.promise)
+            const first = renderHook(() => useSyncRefreshAll(SOURCES))
+            const second = renderHook(() =>
+                useSyncRefreshAll([...SOURCES].reverse()),
+            )
+
+            act(() => {
+                first.result.current.refresh()
+                second.result.current.refresh()
             })
-            const targets = [
-                { addresses: ['ALGO1'], scope: ALGORAND },
-                { addresses: ['0xabc'], scope: ETHEREUM },
-            ]
-            const { result } = renderHook(() => useSyncRefreshAll(targets))
+            await act(async () => {
+                deferred.resolve()
+                await deferred.promise
+            })
+
+            expect(refreshSources).toHaveBeenCalledTimes(1)
+        })
+
+        it('ends the pull when a network fails', async () => {
+            refreshSources.mockRejectedValue(new Error('down'))
+            const { result } = renderHook(() => useSyncRefreshAll(SOURCES))
 
             await act(async () => {
                 result.current.refresh()
             })
 
-            expect(refreshAccounts).toHaveBeenCalledWith(['0xabc'], ETHEREUM)
             expect(result.current.isRefreshing).toBe(false)
         })
     })

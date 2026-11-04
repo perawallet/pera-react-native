@@ -45,12 +45,20 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-const mockRefreshAccounts = vi.fn(() => Promise.resolve())
+const mockRefreshAccounts = vi.fn((_addresses: string[], _scope: unknown) =>
+    Promise.resolve(),
+)
 const mockInvalidateQueries = vi.fn()
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => ({
         refreshAccounts: mockRefreshAccounts,
+        refreshSources: (sources: { addresses: string[]; scope: unknown }[]) =>
+            Promise.all(
+                sources.map(({ addresses, scope }) =>
+                    mockRefreshAccounts(addresses, scope),
+                ),
+            ),
         invalidateQueries: mockInvalidateQueries,
     }),
 }))
@@ -756,6 +764,23 @@ describe('useAccountNfts', () => {
                 collectibles: [algorandRow, ethereumRow],
                 isPending: false,
             })
+        })
+
+        it('refreshes every network the gallery shows in one pull', async () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            await act(async () => {
+                result.current.handleRefresh()
+            })
+
+            expect(mockRefreshAccounts).toHaveBeenCalledWith(
+                [ACCOUNT_ADDRESS],
+                expect.objectContaining({ chainId: 'algorand' }),
+            )
+            expect(mockRefreshAccounts).toHaveBeenCalledWith(
+                [ETH_ADDRESS],
+                expect.objectContaining({ chainId: 'ethereum' }),
+            )
         })
 
         it('keeps the Algorand-only gallery for an account on one network', () => {
