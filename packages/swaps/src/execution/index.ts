@@ -16,5 +16,6 @@ export type {
     SwapExecutionContext,
     SwapExecutionFailure,
     SwapExecutionProgress,
-    UpdateSwapStatusFn,
+    ReportSwapOrderFn,
 } from './types'
+export { signableStepsOn } from './steps'

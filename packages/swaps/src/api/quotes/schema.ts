@@ -11,92 +11,56 @@
  */
 
 import { z } from 'zod'
-import {
-    uint64IdNumberSchema,
-    uint64IdSchema,
-} from '@perawallet/wallet-core-shared'
-import { dexSwapAssetSchema } from '../available-assets/schema'
+import { swapAssetItemSchema } from '../assets/schema'
 
-const swapTypeEnum = z.enum(['fixed-input', 'fixed-output'])
+const baseUnits = z.string().regex(/^\d+$/)
 
-export const calculatePeraFeeRequestSchema = z.object({
-    asset_in_id: uint64IdNumberSchema,
-    amount: z.string(),
-})
-
-export const calculatePeraFeeResponseSchema = z.object({
-    pera_fee_amount: z.number().optional(),
-    pera_fee_asset_id: uint64IdSchema.optional(),
-})
-
-export const calculateSwapAmountRequestSchema = z.object({
-    address: z.string(),
-    asset_in_id: uint64IdNumberSchema,
-    asset_out_id: uint64IdNumberSchema,
-    amount_input: z.string().nullable().optional(),
-    percentage: z.string().nullable().optional(),
-    device: z.string().nullable().optional(),
-})
-
-export const calculateSwapAmountResponseSchema = z.object({
-    amount: z.string().optional(),
-    pera_fee: z.string().optional(),
-    pera_fee_asset_id: uint64IdSchema.optional(),
-})
-
-export const createQuotesRequestSchema = z.object({
-    swapper_address: z.string(),
-    swap_type: swapTypeEnum,
-    device: z.string().nullable().optional(),
-    asset_in_id: uint64IdNumberSchema,
-    asset_out_id: uint64IdNumberSchema,
-    amount: z.string(),
+export const createSwapQuotesRequestSchema = z.object({
+    source_asset_id: z.string(),
+    destination_asset_id: z.string(),
+    source_amount: baseUnits,
+    source_account: z.string(),
+    destination_account: z.string(),
+    /** Percent. */
     slippage: z.string().optional(),
-    referrer_url: z.string().nullable().optional(),
-    include_providers: z.array(z.string()).optional(),
-    exclude_providers: z.array(z.string()).optional(),
 })
 
-const quoteSchema = z.object({
-    // Backend quote/device ids exceed 2^53; the precision-safe JSON parser
-    // delivers them as strings. quote_id_str is the canonical identity.
-    id: uint64IdSchema.optional(),
-    quote_id_str: z.string().optional(),
-    provider: z.string().optional(),
-    swap_type: swapTypeEnum.optional(),
-    swapper_address: z.string().optional(),
-    device: uint64IdSchema.nullable().optional(),
-    asset_in: dexSwapAssetSchema,
-    asset_out: dexSwapAssetSchema,
-    amount_in: z.string().optional(),
-    amount_in_with_slippage: z.string().optional(),
-    amount_in_usd_value: z.string().nullable().optional(),
-    amount_out: z.string().optional(),
-    amount_out_with_slippage: z.string().optional(),
-    amount_out_usd_value: z.string().nullable().optional(),
-    slippage: z.string().optional(),
-    price: z.string().optional(),
-    price_impact: z.string().optional(),
-    pera_fee_amount: z.string().optional(),
-    pera_fee_asset: dexSwapAssetSchema.optional(),
-    transaction_fees: z.string().nullable().optional(),
+export const swapFeeSchema = z.object({
+    kind: z.enum(['pera', 'network', 'provider']),
+    asset_id: z.string(),
+    amount: baseUnits,
+    usd_value: z.string().nullable(),
 })
 
-export const createQuotesResponseSchema = z.object({
-    results: z.array(quoteSchema),
+const swapOfferSchema = z.object({
+    quote_id: z.string(),
+    aggregator: z.string(),
+    provider: z.string(),
+    source_asset: swapAssetItemSchema,
+    destination_asset: swapAssetItemSchema,
+    source_amount: baseUnits,
+    destination_amount_expected: baseUnits,
+    destination_amount_minimum: baseUnits.nullable(),
+    source_amount_usd_value: z.string().nullable(),
+    destination_amount_usd_value: z.string().nullable(),
+    fees: z.array(swapFeeSchema),
+    funding_method: z.string(),
+    expires_at: z.string().nullable(),
+    extras: z
+        .object({ price_impact: z.union([z.string(), z.number()]).nullish() })
+        .passthrough()
+        .nullish(),
 })
 
-export type CalculatePeraFeeRequest = z.infer<
-    typeof calculatePeraFeeRequestSchema
+export const createSwapQuotesResponseSchema = z.object({
+    aggregator: z.string().nullish(),
+    results: z.array(swapOfferSchema),
+})
+
+export type CreateSwapQuotesRequest = z.infer<
+    typeof createSwapQuotesRequestSchema
 >
-export type CalculatePeraFeeApiResponse = z.infer<
-    typeof calculatePeraFeeResponseSchema
+export type SwapOfferApiResponse = z.infer<typeof swapOfferSchema>
+export type CreateSwapQuotesApiResponse = z.infer<
+    typeof createSwapQuotesResponseSchema
 >
-export type CalculateSwapAmountRequest = z.infer<
-    typeof calculateSwapAmountRequestSchema
->
-export type CalculateSwapAmountApiResponse = z.infer<
-    typeof calculateSwapAmountResponseSchema
->
-export type CreateQuotesRequest = z.infer<typeof createQuotesRequestSchema>
-export type CreateQuotesApiResponse = z.infer<typeof createQuotesResponseSchema>

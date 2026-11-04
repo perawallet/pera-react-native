@@ -13,22 +13,17 @@
 import type { SwapQuote } from '../models'
 
 /**
- * How long a fetched quote stays executable on the client. The wire
- * schema carries no expiry, so staleness is otherwise enforced only by
- * the backend at prepare time — a paused confirm could carry a
- * minutes-old quote into execution. Conservative TTL,
- * comfortably above normal confirm latency; replace with the backend's
- * `expires_at` if the API grows one.
+ * How long a fetched quote stays executable on the client, even when the
+ * router's own expiry is later: a paused confirm must not carry a minutes-old
+ * price into execution.
  */
 export const SWAP_QUOTE_TTL_MS = 60_000
 
-/**
- * A quote without a `fetchedAt` stamp predates the freshness contract —
- * treated as stale so it can never slip past the confirm-time guard.
- */
+/** A quote without a `fetchedAt` stamp predates the freshness contract, so it counts as stale. */
 export const isQuoteFresh = (
     quote: SwapQuote,
     nowMs: number = Date.now(),
 ): boolean =>
     quote.fetchedAt !== undefined &&
-    nowMs - quote.fetchedAt <= SWAP_QUOTE_TTL_MS
+    nowMs - quote.fetchedAt <= SWAP_QUOTE_TTL_MS &&
+    nowMs < (quote.expiresAt ?? Number.POSITIVE_INFINITY)

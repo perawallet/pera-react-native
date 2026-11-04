@@ -13,43 +13,33 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import {
-    swapHistoryResponseSchema,
-    swapDistinctPairsHistoryResponseSchema,
-    type SwapDistinctPairsHistoryApiResponse,
-} from './schema'
+import type { SwapRouterErrorBody } from '../quotes/msw-handlers'
+import { SWAP_ROUTER_PATH } from '../router-request'
+import { swapHistoryQuerySchema, swapHistoryResponseSchema } from './schema'
 
-export type MockSwapHistoryParams = {
-    // wire (pre-parse) shape: ids may be numbers or strings
-    response: z.input<typeof swapHistoryResponseSchema>
-    status?: number
-}
+export type MockSwapHistoryParams =
+    | { response: z.input<typeof swapHistoryResponseSchema>; status?: 200 }
+    | { response: SwapRouterErrorBody; status: number }
 
-export const mockSwapHistory = ({
-    response,
-    status = 200,
-}: MockSwapHistoryParams): HttpHandler => {
-    validateMockResponse(swapHistoryResponseSchema, response, 'mockSwapHistory')
-    return http.get('*/v2/dex-swap/history/', () =>
-        HttpResponse.json(response, { status }),
-    )
-}
-
-export type MockDistinctPairsHistoryParams = {
-    response: SwapDistinctPairsHistoryApiResponse
-    status?: number
-}
-
-export const mockDistinctPairsHistory = ({
-    response,
-    status = 200,
-}: MockDistinctPairsHistoryParams): HttpHandler => {
-    validateMockResponse(
-        swapDistinctPairsHistoryResponseSchema,
-        response,
-        'mockDistinctPairsHistory',
-    )
-    return http.get('*/v2/dex-swap/distinct-pairs-history/', () =>
-        HttpResponse.json(response, { status }),
-    )
+export const mockSwapHistory = (params: MockSwapHistoryParams): HttpHandler => {
+    const status = params.status ?? 200
+    if (status === 200) {
+        validateMockResponse(
+            swapHistoryResponseSchema,
+            params.response,
+            'mockSwapHistory',
+        )
+    }
+    return http.get(`*${SWAP_ROUTER_PATH}history/`, ({ request }) => {
+        const query = swapHistoryQuerySchema.safeParse(
+            Object.fromEntries(new URL(request.url).searchParams),
+        )
+        if (!query.success) {
+            return HttpResponse.json(
+                { error: 'Invalid request', details: query.error.issues },
+                { status: 422 },
+            )
+        }
+        return HttpResponse.json(params.response, { status })
+    })
 }

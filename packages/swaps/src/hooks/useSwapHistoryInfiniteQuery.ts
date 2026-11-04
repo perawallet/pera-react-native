@@ -12,14 +12,14 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Optional, Nullable, Maybe } from '@perawallet/wallet-core-shared'
-import { fetchSwapHistory } from '../api'
-import type { SwapHistoryItem } from '../models'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { fetchSwapHistory, routerAccountId, type SwapHistoryPage } from '../api'
+import type { SwapHistoryItem, SwapStatus } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 const PAGE_SIZE = 20
-
-type FetchSwapHistoryResult = Awaited<ReturnType<typeof fetchSwapHistory>>
 
 export type UseSwapHistoryInfiniteQueryResult = {
     swaps: SwapHistoryItem[]
@@ -32,33 +32,36 @@ export type UseSwapHistoryInfiniteQueryResult = {
     refetch: () => void
 }
 
-// API returns the next page as a full URL — we only need the cursor query param.
-const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
-    if (!nextUrl) return undefined
-    try {
-        return new URL(nextUrl).searchParams.get('cursor') ?? undefined
-    } catch {
-        return undefined
-    }
-}
-
+/** The router has no status filter, so `statuses` narrows the loaded rows. */
 export const useSwapHistoryInfiniteQuery = (
     address: string,
     scope: ChainScope,
-    statuses?: string,
-    enabled: boolean = true,
+    statuses?: SwapStatus[],
+    isEnabled: boolean = true,
 ): UseSwapHistoryInfiniteQueryResult => {
+    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.historyInfinite(address, statuses, scope),
+        queryKey: swapQueryKeys.historyInfinite(address, scope),
         queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
-            fetchSwapHistory(address, scope, statuses, pageParam, PAGE_SIZE),
+            fetchSwapHistory(
+                {
+                    deviceId: deviceId ?? '',
+                    accounts: [routerAccountId(scope, address)],
+                    cursor: pageParam,
+                    limit: PAGE_SIZE,
+                },
+                scope,
+            ),
         initialPageParam: undefined as Optional<string>,
-        getNextPageParam: (lastPage: FetchSwapHistoryResult) =>
-            extractCursor(lastPage.next),
-        enabled: enabled && address.length > 0,
+        getNextPageParam: (lastPage: SwapHistoryPage) =>
+            lastPage.next ?? undefined,
+        enabled: isEnabled && address.length > 0 && !!deviceId,
     })
 
-    const swaps = query.data?.pages.flatMap(page => page.results) ?? []
+    const loaded = query.data?.pages.flatMap(page => page.results) ?? []
+    const swaps = statuses
+        ? loaded.filter(item => statuses.includes(item.status))
+        : loaded
 
     return {
         swaps,
@@ -66,7 +69,7 @@ export const useSwapHistoryInfiniteQuery = (
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         error: query.error,
-        hasNextPage: query.hasNextPage ?? false,
+        hasNextPage: query.hasNextPage,
         fetchNextPage: () => void query.fetchNextPage(),
         refetch: () => void query.refetch(),
     }

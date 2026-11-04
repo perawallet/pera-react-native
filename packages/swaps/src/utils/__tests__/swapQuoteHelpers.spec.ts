@@ -17,11 +17,13 @@ import {
     formatSwapRate,
     pickBestByAmountOut,
     sortQuotesByAmountOutDesc,
+    swapRate,
 } from '../swapQuoteHelpers'
+import { makeSwapQuote } from '../../__tests__/swapQuoteFixture'
 
 const quote = (id: string, amountOut?: string): SwapQuote =>
     ({
-        quoteIdStr: id,
+        quoteId: id,
         amountOut: amountOut === undefined ? undefined : new Decimal(amountOut),
     }) as unknown as SwapQuote
 
@@ -34,7 +36,7 @@ describe('pickBestByAmountOut', () => {
             quote('d', '7'),
         ])
 
-        expect(best?.quoteIdStr).toBe('c')
+        expect(best?.quoteId).toBe('c')
     })
 
     it('returns null when no quote has an output', () => {
@@ -48,23 +50,49 @@ describe('sortQuotesByAmountOutDesc', () => {
 
         const sorted = sortQuotesByAmountOutDesc(input)
 
-        expect(sorted.map(q => q.quoteIdStr)).toEqual(['c', 'a', 'b'])
-        expect(input.map(q => q.quoteIdStr)).toEqual(['a', 'b', 'c'])
+        expect(sorted.map(q => q.quoteId)).toEqual(['c', 'a', 'b'])
+        expect(input.map(q => q.quoteId)).toEqual(['a', 'b', 'c'])
+    })
+})
+
+describe('swapRate', () => {
+    it('derives display units out per display unit in from base-unit amounts', () => {
+        const rate = swapRate(
+            makeSwapQuote({
+                amountIn: new Decimal('5000000'),
+                amountOut: new Decimal('150'),
+                assetIn: { decimals: 6 },
+                assetOut: { decimals: 2 },
+            }),
+        )
+
+        expect(rate).toEqual(new Decimal('0.3'))
+    })
+
+    it('is null when either asset has no decimals', () => {
+        expect(
+            swapRate(makeSwapQuote({ assetOut: { decimals: undefined } })),
+        ).toBeNull()
     })
 })
 
 describe('formatSwapRate', () => {
     it('renders the unit rate with the output asset precision', () => {
-        const rate = formatSwapRate({
-            price: new Decimal('0.3'),
-            assetIn: { unitName: 'ALGO' },
-            assetOut: { unitName: 'USDC', decimals: 6 },
-        } as unknown as SwapQuote)
+        const rate = formatSwapRate(
+            makeSwapQuote({
+                amountIn: new Decimal('10000000'),
+                amountOut: new Decimal('3000000'),
+                assetIn: { unitName: 'ALGO', decimals: 6 },
+                assetOut: { unitName: 'USDC', decimals: 6 },
+            }),
+        )
 
         expect(rate).toMatch(/^1 ALGO ≈ 0\.3\d* USDC$/)
     })
 
-    it('renders a dash when the quote has no price', () => {
-        expect(formatSwapRate({} as SwapQuote)).toBe('-')
+    it('renders a dash when the rate is unknown', () => {
+        expect(
+            formatSwapRate(makeSwapQuote({ assetIn: { decimals: undefined } })),
+        ).toBe('-')
     })
 })

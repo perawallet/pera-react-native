@@ -18,10 +18,12 @@ export * from './api'
 export * from './utils'
 export * from './execution'
 export {
+    swapAdapterFor,
     swapChainAdapters,
     swapExplorerUrlFor,
     SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
     type SwapChainAdapter,
 } from './chain-adapter'
+export { SwapQuoteMismatchError } from './errors'
 export { useSwapsStore, useSwapHandoffStore } from './store'

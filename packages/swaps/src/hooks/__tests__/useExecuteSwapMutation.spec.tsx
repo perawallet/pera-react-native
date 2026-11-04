@@ -25,8 +25,7 @@ import {
     SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
 } from '../../chain-adapter'
-import { updateSwapStatus } from '../../api'
-import { prepareSwapTransactions } from '../usePrepareTransactionsMutation'
+import { createSwapOrder, reportSwapOrder } from '../../api'
 import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
 import { useExecuteSwapMutation } from '../useExecuteSwapMutation'
 
@@ -34,15 +33,15 @@ const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
 
 const {
     mockAddSignRequest,
-    mockPrepareTransactions,
-    mockUpdateSwapStatus,
+    mockCreateSwapOrder,
+    mockReportSwapOrder,
     mockRegisterHandoff,
     mockSelectedAccount,
     mockSwapScope,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
-    mockPrepareTransactions: vi.fn(),
-    mockUpdateSwapStatus: vi.fn(),
+    mockCreateSwapOrder: vi.fn(),
+    mockReportSwapOrder: vi.fn(),
     mockRegisterHandoff: vi.fn(),
     mockSelectedAccount: { current: null as WalletAccount | null },
     mockSwapScope: { current: null as ChainScope | null },
@@ -89,12 +88,9 @@ vi.mock('../../store', () => ({
     ) => selector({ registerHandoff: mockRegisterHandoff }),
 }))
 
-vi.mock('../usePrepareTransactionsMutation', () => ({
-    prepareSwapTransactions: mockPrepareTransactions,
-}))
-
 vi.mock('../../api', () => ({
-    updateSwapStatus: mockUpdateSwapStatus,
+    createSwapOrder: mockCreateSwapOrder,
+    reportSwapOrder: mockReportSwapOrder,
 }))
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
@@ -109,7 +105,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 }
 
 const variables = {
-    quote: { quoteIdStr: 'q' } as SwapQuote,
+    quote: { quoteId: 'q' } as SwapQuote,
     signingSource: { name: 'n', description: 'd' },
     onProgress: vi.fn(),
     isCancelled: () => false,
@@ -124,8 +120,8 @@ describe('useExecuteSwapMutation', () => {
             seed: null,
         })
         mockSwapScope.current = SCOPE
-        mockPrepareTransactions.mockReset()
-        mockUpdateSwapStatus.mockReset()
+        mockCreateSwapOrder.mockReset()
+        mockReportSwapOrder.mockReset()
         executeSwap = vi.fn()
         registerFakeSwapAdapter({ executeSwap })
     })
@@ -155,8 +151,8 @@ describe('useExecuteSwapMutation', () => {
                 scope: { chainId: 'algorand', networkId: 'testnet' },
                 deviceId: 'device-developer',
                 addSignRequest: mockAddSignRequest,
-                prepareTransactions: expect.any(Function),
-                updateSwapStatus: expect.any(Function),
+                createOrder: expect.any(Function),
+                reportOrder: expect.any(Function),
                 registerHandoff: mockRegisterHandoff,
             },
         )
@@ -164,10 +160,10 @@ describe('useExecuteSwapMutation', () => {
 
     test("sends the backend calls to the account's swap scope", async () => {
         vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
-            await context.prepareTransactions({ quote: 'q' })
-            await context.updateSwapStatus({
-                swapId: 'S',
-                data: { status: 'completed' },
+            await context.createOrder('q')
+            await context.reportOrder({
+                orderId: 'S',
+                report: { status: 'cancelled' },
             })
             return { kind: 'success', txIds: [] }
         })
@@ -179,13 +175,10 @@ describe('useExecuteSwapMutation', () => {
             await result.current.mutateAsync(variables)
         })
 
-        expect(prepareSwapTransactions).toHaveBeenCalledWith(
-            { quote: 'q' },
-            SCOPE,
-        )
-        expect(updateSwapStatus).toHaveBeenCalledWith(
+        expect(createSwapOrder).toHaveBeenCalledWith('q', SCOPE)
+        expect(reportSwapOrder).toHaveBeenCalledWith(
             'S',
-            { status: 'completed' },
+            { status: 'cancelled' },
             SCOPE,
         )
     })

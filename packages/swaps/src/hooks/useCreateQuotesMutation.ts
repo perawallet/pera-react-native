@@ -10,27 +10,15 @@
  limitations under the License
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { createQuotes, fetchProviders } from '../api'
-import type { CreateQuotesRequest } from '../api'
-import type { SwapProviderItem } from '../models'
-import { swapQueryKeys } from './querykeys'
+import { useMutation } from '@tanstack/react-query'
+import { createSwapQuotes } from '../api'
+import type { SwapQuoteRequest } from '../models'
 
-export const useCreateQuotesMutation = (scope: ChainScope) => {
-    const queryClient = useQueryClient()
-
-    return useMutation({
-        mutationFn: async (data: CreateQuotesRequest) => {
-            const providers = await queryClient.ensureQueryData({
-                queryKey: swapQueryKeys.providers(scope),
-                queryFn: (): Promise<SwapProviderItem[]> =>
-                    fetchProviders(scope),
-            })
-            return createQuotes(data, scope, providers)
-        },
-        // Errors are caught in the calling effect (useSwapForm); suppress
-        // TanStack Query re-throwing them as unhandled promise rejections.
+/** Runs on the request's source asset's chain and network. */
+export const useCreateQuotesMutation = () =>
+    useMutation({
+        mutationFn: (request: SwapQuoteRequest) => createSwapQuotes(request),
+        // Errors are caught in the calling effect; suppress TanStack Query
+        // re-throwing them as unhandled promise rejections.
         throwOnError: false,
     })
-}

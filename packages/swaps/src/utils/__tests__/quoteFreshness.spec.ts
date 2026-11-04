@@ -13,9 +13,13 @@
 import { describe, it, expect } from 'vitest'
 import { isQuoteFresh, SWAP_QUOTE_TTL_MS } from '../quoteFreshness'
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '../../models'
 
-const quote = (fetchedAt?: number): SwapQuote => ({ fetchedAt }) as SwapQuote
+const quote = (
+    fetchedAt?: number,
+    expiresAt: Nullable<number> = null,
+): SwapQuote => ({ fetchedAt, expiresAt }) as SwapQuote
 
 describe('isQuoteFresh', () => {
     it('accepts a quote younger than the TTL', () => {
@@ -34,5 +38,10 @@ describe('isQuoteFresh', () => {
         // A quote without fetchedAt predates the freshness contract — treat
         // it as stale so it can never slip past the confirm-time guard.
         expect(isQuoteFresh(quote(undefined), 10_000)).toBe(false)
+    })
+
+    it('rejects a quote the router has already expired', () => {
+        expect(isQuoteFresh(quote(10_000, 15_000), 15_000)).toBe(false)
+        expect(isQuoteFresh(quote(10_000, 15_000), 14_999)).toBe(true)
     })
 })

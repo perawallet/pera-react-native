@@ -10,150 +10,47 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
-import { fetchSwapHistory, fetchDistinctPairsHistory } from '../endpoints'
+import { fetchSwapHistory } from '../endpoints'
+import { routerOrderItem, SCOPE_A } from '../../__tests__/routerFixtures'
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    return {
-        ...actual,
-        queryClient: vi.fn(),
-    }
-})
-
-const baseAsset = {
-    asset_id: 0,
-    verification_tier: 'verified' as const,
-}
-
-const historyItem = {
-    id: 1,
-    id_str: '1',
-    provider: 'tinyman',
-    status: 'completed' as const,
-    completed_datetime: '2024-01-01T00:00:00Z',
-    transaction_group_id: 'gid',
-    asset_in: baseAsset,
-    asset_out: baseAsset,
-    amount_in: '1000',
-    amount_out: '2000',
-    amount_in_usd_value: '1.00',
-    amount_out_usd_value: '2.00',
-}
-
-const distinctPairItem = {
-    asset_in: baseAsset,
-    asset_out: baseAsset,
-    swap_datetime: '2024-01-01T00:00:00Z',
-    pair_key: '0-31566704',
-}
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    queryClient: vi.fn(),
+}))
 
 describe('fetchSwapHistory', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    test('calls queryClient with address and transforms results', async () => {
+    test('asks for the device and accounts and reads the next cursor', async () => {
         ;(queryClient as Mock).mockResolvedValue({
             data: {
-                results: [historyItem],
-                next: 'next-cursor',
-                previous: null,
+                next: 'https://x/api/v4/swap/history/?cursor=n2',
+                results: [routerOrderItem()],
             },
         })
 
-        const result = await fetchSwapHistory('ADDRESS', {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
-
-        expect(queryClient).toHaveBeenCalledWith({
-            backend: 'pera',
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            method: 'GET',
-            url: '/v2/dex-swap/history/',
-            params: { address: 'ADDRESS' },
-        })
-        expect(result.results).toHaveLength(1)
-        expect(result.results[0].id).toBe('1')
-        expect(result.results[0].amountIn.toString()).toBe('1000')
-        expect(result.next).toBe('next-cursor')
-        expect(result.previous).toBeNull()
-    })
-
-    test('includes optional statuses, cursor and limit params when provided', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: { results: [], next: null, previous: null },
-        })
-
-        await fetchSwapHistory(
-            'ADDRESS',
-            { chainId: 'algorand', networkId: 'mainnet' },
-            'completed',
-            'cursor1',
-            25,
+        const page = await fetchSwapHistory(
+            { deviceId: 'dev-1', accounts: ['fake-a:main:A', 'fake-a:main:B'] },
+            SCOPE_A,
         )
 
-        expect(queryClient).toHaveBeenCalledWith({
-            backend: 'pera',
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            method: 'GET',
-            url: '/v2/dex-swap/history/',
-            params: {
-                address: 'ADDRESS',
-                statuses: 'completed',
-                cursor: 'cursor1',
-                limit: 25,
-            },
-        })
-    })
-})
-
-describe('fetchDistinctPairsHistory', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
-    test('calls queryClient and transforms items', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: { results: [distinctPairItem] },
-        })
-
-        const result = await fetchDistinctPairsHistory('ADDRESS', {
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
-
-        expect(queryClient).toHaveBeenCalledWith({
-            backend: 'pera',
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            method: 'GET',
-            url: '/v2/dex-swap/distinct-pairs-history/',
-            params: { address: 'ADDRESS' },
-        })
-        expect(result).toHaveLength(1)
-        expect(result[0].pairKey).toBe('0-31566704')
-    })
-
-    test('includes statuses when provided', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: { results: [] },
-        })
-
-        await fetchDistinctPairsHistory(
-            'ADDRESS',
-            { chainId: 'algorand', networkId: 'mainnet' },
-            'completed',
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'GET',
+                url: '/api/v4/swap/history/',
+                params: {
+                    device_id: 'dev-1',
+                    accounts: 'fake-a:main:A,fake-a:main:B',
+                },
+            }),
         )
-
-        expect(queryClient).toHaveBeenCalledWith({
-            backend: 'pera',
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            method: 'GET',
-            url: '/v2/dex-swap/distinct-pairs-history/',
-            params: { address: 'ADDRESS', statuses: 'completed' },
-        })
+        expect(page.results).toHaveLength(1)
+        expect(page.next).toBe('n2')
     })
 })

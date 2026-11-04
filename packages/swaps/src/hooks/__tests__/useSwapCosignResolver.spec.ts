@@ -48,7 +48,7 @@ const mocks = vi.hoisted(() => ({
     markHandoffSubmitted: vi.fn(),
     removeHandoff: vi.fn(),
     markConfirmed: vi.fn(),
-    updateSwapStatus: vi.fn(),
+    reportSwapOrder: vi.fn(),
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
 
@@ -61,7 +61,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useNetworkStore: (selector: (state: unknown) => unknown) => selector({}),
 }))
 vi.mock('../../api', () => ({
-    updateSwapStatus: mocks.updateSwapStatus,
+    reportSwapOrder: mocks.reportSwapOrder,
 }))
 vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: mocks.decodeFromBase64,
@@ -84,7 +84,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     resolveSubmissionAttempt: mocks.resolveSubmissionAttempt,
     setSubmissionSettledHandler: mocks.setSubmissionSettledHandler,
 }))
-vi.mock('../../utils', () => ({
+vi.mock('../../utils', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../utils')>()),
     resolveSwapHandoffOutcome: mocks.resolveSwapHandoffOutcome,
 }))
 vi.mock('../../store', () => {
@@ -111,7 +112,15 @@ const makeRecord = (
     multisigAddress: 'JOINT_ADDR',
     deviceId: 'device-1',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
-    plan: [],
+    plan: [
+        {
+            slots: [
+                { kind: 'toSign', flatIndex: 0 },
+                { kind: 'toSign', flatIndex: 1 },
+            ],
+            purpose: 'swap',
+        },
+    ],
     expectedRawTransactionsBase64: ['cmF3'],
     registeredAt: 1,
     ...overrides,
@@ -319,7 +328,7 @@ describe('swaps/useSwapCosignResolver', () => {
         ])
     })
 
-    it("reports the swap status on the handoff's own scope", async () => {
+    it("reports the order on the handoff's own scope", async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
 
@@ -330,13 +339,13 @@ describe('swaps/useSwapCosignResolver', () => {
         })
         const { deps } = mocks.resolveSwapHandoffOutcome.mock.calls[0][0]
 
-        await deps.updateSwapStatus({
-            swapId: '42',
-            data: { status: 'cancelled', swap_version: 'v2' },
+        await deps.reportOrder({
+            orderId: '42',
+            report: { status: 'cancelled' },
         })
-        expect(mocks.updateSwapStatus).toHaveBeenCalledWith(
+        expect(mocks.reportSwapOrder).toHaveBeenCalledWith(
             '42',
-            { status: 'cancelled', swap_version: 'v2' },
+            { status: 'cancelled' },
             MAINNET,
         )
     })
@@ -420,19 +429,20 @@ describe('swaps/useSwapCosignResolver', () => {
             deviceId: 'device-1',
             signRequestIds: ['req-1'],
         })
-        expect(mocks.updateSwapStatus).toHaveBeenCalledWith(
+        expect(mocks.reportSwapOrder).toHaveBeenCalledWith(
             '42',
             {
-                status: 'in_progress',
-                submitted_transaction_ids: ['txid-1'],
-                swap_version: 'v2',
+                status: 'sent',
+                transactions: [
+                    { scope: MAINNET, txHash: 'txid-1', purpose: 'swap' },
+                ],
             },
             MAINNET,
         )
         expect(mocks.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
-    it('fails and removes the retained handoff without declining on a definitive failure', async () => {
+    it('removes the retained handoff on a failure without declining or reporting', async () => {
         mocks.handoffs = {
             'req-1': makeRecord({
                 submission: { txIds: ['txid-1'], submittedAt: 2 },
@@ -444,15 +454,7 @@ describe('swaps/useSwapCosignResolver', () => {
         const handler = mocks.setSubmissionSettledHandler.mock.calls[0][2]
         await handler(['txid-1'], 'mainnet', 'failed')
 
-        expect(mocks.updateSwapStatus).toHaveBeenCalledWith(
-            '42',
-            {
-                status: 'failed',
-                reason: 'blockchain_error',
-                swap_version: 'v2',
-            },
-            MAINNET,
-        )
+        expect(mocks.reportSwapOrder).not.toHaveBeenCalled()
         expect(mocks.addSignature).not.toHaveBeenCalled()
         expect(mocks.removeHandoff).toHaveBeenCalledWith('req-1')
     })
@@ -479,9 +481,28 @@ describe('swaps/useSwapCosignResolver', () => {
 })
 
 describe('settleCosignAttempt', () => {
+    it('confirmed: reports nothing for a record from before the router, and still cleans up', async () => {
+        const handoff = makeRecord({
+            plan: [{ slots: [{ kind: 'toSign', flatIndex: 0 }] }],
+            submission: { txIds: ['txid-1'], submittedAt: 2 },
+        })
+        const deps = settleDeps()
+
+        await settleCosignAttempt(
+            { 'req-1': handoff },
+            MAINNET,
+            ['txid-1'],
+            'confirmed',
+            deps,
+        )
+
+        expect(deps.reportOrder).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
     const settleDeps = () => ({
         markConfirmed: vi.fn().mockResolvedValue(undefined),
-        updateSwapStatus: vi.fn().mockResolvedValue(undefined),
+        reportOrder: vi.fn().mockResolvedValue(undefined),
         removeHandoff: vi.fn(),
     })
 
@@ -504,19 +525,21 @@ describe('settleCosignAttempt', () => {
             deviceId: 'device-1',
             signRequestIds: ['req-1'],
         })
-        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
+        expect(deps.reportOrder).toHaveBeenCalledWith({
             scope: MAINNET,
-            swapId: '42',
-            data: {
-                status: 'in_progress',
-                submitted_transaction_ids: ['txid-2'],
-                swap_version: 'v2',
+            orderId: '42',
+            report: {
+                status: 'sent',
+                transactions: [
+                    { scope: MAINNET, txHash: 'txid-1', purpose: 'swap' },
+                    { scope: MAINNET, txHash: 'txid-2', purpose: 'swap' },
+                ],
             },
         })
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
-    it('failed: marks the swap failed and removes the handoff', async () => {
+    it('failed: reports nothing, since the router settles it from the chain, and removes the handoff', async () => {
         const handoff = makeRecord({
             submission: { txIds: ['txid-1'], submittedAt: 2 },
         })
@@ -530,15 +553,7 @@ describe('settleCosignAttempt', () => {
             deps,
         )
 
-        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
-            scope: MAINNET,
-            swapId: '42',
-            data: {
-                status: 'failed',
-                reason: 'blockchain_error',
-                swap_version: 'v2',
-            },
-        })
+        expect(deps.reportOrder).not.toHaveBeenCalled()
         expect(deps.markConfirmed).not.toHaveBeenCalled()
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
@@ -558,7 +573,7 @@ describe('settleCosignAttempt', () => {
             deps,
         )
 
-        expect(deps.updateSwapStatus).toHaveBeenCalled()
+        expect(deps.reportOrder).toHaveBeenCalled()
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
@@ -594,7 +609,7 @@ describe('settleCosignAttempt', () => {
         )
 
         expect(deps.markConfirmed).not.toHaveBeenCalled()
-        expect(deps.updateSwapStatus).not.toHaveBeenCalled()
+        expect(deps.reportOrder).not.toHaveBeenCalled()
         expect(deps.removeHandoff).not.toHaveBeenCalled()
     })
 })

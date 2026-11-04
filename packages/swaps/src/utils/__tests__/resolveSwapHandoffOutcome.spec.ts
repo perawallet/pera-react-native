@@ -58,6 +58,7 @@ const makeRecord = (
                 { kind: 'preSigned', signedTxnBase64: 'cHJlc2lnbmVk' },
                 { kind: 'toSign', flatIndex: 0 },
             ],
+            purpose: 'swap',
         },
     ],
     expectedRawTransactionsBase64: ['cmF3'],
@@ -71,7 +72,7 @@ const makeDeps = (): {
     submitGroup: vi.fn().mockResolvedValue(['txid-1']),
     markSubmitted: vi.fn(),
     decodeBase64: vi.fn().mockReturnValue(PRESIGNED_BYTES),
-    updateSwapStatus: vi.fn().mockResolvedValue(undefined),
+    reportOrder: vi.fn().mockResolvedValue(undefined),
     markConfirmed: vi.fn().mockResolvedValue(undefined),
     removeHandoff: vi.fn(),
     reportError: vi.fn(),
@@ -330,53 +331,62 @@ describe('resolveSwapHandoffOutcome', () => {
         })
     })
 
-    test('onSubmitted marks the swap in_progress with the collected txIds', async () => {
+    test('onSubmitted reports every txid sent under its step label', async () => {
         const completionDeps = await resolve()
 
-        await completionDeps.onSubmitted(['txid-1'])
+        await completionDeps.onSubmitted(['txid-1', 'txid-2'])
 
-        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
-            swapId: '42',
-            data: {
-                status: 'in_progress',
-                submitted_transaction_ids: ['txid-1'],
-                swap_version: 'v2',
+        expect(deps.reportOrder).toHaveBeenCalledWith({
+            orderId: '42',
+            report: {
+                status: 'sent',
+                transactions: [
+                    {
+                        scope: { chainId: 'algorand', networkId: 'mainnet' },
+                        txHash: 'txid-1',
+                        purpose: 'swap',
+                    },
+                    {
+                        scope: { chainId: 'algorand', networkId: 'mainnet' },
+                        txHash: 'txid-2',
+                        purpose: 'swap',
+                    },
+                ],
             },
         })
     })
 
-    test('onSoftRejected maps a decline to cancelled and an expiry to failed', async () => {
+    test('onSubmitted reports nothing for a record from before the router', async () => {
+        const record = makeRecord()
+        delete record.plan[0].purpose
+        const completionDeps = await resolve(record)
+
+        await completionDeps.onSubmitted(['txid-1'])
+
+        expect(deps.reportOrder).not.toHaveBeenCalled()
+    })
+
+    test('onSoftRejected cancels the order on a decline and an expiry', async () => {
         const completionDeps = await resolve()
 
         await completionDeps.onSoftRejected('declined')
         await completionDeps.onSoftRejected('expired')
 
-        expect(deps.updateSwapStatus).toHaveBeenNthCalledWith(1, {
-            swapId: '42',
-            data: {
-                status: 'cancelled',
-                reason: 'user_cancelled',
-                swap_version: 'v2',
-            },
-        })
-        expect(deps.updateSwapStatus).toHaveBeenNthCalledWith(2, {
-            swapId: '42',
-            data: { status: 'failed', reason: 'other', swap_version: 'v2' },
+        expect(deps.reportOrder).toHaveBeenCalledTimes(2)
+        expect(deps.reportOrder).toHaveBeenNthCalledWith(2, {
+            orderId: '42',
+            report: { status: 'cancelled' },
         })
     })
 
-    test('onFailed marks the swap failed with a blockchain error', async () => {
+    test('onFailed cancels the order: nothing reached the chain', async () => {
         const completionDeps = await resolve()
 
         await completionDeps.onFailed()
 
-        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
-            swapId: '42',
-            data: {
-                status: 'failed',
-                reason: 'blockchain_error',
-                swap_version: 'v2',
-            },
+        expect(deps.reportOrder).toHaveBeenCalledWith({
+            orderId: '42',
+            report: { status: 'cancelled' },
         })
     })
 })

@@ -13,7 +13,7 @@
 import { beforeEach, vi } from 'vitest'
 import { registerFakeSwapAdapter } from './src/__tests__/fakeSwapAdapter'
 
-const store = new Map<string, string>()
+const store = vi.hoisted(() => new Map<string, string>())
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
@@ -36,16 +36,24 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
+vi.mock('@perawallet/wallet-extension-provider', async () => {
+    const { fakeChains } = await import('./src/__tests__/fakeRouterChains')
+    return {
+        getProvider: () => ({
+            chains: fakeChains,
+            keyValueStorage: {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => store.set(key, value),
+                removeItem: (key: string) => {
+                    store.delete(key)
+                },
             },
-        },
-    }),
+        }),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    buildIntegrityHeaders: () => ({}),
 }))
 
 // Endpoints and useSwaps resolve the native asset through the registry.
