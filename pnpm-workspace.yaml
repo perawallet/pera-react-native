@@ -342,6 +342,13 @@ patchedDependencies:
   # for Debug. The script is copied into the Xcode project at pod install, so
   # the patch takes effect only after a fresh pod install.
   "@react-native-firebase/crashlytics@27.0.0": patches/@react-native-firebase__crashlytics@27.0.0.patch
+  # A relay close with code 3000 emits `error`, and an EventEmitter with no
+  # `error` listener throws, fatally on RN. Core's relayer drops a provider's
+  # listeners when a connect attempt times out but leaves its socket alive, so
+  # a 3000 arriving later crashed the app. Emits only when someone listens; the
+  # live provider's handling is unchanged. Drop once upstream guards the emit or
+  # closes the abandoned socket (still unfixed in core 2.26.0).
+  "@walletconnect/jsonrpc-provider@1.0.14": patches/@walletconnect__jsonrpc-provider@1.0.14.patch
 
 overrides:
   # No `algosdk` override: official 3.7.0 satisfies @algorandfoundation/
