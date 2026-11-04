@@ -341,6 +341,17 @@ describe('useSwapForm', () => {
 
             expect(mockSetToAsset).toHaveBeenCalledWith('0', ETH_SCOPE)
         })
+
+        it('reserves no first holding, since the receive asset locks nothing on the pay chain', () => {
+            mockToAsset = '31566704'
+            mockUnheldAssetId = '31566704'
+
+            renderHook(() => useSwapForm(SCOPE))
+
+            expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({ fee: new Decimal(100_000) }),
+            )
+        })
     })
 
     it('leaves the direction swap on for a pair on one chain', () => {

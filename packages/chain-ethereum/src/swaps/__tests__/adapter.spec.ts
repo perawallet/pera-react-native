@@ -72,6 +72,7 @@ describe('createEvmSwapAdapter', () => {
         expect(adapter.chainId).toBe('ethereum')
         expect(adapter.defaultReceiveAssetId).toBe(adapter.nativeAssetId)
         expect(adapter.maxAmountFeeReserve.isZero()).toBe(true)
+        expect(adapter.holdingReserve(scope).isZero()).toBe(true)
         expect(adapter.swapExplorerUrl(scope, {} as never)).toBeUndefined()
     })
 })

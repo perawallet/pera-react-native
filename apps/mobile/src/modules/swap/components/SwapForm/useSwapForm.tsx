@@ -172,7 +172,7 @@ export const useSwapForm = (
     // A percentage of what the account can spend, less the chain's fee reserve
     // and, for a first holding of the receive asset, the reserve it locks. An
     // unsettled receive balance reserves too: short of MAX beats failing at
-    // confirm.
+    // confirm. A holding on another chain locks nothing on this one.
     const swapAdapter = swapAdapterFor(scope)
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(
@@ -181,11 +181,12 @@ export const useSwapForm = (
                       account: selectedAccount,
                       asset: { chainId: scope.chainId, assetId: fromAsset },
                       scope,
-                      fee: receiveAssetBalance
-                          ? swapAdapter.maxAmountFeeReserve
-                          : swapAdapter.maxAmountFeeReserve.add(
-                                swapAdapter.holdingReserve(scope),
-                            ),
+                      fee:
+                          isCrossChain || receiveAssetBalance
+                              ? swapAdapter.maxAmountFeeReserve
+                              : swapAdapter.maxAmountFeeReserve.add(
+                                    swapAdapter.holdingReserve(scope),
+                                ),
                   }
                 : undefined,
         )

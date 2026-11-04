@@ -37,6 +37,7 @@ export const createEvmSwapAdapter = (chain: EvmChain): SwapChainAdapter => ({
         }
     },
     maxAmountFeeReserve: new Decimal(0),
+    holdingReserve: () => new Decimal(0),
     swapExplorerUrl: () => undefined,
     executeSwap: async () => ({
         kind: 'failed',
