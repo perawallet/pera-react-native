@@ -229,7 +229,14 @@ export type ChainTransactionData =
           rekeyTo?: string
           closeRemainderTo?: string
       }
-    | { family: 'evm' }
+    | {
+          family: 'evm'
+          /** Set on a history record that moves a single NFT; its contract and token id are in the asset id. */
+          nft?: {
+              standard: 'erc721' | 'erc1155'
+              collectionName?: string
+          }
+      }
 
 /** Payment-link fields only the parsing chain reads; each family adds a member discriminated by `family`. */
 export type ChainPaymentData = {
