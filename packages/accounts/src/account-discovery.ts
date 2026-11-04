@@ -16,13 +16,20 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { mapWithConcurrency } from '@perawallet/wallet-core-shared'
-import type { AccountChains, LocalAccount, WalletAccount } from './models'
+import type {
+    AccountChains,
+    LocalAccount,
+    WalletAccount,
+    WalletCandidates,
+    WalletDiscoveryProgress,
+} from './models'
 import {
     buildAccount,
     isEnabledByDefault,
     preferDefaultChain,
     withEnablement,
 } from './credentials'
+import { createWalletDiscoveryTracker } from './discovery-progress'
 import { recordAuthority } from './store/recordAuthority'
 import {
     accountsChainAdapters,
@@ -114,6 +121,11 @@ type DiscoverWalletCandidatesParams = {
     /** The in-memory XHD root; the caller keeps ownership. */
     rootKey?: Uint8Array
     onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
+    /** Once aborted, no further batch is probed; the walk resolves to what it found. */
+    signal?: AbortSignal
+    onProgress?: (progress: WalletDiscoveryProgress) => void
+    /** True for an active index the wallet already holds, which isn't counted as found. */
+    isHeld?: (found: ProbedHdIndex) => boolean
 }
 
 /**
@@ -121,26 +133,41 @@ type DiscoverWalletCandidatesParams = {
  * account per index active on any of them, by path: the 0/0 account alone when
  * none is. Each carries an entry on every default chain plus every chain it is
  * active on. `walletKeyId` must already be in the keystore when a chain in
- * `chainIds` has no in-memory public-key getter. Empty when no probe answered,
- * as "no activity" is unknown then.
+ * `chainIds` has no in-memory public-key getter. No accounts when no probe
+ * answered, as "no activity" is unknown then. `failedChainIds` names the
+ * chains that couldn't be checked, so a slow or down chain never blocks the
+ * rest.
  */
 export async function discoverWalletCandidates({
     walletKeyId,
     chainIds,
     rootKey,
     onUnusedKeys,
-}: DiscoverWalletCandidatesParams): Promise<LocalAccount[]> {
+    signal,
+    onProgress,
+    isHeld = () => false,
+}: DiscoverWalletCandidatesParams): Promise<WalletCandidates> {
     let hasProbeAnswered = false
+    const tracker = createWalletDiscoveryTracker({
+        chainIds,
+        onProgress,
+        isHeld,
+    })
     const probed = await discoverWalletActivity({
         walletId: walletKeyId,
         chainIds,
         rootKey,
         onUnusedKeys,
+        signal,
         onProbeAnswered: () => {
             hasProbeAnswered = true
         },
+        onProbeSettled: tracker.onProbeSettled,
+        onBatchProbed: tracker.onBatchProbed,
+        onFound: tracker.onFound,
     })
-    if (!hasProbeAnswered) return []
+    const failedChainIds = tracker.failedChainIds(signal?.aborted === true)
+    if (!hasProbeAnswered) return { accounts: [], failedChainIds }
 
     const isActive = ({ active }: ProbedHdIndex) =>
         Object.keys(active).length > 0
@@ -150,7 +177,7 @@ export async function discoverWalletCandidates({
         ? probed.filter(isActive)
         : probed.filter(origin)
 
-    return selected.flatMap(({ index, derived, active }) => {
+    const accounts = selected.flatMap(({ index, derived, active }) => {
         const chains: AccountChains = {}
         for (const chainId of chainIds) {
             const activeEntry = active[chainId]
@@ -179,6 +206,7 @@ export async function discoverWalletCandidates({
             }),
         ]
     })
+    return { accounts, failedChainIds }
 }
 
 type DiscoverDelegatedAccountsParams = {

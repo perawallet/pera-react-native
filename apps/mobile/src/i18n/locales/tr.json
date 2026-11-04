@@ -2284,6 +2284,7 @@
             "button": "Kurtar",
             "failed_title": "İçe aktarma başarısız",
             "failed_body": "Cüzdanın içe aktarılırken bir hata oluştu",
+            "failed_networks_body": "Şu ağlar kontrol edilemedi: {{networks}}. Bağlantını kontrol edip tekrar dene.",
             "duplicate_account_title": "Hesap zaten eklenmiş",
             "duplicate_account_body": "Bu hesap cüzdanında zaten var.",
             "invalid_mnemonic_title": "Geçersiz passphrase",

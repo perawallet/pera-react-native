@@ -2276,6 +2276,7 @@
             "button": "Wiederherstellen",
             "failed_title": "Import fehlgeschlagen",
             "failed_body": "Beim Importieren deines Wallets ist ein Fehler aufgetreten",
+            "failed_networks_body": "Nicht geprüft werden konnten: {{networks}}. Prüfe deine Verbindung und versuche es erneut.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Dieses Konto befindet sich bereits in deinem Wallet.",
             "invalid_mnemonic_title": "Ungültige Passphrase",

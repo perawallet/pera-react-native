@@ -2288,6 +2288,7 @@
             "button": "Recuperar",
             "failed_title": "Falha na importação",
             "failed_body": "Ocorreu um erro ao tentar importar sua wallet",
+            "failed_networks_body": "Não foi possível verificar: {{networks}}. Verifique sua conexão e tente novamente.",
             "duplicate_account_title": "Conta já adicionada",
             "duplicate_account_body": "Esta conta já está na sua wallet.",
             "invalid_mnemonic_title": "Passphrase inválida",

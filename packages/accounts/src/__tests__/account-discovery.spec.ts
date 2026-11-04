@@ -384,7 +384,7 @@ describe('discoverWalletCandidates', () => {
         activeOn(families, ETHEREUM, [])
         activeOn(families, BASE, [familyHdAddress('evm', 2, 0)])
 
-        const found = await discoverWalletCandidates({
+        const { accounts: found } = await discoverWalletCandidates({
             walletKeyId: 'seed',
             chainIds: CHAIN_IDS,
         })
@@ -416,7 +416,7 @@ describe('discoverWalletCandidates', () => {
         activeOn(families, ETHEREUM, [])
         activeOn(families, BASE, [])
 
-        const found = await discoverWalletCandidates({
+        const { accounts: found } = await discoverWalletCandidates({
             walletKeyId: 'seed',
             chainIds: CHAIN_IDS,
         })
@@ -436,7 +436,84 @@ describe('discoverWalletCandidates', () => {
                 walletKeyId: 'seed',
                 chainIds: CHAIN_IDS,
             }),
-        ).resolves.toEqual([])
+        ).resolves.toMatchObject({ accounts: [] })
+    })
+
+    it('names a chain whose probe rejects while still returning what the others found', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [familyHdAddress('algorand', 1, 0)])
+        activeOn(families, ETHEREUM, [])
+        families.checkActivity
+            .get(BASE)!
+            .mockRejectedValue(new Error('rpc down'))
+
+        const { accounts, failedChainIds } = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+
+        expect(accounts.map(hdIndexOf)).toEqual([{ account: 1, keyIndex: 0 }])
+        expect(failedChainIds).toEqual([BASE])
+    })
+
+    it('names every chain when none answered', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        for (const checkActivity of families.checkActivity.values()) {
+            checkActivity.mockRejectedValue(new Error('offline'))
+        }
+
+        await expect(
+            discoverWalletCandidates({
+                walletKeyId: 'seed',
+                chainIds: CHAIN_IDS,
+            }),
+        ).resolves.toEqual({ accounts: [], failedChainIds: CHAIN_IDS })
+    })
+
+    it('reports progress, leaving an index the wallet holds out of the found count', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [
+            familyHdAddress('algorand', 0, 0),
+            familyHdAddress('algorand', 1, 0),
+        ])
+        activeOn(families, ETHEREUM, [])
+        activeOn(families, BASE, [])
+        const onProgress = vi.fn()
+
+        await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+            onProgress,
+            isHeld: ({ index }) => index.account === 0,
+        })
+
+        expect(onProgress.mock.calls[0]![0]).toMatchObject({
+            chainIds: CHAIN_IDS,
+            checkedAccountCount: 0,
+            foundCount: 0,
+        })
+        expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+            // Indexes 0-4, then the two still needed to close the gap.
+            checkedAccountCount: 7,
+            foundCount: 1,
+        })
+    })
+
+    it('probes no batch once aborted', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        const controller = new AbortController()
+        controller.abort()
+
+        const { accounts } = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+            signal: controller.signal,
+        })
+
+        for (const checkActivity of families.checkActivity.values()) {
+            expect(checkActivity).not.toHaveBeenCalled()
+        }
+        expect(accounts).toEqual([])
     })
 
     it('orders accounts by path', async () => {
@@ -448,7 +525,7 @@ describe('discoverWalletCandidates', () => {
         activeOn(families, ETHEREUM, [familyHdAddress('evm', 0, 1)])
         activeOn(families, BASE, [])
 
-        const found = await discoverWalletCandidates({
+        const { accounts: found } = await discoverWalletCandidates({
             walletKeyId: 'seed',
             chainIds: CHAIN_IDS,
         })

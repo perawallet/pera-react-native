@@ -41,6 +41,14 @@ const KEY_INDEX_GAP_LIMIT = 5
 // per chain family. A single-chain search derives in memory and stays unbounded.
 const WALLET_ACCOUNT_INDEX_LIMIT = 50
 const WALLET_KEY_INDEX_LIMIT = 20
+// How long the walk may hear nothing from any chain, once one has answered,
+// before the chains still pending are dropped and named as unchecked. Every
+// batch waits for every chain, so a silent one would hold the walk back. Any
+// chain's answer restarts it, because lookups queue behind one another across
+// chains: a healthy chain waiting its turn must not read as a dead one. It
+// doesn't run before the first answer: on a slow link that answer is slow for
+// every chain, and cutting them all would fail an import that only needed time.
+const CHAIN_PROBE_IDLE_TIMEOUT_MS = 4000
 
 /** One answer per index, in order: `true` when the index has activity. */
 export type HdBatchProbe = (indices: readonly HdIndex[]) => Promise<boolean[]>
@@ -100,7 +108,12 @@ async function scanAccountIndex(
             onLimit()
             break
         }
-        const size = Math.min(keyIndexGapLimit, keyIndexLimit - keyIndex)
+        // Only the keys still needed to close the gap: one active key reopens
+        // it, and the next batch is sized again, so nothing found is missed.
+        const size = Math.min(
+            keyIndexGapLimit - keyGap,
+            keyIndexLimit - keyIndex,
+        )
         const batch = Array.from({ length: size }, (_, i) => ({
             account,
             keyIndex: keyIndex + i,
@@ -175,7 +188,12 @@ export async function walkHdTree({
             hasHitLimit = true
             break
         }
-        const size = Math.min(accountGapLimit, accountIndexLimit - accountIndex)
+        // As above, for account indexes: a batch past the one that closes the
+        // gap costs a probe per key on every chain and is never read.
+        const size = Math.min(
+            accountGapLimit - accountGap,
+            accountIndexLimit - accountIndex,
+        )
         const results = await Promise.allSettled(
             Array.from({ length: size }, (_, i) =>
                 scanAccountIndex(accountIndex + i, limits, probe),
@@ -243,8 +261,10 @@ type DiscoverWalletActivityParams = {
     keyIndexGapLimit?: number
     /**
      * Called once per chain for each probed batch. A batch whose probe
-     * rejects is asked once more; a chain whose batch then `failed`, or was
-     * `refused`, is not probed again for the rest of the walk.
+     * rejects is asked once more; a chain that answers no batch for
+     * `CHAIN_PROBE_IDLE_TIMEOUT_MS` also `failed`. A chain whose batch `failed`, or
+     * was `refused`, is not probed again for the rest of the walk, and its
+     * pending lookups are aborted.
      */
     onProbeSettled?: (chainId: ChainId, outcome: HdProbeOutcome) => void
     /** Called with each batch's indexes once every chain's probe of it resolves. */
@@ -280,10 +300,63 @@ export async function discoverWalletActivity({
     signal,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
     const { chains: registry } = getProvider()
+    const startedAt = Date.now()
+    // For the one summary line at the end: where the time went, per chain.
+    const answeredBy = new Map<
+        ChainId,
+        { batches: number; lastAnswerMs: number }
+    >()
     // A chain whose probe rejected twice in a row is down for this walk:
     // probing it again would only queue more failing lookups ahead of the
     // chains that answer.
     const failedChains = new Set<ChainId>()
+    // Aborted once the walk gives up on a chain, so its queued lookups stop
+    // holding slots the healthy chains need. A user cancel doesn't touch
+    // these: it must not turn a chain into a failed one.
+    const chainAborts = new Map<ChainId, AbortController>()
+    const chainAbortOf = (chainId: ChainId): AbortController => {
+        let abort = chainAborts.get(chainId)
+        if (!abort) {
+            abort = new AbortController()
+            chainAborts.set(chainId, abort)
+        }
+        return abort
+    }
+    // Why the walk gave up on a chain, as its first failing batch saw it. The
+    // chain's other batches then fail on the abort itself, which says nothing
+    // about whether the backend refused it.
+    const cutOutcomes = new Map<ChainId, 'failed' | 'refused'>()
+    // Each batch in flight restarts its idle timer whenever any chain answers.
+    const idleResets = new Set<() => void>()
+    let hasAnyAnswer = false
+    const markAnswered = (): void => {
+        hasAnyAnswer = true
+        idleResets.forEach(reset => reset())
+    }
+    const withIdleTimeout = <T>(
+        chainId: ChainId,
+        promise: Promise<T>,
+    ): Promise<T> =>
+        new Promise<T>((resolve, reject) => {
+            let timer: Optional<ReturnType<typeof setTimeout>>
+            const reset = () => {
+                clearTimeout(timer)
+                timer = setTimeout(() => {
+                    idleResets.delete(reset)
+                    reject(
+                        new Error(
+                            `Wallet discovery probe of ${chainId} heard nothing for ${CHAIN_PROBE_IDLE_TIMEOUT_MS}ms`,
+                        ),
+                    )
+                }, CHAIN_PROBE_IDLE_TIMEOUT_MS)
+            }
+            idleResets.add(reset)
+            if (hasAnyAnswer) reset()
+            promise.then(resolve, reject).finally(() => {
+                clearTimeout(timer)
+                idleResets.delete(reset)
+            })
+        })
     // Filled as each key is derived, so a batch that fails later still reports
     // the keys it saved and the caller can drop them.
     const probed = new Map<string, ProbedHdIndex>()
@@ -386,22 +459,49 @@ export async function discoverWalletActivity({
             onProbeSettled?.(chainId, 'failed')
             return entries.map(() => undefined)
         }
+        const chainAbort = chainAbortOf(chainId)
         const check = async () =>
-            accountsChainAdapters.get(chainId).checkActivity(addresses, scope)
+            accountsChainAdapters
+                .get(chainId)
+                .checkActivity(addresses, scope, chainAbort.signal)
         let activity: Map<string, boolean>
         try {
-            // Pera lookups get one try each, so one slow or dropped answer
-            // mustn't cost a healthy chain the rest of the walk: the batch is
-            // asked once more before the cutoff. Node clients retry their own
-            // reads, and a 4xx (a refusal included) would only fail again.
-            activity = await check().catch((error: unknown) => {
-                const isTransient =
-                    isPeraNetworkError(error) && error.metadata.retryable
-                if (!isTransient || signal?.aborted) throw error
-                return check()
-            })
+            // Pera lookups get one try each, so a dropped answer mustn't cost a
+            // healthy chain the rest of the walk: a batch that fails while the
+            // walk is still hearing from chains is asked once more. One that
+            // stays silent past the idle window is cut instead. Node clients
+            // retry their own reads, and a 4xx (a refusal included) would only
+            // fail again.
+            activity = await withIdleTimeout(
+                chainId,
+                check().catch((error: unknown) => {
+                    const isTransient =
+                        isPeraNetworkError(error) && error.metadata.retryable
+                    if (
+                        !isTransient ||
+                        signal?.aborted ||
+                        chainAbort.signal.aborted
+                    ) {
+                        throw error
+                    }
+                    return check()
+                }),
+            )
+            markAnswered()
+            const answered = answeredBy.get(chainId) ?? {
+                batches: 0,
+                lastAnswerMs: 0,
+            }
+            answered.batches += 1
+            answered.lastAnswerMs = Date.now() - startedAt
+            answeredBy.set(chainId, answered)
         } catch (error) {
-            const isRefused = isChainRefusedError(error)
+            const cutOutcome =
+                cutOutcomes.get(chainId) ??
+                (isChainRefusedError(error) ? 'refused' : 'failed')
+            cutOutcomes.set(chainId, cutOutcome)
+            chainAbort.abort()
+            const isRefused = cutOutcome === 'refused'
             if (!failedChains.has(chainId)) {
                 failedChains.add(chainId)
                 if (isRefused) {
@@ -417,6 +517,12 @@ export async function discoverWalletActivity({
                 }
             }
             onProbeSettled?.(chainId, isRefused ? 'refused' : 'failed')
+            return entries.map(() => undefined)
+        }
+        // Another batch got the refusal while this one was still in flight:
+        // what it saw failed on the abort, so it is no answer from the chain.
+        if (cutOutcomes.get(chainId) === 'refused') {
+            onProbeSettled?.(chainId, 'refused')
             return entries.map(() => undefined)
         }
         onProbeAnswered?.()
@@ -511,6 +617,13 @@ export async function discoverWalletActivity({
             })
         ).map(hdPathKey),
     )
+
+    logger.info('Wallet discovery walk timings', {
+        totalMs: Date.now() - startedAt,
+        probedIndexes: probed.size,
+        chains: Object.fromEntries(answeredBy),
+        cutChains: Object.fromEntries(cutOutcomes),
+    })
 
     return [...probed.values()]
         .map(entry =>

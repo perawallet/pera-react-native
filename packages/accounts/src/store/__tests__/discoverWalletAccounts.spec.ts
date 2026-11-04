@@ -714,7 +714,7 @@ describe('discoverWalletAccounts', () => {
             })
             expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
                 failedChainIds: [ETHEREUM],
-                checkedAccountCount: 10,
+                checkedAccountCount: 8,
                 foundCount: 1,
             })
         })

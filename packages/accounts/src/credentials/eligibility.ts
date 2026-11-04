@@ -31,12 +31,14 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import type {
+    AccountChains,
+    ChainAccount,
     HardwareWalletAccount,
     HardwareWalletDetails,
     HdIndex,
     WalletAccount,
 } from '../models'
-import { findAccountByAddressOn } from '../utils'
+import { findAccountByAddressOn, isSameAddress } from '../utils'
 import { chainAccountOf, hasCustody, hdIndexOf, seedOf } from './accessors'
 import type { KeystoreSnapshot } from './credentialScheme'
 
@@ -233,6 +235,35 @@ export const findPathHolder = (
             held?.account === index.account &&
             held.keyIndex === index.keyIndex &&
             seedOf(account, keys) === walletId
+        )
+    })
+
+/**
+ * The local HD account at `index`: the one `walletId` holds there, or, when the
+ * same seed was imported again under another id, the one at that index that
+ * holds an address derived there.
+ */
+export const hdHolderAt = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    index: HdIndex,
+    derived: AccountChains,
+): Optional<WalletAccount> =>
+    findPathHolder(accounts, walletId, index) ??
+    accounts.find(account => {
+        const held = hdIndexOf(account)
+        return (
+            held?.account === index.account &&
+            held.keyIndex === index.keyIndex &&
+            (Object.entries(derived) as [ChainId, ChainAccount][]).some(
+                ([chainId, entry]) => {
+                    const address = chainAccountOf(account, chainId)?.address
+                    return (
+                        address !== undefined &&
+                        isSameAddress(chainId, address, entry.address)
+                    )
+                },
+            )
         )
     })
 

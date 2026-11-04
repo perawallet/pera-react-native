@@ -360,12 +360,19 @@ describe('useHDImportSession', () => {
         })
 
         let found: LocalAccount[] = []
+        let failedChainIds: string[] = ['unset']
         await act(async () => {
-            found = await result.current.discoverImportAccounts({
+            const walked = await result.current.discoverImportAccounts({
                 walletKeyId: 'w-1',
             })
+            found = walked.accounts
+            failedChainIds = walked.failedChainIds
         })
 
+        // Discovery only asks whether an address has activity; balances and
+        // history load after the import.
+        expect(adapter.fetchAccountState).not.toHaveBeenCalled()
+        expect(failedChainIds).toEqual([])
         expect(adapter.createPublicKeyGetter).toHaveBeenCalledWith(
             new Uint8Array(96).fill(7),
         )
@@ -390,9 +397,11 @@ describe('useHDImportSession', () => {
         })
         let found: LocalAccount[] = []
         await act(async () => {
-            found = await result.current.discoverImportAccounts({
-                walletKeyId: 'w-1',
-            })
+            found = (
+                await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            ).accounts
         })
         useAccountsStore.setState({ accounts: [{ ...found[0], id: 'held' }] })
 
@@ -462,12 +471,95 @@ describe('useHDImportSession', () => {
         const discover = async (result: HookResult) => {
             let found: LocalAccount[] = []
             await act(async () => {
-                found = await result.current.discoverImportAccounts({
-                    walletKeyId: 'w-1',
-                })
+                found = (
+                    await result.current.discoverImportAccounts({
+                        walletKeyId: 'w-1',
+                    })
+                ).accounts
             })
             return found
         }
+
+        test('reports each network as the walk goes, and names the chain that could not be checked while still offering the others', async () => {
+            const families = setUpChains({
+                [ALGORAND]: [familyHdAddress('algorand', 1, 0)],
+            })
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(new Error('rpc down'))
+            const fetchAccountState = vi.fn()
+            for (const chainId of CHAIN_IDS) {
+                Object.assign(accountsChainAdapters.get(chainId), {
+                    fetchAccountState,
+                })
+            }
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const onProgress = vi.fn()
+            const signal = new AbortController().signal
+
+            let walked: Awaited<
+                ReturnType<typeof result.current.discoverImportAccounts>
+            >
+            await act(async () => {
+                walked = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    signal,
+                    onProgress,
+                })
+            })
+
+            expect(walked!.accounts.map(hdIndexOf)).toEqual([
+                { account: 1, keyIndex: 0 },
+            ])
+            expect(walked!.failedChainIds).toEqual([ETHEREUM])
+            // Balances and history wait until after the import.
+            expect(fetchAccountState).not.toHaveBeenCalled()
+            expect(onProgress).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chainIds: CHAIN_IDS,
+                    failedChainIds: [ETHEREUM],
+                    foundCount: 1,
+                }),
+            )
+            expect(
+                families.checkActivity.get(ALGORAND)!.mock.calls[0]![2],
+            ).toBeDefined()
+        })
+
+        test('does not count an index the wallet already holds as found', async () => {
+            setUpChains({ [ALGORAND]: [familyHdAddress('algorand', 1, 0)] })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            useAccountsStore.setState({
+                accounts: [
+                    buildAccount({
+                        custody: {
+                            kind: 'local',
+                            seed: 'bip39',
+                            hd: { account: 1, keyIndex: 0 },
+                        },
+                        chainId: ALGORAND,
+                        chains: {
+                            [ALGORAND]: {
+                                address: familyHdAddress('algorand', 1, 0),
+                                keyPairId: 'held-key',
+                            },
+                        },
+                    }),
+                ],
+            })
+            const onProgress = vi.fn()
+
+            await act(async () => {
+                await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    onProgress,
+                })
+            })
+
+            expect(onProgress.mock.calls.at(-1)![0].foundCount).toBe(0)
+        })
 
         test('persists the seed once from copies, marks the session persisted and finds an index active on one chain only', async () => {
             setUpChains({ [BASE]: [familyHdAddress('evm', 2, 0)] })
@@ -618,7 +710,7 @@ describe('useHDImportSession', () => {
             const { result } = renderHook(() => useHDImportSession(MAINNET))
             await prepare(result)
 
-            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            let discovery: Promise<unknown> = Promise.resolve([])
             act(() => {
                 discovery = result.current.discoverImportAccounts({
                     walletKeyId: 'w-1',
@@ -651,7 +743,7 @@ describe('useHDImportSession', () => {
             const { result } = renderHook(() => useHDImportSession(MAINNET))
             await prepare(result)
 
-            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            let discovery: Promise<unknown> = Promise.resolve([])
             act(() => {
                 discovery = result.current.discoverImportAccounts({
                     walletKeyId: 'w-1',
