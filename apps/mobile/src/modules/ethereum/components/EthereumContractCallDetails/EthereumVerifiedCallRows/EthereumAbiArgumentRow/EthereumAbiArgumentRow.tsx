@@ -63,7 +63,6 @@ export const EthereumAbiArgumentRow = ({
                     <AddressDisplay
                         address={value.value}
                         displayType='full'
-                        showSecondaryAddress
                         scope={scope}
                     />
                 )
