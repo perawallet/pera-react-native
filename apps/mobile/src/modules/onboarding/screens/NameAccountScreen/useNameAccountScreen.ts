@@ -170,9 +170,9 @@ export const useNameAccountScreen = () => {
 
     const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
-    const previewName = walletDisplay || accountTitle
 
     const trimmedName = walletDisplay.trim()
+    const previewName = trimmedName || accountTitle
     const isNameTaken = isTakenByAnother(trimmedName)
     const nameError = isNameTaken ? t('account_info.name_taken') : undefined
     const isFinishDisabled = isCreating || trimmedName === '' || isNameTaken
