@@ -32,7 +32,7 @@ vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-contract')
     >()),
-    isTestTierScope: () => false,
+    countsTowardFiatTotals: () => true,
     addressCodecs: {
         has: () => true,
         get: () => ({
