@@ -24,7 +24,14 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import {
+    cleanup,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 
 import {
@@ -40,7 +47,9 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
     resetTestDatabase,
@@ -55,8 +64,14 @@ import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewS
 import { AccountOverviewHeader } from '@modules/accounts/components/AccountOverview/AccountOverviewHeader'
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
 import { CloudBackupAccountsScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsScreen'
+import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
 import { ETH_ADDRESS, ETH_SCOPE } from './__fixtures__/multichainHoldings'
-import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import {
+    ALGO25_TEST_ADDRESS,
+    HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_24_ALT_INDICES,
+    HD_TEST_MNEMONIC_24_INDICES,
+} from './__fixtures__/onboarding'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual =
@@ -297,6 +312,107 @@ describe('Flow: Account overview fiat total', () => {
                     within(row).getByTestId('backup_account_summary_fiat')
                         .textContent,
                 ).toMatch(/^2 assets・\$ ?3\.16$/)
+            })
+        })
+    })
+
+    describe('on the Select Universal Wallet screen', () => {
+        const hdAccount = (
+            id: string,
+            chains: WalletAccount['chains'],
+        ): WalletAccount => ({
+            id,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains,
+        })
+
+        const seedTwoWallets = async () => {
+            const { result: kms } = renderHook(() => useKMS())
+            const first = await waitFor(async () => {
+                const created = await kms.current.createHDWalletKey({
+                    mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+                })
+                expect(created).not.toBeNull()
+                return created!
+            })
+            const second = await waitFor(async () => {
+                const created = await kms.current.createHDWalletKey({
+                    mnemonicIndices: HD_TEST_MNEMONIC_24_ALT_INDICES,
+                })
+                expect(created).not.toBeNull()
+                return created!
+            })
+            const withEthereum = hdAccount('wallet-1', {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: first.seedKey.id,
+                },
+                ethereum: { address: ETH_ADDRESS, keyPairId: first.seedKey.id },
+                base: { address: ETH_ADDRESS, keyPairId: first.seedKey.id },
+            })
+            const algorandOnly = hdAccount('wallet-2', {
+                algorand: {
+                    address: HD_TEST_ADDRESS,
+                    keyPairId: second.seedKey.id,
+                },
+            })
+            useAccountsStore
+                .getState()
+                .setAccounts([withEthereum, algorandOnly])
+            return withEthereum
+        }
+
+        afterEach(() => {
+            resetTestKeystore()
+        })
+
+        it('Given a wallet whose account holds ALGO and ETH, when the picker renders, then its row reads the overview total with no ALGO amount and shows its networks', async () => {
+            await seedThreeChains()
+            // 2 ALGO at the $0.102447 seeded above: $0.20, nowhere near wallet 1's $3.16.
+            await seedAlgorandAccountState({
+                accountAddress: HD_TEST_ADDRESS,
+                scope: ALGO_SCOPE,
+                nativeBalance: new Decimal('2000000'),
+            })
+            await insertAssetHolding({
+                accountAddress: HD_TEST_ADDRESS,
+                assetId: '0',
+                scope: ALGO_SCOPE,
+                amount: new Decimal('2000000'),
+            })
+            const account = await seedTwoWallets()
+
+            renderWithNavigation(SelectHDWalletScreen, 'SelectHDWallet')
+
+            const row = await screen.findByTestId('select_hd_wallet_item_0')
+            await waitFor(() => {
+                expect(within(row).getByText(/^\$ ?3\.16$/)).toBeTruthy()
+            })
+            // An ALGO amount renders as the Algo glyph and the bare number, not the word ALGO.
+            expect(row.textContent).not.toMatch(/¦|0\.15/)
+            expect(
+                within(row).getByTestId('chain_icon_stack_ethereum'),
+            ).toBeTruthy()
+
+            const otherRow = screen.getByTestId('select_hd_wallet_item_1')
+            await waitFor(() => {
+                expect(within(otherRow).getByText(/^\$ ?0\.20$/)).toBeTruthy()
+            })
+            expect(
+                within(otherRow).queryByTestId('chain_icon_stack_ethereum'),
+            ).toBeNull()
+            expect(within(row).queryByText(/^\$ ?0\.20$/)).toBeNull()
+
+            cleanup()
+            renderOverview(account)
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('portfolio_primary_value').textContent,
+                ).toMatch(/^\$ ?3\.16$/)
             })
         })
     })
