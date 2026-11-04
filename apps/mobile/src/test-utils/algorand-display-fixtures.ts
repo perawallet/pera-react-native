@@ -178,10 +178,12 @@ const assetTransferVariant: Record<
 
 export const buildAlgorandAssetTransferFixture = (
     variant: AlgorandAssetTransferVariant,
+    overrides: Partial<AlgorandTransactionView> = {},
 ): TransactionNative =>
     toAlgorandNative({
         ...byKind['asset-transfer'](),
         assetTransferTransaction: assetTransferVariant[variant],
+        ...overrides,
     })
 
 export const buildAlgorandDisplayFixture = (
