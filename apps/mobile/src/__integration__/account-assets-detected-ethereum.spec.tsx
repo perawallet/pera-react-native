@@ -201,7 +201,9 @@ describe('Flow: tokens an Ethereum account received', () => {
     })
 
     it('Given suspicious assets are switched on in the filters, when the list renders, then the flagged token is listed', async () => {
-        act(() => useAssetPreferencesStore.getState().setShowSuspicious(true))
+        act(() => {
+            useAssetPreferencesStore.getState().setShowSuspicious(true)
+        })
 
         renderList()
 
