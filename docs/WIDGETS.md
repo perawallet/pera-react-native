@@ -3,7 +3,8 @@
 Pera's home-screen widgets are native code per platform: SwiftUI/WidgetKit on iOS, Glance on
 Android. React Native cannot render inside a widget process, so no widget UI is shared between
 platforms. What is shared is everything that feeds them: the app computes a display-ready
-**snapshot** in TypeScript and hands it to the widgets through a small native bridge.
+**snapshot** in TypeScript and hands it to the widgets through a small native bridge. What each iOS
+widget shows, its options and its taps are in [WIDGETS_IOS.md](WIDGETS_IOS.md).
 
 ```text
 RN app (JS)                          native bridge               widget process
