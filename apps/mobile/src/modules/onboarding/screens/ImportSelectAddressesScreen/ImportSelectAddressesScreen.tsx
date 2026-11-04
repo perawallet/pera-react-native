@@ -62,7 +62,9 @@ export const ImportSelectAddressesScreen = () => {
                     <PWButton
                         testID='import_select_addresses_continue_button'
                         title={t(
-                            'onboarding.import_select_addresses.import_button',
+                            areAllImported
+                                ? 'onboarding.import_select_addresses.go_to_wallet'
+                                : 'onboarding.import_select_addresses.import_button',
                         )}
                         onPress={handleContinue}
                         variant='primary'
@@ -104,6 +106,7 @@ export const ImportSelectAddressesScreen = () => {
                             body={t(
                                 'onboarding.import_select_addresses.all_imported_body',
                             )}
+                            shouldTruncateBody={false}
                         />
                     ) : (
                         <>

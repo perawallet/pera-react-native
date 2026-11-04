@@ -2366,9 +2366,10 @@
             "select_all": "Alle auswählen",
             "already_imported": "bereits importiert",
             "import_button": "Konten importieren",
+            "go_to_wallet": "Zum Wallet",
             "total_value": "<0/> insgesamt",
             "all_imported_title": "Bereits in deinem Wallet",
-            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
+            "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",

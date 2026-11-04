@@ -2374,9 +2374,10 @@
             "select_all": "Select all",
             "already_imported": "already imported",
             "import_button": "Import accounts",
+            "go_to_wallet": "Go to wallet",
             "total_value": "<0/> total",
             "all_imported_title": "Already in your wallet",
-            "all_imported_body": "Every address this wallet derives is already in Pera — including any you are only watching. Remove an address to re-add it with its private key."
+            "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",
