@@ -63,11 +63,14 @@ export const EthereumAbiArgumentRow = ({
                     <AddressDisplay
                         address={value.value}
                         displayType='full'
+                        // An address the user doesn't know is compared in full, never truncated.
+                        unnamedAddressFormat='full'
                         scope={scope}
                     />
                 )
             }
             case 'array': {
+                if (value.items.length === 0) return <PWText>[]</PWText>
                 const elementType = argument.type.replace(ARRAY_SUFFIX, '')
                 return nestedOf(
                     value.items.map((item, itemIndex) => ({

@@ -88,6 +88,7 @@ const ETH_MAINNET = 'eip155:1'
 const ACCOUNT_NAME = 'Ether'
 // Uniswap V2's router: verified, and not in the well-known registry.
 const ROUTER = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
 const DISTRIBUTOR = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'
 const IMPLEMENTATION = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 const CONTACT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
@@ -330,6 +331,10 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             argumentRows().some(row =>
                 (row.textContent ?? '').includes('2400000000000000000'),
             ),
+        ).toBe(true)
+        // A path token the user doesn't know is shown whole, not truncated.
+        expect(
+            argumentRows().some(row => (row.textContent ?? '').includes(WETH)),
         ).toBe(true)
         expect(
             screen.getByTestId('ethereum_contract_call_warning'),
