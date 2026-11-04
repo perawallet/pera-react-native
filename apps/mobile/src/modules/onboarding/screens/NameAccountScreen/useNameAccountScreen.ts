@@ -170,6 +170,7 @@ export const useNameAccountScreen = () => {
 
     const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
+    const previewName = walletDisplay || accountTitle
 
     const trimmedName = walletDisplay.trim()
     const isNameTaken = isTakenByAnother(trimmedName)
@@ -250,6 +251,7 @@ export const useNameAccountScreen = () => {
         handleNameChange,
         handleFinish,
         accountTitle,
+        previewName,
         account,
         chainId,
         enabledChainIds,
