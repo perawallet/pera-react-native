@@ -2284,6 +2284,7 @@
             "button": "Recuperar",
             "failed_title": "Error al importar",
             "failed_body": "Se produjo un error al importar tu wallet",
+            "failed_networks_body": "No se pudo comprobar: {{networks}}. Comprueba tu conexión e inténtalo de nuevo.",
             "duplicate_account_title": "La cuenta ya está añadida",
             "duplicate_account_body": "Esta cuenta ya está en tu wallet.",
             "invalid_mnemonic_title": "Passphrase no válida",
@@ -2376,7 +2377,9 @@
             "import_button": "Importar cuentas",
             "total_value": "<0/> en total",
             "all_imported_title": "Ya están en tu wallet",
-            "all_imported_body": "Todas las direcciones que deriva tu wallet ya están en Pera, incluidas las que solo estás observando. Elimina una dirección para volver a añadirla con su clave privada."
+            "all_imported_body": "Todas las direcciones que deriva tu wallet ya están en Pera, incluidas las que solo estás observando. Elimina una dirección para volver a añadirla con su clave privada.",
+            "unchecked_networks_title": "No se pudo comprobar: {{networks}}",
+            "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} cuentas con rekey encontradas",

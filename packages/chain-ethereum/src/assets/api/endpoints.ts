@@ -171,6 +171,7 @@ export const fetchHasNftHoldings = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
+    signal?: AbortSignal,
 ): Promise<boolean> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
@@ -182,6 +183,7 @@ export const fetchHasNftHoldings = async (
             address.toLowerCase(),
         ),
         headers: buildIntegrityHeaders(),
+        signal,
         ...DISCOVERY_LOOKUP_BOUNDS,
     })
     const { results, next } = nftHoldingsPageSchema.parse(data)

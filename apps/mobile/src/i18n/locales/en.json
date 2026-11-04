@@ -2284,6 +2284,7 @@
             "button": "Recover",
             "failed_title": "Import failed",
             "failed_body": "There was an error trying to import your wallet",
+            "failed_networks_body": "We couldn't check {{networks}}. Check your connection and try again.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "This account is already in your wallet.",
             "invalid_mnemonic_title": "Invalid Passphrase",
@@ -2376,7 +2377,9 @@
             "import_button": "Import accounts",
             "total_value": "<0/> total",
             "all_imported_title": "Already in your wallet",
-            "all_imported_body": "Every address this wallet derives is already in Pera — including any you are only watching. Remove an address to re-add it with its private key."
+            "all_imported_body": "Every address this wallet derives is already in Pera — including any you are only watching. Remove an address to re-add it with its private key.",
+            "unchecked_networks_title": "Couldn't check {{networks}}",
+            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",

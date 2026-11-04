@@ -36,6 +36,9 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.positive,
         marginRight: theme.spacing.xs,
     },
+    uncheckedNetworks: {
+        marginBottom: theme.spacing.md,
+    },
     emptyState: {
         flex: 1,
         justifyContent: 'center',
