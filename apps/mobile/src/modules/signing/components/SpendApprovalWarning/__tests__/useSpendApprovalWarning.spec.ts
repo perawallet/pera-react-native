@@ -145,4 +145,49 @@ describe('an unlimited approval sent as a transaction', () => {
         ])
         expect(rowTypes(permit)).toContain('unlimited')
     })
+
+    describe('with a well-known spender', () => {
+        const PERMIT2 = { name: 'Permit2', projectDomain: 'uniswap.org' }
+
+        it('swaps the danger copy for a neutral note and names the spender', () => {
+            const { result } = renderHook(() =>
+                useSpendApprovalWarning(
+                    approval({
+                        knownSpender: PERMIT2,
+                        allowances: [unlimited('0xtsla')],
+                        deadline: undefined,
+                        isLongLived: true,
+                    }),
+                ),
+            )
+
+            expect(result.current.knownSpenderName).toBe('Permit2')
+            expect(result.current.rows).toEqual([
+                {
+                    type: 'spend',
+                    icon: 'outflow',
+                    message: 'signing.spend_approval.known_spend_note',
+                    caption: 'signing.spend_approval.spender_caption',
+                },
+                {
+                    type: 'unlimited',
+                    icon: 'info',
+                    message: 'signing.spend_approval.known_unlimited_note',
+                    caption: undefined,
+                },
+                expect.objectContaining({
+                    type: 'no-expiry',
+                    message: 'signing.spend_approval.no_deadline_warning',
+                }),
+            ])
+        })
+
+        it('leaves knownSpenderName unset for an unlisted spender', () => {
+            const { result } = renderHook(() =>
+                useSpendApprovalWarning(approval()),
+            )
+
+            expect(result.current.knownSpenderName).toBeUndefined()
+        })
+    })
 })

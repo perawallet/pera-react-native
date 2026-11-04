@@ -16,6 +16,7 @@ import type { Address, Hex } from 'viem'
 import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
 import type {
     FeePreset,
+    SpendApproval,
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmNftStandard } from '../blockchain/utils/caip19'
@@ -104,6 +105,8 @@ type EthereumTransactionViewBase = {
      * `contractDecoding` is on.
      */
     knownContract?: EvmContractLabel
+    /** Only with an `approve` or `increase-allowance` `call` whose spender is in the registry. */
+    knownSpender?: SpendApproval['knownSpender']
     /** Only with `knownContract`: what the calldata proves the call does. */
     action?: EvmContractAction
 }
@@ -205,6 +208,14 @@ const isKnownContract = (value: unknown): boolean =>
         (domain): domain is string => typeof domain === 'string',
     )
 
+const isKnownSpender = (value: unknown): boolean =>
+    isRecord(value) &&
+    typeof value.name === 'string' &&
+    isOptional(
+        value.projectDomain,
+        (domain): domain is string => typeof domain === 'string',
+    )
+
 const isActionAsset = (value: unknown): boolean =>
     isRecord(value) &&
     (value.kind === 'native' ||
@@ -298,6 +309,9 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     (value.knownContract === undefined ||
         (value.kind === 'contract-call' &&
             isKnownContract(value.knownContract))) &&
+    (value.knownSpender === undefined ||
+        (value.kind === 'contract-call' &&
+            isKnownSpender(value.knownSpender))) &&
     (value.action === undefined ||
         (value.kind === 'contract-call' &&
             value.knownContract !== undefined &&

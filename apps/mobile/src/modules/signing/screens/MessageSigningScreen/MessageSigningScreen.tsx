@@ -18,6 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { CannotSignNotice } from '@modules/signing/components/CannotSignNotice'
 import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
+import { SpendApprovalTitle } from '@modules/signing/components/SpendApprovalTitle'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
@@ -43,6 +44,9 @@ export const MessageSigningScreen = () => {
     } = useMessageSigningScreen()
 
     if (!summary) return null
+
+    // A recognised permit is titled by what it grants; its type name means nothing to a reader.
+    const spendApproval = scope ? summary.spendApproval : undefined
 
     return (
         <PWScreen
@@ -80,18 +84,27 @@ export const MessageSigningScreen = () => {
                 />
             )}
             <PWView style={styles.bodyContainer}>
-                <PWText variant='h2'>
-                    {t(summary.title.key, summary.title.params)}
-                </PWText>
+                {spendApproval && scope ? (
+                    <SpendApprovalTitle
+                        approval={spendApproval}
+                        scope={scope}
+                    />
+                ) : (
+                    <PWText variant='h2'>
+                        {t(summary.title.key, summary.title.params)}
+                    </PWText>
+                )}
 
                 <PWView style={styles.section}>
-                    <PWText
-                        variant='captionMedium'
-                        style={styles.sectionLabel}
-                    >
-                        {t('signing.arbitrary_data_view.data_label')}
-                    </PWText>
-                    {!!summary.preview && (
+                    {!spendApproval && (
+                        <PWText
+                            variant='captionMedium'
+                            style={styles.sectionLabel}
+                        >
+                            {t('signing.arbitrary_data_view.data_label')}
+                        </PWText>
+                    )}
+                    {!spendApproval && !!summary.preview && (
                         <PWView style={styles.dataBox}>
                             <PWText variant='mono'>{summary.preview}</PWText>
                         </PWView>

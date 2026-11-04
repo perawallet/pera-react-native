@@ -436,6 +436,8 @@ export interface SpendAllowance {
 export interface SpendApproval {
     /** Requester-supplied, in the chain's address format. */
     spender: string
+    /** Set when `spender` is in the chain's well-known contract registry; `name` is a proper noun, never translated. */
+    knownSpender?: { name: string; projectDomain?: string }
     /** One per asset, in message order; never empty. */
     allowances: SpendAllowance[]
     /** Unix ms after which the approval can't be used; absent when it never lapses. */

@@ -146,6 +146,7 @@ const present = (
     chainId: ChainScope['chainId'],
     token: EthereumAmount,
     nft: Nullable<PeraAsset>,
+    knownSpender: SpendApproval['knownSpender'],
 ): EthereumStandardCallPresentation => {
     switch (call.kind) {
         case 'transfer':
@@ -208,7 +209,7 @@ const present = (
                 spender: call.spender,
                 ...(!isRevocation && {
                     spendApproval:
-                        spendApprovalOfCall(call, chainId) ??
+                        spendApprovalOfCall(call, chainId, knownSpender) ??
                         zeroGrantOf(call, chainId),
                 }),
             }
@@ -219,7 +220,7 @@ const present = (
                 contract: call.contract,
                 spender: call.spender,
                 spendApproval:
-                    spendApprovalOfCall(call, chainId) ??
+                    spendApprovalOfCall(call, chainId, knownSpender) ??
                     zeroGrantOf(call, chainId),
             }
         }
@@ -274,11 +275,18 @@ export const useEthereumStandardCall = (
         }
         const nft = nftAssetId ? (nftData ?? null) : null
         return {
-            standardCall: present(call, scope.chainId, token, nft),
+            standardCall: present(
+                call,
+                scope.chainId,
+                token,
+                nft,
+                view?.knownSpender,
+            ),
             isLoading: fungible.isLoading || isNftLoading,
         }
     }, [
         call,
+        view?.knownSpender,
         scope.chainId,
         fungible.asset,
         fungible.value,

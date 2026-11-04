@@ -36,6 +36,7 @@ export const toAllowanceAmount = (baseUnits: bigint): Optional<Decimal> =>
 export const spendApprovalOfCall = (
     call: EvmStandardCall,
     chainId: ChainId,
+    knownSpender?: SpendApproval['knownSpender'],
 ): Optional<SpendApproval> => {
     if (
         (call.kind !== 'approve' && call.kind !== 'increase-allowance') ||
@@ -46,6 +47,7 @@ export const spendApprovalOfCall = (
     const amount = toAllowanceAmount(BigInt(call.value.toFixed()))
     return {
         spender: call.spender,
+        ...(knownSpender && { knownSpender }),
         allowances: [
             {
                 assetRef: { chainId, assetId: call.contract },

@@ -3429,7 +3429,15 @@
             "spender_label": "Spender",
             "unlimited": "Unlimited",
             "deadline_label": "Deadline",
-            "never": "Never"
+            "never": "Never",
+            "known_title": "About this approval",
+            "known_description": "{{name}} is a well-known contract",
+            "known_spend_note": "{{name}} is a well-known contract. It can only move this token as part of a transaction or signature you approve.",
+            "known_unlimited_note": "The amount is unlimited, so you won't need to approve this token for {{name}} again.",
+            "permit_title": "Allow {{spender}} to use your {{asset}}",
+            "permit_title_assets": "Allow {{spender}} to use your assets",
+            "permit_title_unknown": "Allow another address to use your {{asset}}",
+            "permit_title_unknown_assets": "Allow another address to use your assets"
         },
         "collection_approval": {
             "warning": "This lets the operator transfer every item you hold in this collection, including ones you get later, until you revoke it.",

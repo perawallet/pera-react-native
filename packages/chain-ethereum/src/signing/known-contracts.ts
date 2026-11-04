@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isAddress } from 'viem'
 import type { Address } from 'viem'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
@@ -201,6 +202,23 @@ export const findKnownEvmContract = (
     KNOWN_EVM_CONTRACTS[eip155ChainId]?.find(contract =>
         areEvmAddressesEqual(contract.address, address),
     )
+
+/** A spend approval's `knownSpender`, when `spender` is in the registry. */
+export const knownSpenderOf = (
+    eip155ChainId: Optional<number>,
+    spender: string,
+): Optional<{ name: string; projectDomain?: string }> => {
+    const known =
+        eip155ChainId === undefined || !isAddress(spender)
+            ? undefined
+            : findKnownEvmContract(eip155ChainId, spender)
+    return (
+        known && {
+            name: known.name,
+            ...(known.projectDomain && { projectDomain: known.projectDomain }),
+        }
+    )
+}
 
 export const wrappedNativeOf = (eip155ChainId: number): Optional<Address> =>
     KNOWN_EVM_CONTRACTS[eip155ChainId]?.find(
