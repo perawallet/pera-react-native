@@ -87,6 +87,10 @@ const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
 // Must stay above PRICE_CACHE_TTL_MS in packages/assets price-syncer, or the
 // TTL gate would classify every periodic pass as fresh and stop re-pricing.
 const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
+// A change signal can miss activity (an EVM block follower blind to internal
+// transfers), and every "unchanged" answer would keep the balance as it is
+// indefinitely. A scope not read for this long is read anyway.
+const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
 
 type ScopeSyncOutcome = {
     hadTotalFailure: boolean
@@ -116,11 +120,13 @@ const isRefusedCredential = (error: unknown): boolean =>
 export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
-    // A scope's first sync of the session skips its change signal: the
-    // persisted cursor may predate a relaunch, and the DB must be populated.
-    // A settled submission re-arms its chain's scopes, since a paced signal
-    // may not report the sender's new balance for several blocks.
-    private forceSyncedScopes = new Set<ChainScopeKey>()
+    // When each scope's accounts were last read (epoch ms). A scope absent
+    // here skips its change signal: on its first sync of a session the
+    // persisted cursor may predate a relaunch and the DB must be populated.
+    // Entries are dropped to force a read: on start (the app returning to the
+    // foreground), on reconnect, and when a submission settles on the chain,
+    // since a paced signal may not report the sender's new balance for blocks.
+    private scopeReadAt = new Map<ChainScopeKey, number>()
     // A scope whose change signal got a 401/403: the key is wrong/missing, a
     // config-level problem retrying every tick can't fix. Reset on
     // start()/restart() so a rebuilt or reconfigured session recovers.
@@ -194,6 +200,9 @@ export class SyncService {
             ),
         )
         this.authRefusedScopes.clear()
+        // The app calls start() on every return to the foreground; balances
+        // may have moved while it was away, whatever the signal says.
+        this.scopeReadAt.clear()
         void this.tick()
     }
 
@@ -240,12 +249,12 @@ export class SyncService {
             this.timer = null
         }
         this.scopeBackoffs.clear()
+        this.scopeReadAt.clear()
         void this.tick()
     }
 
     restart(): void {
         this.stop()
-        this.forceSyncedScopes.clear()
         this.scopeBackoffs.clear()
         this.currentInterval = this.baseInterval
         this.start()
@@ -483,9 +492,9 @@ export class SyncService {
                 // Only the settled chain's: another chain's backend-read
                 // History would refetch for nothing.
                 invalidateTransactionQueriesForChain(this.deps.queryClient, id)
-                for (const key of this.forceSyncedScopes) {
+                for (const key of this.scopeReadAt.keys()) {
                     if (parseScopeKey(key).chainId === id) {
-                        this.forceSyncedScopes.delete(key)
+                        this.scopeReadAt.delete(key)
                     }
                 }
             }
@@ -496,8 +505,13 @@ export class SyncService {
         const { scope, addresses } = group
         const key = toScopeKey(scope)
 
-        if (!this.forceSyncedScopes.has(key)) {
-            this.forceSyncedScopes.add(key)
+        const nowMs = Date.now()
+        const lastReadAt = this.scopeReadAt.get(key)
+        const unreadMs =
+            lastReadAt === undefined ? Infinity : nowMs - lastReadAt
+        // Negative when the device clock moved back; read rather than stall.
+        if (unreadMs < 0 || unreadMs >= MAX_UNREAD_SCOPE_MS) {
+            this.scopeReadAt.set(key, nowMs)
             return this.syncScopeState(scope, addresses, null)
         }
 
@@ -515,6 +529,7 @@ export class SyncService {
             }
             return CLEAN_OUTCOME
         }
+        this.scopeReadAt.set(key, nowMs)
         return this.syncScopeState(scope, addresses, signal.cursor ?? null)
     }
 

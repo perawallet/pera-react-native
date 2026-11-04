@@ -654,6 +654,69 @@ describe('SyncService', () => {
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
     })
 
+    describe('reading past an unchanged change signal', () => {
+        const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
+
+        const startAfterFirstPass = async () => {
+            mockSendShouldRefreshRequest.mockResolvedValue({
+                refresh: false,
+                round: null,
+            })
+            // A synced scope, so the signal answers for itself rather than
+            // reading a never-synced one.
+            service = new SyncService({
+                queryClient,
+                stores: { ...createSyncStorePorts(), getChangeCursor: () => 42 },
+                chains: chainsDep(),
+            })
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            service.start()
+            await vi.advanceTimersByTimeAsync(50)
+            vi.mocked(fetchAndPersistAccount).mockClear()
+            mockSendShouldRefreshRequest.mockClear()
+            return vi.mocked(fetchAndPersistAccount)
+        }
+
+        it('trusts the signal until the scope has gone unread for the ceiling', async () => {
+            const accountReads = await startAfterFirstPass()
+
+            await vi.advanceTimersByTimeAsync(MAX_UNREAD_SCOPE_MS - 100)
+
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+            expect(accountReads).not.toHaveBeenCalled()
+        })
+
+        it('reads a scope whose signal keeps answering unchanged once the ceiling elapses', async () => {
+            const accountReads = await startAfterFirstPass()
+
+            await vi.advanceTimersByTimeAsync(MAX_UNREAD_SCOPE_MS + POLL_INTERVAL)
+
+            expect(accountReads).toHaveBeenCalled()
+        })
+
+        it('reads every scope on reconnect without asking the signal', async () => {
+            const accountReads = await startAfterFirstPass()
+            onlineManager.setOnline(false)
+            onlineManager.setOnline(true)
+            await flushMicrotasks()
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+
+        it('reads every scope when started again, as on a return to the foreground', async () => {
+            const accountReads = await startAfterFirstPass()
+            service.stop()
+
+            service.start()
+            await flushMicrotasks()
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+    })
+
     it('updates last refreshed round when refresh is needed', async () => {
         mockSendShouldRefreshRequest.mockResolvedValue({
             refresh: true,

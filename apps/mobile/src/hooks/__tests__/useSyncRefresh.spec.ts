@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useSyncRefresh } from '../useSyncRefresh'
+import { useSyncRefresh, useSyncRefreshAll } from '../useSyncRefresh'
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: vi.fn(),
@@ -282,5 +282,41 @@ describe('useSyncRefresh', () => {
         })
 
         expect(refreshAccounts).toHaveBeenCalledTimes(1)
+    })
+
+    describe('useSyncRefreshAll', () => {
+        it('refreshes every network in one pull', async () => {
+            const targets = [
+                { addresses: ['ALGO1'], scope: ALGORAND },
+                { addresses: ['0xabc'], scope: ETHEREUM },
+            ]
+            const { result } = renderHook(() => useSyncRefreshAll(targets))
+
+            await act(async () => {
+                result.current.refresh()
+            })
+
+            expect(refreshAccounts).toHaveBeenCalledWith(['ALGO1'], ALGORAND)
+            expect(refreshAccounts).toHaveBeenCalledWith(['0xabc'], ETHEREUM)
+            expect(result.current.isRefreshing).toBe(false)
+        })
+
+        it('still refreshes the other networks when one fails', async () => {
+            refreshAccounts.mockImplementation(async (_addresses, scope) => {
+                if (scope.chainId === 'algorand') throw new Error('down')
+            })
+            const targets = [
+                { addresses: ['ALGO1'], scope: ALGORAND },
+                { addresses: ['0xabc'], scope: ETHEREUM },
+            ]
+            const { result } = renderHook(() => useSyncRefreshAll(targets))
+
+            await act(async () => {
+                result.current.refresh()
+            })
+
+            expect(refreshAccounts).toHaveBeenCalledWith(['0xabc'], ETHEREUM)
+            expect(result.current.isRefreshing).toBe(false)
+        })
     })
 })

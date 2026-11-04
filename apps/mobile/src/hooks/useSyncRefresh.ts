@@ -37,43 +37,36 @@ const inFlightRefreshes = new Map<string, Promise<void>>()
 const buildRefreshKey = (addresses: string[], scope: ChainScope) =>
     `${toScopeKey(scope)}:${[...addresses].sort().join(',')}`
 
-/**
- * Pull-to-refresh for DB-first screens. Their queries hold
- * `staleTime: Infinity` over SQLite, so `refetch()` only re-reads the same
- * local rows — only the sync service pulls fresh chain state, persists it,
- * and then invalidates.
- *
- * No connectivity gate here: PWRefreshControl short-circuits offline pulls
- * (pulsing the offline banner) before `onRefresh` ever fires.
- */
-export const useSyncRefresh = ({
-    addresses,
-    scope,
-}: UseSyncRefreshParams): UseSyncRefreshResult => {
+const refreshOnce = async (
+    addresses: string[],
+    scope: ChainScope,
+): Promise<void> => {
+    const key = buildRefreshKey(addresses, scope)
+    const pending = inFlightRefreshes.get(key)
+    if (pending) return pending
+    // refreshAccounts owns the invalidation fan-out; a second call here would
+    // re-fire it un-debounced for no new data.
+    const work = (async () =>
+        getSyncService().refreshAccounts(addresses, scope))()
+    inFlightRefreshes.set(key, work)
+    try {
+        await work
+    } finally {
+        inFlightRefreshes.delete(key)
+    }
+}
+
+const useRefreshRunner = (
+    run: () => Promise<unknown>,
+): UseSyncRefreshResult => {
     const isMounted = useIsMounted()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
     const refresh = useCallback(() => {
-        const key = buildRefreshKey(addresses, scope)
         setIsRefreshing(true)
         void (async () => {
             try {
-                const pending = inFlightRefreshes.get(key)
-                if (pending) {
-                    await pending
-                    return
-                }
-
-                // refreshAccounts owns the invalidation fan-out; a second call
-                // here would re-fire it un-debounced for no new data.
-                const work = (async () =>
-                    getSyncService().refreshAccounts(addresses, scope))()
-                inFlightRefreshes.set(key, work)
-                try {
-                    await work
-                } finally {
-                    inFlightRefreshes.delete(key)
-                }
+                await run()
             } catch {
                 // Chiefly getSyncService() before init, but a pull gesture must
                 // never surface a crash — the periodic tick is the safety net.
@@ -81,7 +74,35 @@ export const useSyncRefresh = ({
                 if (isMounted()) setIsRefreshing(false)
             }
         })()
-    }, [addresses, isMounted, scope])
+    }, [isMounted, run])
 
     return { isRefreshing, refresh }
 }
+
+export const useSyncRefresh = ({
+    addresses,
+    scope,
+}: UseSyncRefreshParams): UseSyncRefreshResult =>
+    useRefreshRunner(
+        useCallback(() => refreshOnce(addresses, scope), [addresses, scope]),
+    )
+
+/**
+ * One pull over several networks, as an account holding more than one chain
+ * shows them all at once; each network refreshes on its own, so a slow or
+ * failing one never holds back the rest.
+ */
+export const useSyncRefreshAll = (
+    targets: readonly UseSyncRefreshParams[],
+): UseSyncRefreshResult =>
+    useRefreshRunner(
+        useCallback(
+            () =>
+                Promise.allSettled(
+                    targets.map(({ addresses, scope }) =>
+                        refreshOnce(addresses, scope),
+                    ),
+                ),
+            [targets],
+        ),
+    )

@@ -78,6 +78,9 @@ vi.mock('@modules/transactions/routes', () => ({
     SEND_FUNDS_SHEET_ID: 'send-funds',
 }))
 
+// Stable per account, as the real hook keeps its list's identity.
+const mockSourcesByAccount = new Map<object, unknown[]>()
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountScope: (account: { chains: Record<string, unknown> }) => ({
         chainId: Object.keys(account.chains)[0],
@@ -98,6 +101,20 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         isPending: mockHistoryPending.value,
     })),
     useEnsureAccountEnriched: vi.fn(),
+    useAccountHoldingSources: (account: {
+        chains: Record<string, { address: string }>
+    }) => {
+        const cached = mockSourcesByAccount.get(account)
+        if (cached) return cached
+        const sources = Object.entries(account.chains).map(
+            ([chainId, { address }]) => ({
+                address,
+                scope: { chainId, networkId: 'mainnet' },
+            }),
+        )
+        mockSourcesByAccount.set(account, sources)
+        return sources
+    },
 }))
 
 vi.mock('@modules/transactions', () => ({
@@ -153,6 +170,32 @@ describe('useAccountOverview', () => {
             networkId: 'mainnet',
         })
         expect(mockInvalidateQueries).not.toHaveBeenCalled()
+    })
+
+    it('refreshes every network of a multichain account in one pull', async () => {
+        const multichain = {
+            ...mockAccount,
+            chains: {
+                algorand: { address: 'test-address' },
+                ethereum: { address: '0xabc' },
+            },
+        } as unknown as WalletAccount
+        const { result } = renderHook(() =>
+            useAccountOverview({ account: multichain }),
+        )
+
+        await act(async () => {
+            result.current.handleRefresh()
+        })
+
+        expect(mockRefreshAccounts).toHaveBeenCalledWith(['test-address'], {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        expect(mockRefreshAccounts).toHaveBeenCalledWith(['0xabc'], {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
     })
 
     it('reports isRefreshing while the sync refresh is in flight', async () => {
