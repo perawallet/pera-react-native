@@ -3851,7 +3851,7 @@
             "origin_unverified": "A Pera não conseguiu verificar o site deste app."
         },
         "permissions": {
-            "heading": "Este app poderá",
+            "heading": "Este app pode",
             "view_accounts": "Ver seu endereço e saldos",
             "approve_transactions": "Pedir que você aprove transações",
             "sign_messages": "Pedir que você assine mensagens",

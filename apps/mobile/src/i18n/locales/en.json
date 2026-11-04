@@ -3829,7 +3829,7 @@
             "origin_unverified": "Pera couldn't verify this app's website."
         },
         "permissions": {
-            "heading": "This app will be able to",
+            "heading": "This app can",
             "view_accounts": "See your address and balances",
             "approve_transactions": "Ask you to approve transactions",
             "sign_messages": "Ask you to sign messages",

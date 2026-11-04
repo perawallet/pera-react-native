@@ -3829,7 +3829,7 @@
             "origin_unverified": "Pera no pudo verificar el sitio web de esta app."
         },
         "permissions": {
-            "heading": "Esta app podrá",
+            "heading": "Esta app puede",
             "view_accounts": "Ver tu dirección y tus saldos",
             "approve_transactions": "Pedirte que apruebes transacciones",
             "sign_messages": "Pedirte que firmes mensajes",
