@@ -84,7 +84,9 @@ export const SwapToAssetItemView = ({
             logoUrl={swapAsset.logo}
             showBalance={balance !== null}
             subtitle={
-                isChainShown ? <ChainLabel chainId={scope.chainId} /> : undefined
+                isChainShown ? (
+                    <ChainLabel chainId={scope.chainId} />
+                ) : undefined
             }
             {...rest}
         />

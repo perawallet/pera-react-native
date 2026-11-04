@@ -50,9 +50,7 @@ describe('swaps/hooks/querykeys', () => {
         const matches = (queryKey: readonly unknown[]) =>
             getInvalidateSwapHistoryPredicate({ queryKey } as unknown as Query)
 
-        expect(matches(swapQueryKeys.historyInfinite(accounts))).toBe(
-            true,
-        )
+        expect(matches(swapQueryKeys.historyInfinite(accounts))).toBe(true)
         expect(
             matches(swapQueryKeys.distinctPairsHistory('ADDR', mainnet)),
         ).toBe(true)

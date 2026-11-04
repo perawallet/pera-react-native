@@ -44,7 +44,7 @@ describe('swaps/useSwapTrackedOrders', () => {
         useSwapTrackingStore.getState().resetState()
     })
 
-    test("lists the orders the given addresses paid for, newest first", () => {
+    test('lists the orders the given addresses paid for, newest first', () => {
         const state = useSwapTrackingStore.getState()
         state.trackOrder(order('old', 'MINE', 1))
         state.trackOrder(order('other', 'THEIRS', 3))
@@ -52,10 +52,7 @@ describe('swaps/useSwapTrackedOrders', () => {
 
         const { result } = renderHook(() => useSwapTrackedOrders(['MINE']))
 
-        expect(result.current.map(item => item.orderId)).toEqual([
-            'new',
-            'old',
-        ])
+        expect(result.current.map(item => item.orderId)).toEqual(['new', 'old'])
     })
 
     test('lists nothing for no addresses', () => {

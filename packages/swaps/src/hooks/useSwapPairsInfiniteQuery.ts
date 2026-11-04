@@ -59,7 +59,9 @@ const fetchVisiblePage = async (
         limit: PAGE_SIZE,
     })
     for (let skipped = 0; skipped < MAX_SKIPPED_PAGES; skipped++) {
-        const assets = page.assets.filter(asset => isOnAnyScope(asset, scopeKeys))
+        const assets = page.assets.filter(asset =>
+            isOnAnyScope(asset, scopeKeys),
+        )
         if (assets.length > 0 || page.next === null) {
             return { assets, next: page.next }
         }

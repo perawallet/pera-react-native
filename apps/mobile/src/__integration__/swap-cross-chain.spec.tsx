@@ -350,9 +350,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
                 { wrapper: createQueryClientWrapper() },
             )
             await waitFor(() => expect(result.current.isLoading).toBe(false))
-            return result.current.items.map(
-                item => item.swapAsset.ref.chainId,
-            )
+            return result.current.items.map(item => item.swapAsset.ref.chainId)
         }
 
         it('Given an account with a signing Ethereum address, when the picker lists pairs, then ETH is offered', async () => {

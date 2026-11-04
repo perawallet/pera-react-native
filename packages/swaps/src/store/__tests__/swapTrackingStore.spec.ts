@@ -109,7 +109,9 @@ describe('swaps/swapTrackingStore', () => {
     test('prunes settled orders older than the reversible window and keeps the rest', () => {
         const now = CREATED_AT + SWAP_STATUS_REVERSIBLE_MS
         const state = useSwapTrackingStore.getState()
-        state.trackOrder(makeOrder({ orderId: 'old-done', status: 'completed' }))
+        state.trackOrder(
+            makeOrder({ orderId: 'old-done', status: 'completed' }),
+        )
         state.trackOrder(
             makeOrder({ orderId: 'old-open', status: 'in_progress' }),
         )

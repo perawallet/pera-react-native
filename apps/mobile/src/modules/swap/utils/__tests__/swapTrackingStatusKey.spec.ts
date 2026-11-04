@@ -25,13 +25,7 @@ describe('swapTrackingStatusKey', () => {
 
     it('gives each final outcome its own message', () => {
         const keys = (
-            [
-                'completed',
-                'failed',
-                'refunded',
-                'expired',
-                'cancelled',
-            ] as const
+            ['completed', 'failed', 'refunded', 'expired', 'cancelled'] as const
         ).map(swapTrackingStatusKey)
 
         expect(new Set(keys).size).toBe(keys.length)

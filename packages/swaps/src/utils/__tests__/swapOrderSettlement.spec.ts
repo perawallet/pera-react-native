@@ -23,7 +23,10 @@ describe('isSwapOrderSettled', () => {
         'treats %s as final at once',
         status => {
             expect(
-                isSwapOrderSettled({ status, createdAt: CREATED_AT }, CREATED_AT),
+                isSwapOrderSettled(
+                    { status, createdAt: CREATED_AT },
+                    CREATED_AT,
+                ),
             ).toBe(true)
         },
     )
@@ -52,7 +55,10 @@ describe('isSwapOrderSettled', () => {
                 ),
             ).toBe(false)
             expect(
-                isSwapOrderSettled(order, CREATED_AT + SWAP_STATUS_REVERSIBLE_MS),
+                isSwapOrderSettled(
+                    order,
+                    CREATED_AT + SWAP_STATUS_REVERSIBLE_MS,
+                ),
             ).toBe(true)
         },
     )

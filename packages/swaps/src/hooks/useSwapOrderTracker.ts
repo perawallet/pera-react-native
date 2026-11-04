@@ -13,6 +13,7 @@
 import { useEffect } from 'react'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { invalidateAccountQueriesForAddresses } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchSwapOrder } from '../api'
 import type { SwapStatus, SwapTrackedOrder } from '../models'
 import { useSwapTrackingStore } from '../store'
@@ -24,7 +25,7 @@ const POLL_INTERVAL_MS = 30_000
 const addressRefreshedOn = (
     order: SwapTrackedOrder,
     status: SwapStatus,
-): string | null => {
+): Nullable<string> => {
     if (status === 'completed') return order.destinationAddress
     if (status === 'refunded') return order.sourceAddress
     return null

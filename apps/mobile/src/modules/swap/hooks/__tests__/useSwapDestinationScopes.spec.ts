@@ -100,11 +100,9 @@ describe('useSwapDestinationScopes', () => {
     })
 
     it('keeps a shared source account on its own chain', () => {
-        const shared = account(
-            'shared',
-            { algorand: { address: 'MSIG' } },
-            { kind: 'multisig' } as WalletAccount['custody'],
-        )
+        const shared = account('shared', { algorand: { address: 'MSIG' } }, {
+            kind: 'multisig',
+        } as WalletAccount['custody'])
         vi.mocked(useAllAccounts).mockReturnValue([shared, TWO_CHAIN])
 
         const { result } = renderHook(() =>

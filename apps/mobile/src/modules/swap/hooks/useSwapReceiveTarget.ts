@@ -22,7 +22,7 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
 
 export type UseSwapReceiveTargetResult = {
@@ -72,7 +72,7 @@ export const useSwapReceiveTarget = (
 
     const receivingAccount = useMemo<Nullable<WalletAccount>>(() => {
         if (!isCrossChain) return selectedAccount
-        const findEligible = (id: Nullable<string> | undefined) =>
+        const findEligible = (id: Maybe<string>) =>
             receivingAccounts.find(candidate => candidate.id === id)
         return (
             findEligible(receivingAccountId) ??

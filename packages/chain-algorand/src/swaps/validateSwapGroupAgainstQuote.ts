@@ -78,7 +78,11 @@ const validateCrossChainSourceLeg = (
         )
     }
     const [receiver] = receivers
-    if (depositAddress && receiver !== undefined && receiver !== depositAddress) {
+    if (
+        depositAddress &&
+        receiver !== undefined &&
+        receiver !== depositAddress
+    ) {
         throw new SwapQuoteMismatchError(
             'Cross-chain swap leg pays an address other than the deposit address',
         )

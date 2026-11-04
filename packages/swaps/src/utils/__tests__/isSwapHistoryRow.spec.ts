@@ -18,18 +18,18 @@ describe('isSwapHistoryRow', () => {
     test.each([null, 'wallet_transaction'])(
         'keeps a row funded by %s',
         fundingMethod => {
-            expect(isSwapHistoryRow(makeSwapHistoryItem({ fundingMethod }))).toBe(
-                true,
-            )
+            expect(
+                isSwapHistoryRow(makeSwapHistoryItem({ fundingMethod })),
+            ).toBe(true)
         },
     )
 
     test.each(['deposit', 'fiat'])(
         'drops a row funded by %s',
         fundingMethod => {
-            expect(isSwapHistoryRow(makeSwapHistoryItem({ fundingMethod }))).toBe(
-                false,
-            )
+            expect(
+                isSwapHistoryRow(makeSwapHistoryItem({ fundingMethod })),
+            ).toBe(false)
         },
     )
 })
