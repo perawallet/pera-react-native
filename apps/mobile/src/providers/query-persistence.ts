@@ -47,6 +47,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     // The proven-passkey sweep: credential metadata, and a cold start re-runs
     // it before any reader needs it.
     'cloud-backup': 'never',
+    // Keyed by the contracts dApps asked the user to call.
+    'contract-abis': 'never',
     onramp: 'never',
     passkeys: 'never',
     // Read fresh every launch: an old list would refuse a chain the backend

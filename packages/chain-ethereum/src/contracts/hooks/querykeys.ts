@@ -16,11 +16,13 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 
+const MODULE_PREFIX = 'contract-abis'
+
 export const contractAbiQueryKey = (
     scope: ChainScope,
     address: string,
-): readonly ['contract-abis', ChainId, NetworkId, string] => [
-    'contract-abis',
+): readonly [typeof MODULE_PREFIX, ChainId, NetworkId, string] => [
+    MODULE_PREFIX,
     scope.chainId,
     scope.networkId,
     address.toLowerCase(),
