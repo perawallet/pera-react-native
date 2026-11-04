@@ -304,7 +304,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         expect(result.current.portfolio.accountValueTotals.size).toBe(0)
     })
 
-    describe('with a second chain registered', () => {
+    describe('in developer mode on a test network', () => {
         const TEST_NETWORK = 'testnet' as const
 
         afterEach(() => {
@@ -313,8 +313,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             useNetworkStore.getState().resetState()
         })
 
-        it('Given developer mode puts the accounts on a test network, when the portfolio hooks resolve, then each account keeps its value but none reaches the fiat total', async () => {
-            registerEthereumChain()
+        const expectValueKeptOutOfFiatTotal = async () => {
             useNetworkStore.getState().setMode('developer')
             useAccountsStore.getState().setAccounts([ACCOUNT_A])
             const scope = {
@@ -381,6 +380,18 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             expect(result.current.portfolio.portfolioUsdValue?.isZero()).toBe(
                 true,
             )
+        }
+
+        it('Given a second chain is registered, when the portfolio hooks resolve, then each account keeps its value but none reaches the fiat total', async () => {
+            registerEthereumChain()
+
+            await expectValueKeptOutOfFiatTotal()
+        })
+
+        it('Given Algorand is the only chain registered, when the portfolio hooks resolve, then the account keeps its value but none reaches the fiat total', async () => {
+            expect(getProvider().chains.list()).toHaveLength(1)
+
+            await expectValueKeptOutOfFiatTotal()
         })
     })
 })
