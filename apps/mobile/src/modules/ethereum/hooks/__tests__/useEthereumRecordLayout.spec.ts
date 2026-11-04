@@ -253,14 +253,22 @@ describe('useEthereumRecordLayout', () => {
         expect(amountRows).toHaveLength(1)
     })
 
-    it('Given a payment received, then it still shows the fee the record carries, as every chain does', () => {
+    it('Given a payment received, then it shows no fee, since the sender paid it', () => {
         const { summary } = layoutOf(
             recordOf({ initiator: PEER }, { direction: 'in' }),
         )
 
-        expect(summary.fee?.value.toString()).toBe('0.000021')
+        expect(summary.fee).toBeUndefined()
         expect(summary.from).toBe(PEER)
         expect(summary.to).toBe(ME)
+    })
+
+    it('Given a pending send the history names no signer for, then it keeps its fee', () => {
+        const { summary } = layoutOf(
+            recordOf({ initiator: undefined, status: 'pending' }),
+        )
+
+        expect(summary.fee?.value.toString()).toBe('0.000021')
     })
 
     it('Given a record with no fee, then it shows none', () => {
