@@ -11,10 +11,11 @@
  */
 
 // @vitest-environment jsdom
-import React from 'react'
+import React, { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { create } from 'zustand'
 import type {
     ChainNetwork,
     ChainRegistry,
@@ -30,17 +31,35 @@ const mocks = vi.hoisted(() => ({
     deployment: 'live' as 'live' | 'developer',
     setPeraServedScopes: vi.fn(),
     warn: vi.fn(),
+    info: vi.fn(),
+}))
+
+const integrity = vi.hoisted(() => ({
+    store: undefined as unknown as {
+        getState: () => { canCall: boolean }
+        setState: (state: { canCall: boolean }) => void
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
     queryClient: vi.fn(),
-    logger: { warn: mocks.warn, debug: vi.fn(), info: vi.fn(), error: vi.fn() },
+    logger: {
+        warn: mocks.warn,
+        debug: vi.fn(),
+        info: mocks.info,
+        error: vi.fn(),
+    },
 }))
 
-vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    buildIntegrityHeaders: () => ({ 'X-Integrity-Token': 'token' }),
-}))
+vi.mock('@perawallet/wallet-core-app-integrity', () => {
+    integrity.store = create<{ canCall: boolean }>()(() => ({ canCall: true }))
+    return {
+        buildIntegrityHeaders: () => ({ 'X-Integrity-Token': 'token' }),
+        useAppIntegrityStore: integrity.store,
+        canCallIntegrityGuardedRoute: () => integrity.store.getState().canCall,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useWalletDeployment: () => mocks.deployment,
@@ -76,6 +95,18 @@ const NETWORKS: Record<string, { chainId: string; networkId: string }> = {
 }
 
 const chains = {
+    list: () => [
+        {
+            networks: Object.keys(NETWORKS)
+                .filter(caip2 => NETWORKS[caip2].chainId === 'algorand')
+                .map(caip2 => ({ caip2 })),
+        },
+        {
+            networks: Object.keys(NETWORKS)
+                .filter(caip2 => NETWORKS[caip2].chainId === 'ethereum')
+                .map(caip2 => ({ caip2 })),
+        },
+    ],
     byCaip2: (caip2: string) => {
         const scope = NETWORKS[caip2]
         return scope
@@ -113,6 +144,7 @@ const renderQuery = () => {
 describe('device/hooks/usePeraServedChainsQuery', () => {
     beforeEach(() => {
         mocks.deployment = 'live'
+        integrity.store.setState({ canCall: true })
     })
 
     afterEach(() => {
@@ -184,6 +216,53 @@ describe('device/hooks/usePeraServedChainsQuery', () => {
         expect(result.current.servedScopes).toEqual([
             { chainId: 'algorand', networkId: 'mainnet' },
         ])
+    })
+
+    it('waits for the integrity token before reading the list', async () => {
+        integrity.store.setState({ canCall: false })
+        answer(chainList('algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'))
+
+        const { result } = renderQuery()
+
+        expect(mockedQueryClient).not.toHaveBeenCalled()
+        act(() => integrity.store.setState({ canCall: true }))
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(mockedQueryClient).toHaveBeenCalledOnce()
+        expect(mocks.setPeraServedScopes).toHaveBeenCalledWith('live', [
+            { chainId: 'algorand', networkId: 'mainnet' },
+        ])
+    })
+
+    it('logs the networks a list switches off beside the ids it names that the build does not know', async () => {
+        answer(
+            chainList('eip155:1', 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73X'),
+        )
+
+        const { result } = renderQuery()
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(mocks.info).toHaveBeenCalledWith(
+            'Pera chain list switches networks off',
+            {
+                deployment: 'live',
+                switchedOff: ['algorand/mainnet'],
+                unrecognisedChainIds: [
+                    'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73X',
+                ],
+            },
+        )
+        expect(mocks.warn).not.toHaveBeenCalled()
+    })
+
+    it('logs nothing when the list serves every network of the deployment', async () => {
+        answer(
+            chainList('algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k', 'eip155:1'),
+        )
+
+        const { result } = renderQuery()
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(mocks.info).not.toHaveBeenCalled()
     })
 
     it('records nothing when the read fails', async () => {

@@ -11,6 +11,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import {
+    canCallIntegrityGuardedRoute,
+    useAppIntegrityStore,
+} from '@perawallet/wallet-core-app-integrity'
 import type {
     ChainRegistry,
     ChainScope,
@@ -45,6 +49,38 @@ export const toServedScopes = (
         return peraDeploymentOf(scope) === deployment ? [scope] : []
     })
 
+const scopeKey = ({ chainId, networkId }: ChainScope): string =>
+    `${chainId}/${networkId}`
+
+// Info, not warn: switching a chain off is a normal backend decision. The
+// unrecognised ids sit beside it so a misspelt id that drops a chain is legible.
+const logSwitchedOffScopes = (
+    caip2Ids: readonly string[],
+    served: readonly ChainScope[],
+    chains: Pick<ChainRegistry, 'byCaip2' | 'list'>,
+    deployment: WalletMode,
+): void => {
+    const servedKeys = new Set(served.map(scopeKey))
+    const registered = toServedScopes(
+        chains
+            .list()
+            .flatMap(chain =>
+                chain.networks.flatMap(({ caip2 }) => (caip2 ? [caip2] : [])),
+            ),
+        chains,
+        deployment,
+    )
+    const switchedOff = registered
+        .map(scopeKey)
+        .filter(key => !servedKeys.has(key))
+    if (switchedOff.length === 0) return
+    logger.info('Pera chain list switches networks off', {
+        deployment,
+        switchedOff,
+        unrecognisedChainIds: caip2Ids.filter(id => !chains.byCaip2(id)),
+    })
+}
+
 export type UsePeraServedChainsQueryResult = {
     servedScopes: readonly ChainScope[]
     isFetched: boolean
@@ -57,11 +93,15 @@ export type UsePeraServedChainsQueryResult = {
  */
 export const usePeraServedChainsQuery = (): UsePeraServedChainsQueryResult => {
     const deployment = useWalletDeployment()
+    // The route is integrity-guarded and production boots without a token, so
+    // a read at mount is certain to fail; wait for the attestation to land.
+    const canCall = useAppIntegrityStore(() => canCallIntegrityGuardedRoute())
     const query = useQuery({
         queryKey: getPeraServedChainsQueryKey(deployment),
         queryFn: async (): Promise<ChainScope[]> => {
             const ids = await fetchPeraServedChainIds(deployment)
-            const scopes = toServedScopes(ids, getProvider().chains, deployment)
+            const { chains } = getProvider()
+            const scopes = toServedScopes(ids, chains, deployment)
             // A list naming none of our scopes is a broken registry, not
             // every chain switched off.
             if (scopes.length === 0) {
@@ -72,8 +112,10 @@ export const usePeraServedChainsQuery = (): UsePeraServedChainsQueryResult => {
                 return scopes
             }
             setPeraServedScopes(deployment, scopes)
+            logSwitchedOffScopes(ids, scopes, chains, deployment)
             return scopes
         },
+        enabled: canCall,
         staleTime: Infinity,
     })
     return {
