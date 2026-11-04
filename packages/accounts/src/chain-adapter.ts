@@ -367,10 +367,14 @@ export interface AccountsChainAdapter {
      * An adapter that can tell a failed read from a negative one leaves the
      * address out of the map: callers read it as inactive, and a walk counts
      * that batch as partly answered.
+     * Once `signal` aborts the walk has given up on the batch: the adapter
+     * starts no further lookup for it and may reject. An adapter that ignores
+     * it stays correct.
      */
     checkActivity(
         addresses: string[],
         scope: ChainScope,
+        signal?: AbortSignal,
     ): Promise<Map<string, boolean>>
     /**
      * Public keys from the in-memory XHD root key `prepareHDMasterKey`

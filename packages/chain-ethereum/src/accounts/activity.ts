@@ -58,10 +58,22 @@ type Quiet = { address: string; index: number }
 const PERA_LOOKUP_CONCURRENCY = 4
 let peraLookupGate: Optional<ConcurrencyLimit>
 // Built on first use, so importing the adapter runs nothing.
-const peraLookup: ConcurrencyLimit = task => {
+const gatedPeraLookup: ConcurrencyLimit = task => {
     peraLookupGate ??= createConcurrencyLimit(PERA_LOOKUP_CONCURRENCY)
     return peraLookupGate(task)
 }
+
+// A walk that gave up on the chain aborts `signal`: the lookups still queued
+// then skip their request instead of holding a slot a healthy chain needs.
+const peraLookup = (
+    signal: Optional<AbortSignal>,
+    lookup: () => Promise<boolean>,
+): Promise<boolean> =>
+    gatedPeraLookup(() =>
+        signal?.aborted
+            ? Promise.reject(new Error('Activity lookup abandoned'))
+            : lookup(),
+    )
 
 /**
  * One Multicall3 pass over the listed ERC-20s for `holders`: whether each
@@ -94,7 +106,8 @@ const readTokenHoldings = async (
  * Whether each address has any on-chain footprint, for HD discovery. An
  * address counts as used with a native balance or a nonce, and past that with
  * Pera history for it or, on a scope with no history service, a current
- * listed ERC-20 or NFT holding.
+ * listed ERC-20 or NFT holding. Once `signal` aborts, Pera lookups not yet
+ * sent are skipped.
  *
  * Each address costs two node reads (balance, nonce) and at most one Pera GET
  * (a history page or an NFT page, never a cursor), plus a share of one
@@ -112,7 +125,7 @@ export const createEvmActivityCheck =
         chain: EvmChain,
         listedTokenIds: ListedTokenIds,
     ): AccountsChainAdapter['checkActivity'] =>
-    async (addresses, scope) => {
+    async (addresses, scope, signal) => {
         // Answering over RPC alone would list a network the backend refuses.
         if (ctx.getPeraBackend(scope).isChainRefused === true) {
             throw new PeraServiceUnavailableError(scope, undefined, {
@@ -151,8 +164,8 @@ export const createEvmActivityCheck =
                 takeAll(
                     await Promise.allSettled(
                         quiet.map(({ address }) =>
-                            peraLookup(() =>
-                                fetchHasHistory(scope, chain, address),
+                            peraLookup(signal, () =>
+                                fetchHasHistory(scope, chain, address, signal),
                             ),
                         ),
                     ),
@@ -189,8 +202,13 @@ export const createEvmActivityCheck =
                     sources.push(
                         Promise.allSettled(
                             quiet.map(({ address }) =>
-                                peraLookup(() =>
-                                    fetchHasNftHoldings(scope, chain, address),
+                                peraLookup(signal, () =>
+                                    fetchHasNftHoldings(
+                                        scope,
+                                        chain,
+                                        address,
+                                        signal,
+                                    ),
                                 ),
                             ),
                         ).then(takeAll),
