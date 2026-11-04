@@ -168,4 +168,54 @@ describe('useTransferFeeEstimateQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.data).toBeUndefined()
     })
+
+    it('carries the error behind a failed estimate, and none once it recovers', async () => {
+        const failure = new Error('insufficient funds')
+        getFeeEstimate.mockRejectedValueOnce(failure)
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(result.current.error).toBe(failure))
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(result.current.error).toBeNull())
+    })
+
+    it('keeps a failed estimate an error while it is read again', async () => {
+        const failure = new Error('rpc down')
+        getFeeEstimate.mockRejectedValueOnce(failure)
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        getFeeEstimate.mockReturnValue(new Promise(() => {}))
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(result.current.isRetrying).toBe(true))
+        expect(result.current.isError).toBe(true)
+        expect(result.current.error).toBe(failure)
+    })
+
+    it('carries no failure over to a new input', async () => {
+        getFeeEstimate.mockRejectedValueOnce(new Error('rpc down'))
+        const { result, rerender } = renderHook(
+            ({ input }: { input: TransferFeeEstimateInput }) =>
+                useTransferFeeEstimateQuery(input),
+            {
+                wrapper: wrapper(queryClient),
+                initialProps: { input: { intent: INTENT, scope: SCOPE } },
+            },
+        )
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        getFeeEstimate.mockReturnValue(new Promise(() => {}))
+
+        rerender({
+            input: {
+                intent: { ...INTENT, amount: INTENT.amount.plus(1) },
+                scope: SCOPE,
+            },
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(false))
+        expect(result.current.isRetrying).toBe(false)
+    })
 })

@@ -98,6 +98,8 @@ describe('useSendFeeQuery', () => {
             presets: undefined,
             isPending: false,
             isError: false,
+            error: null,
+            isRetrying: false,
             refresh: expect.any(Function),
         })
     })
@@ -239,10 +241,13 @@ describe('useSendFeeQuery', () => {
     })
 
     it('reports a failed estimate as an error rather than a zero fee', () => {
+        const failure = new Error('insufficient funds')
         ;(useTransferFeeEstimateQuery as Mock).mockReturnValue({
             data: undefined,
             isPending: false,
             isError: true,
+            error: failure,
+            isRetrying: true,
         })
 
         const { result } = renderHook(() =>
@@ -255,6 +260,8 @@ describe('useSendFeeQuery', () => {
         )
 
         expect(result.current.isError).toBe(true)
+        expect(result.current.error).toBe(failure)
+        expect(result.current.isRetrying).toBe(true)
         expect(result.current.maxFeeAmount).toBeUndefined()
     })
 })

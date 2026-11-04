@@ -55,7 +55,7 @@ import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
 import { getPendingTransactionRecords } from '@perawallet/wallet-core-transactions'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { findEnabledByTestId } from '@test-utils/rnw'
+import { findEnabledByTestId, isElementDisabled } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     setupTestDatabase,
@@ -382,7 +382,7 @@ describe('Flow: send an NFT from an Ethereum account', () => {
         })
     })
 
-    it('Given a recipient that reverts the gas estimate, when the user confirms, then the fee error shows and nothing is signed', async () => {
+    it('Given a recipient that reverts the gas estimate, when the user reviews the send, then the contract reason shows, Confirm stays off and nothing is signed', async () => {
         useRpc({
             eth_estimateGas: new EvmRpcErrorFixture(
                 3,
@@ -392,16 +392,16 @@ describe('Flow: send an NFT from an Ethereum account', () => {
         prefillSend(APE_ID, 1)
 
         renderSendConfirmationStack()
-        await screen.findByTestId('send_confirm_button', {}, { timeout: 5000 })
-        await waitFor(() => {
-            fireEvent.click(screen.getByTestId('send_confirm_button'))
-            expect(Notifier.showNotification).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.confirmation.fee_unavailable.title',
-                }),
-            )
-        })
 
+        const notice = await screen.findByTestId('send_fee_error', undefined, {
+            timeout: 5000,
+        })
+        expect(notice.textContent).toContain(
+            'errors.evm.reverted_with_reason.title',
+        )
+        const confirm = screen.getByTestId('send_confirm_button')
+        expect(isElementDisabled(confirm)).toBe(true)
+        fireEvent.click(confirm)
         expect(screen.queryByTestId('send_success')).toBeNull()
         expect(kmsCore.sign).not.toHaveBeenCalled()
         expect(sentRawTransactions).toHaveLength(0)

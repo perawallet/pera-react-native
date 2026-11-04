@@ -61,6 +61,7 @@ import {
     erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
+    type EvmRpcResponder,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { http, HttpResponse, server } from '@test-utils/msw-server'
@@ -447,6 +448,72 @@ describe('Flow: send from an Ethereum account', () => {
         fireEvent.click(confirm)
         expect(screen.queryByTestId('send_success')).toBeNull()
         expect(sentRawTransactions).toHaveLength(0)
+    })
+
+    const reviewEtherSendWithGasEstimate = (
+        eth_estimateGas: EvmRpcResponder<'eth_estimateGas'>,
+    ) => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_estimateGas,
+                    eth_sendRawTransaction: recordSentRawTransaction,
+                },
+            }),
+        )
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+        renderSendConfirmationStack()
+    }
+
+    it('Given a node that refuses the gas estimate for the balance, when the user reviews the send, then the review names the shortfall, offers no retry and Confirm stays off', async () => {
+        reviewEtherSendWithGasEstimate(
+            new EvmRpcErrorFixture(
+                -32_000,
+                'insufficient funds for gas * price + value',
+            ),
+        )
+
+        const notice = await screen.findByTestId('send_fee_error', undefined, {
+            timeout: 5000,
+        })
+        expect(notice.textContent).toContain('Insufficient ETH')
+        expect(screen.queryByTestId('send_fee_retry_button')).toBeNull()
+        const confirm = screen.getByTestId('send_confirm_button')
+        expect(isElementDisabled(confirm)).toBe(true)
+        fireEvent.click(confirm)
+        expect(screen.queryByTestId('send_success')).toBeNull()
+        expect(sentRawTransactions).toHaveLength(0)
+    })
+
+    it('Given a gas estimate that fails for no stated reason, when the user retries and the node answers, then the fee loads and Confirm sends', async () => {
+        let isNodeDown = true
+        reviewEtherSendWithGasEstimate(() =>
+            isNodeDown
+                ? new EvmRpcErrorFixture(-32_603, 'internal error')
+                : '0x5208',
+        )
+
+        const notice = await screen.findByTestId('send_fee_error', undefined, {
+            timeout: 5000,
+        })
+        expect(notice.textContent).toContain("Couldn't estimate the fee")
+        expect(
+            isElementDisabled(screen.getByTestId('send_confirm_button')),
+        ).toBe(true)
+        isNodeDown = false
+        fireEvent.click(screen.getByTestId('send_fee_retry_button'))
+
+        await confirmSend()
+
+        expect(screen.queryByTestId('send_fee_error')).toBeNull()
+        expect(sentRawTransactions).toHaveLength(1)
     })
 
     describe('a MAX ether send', () => {
