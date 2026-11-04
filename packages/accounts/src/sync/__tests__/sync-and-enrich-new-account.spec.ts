@@ -101,7 +101,11 @@ describe('syncAndEnrichNewAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined, addedTokenIds: [] },
+            {
+                priorChainState: undefined,
+                addedTokenIds: [],
+                isPersisted: true,
+            },
         )
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
             chainId: 'algorand',

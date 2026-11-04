@@ -95,7 +95,9 @@
         "display_nfts": "NFT’leri varlık listesinde göster",
         "display_nfts_description": "NFT varlıkları hesabının varlık listesinde gösterilecek",
         "display_opted_in_nfts": "Opt-in olduğun NFT’leri göster",
-        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin"
+        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin",
+        "show_suspicious": "Şüpheli varlıkları göster",
+        "show_suspicious_description": "Pera’nın olası spam veya dolandırıcılık olarak işaretlediği token’ları gösterir. Bakiyene asla dahil edilmezler"
     },
     "add_asset": {
         "title": "Varlık ekle",
@@ -266,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)"
+        "deleted_label": "(Silindi)",
+        "unverified_label": "Doğrulanmamış"
     },
     "asset_details": {
         "about": {

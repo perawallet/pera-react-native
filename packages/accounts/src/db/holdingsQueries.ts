@@ -48,6 +48,8 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
+import { isOptInChain } from '../chainProtocol'
+import { isNotSuspiciousSql } from './holdingSuspicion'
 import type { AccountHoldingsFilters } from './holdingsRepository'
 
 export type AccountHoldingsPageRow = {
@@ -163,6 +165,7 @@ async function queryHoldingRows({
     hideNfts,
     hideZeroBalanceNfts,
     excludeAssetTypes,
+    hideSuspicious,
     limit,
     offset,
 }: GetAccountHoldingsLiteParams) {
@@ -209,6 +212,20 @@ async function queryHoldingRows({
                 isNull(AssetsPeraSchema.assetType),
                 notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
             )!,
+        )
+    }
+    if (hideSuspicious) {
+        // The user chose every asset on an opt-in chain, so its rows stay.
+        const optInScopes = sources
+            .filter(({ scope }) => isOptInChain(scope.chainId))
+            .map(({ scope }) => toScopeKey(scope))
+        conditions.push(
+            optInScopes.length > 0
+                ? or(
+                      isNotSuspiciousSql(),
+                      inArray(AccountAssetHoldingsSchema.scope, optInScopes),
+                  )!
+                : isNotSuspiciousSql(),
         )
     }
     const term = search?.trim()

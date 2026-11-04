@@ -42,6 +42,7 @@ import {
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 
 const MAINNET_SCOPE = {
     chainId: LEGACY_CHAIN_ID,
@@ -110,6 +111,71 @@ describe('account holdings queries', () => {
                 '10',
                 '20',
             ])
+        })
+    })
+
+    describe('hideSuspicious', () => {
+        const token = (
+            assetId: string,
+            verificationTier: 'verified' | 'unverified' | 'suspicious',
+        ): PeraAsset => ({
+            assetId,
+            decimals: 0,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier,
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        const idsOf = async (hideSuspicious?: boolean) =>
+            (
+                await getAccountHoldingsLite({
+                    db,
+                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                    hideSuspicious,
+                })
+            )
+                .map(row => row.assetId)
+                .sort()
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                holdings: ['10', '20', '30', '40'].map(assetId => ({
+                    assetId,
+                    amount: new Decimal(5),
+                })),
+            })
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    token('10', 'suspicious'),
+                    token('20', 'verified'),
+                    token('30', 'unverified'),
+                ],
+            })
+        })
+
+        it('drops suspicious rows and keeps verified, unverified and unenriched ones', async () => {
+            expect(await idsOf(true)).toEqual(['20', '30', '40'])
+        })
+
+        it('lists every row without the filter', async () => {
+            expect(await idsOf()).toEqual(['10', '20', '30', '40'])
+        })
+
+        it('keeps a suspicious row on a chain where the user opts in to each asset', async () => {
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+            expect(await idsOf(true)).toEqual(['10', '20', '30', '40'])
         })
     })
 

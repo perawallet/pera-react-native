@@ -17,9 +17,11 @@ type UseAssetFilterContentResult = {
     hideZeroBalance: boolean
     displayNfts: boolean
     displayOptedInNfts: boolean
+    showSuspicious: boolean
     handleToggleHideZeroBalance: () => void
     handleToggleDisplayNfts: () => void
     handleToggleDisplayOptedInNfts: () => void
+    handleToggleShowSuspicious: () => void
     commitChanges: () => void
 }
 
@@ -30,6 +32,12 @@ export const useAssetFilterContent = (): UseAssetFilterContentResult => {
     const displayNfts = useAssetPreferencesStore(state => state.displayNfts)
     const displayOptedInNfts = useAssetPreferencesStore(
         state => state.displayOptedInNfts,
+    )
+    const showSuspicious = useAssetPreferencesStore(
+        state => state.showSuspicious,
+    )
+    const setShowSuspicious = useAssetPreferencesStore(
+        state => state.setShowSuspicious,
     )
     const setHideZeroBalance = useAssetPreferencesStore(
         state => state.setHideZeroBalance,
@@ -47,6 +55,13 @@ export const useAssetFilterContent = (): UseAssetFilterContentResult => {
     const [draftDisplayOptedInNfts, setDraftDisplayOptedInNfts] =
         useState(displayOptedInNfts)
 
+    const [draftShowSuspicious, setDraftShowSuspicious] =
+        useState(showSuspicious)
+
+    const handleToggleShowSuspicious = useCallback(() => {
+        setDraftShowSuspicious(prev => !prev)
+    }, [])
+
     const handleToggleHideZeroBalance = useCallback(() => {
         setDraftHideZeroBalance(prev => !prev)
     }, [])
@@ -63,22 +78,27 @@ export const useAssetFilterContent = (): UseAssetFilterContentResult => {
         setHideZeroBalance(draftHideZeroBalance)
         setDisplayNfts(draftDisplayNfts)
         setDisplayOptedInNfts(draftDisplayOptedInNfts)
+        setShowSuspicious(draftShowSuspicious)
     }, [
         draftHideZeroBalance,
         draftDisplayNfts,
         draftDisplayOptedInNfts,
+        draftShowSuspicious,
         setHideZeroBalance,
         setDisplayNfts,
         setDisplayOptedInNfts,
+        setShowSuspicious,
     ])
 
     return {
         hideZeroBalance: draftHideZeroBalance,
         displayNfts: draftDisplayNfts,
         displayOptedInNfts: draftDisplayOptedInNfts,
+        showSuspicious: draftShowSuspicious,
         handleToggleHideZeroBalance,
         handleToggleDisplayNfts,
         handleToggleDisplayOptedInNfts,
+        handleToggleShowSuspicious,
         commitChanges,
     }
 }

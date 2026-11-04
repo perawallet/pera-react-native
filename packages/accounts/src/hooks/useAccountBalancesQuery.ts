@@ -44,6 +44,7 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
+import { isOptInChain } from '../chainProtocol'
 import {
     useOtherRegisteredChainIds,
     useRegisteredChainIds,
@@ -156,12 +157,19 @@ export const summarizeHoldings = (
             return assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
         }
         const nativeAssetValue = nativeAssetValueOf()
-        if (nativeAssetValue) {
-            nativeValue = nativeValue.plus(nativeAssetValue)
-        } else if (!usdAssetPrice.isZero()) {
-            hasUnconvertible = true
+        // Listed, but never counted: a flagged token's price isn't one to trust.
+        // An opt-in chain's asset was chosen by the user, so it counts.
+        const isCounted =
+            isOptInChain(chainId) ||
+            asset.peraMetadata?.verificationTier !== 'suspicious'
+        if (isCounted) {
+            if (nativeAssetValue) {
+                nativeValue = nativeValue.plus(nativeAssetValue)
+            } else if (!usdAssetPrice.isZero()) {
+                hasUnconvertible = true
+            }
+            usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
         }
-        usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
         return {
             assetId: holding.assetId,
             asset,
