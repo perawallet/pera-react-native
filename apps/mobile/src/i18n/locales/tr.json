@@ -2377,7 +2377,9 @@
             "import_button": "Hesapları içe aktar",
             "total_value": "Toplam <0/>",
             "all_imported_title": "Zaten cüzdanında",
-            "all_imported_body": "Bu cüzdanın türettiği tüm adresler zaten Pera’da — yalnızca izlediklerin dahil. Bir adresi özel anahtarıyla yeniden eklemek için önce onu kaldır."
+            "all_imported_body": "Bu cüzdanın türettiği tüm adresler zaten Pera’da — yalnızca izlediklerin dahil. Bir adresi özel anahtarıyla yeniden eklemek için önce onu kaldır.",
+            "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
+            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekey yapılmış hesap bulundu",

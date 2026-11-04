@@ -2369,7 +2369,9 @@
             "import_button": "Konten importieren",
             "total_value": "<0/> insgesamt",
             "all_imported_title": "Bereits in deinem Wallet",
-            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
+            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen.",
+            "unchecked_networks_title": "Nicht geprüft: {{networks}}",
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",

@@ -2377,7 +2377,9 @@
             "import_button": "Importer les comptes",
             "total_value": "<0/> au total",
             "all_imported_title": "Déjà dans votre wallet",
-            "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée."
+            "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée.",
+            "unchecked_networks_title": "Impossible de vérifier : {{networks}}",
+            "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} comptes rekeyés trouvés",
