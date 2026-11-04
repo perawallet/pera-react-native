@@ -223,7 +223,10 @@ describe('useSwapConfirmation', () => {
         const quote = makeQuote({
             amountIn: new Decimal('4000000'),
             amountOut: new Decimal('1000000'),
-            assetOut: { ...USDC, decimals: undefined } as unknown as SwapQuote['assetOut'],
+            assetOut: {
+                ...USDC,
+                decimals: undefined,
+            } as unknown as SwapQuote['assetOut'],
         })
 
         const { result } = renderConfirmation(quote)

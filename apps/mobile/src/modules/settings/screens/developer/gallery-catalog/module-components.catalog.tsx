@@ -452,9 +452,7 @@ registerPreview({
 
 registerPreview({
     id: 'comp-swap-provider-display',
-    render: () => (
-        <SwapProviderDisplay provider='tinyman' />
-    ),
+    render: () => <SwapProviderDisplay provider='tinyman' />,
 })
 
 registerPreview({

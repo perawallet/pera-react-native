@@ -29,7 +29,10 @@ import {
     useSwapPairsInfiniteQuery,
     type SwapAsset,
 } from '@perawallet/wallet-core-swaps'
-import { useDebouncedValue, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    useDebouncedValue,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 export type AvailableAssetWithBalance = {
     swapAsset: SwapAsset

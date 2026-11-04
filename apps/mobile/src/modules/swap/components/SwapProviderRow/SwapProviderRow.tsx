@@ -52,9 +52,7 @@ export const SwapProviderRow = ({
                 onPress={onPress}
                 testID='swap-provider-row'
             >
-                <SwapProviderDisplay
-                    provider={quote.provider}
-                />
+                <SwapProviderDisplay provider={quote.provider} />
                 <PWView style={styles.right}>
                     <PWText
                         variant='body'

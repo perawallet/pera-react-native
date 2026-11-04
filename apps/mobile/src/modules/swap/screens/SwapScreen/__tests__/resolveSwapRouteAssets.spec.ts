@@ -52,7 +52,7 @@ describe('resolveSwapRouteAssets', () => {
     it('keeps a distinct output asset (ALGO -> token)', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0'), assetOut: algo(TOKEN )},
+                { assetIn: algo('0'), assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
@@ -61,7 +61,7 @@ describe('resolveSwapRouteAssets', () => {
     it('falls back to USDC when the output is missing (ALGO page → ALGO/USDC)', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0' )},
+                { assetIn: algo('0') },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({
@@ -73,7 +73,7 @@ describe('resolveSwapRouteAssets', () => {
     it('falls back to USDC when the output equals the input', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0'), assetOut: algo('0' )},
+                { assetIn: algo('0'), assetOut: algo('0') },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: USDC_MAINNET })
@@ -82,7 +82,7 @@ describe('resolveSwapRouteAssets', () => {
     it('uses the network-specific USDC id on testnet', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0' )},
+                { assetIn: algo('0') },
                 { chainId: 'algorand', networkId: 'testnet' },
             ),
         ).toEqual({
@@ -94,13 +94,13 @@ describe('resolveSwapRouteAssets', () => {
     it('returns null on a network with no known USDC to default the output to', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0' )},
+                { assetIn: algo('0') },
                 { chainId: 'algorand', networkId: 'betanet' },
             ),
         ).toBeNull()
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0'), assetOut: algo('0' )},
+                { assetIn: algo('0'), assetOut: algo('0') },
                 { chainId: 'algorand', networkId: 'custom' },
             ),
         ).toBeNull()
@@ -111,7 +111,7 @@ describe('resolveSwapRouteAssets', () => {
         // route needs no known id at all.
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo('0'), assetOut: algo(TOKEN )},
+                { assetIn: algo('0'), assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'betanet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
@@ -120,7 +120,7 @@ describe('resolveSwapRouteAssets', () => {
     it('defaults the input to ALGO when only an output is provided', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetOut: algo(TOKEN )},
+                { assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
@@ -131,7 +131,10 @@ describe('resolveSwapRouteAssets', () => {
             resolveSwapRouteAssets(
                 {
                     assetIn: { chainId: 'ethereum' as const, assetId: '0xabc' },
-                    assetOut: { chainId: 'ethereum' as const, assetId: '0xdef' },
+                    assetOut: {
+                        chainId: 'ethereum' as const,
+                        assetId: '0xdef',
+                    },
                 },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
@@ -141,7 +144,7 @@ describe('resolveSwapRouteAssets', () => {
     it('normalises an empty-string input to ALGO', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetIn: algo(''), assetOut: algo(TOKEN )},
+                { assetIn: algo(''), assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })

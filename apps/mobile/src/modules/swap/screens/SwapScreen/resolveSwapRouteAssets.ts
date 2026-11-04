@@ -27,7 +27,9 @@ const idOnScope = (
     ref: Optional<AssetRef>,
     scope: ChainScope,
 ): Optional<string> =>
-    ref && ref.chainId === scope.chainId && ref.assetId ? ref.assetId : undefined
+    ref && ref.chainId === scope.chainId && ref.assetId
+        ? ref.assetId
+        : undefined
 
 // Input defaults to the native asset; output falls back to the network's USDC
 // when it's missing or the same as the input. A ref on another chain counts as
@@ -39,7 +41,8 @@ export const resolveSwapRouteAssets = (
     if (!params?.assetIn && !params?.assetOut) return null
 
     const assetInId =
-        idOnScope(params.assetIn, scope) ?? nativeAssetFor(scope.chainId).assetId
+        idOnScope(params.assetIn, scope) ??
+        nativeAssetFor(scope.chainId).assetId
     const routeOutId = idOnScope(params.assetOut, scope)
     const assetOutId =
         routeOutId && routeOutId !== assetInId

@@ -66,7 +66,11 @@ describe('useSwapHistoryList', () => {
 
     it('asks for the visible statuses on the scope', () => {
         renderHook(() =>
-            useSwapHistoryList({ scope: SCOPE, address: 'ADDR', onClose: vi.fn() }),
+            useSwapHistoryList({
+                scope: SCOPE,
+                address: 'ADDR',
+                onClose: vi.fn(),
+            }),
         )
 
         expect(mockHistory).toHaveBeenCalledWith(
@@ -85,7 +89,11 @@ describe('useSwapHistoryList', () => {
         mockHistory.mockReturnValue(historyOf([legacy, item]))
 
         const { result } = renderHook(() =>
-            useSwapHistoryList({ scope: SCOPE, address: 'ADDR', onClose: vi.fn() }),
+            useSwapHistoryList({
+                scope: SCOPE,
+                address: 'ADDR',
+                onClose: vi.fn(),
+            }),
         )
 
         expect(result.current.swaps).toEqual([item])

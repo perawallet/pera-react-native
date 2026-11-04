@@ -45,8 +45,7 @@ vi.mock('@analytics', async importOriginal => ({
 const mockResolve = vi.fn()
 const mockDismiss = vi.fn()
 const mockInfoToast = vi.fn()
-const mockExecute =
-    vi.fn<(quote: SwapQuote) => Promise<SwapExecutionOutcome>>()
+const mockExecute = vi.fn<(quote: SwapQuote) => Promise<SwapExecutionOutcome>>()
 const mockReset = vi.fn()
 const mockSchedule = vi.fn((callback: () => void, _delayMs: number) => {
     callback()

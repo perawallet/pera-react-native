@@ -181,7 +181,11 @@ export const useSwapQuotes = ({
                 // Same-chain only: the swapper receives on the scope it pays from.
                 const result = await createQuotesRef.current({
                     sourceAsset: { chainId, networkId, assetId: fromAssetId },
-                    destinationAsset: { chainId, networkId, assetId: toAssetId },
+                    destinationAsset: {
+                        chainId,
+                        networkId,
+                        assetId: toAssetId,
+                    },
                     sourceAmount: amountInBaseUnits,
                     sourceAddress: swapperAddress,
                     destinationAddress: swapperAddress,
