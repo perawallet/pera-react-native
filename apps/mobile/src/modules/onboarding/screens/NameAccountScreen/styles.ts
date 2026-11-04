@@ -17,19 +17,16 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.sm,
         paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
         flexDirection: 'row',
-        flexWrap: 'nowrap',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: theme.spacing.sm,
+    },
+    walletNameDetails: {
+        flex: 1,
+        gap: theme.spacing.xs,
     },
     nameText: {
         color: theme.colors.textGray,
-        alignSelf: 'center',
-    },
-    chainIconRow: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: theme.spacing.xs,
     },
 }))
