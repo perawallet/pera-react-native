@@ -27,7 +27,6 @@ import {
     entropyChildIdOf,
     withSecret,
 } from '@perawallet/wallet-core-kms'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
@@ -35,6 +34,7 @@ import {
     derivePasskeyMainKey,
 } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -76,9 +76,9 @@ export const seedAlgo25Account = async (): Promise<WalletAccount> => {
         id: 'algo25-1',
         name: 'Algo25 Test',
         custody: { kind: 'local', seed: null },
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         chains: {
-            [LEGACY_CHAIN_ID]: {
+            [ALGORAND_CHAIN_ID]: {
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: key!.seedKey.id ?? '',
             },
@@ -118,7 +118,7 @@ export const seedHDWalletAccounts = async (params?: {
         name: string,
     ): Promise<WalletAccount> => {
         const derived = await deriveHdAccount(
-            getSelectedScope(LEGACY_CHAIN_ID),
+            getSelectedScope(ALGORAND_CHAIN_ID),
             seedKeyId,
             { account, keyIndex },
         )
@@ -132,9 +132,9 @@ export const seedHDWalletAccounts = async (params?: {
                 seed: 'bip39',
                 hd: { account, keyIndex },
             },
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             chains: {
-                [LEGACY_CHAIN_ID]: {
+                [ALGORAND_CHAIN_ID]: {
                     address: derived.address,
                     keyPairId: derived.keyPairId,
                 },
@@ -212,7 +212,7 @@ export const seedPasskey = async (params: {
     }))
 
     const firstDerived = await deriveHdAccount(
-        getSelectedScope(LEGACY_CHAIN_ID),
+        getSelectedScope(ALGORAND_CHAIN_ID),
         seedKeyId,
         { account: 0, keyIndex: 0 },
     )

@@ -476,7 +476,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) =>
                 chainAccountOf(account, accountChainIdOf(account))?.address,
         ),
-        useSigningAccountsOnOwnChain: vi.fn(() => []),
+        useSigningAccountsOnAnyChain: vi.fn(() => []),
+        // Every capability on; a spec that switches one off wires the real hook.
+        useAccountCapabilityScope: vi.fn(
+            (account: any, _capability: string, chainId?: string) =>
+                account ? scopeOf(chainId ?? accountChainIdOf(account)) : null,
+        ),
         custodyOf: vi.fn((account: any) => account.custody),
         hasCustody: vi.fn(
             (account: any, kind: string) => kindOf(account) === kind,
@@ -650,6 +655,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         multisigParametersOf: vi.fn(() => undefined),
         useCanSignWith: vi.fn((account: any) => hasSigningKeys(account)),
+        useCanSignWithCheck: vi.fn(
+            () => (account: any) => hasSigningKeys(account),
+        ),
+        useCanSignOnAnyChain: vi.fn((account: any) => hasSigningKeys(account)),
+        useAccountChainOptionsResolver: vi.fn(() => () => []),
         useDelegatedAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({
@@ -683,6 +693,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             manual: 'manual',
         },
         findAccountByAnyChainAddress: vi.fn(findInAnyChain),
+        chainIdOfAddress: vi.fn((account: any, address: string) =>
+            Object.keys(account?.chains ?? {}).find(
+                chainId =>
+                    chainAccountOf(account, chainId)?.address === address,
+            ),
+        ),
         importableCandidate: vi.fn((accounts: any[] = [], account: any) =>
             accounts.some(held =>
                 Object.entries(account?.chains ?? {}).some(

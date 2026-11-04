@@ -61,6 +61,7 @@ import {
     mockIndexerSearchForAccounts,
     mockPublicAssetDetails,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { findEnabledByTestId } from '@test-utils/rnw'
 import {
@@ -70,10 +71,9 @@ import {
 } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -227,7 +227,7 @@ describe('Flow: View NFT collectible detail', () => {
         renderWithNavigation(CollectibleDetailScreen, 'CollectibleDetails', {
             initialParams: {
                 assetId: NFT_TEST_ASSET_ID,
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
             },
         })
 

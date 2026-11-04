@@ -110,6 +110,11 @@ const CHAIN_DESCRIPTORS: Record<
     base: { family: 'evm', displayName: 'Base', networks: NETWORKS },
 }
 
+// The unit registry holds no chain, so the first registered chain is named here.
+vi.mock('@hooks/useHomeChainScope', () => ({
+    useHomeChainScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
     const actual =
         await importOriginal<

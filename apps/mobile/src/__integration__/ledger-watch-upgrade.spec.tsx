@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
@@ -34,6 +33,7 @@ import {
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
 import { findEnabledByTestId } from '@test-utils/rnw'
@@ -134,7 +134,7 @@ describe('Flow: Ledger import upgrades a watch account', () => {
                     isHardwareWalletAccount(upgraded) &&
                         upgraded.custody.device.deviceId,
                 ).toBe('test-device-id')
-                expect(canSignWith(upgraded, accounts, LEGACY_CHAIN_ID)).toBe(
+                expect(canSignWith(upgraded, accounts, ALGORAND_CHAIN_ID)).toBe(
                     true,
                 )
             },

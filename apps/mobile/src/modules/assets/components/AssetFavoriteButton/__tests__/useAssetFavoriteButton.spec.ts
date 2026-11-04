@@ -20,16 +20,16 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useAssetFavoriteButton } from '../useAssetFavoriteButton'
 import {
     EVM_CHAIN_NETWORKS,
-    LEGACY_CHAIN_ID,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 const BETANET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'betanet',
 } as const
 

@@ -53,6 +53,7 @@ import {
     mockAlgodStatusAfterBlock,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
@@ -63,7 +64,6 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The card chain ids are empty in the test env and the escrow hooks fail
 // closed without them.
@@ -270,7 +270,10 @@ describe('Flow: Card withdraw', () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: CARD_ADDRESS,
             ownerAddress: ALGO25_TEST_ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txId: 'CREATE_TX',
         })
         server.use(

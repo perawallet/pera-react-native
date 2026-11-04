@@ -94,12 +94,12 @@ import {
 
 import { registerPreview } from './registry'
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { Banner } from '@perawallet/wallet-core-banners'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { GallerySection } from './types'
 import { mockDexAssetAlgo, mockDexAssetUsdc } from './mockDexAssets'
 import { SwapAssetPairIconPreview } from './SwapAssetPairIconPreview'
@@ -173,17 +173,17 @@ registerPreview({
         <PWView>
             <AssetIcon
                 asset={mockAsset}
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 size='sm'
             />
             <AssetIcon
                 asset={mockAsset}
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 size='md'
             />
             <AssetIcon
                 asset={mockAsset}
-                chainId={LEGACY_CHAIN_ID}
+                chainId={ALGORAND_CHAIN_ID}
                 size='lg'
             />
         </PWView>
@@ -238,7 +238,7 @@ registerPreview({
     render: () => (
         <AssetTitle
             asset={mockAsset}
-            chainId={LEGACY_CHAIN_ID}
+            chainId={ALGORAND_CHAIN_ID}
             showId={true}
         />
     ),
@@ -250,12 +250,12 @@ registerPreview({
         <PWView>
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
-                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
+                scope={{ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }}
                 isFavorite={false}
             />
             <AssetFavoriteButton
                 assetId={MOCK_ASSET_ID}
-                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
+                scope={{ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }}
                 isFavorite={true}
             />
         </PWView>
@@ -268,12 +268,12 @@ registerPreview({
         <PWView>
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
-                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
+                scope={{ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }}
                 isNotificationsEnabled={false}
             />
             <AssetNotificationButton
                 assetId={MOCK_ASSET_ID}
-                scope={{ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }}
+                scope={{ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }}
                 isNotificationsEnabled={true}
             />
         </PWView>
@@ -285,7 +285,7 @@ registerPreview({
     render: () => (
         <AssetSearchItem
             result={{
-                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+                scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
                 asset: {
                     assetId: MOCK_ASSET_ID,
                     name: 'USD Coin',
@@ -308,7 +308,7 @@ registerPreview({
     render: () => (
         <AssetSelection
             asset={mockAsset}
-            chainId={LEGACY_CHAIN_ID}
+            chainId={ALGORAND_CHAIN_ID}
         />
     ),
 })
@@ -359,6 +359,7 @@ registerPreview({
                 restriction: null,
             }}
             usdPrice={new Decimal('1.00')}
+            scope={{ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }}
             showBalance={true}
         />
     ),
@@ -398,6 +399,7 @@ registerPreview({
     render: () => (
         <TransactionListItem
             transaction={mockTransaction}
+            scope={{ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }}
             onPress={() => undefined}
         />
     ),
@@ -429,7 +431,7 @@ const mockSwapQuote: SwapQuote = {
 
 registerPreview({
     id: 'comp-swap-asset-pair-icon',
-    render: () => <SwapAssetPairIconPreview chainId={LEGACY_CHAIN_ID} />,
+    render: () => <SwapAssetPairIconPreview chainId={ALGORAND_CHAIN_ID} />,
 })
 
 registerPreview({

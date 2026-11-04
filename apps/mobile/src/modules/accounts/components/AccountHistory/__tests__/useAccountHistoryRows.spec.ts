@@ -24,6 +24,7 @@ import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 import { useAccountHistoryRows } from '../useAccountHistoryRows'
 
 const mockSources = vi.hoisted(() => ({ current: [] as unknown[] }))
+const mockHistoryScope = vi.hoisted(() => ({ current: null as unknown }))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
@@ -34,7 +35,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     }),
     useAccountHoldingSources: () => mockSources.current,
     useAccountScope: () => ALGORAND,
-    addressOn: () => 'ALGO_ADDRESS',
+    useAccountCapabilityScope: () => mockHistoryScope.current,
+    addressOn: (_account: unknown, scope: ChainScope) =>
+        scope.chainId === 'ethereum' ? '0xaaa' : 'ALGO_ADDRESS',
 }))
 
 vi.mock('@modules/transactions', () => ({
@@ -98,6 +101,7 @@ describe('useAccountHistoryRows', () => {
         vi.clearAllMocks()
         registerEthereumChain()
         mockSources.current = []
+        mockHistoryScope.current = null
         useAssetListViewStore.setState({ selectedChainId: null })
         vi.mocked(useTransactionHistoryRows).mockReturnValue(history())
         vi.mocked(useMergedTransactionHistoryRows).mockReturnValue(
@@ -118,6 +122,20 @@ describe('useAccountHistoryRows', () => {
 
         act(() => result.current.handleRefresh())
         expect(mockSingleRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it("reads the chain serving history when the account's first chain has none", () => {
+        mockHistoryScope.current = ETHEREUM
+        mockSources.current = [{ address: '0xaaa', scope: ETHEREUM }]
+
+        renderHook(() => useAccountHistoryRows({}))
+
+        expect(useTransactionHistoryRows).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountAddress: '0xaaa',
+                scope: ETHEREUM,
+            }),
+        )
     })
 
     it('merges every network on All and routes paging, refresh and row scopes to the merge', () => {

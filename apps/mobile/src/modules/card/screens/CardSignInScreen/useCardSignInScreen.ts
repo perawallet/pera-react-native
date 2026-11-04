@@ -32,7 +32,7 @@ import {
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -218,7 +218,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                         (await restoreEscrowCardAsync(
                             accounts.flatMap(
                                 account =>
-                                    chainAccountOf(account, LEGACY_CHAIN_ID)
+                                    chainAccountOf(account, ALGORAND_CHAIN_ID)
                                         ?.address ?? [],
                             ),
                         ).catch(() => null)) !== null

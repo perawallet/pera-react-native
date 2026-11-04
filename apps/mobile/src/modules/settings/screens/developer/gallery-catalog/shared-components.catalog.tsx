@@ -13,10 +13,8 @@
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import {
-    i18nKey,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { PWButton, PWText } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
@@ -176,8 +174,8 @@ registerPreview({
                     node: (
                         <CurrencyAmount
                             currency='ALGO'
-                            assetId={nativeAssetFor(LEGACY_CHAIN_ID).assetId}
-                            chainId={LEGACY_CHAIN_ID}
+                            assetId={nativeAssetFor(ALGORAND_CHAIN_ID).assetId}
+                            chainId={ALGORAND_CHAIN_ID}
                             value={new Decimal('42.500000')}
                             precision='assetFull'
                             assetDecimals={6}

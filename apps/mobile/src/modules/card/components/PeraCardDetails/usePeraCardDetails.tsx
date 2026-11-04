@@ -24,7 +24,7 @@ import {
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -426,7 +426,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
         const account = await pickFundingSource()
         const address = account
-            ? cardAccountAddressOf(account, LEGACY_CHAIN_ID)
+            ? cardAccountAddressOf(account, ALGORAND_CHAIN_ID)
             : undefined
         if (address === undefined || address === fundingAddress) return
         // Local only: the Pera backend registers the address with Baanx at

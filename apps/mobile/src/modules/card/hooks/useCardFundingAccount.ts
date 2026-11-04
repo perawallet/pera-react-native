@@ -15,9 +15,9 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 /**
  * The local account the card draws from, resolved from the stored address.
@@ -30,6 +30,6 @@ export const useCardFundingAccount = (): Nullable<WalletAccount> => {
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     return useFindAccountByAddress(connectedAddress ?? '', scope)
 }

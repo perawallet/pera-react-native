@@ -66,12 +66,13 @@ export const SwapToAssetSelectionList = ({
             <SwapToAssetItemView
                 dexAsset={item.dexAsset}
                 balance={item.balance}
+                scope={scope}
                 onPress={() => handleAssetSelected(item)}
                 style={styles.item}
                 testID={`swap-asset-item-${item.dexAsset.assetId}`}
             />
         ),
-        [handleAssetSelected, styles],
+        [handleAssetSelected, scope, styles],
     )
 
     return (

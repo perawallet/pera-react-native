@@ -30,7 +30,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-let mockRouteParams: { returnTo?: unknown } | undefined
+let mockRouteParams: { chainId: string; returnTo?: unknown }
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
@@ -47,6 +47,7 @@ vi.mock('@hooks/useErrorToast', () => ({
 }))
 
 const mockBuildHdWalletAccount = vi.fn()
+const mockUseCreateAccount = vi.fn()
 
 const mockHdSeedGroups: HdSeedGroup[] = [
     {
@@ -132,9 +133,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             hasMultipleHdSeeds: groupsState.groups.length > 1,
         }),
         useAllAccounts: () => [],
-        useCreateAccount: () => ({
-            buildHdWalletAccount: mockBuildHdWalletAccount,
-        }),
+        useCreateAccount: (scope: unknown) => {
+            mockUseCreateAccount(scope)
+            return { buildHdWalletAccount: mockBuildHdWalletAccount }
+        },
     }
 })
 
@@ -151,7 +153,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 describe('useSelectHDWalletScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRouteParams = undefined
+        mockRouteParams = { chainId: 'algorand' }
         // Default to the two-wallet picker; auto-skip tests override this.
         groupsState.groups = mockHdSeedGroups
     })
@@ -161,6 +163,16 @@ describe('useSelectHDWalletScreen', () => {
         expect(result.current.hdSeedGroups).toHaveLength(2)
         expect(result.current.hdSeedGroups[0].seedKeyId).toBe('wallet-1')
         expect(result.current.hdSeedGroups[1].seedKeyId).toBe('wallet-2')
+    })
+
+    it("reads its scope off the route's chain", () => {
+        mockRouteParams = { chainId: 'ethereum' }
+
+        renderHook(() => useSelectHDWalletScreen())
+
+        expect(mockUseCreateAccount).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
     })
 
     it('starts with isCreatingWallet as false', () => {
@@ -200,7 +212,7 @@ describe('useSelectHDWalletScreen', () => {
                 params: { screen: 'CardOnboardingStatus' },
             },
         }
-        mockRouteParams = { returnTo }
+        mockRouteParams = { chainId: 'algorand', returnTo }
         const newAccount = {
             id: 'hd-new',
             chains: { algorand: { address: 'HD_NEW' } },
@@ -321,7 +333,7 @@ describe('useSelectHDWalletScreen', () => {
                 params: { screen: 'CardOnboardingStatus' },
             },
         }
-        mockRouteParams = { returnTo }
+        mockRouteParams = { chainId: 'algorand', returnTo }
         const newAccount = {
             id: 'new-id',
             chains: { algorand: { address: 'NEW_ADDRESS' } },
@@ -424,7 +436,7 @@ describe('useSelectHDWalletScreen', () => {
                     params: { screen: 'CardOnboardingStatus' },
                 },
             }
-            mockRouteParams = { returnTo }
+            mockRouteParams = { chainId: 'algorand', returnTo }
             const newAccount = {
                 id: 'x',
                 chains: { algorand: { address: 'X' } },

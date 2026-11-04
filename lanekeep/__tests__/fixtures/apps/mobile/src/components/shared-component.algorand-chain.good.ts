@@ -4,9 +4,9 @@
 
 declare const useAccountScope: (account: object) => object
 declare const account: object
-declare const constants: { LEGACY_CHAIN_ID: string }
+declare const constants: { ALGORAND_CHAIN_ID: string }
 
-// LEGACY_CHAIN_ID named in a comment is fine.
+// ALGORAND_CHAIN_ID named in a comment is fine.
 export const scope = useAccountScope(account)
-export const label = 'LEGACY_CHAIN_ID'
-export const member = constants.LEGACY_CHAIN_ID
+export const label = 'ALGORAND_CHAIN_ID'
+export const member = constants.ALGORAND_CHAIN_ID

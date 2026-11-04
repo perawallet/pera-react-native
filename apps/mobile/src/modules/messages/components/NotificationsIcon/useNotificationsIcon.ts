@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, HomeEvent } from '@analytics'
@@ -34,7 +34,7 @@ export const useNotificationsIcon = (): UseNotificationsIconResult => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const isAllowed = useCapabilityCheck()
     const canOpenMessages = MESSAGES_REQUIREMENTS.some(isAllowed)
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { unreadInboxCount, hasUnreadNotifications, isUnavailableOnNetwork } =
         useInboxStatus(scope)
     // Spot banners live on the Messages screen above the tabs, so any

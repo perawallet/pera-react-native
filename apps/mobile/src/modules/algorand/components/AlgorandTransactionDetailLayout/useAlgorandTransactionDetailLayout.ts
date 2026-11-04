@@ -26,17 +26,14 @@ import {
     useNativeAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    i18nKey,
-    LEGACY_CHAIN_ID,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     decodeBytesToText,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { algorandTransactionIconName } from '@modules/algorand/icons'
 import {
     useTransactionHeroTitle,
@@ -97,7 +94,7 @@ export const useAlgorandTransactionDetailLayout = (
     transaction: AlgorandTransactionView,
 ): TransactionDetailSummary => {
     const heroTitle = useTransactionHeroTitle()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const account = useSelectedAccount()
     const viewer = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')

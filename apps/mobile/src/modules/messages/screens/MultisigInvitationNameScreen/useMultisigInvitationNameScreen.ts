@@ -26,13 +26,13 @@ import {
     useSelectedAccountId,
     withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
@@ -67,7 +67,7 @@ export const useMultisigInvitationNameScreen =
 
         const { t } = useLanguage()
         const { errorToast, successToast } = useToast()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
         const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
 
         const accounts = useAllAccounts()
@@ -84,7 +84,7 @@ export const useMultisigInvitationNameScreen =
             getNextSharedAccountName(
                 accounts,
                 t('multisig.invitation.name.default_name'),
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
                 invitation.address,
             ),
         )
@@ -97,7 +97,7 @@ export const useMultisigInvitationNameScreen =
             trimmedName !== '' &&
             accounts.some(
                 a =>
-                    chainAccountOf(a, LEGACY_CHAIN_ID)?.address !==
+                    chainAccountOf(a, ALGORAND_CHAIN_ID)?.address !==
                         invitation.address &&
                     (a.name ?? '').trim().toLowerCase() === normalizedName,
             )
@@ -123,7 +123,7 @@ export const useMultisigInvitationNameScreen =
 
             const alreadyExists = findAccountByAddressOn(
                 accounts,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
                 invitation.address,
             )
             if (alreadyExists) {

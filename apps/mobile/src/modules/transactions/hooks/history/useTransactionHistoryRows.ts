@@ -104,9 +104,9 @@ export const useTransactionHistoryRows = ({
     const rows = useMemo(
         () =>
             isRowCached
-                ? buildTransactionListRows(transactions)
+                ? buildTransactionListRows(transactions, scope)
                 : buildRecordListRows(records),
-        [isRowCached, transactions, records],
+        [isRowCached, transactions, records, scope],
     )
 
     const entries = useMemo<SuspectableEntry[]>(

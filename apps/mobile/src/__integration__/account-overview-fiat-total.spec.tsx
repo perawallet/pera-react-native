@@ -45,10 +45,10 @@ import {
     upsertAssetPrices,
     upsertAssets,
 } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
@@ -88,7 +88,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-const ALGO_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const ALGO_SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const ACCOUNT: WalletAccount = {
     id: 'algo-1',
@@ -386,7 +386,9 @@ describe('Flow: Account overview fiat total', () => {
             })
             const account = await seedTwoWallets()
 
-            renderWithNavigation(SelectHDWalletScreen, 'SelectHDWallet')
+            renderWithNavigation(SelectHDWalletScreen, 'SelectHDWallet', {
+                initialParams: { chainId: ALGORAND_CHAIN_ID },
+            })
 
             const row = await screen.findByTestId('select_hd_wallet_item_0')
             await waitFor(() => {

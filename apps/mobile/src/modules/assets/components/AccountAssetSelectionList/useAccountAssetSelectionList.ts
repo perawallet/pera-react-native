@@ -22,11 +22,9 @@ import {
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 const isNativeOn = (balance: ChainAssetBalance): boolean =>
     balance.assetId === nativeAssetFor(balance.scope.chainId).assetId
@@ -56,7 +54,8 @@ export const useAccountAssetSelectionList = ({
     chainId,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
     const selectedAccount = useSelectedAccount()
-    const ownChainId = useAccountChainId(selectedAccount, LEGACY_CHAIN_ID)
+    const home = useHomeChainScope()
+    const ownChainId = useAccountChainId(selectedAccount, home.chainId)
     const scope = useSelectedScope(chainId ?? ownChainId)
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address

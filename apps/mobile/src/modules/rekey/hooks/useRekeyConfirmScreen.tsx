@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCallback, useRef } from 'react'
 import {
@@ -28,6 +27,7 @@ import {
     useSubmitDelegationMutation,
 } from '@perawallet/wallet-core-transactions'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
@@ -88,7 +88,7 @@ export const useRekeyConfirmScreen = ({
 }: RekeyConfirmConfig): UseRekeyConfirmScreenResult => {
     const navigation = useAppNavigation()
 
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const source = useFindAccountByAddress(sourceAddress, scope)
     const target = useFindAccountByAddress(targetAddress, scope)
     const sourceAuthority = useAuthorityOf(source, scope)

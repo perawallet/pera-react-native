@@ -17,7 +17,7 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
@@ -77,7 +77,8 @@ export const useCardCreateSigningScreen =
         )
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () => findCardAccount(accounts, connectedAddress, LEGACY_CHAIN_ID),
+            () =>
+                findCardAccount(accounts, connectedAddress, ALGORAND_CHAIN_ID),
             [accounts, connectedAddress],
         )
 

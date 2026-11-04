@@ -19,13 +19,9 @@ import {
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type SortOption = {
     mode: AccountSortMode
@@ -63,7 +59,7 @@ type UseAccountSortContentResult = {
 }
 
 export const useAccountSortContent = (): UseAccountSortContentResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const { accountValueTotals } = useAccountValueTotalsQuery(

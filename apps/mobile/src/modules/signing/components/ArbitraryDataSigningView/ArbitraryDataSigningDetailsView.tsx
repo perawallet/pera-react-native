@@ -12,7 +12,6 @@
 
 import React, { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeArbitraryDataForDisplay,
     type ArbitraryDataSignRequest,
@@ -30,6 +29,7 @@ import { useStyles } from './styles'
 import { AssetAmount } from '@components/AssetAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { Decimal } from 'decimal.js'
 
 export type ArbitraryDataSigningDetailsViewProps = {
@@ -41,13 +41,13 @@ export const ArbitraryDataSigningDetailsView = ({
     request,
     dataMessage,
 }: ArbitraryDataSigningDetailsViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const account = findAccountByAddressOn(
         accounts,
-        LEGACY_CHAIN_ID,
+        ALGORAND_CHAIN_ID,
         dataMessage.signer,
     )
     const styles = useStyles()
@@ -56,7 +56,8 @@ export const ArbitraryDataSigningDetailsView = ({
     // user reviews the actual signed bytes. Memoized: `data` is unbounded
     // dApp input.
     const signedContent = useMemo(
-        () => decodeArbitraryDataForDisplay(LEGACY_CHAIN_ID, dataMessage.data),
+        () =>
+            decodeArbitraryDataForDisplay(ALGORAND_CHAIN_ID, dataMessage.data),
         [dataMessage.data],
     )
 

@@ -21,9 +21,9 @@ import {
 import {
     type AssetRef,
     type ChainId,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { transferContractTests } from '@perawallet/wallet-core-transactions/testing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandDescriptor } from '../../descriptor'
 import { mockAlgodTransactionParams } from '../../test-handlers'
 import { algorandTransferAdapter } from '../adapter'
@@ -72,7 +72,7 @@ afterAll(() => server.close())
 
 transferContractTests(() => algorandTransferAdapter, {
     context: {
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const,
     },
     nativeTransfer: {
         kind: 'transfer',

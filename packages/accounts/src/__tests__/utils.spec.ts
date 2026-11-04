@@ -18,6 +18,7 @@ import {
     canSignDirectly,
     canSignProgram,
     findAccountByAddressOn,
+    chainIdOfAddress,
     findAccountByAnyChainAddress,
     getAccountDisplayName,
     hasSigningKeys,
@@ -409,6 +410,17 @@ describe('utils - address lookups', () => {
         expect(
             findAccountByAnyChainAddress(accounts, 'NOT_HELD'),
         ).toBeUndefined()
+    })
+
+    test('names the chain an address is held on', () => {
+        const onBoth = buildTestAccount(TEST_CUSTODY.watch, {
+            [FAKE_CHAIN_ID]: { address: 'FAKE_ADDRESS' },
+            [OTHER_CHAIN_ID]: { address: 'OTHER_ADDRESS' },
+        })
+
+        expect(chainIdOfAddress(onBoth, 'OTHER_ADDRESS')).toBe(OTHER_CHAIN_ID)
+        expect(chainIdOfAddress(onBoth, 'FAKE_ADDRESS')).toBe(FAKE_CHAIN_ID)
+        expect(chainIdOfAddress(onBoth, 'NOT_HELD')).toBeUndefined()
     })
 
     test('falls back to string equality on a chain without a codec', () => {

@@ -55,15 +55,15 @@ export const parseScopeKey = (key: string): ChainScope => {
 }
 
 // Every legacy network value, and every row stored before scope keys, is this
-// chain's.
-export const LEGACY_CHAIN_ID = 'algorand' satisfies ChainId
+// chain's. chain-contract can't import chain-algorand, so the id is named here.
+const ALGORAND_CHAIN_ID = 'algorand' satisfies ChainId
 
 // Every contact address stored before families existed, and a contact backup
 // item's bare `address`, belongs to this family.
 export const LEGACY_CHAIN_FAMILY = 'algorand' satisfies ChainFamily
 
 export const LEGACY_SCOPES: readonly ChainScope[] = LEGACY_NETWORKS.map(
-    networkId => ({ chainId: LEGACY_CHAIN_ID, networkId }),
+    networkId => ({ chainId: ALGORAND_CHAIN_ID, networkId }),
 )
 
 const isScopeOf = (part: unknown, scope: ChainScope): boolean =>
@@ -119,7 +119,7 @@ export const scopeFromNetworkColumn = (value: string): ChainScope => {
     if (!isLegacyNetwork(value)) {
         throw new InvalidScopeKeyError(value)
     }
-    return { chainId: LEGACY_CHAIN_ID, networkId: value }
+    return { chainId: ALGORAND_CHAIN_ID, networkId: value }
 }
 
 // For persisted state keyed by the bare legacy network. A key that already is a

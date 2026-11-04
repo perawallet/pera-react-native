@@ -28,7 +28,6 @@ import {
     makeSession,
     TOPIC,
 } from './fakeWalletKit'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Same stand-in as the other v2 specs: the connections barrel reaches the
 // provider, which imports react-native-mmkv at module scope.
@@ -43,7 +42,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 const registeredAdapter = dappRequestAdapterFor({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const)
 if (!registeredAdapter) {

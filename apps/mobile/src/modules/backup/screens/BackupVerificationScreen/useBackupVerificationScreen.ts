@@ -20,15 +20,15 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    findAddressHolder,
+    chainIdOfAddress,
+    findAccountByAnyChainAddress,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -66,11 +66,17 @@ export const useBackupVerificationScreen =
         )
 
         const address = route.params?.address
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
         const account = useMemo<Nullable<WalletAccount>>(() => {
             if (!address) return null
-            return findAddressHolder(accounts, scope, address) ?? null
-        }, [address, accounts, scope])
+            return findAccountByAnyChainAddress(accounts, address) ?? null
+        }, [address, accounts])
+        // The home chain only stands in while no account is found, when
+        // nothing gets marked.
+        const homeChainId = useHomeChainScope().chainId
+        const chainId =
+            account && address
+                ? (chainIdOfAddress(account, address) ?? homeChainId)
+                : homeChainId
 
         const { picks, isLoading, error } = useRandomMnemonicForAddress(
             address,
@@ -78,7 +84,7 @@ export const useBackupVerificationScreen =
             VERIFICATION_WORD_COUNT,
         )
 
-        const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
+        const markBackupComplete = useMarkMnemonicBackupComplete(chainId)
         const { t } = useLanguage()
         const { errorToast } = useToast()
 

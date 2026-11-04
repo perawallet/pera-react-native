@@ -28,7 +28,6 @@ import { calculateMinTxnFee } from '@perawallet/wallet-core-chain-algorand/block
 import { encodeSignedTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain/utils/transact'
 import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-chain-algorand/signing/local-key/signTransactionsWithLocalKey'
 import {
-    LEGACY_CHAIN_ID,
     toScopeKey,
     type ChainScope,
     CUSTOM_NETWORK_ID,
@@ -42,6 +41,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { resolveSigningAccount } from '@perawallet/wallet-core-signing/machine/utils/resolveSigningAccount'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 import {
     createAlgo25Account,
@@ -97,7 +97,7 @@ type PersistedState = {
 }
 
 const addressOf = (account: WalletAccount): string | undefined =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+    chainAccountOf(account, ALGORAND_CHAIN_ID)?.address
 
 // The platform key-value store under the accounts store, JSON-encoded the way
 // every version wrote it. Seeded and read directly: the store's own persist
@@ -143,7 +143,7 @@ describe('accounts-store migration conformance', () => {
         useNetworkStore.getState().setMode('developer')
         useNetworkStore
             .getState()
-            .selectNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
+            .selectNetwork(ALGORAND_CHAIN_ID, CUSTOM_NETWORK_ID)
         const { minFee } = await getConformanceClient()
             .client.algod.getTransactionParams()
             .do()
@@ -243,7 +243,7 @@ describe('accounts-store migration conformance', () => {
             { type: 'local' },
             'transactions',
             accounts,
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
         )
         expect(addressOf(signer)).toBe(expectedSigner.address)
 
@@ -316,7 +316,7 @@ describe('accounts-store migration conformance', () => {
 
         // The guard that stops removing an account another account signs through.
         const delegated = accountsChainAdapters
-            .get(LEGACY_CHAIN_ID)
+            .get(ALGORAND_CHAIN_ID)
             .authority?.accountsDelegatedTo(algo25.address, accounts)
         expect(delegated?.map(addressOf)).toEqual([rekeyed.address])
 

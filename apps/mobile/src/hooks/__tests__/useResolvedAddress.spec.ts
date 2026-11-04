@@ -22,7 +22,6 @@ const mockCodecs = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-chain-contract', () => ({
     addressCodecs: mockCodecs,
-    LEGACY_CHAIN_ID: 'algorand',
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({

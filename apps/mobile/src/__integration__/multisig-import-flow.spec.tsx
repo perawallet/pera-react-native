@@ -20,7 +20,6 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { ImportSharedAccountScreen } from '@modules/multisig/screens/ImportSharedAccountScreen/ImportSharedAccountScreen'
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useAccountsStore,
     multisigParametersOf,
@@ -32,6 +31,7 @@ import {
     mockDeleteMultisigImportInbox,
     mockGetMultisigAccountDetail,
 } from '@perawallet/wallet-core-multisig/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -146,7 +146,7 @@ describe('Flow: Import shared account by scanning its QR code', () => {
         expect(saved.custody).toEqual({ kind: 'multisig' })
         expect(addressOf(saved)).toBe(SHARED_ADDRESS)
         expect(saved.name).toBe('Team treasury')
-        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
+        expect(multisigParametersOf(saved, ALGORAND_CHAIN_ID)).toEqual({
             threshold: THRESHOLD,
             addresses: PARTICIPANTS,
             version: 1,

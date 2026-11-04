@@ -36,10 +36,7 @@ vi.mock('../../session', () => session)
 const auth = vi.hoisted(() => ({ acquireCardSessionTokens: vi.fn() }))
 vi.mock('../../api/auth', () => auth)
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
@@ -54,7 +51,7 @@ import { OnboardingPhase, OnboardingStep } from '../../models'
 import { getLoginPassword } from '../../store/login-password'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'algorand', networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

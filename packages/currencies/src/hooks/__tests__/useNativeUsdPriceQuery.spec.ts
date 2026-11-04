@@ -20,10 +20,7 @@ import {
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
-import {
-    toScopeKey,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import {
     migrations,
     runMigrations,
@@ -53,7 +50,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     }),
 }))
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('useNativeUsdPriceQuery', () => {
     let queryClient: QueryClient
@@ -159,7 +156,7 @@ describe('useNativeUsdPriceQuery', () => {
 
     it('returns zero when only another scope has a price', async () => {
         await storePrice('0.15', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
 

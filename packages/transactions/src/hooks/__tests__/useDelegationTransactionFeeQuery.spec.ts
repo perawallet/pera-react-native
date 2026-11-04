@@ -21,7 +21,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockBuildRekeyTx = vi.fn()
 const mockCallerScope = vi.fn(
-    () => ({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }) as const,
+    () => ({ chainId: 'algorand', networkId: 'mainnet' }) as const,
 )
 const mockUseAllAccounts = vi.fn()
 const mockUseFeeConfig = vi.fn()
@@ -54,7 +54,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 
 import { sendFlowChainAdapters } from '../../chain-adapter'
 import { useDelegationTransactionFeeQuery } from '../useDelegationTransactionFeeQuery'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const quantum = (
     address = 'QADDR',
@@ -94,7 +93,7 @@ const buildWrapper = () => {
 beforeEach(() => {
     vi.clearAllMocks()
     mockCallerScope.mockReturnValue({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: 'algorand',
         networkId: 'mainnet',
     } as const)
     sendFlowChainAdapters.reset()
@@ -142,7 +141,7 @@ describe('useDelegationTransactionFeeQuery', () => {
         await waitFor(() => {
             expect(result.current.isPending).toBe(false)
         })
-        expect(mockGetChainDescriptor).toHaveBeenCalledWith(LEGACY_CHAIN_ID)
+        expect(mockGetChainDescriptor).toHaveBeenCalledWith('algorand')
         expect(result.current.fee?.toString()).toBe('0.002')
     })
 
@@ -294,7 +293,7 @@ describe('useDelegationTransactionFeeQuery', () => {
         expect(mainnet.current.fee?.toString()).toBe('0.001')
 
         mockCallerScope.mockReturnValue({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
         const { result: testnet } = renderHook(

@@ -20,14 +20,13 @@ import {
     HARDWARE_BACKGROUND_GRACE_MS,
 } from '../appStateTracker'
 import type { HardwareSigningInput } from '../hardwareSigningMachine.context'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const makeInput = (
     overrides: Partial<HardwareSigningInput> = {},
 ): HardwareSigningInput => ({
     groups: [],
     allAccounts: [],
-    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
     hardwareWalletRegistry: {} as never,
     totalTxs: 1,
     deviceName: 'Nano X',

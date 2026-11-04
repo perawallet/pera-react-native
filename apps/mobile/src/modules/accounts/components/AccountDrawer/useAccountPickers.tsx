@@ -11,11 +11,10 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useOnrampChainOf } from '@perawallet/wallet-core-onramp'
 import {
-    useSigningAccounts,
     type WalletAccount,
+    useSigningAccountsOnAnyChain,
 } from '@perawallet/wallet-core-accounts'
 import { useSwapSigningAccounts } from '@perawallet/wallet-core-swaps'
 
@@ -61,7 +60,7 @@ export const useAccountListPicker = (
 
 /** Picking an account to act with — only accounts this wallet can sign for. */
 export const useSigningPicker = (): AccountDrawerPickerProps =>
-    useAccountListPicker(useSigningAccounts(LEGACY_CHAIN_ID))
+    useAccountListPicker(useSigningAccountsOnAnyChain())
 
 /** Picking an account to swap with — only accounts that can sign on their swap chain. */
 export const useSwapPicker = (): AccountDrawerPickerProps =>

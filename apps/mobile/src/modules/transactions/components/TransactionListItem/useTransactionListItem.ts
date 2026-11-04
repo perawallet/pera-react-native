@@ -18,11 +18,10 @@ import {
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
     i18nKey,
-    LEGACY_CHAIN_ID,
+    type ChainScope,
     type LocalizedText,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     summarizeHistoryItem,
     type SuspectedPoisoning,
@@ -52,6 +51,7 @@ const WAITING_ON_EARLIER = {
 export type UseTransactionListItemParams = (
     | {
           transaction: TransactionHistoryItem
+          scope: ChainScope
           onPress?: (transaction: TransactionHistoryItem) => void
       }
     // The details screen reads a cached history row, which a record has none of;
@@ -84,8 +84,7 @@ export const useTransactionListItem = (
     const account = useSelectedAccount()
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
-    const selectedScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const scope = record?.scope ?? selectedScope
+    const scope = 'record' in params ? params.record.scope : params.scope
     const address = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''

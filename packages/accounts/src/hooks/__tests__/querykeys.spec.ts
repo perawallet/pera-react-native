@@ -12,10 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
-import {
-    queryKeyReferencesScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
@@ -36,8 +33,8 @@ import {
     isAccountBalancesHistoryQuery,
 } from '../querykeys'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
-const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
 describe('query keys', () => {
     test.each([

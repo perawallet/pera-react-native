@@ -14,7 +14,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     DuplicateChainAdapterError,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -86,7 +85,7 @@ const argsByWrapper: Record<WrapperName, unknown[]> = {
 const names = Object.keys(wrappers) as WrapperName[]
 const call = (name: WrapperName) =>
     (wrappers[name] as (...a: unknown[]) => unknown)(
-        LEGACY_CHAIN_ID,
+        'algorand',
         ...argsByWrapper[name],
     )
 

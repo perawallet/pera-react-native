@@ -15,7 +15,6 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
@@ -35,6 +34,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     addressFamilyOf: vi.fn(),
@@ -102,7 +102,7 @@ vi.mock('@modules/chain-ui', () => ({
 }))
 
 const ALGORAND_SCOPE: ChainScope = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 }
 const ETHEREUM_SCOPE: ChainScope = {
@@ -147,7 +147,7 @@ const mockIsValidAddress = vi.fn<(address: string) => boolean>()
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         isValid: address => mockIsValidAddress(address),
     })
     addressCodecs.register({

@@ -20,7 +20,6 @@ import {
     getAccountHoldingsPageQueryKey,
     getInvalidateAccountHoldingsPredicate,
 } from '../querykeys'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mockInvalidateQueries = vi.fn()
 vi.mock('@tanstack/react-query', () => ({
@@ -48,11 +47,11 @@ describe('useAccountHoldingsInvalidator', () => {
         const holdings = getAccountHoldingsPageQueryKey([
             {
                 address: 'ADDRESS',
-                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
             },
         ])
         const balances = getAccountBalancesQueryKey('ADDRESS', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 

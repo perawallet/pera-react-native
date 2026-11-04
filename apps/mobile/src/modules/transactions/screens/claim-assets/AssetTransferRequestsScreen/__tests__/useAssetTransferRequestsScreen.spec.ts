@@ -13,12 +13,12 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAssetTransferRequestsScreen } from '../useAssetTransferRequestsScreen'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useAssetInboxRequestsQuery } from '@perawallet/wallet-core-transactions'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { ETHEREUM_CHAIN_ID } from '@test-utils/chain-fixtures'
 
-const ALGORAND_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
+const ALGORAND_SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }
 const { routeParams } = vi.hoisted(() => ({
     routeParams: {
         current: {} as Record<string, unknown>,

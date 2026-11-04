@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -58,7 +58,7 @@ export const AssetTransferSummaryHeader = ({
             <PWView style={styles.amountContainer}>
                 {amount.isZero() ? null : (
                     <AssetAmount
-                        chainId={LEGACY_CHAIN_ID}
+                        chainId={ALGORAND_CHAIN_ID}
                         asset={asset}
                         value={amount}
                         // The signer authorizes an outgoing transfer, so the

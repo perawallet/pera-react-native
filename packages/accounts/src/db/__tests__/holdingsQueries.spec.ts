@@ -41,11 +41,10 @@ import {
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 
@@ -86,7 +85,7 @@ describe('account holdings queries', () => {
                 scope: MAINNET_SCOPE,
                 holdings: [
                     {
-                        assetId: nativeAssetFor(LEGACY_CHAIN_ID).assetId,
+                        assetId: nativeAssetFor('algorand').assetId,
                         amount: new Decimal(0),
                     },
                     { assetId: '10', amount: new Decimal(0) },
@@ -445,7 +444,7 @@ describe('account holdings queries', () => {
 
         it('reads every source in one pass and tags each row with its scope', async () => {
             const testnet = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const
             await refreshAccountHoldings({
@@ -662,7 +661,7 @@ describe('account holdings queries', () => {
                 networkId: 'mainnet',
             } as const
             const TESTNET_SCOPE = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const
             const ETH_SOURCE = { address: '0xETH', scope: ETH_SCOPE }
@@ -988,7 +987,7 @@ describe('account holdings queries', () => {
     describe('getAccountHeldAssets', () => {
         const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
         const TESTNET_SCOPE = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const
 

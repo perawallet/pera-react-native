@@ -15,9 +15,9 @@ import {
     useDelegatedAddressesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { isLegacyQuantumChild } from '@modules/accounts/utils/legacyQuantum'
 
 export type UseLegacyQuantumNoticeResult = {
@@ -43,7 +43,7 @@ export const useLegacyQuantumNotice = (
     account: WalletAccount,
 ): UseLegacyQuantumNoticeResult => {
     const { getKey } = useKMS()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const isLegacyQuantumAccount = isLegacyQuantumChild(
         getKey,
         account,

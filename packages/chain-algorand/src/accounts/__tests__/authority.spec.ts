@@ -29,6 +29,7 @@ import {
 } from '../../__tests__/algorandAccounts'
 import { algorandAccountsAdapter } from '../adapter'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
@@ -36,10 +37,9 @@ import {
 import { algorandDescriptor } from '../../descriptor'
 import { algorandAuthority, AlgorandAuthorityTargetKinds } from '../authority'
 import { seedAuthority } from './seedAuthority'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const mainnet = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
-const testnet = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const mainnet = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
+const testnet = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 
 beforeAll(() => {
     accountsChainAdapters.reset()

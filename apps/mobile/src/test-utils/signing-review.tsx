@@ -65,6 +65,7 @@ import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { SigningOverlays } from '@modules/signing/shell'
 import { createTestQueryClient } from './render'
 import { renderWithNavigation } from './renderWithNavigation'
@@ -77,7 +78,6 @@ import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from '../__integration__/__fixtures__/quantum'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const REVIEW_SIGNER_ADDRESS = ALGO25_TEST_ADDRESS
 export const REVIEW_RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -116,9 +116,9 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
         id: 'review-signer',
         name: 'Review Signer',
         custody: { kind: 'local', seed: null },
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         chains: {
-            [LEGACY_CHAIN_ID]: {
+            [ALGORAND_CHAIN_ID]: {
                 address: ALGO25_TEST_ADDRESS,
                 keyPairId: keyResult!.seedKey.id ?? '',
             },
@@ -148,9 +148,9 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
         id: 'review-quantum-signer',
         name: 'Quantum Review Signer',
         custody: { kind: 'local', seed: 'quantum' },
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         chains: {
-            [LEGACY_CHAIN_ID]: {
+            [ALGORAND_CHAIN_ID]: {
                 address: QUANTUM_TEST_ADDRESS,
                 keyPairId: keyResult!.signKeyId,
             },
@@ -229,7 +229,7 @@ export const buildTransactionSignRequest = ({
         sourceType,
         txs: toUnsignedAlgorandTransactions(
             txs ?? [buildPaymentTransaction()],
-            getSelectedScope(LEGACY_CHAIN_ID),
+            getSelectedScope(ALGORAND_CHAIN_ID),
         ),
         approve:
             spies.approve as unknown as UnsignedTransactionSignRequest['approve'],
@@ -256,7 +256,7 @@ export const buildArbitraryDataSignRequest = ({
     const request: ArbitraryDataSignRequest = {
         id: `review-data-${Math.round(Math.random() * 1e9)}`,
         type: 'arbitrary-data',
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         transport: 'callback',
         sourceType,
         data: (messages ?? [{ message: 'Sign me' }]).map(m => ({
@@ -322,7 +322,7 @@ export const buildArc60SignRequest = ({
     const request: AuthDataSignRequest = {
         id: `review-arc60-${Math.round(Math.random() * 1e9)}`,
         type: 'auth-data',
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         transport: 'callback',
         sourceType,
         verifiedOrigin,

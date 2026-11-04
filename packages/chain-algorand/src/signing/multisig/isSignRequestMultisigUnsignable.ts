@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     isMultisigUnsignable,
     type WalletAccount,
@@ -19,6 +18,7 @@ import {
     isTransactionRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 import { algorandRequestOf } from '../algorandRequest'
 
@@ -55,7 +55,7 @@ export const isSignRequestMultisigUnsignable = (
             account => algorandAddressOf(account) === signerAddress,
         )
         if (!signerAccount) continue
-        if (isMultisigUnsignable(signerAccount, accounts, LEGACY_CHAIN_ID))
+        if (isMultisigUnsignable(signerAccount, accounts, ALGORAND_CHAIN_ID))
             return true
     }
     return false

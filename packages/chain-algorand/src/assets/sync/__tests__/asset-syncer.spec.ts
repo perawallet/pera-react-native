@@ -11,10 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
 const fetchCrossChainAssetGroupsMock = vi.hoisted(() =>
@@ -90,7 +88,7 @@ import { hasAlgorandNftShape } from '../../collectible'
 import { fetchAndPersistAssets } from '../asset-syncer'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 const ref = (assetId: string) => ({ chainId: 'algorand', assetId }) as const
@@ -377,14 +375,14 @@ describe('fetchAndPersistAssets', () => {
                 })
 
                 await fetchAndPersistAssets(['1002'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: network,
                 } as const)
 
                 expect(upsertAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 6 }],
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: ALGORAND_CHAIN_ID,
                         networkId: network,
                     } as const,
                 })
@@ -415,14 +413,14 @@ describe('fetchAndPersistAssets', () => {
                 })
 
                 await fetchAndPersistAssets(['1002'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: network,
                 } as const)
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0, name: 'MYTOKEN' }],
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: ALGORAND_CHAIN_ID,
                         networkId: network,
                     } as const,
                 })
@@ -440,14 +438,14 @@ describe('fetchAndPersistAssets', () => {
                 )
 
                 await fetchAndPersistAssets(['1002'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: network,
                 } as const)
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [],
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: ALGORAND_CHAIN_ID,
                         networkId: network,
                     } as const,
                 })
@@ -462,14 +460,14 @@ describe('fetchAndPersistAssets', () => {
                 })
 
                 await fetchAndPersistAssets(['1002'], {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: network,
                 } as const)
 
                 expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
                     items: [{ assetId: '1002', decimals: 0 }],
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: ALGORAND_CHAIN_ID,
                         networkId: network,
                     } as const,
                 })
@@ -485,7 +483,7 @@ describe('fetchAndPersistAssets', () => {
         })
 
         await fetchAndPersistAssets(['123'], {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'betanet',
         } as const)
 
@@ -594,7 +592,7 @@ describe('fetchAndPersistAssets', () => {
             fetchIndexerAssetDetailsMock.mockResolvedValue({ assetId: '1' })
 
             await fetchAndPersistAssets(['1'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'betanet',
             } as const)
 
@@ -652,7 +650,7 @@ describe('through the adapter', () => {
 
     test('writes the same rows as a direct sync on a network with no Pera deployment', async () => {
         const betanet = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'betanet',
         } as const
         await fetchAndPersistAssets(['1', '2'], betanet)

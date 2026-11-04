@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    i18nKey,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -32,6 +29,7 @@ import {
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
@@ -55,7 +53,7 @@ vi.mock('@hooks/useToast', () => ({
 import { resolveCardErrorCopy, useCardErrorToast } from '../useCardErrorToast'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 beforeEach(() => {
     registerAlgorandCardAdapter()

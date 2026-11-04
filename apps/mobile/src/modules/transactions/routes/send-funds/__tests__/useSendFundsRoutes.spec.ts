@@ -29,8 +29,8 @@ const state = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => state.account,
-    useAccountChainOptionsResolver: (capability: string) => {
-        state.resolverCapability(capability)
+    useAccountChainOptionsResolver: (capability: string, options: unknown) => {
+        state.resolverCapability(capability, options)
         return () => state.options
     },
 }))
@@ -69,7 +69,9 @@ describe('useSendFundsRoutes', () => {
 
     it('asks for the network first when the account can send on more than one', () => {
         expect(initialRoute()).toBe('ChainSelection')
-        expect(state.resolverCapability).toHaveBeenCalledWith('send')
+        expect(state.resolverCapability).toHaveBeenCalledWith('send', {
+            isSignerRequired: true,
+        })
         expect(state.setChainId).not.toHaveBeenCalled()
     })
 

@@ -21,9 +21,8 @@ import {
     getAssetInboxSendSummaryQueryKey,
     transactionQueryKeys,
 } from '../querykeys'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const seed = () => {
     const queryClient = new QueryClient()

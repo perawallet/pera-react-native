@@ -40,4 +40,23 @@ describe('useBackupFlowLauncher', () => {
             params: { address: 'ADDR_1' },
         })
     })
+
+    test("starts the flow from an Ethereum-only account's address", () => {
+        const { result } = renderHook(() => useBackupFlowLauncher())
+
+        const account: WalletAccount = {
+            id: 'evm-account',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xETH_ADDR', keyPairId: 'kp' } },
+        }
+
+        act(() => {
+            result.current(account)
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('BackupWallet', {
+            screen: 'BackupInfo',
+            params: { address: '0xETH_ADDR' },
+        })
+    })
 })

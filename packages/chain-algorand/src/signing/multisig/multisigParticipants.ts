@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     getAuthAccount,
@@ -21,6 +20,7 @@ import type {
     AnalyzedSignableGroup,
     SigningResult,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import {
     algorandMultisigOf,
     signableParticipantAt,
@@ -86,7 +86,7 @@ export const shouldDeferPropose = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ): boolean => {
-    const target = getAuthAccount(account, allAccounts, LEGACY_CHAIN_ID)
+    const target = getAuthAccount(account, allAccounts, ALGORAND_CHAIN_ID)
     if (!target || !isMultisigAccount(target)) return false
 
     const localParticipants = getLocalParticipants(target, allAccounts)

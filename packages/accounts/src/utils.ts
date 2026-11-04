@@ -172,17 +172,22 @@ export const findAccountByAddressOn = (
         return held !== undefined && isSameAddress(chainId, held, address)
     })
 
+/** The chain `account` holds `address` on, compared through that chain's codec. */
+export const chainIdOfAddress = (
+    account: WalletAccount,
+    address: string,
+): Optional<ChainId> =>
+    (Object.keys(account.chains) as ChainId[]).find(chainId => {
+        const held = chainAccountOf(account, chainId)?.address
+        return held !== undefined && isSameAddress(chainId, held, address)
+    })
+
 /** The account holding `address` on any of its chains, compared per chain through that chain's codec. */
 export const findAccountByAnyChainAddress = (
     accounts: readonly WalletAccount[],
     address: string,
 ): Optional<WalletAccount> =>
-    accounts.find(account =>
-        (Object.keys(account.chains) as ChainId[]).some(chainId => {
-            const held = chainAccountOf(account, chainId)?.address
-            return held !== undefined && isSameAddress(chainId, held, address)
-        }),
-    )
+    accounts.find(account => chainIdOfAddress(account, address) !== undefined)
 
 const holdsAnEntryOf = (
     holder: WalletAccount,

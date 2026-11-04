@@ -31,8 +31,8 @@ import {
 import {
     type ChainId,
     type TransferIntent,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { seedAuthority } from '../../accounts/__tests__/seedAuthority'
 import { mockAlgodTransactionParams } from '../../test-handlers'
 
@@ -62,7 +62,7 @@ const ed25519 = standaloneAccount(ED25519, {
 })
 
 const context = {
-    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const,
 }
 const ALGO = { chainId: 'algorand' as ChainId, assetId: '0' }
 

@@ -14,9 +14,9 @@ import { sql } from 'drizzle-orm'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import {
     CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
     toScopeKey,
     queryKeyReferencesScope,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
@@ -35,10 +35,10 @@ export const shouldClearCustomCache = (
 ): boolean =>
     previous !== undefined && previous.genesisHash !== next.genesisHash
 
-const CUSTOM_SCOPE: ChainScope = {
-    chainId: LEGACY_CHAIN_ID,
+const customScopeOf = (chainId: ChainId): ChainScope => ({
+    chainId,
     networkId: CUSTOM_NETWORK_ID,
-}
+})
 
 // Every table partitioned by a `scope` column, across the domain packages that
 // own them. Named as literal SQL rather than imported Drizzle schemas: those
@@ -78,7 +78,10 @@ export const NETWORK_PARTITIONED_QUERY_MODULES: ReadonlySet<string> = new Set([
     'nfd',
 ])
 
-const queryKeyTargetsCustomNetwork = (queryKey: QueryKey): boolean => {
+const queryKeyTargetsCustomNetwork = (
+    queryKey: QueryKey,
+    scope: ChainScope,
+): boolean => {
     const [modulePrefix] = queryKey
     if (
         typeof modulePrefix !== 'string' ||
@@ -87,20 +90,22 @@ const queryKeyTargetsCustomNetwork = (queryKey: QueryKey): boolean => {
         return false
     }
 
-    return queryKeyReferencesScope(queryKey, CUSTOM_SCOPE)
+    return queryKeyReferencesScope(queryKey, scope)
 }
 
 /**
- * Deletes every DB row and query-cache entry scoped to the `custom` slot.
+ * Deletes every DB row and query-cache entry scoped to `chainId`'s `custom` slot.
  *
  * Call only when {@link shouldClearCustomCache} says the chain identity changed
  * — never on first configuration, never for a host-only edit of the same chain.
  */
 export const clearCustomNetworkCache = async (
     queryClient: QueryClient,
+    chainId: ChainId,
     db: Database = getDatabase(),
 ): Promise<void> => {
-    const scopeKey = toScopeKey(CUSTOM_SCOPE)
+    const customScope = customScopeOf(chainId)
+    const scopeKey = toScopeKey(customScope)
     for (const table of NETWORK_PARTITIONED_TABLES) {
         await db.run(
             sql`DELETE FROM ${sql.raw(table)} WHERE scope = ${scopeKey}`,
@@ -108,6 +113,7 @@ export const clearCustomNetworkCache = async (
     }
 
     queryClient.removeQueries({
-        predicate: query => queryKeyTargetsCustomNetwork(query.queryKey),
+        predicate: query =>
+            queryKeyTargetsCustomNetwork(query.queryKey, customScope),
     })
 }

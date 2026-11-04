@@ -12,7 +12,6 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    LEGACY_CHAIN_ID,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -124,8 +123,13 @@ export type PeraAssetMetadata = {
     crossChainAssetGroup?: Nullable<AssetGroup>
 }
 
+// The known ids below are Algorand ASA ids, minted before assets spanned chains.
 const legacyScopeKey = (networkId: NetworkId): ChainScopeKey =>
-    toScopeKey({ chainId: LEGACY_CHAIN_ID, networkId })
+    toScopeKey({
+        // lanekeep-ignore-next-line pera/no-algorand-terms-in-chain-neutral-packages reason: the known ids below are this chain's ASA ids
+        chainId: 'algorand',
+        networkId,
+    })
 
 /**
  * Every declared network has an explicit entry, `null` included, so a network

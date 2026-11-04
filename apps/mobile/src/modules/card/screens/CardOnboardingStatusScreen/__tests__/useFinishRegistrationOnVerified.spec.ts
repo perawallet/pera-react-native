@@ -12,16 +12,14 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     LOGIN_ATTEMPT_SPACING_MS,
     MAX_LOGIN_ATTEMPTS,
     useCardStore,
     type FinalizeRegistrationOutcome,
 } from '@perawallet/wallet-core-card'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // Stands in for the real mutation, including its bookkeeping: without a
 // password it returns before logging in, every login it runs is recorded
@@ -75,7 +73,7 @@ import {
     type UseFinishRegistrationOnVerifiedParams,
 } from '../useFinishRegistrationOnVerified'
 
-const SCOPE: ChainScope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
+const SCOPE: ChainScope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' }
 const VERIFIED: UseFinishRegistrationOnVerifiedParams = {
     verificationState: 'VERIFIED',
     areDetailsSubmitted: true,

@@ -37,11 +37,11 @@ import {
     fetchIndexerAssetDetails,
 } from '../endpoints'
 import { searchAssets } from '../search-endpoints'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     logger,
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 const validAsset = {
     asset_id: 123,
@@ -311,7 +311,7 @@ describe('assets endpoints', () => {
             expect.objectContaining({
                 backend: 'pera',
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
                 method: 'POST',

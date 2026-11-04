@@ -21,7 +21,6 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     toScopeKey,
     type ChainScopeKey,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -38,8 +37,8 @@ import { hydrateAccountChainStates } from '../hydrateAccountChainStates'
 import { recordAuthority } from '../recordAuthority'
 import { useAccountsStore } from '../store'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
-const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
 const addressOf = (account: WalletAccount): string =>
     addressOn(account, MAINNET) as string

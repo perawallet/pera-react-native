@@ -34,13 +34,11 @@ import {
     upsertAssetPrices,
     upsertAssets,
 } from '@perawallet/wallet-core-assets'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
     resetTestDatabase,
@@ -69,7 +67,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
 const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-const ALGO_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const ALGO_SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const ALGORAND_ACCOUNT: WalletAccount = {
     id: 'algo-1',

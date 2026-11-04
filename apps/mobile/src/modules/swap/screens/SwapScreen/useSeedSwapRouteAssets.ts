@@ -18,12 +18,9 @@ import {
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type UseSeedSwapRouteAssetsParams = {
     assetInId?: string
@@ -54,9 +51,9 @@ export const useSeedSwapRouteAssets = ({
     scope,
 }: UseSeedSwapRouteAssetsParams): void => {
     // Without a swap scope every route id is '' and both queries stay
-    // disabled; the legacy scope only fills the hook's required argument.
-    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const queryScope = scope ?? legacyScope
+    // disabled; the home scope only fills the hook's required argument.
+    const homeScope = useHomeChainScope()
+    const queryScope = scope ?? homeScope
     const queryClient = useQueryClient()
 
     // The native asset is always in the DB and the API skips it, so only seed

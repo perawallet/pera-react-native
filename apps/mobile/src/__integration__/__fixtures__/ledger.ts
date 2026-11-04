@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { LedgerAppDriverNotRegisteredError } from '@perawallet/wallet-extension-hardware-wallet'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 export type FakeLedgerOptions = {
     address: string | ((accountIndex: number, chainId: ChainId) => string)
@@ -34,7 +32,7 @@ export type FakeLedgerOptions = {
 // outside `chainIds` fails to connect the way a device without its app does.
 export const registerFakeLedgerProvider = ({
     address,
-    chainIds = [LEGACY_CHAIN_ID],
+    chainIds = [ALGORAND_CHAIN_ID],
     signTransaction = async () => new Uint8Array(64),
 }: FakeLedgerOptions): void => {
     getProvider().hardwareWalletRegistry.register({
@@ -53,7 +51,7 @@ export const registerFakeLedgerProvider = ({
                             : address,
                     // An Ed25519 key on the legacy chain, an uncompressed secp256k1 one elsewhere.
                     publicKey: new Uint8Array(
-                        chainId === LEGACY_CHAIN_ID ? 32 : 65,
+                        chainId === ALGORAND_CHAIN_ID ? 32 : 65,
                     ),
                     accountIndex,
                 }),

@@ -16,7 +16,7 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import {
     useAccountValueTotalsQuery,
-    useSigningAccountsOnOwnChain,
+    useSigningAccountsOnAnyChain,
     type AccountHoldingSource,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAllAccounts: vi.fn(() => []),
-    useSigningAccountsOnOwnChain: vi.fn(() => []),
+    useSigningAccountsOnAnyChain: vi.fn(() => []),
     useAccountValueTotalsQuery: vi.fn(),
 }))
 
@@ -153,7 +153,7 @@ describe('usePortfolioView', () => {
         expect(result.current.isPreferredValuePartial).toBe(false)
     })
 
-    it('totals every account that signs on its own chain, Ethereum included', () => {
+    it('totals every account that signs on any chain it holds, Ethereum included', () => {
         registerEthereumChain()
         const ethAccount: WalletAccount = {
             id: 'eth',
@@ -162,7 +162,7 @@ describe('usePortfolioView', () => {
                 ethereum: { address: `0x${'a'.repeat(40)}`, keyPairId: 'k' },
             },
         }
-        vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([ethAccount])
+        vi.mocked(useSigningAccountsOnAnyChain).mockReturnValue([ethAccount])
 
         const { result } = renderHook(() => usePortfolioView())
 

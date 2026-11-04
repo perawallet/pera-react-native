@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     TransactionDetailAddress,
@@ -36,7 +36,7 @@ export const AssetTransferDisplay = ({
     transaction,
 }: AssetTransferDisplayProps) => {
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
     const {
         asset,
@@ -73,7 +73,7 @@ export const AssetTransferDisplay = ({
         if (asset) {
             return (
                 <AssetTitle
-                    chainId={LEGACY_CHAIN_ID}
+                    chainId={ALGORAND_CHAIN_ID}
                     asset={asset}
                     nameVariant='body'
                     showId
@@ -119,7 +119,7 @@ export const AssetTransferDisplay = ({
                     title={t('transactions.common.close_amount')}
                 >
                     <AssetAmount
-                        chainId={LEGACY_CHAIN_ID}
+                        chainId={ALGORAND_CHAIN_ID}
                         isLoading={isAssetPending}
                         asset={asset}
                         value={closeAmountValue}

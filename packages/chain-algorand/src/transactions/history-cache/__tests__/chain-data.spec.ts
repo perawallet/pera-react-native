@@ -19,13 +19,13 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getTransactionHistory,
     historyChainAdapters,
     upsertTransactions,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import {
     algorandHistoryDataOf,
     EMPTY_ALGORAND_HISTORY_DATA,
@@ -39,7 +39,7 @@ import {
 import { registerAlgorandHistoryCodec } from './register-history-codec'
 
 const ADDRESS = 'ACCT1'
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const makeTx = (
     overrides: Partial<FlatHistoryItem> = {},

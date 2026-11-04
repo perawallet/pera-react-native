@@ -44,6 +44,7 @@ export const useSendChainSelectionScreen =
         return useAccountChainSelection({
             account: account ?? undefined,
             capability: 'send',
+            isSignerRequired: true,
             onSelectChain: handleSelectChain,
         })
     }

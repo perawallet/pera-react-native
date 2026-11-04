@@ -12,13 +12,13 @@
 
 import React, { useMemo } from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     decodeArbitraryDataForDisplay,
     type PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-signing'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { SignedDataWarning } from '../SignedDataWarning'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,7 +35,7 @@ export const SingleArbitrarySignRequestView = ({
 }: SingleArbitrarySignRequestViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const account = useFindAccountByAddress(request.signer, scope)
 
     // The bytes actually signed are `MX || decode(data)`. Show the decoded

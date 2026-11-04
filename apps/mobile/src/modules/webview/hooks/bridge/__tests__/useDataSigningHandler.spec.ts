@@ -16,16 +16,14 @@ import {
     canSignArbitraryData,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import {
-    ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     isAuthDataWirePayload,
     type ArbitraryDataSignRequest,
     type AuthDataSignRequest,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useDataSigningHandler } from '../useDataSigningHandler'
 import {
     TRUSTED,
@@ -125,7 +123,7 @@ describe('useDataSigningHandler', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
             {
                 id: 'account-1',
-                chains: { [LEGACY_CHAIN_ID]: { address: 'addr1' } },
+                chains: { [ALGORAND_CHAIN_ID]: { address: 'addr1' } },
                 custody: {
                     kind: 'local',
                     seed: 'bip39',
@@ -364,7 +362,7 @@ describe('useDataSigningHandler', () => {
             vi.mocked(isAuthDataWirePayload).mockImplementationOnce(() => {
                 throw new ChainAdapterNotRegisteredError(
                     'message-signer',
-                    LEGACY_CHAIN_ID,
+                    ALGORAND_CHAIN_ID,
                 )
             })
             const { webview, handle } = render()

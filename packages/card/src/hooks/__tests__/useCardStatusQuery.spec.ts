@@ -22,9 +22,8 @@ vi.mock('../../api/card', () => ({ fetchCardStatus }))
 import { useCardStatusQuery } from '../useCardStatusQuery'
 import { CardStatus, CardType, type Card } from '../../models'
 import { useCardStore } from '../../store'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const card: Card = {
     id: 'card_1',

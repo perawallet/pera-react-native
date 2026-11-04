@@ -253,6 +253,7 @@ describe('useTransactionProcessingScreen', () => {
 
         expect(mockRegisterTabResume).toHaveBeenCalledWith({
             flow: 'send',
+            chainId: 'algorand',
             accountAddress: 'test-address',
             assetId: '0',
             destination: 'dest-address',

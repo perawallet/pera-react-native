@@ -41,6 +41,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         chains: {
+            list: () => [{ id: 'algorand' }],
             has: () => true,
             get: () => ({
                 descriptor: { networks: [{ id: 'mainnet', tier: 'mainnet' }] },

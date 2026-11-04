@@ -63,11 +63,11 @@ import {
 } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -180,7 +180,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         // first.
         server.use(
             http.get(
-                `${getAlgorandChainConfig({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
+                `${getAlgorandChainConfig({ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
                 () =>
                     HttpResponse.json({
                         'current-round': 30_000,
@@ -240,7 +240,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         // [2, 3, 1], the old sink behavior gave [1, 2, 3].
         server.use(
             http.get(
-                `${getAlgorandChainConfig({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
+                `${getAlgorandChainConfig({ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
                 () =>
                     HttpResponse.json({
                         'current-round': 30_000,

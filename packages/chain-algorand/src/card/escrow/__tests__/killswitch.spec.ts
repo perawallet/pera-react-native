@@ -31,9 +31,9 @@ const { algorandCardConfig } = vi.hoisted(() => ({
 }))
 vi.mock('../../config', () => ({ algorandCardConfig }))
 
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandAutoDraw as autoDraw } from '../killswitch'
 import { payloadTransactionOf } from '../../../signing/__tests__/transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const APP_ADDRESS = 'KILLSWITCHAPPADDR'
 const ENABLE_CALL = { method: 'enable' }
@@ -131,7 +131,7 @@ describe('algorandAutoDraw', () => {
             { id: 'txn-1', sender: 'SENDER', fee: 0n, group: undefined },
         ])
         expect(txns[0].scope).toEqual({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
     })

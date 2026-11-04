@@ -22,6 +22,7 @@ import { AccountAssetItemView } from '@modules/assets'
 
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { PWTouchableOpacityProps } from '@components/core'
 
 const VERIFICATION_TIERS = new Set<string>(
@@ -36,11 +37,13 @@ const isVerificationTier = (
 export type SwapToAssetItemViewProps = {
     dexAsset: DexSwapAsset
     balance: Nullable<Decimal>
+    scope: ChainScope
 } & PWTouchableOpacityProps
 
 export const SwapToAssetItemView = ({
     dexAsset,
     balance,
+    scope,
     ...rest
 }: SwapToAssetItemViewProps) => {
     const accountBalance = useMemo<AssetWithAccountBalance>(() => {
@@ -74,6 +77,7 @@ export const SwapToAssetItemView = ({
     return (
         <AccountAssetItemView
             accountBalance={accountBalance}
+            scope={scope}
             logoUrl={dexAsset.logo}
             showBalance={balance !== null}
             {...rest}

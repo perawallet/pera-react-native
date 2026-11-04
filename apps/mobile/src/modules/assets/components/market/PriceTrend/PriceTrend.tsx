@@ -19,12 +19,9 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { AssetPriceHistoryItem } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { TrendIndicator } from '@components/TrendIndicator'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { usePriceTrend } from './usePriceTrend'
 
 export type PriceTrendProps = {
@@ -42,7 +39,7 @@ export const PriceTrend = ({
     selectedDataPoint,
     showAbsolute = false,
 }: PriceTrendProps) => {
-    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useHomeChainScope()
     const styles = useStyles()
     const { preferredCurrency } = useCurrency(currencyScope)
 

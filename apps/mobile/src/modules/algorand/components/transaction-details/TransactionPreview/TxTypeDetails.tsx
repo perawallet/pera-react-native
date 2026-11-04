@@ -18,7 +18,6 @@ import {
     baseUnitsToDisplayUnits,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
@@ -26,6 +25,7 @@ import {
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { AssetAmount } from '@components/AssetAmount'
 import { PWText, PWView } from '@components/core'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
@@ -40,7 +40,7 @@ type TxTypeDetailsProps = {
 }
 
 export const TxTypeDetails = ({ tx, isExternal }: TxTypeDetailsProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const txType = getTransactionType(tx)
     const { t } = useLanguage()

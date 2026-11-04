@@ -18,9 +18,9 @@ import {
     type DelegatedSweepCandidate,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
@@ -51,7 +51,7 @@ export type UseDelegatedSweepSelectScreenResult = {
 
 export const useDelegatedSweepSelectScreen =
     (): UseDelegatedSweepSelectScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
         const navigation = useAppNavigation()
         const route =
             useRoute<

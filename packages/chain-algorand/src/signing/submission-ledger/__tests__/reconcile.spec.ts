@@ -15,7 +15,6 @@ import { eq, sql } from 'drizzle-orm'
 import {
     toScopeKey,
     type ChainScopeKey,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     runMigrations,
@@ -36,6 +35,7 @@ import {
     SubmissionAttemptsSchema,
     type SubmissionAttempt,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import type { SubmissionProbeClient } from '../reconcile'
 
 type PendingResponse = Record<string, unknown>
@@ -111,7 +111,10 @@ describe('submission reconciler', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txIds: ['TXID-1'],
             flow: 'cosign',
             chainData: { family: 'algorand', lastValid: 100 },
@@ -343,7 +346,7 @@ describe('submission reconciler', () => {
             .update(SubmissionAttemptsSchema)
             .set({
                 scope: toScopeKey({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const),
             })

@@ -17,7 +17,6 @@ import {
     isChainId,
     isNetworkId,
     isWalletMode,
-    LEGACY_CHAIN_ID,
     networkIdForMode,
     networkTierForMode,
     type ChainId,
@@ -35,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
+    PRE_MODE_CHAIN_ID,
     isLegacyOverrideUsable,
     LEGACY_CUSTOM_NETWORK_KEY,
     migrateLegacyNetworkState,
@@ -226,17 +226,17 @@ export const mergePersistedNetwork = (persisted: unknown): NetworkSelection => {
     }
 
     const customNetworksByChain = customNetworksOf(state.customNetworksByChain)
-    const legacyOverride = state.selectedNetworkByChain?.[LEGACY_CHAIN_ID]
+    const legacyOverride = state.selectedNetworkByChain?.[PRE_MODE_CHAIN_ID]
     const isLegacyUsable = isLegacyOverrideUsable(
         legacyOverride,
-        customNetworksByChain[LEGACY_CHAIN_ID] ?? [],
+        customNetworksByChain[PRE_MODE_CHAIN_ID] ?? [],
     )
 
     const otherChains = Object.entries(
         state.selectedNetworkByChain ?? {},
     ).filter(
         ([chainId, networkId]) =>
-            chainId !== LEGACY_CHAIN_ID && isNetworkId(networkId),
+            chainId !== PRE_MODE_CHAIN_ID && isNetworkId(networkId),
     ) as [ChainId, NetworkId][]
 
     const overrides = withLegacyOverride(
@@ -399,7 +399,7 @@ export const useNetworkStore: UseBoundStore<
                               ...current,
                               customNetworksByChain: {
                                   ...current.customNetworksByChain,
-                                  [LEGACY_CHAIN_ID]: legacy,
+                                  [PRE_MODE_CHAIN_ID]: legacy,
                               },
                           }
                 }

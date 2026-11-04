@@ -18,13 +18,13 @@ import {
     type AuthorityTargetKind,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const watchAccount = (address: string): WalletAccount => ({
     id: address,
     name: address,
     custody: { kind: 'watch' },
-    chains: { [LEGACY_CHAIN_ID]: { address } },
+    chains: { [ALGORAND_CHAIN_ID]: { address } },
 })
 
 export const sourceAccount = watchAccount('SRC')
@@ -42,7 +42,7 @@ export const registerTargetFixtureChain = (
     eligible: Readonly<Record<string, readonly string[]>>,
 ): AccountsChainAdapter => {
     const adapter = {
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         authority: {
             capability: 'rekey',
             fetchDelegatedAddresses: async () => [],

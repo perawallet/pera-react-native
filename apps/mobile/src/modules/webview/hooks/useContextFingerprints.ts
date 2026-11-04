@@ -18,7 +18,7 @@ import {
     chainAccountOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ContextFingerprints } from './useNotifyWebViewOnContextChange'
 
@@ -28,7 +28,7 @@ import type { ContextFingerprints } from './useNotifyWebViewOnContextChange'
  * to notify webviews only when values actually change.
  */
 export function useContextFingerprints(): ContextFingerprints {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const isDarkMode = useIsDarkMode()
     const { preferredCurrency } = useCurrency(scope)
     const network = scope.networkId
@@ -39,7 +39,7 @@ export function useContextFingerprints(): ContextFingerprints {
         () => ({
             settings: `${isDarkMode}-${preferredCurrency}-${network}-${currentLanguage}`,
             accounts: accounts
-                .map(a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address)
+                .map(a => chainAccountOf(a, ALGORAND_CHAIN_ID)?.address)
                 .join(','),
         }),
         [isDarkMode, preferredCurrency, network, currentLanguage, accounts],

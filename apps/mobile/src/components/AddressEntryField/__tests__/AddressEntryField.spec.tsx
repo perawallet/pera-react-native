@@ -12,13 +12,11 @@
 
 import { render, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { AddressEntryField } from '../AddressEntryField'
 
-const CHAIN_IDS: ChainId[] = [LEGACY_CHAIN_ID]
+const CHAIN_IDS: ChainId[] = [ALGORAND_CHAIN_ID]
 
 const { mockResolveScannedAddress, scannerProps } = vi.hoisted(() => ({
     mockResolveScannedAddress: vi.fn(),

@@ -500,6 +500,7 @@ export const useSwapForm = (
         if (selectedAddress && payAmount) {
             registerTabResumeIntent({
                 flow: 'swap',
+                chainId: scope.chainId,
                 accountAddress: selectedAddress,
                 assetInId: fromAsset ?? nativeAssetId,
                 assetOutId: toAsset,

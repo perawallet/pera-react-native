@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -21,6 +22,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 export type TabResumeIntent =
     | {
           flow: 'swap'
+          chainId: ChainId
           accountAddress: string
           assetInId: string
           assetOutId: string
@@ -29,6 +31,7 @@ export type TabResumeIntent =
       }
     | {
           flow: 'send'
+          chainId: ChainId
           accountAddress: string
           assetId: string
           destination: string

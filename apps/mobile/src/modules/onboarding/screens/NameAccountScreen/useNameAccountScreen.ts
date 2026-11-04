@@ -41,11 +41,9 @@ import {
     useShouldPlayConfetti,
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
@@ -65,8 +63,7 @@ export const useNameAccountScreen = () => {
 
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { buildHdWalletAccount, saveAccount } = useCreateAccount(scope)
+    const home = useHomeChainScope()
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
     const { getAccountName } = useAccountName()
@@ -76,7 +73,7 @@ export const useNameAccountScreen = () => {
     const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
-    const requestedChainId = route.params?.chainId ?? LEGACY_CHAIN_ID
+    const requestedChainId = route.params?.chainId ?? home.chainId
     // Discovery can leave the chain an import was made on off the account.
     const chainId =
         routeAccount && !chainAccountOf(routeAccount, requestedChainId)
@@ -84,6 +81,8 @@ export const useNameAccountScreen = () => {
                   Object.keys(routeAccount.chains) as ChainId[],
               ) ?? requestedChainId)
             : requestedChainId
+    const scope = useSelectedScope(chainId)
+    const { buildHdWalletAccount, saveAccount } = useCreateAccount(scope)
     const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
     const registeredChainIds = useRegisteredChainIds()

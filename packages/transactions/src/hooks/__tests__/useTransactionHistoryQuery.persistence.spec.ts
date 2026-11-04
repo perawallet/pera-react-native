@@ -22,7 +22,6 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { historyChainAdapters } from '../../history-adapter'
 import {
     fixtureChainDataOf,
@@ -60,7 +59,7 @@ import { upsertTransactions } from '../../db'
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
 
 const ADDRESS = 'ACCT1'
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const makeTx = (
     overrides: Partial<TransactionHistoryItem>,
