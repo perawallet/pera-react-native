@@ -512,6 +512,7 @@
         "type_watch": "Compte de suivi",
         "type_ledger": "Compte Ledger",
         "type_multisig": "Compte partagé",
+        "type_multisig_signers": "Partagé · {{threshold}} signataires sur {{total}}",
         "type_quantum": "Compte quantique",
         "type_rekeyed": "Compte rekeyé",
         "type_rekeyed_signer": "Rekeyé (Signé par {{to}})",

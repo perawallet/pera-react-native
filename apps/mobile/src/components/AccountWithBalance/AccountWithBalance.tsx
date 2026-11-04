@@ -12,9 +12,10 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWBadge, PWView, type PWViewProps } from '@components/core'
+import { PWText, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
+import { AvatarCountBadge } from '@components/AvatarCountBadge'
 import { ChainBadge } from '@components/ChainBadge'
 import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -46,6 +47,7 @@ export const AccountWithBalance = ({
         crossChainTotal,
         singleNetworkChainId,
         jointParticipantCount,
+        jointSignersLabel,
         shouldShowSecondaryLabel,
     } = useAccountWithBalance(account, chainId)
     // A chain-agnostic row stands for every chain the account is on, so no one
@@ -55,6 +57,26 @@ export const AccountWithBalance = ({
         !crossChainTotal && isMultiChain && !!chainName ? (
             <ChainBadge name={chainName} />
         ) : undefined
+
+    const renderSecondaryContent = () => {
+        if (singleNetworkChainId) {
+            return <ChainLabel chainId={singleNetworkChainId} />
+        }
+        if (jointSignersLabel) {
+            return (
+                <PWText
+                    variant='body'
+                    weight={400}
+                    numberOfLines={1}
+                    style={styles.secondaryLabel}
+                    testID='account_joint_signers'
+                >
+                    {jointSignersLabel}
+                </PWText>
+            )
+        }
+        return undefined
+    }
 
     const renderBalance = () => {
         if (crossChainTotal) {
@@ -139,17 +161,10 @@ export const AccountWithBalance = ({
                 alwaysShowAccountType={!!crossChainTotal}
                 shouldShowSecondaryLabel={shouldShowSecondaryLabel}
                 badges={badges}
-                secondaryContent={
-                    singleNetworkChainId ? (
-                        <ChainLabel chainId={singleNetworkChainId} />
-                    ) : undefined
-                }
+                secondaryContent={renderSecondaryContent()}
                 avatarBadge={
                     jointParticipantCount !== undefined ? (
-                        <PWBadge
-                            variant='secondary'
-                            value={jointParticipantCount}
-                        />
+                        <AvatarCountBadge count={jointParticipantCount} />
                     ) : undefined
                 }
                 style={styles.accountDisplay}

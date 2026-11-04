@@ -512,6 +512,7 @@
         "type_watch": "Beobachtungskonto",
         "type_ledger": "Ledger-Konto",
         "type_multisig": "Gemeinschaftskonto",
+        "type_multisig_signers": "Gemeinsam · {{threshold}} von {{total}} Signierern",
         "type_quantum": "Quantum-Konto",
         "type_rekeyed": "Rekeyed Konto",
         "type_rekeyed_signer": "Rekeyed (Signiert von {{to}})",

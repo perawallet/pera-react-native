@@ -512,6 +512,7 @@
         "type_watch": "Conta de observação",
         "type_ledger": "Conta Ledger",
         "type_multisig": "Conta compartilhada",
+        "type_multisig_signers": "Compartilhada · {{threshold}} de {{total}} signatários",
         "type_quantum": "Conta Quantum",
         "type_rekeyed": "Conta com rekey",
         "type_rekeyed_signer": "Rekey (Assinada por {{to}})",

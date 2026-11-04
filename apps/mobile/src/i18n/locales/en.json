@@ -512,6 +512,7 @@
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
         "type_multisig": "Shared Account",
+        "type_multisig_signers": "Shared · {{threshold}} of {{total}} signers",
         "type_quantum": "Quantum Account",
         "type_rekeyed": "Rekeyed Account",
         "type_rekeyed_signer": "Rekeyed (Signed by {{to}})",

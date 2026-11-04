@@ -18,6 +18,7 @@ import {
     isWatchAccount,
     multisigParametersOf,
     useAccountChainId,
+    useAuthorityOf,
     useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
@@ -42,6 +43,7 @@ import {
     type ChainAvailability,
 } from '@hooks/useChainAvailability'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type CrossChainTotal =
     /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
@@ -76,6 +78,8 @@ export type UseAccountWithBalanceResult = {
     singleNetworkChainId: Optional<ChainId>
     /** The member count of a joint account, which the avatar badge shows. */
     jointParticipantCount: Optional<number>
+    /** A joint account's required approvals out of its members, e.g. "Shared · 2 of 3 signers"; unset once it is rekeyed, as its members no longer sign. */
+    jointSignersLabel: Optional<string>
     /** A whole-account row names only a watch account's type or network under it; the name and value say the rest. */
     shouldShowSecondaryLabel: boolean
 }
@@ -147,9 +151,19 @@ export const useAccountWithBalance = (
         isChainAgnostic && isWatchAccount(account) && sources.length === 1
             ? sources[0]?.scope.chainId
             : undefined
-    const jointParticipantCount = isChainAgnostic
-        ? multisigParametersOf(account, accountChainId)?.addresses.length
+    const { t } = useLanguage()
+    const authority = useAuthorityOf(account, scope)
+    const multisig = isChainAgnostic
+        ? multisigParametersOf(account, accountChainId)
         : undefined
+    const jointParticipantCount = multisig?.addresses.length
+    const jointSignersLabel =
+        multisig && authority === null
+            ? t('account_info.type_multisig_signers', {
+                  threshold: multisig.threshold,
+                  total: multisig.addresses.length,
+              })
+            : undefined
 
     return {
         scope,
@@ -164,6 +178,7 @@ export const useAccountWithBalance = (
         crossChainTotal,
         singleNetworkChainId,
         jointParticipantCount,
+        jointSignersLabel,
         shouldShowSecondaryLabel: !isChainAgnostic || isWatchAccount(account),
     }
 }

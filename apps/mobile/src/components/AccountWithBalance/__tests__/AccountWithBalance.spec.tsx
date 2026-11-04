@@ -31,6 +31,7 @@ const mockHookResult = {
     crossChainTotal: undefined as CrossChainTotal | undefined,
     singleNetworkChainId: undefined as string | undefined,
     jointParticipantCount: undefined as number | undefined,
+    jointSignersLabel: undefined as string | undefined,
 }
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
 const mockAccountDisplay = vi.fn((_props: unknown) => null)
@@ -88,6 +89,7 @@ describe('AccountWithBalance', () => {
         mockHookResult.crossChainTotal = undefined
         mockHookResult.singleNetworkChainId = undefined
         mockHookResult.jointParticipantCount = undefined
+        mockHookResult.jointSignersLabel = undefined
         mockPreferredAmount.mockClear()
         mockAssetAmount.mockClear()
         mockAccountDisplay.mockClear()
@@ -221,6 +223,19 @@ describe('AccountWithBalance', () => {
             expect(
                 within(screen.getByTestId('account_avatar_badge')).getByText(
                     '3',
+                ),
+            ).toBeTruthy()
+        })
+
+        it("shows a joint account's signers under its name", () => {
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
+            mockHookResult.jointSignersLabel = 'Shared · 2 of 3 signers'
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(
+                within(screen.getByTestId('account_display')).getByText(
+                    'Shared · 2 of 3 signers',
                 ),
             ).toBeTruthy()
         })
