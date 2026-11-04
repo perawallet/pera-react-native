@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
-import { createSwapOrder, reportSwapOrder } from '../endpoints'
+import { createSwapOrder, fetchSwapOrder, reportSwapOrder } from '../endpoints'
 import { routerOrderItem, SCOPE_A } from '../../__tests__/routerFixtures'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -90,5 +90,25 @@ describe('order endpoints', () => {
 
         const [{ data }] = (queryClient as Mock).mock.calls[0]
         expect(data).toEqual({ status: 'cancelled' })
+    })
+
+    test('reads an order by id', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: routerOrderItem({
+                status: 'in_progress',
+                funding_method: 'wallet_transaction',
+            }),
+        })
+
+        const item = await fetchSwapOrder('order 1', SCOPE_A)
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'GET',
+                url: '/api/v4/swap/orders/order%201/',
+            }),
+        )
+        expect(item.status).toBe('in_progress')
+        expect(item.fundingMethod).toBe('wallet_transaction')
     })
 })

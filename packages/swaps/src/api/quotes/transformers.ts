@@ -96,5 +96,6 @@ export const transformSwapQuote = (
                 : new Decimal(priceImpact),
         expiresAt: toEpochMs(offer.expires_at),
         fetchedAt: Date.now(),
+        depositAddress: offer.deposit_address ?? null,
     }
 }

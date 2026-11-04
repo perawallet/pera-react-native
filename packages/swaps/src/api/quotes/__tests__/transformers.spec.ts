@@ -134,4 +134,20 @@ describe('transformSwapQuote', () => {
             ),
         ).toThrow(SwapQuoteMismatchError)
     })
+
+    test('reads the deposit address the offer names', () => {
+        const quote = transformSwapQuote(
+            { ...routerOffer(), deposit_address: 'DEPOSIT' },
+            request,
+            swapAssetRefOf,
+        )
+
+        expect(quote.depositAddress).toBe('DEPOSIT')
+    })
+
+    test('leaves the deposit address null when the offer names none', () => {
+        const quote = transformSwapQuote(routerOffer(), request, swapAssetRefOf)
+
+        expect(quote.depositAddress).toBeNull()
+    })
 })

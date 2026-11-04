@@ -78,6 +78,7 @@ export const transformSwapOrderItem = (
         txHash: transaction.tx_hash,
         role: transaction.role,
     })),
+    fundingMethod: item.funding_method,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
 })

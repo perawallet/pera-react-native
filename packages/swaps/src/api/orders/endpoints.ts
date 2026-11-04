@@ -67,3 +67,16 @@ export const reportSwapOrder = async (
     })
     return transformSwapOrderItem(swapOrderItemSchema.parse(data), resolve)
 }
+
+export const fetchSwapOrder = async (
+    orderId: string,
+    scope: ChainScope,
+    resolve: ResolveSwapAssetRef = swapAssetRefOf,
+): Promise<SwapHistoryItem> => {
+    const data = await routerRequest({
+        scope,
+        method: 'GET',
+        path: `orders/${encodeURIComponent(orderId)}/`,
+    })
+    return transformSwapOrderItem(swapOrderItemSchema.parse(data), resolve)
+}

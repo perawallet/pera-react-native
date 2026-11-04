@@ -37,6 +37,7 @@ const row = (
     amountInUsdValue: null,
     amountOutUsdValue: null,
     transactions: [],
+    fundingMethod: null,
     createdAt,
     updatedAt: createdAt,
 })
