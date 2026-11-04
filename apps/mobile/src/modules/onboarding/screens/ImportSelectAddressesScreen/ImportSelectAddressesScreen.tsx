@@ -57,7 +57,8 @@ export const ImportSelectAddressesScreen = () => {
     return (
         <>
             <PWScreen
-                scroll='never'
+                // The list scrolls itself; the untruncated empty-state copy needs the body to.
+                scroll={areAllImported ? 'auto' : 'never'}
                 footer={
                     <PWButton
                         testID='import_select_addresses_continue_button'
