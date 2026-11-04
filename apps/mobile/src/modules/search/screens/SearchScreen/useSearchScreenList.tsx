@@ -17,8 +17,11 @@ import {
     type ReactElement,
     type RefObject,
 } from 'react'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    ownAddressOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     primaryContactAddress,
     type Contact,
@@ -31,11 +34,12 @@ import {
     PWView,
     type PWFlatListRef,
 } from '@components/core'
-import { AccountDisplay } from '@components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetTitle } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { SearchAccountRow } from '../../components/SearchAccountRow'
 import { useStyles } from './styles'
 import type { SearchScope } from '@perawallet/wallet-core-search'
 import type { SearchRow } from './useSearchScreen'
@@ -43,11 +47,12 @@ import type { SearchRow } from './useSearchScreen'
 export type UseSearchScreenListProps = {
     onAccountPress: (account: WalletAccount) => void
     onContactPress: (contact: Contact) => void
-    onAssetPress: (asset: PeraAsset) => Promise<void>
+    onAssetPress: (asset: PeraAsset, scope: ChainScope) => Promise<void>
     onExpandSection: (kind: SearchScope) => void
-    chainId: ChainId
-    /** The address the row's test id names. */
-    getAccountAddress: (account: WalletAccount) => Optional<string>
+    /** The term the results matched, for highlighting the matching address. */
+    query: string
+    /** Each asset row names its network. */
+    shouldShowAssetNetwork: boolean
     /** The query and the scopes it spans; either change scrolls the list back to the top. */
     value: string
     scopes: SearchScope[]
@@ -64,8 +69,8 @@ export const useSearchScreenList = ({
     onContactPress,
     onAssetPress,
     onExpandSection,
-    chainId,
-    getAccountAddress,
+    query,
+    shouldShowAssetNetwork,
     value,
     scopes,
 }: UseSearchScreenListProps): UseSearchScreenListResult => {
@@ -93,11 +98,12 @@ export const useSearchScreenList = ({
                     return (
                         <PWTouchableOpacity
                             onPress={() => onAccountPress(item.account)}
-                            testID={`search_result_account_${getAccountAddress(item.account)}`}
+                            testID={`search_result_account_${ownAddressOf(item.account)}`}
                         >
-                            <AccountDisplay
+                            <SearchAccountRow
                                 account={item.account}
-                                showChevron={false}
+                                chainId={item.chainId}
+                                query={query}
                                 style={styles.rowContainer}
                             />
                         </PWTouchableOpacity>
@@ -120,15 +126,24 @@ export const useSearchScreenList = ({
                 case 'asset': {
                     return (
                         <PWTouchableOpacity
-                            onPress={() => void onAssetPress(item.asset)}
+                            onPress={() =>
+                                void onAssetPress(item.asset, item.scope)
+                            }
                             style={styles.assetRow}
-                            testID={`search_result_asset_${item.asset.assetId}`}
+                            testID={`search_result_asset_${item.scope.chainId}_${item.asset.assetId}`}
                         >
                             <AssetTitle
                                 asset={item.asset}
-                                chainId={chainId}
+                                chainId={item.scope.chainId}
                                 showId
                                 nameVariant='body'
+                                footer={
+                                    shouldShowAssetNetwork ? (
+                                        <ChainLabel
+                                            chainId={item.scope.chainId}
+                                        />
+                                    ) : undefined
+                                }
                             />
                         </PWTouchableOpacity>
                     )
@@ -163,8 +178,8 @@ export const useSearchScreenList = ({
             onContactPress,
             onAssetPress,
             onExpandSection,
-            chainId,
-            getAccountAddress,
+            query,
+            shouldShowAssetNetwork,
             styles,
             t,
         ],

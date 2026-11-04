@@ -22,7 +22,11 @@ import {
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
-import { useAccountHoldingSources } from '../useAccountHoldingSources'
+import { useAccountsStore } from '../../store'
+import {
+    useAccountHoldingSources,
+    useWalletHoldingSources,
+} from '../useAccountHoldingSources'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -160,6 +164,74 @@ describe('useAccountHoldingSources', () => {
         register('algorand')
 
         const { result } = renderHook(() => useAccountHoldingSources(null))
+
+        expect(result.current).toEqual([])
+    })
+})
+
+describe('useWalletHoldingSources', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks()
+        useNetworkStore.getState().setMode('live')
+        useAccountsStore.getState().resetState()
+    })
+
+    it("lists every account's chains, accounts in store order and chains in registry order", () => {
+        register('algorand', 'ethereum')
+        const algorandOnly: WalletAccount = {
+            id: 'solo',
+            custody: { kind: 'local', seed: null },
+            chains: { algorand: { address: 'SOLO', keyPairId: 's' } },
+        }
+        useAccountsStore.getState().setAccounts([algorandOnly, BOTH_CHAINS])
+
+        const { result } = renderHook(() => useWalletHoldingSources())
+
+        expect(result.current.map(s => [s.address, s.scope.chainId])).toEqual([
+            ['SOLO', 'algorand'],
+            ['ALGO', 'algorand'],
+            ['0xETH', 'ethereum'],
+        ])
+    })
+
+    it('lists a repeated address on a scope once', () => {
+        register('algorand')
+        const twin: WalletAccount = { ...BOTH_CHAINS, id: 'twin' }
+        useAccountsStore.getState().setAccounts([BOTH_CHAINS, twin])
+
+        const { result } = renderHook(() => useWalletHoldingSources())
+
+        expect(result.current).toHaveLength(1)
+    })
+
+    it('follows the selected network', () => {
+        register('algorand', 'ethereum')
+        useAccountsStore.getState().setAccounts([BOTH_CHAINS])
+        const { result } = renderHook(() => useWalletHoldingSources())
+
+        act(() => useNetworkStore.getState().setMode('developer'))
+
+        expect(result.current.map(s => s.scope.networkId)).toEqual([
+            'testnet',
+            'testnet',
+        ])
+    })
+
+    it('keeps its identity across renders while nothing changes', () => {
+        register('algorand', 'ethereum')
+        useAccountsStore.getState().setAccounts([BOTH_CHAINS])
+        const { result, rerender } = renderHook(() => useWalletHoldingSources())
+        const first = result.current
+
+        rerender()
+
+        expect(result.current).toBe(first)
+    })
+
+    it('is empty without accounts', () => {
+        register('algorand')
+
+        const { result } = renderHook(() => useWalletHoldingSources())
 
         expect(result.current).toEqual([])
     })

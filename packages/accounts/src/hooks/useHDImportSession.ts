@@ -36,7 +36,12 @@ import {
     deriveHdAccount,
     requirePublicKeyGetter,
 } from '../chain-adapter'
-import type { ChainAccount, LocalAccount } from '../models'
+import type {
+    ChainAccount,
+    LocalAccount,
+    WalletCandidates,
+    WalletDiscoveryProgress,
+} from '../models'
 import {
     removeUnclaimedKeys,
     useAccountsStore,
@@ -44,7 +49,7 @@ import {
 } from '../store'
 import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
 import { importableCandidate } from '../utils'
-import { hdDiscoveryChains, hdIndexOf } from '../credentials'
+import { hdDiscoveryChains, hdHolderAt, hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
@@ -52,7 +57,11 @@ export type UseHDImportSessionResult = {
     }>
     discoverImportAccounts: (params: {
         walletKeyId: string
-    }) => Promise<LocalAccount[]>
+        /** Once aborted, no further batch is probed. */
+        signal?: AbortSignal
+        /** Reported only when more than one chain is discovered; a single chain has no networks to tell apart. */
+        onProgress?: (progress: WalletDiscoveryProgress) => void
+    }) => Promise<WalletCandidates>
     commitImport: (params: {
         walletKeyId: string
         selectedAccounts: LocalAccount[]
@@ -87,13 +96,22 @@ export const useHDImportSession = (
     )
 
     const discoverImportAccounts = useCallback(
-        async ({ walletKeyId }: { walletKeyId: string }) => {
+        async ({
+            walletKeyId,
+            signal,
+            onProgress,
+        }: {
+            walletKeyId: string
+            signal?: AbortSignal
+            onProgress?: (progress: WalletDiscoveryProgress) => void
+        }): Promise<WalletCandidates> => {
             const pending = useHDImportSessionStore.getState().pending
             if (!pending || pending.walletKeyId !== walletKeyId) {
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
             const chainIds = hdDiscoveryChains()
             let discovered: LocalAccount[]
+            let failedChainIds: WalletCandidates['failedChainIds'] = []
             if (chainIds.length > 1) {
                 const needsKeystore = chainIds.some(
                     chainId =>
@@ -128,12 +146,23 @@ export const useHDImportSession = (
                         .getState()
                         .markSeedPersisted(pending.walletKeyId)
                 }
-                discovered = await discoverWalletCandidates({
+                const walked = await discoverWalletCandidates({
                     walletKeyId: pending.walletKeyId,
                     chainIds,
                     rootKey: pending.rootKey,
                     onUnusedKeys: removeUnclaimedKeys,
+                    signal,
+                    onProgress,
+                    isHeld: ({ index, derived }) =>
+                        hdHolderAt(
+                            useAccountsStore.getState().accounts,
+                            pending.walletKeyId,
+                            index,
+                            derived,
+                        ) !== undefined,
                 })
+                discovered = walked.accounts
+                failedChainIds = walked.failedChainIds
                 // A cancel mid-walk removed the seed while a derive was still
                 // writing children under it, so they are swept once it ends.
                 if (
@@ -153,6 +182,7 @@ export const useHDImportSession = (
                     scope,
                     getPublicKey,
                     walletKeyId: pending.walletKeyId,
+                    signal,
                 })
             }
             // Only the indexes the user can pick: one the wallet already holds
@@ -166,7 +196,7 @@ export const useHDImportSession = (
                         : (hdIndexOf(account) ?? []),
                 ),
             )
-            return discovered
+            return { accounts: discovered, failedChainIds }
         },
         [scope, persistHDMasterKey, removeKeyAndChildren],
     )

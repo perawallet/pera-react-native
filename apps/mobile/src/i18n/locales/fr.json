@@ -2284,6 +2284,7 @@
             "button": "Récupérer",
             "failed_title": "Échec de l’importation",
             "failed_body": "Une erreur s’est produite lors de l’importation de votre wallet",
+            "failed_networks_body": "Impossible de vérifier : {{networks}}. Vérifiez votre connexion et réessayez.",
             "duplicate_account_title": "Compte déjà ajouté",
             "duplicate_account_body": "Ce compte est déjà dans votre wallet.",
             "invalid_mnemonic_title": "Passphrase invalide",
@@ -2376,7 +2377,9 @@
             "import_button": "Importer les comptes",
             "total_value": "<0/> au total",
             "all_imported_title": "Déjà dans votre wallet",
-            "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée."
+            "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée.",
+            "unchecked_networks_title": "Impossible de vérifier : {{networks}}",
+            "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} comptes rekeyés trouvés",
@@ -2920,7 +2923,7 @@
         "empty_prompt_body": "Recherchez dans vos comptes, contacts et actifs",
         "show_more": "Afficher {{count}} de plus",
         "no_results_title": "Aucun résultat",
-        "no_results_body": "Essayez un autre terme de recherche",
+        "no_results_body": "Essayez de rechercher par nom de compte, adresse ou réseau",
         "sections": {
             "accounts": "Comptes",
             "contacts": "Contacts",
@@ -2930,7 +2933,8 @@
             "title": "Options de recherche",
             "accounts": "Inclure les comptes",
             "contacts": "Inclure les contacts",
-            "assets": "Inclure les actifs"
+            "assets": "Inclure les actifs",
+            "network": "Réseau"
         }
     },
     "security": {

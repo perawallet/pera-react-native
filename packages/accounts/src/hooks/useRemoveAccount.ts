@@ -92,8 +92,7 @@ export const useRemoveAccount = () => {
             .then(() => {
                 // Evict the gone account's own queries (e.g. its large holdings
                 // page) so they don't linger in cache until gcTime. Then refresh
-                // the rest: network-scoped owned-asset-ids (search), multi-account
-                // aggregates, and asset metadata/prices.
+                // the rest: multi-account aggregates, and asset metadata/prices.
                 removeAccountQueriesForAddresses(queryClient, addresses)
                 invalidateAccountQueries(queryClient)
                 invalidateAssetQueries(queryClient)

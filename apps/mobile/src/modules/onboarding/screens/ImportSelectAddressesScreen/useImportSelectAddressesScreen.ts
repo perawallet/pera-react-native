@@ -34,12 +34,17 @@ import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import {
+    deferToNextCycle,
+    logger,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useToast } from '@hooks/useToast'
+import { networkListOf } from '@modules/chain-ui'
 import {
     useExitAccountFlow,
     useDelegationScanNoticeResult,
@@ -60,6 +65,8 @@ export type UseImportSelectAddressesScreenResult = {
     canContinue: boolean
     isProcessing: boolean
     importedAccountIds: Set<string>
+    /** The networks the search couldn't check, as a list to read aloud; undefined when it checked them all. */
+    uncheckedNetworks: Optional<string>
     /** Some account holds more than one distinct address, so rows and copy speak of accounts rather than addresses. */
     hasLinkedAddresses: boolean
     toggleSelection: (accountId: string) => void
@@ -76,6 +83,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { accounts } = params
     const isImportMode = 'mode' in params && params.mode === 'import'
     const importWalletKeyId = isImportMode ? params.walletKeyId : null
+    const failedChainIds = isImportMode ? params.failedChainIds : undefined
 
     const { t } = useLanguage()
     const { errorToast } = useToast()
@@ -327,6 +335,10 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         return unsub
     }, [isImportMode, reactNavigation, cancelImport])
 
+    const uncheckedNetworks = failedChainIds?.length
+        ? networkListOf(failedChainIds, t)
+        : undefined
+
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAccountIds.size > 0
 
@@ -338,6 +350,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         canContinue,
         isProcessing,
         importedAccountIds,
+        uncheckedNetworks,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,

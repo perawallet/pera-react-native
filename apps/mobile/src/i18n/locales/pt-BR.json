@@ -2288,6 +2288,7 @@
             "button": "Recuperar",
             "failed_title": "Falha na importação",
             "failed_body": "Ocorreu um erro ao tentar importar sua wallet",
+            "failed_networks_body": "Não foi possível verificar: {{networks}}. Verifique sua conexão e tente novamente.",
             "duplicate_account_title": "Conta já adicionada",
             "duplicate_account_body": "Esta conta já está na sua wallet.",
             "invalid_mnemonic_title": "Passphrase inválida",
@@ -2380,7 +2381,9 @@
             "import_button": "Importar contas",
             "total_value": "<0/> no total",
             "all_imported_title": "Já está na sua wallet",
-            "all_imported_body": "Todos os endereços que esta wallet deriva já estão na Pera, incluindo os que você apenas observa. Remova um endereço para adicioná-lo novamente com a chave privada dele."
+            "all_imported_body": "Todos os endereços que esta wallet deriva já estão na Pera, incluindo os que você apenas observa. Remova um endereço para adicioná-lo novamente com a chave privada dele.",
+            "unchecked_networks_title": "Não foi possível verificar: {{networks}}",
+            "unchecked_networks_body": "As contas das outras redes estão listadas. Você pode buscar novas contas novamente mais tarde."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} contas com rekey encontradas",
@@ -2936,7 +2939,7 @@
         "empty_prompt_body": "Busque em suas contas, contatos e ativos",
         "show_more": "Mostrar {{count}} mais",
         "no_results_title": "Nenhum resultado",
-        "no_results_body": "Tente outro termo de busca",
+        "no_results_body": "Tente buscar por nome da conta, endereço ou rede",
         "sections": {
             "accounts": "Contas",
             "contacts": "Contatos",
@@ -2946,7 +2949,8 @@
             "title": "Opções de busca",
             "accounts": "Incluir contas",
             "contacts": "Incluir contatos",
-            "assets": "Incluir ativos"
+            "assets": "Incluir ativos",
+            "network": "Rede"
         }
     },
     "security": {

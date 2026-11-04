@@ -61,7 +61,6 @@ export * from './useIsDelegationAvailable'
 export * from './useAccountCapabilityScope'
 export * from './useAccountChainOptions'
 export * from './useEnableChain'
-export * from './useOwnedAssets'
 export * from './useHDImportSession'
 export {
     invalidateAccountQueries,
