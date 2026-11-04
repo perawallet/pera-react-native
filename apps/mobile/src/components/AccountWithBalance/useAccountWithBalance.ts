@@ -90,8 +90,8 @@ export const crossChainTotalOf = (
     usdToPreferred: (usd: Maybe<Decimal>) => Nullable<Decimal>,
 ): CrossChainTotal => {
     if (sources.length === 0) return { kind: 'unavailable' }
-    const counted = sources.filter(
-        source => countsTowardFiatTotals(getProvider().chains, source.scope),
+    const counted = sources.filter(source =>
+        countsTowardFiatTotals(getProvider().chains, source.scope),
     )
     if (counted.length === 0) return { kind: 'testOnly' }
     const values = counted.map(source =>
