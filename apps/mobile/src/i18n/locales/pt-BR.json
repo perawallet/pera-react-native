@@ -4833,6 +4833,13 @@
             "fee_recipient": "Paga para",
             "base_units": "unidades base"
         },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Limite de gas",
+            "max_fee_per_gas": "Taxa máxima por gas",
+            "max_priority_fee_per_gas": "Taxa de prioridade máxima por gas"
+        },
         "known_contract": {
             "title": "Contrato",
             "verified": "Contrato verificado",

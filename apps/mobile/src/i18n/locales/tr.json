@@ -4805,6 +4805,13 @@
             "fee_recipient": "Alıcı",
             "base_units": "temel birim"
         },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas limiti",
+            "max_fee_per_gas": "Gas başına maks. ücret",
+            "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
+        },
         "known_contract": {
             "title": "Sözleşme",
             "verified": "Doğrulanmış sözleşme",

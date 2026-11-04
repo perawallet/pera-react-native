@@ -4805,6 +4805,13 @@
             "fee_recipient": "Gezahlt an",
             "base_units": "Basiseinheiten"
         },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas-Limit",
+            "max_fee_per_gas": "Max. Gebühr pro Gas",
+            "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
+        },
         "known_contract": {
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",

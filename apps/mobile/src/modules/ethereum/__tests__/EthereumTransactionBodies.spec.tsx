@@ -497,7 +497,7 @@ describe('Ethereum transaction bodies', () => {
         })
     })
 
-    describe('detail of a transaction already on chain', () => {
+    describe('detail of a transaction with no signed pricing', () => {
         const PRICING = ['fee', 'nonce', 'gas', 'isPreview']
         const mined = (feePaid?: Decimal): TransactionNative => ({
             family: 'evm',
@@ -521,6 +521,28 @@ describe('Ethereum transaction bodies', () => {
 
             expect(textOf('transaction_detail_fee')).toContain('0.000021')
             expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
+            expect(screen.queryByTestId('ethereum_nonce')).toBeNull()
+        })
+
+        it('shows no pricing, only that the fee is set once reached, for a batch call not yet priced', () => {
+            const preview: TransactionNative = {
+                family: 'evm',
+                transaction: {
+                    ...Object.fromEntries(
+                        Object.entries(
+                            natives.transfer.transaction as object,
+                        ).filter(([key]) => !PRICING.includes(key)),
+                    ),
+                    isPreview: true,
+                },
+            }
+
+            render(<TransactionDetailBody transaction={preview} />)
+
+            expect(screen.queryByTestId('ethereum_nonce')).toBeNull()
+            expect(textOf('ethereum_max_fee')).toContain(
+                'ethereum.batch.fee_when_reached',
+            )
         })
 
         it('shows no fee row, and no promise of one, when the history gave none', () => {
