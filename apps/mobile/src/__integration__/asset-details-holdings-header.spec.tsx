@@ -134,6 +134,19 @@ const renderDetails = (params: { assetId: string; chainId: string }) =>
         additionalScreens: [{ name: 'TabBar', component: TabBarStub }],
     })
 
+// Other charts on the screen can be in an error state of their own, each with
+// its own Retry; this finds the one in the same chart as `message`.
+const retryBeside = (message: HTMLElement): HTMLElement => {
+    let node = message.parentElement
+    while (
+        node &&
+        within(node).queryAllByTestId('balance-chart-retry').length === 0
+    ) {
+        node = node.parentElement
+    }
+    return within(node as HTMLElement).getByTestId('balance-chart-retry')
+}
+
 const trend = async () =>
     (await screen.findByTestId('wealth_trend')).textContent ?? ''
 
@@ -204,13 +217,11 @@ describe('Flow: Asset details header leads with the fiat value', () => {
 
         act(() => useCurrenciesStore.getState().setPreferredCurrency('ARS'))
 
-        expect(
-            await screen.findByText(
-                'common.wealth_chart.currency_unavailable_body',
-                undefined,
-                { timeout: SLOW_WAIT_TIMEOUT_MS },
-            ),
-        ).toBeTruthy()
+        const unavailable = await screen.findByText(
+            'common.wealth_chart.currency_unavailable_body',
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
         server.use(
             http.get('*/v1/currencies/ARS/', () =>
                 HttpResponse.json({
@@ -222,7 +233,7 @@ describe('Flow: Asset details header leads with the fiat value', () => {
                 }),
             ),
         )
-        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+        fireEvent.click(retryBeside(unavailable))
 
         await vi.waitFor(() =>
             expect(
