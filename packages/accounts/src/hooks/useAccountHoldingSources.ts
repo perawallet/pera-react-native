@@ -21,9 +21,40 @@ import { chainAccountOf } from '../credentials/accessors'
 import type { AccountHoldingSource } from '../db'
 import type { WalletAccount } from '../models'
 import { useRegisteredChainIds } from './accountChainEntries'
+import { useAllAccounts } from './useAllAccounts'
 
 const SOURCE_SEPARATOR = '|'
 const FIELD_SEPARATOR = '::'
+
+type NetworkStoreState = ReturnType<typeof useNetworkStore.getState>
+
+// Each source as a string, so a hook can hold them as one primitive and keep
+// its result's identity until a chain, an address or a selected network changes.
+const sourceKeysOf = (
+    state: NetworkStoreState,
+    registeredChainIds: readonly ChainId[],
+    account: WalletAccount,
+): string[] =>
+    registeredChainIds.flatMap(chainId => {
+        const address = chainAccountOf(account, chainId)?.address
+        return address
+            ? [
+                  [chainId, selectChainNetworkId(state, chainId), address].join(
+                      FIELD_SEPARATOR,
+                  ),
+              ]
+            : []
+    })
+
+const sourcesOfKey = (key: string): AccountHoldingSource[] =>
+    key
+        ? key.split(SOURCE_SEPARATOR).map(source => {
+              const [chainId, networkId, address] = source.split(
+                  FIELD_SEPARATOR,
+              ) as [ChainId, NetworkId, string]
+              return { address, scope: { chainId, networkId } }
+          })
+        : []
 
 /**
  * Where the account's holdings live: one source per registered chain the
@@ -34,37 +65,34 @@ export const useAccountHoldingSources = (
     account: Maybe<WalletAccount>,
 ): AccountHoldingSource[] => {
     const registeredChainIds = useRegisteredChainIds()
-    // A primitive, so the result keeps its identity until a chain, an address
-    // or a selected network actually changes.
     const key = useNetworkStore(state =>
         account
-            ? registeredChainIds
-                  .flatMap(chainId => {
-                      const address = chainAccountOf(account, chainId)?.address
-                      return address
-                          ? [
-                                [
-                                    chainId,
-                                    selectChainNetworkId(state, chainId),
-                                    address,
-                                ].join(FIELD_SEPARATOR),
-                            ]
-                          : []
-                  })
-                  .join(SOURCE_SEPARATOR)
+            ? sourceKeysOf(state, registeredChainIds, account).join(
+                  SOURCE_SEPARATOR,
+              )
             : '',
     )
 
-    return useMemo(
-        () =>
-            key
-                ? key.split(SOURCE_SEPARATOR).map(source => {
-                      const [chainId, networkId, address] = source.split(
-                          FIELD_SEPARATOR,
-                      ) as [ChainId, NetworkId, string]
-                      return { address, scope: { chainId, networkId } }
-                  })
-                : [],
-        [key],
+    return useMemo(() => sourcesOfKey(key), [key])
+}
+
+/**
+ * Every account's holding sources, accounts in store order and each one's
+ * chains in registry order; an address on a scope that two accounts share is
+ * listed once.
+ */
+export const useWalletHoldingSources = (): AccountHoldingSource[] => {
+    const accounts = useAllAccounts()
+    const registeredChainIds = useRegisteredChainIds()
+    const key = useNetworkStore(state =>
+        [
+            ...new Set(
+                accounts.flatMap(account =>
+                    sourceKeysOf(state, registeredChainIds, account),
+                ),
+            ),
+        ].join(SOURCE_SEPARATOR),
     )
+
+    return useMemo(() => sourcesOfKey(key), [key])
 }

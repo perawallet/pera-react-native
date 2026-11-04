@@ -255,7 +255,7 @@ describe('useRemoveAccount', () => {
         expect(
             matches([
                 'accounts',
-                'owned-asset-ids',
+                'asset-holders',
                 {
                     scope: {
                         chainId: 'algorand',

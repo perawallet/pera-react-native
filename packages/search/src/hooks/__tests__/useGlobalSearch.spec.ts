@@ -9,18 +9,38 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountHoldingSource,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useGlobalSearch } from '../useGlobalSearch'
 
-const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ALGO_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const BASE_SCOPE: ChainScope = { chainId: 'base', networkId: 'mainnet' }
+
+const REGISTERED: ChainId[] = ['algorand', 'ethereum', 'base']
+const DISPLAY_NAMES: Record<string, string> = {
+    algorand: 'Algorand',
+    ethereum: 'Ethereum',
+    base: 'Base',
+}
+const FAMILIES: Record<string, string> = {
+    algorand: 'algorand',
+    ethereum: 'evm',
+    base: 'evm',
+}
 
 const makeWrapper = () => {
     const client = new QueryClient({
@@ -30,12 +50,20 @@ const makeWrapper = () => {
         React.createElement(QueryClientProvider, { client }, children)
 }
 
+type HoldingRow = { assetId: string; scope: ChainScope; asset: PeraAsset }
+
 const mockAllAccounts = vi.fn<() => WalletAccount[]>()
-const mockFindContacts = vi.fn<(args: { keyword: string }) => Contact[]>()
-const mockUseOwnedAssets = vi.fn<
-    (options?: { enabled?: boolean }) => {
-        assets: PeraAsset[]
-        isLoading: boolean
+const mockFindContacts =
+    vi.fn<(args: { keyword: string; family?: string }) => Contact[]>()
+const mockWalletSources = vi.fn<() => AccountHoldingSource[]>()
+const mockAssetsQuery = vi.fn<
+    (
+        sources: readonly AccountHoldingSource[],
+        options: { search?: string; enabled?: boolean },
+    ) => {
+        holdings: HoldingRow[]
+        isPending: boolean
+        isPlaceholderData: boolean
     }
 >()
 
@@ -46,19 +74,33 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockAllAccounts(),
-        useOwnedAssets: (_scope: unknown, options?: { enabled?: boolean }) =>
-            mockUseOwnedAssets(options),
+        useRegisteredChainIds: () => REGISTERED,
+        useWalletHoldingSources: () => mockWalletSources(),
+        useAccountAssetsQuery: (
+            sources: readonly AccountHoldingSource[],
+            options: { search?: string; enabled?: boolean },
+        ) => mockAssetsQuery(sources, options),
+        assetFromHoldingLiteRow: (row: HoldingRow) => row.asset,
     }
 })
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    chainDisplayNameOf: (chainId: string) => DISPLAY_NAMES[chainId],
+    getChainDescriptor: (chainId: string) => ({ family: FAMILIES[chainId] }),
+}))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: () => ({ findContacts: mockFindContacts }),
 }))
 
-const makeAccount = (address: string, name?: string): WalletAccount => ({
+const makeAccount = (
+    address: string,
+    name?: string,
+    extraChains: WalletAccount['chains'] = {},
+): WalletAccount => ({
     id: address,
     custody: { kind: 'local', seed: null },
-    chains: { algorand: { address, keyPairId: '' } },
+    chains: { algorand: { address, keyPairId: '' }, ...extraChains },
     name,
 })
 
@@ -75,18 +117,56 @@ const makeAsset = (
     ...overrides,
 })
 
-const setOwnedAssets = (assets: PeraAsset[]) => {
-    mockUseOwnedAssets.mockReturnValue({ assets, isLoading: false })
+const holding = (
+    asset: PeraAsset,
+    scope: ChainScope = ALGO_SCOPE,
+): HoldingRow => ({ assetId: asset.assetId, scope, asset })
+
+const setHoldings = (holdings: HoldingRow[]) => {
+    mockAssetsQuery.mockReturnValue({
+        holdings,
+        isPending: false,
+        isPlaceholderData: false,
+    })
+}
+
+// The real query is only pending while it is enabled.
+const setPendingHoldings = () => {
+    mockAssetsQuery.mockImplementation((_sources, { enabled }) => ({
+        holdings: [],
+        isPending: enabled === true,
+        isPlaceholderData: false,
+    }))
+}
+
+const search = async (
+    options: Parameters<typeof useGlobalSearch>[0],
+    query: string,
+) => {
+    const hook = renderHook(
+        () => useGlobalSearch({ debounceMs: 0, ...options }),
+        { wrapper: makeWrapper() },
+    )
+    await act(async () => {
+        hook.result.current.setValue(query)
+    })
+    return hook
 }
 
 describe('useGlobalSearch', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        mockWalletSources.mockReturnValue([])
+        setHoldings([])
+    })
+
     test('returns empty results with empty query', () => {
         mockAllAccounts.mockReturnValue([makeAccount('ALICE', 'Alice')])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
 
         const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
+            () => useGlobalSearch({ debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
@@ -98,23 +178,13 @@ describe('useGlobalSearch', () => {
     })
 
     test('scopes option restricts which sections are populated', async () => {
-        const alice = makeAccount('ALICE_ADDR', 'Alice')
-        mockAllAccounts.mockReturnValue([alice])
+        mockAllAccounts.mockReturnValue([makeAccount('ALICE_ADDR', 'Alice')])
         mockFindContacts.mockReturnValue([
             { name: 'Alice Contact', addresses: { algorand: 'CONTACT_ADDR' } },
-        ])
-        setOwnedAssets([
-            makeAsset('1', { name: 'Alice Asset', unitName: 'ALI' }),
-        ])
+        ] as Contact[])
+        setHoldings([holding(makeAsset('1', { name: 'Alice Asset' }))])
 
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0, scopes: ['assets'] }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('alice')
-        })
+        const { result } = await search({ scopes: ['assets'] }, 'alice')
 
         await waitFor(() => {
             expect(result.current.results.assets).toHaveLength(1)
@@ -123,46 +193,14 @@ describe('useGlobalSearch', () => {
         expect(result.current.results.contacts).toEqual([])
     })
 
-    test('assetFilter narrows the local asset set before matching', async () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        const nft = makeAsset('1', { name: 'PeraFriend NFT', unitName: 'PF' })
-        const fungible = makeAsset('2', { name: 'PeraCoin', unitName: 'PC' })
-        setOwnedAssets([nft, fungible])
-
-        const { result } = renderHook(
-            () =>
-                useGlobalSearch(SCOPE, {
-                    debounceMs: 0,
-                    scopes: ['assets'],
-                    assetFilter: a => a.assetId === '1',
-                }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('pera')
-        })
-
-        await waitFor(() =>
-            expect(result.current.results.assets.map(a => a.name)).toEqual([
-                'PeraFriend NFT',
-            ]),
-        )
-    })
-
     test('does not report loading while debouncing a query', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([makeAsset('1', { name: 'USDC', unitName: 'USDC' })])
+        setPendingHoldings()
 
         const { result } = renderHook(
-            () =>
-                useGlobalSearch(SCOPE, { debounceMs: 100, scopes: ['assets'] }),
+            () => useGlobalSearch({ debounceMs: 100, scopes: ['assets'] }),
             { wrapper: makeWrapper() },
         )
 
-        // No timer advance, so the query is still debouncing.
         act(() => {
             result.current.setValue('usd')
         })
@@ -171,184 +209,239 @@ describe('useGlobalSearch', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
-    test('matches accounts by name or address (case-insensitive)', async () => {
+    test('reports loading while the holdings read is pending', async () => {
+        setPendingHoldings()
+
+        const { result } = await search({ scopes: ['assets'] }, 'usd')
+
+        await waitFor(() => expect(result.current.isLoading).toBe(true))
+    })
+
+    test('matches accounts by name (case-insensitive)', async () => {
         const alice = makeAccount('ALICE_ADDR', 'Alice')
         const bob = makeAccount('BOB_ADDR', 'Bob')
         mockAllAccounts.mockReturnValue([alice, bob])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
 
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('alice')
-        })
+        const { result } = await search({}, 'ALICE')
 
         await waitFor(() =>
-            expect(result.current.results.accounts).toEqual([alice]),
+            expect(result.current.results.accounts).toEqual([
+                { account: alice, chainId: 'algorand' },
+            ]),
         )
         expect(result.current.hasResults).toBe(true)
     })
 
-    test('matches an account by its address on any chain', async () => {
-        const evm: WalletAccount = {
-            id: 'evm',
-            custody: { kind: 'watch' },
-            chains: { ethereum: { address: '0xBEEF' } },
-        }
-        mockAllAccounts.mockReturnValue([makeAccount('ALICE_ADDR'), evm])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('beef')
+    test('an address match carries the chain it matched on', async () => {
+        const evm = makeAccount('ALICE_ADDR', 'ETH', {
+            ethereum: { address: '0xC3D7BEEF' },
         })
+        mockAllAccounts.mockReturnValue([evm])
+
+        const { result } = await search({}, '0xc3')
 
         await waitFor(() =>
-            expect(result.current.results.accounts).toEqual([evm]),
+            expect(result.current.results.accounts).toEqual([
+                { account: evm, chainId: 'ethereum' },
+            ]),
+        )
+        expect(result.current.query).toBe('0xc3')
+    })
+
+    test('a network name lists only the accounts with an address on it', async () => {
+        const universal = makeAccount('UNI_ADDR', 'Universal', {
+            ethereum: { address: '0xAAAA' },
+        })
+        const algorandOnly = makeAccount('SOLO_ADDR', 'Solo')
+        mockAllAccounts.mockReturnValue([universal, algorandOnly])
+
+        const { result } = await search({}, 'ethereum')
+
+        await waitFor(() =>
+            expect(result.current.results.accounts).toEqual([
+                { account: universal, chainId: 'ethereum' },
+            ]),
         )
     })
 
-    test('matches contacts via findContacts', async () => {
-        mockAllAccounts.mockReturnValue([])
-        const charlie: Contact = {
-            name: 'Charlie',
-            addresses: { algorand: 'CHAR_ADDR' },
-        }
-        mockFindContacts.mockImplementation(({ keyword }) =>
-            keyword.toLowerCase() === 'char' ? [charlie] : [],
-        )
-        setOwnedAssets([])
+    test('lists the chains any account is on, in registry order', () => {
+        mockAllAccounts.mockReturnValue([
+            makeAccount('A', 'A', { base: { address: '0xB' } }),
+            makeAccount('C', 'C', { ethereum: { address: '0xE' } }),
+        ])
 
         const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
+            () => useGlobalSearch({ debounceMs: 0 }),
             { wrapper: makeWrapper() },
         )
 
-        await act(async () => {
-            result.current.setValue('char')
-        })
+        expect(result.current.chainIds).toEqual([
+            'algorand',
+            'ethereum',
+            'base',
+        ])
+    })
+
+    test('matches contacts via findContacts', async () => {
+        const charlie = {
+            name: 'Charlie',
+            addresses: { algorand: 'CHAR_ADDR' },
+        } as Contact
+        mockFindContacts.mockImplementation(({ keyword }) =>
+            keyword.toLowerCase() === 'char' ? [charlie] : [],
+        )
+
+        const { result } = await search({}, 'char')
 
         await waitFor(() =>
             expect(result.current.results.contacts).toEqual([charlie]),
         )
+        expect(mockFindContacts).toHaveBeenCalledWith({
+            keyword: 'char',
+            family: undefined,
+        })
     })
 
-    test('matches assets on owned holdings across accounts', async () => {
-        mockAllAccounts.mockReturnValue([makeAccount('A1')])
-        mockFindContacts.mockReturnValue([])
-        const usdc = makeAsset('31566704', {
-            name: 'USD Coin',
-            unitName: 'USDC',
+    test('a network filter narrows contacts to that chain family and accounts to that chain', async () => {
+        const onEth = makeAccount('UNI', 'Savings', {
+            ethereum: { address: '0xAAAA' },
         })
-        const goBtc = makeAsset('386195940', {
-            name: 'goBTC',
-            unitName: 'goBTC',
-        })
-        setOwnedAssets([usdc, goBtc])
+        const algorandOnly = makeAccount('SOLO', 'Savings two')
+        mockAllAccounts.mockReturnValue([onEth, algorandOnly])
 
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('usd')
-        })
+        const { result } = await search({ chainId: 'ethereum' }, 'sav')
 
         await waitFor(() =>
-            expect(result.current.results.assets).toEqual([usdc]),
+            expect(result.current.results.accounts).toEqual([
+                { account: onEth, chainId: 'ethereum' },
+            ]),
+        )
+        expect(mockFindContacts).toHaveBeenLastCalledWith({
+            keyword: 'sav',
+            family: 'evm',
+        })
+    })
+
+    test('asks the holdings read for the typed term over every wallet source', async () => {
+        const sources = [
+            { address: 'A', scope: ALGO_SCOPE },
+            { address: '0xA', scope: ETH_SCOPE },
+        ]
+        mockWalletSources.mockReturnValue(sources)
+
+        await search({}, 'eth')
+
+        await waitFor(() =>
+            expect(mockAssetsQuery).toHaveBeenLastCalledWith(sources, {
+                search: 'eth',
+                enabled: true,
+            }),
         )
     })
 
-    test('returns multiple sections simultaneously when all match', async () => {
-        const alice = makeAccount('ALICEADDR', 'Alice')
-        mockAllAccounts.mockReturnValue([alice])
-        const aliceContact: Contact = {
-            name: 'Alice Contact',
-            addresses: { algorand: 'ALICECONTACTADDR' },
-        }
-        mockFindContacts.mockReturnValue([aliceContact])
-        const aliceAsset = makeAsset('1', {
-            name: 'Alice Token',
-            unitName: 'ALICE',
-        })
-        setOwnedAssets([aliceAsset])
+    test('a network filter narrows the asset sources to that chain', async () => {
+        mockWalletSources.mockReturnValue([
+            { address: 'A', scope: ALGO_SCOPE },
+            { address: '0xA', scope: ETH_SCOPE },
+            { address: '0xA', scope: BASE_SCOPE },
+        ])
 
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
+        await search({ chainId: 'base' }, 'eth')
+
+        await waitFor(() =>
+            expect(mockAssetsQuery).toHaveBeenLastCalledWith(
+                [{ address: '0xA', scope: BASE_SCOPE }],
+                { search: 'eth', enabled: true },
+            ),
+        )
+    })
+
+    test('does not read holdings without the assets scope or a query', () => {
+        renderHook(
+            () => useGlobalSearch({ debounceMs: 0, scopes: ['accounts'] }),
             { wrapper: makeWrapper() },
         )
 
-        await act(async () => {
-            result.current.setValue('alice')
+        expect(mockAssetsQuery).toHaveBeenLastCalledWith([], {
+            search: '',
+            enabled: false,
+        })
+    })
+
+    test('lists an asset held by two accounts once, and the same coin on two networks twice', async () => {
+        const ether = makeAsset('native', { name: 'Ether', unitName: 'ETH' })
+        setHoldings([
+            holding(ether, ETH_SCOPE),
+            holding(ether, ETH_SCOPE),
+            holding(ether, BASE_SCOPE),
+        ])
+
+        const { result } = await search({}, 'eth')
+
+        await waitFor(() =>
+            expect(result.current.results.assets).toEqual([
+                { asset: ether, scope: ETH_SCOPE },
+                { asset: ether, scope: BASE_SCOPE },
+            ]),
+        )
+    })
+
+    test("holds back the previous term's holdings until the new read lands", async () => {
+        mockAssetsQuery.mockReturnValue({
+            holdings: [holding(makeAsset('1', { name: 'USDC' }))],
+            isPending: false,
+            isPlaceholderData: true,
         })
 
-        await waitFor(() => {
-            expect(result.current.results.accounts).toHaveLength(1)
-            expect(result.current.results.contacts).toHaveLength(1)
-            expect(result.current.results.assets).toHaveLength(1)
-        })
-        expect(result.current.hasResults).toBe(true)
+        const { result } = await search({}, 'zzz')
+
+        await waitFor(() => expect(result.current.isLoading).toBe(true))
+        expect(result.current.results.assets).toEqual([])
+    })
+
+    test('leaves out a holding whose metadata has not synced', async () => {
+        setHoldings([
+            { assetId: '9', scope: ALGO_SCOPE, asset: null as never },
+            holding(makeAsset('1', { name: 'USDC' })),
+        ])
+
+        const { result } = await search({}, 'u')
+
+        await waitFor(() =>
+            expect(
+                result.current.results.assets.map(a => a.asset.assetId),
+            ).toEqual(['1']),
+        )
     })
 
     test('sorts each section alphabetically (case-insensitive)', async () => {
-        const zara = makeAccount('ADDR_Z', 'Zara')
-        const alpha = makeAccount('ADDR_A', 'alpha')
-        const mia = makeAccount('ADDR_M', 'Mia')
-        mockAllAccounts.mockReturnValue([zara, alpha, mia])
-        mockFindContacts.mockReturnValue([])
-        const apple = makeAsset('1', { name: 'Apple', unitName: 'APL' })
-        const banana = makeAsset('2', { name: 'banana', unitName: 'BAN' })
-        const carrot = makeAsset('3', { name: 'Carrot', unitName: 'CAR' })
-        setOwnedAssets([carrot, apple, banana])
+        mockAllAccounts.mockReturnValue([
+            makeAccount('ADDR_Z', 'Zara'),
+            makeAccount('ADDR_A', 'alpha'),
+            makeAccount('ADDR_M', 'Mia'),
+        ])
+        setHoldings([
+            holding(makeAsset('3', { name: 'Carrot' })),
+            holding(makeAsset('1', { name: 'Apple' })),
+            holding(makeAsset('2', { name: 'banana' })),
+        ])
 
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
-            {
-                wrapper: makeWrapper(),
-            },
-        )
-
-        await act(async () => {
-            result.current.setValue('a')
-        })
+        const { result } = await search({}, 'a')
 
         await waitFor(() => {
-            expect(result.current.results.accounts.map(a => a.name)).toEqual([
-                'alpha',
-                'Mia',
-                'Zara',
-            ])
-            expect(result.current.results.assets.map(a => a.name)).toEqual([
-                'Apple',
-                'banana',
-                'Carrot',
-            ])
+            expect(
+                result.current.results.accounts.map(r => r.account.name),
+            ).toEqual(['alpha', 'Mia', 'Zara'])
+            expect(
+                result.current.results.assets.map(r => r.asset.name),
+            ).toEqual(['Apple', 'banana', 'Carrot'])
         })
     })
 
     test('returns hasResults=false when nothing matches', async () => {
         mockAllAccounts.mockReturnValue([makeAccount('A', 'Alice')])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([makeAsset('1', { name: 'USDC', unitName: 'USDC' })])
 
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0 }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('zzz')
-        })
+        const { result } = await search({}, 'zzz')
 
         await waitFor(() => {
             expect(result.current.value).toBe('zzz')

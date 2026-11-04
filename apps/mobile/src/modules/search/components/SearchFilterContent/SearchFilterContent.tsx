@@ -11,9 +11,15 @@
  */
 
 import { useState } from 'react'
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type ChainId,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWSheetLayout, PWSwitch, PWText, PWView } from '@components/core'
 import { SEARCH_SCOPES, type SearchScope } from '@perawallet/wallet-core-search'
+import { FilterSelection, type FilterOption } from '@components/FilterSelection'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -21,6 +27,10 @@ import { useStyles } from './styles'
 export type SearchFilterContentProps = {
     scopes: SearchScope[]
     onToggleScope: (scope: SearchScope) => void
+    /** No Network section while empty: the wallet is on a single network. */
+    chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    selectedChainId: Nullable<ChainId>
+    onSelectChain: (chainId: Nullable<ChainId>) => void
 }
 
 const SCOPE_LABEL_KEYS: Record<SearchScope, I18nKey> = {
@@ -32,6 +42,9 @@ const SCOPE_LABEL_KEYS: Record<SearchScope, I18nKey> = {
 export const SearchFilterContent = ({
     scopes,
     onToggleScope,
+    chainFilterOptions,
+    selectedChainId,
+    onSelectChain,
 }: SearchFilterContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -47,6 +60,14 @@ export const SearchFilterContent = ({
                 : [...prev, scope],
         )
         onToggleScope(scope)
+    }
+
+    const [activeChainId, setActiveChainId] =
+        useState<Nullable<ChainId>>(selectedChainId)
+
+    const handleSelectChain = (chainId: Nullable<ChainId>) => {
+        setActiveChainId(chainId)
+        onSelectChain(chainId)
     }
 
     return (
@@ -74,6 +95,19 @@ export const SearchFilterContent = ({
                         />
                     </PWView>
                 ))}
+                {chainFilterOptions.length > 0 && (
+                    <PWView style={styles.networkSection}>
+                        <PWText variant='h4'>
+                            {t('search.filter.network')}
+                        </PWText>
+                        <FilterSelection
+                            options={chainFilterOptions}
+                            selectedValue={activeChainId}
+                            onSelect={handleSelectChain}
+                            testID='search_network_filter'
+                        />
+                    </PWView>
+                )}
             </PWView>
         </PWSheetLayout>
     )

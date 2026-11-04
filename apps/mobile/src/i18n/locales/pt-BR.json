@@ -2939,7 +2939,7 @@
         "empty_prompt_body": "Busque em suas contas, contatos e ativos",
         "show_more": "Mostrar {{count}} mais",
         "no_results_title": "Nenhum resultado",
-        "no_results_body": "Tente outro termo de busca",
+        "no_results_body": "Tente buscar por nome da conta, endereço ou rede",
         "sections": {
             "accounts": "Contas",
             "contacts": "Contatos",
@@ -2949,7 +2949,8 @@
             "title": "Opções de busca",
             "accounts": "Incluir contas",
             "contacts": "Incluir contatos",
-            "assets": "Incluir ativos"
+            "assets": "Incluir ativos",
+            "network": "Rede"
         }
     },
     "security": {

@@ -2923,7 +2923,7 @@
         "empty_prompt_body": "Hesaplarında, kişilerinde ve varlıklarında ara",
         "show_more": "{{count}} tane daha göster",
         "no_results_title": "Sonuç yok",
-        "no_results_body": "Farklı bir arama terimi dene",
+        "no_results_body": "Hesap adı, adres veya ağa göre aramayı dene",
         "sections": {
             "accounts": "Hesaplar",
             "contacts": "Kişiler",
@@ -2933,7 +2933,8 @@
             "title": "Arama seçenekleri",
             "accounts": "Hesapları dahil et",
             "contacts": "Kişileri dahil et",
-            "assets": "Varlıkları dahil et"
+            "assets": "Varlıkları dahil et",
+            "network": "Ağ"
         }
     },
     "security": {

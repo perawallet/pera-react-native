@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
@@ -27,6 +28,8 @@ export type AssetTitleProps = {
     showId?: boolean
     nameVariant?: TypographyVariant
     nameWeight?: FontWeight
+    /** Rendered under the id, e.g. the network the asset is on. */
+    footer?: ReactNode
 }
 
 export const AssetTitle = ({
@@ -35,6 +38,7 @@ export const AssetTitle = ({
     showId = false,
     nameVariant = 'h4',
     nameWeight,
+    footer,
 }: AssetTitleProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -90,6 +94,7 @@ export const AssetTitle = ({
                         </PWText>
                     </CopyableText>
                 )}
+                {footer}
             </PWView>
         </PWView>
     )

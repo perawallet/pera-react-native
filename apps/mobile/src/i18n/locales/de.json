@@ -2915,7 +2915,7 @@
         "empty_prompt_body": "Durchsuche deine Konten, Kontakte und Assets",
         "show_more": "{{count}} weitere anzeigen",
         "no_results_title": "Keine Ergebnisse",
-        "no_results_body": "Versuche einen anderen Suchbegriff",
+        "no_results_body": "Suche nach Kontoname, Adresse oder Netzwerk",
         "sections": {
             "accounts": "Konten",
             "contacts": "Kontakte",
@@ -2925,7 +2925,8 @@
             "title": "Suchoptionen",
             "accounts": "Konten einschließen",
             "contacts": "Kontakte einschließen",
-            "assets": "Assets einschließen"
+            "assets": "Assets einschließen",
+            "network": "Netzwerk"
         }
     },
     "security": {
