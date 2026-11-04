@@ -268,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Excluído)"
+        "deleted_label": "(Excluído)",
+        "unverified_label": "Não verificado"
     },
     "asset_details": {
         "about": {

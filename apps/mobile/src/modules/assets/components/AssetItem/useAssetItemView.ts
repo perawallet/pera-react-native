@@ -13,8 +13,11 @@
 import { useCallback } from 'react'
 import {
     PeraAssetType,
+    PeraAssetVerificationTier,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -35,6 +38,8 @@ type UseAssetItemViewResult = {
     isCollectible: boolean
     isNativeAsset: boolean
     isSuspicious: boolean
+    /** A token Pera hasn't vetted, on a chain where anyone can send one unasked. */
+    isUnverified: boolean
     isDeleted: boolean
     displayName: string
     secondaryText: string
@@ -58,6 +63,14 @@ export const useAssetItemView = (
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'
     const isDeleted = meta?.isDeleted === true
+    // On an opt-in chain the user chose the asset, so only the unasked kind is
+    // flagged. A chain this build doesn't register has no descriptor to ask.
+    const isUnverified =
+        tier === PeraAssetVerificationTier.unverified &&
+        !isNativeAsset &&
+        !isCollectible &&
+        getProvider().chains.has(chainId) &&
+        !getChainDescriptor(chainId).protocol.requiresAssetOptIn
 
     const verificationIconOf = (): Nullable<IconName> => {
         if (isNativeAsset) return 'assets/trusted'
@@ -106,6 +119,7 @@ export const useAssetItemView = (
         isCollectible,
         isNativeAsset,
         isSuspicious,
+        isUnverified,
         isDeleted,
         displayName,
         secondaryText,

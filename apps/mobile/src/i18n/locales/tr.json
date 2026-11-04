@@ -268,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)"
+        "deleted_label": "(Silindi)",
+        "unverified_label": "Doğrulanmamış"
     },
     "asset_details": {
         "about": {

@@ -241,4 +241,68 @@ describe('useAssetItemView', () => {
             expect(mockCopyToClipboard).toHaveBeenCalledWith(DAI)
         })
     })
+
+    describe('unverified tokens', () => {
+        const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+        const tokenOn = (
+            tier: 'verified' | 'unverified' | 'suspicious',
+            chainId: ChainId,
+            overrides: Partial<DisplayableAsset> = {},
+        ) =>
+            renderHook(() =>
+                useView(
+                    make({
+                        assetId: DAI,
+                        peraMetadata: { verificationTier: tier },
+                        ...overrides,
+                    }),
+                    { chainId },
+                ),
+            ).result.current
+
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('flags an unverified token on a chain where tokens arrive unasked', () => {
+            expect(tokenOn('unverified', 'ethereum').isUnverified).toBe(true)
+        })
+
+        it.each(['verified', 'suspicious'] as const)(
+            'does not flag a %s token as unverified',
+            tier => {
+                expect(tokenOn(tier, 'ethereum').isUnverified).toBe(false)
+            },
+        )
+
+        it('does not flag an Algorand asset, which the user opted in to', () => {
+            expect(
+                tokenOn('unverified', 'algorand', { assetId: '123' })
+                    .isUnverified,
+            ).toBe(false)
+        })
+
+        it('does not flag a token on a chain this build does not register', () => {
+            expect(tokenOn('unverified', 'base').isUnverified).toBe(false)
+        })
+
+        it('does not flag the native coin or an NFT', () => {
+            expect(
+                tokenOn('unverified', 'ethereum', { assetId: 'native' })
+                    .isUnverified,
+            ).toBe(false)
+            expect(
+                tokenOn('unverified', 'ethereum', {
+                    peraMetadata: {
+                        verificationTier: 'unverified',
+                        type: 'collectible',
+                    },
+                }).isUnverified,
+            ).toBe(false)
+        })
+    })
 })
