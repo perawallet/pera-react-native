@@ -939,8 +939,13 @@ describe('discoverWalletActivity', () => {
             })
 
             await vi.advanceTimersByTimeAsync(1000)
+            const silentSignal =
+                families.checkActivity.get(ETHEREUM)!.mock.calls[0]![2]!
+            expect(silentSignal.aborted).toBe(false)
             controller.abort()
-            // Ethereum's idle timer still fires, long after the user stopped.
+            // The silent chain's queued lookups are told to stop at once, not
+            // left holding the gate until its idle timer fires.
+            expect(silentSignal.aborted).toBe(true)
             await vi.advanceTimersByTimeAsync(8000)
             await walk
 
@@ -1100,7 +1105,7 @@ describe('discoverWalletActivity', () => {
         expect(probe).toHaveBeenCalledTimes(2)
     })
 
-    it('leaves every chain unaborted and unfailed when the walk itself is cancelled', async () => {
+    it("aborts every chain's lookups but marks none failed when the walk itself is cancelled", async () => {
         const families = registerChainFamilies([ALGORAND, ETHEREUM])
         const controller = new AbortController()
         activeOn(families, ETHEREUM, [])
@@ -1121,7 +1126,7 @@ describe('discoverWalletActivity', () => {
             onProbeSettled,
         })
 
-        expect(algorandProbe.mock.calls[0]![2]!.aborted).toBe(false)
+        expect(algorandProbe.mock.calls[0]![2]!.aborted).toBe(true)
         expect(onProbeSettled).not.toHaveBeenCalledWith(
             expect.anything(),
             'failed',

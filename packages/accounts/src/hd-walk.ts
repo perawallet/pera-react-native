@@ -315,17 +315,25 @@ export async function discoverWalletActivity({
     // chains that answer.
     const failedChains = new Set<ChainId>()
     // Aborted once the walk gives up on a chain, so its queued lookups stop
-    // holding slots the healthy chains need. A user cancel doesn't touch
-    // these: it must not turn a chain into a failed one.
+    // holding slots the healthy chains need, and when the user cancels: the
+    // lookups a cancel leaves queued would hold the gate every later walk
+    // shares. Aborting here only stops lookups; what marks a chain failed is
+    // `cutOutcomes`, which a cancel never writes.
     const chainAborts = new Map<ChainId, AbortController>()
     const chainAbortOf = (chainId: ChainId): AbortController => {
         let abort = chainAborts.get(chainId)
         if (!abort) {
             abort = new AbortController()
+            if (signal?.aborted) abort.abort()
             chainAborts.set(chainId, abort)
         }
         return abort
     }
+    signal?.addEventListener(
+        'abort',
+        () => chainAborts.forEach(abort => abort.abort()),
+        { once: true },
+    )
     // Why the walk gave up on a chain, as its first failing batch saw it. The
     // chain's other batches then fail on the abort itself, which says nothing
     // about whether the backend refused it.
