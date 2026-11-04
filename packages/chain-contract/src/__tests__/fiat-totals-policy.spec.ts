@@ -14,7 +14,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChainRegistry } from '../chain-registry'
 import type { ChainCapabilities } from '../models/capabilities'
 import type { ChainDescriptor } from '../models/descriptor'
-import type { ChainId, ChainNetwork, NetworkTier } from '../models/identity'
+import type {
+    ChainId,
+    ChainNetwork,
+    ChainScope,
+    NetworkTier,
+} from '../models/identity'
 import { countsTowardFiatTotals, isTestTierScope } from '../network-selection'
 
 vi.mock('../fiat-totals-policy', () => ({
@@ -56,7 +61,10 @@ describe('countsTowardFiatTotals with test-network value counted', () => {
         })
 
         it('counts a test network, which is still test tier', () => {
-            const scope = { chainId: 'algorand', networkId: 'testnet' }
+            const scope: ChainScope = {
+                chainId: 'algorand',
+                networkId: 'testnet',
+            }
 
             expect(countsTowardFiatTotals(chains, scope)).toBe(true)
             expect(isTestTierScope(chains, scope)).toBe(true)
