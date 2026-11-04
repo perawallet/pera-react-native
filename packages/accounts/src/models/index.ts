@@ -19,6 +19,7 @@ import type {
     AccountSortMode,
     HardwareWalletDetails,
     LaunchAccountMode,
+    LocalAccount,
 } from './accounts'
 import type { ChainEnabledBy, HdIndex } from './credentials'
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
@@ -82,6 +83,13 @@ export type WalletDiscoveryProgress = {
     checkedAccountCount: number
     /** Active indexes no account in the wallet holds yet, i.e. new accounts. */
     foundCount: number
+}
+
+export type WalletCandidates = {
+    /** One unsaved account per index active on any chain checked; the first account alone when none is. */
+    accounts: LocalAccount[]
+    /** The chains the walk couldn't fully check, as `WalletDiscoveryResult.failedChainIds` says. */
+    failedChainIds: ChainId[]
 }
 
 export type AccountsState = BaseStoreState & {

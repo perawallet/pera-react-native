@@ -591,12 +591,15 @@ describe('Ethereum transaction bodies', () => {
             },
         })
 
-        it('reviews an unlimited approve as an approval with the spend warning, not as an unknown call', () => {
+        it('reviews an unlimited approve titled by what it allows, with the spend warning, not as an unknown call', () => {
             render(<TransactionReviewBody transaction={natives.approval} />)
 
             expect(
-                screen.getByText('transactions.list_item.approval'),
+                screen.getByText(/^signing\.spend_approval\.allow_title/),
             ).toBeTruthy()
+            expect(
+                screen.queryByText('transactions.list_item.approval'),
+            ).toBeNull()
             expect(
                 screen.getByTestId('message-signing-spend-approval-warning'),
             ).toBeTruthy()

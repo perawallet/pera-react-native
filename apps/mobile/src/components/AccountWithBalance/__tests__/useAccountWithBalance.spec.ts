@@ -17,7 +17,10 @@ import type {
     AccountValueBasis,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import {
     crossChainTotalOf,
     useAccountWithBalance,
@@ -27,6 +30,7 @@ const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
 const mockTotalsQuery = vi.fn()
 const mockMultisigParameters = vi.fn()
+const mockAuthority = vi.fn()
 const mockAccountValueTotals = new Map<
     string,
     {
@@ -35,6 +39,13 @@ const mockAccountValueTotals = new Map<
         isPending?: boolean
     }
 >()
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
     const chainOf = (account: WalletAccount) =>
@@ -66,6 +77,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             account.custody.kind === 'watch',
         multisigParametersOf: (account: WalletAccount, chainId: string) =>
             mockMultisigParameters(account, chainId),
+        useAuthorityOf: () => mockAuthority(),
     }
 })
 
@@ -115,6 +127,7 @@ describe('useAccountWithBalance', () => {
         mockAccountValueTotals.clear()
         mockTotalsQuery.mockReset()
         mockMultisigParameters.mockReset().mockReturnValue(undefined)
+        mockAuthority.mockReset().mockReturnValue(null)
         mockHoldingSources
             .mockReset()
             .mockImplementation((account: WalletAccount) =>
@@ -459,6 +472,28 @@ describe('useAccountWithBalance', () => {
             })
         })
 
+        it('shows no value for an Algorand-only build on a test network', () => {
+            restoreAlgorandOnlyChains()
+            mockHoldingSources.mockReturnValue([
+                {
+                    address: ALGO_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                },
+            ])
+
+            try {
+                const { result } = renderHook(() =>
+                    useAccountWithBalance(ALGO_ACCOUNT),
+                )
+
+                expect(result.current.crossChainTotal).toEqual({
+                    kind: 'testOnly',
+                })
+            } finally {
+                registerEthereumChain()
+            }
+        })
+
         it('shows no value for an Algorand-only wallet on a test network, as for any other wallet', () => {
             mockBasis.current = 'native'
             mockHoldingSources.mockReturnValue([
@@ -561,10 +596,27 @@ describe('useAccountWithBalance', () => {
             const { result } = renderHook(() => useAccountWithBalance(JOINT))
 
             expect(result.current.jointParticipantCount).toBe(3)
+            expect(result.current.jointSignersLabel).toBe(
+                'account_info.type_multisig_signers {"threshold":2,"total":3}',
+            )
             expect(mockMultisigParameters).toHaveBeenCalledWith(
                 JOINT,
                 'algorand',
             )
+        })
+
+        it('drops the signers line once the account is rekeyed, as its members no longer sign, but keeps the member count', () => {
+            mockMultisigParameters.mockReturnValue({
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B', 'C'],
+            })
+            mockAuthority.mockReturnValue('AUTH')
+
+            const { result } = renderHook(() => useAccountWithBalance(JOINT))
+
+            expect(result.current.jointSignersLabel).toBeUndefined()
+            expect(result.current.jointParticipantCount).toBe(3)
         })
 
         it('is unset on a row scoped to one chain', () => {
@@ -579,6 +631,7 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.jointParticipantCount).toBeUndefined()
+            expect(result.current.jointSignersLabel).toBeUndefined()
         })
 
         it('is unset for an account with no multisig parameters', () => {
@@ -587,6 +640,7 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.jointParticipantCount).toBeUndefined()
+            expect(result.current.jointSignersLabel).toBeUndefined()
         })
     })
 })

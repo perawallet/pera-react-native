@@ -41,6 +41,7 @@ const METHOD_PERMISSIONS: Readonly<Record<string, ConnectionPermission>> = {
     eth_signTypedData_v4: 'sign-messages',
     eth_signTypedData: 'sign-messages',
     wallet_switchEthereumChain: 'switch-networks',
+    wallet_addEthereumChain: 'switch-networks',
 }
 
 const ORDER: readonly ConnectionPermission[] = [

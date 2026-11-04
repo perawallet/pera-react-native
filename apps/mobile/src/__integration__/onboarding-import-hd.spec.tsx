@@ -305,6 +305,10 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             { timeout: 5000 },
         )
 
+        expect(
+            screen.getByText('onboarding.import_select_addresses.go_to_wallet'),
+        ).toBeTruthy()
+
         // Already-imported addresses render a chip instead of a checkbox,
         // so the per-address checkbox is absent.
         expect(

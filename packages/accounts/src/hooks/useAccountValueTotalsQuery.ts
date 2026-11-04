@@ -20,7 +20,7 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import {
-    isTestTierScope,
+    countsTowardFiatTotals,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -131,7 +131,7 @@ export const useAccountValueTotalsQuery = (
 ): UseAccountValueTotalsQueryResult => {
     const hasAccounts = !!accounts?.length
     const hasFiatTotal = useMemo(
-        () => !isTestTierScope(getProvider().chains, scope),
+        () => countsTowardFiatTotals(getProvider().chains, scope),
         [scope],
     )
     const check = useChainCapabilityCheck()
@@ -187,7 +187,7 @@ export const useAccountValueTotalsQuery = (
                 scope: entryScope,
                 // Each chain sits on its own network, so a test-tier one is
                 // left out of the fiat totals entry by entry.
-                hasFiatTotal: !isTestTierScope(chains, entryScope),
+                hasFiatTotal: countsTowardFiatTotals(chains, entryScope),
             }
         })
         // `otherNetworksKey` stands in for the network store read above.

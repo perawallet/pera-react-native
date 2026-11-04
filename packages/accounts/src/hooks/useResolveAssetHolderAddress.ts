@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -24,12 +24,14 @@ const ASSET_HOLDERS_STALE_TIME_MS = 60_000
 
 export type ResolveAssetHolderAddress = (
     assetId: string,
+    scope: ChainScope,
 ) => Promise<Nullable<string>>
 
 /**
- * Which of the user's accounts to treat as the holder of `assetId`, preferring
- * the selected account when it holds the asset. Resolves to `null` when no
- * account holds it (including the native asset, which has no holdings row).
+ * Which of the user's accounts to treat as the holder of `assetId` on `scope`,
+ * preferring the selected account when it holds the asset. Resolves to the
+ * holder's address on that scope's chain, or `null` when no account holds it
+ * (including a native asset on a chain that keeps no holdings row for it).
  *
  * The asset and collectible detail screens are account-scoped but their routes
  * only carry an asset id, so they read the *selected* account. Any caller that
@@ -38,36 +40,30 @@ export type ResolveAssetHolderAddress = (
  * holder first, or the detail screen attributes the asset to whichever account
  * happened to be selected.
  */
-export const useResolveAssetHolderAddress = (
-    scope: ChainScope,
-): ResolveAssetHolderAddress => {
+export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
-    const selectedAccountAddress = selectedAccount
-        ? chainAccountOf(selectedAccount, scope.chainId)?.address
-        : undefined
     const accounts = useAllAccounts()
     const queryClient = useQueryClient()
 
-    const knownAddresses = useMemo(
-        () =>
-            new Set(
-                accounts.flatMap(
-                    account =>
-                        chainAccountOf(account, scope.chainId)?.address ?? [],
-                ),
-            ),
-        [accounts, scope.chainId],
-    )
-
     return useCallback(
-        async (assetId: string) => {
+        async (assetId: string, scope: ChainScope) => {
             const holders = await queryClient.ensureQueryData({
                 queryKey: getAssetHoldersQueryKey(assetId, scope),
                 queryFn: () => getAssetHolderAddresses({ assetId, scope }),
                 staleTime: ASSET_HOLDERS_STALE_TIME_MS,
             })
+
+            const knownAddresses = new Set(
+                accounts.flatMap(
+                    account =>
+                        chainAccountOf(account, scope.chainId)?.address ?? [],
+                ),
+            )
+            const selectedAccountAddress = selectedAccount
+                ? chainAccountOf(selectedAccount, scope.chainId)?.address
+                : undefined
 
             // Account removal clears its holdings, but a stale row would
             // otherwise select an address the store no longer knows.
@@ -83,6 +79,6 @@ export const useResolveAssetHolderAddress = (
             }
             return candidates[0] ?? null
         },
-        [queryClient, scope, knownAddresses, selectedAccountAddress],
+        [queryClient, accounts, selectedAccount],
     )
 }

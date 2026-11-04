@@ -12,29 +12,20 @@
 
 import { PWSheetLayout } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
-import { useLanguage } from '@hooks/useLanguage'
 import { WarningRow } from '../SigningWarnings'
 import type { SpendApprovalWarningRow } from './useSpendApprovalWarning'
 
 type SpendApprovalWarningContentProps = {
+    title: string
     rows: SpendApprovalWarningRow[]
 }
 
 export const SpendApprovalWarningContent = ({
+    title,
     rows,
 }: SpendApprovalWarningContentProps) => {
-    const { t } = useLanguage()
-
     return (
-        <PWSheetLayout
-            header={
-                <SheetHeader
-                    title={t('transactions.warning.title', {
-                        count: rows.length,
-                    })}
-                />
-            }
-        >
+        <PWSheetLayout header={<SheetHeader title={title} />}>
             {rows.map(({ type, ...row }, index) => (
                 <WarningRow
                     key={type}

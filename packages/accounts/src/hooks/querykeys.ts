@@ -135,12 +135,6 @@ export const getDelegatedAddressesQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'delegated-addresses', { address, scope }]
 
-export const getOwnedAssetIdsQueryKey = (scope: ChainScope) => [
-    MODULE_PREFIX,
-    'owned-asset-ids',
-    { scope },
-]
-
 export const getAssetHoldersQueryKey = (assetId: string, scope: ChainScope) => [
     MODULE_PREFIX,
     'asset-holders',
@@ -235,7 +229,7 @@ const queryKeyTargetsAccountAggregate = (
  * for asset balance-history), so the sync service can refresh just the accounts
  * that actually changed this tick instead of fanning a wide DB re-read across
  * every mounted account query. Keys without a single-account payload (e.g.
- * network-scoped owned-asset-ids, multi-account balance-history) are left alone
+ * multi-account balance-history) are left alone
  * by default; `includeMultiAccountKeys` additionally invalidates multi-account
  * aggregates (the wealth-chart balance-history) whose `addresses` payload
  * intersects the targets — wanted by the post-submission refresh, where the
@@ -265,8 +259,8 @@ export function invalidateAccountQueriesForAddresses(
  * datasets (e.g. a 5k-row holdings page) sitting in cache until gcTime, where
  * the periodic sync's broad invalidations keep re-marking them stale. Removing
  * them frees the memory and stops that churn. Keys without a single-account
- * payload (e.g. network-scoped owned-asset-ids, multi-account balance-history)
- * are left for the caller to refresh.
+ * payload (e.g. multi-account balance-history) are left for the caller to
+ * refresh.
  */
 export function removeAccountQueriesForAddresses(
     queryClient: QueryClient,

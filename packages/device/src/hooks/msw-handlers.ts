@@ -35,3 +35,30 @@ export const mockDeleteDevice = ({
     status = 204,
 }: MockDeleteDeviceParams = {}): HttpHandler =>
     http.delete('*/api/v3/devices', () => new HttpResponse(null, { status }))
+
+export type MockGetPeraChainsParams = {
+    /** CAIP-2 ids the deployment serves. */
+    chainIds?: readonly string[]
+    status?: number
+}
+
+export const mockGetPeraChains = ({
+    chainIds = [],
+    status = 200,
+}: MockGetPeraChainsParams = {}): HttpHandler =>
+    http.get('*/api/v4/chains/', () =>
+        status === 200
+            ? HttpResponse.json({
+                  results: chainIds.map(chain_id => ({
+                      chain_id,
+                      name: chain_id,
+                      native_asset_id: '',
+                      native_symbol: '',
+                      native_decimals: 18,
+                      logo_url: null,
+                      explorer_url: null,
+                      is_testnet: false,
+                  })),
+              })
+            : new HttpResponse(null, { status }),
+    )

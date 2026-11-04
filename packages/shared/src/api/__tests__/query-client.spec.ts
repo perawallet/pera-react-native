@@ -53,6 +53,7 @@ const {
     servicesByScopeKey,
     extraScopes,
     switchedOffChainIds,
+    refusedScopeKeys,
     resetMockScopeConfig,
 } = vi.hoisted(() => {
     const mockNetworks = {
@@ -86,10 +87,13 @@ const {
 
     // Chains whose remote kill switch is on; resetMockScopeConfig clears it.
     const switchedOffChainIds = new Set<string>()
+    // `chainId/networkId` of scopes the backend refuses; cleared the same way.
+    const refusedScopeKeys = new Set<string>()
 
     const resetMockScopeConfig = () => {
         extraScopes.length = 0
         switchedOffChainIds.clear()
+        refusedScopeKeys.clear()
         for (const key of Object.keys(servicesByScopeKey)) {
             delete servicesByScopeKey[key]
         }
@@ -113,6 +117,7 @@ const {
         servicesByScopeKey,
         extraScopes,
         switchedOffChainIds,
+        refusedScopeKeys,
         resetMockScopeConfig,
     }
 })
@@ -161,6 +166,11 @@ vi.mock('@perawallet/wallet-core-config', () => {
                 : findExtraScope(scope)?.deployment,
         isPeraBackendSwitchedOff: (chainId: string) =>
             switchedOffChainIds.has(chainId),
+        isPeraScopeRefused: (scope: Scope) =>
+            refusedScopeKeys.has(`${scope.chainId}/${scope.networkId}`),
+        markPeraScopeRefused: (scope: Scope) => {
+            refusedScopeKeys.add(`${scope.chainId}/${scope.networkId}`)
+        },
         hasPeraService: (scope: Scope, service: string) =>
             servicesByScopeKey[`${scope.chainId}/${scope.networkId}`]?.includes(
                 service,
@@ -1320,22 +1330,104 @@ describe('queryClient', () => {
         beforeEach(() => vi.resetModules())
         afterEach(() => vi.resetModules())
 
-        it('is asked once, then refused locally with the same error until relaunch', async () => {
+        it.each(['chain_not_enabled', 'unknown_chain'])(
+            'a 422 %s rejects as a chain-refused service error and refuses the scope',
+            async code => {
+                const { queryClient } = await import('../query-client')
+                const { isChainRefusedError } =
+                    await import('../../errors/network')
+                const { PeraServiceUnavailableError } =
+                    await import('../../errors/pera-service')
+                mockKy.mockRejectedValueOnce(
+                    Object.assign(new MockHTTPError(422), {
+                        data: { code, error: 'refused' },
+                    }),
+                )
+
+                const error = await queryClient({
+                    ...request,
+                    service: 'assets',
+                }).catch((thrown: unknown) => thrown)
+
+                expect(error).toBeInstanceOf(PeraServiceUnavailableError)
+                expect(error).toMatchObject({
+                    isChainRefused: true,
+                    scope,
+                    service: 'assets',
+                })
+                expect(isChainRefusedError(error)).toBe(true)
+                expect(refusedScopeKeys.has('algorand/mainnet')).toBe(true)
+            },
+        )
+
+        it('sends nothing more for a refused scope, and still sends for another', async () => {
             const { queryClient } = await import('../query-client')
             const { isChainRefusedError } = await import('../../errors/network')
             mockKy.mockRejectedValueOnce(chainRefusal())
-
-            const first = await queryClient(request).catch(
-                (thrown: unknown) => thrown,
-            )
+            await queryClient(request).catch(() => undefined)
             const callsAfterFirst = mockKy.mock.calls.length
+
             const second = await queryClient(request).catch(
                 (thrown: unknown) => thrown,
             )
 
-            expect(isChainRefusedError(first)).toBe(true)
-            expect(second).toBe(first)
+            expect(isChainRefusedError(second)).toBe(true)
             expect(mockKy.mock.calls.length).toBe(callsAfterFirst)
+
+            mockJson.mockResolvedValue({ ok: true })
+            const other = await queryClient({
+                ...request,
+                scope: { chainId: 'algorand', networkId: 'testnet' },
+            })
+            expect(other.data).toEqual({ ok: true })
+        })
+
+        it('sends nothing for a scope its deployment already refuses', async () => {
+            const { queryClient } = await import('../query-client')
+            const { isChainRefusedError } = await import('../../errors/network')
+            refusedScopeKeys.add('algorand/mainnet')
+
+            const error = await queryClient(request).catch(
+                (thrown: unknown) => thrown,
+            )
+
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(mockKy).not.toHaveBeenCalled()
+        })
+
+        it('keeps any other 422 a network error', async () => {
+            const { queryClient } = await import('../query-client')
+            const { PeraNetworkError } = await import('../../errors/network')
+            mockKy.mockRejectedValueOnce(
+                Object.assign(new MockHTTPError(422), {
+                    data: { code: 'invalid_asset_id', error: 'bad id' },
+                }),
+            )
+
+            const error = await queryClient(request).catch(
+                (thrown: unknown) => thrown,
+            )
+
+            expect(error).toBeInstanceOf(PeraNetworkError)
+            expect(refusedScopeKeys.size).toBe(0)
+        })
+
+        it('keeps a refusal of a deployment request a network error', async () => {
+            const { queryClient } = await import('../query-client')
+            const { PeraNetworkError, isChainRefusedError } =
+                await import('../../errors/network')
+            mockKy.mockRejectedValueOnce(chainRefusal())
+
+            const error = await queryClient({
+                backend: 'pera',
+                deployment: 'live',
+                url: '/api/v4/devices/',
+                method: 'POST',
+            }).catch((thrown: unknown) => thrown)
+
+            expect(error).toBeInstanceOf(PeraNetworkError)
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(refusedScopeKeys.size).toBe(0)
         })
 
         it('still asks again after any other failure', async () => {
@@ -1349,7 +1441,7 @@ describe('queryClient', () => {
             expect(response.data).toEqual({ ok: true })
         })
 
-        it('logs the refusal at warn level, not error', async () => {
+        it('logs the refusal at info level, never warn or error', async () => {
             await import('../query-client')
             const [beforeError] = capturedHooks.beforeError
 
@@ -1359,10 +1451,11 @@ describe('queryClient', () => {
                 error: chainRefusal(),
             })
 
-            expect(mockLogger.warn).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 'Request refused chain',
                 expect.objectContaining({ status: 422 }),
             )
+            expect(mockLogger.warn).not.toHaveBeenCalled()
             expect(mockLogger.error).not.toHaveBeenCalled()
         })
     })

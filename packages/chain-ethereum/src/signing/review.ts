@@ -56,7 +56,11 @@ import {
     decodeEvmContractAction,
     hidesUnknownContractNotice,
 } from './contract-actions'
-import { findKnownEvmContract, wrappedNativeOf } from './known-contracts'
+import {
+    findKnownEvmContract,
+    knownSpenderOf,
+    wrappedNativeOf,
+} from './known-contracts'
 import type { EthereumPayloadFeeEstimate } from './adapter'
 import type { EvmStandardCall } from './standard-call-types'
 import {
@@ -315,10 +319,11 @@ const viewOf = (
         nft,
         call: standard,
         knownContract,
+        knownSpender,
         action,
     }: Pick<
         EthereumTransactionView,
-        'token' | 'nft' | 'call' | 'knownContract' | 'action'
+        'token' | 'nft' | 'call' | 'knownContract' | 'knownSpender' | 'action'
     > = {},
 ): EthereumTransactionView => ({
     kind,
@@ -334,6 +339,7 @@ const viewOf = (
     ...(nft && { nft }),
     ...(standard && { call: standard }),
     ...(knownContract && { knownContract }),
+    ...(knownSpender && { knownSpender }),
     ...(action && { action }),
 })
 
@@ -349,8 +355,15 @@ const contractCallView = (
         eip155ChainId !== undefined && to
             ? findKnownEvmContract(eip155ChainId, to)
             : undefined
+    const spender =
+        standard?.kind === 'approve' || standard?.kind === 'increase-allowance'
+            ? knownSpenderOf(eip155ChainId, standard.spender)
+            : undefined
     if (eip155ChainId === undefined || !to || !known) {
-        return viewOf(call, 'contract-call', standard && { call: standard })
+        return viewOf(call, 'contract-call', {
+            ...(standard && { call: standard }),
+            ...(spender && { knownSpender: spender }),
+        })
     }
     // A standard token call keeps its own review, even to a known contract.
     const action = standard
@@ -362,6 +375,7 @@ const contractCallView = (
           )
     return viewOf(call, 'contract-call', {
         ...(standard && { call: standard }),
+        ...(spender && { knownSpender: spender }),
         knownContract: {
             kind: known.kind,
             name: known.name,

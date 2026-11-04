@@ -1204,6 +1204,19 @@ export const getSheetSections = (): GallerySection[] => [
                                 <SearchFilterContent
                                     scopes={['accounts', 'contacts', 'assets']}
                                     onToggleScope={() => undefined}
+                                    chainFilterOptions={[
+                                        { value: null, label: 'All' },
+                                        {
+                                            value: 'algorand',
+                                            label: 'Algorand',
+                                        },
+                                        {
+                                            value: 'ethereum',
+                                            label: 'Ethereum',
+                                        },
+                                    ]}
+                                    selectedChainId={null}
+                                    onSelectChain={() => undefined}
                                 />
                             </GallerySheetBoundary>
                         ),

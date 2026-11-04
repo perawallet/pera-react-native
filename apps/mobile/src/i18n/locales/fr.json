@@ -512,6 +512,7 @@
         "type_watch": "Compte de suivi",
         "type_ledger": "Compte Ledger",
         "type_multisig": "Compte partagé",
+        "type_multisig_signers": "Partagé · {{threshold}} signataires sur {{total}}",
         "type_quantum": "Compte quantique",
         "type_rekeyed": "Compte rekeyé",
         "type_rekeyed_signer": "Rekeyé (Signé par {{to}})",
@@ -2283,6 +2284,7 @@
             "button": "Récupérer",
             "failed_title": "Échec de l’importation",
             "failed_body": "Une erreur s’est produite lors de l’importation de votre wallet",
+            "failed_networks_body": "Impossible de vérifier : {{networks}}. Vérifiez votre connexion et réessayez.",
             "duplicate_account_title": "Compte déjà ajouté",
             "duplicate_account_body": "Ce compte est déjà dans votre wallet.",
             "invalid_mnemonic_title": "Passphrase invalide",
@@ -2373,9 +2375,12 @@
             "select_all": "Tout sélectionner",
             "already_imported": "déjà importé",
             "import_button": "Importer les comptes",
+            "go_to_wallet": "Aller au wallet",
             "total_value": "<0/> au total",
             "all_imported_title": "Déjà dans votre wallet",
-            "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée."
+            "all_imported_body": "Tous les comptes de ce wallet figurent déjà dans Pera. Si l’un d’eux est ajouté comme compte de suivi, supprimez-le d’abord, puis importez-le à nouveau pour l’ajouter avec un accès complet.",
+            "unchecked_networks_title": "Impossible de vérifier : {{networks}}",
+            "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} comptes rekeyés trouvés",
@@ -2919,7 +2924,7 @@
         "empty_prompt_body": "Recherchez dans vos comptes, contacts et actifs",
         "show_more": "Afficher {{count}} de plus",
         "no_results_title": "Aucun résultat",
-        "no_results_body": "Essayez un autre terme de recherche",
+        "no_results_body": "Essayez de rechercher par nom de compte, adresse ou réseau",
         "sections": {
             "accounts": "Comptes",
             "contacts": "Contacts",
@@ -2929,7 +2934,8 @@
             "title": "Options de recherche",
             "accounts": "Inclure les comptes",
             "contacts": "Inclure les contacts",
-            "assets": "Inclure les actifs"
+            "assets": "Inclure les actifs",
+            "network": "Réseau"
         }
     },
     "security": {
@@ -3424,7 +3430,15 @@
             "spender_label": "Adresse autorisée",
             "unlimited": "Illimité",
             "deadline_label": "Date limite",
-            "never": "Jamais"
+            "never": "Jamais",
+            "known_title": "À propos de cette autorisation",
+            "known_description": "{{name}} est un contrat connu",
+            "known_spend_note": "{{name}} est un contrat connu. Il ne peut déplacer ce token que dans le cadre d’une transaction ou d’une signature que vous approuvez.",
+            "known_unlimited_note": "Le montant est illimité : vous n’aurez pas à autoriser de nouveau ce token pour {{name}}.",
+            "allow_title": "Autoriser {{spender}} à utiliser vos {{asset}}",
+            "allow_title_assets": "Autoriser {{spender}} à utiliser vos actifs",
+            "allow_title_unknown": "Autoriser une autre adresse à utiliser vos {{asset}}",
+            "allow_title_unknown_assets": "Autoriser une autre adresse à utiliser vos actifs"
         },
         "collection_approval": {
             "warning": "Cela permet à l'opérateur de transférer tous les éléments que vous détenez dans cette collection, y compris ceux que vous recevrez plus tard, jusqu'à ce que vous révoquiez cette autorisation.",
@@ -3828,7 +3842,7 @@
             "origin_unverified": "Pera n’a pas pu vérifier le site web de cette application."
         },
         "permissions": {
-            "heading": "Cette application pourra",
+            "heading": "Cette application peut",
             "view_accounts": "Voir votre adresse et vos soldes",
             "approve_transactions": "Vous demander d’approuver des transactions",
             "sign_messages": "Vous demander de signer des messages",

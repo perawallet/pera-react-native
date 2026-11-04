@@ -23,6 +23,7 @@ import {
     PWScreen,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { InfoCallout } from '@components/InfoCallout'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { DiscoveredAccountRow } from './DiscoveredAccountRow'
 import { useStyles } from './styles'
@@ -38,6 +39,7 @@ export const ImportSelectAddressesScreen = () => {
         canContinue,
         isProcessing,
         importedAccountIds,
+        uncheckedNetworks,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
@@ -57,12 +59,15 @@ export const ImportSelectAddressesScreen = () => {
     return (
         <>
             <PWScreen
-                scroll='never'
+                // The list scrolls itself; the untruncated empty-state copy needs the body to.
+                scroll={areAllImported ? 'auto' : 'never'}
                 footer={
                     <PWButton
                         testID='import_select_addresses_continue_button'
                         title={t(
-                            'onboarding.import_select_addresses.import_button',
+                            areAllImported
+                                ? 'onboarding.import_select_addresses.go_to_wallet'
+                                : 'onboarding.import_select_addresses.import_button',
                         )}
                         onPress={handleContinue}
                         variant='primary'
@@ -87,6 +92,20 @@ export const ImportSelectAddressesScreen = () => {
                         }
                     />
 
+                    {uncheckedNetworks !== undefined && (
+                        <InfoCallout
+                            style={styles.uncheckedNetworks}
+                            testID='import_select_addresses_unchecked_networks'
+                            title={t(
+                                'onboarding.import_select_addresses.unchecked_networks_title',
+                                { networks: uncheckedNetworks },
+                            )}
+                            body={t(
+                                'onboarding.import_select_addresses.unchecked_networks_body',
+                            )}
+                        />
+                    )}
+
                     {areAllImported ? (
                         // Distinct from `searching_accounts.no_new_addresses`,
                         // which says nothing was FOUND. Reaching this screen
@@ -104,6 +123,7 @@ export const ImportSelectAddressesScreen = () => {
                             body={t(
                                 'onboarding.import_select_addresses.all_imported_body',
                             )}
+                            shouldTruncateBody={false}
                         />
                     ) : (
                         <>

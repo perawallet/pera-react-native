@@ -18,6 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { CannotSignNotice } from '@modules/signing/components/CannotSignNotice'
 import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
+import { SpendApprovalTitle } from '@modules/signing/components/SpendApprovalTitle'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
@@ -43,6 +44,12 @@ export const MessageSigningScreen = () => {
     } = useMessageSigningScreen()
 
     if (!summary) return null
+
+    // A recognised permit is titled by what it grants; its type name means nothing to a reader.
+    const spendReview =
+        scope && summary.spendApproval
+            ? { approval: summary.spendApproval, scope }
+            : undefined
 
     return (
         <PWScreen
@@ -80,46 +87,54 @@ export const MessageSigningScreen = () => {
                 />
             )}
             <PWView style={styles.bodyContainer}>
-                <PWText variant='h2'>
-                    {t(summary.title.key, summary.title.params)}
-                </PWText>
+                {spendReview ? (
+                    <SpendApprovalTitle
+                        approval={spendReview.approval}
+                        scope={spendReview.scope}
+                    />
+                ) : (
+                    <PWText variant='h2'>
+                        {t(summary.title.key, summary.title.params)}
+                    </PWText>
+                )}
 
                 <PWView style={styles.section}>
-                    <PWText
-                        variant='captionMedium'
-                        style={styles.sectionLabel}
-                    >
-                        {t('signing.arbitrary_data_view.data_label')}
-                    </PWText>
-                    {!!summary.preview && (
+                    {!spendReview && (
+                        <PWText
+                            variant='captionMedium'
+                            style={styles.sectionLabel}
+                        >
+                            {t('signing.arbitrary_data_view.data_label')}
+                        </PWText>
+                    )}
+                    {!spendReview && !!summary.preview && (
                         <PWView style={styles.dataBox}>
                             <PWText variant='mono'>{summary.preview}</PWText>
                         </PWView>
                     )}
                     {summary.kind === 'raw' && <SignedDataWarning />}
-                    {!!summary.spendApproval && !!scope && (
+                    {spendReview && (
                         <SpendApprovalWarning
-                            approval={summary.spendApproval}
-                            scope={scope}
+                            approval={spendReview.approval}
+                            scope={spendReview.scope}
                         />
                     )}
                     <RequestSiteWarning />
                     <RequestAddressWarning addresses={reviewedAddresses} />
-                    {summary.kind === 'typed-data' &&
-                        (!summary.spendApproval || !scope) && (
-                            <InfoCallout
-                                icon='warning'
-                                iconSize='sm'
-                                titleVariant='bodySemibold'
-                                title={t(
-                                    'signing.arbitrary_data_view.typed_data_warning_title',
-                                )}
-                                body={t(
-                                    'signing.arbitrary_data_view.typed_data_warning_body',
-                                )}
-                                testID='message-signing-typed-data-warning'
-                            />
-                        )}
+                    {summary.kind === 'typed-data' && !spendReview && (
+                        <InfoCallout
+                            icon='warning'
+                            iconSize='sm'
+                            titleVariant='bodySemibold'
+                            title={t(
+                                'signing.arbitrary_data_view.typed_data_warning_title',
+                            )}
+                            body={t(
+                                'signing.arbitrary_data_view.typed_data_warning_body',
+                            )}
+                            testID='message-signing-typed-data-warning'
+                        />
+                    )}
                     {!!summary.tree && <MessageTreeView nodes={summary.tree} />}
                 </PWView>
 

@@ -15,7 +15,7 @@ import type {
     ChainScope,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
-import { PWText, PWView } from '@components/core'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { PanelButton } from '@components/PanelButton'
@@ -37,32 +37,48 @@ export const SpendApprovalWarning = ({
 }: SpendApprovalWarningProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { rows, deadlineText } = useSpendApprovalWarning(approval)
+    const { rows, deadlineText, knownSpenderName } =
+        useSpendApprovalWarning(approval)
     const { request: requestBottomSheet } = useBottomSheet()
+
+    const title = knownSpenderName
+        ? t('signing.spend_approval.known_title')
+        : t('transactions.warning.title')
 
     const handleOpen = useCallback(() => {
         void requestBottomSheet({
-            contents: <SpendApprovalWarningContent rows={rows} />,
+            contents: (
+                <SpendApprovalWarningContent
+                    title={title}
+                    rows={rows}
+                />
+            ),
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, rows])
+    }, [requestBottomSheet, rows, title])
 
     return (
         <PWView style={styles.container}>
             <PanelButton
                 onPress={handleOpen}
-                title={t('transactions.warning.title')}
+                title={title}
                 titleWeight='h4'
-                description={t('transactions.warning.title_cta', {
-                    count: rows.length,
-                })}
+                description={
+                    knownSpenderName
+                        ? t('signing.spend_approval.known_description', {
+                              name: knownSpenderName,
+                          })
+                        : t('transactions.warning.title_cta', {
+                              count: rows.length,
+                          })
+                }
                 leftIcon='info'
                 rightIcon='chevron-right'
-                variant='error'
+                variant={knownSpenderName ? 'default' : 'error'}
                 paddingStyle='dense'
                 style={styles.panelButton}
                 testID='message-signing-spend-approval-warning'
@@ -70,11 +86,27 @@ export const SpendApprovalWarning = ({
             <KeyValueRow
                 testID='message-signing-spend-approval-spender'
                 title={t('signing.spend_approval.spender_label')}
+                verticalAlignment={knownSpenderName ? 'top' : undefined}
             >
-                <AddressDisplay
-                    address={approval.spender}
-                    displayType='address-only'
-                />
+                <PWView style={styles.spender}>
+                    {!!knownSpenderName && (
+                        <PWView style={styles.spenderName}>
+                            <PWText>{knownSpenderName}</PWText>
+                            <PWIcon
+                                testID='message-signing-spend-approval-spender-verified'
+                                name='assets/verified'
+                                size='sm'
+                                accessibilityLabel={t(
+                                    'ethereum.known_contract.verified',
+                                )}
+                            />
+                        </PWView>
+                    )}
+                    <AddressDisplay
+                        address={approval.spender}
+                        displayType='address-only'
+                    />
+                </PWView>
             </KeyValueRow>
             {approval.allowances.map((allowance, index) => (
                 <SpendAllowanceRow

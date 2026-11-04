@@ -206,6 +206,14 @@ describe('useSigningCompletedDriver', () => {
             expect(requestBottomSheetMock).not.toHaveBeenCalled()
         })
 
+        it('suppresses the sheet for injected-provider signing (in-app browser and extension dApps)', () => {
+            renderHook(() => useSigningCompletedDriver())
+
+            publishCompleted(buildRequest('injected'))
+
+            expect(requestBottomSheetMock).not.toHaveBeenCalled()
+        })
+
         it('suppresses the sheet for WC sessions paired inside the in-app browser', () => {
             seedConnection('wc-client-9', { source: 'in-app' })
             renderHook(() => useSigningCompletedDriver())

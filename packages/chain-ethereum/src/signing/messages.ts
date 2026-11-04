@@ -51,7 +51,10 @@ import {
     type ReviewedAddressRole,
 } from '@perawallet/wallet-core-signing'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
-import { eip155ChainIdOf } from '../blockchain/utils/caip19'
+import {
+    eip155ChainIdOf,
+    eip155ChainIdOfNetwork,
+} from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { ETHEREUM_WC_V2_METHOD } from '../connect/walletConnect'
 import {
@@ -335,6 +338,7 @@ const describePersonalSign = (payload: unknown): MessageSummary => {
 const describeTypedData = (
     payload: unknown,
     chain: EvmChain,
+    eip155ChainId?: number,
 ): MessageSummary => {
     const title = { key: TITLE_KEY }
     let typedData: TypedDataDefinition
@@ -345,7 +349,12 @@ const describeTypedData = (
     } catch {
         return { kind: 'raw', title }
     }
-    const spendApproval = spendApprovalOf(typedData, Date.now(), chain)
+    const spendApproval = spendApprovalOf(
+        typedData,
+        Date.now(),
+        chain,
+        eip155ChainId,
+    )
     return {
         kind: 'typed-data',
         title,
@@ -362,7 +371,11 @@ const describeWith =
             return describePersonalSign(request.payload)
         }
         if (request.method === SIGN_TYPED_DATA_V4) {
-            return describeTypedData(request.payload, chain)
+            return describeTypedData(
+                request.payload,
+                chain,
+                eip155ChainIdOfNetwork(chain, request.scope.networkId),
+            )
         }
         throw new Error(`Unsupported message method ${request.method}`)
     }

@@ -652,7 +652,7 @@ describe('useAccountValueTotalsQuery', () => {
             mockGetAccountPortfolioTotals.mockResolvedValue(totals(10, 20))
         })
 
-        it('keeps the fiat total of a lone chain on its test network', async () => {
+        it("leaves a lone chain's test network out of the fiat total", async () => {
             registerChain(SCOPE.chainId, TESTNET_SCOPE.networkId)
 
             const { result } = renderHook(
@@ -661,6 +661,23 @@ describe('useAccountValueTotalsQuery', () => {
                         [makeAccount('A1')],
                         TESTNET_SCOPE,
                     ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.hasFiatTotal).toBe(false)
+            expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
+            expect(
+                result.current.accountValueTotals.get(valueKey('A1'))?.usdValue,
+            ).toEqual(new Decimal(40))
+            expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
+        })
+
+        it("keeps a lone chain's mainnet fiat total", async () => {
+            registerChain(SCOPE.chainId, TESTNET_SCOPE.networkId)
+
+            const { result } = renderHook(
+                () => useAccountValueTotalsQuery([makeAccount('A1')], SCOPE),
                 { wrapper: createWrapper() },
             )
             await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -702,7 +719,7 @@ describe('useAccountValueTotalsQuery', () => {
             expect(testTier.portfolioNativeValue).toEqual(new Decimal(20))
         })
 
-        it('leaves the test network of the first chain out once a second chain is registered', async () => {
+        it('leaves the test network of the first chain out with a second chain registered', async () => {
             registerBothChains()
 
             const { result } = renderHook(

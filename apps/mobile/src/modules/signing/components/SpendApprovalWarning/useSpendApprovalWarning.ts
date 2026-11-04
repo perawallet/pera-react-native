@@ -31,6 +31,8 @@ export type SpendApprovalWarningRow = {
 export type UseSpendApprovalWarningResult = {
     rows: SpendApprovalWarningRow[]
     deadlineText: string
+    /** Set when the spender is a well-known contract: the panel reads as information, not danger. */
+    knownSpenderName?: string
 }
 
 type RowCopy = {
@@ -64,13 +66,27 @@ const ROW_COPY: Record<SpendRowType, RowCopy> = {
 
 const NFT_SPEND_MESSAGE = i18nKey('signing.spend_approval.nft_spend_warning')
 
+// A registry contract moves tokens only inside a call or signature the signer
+// approves, so the "anyone can drain you" copy would overstate the risk.
+const KNOWN_SPENDER_COPY: Partial<Record<SpendRowType, RowCopy>> = {
+    spend: {
+        icon: 'outflow',
+        message: i18nKey('signing.spend_approval.known_spend_note'),
+    },
+    unlimited: {
+        icon: 'info',
+        message: i18nKey('signing.spend_approval.known_unlimited_note'),
+    },
+}
+
 export const useSpendApprovalWarning = (
     approval: SpendApproval,
 ): UseSpendApprovalWarningResult => {
     const { t } = useLanguage()
 
     return useMemo(() => {
-        const { spender, allowances, deadline, isLongLived } = approval
+        const { spender, knownSpender, allowances, deadline, isLongLived } =
+            approval
         const isNftOnly = allowances.every(allowance => !!allowance.nft)
         const types: SpendRowType[] = ['spend']
         if (allowances.some(allowance => allowance.amount === undefined)) {
@@ -83,6 +99,20 @@ export const useSpendApprovalWarning = (
         }
 
         const rows = types.map((type): SpendApprovalWarningRow => {
+            const known = knownSpender && KNOWN_SPENDER_COPY[type]
+            if (known) {
+                return {
+                    type,
+                    icon: known.icon,
+                    message: t(known.message, { name: knownSpender.name }),
+                    caption:
+                        type === 'spend'
+                            ? t('signing.spend_approval.spender_caption', {
+                                  address: spender,
+                              })
+                            : undefined,
+                }
+            }
             const { icon, message, emphasis } = ROW_COPY[type]
             return {
                 type,
@@ -106,6 +136,7 @@ export const useSpendApprovalWarning = (
                 deadline === undefined
                     ? t('signing.spend_approval.never')
                     : formatDatetime(new Date(deadline)),
+            ...(knownSpender && { knownSpenderName: knownSpender.name }),
         }
     }, [approval, t])
 }

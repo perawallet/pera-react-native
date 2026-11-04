@@ -512,6 +512,7 @@
         "type_watch": "Conta de observação",
         "type_ledger": "Conta Ledger",
         "type_multisig": "Conta compartilhada",
+        "type_multisig_signers": "Compartilhada · {{threshold}} de {{total}} signatários",
         "type_quantum": "Conta Quantum",
         "type_rekeyed": "Conta com rekey",
         "type_rekeyed_signer": "Rekey (Assinada por {{to}})",
@@ -2287,6 +2288,7 @@
             "button": "Recuperar",
             "failed_title": "Falha na importação",
             "failed_body": "Ocorreu um erro ao tentar importar sua wallet",
+            "failed_networks_body": "Não foi possível verificar: {{networks}}. Verifique sua conexão e tente novamente.",
             "duplicate_account_title": "Conta já adicionada",
             "duplicate_account_body": "Esta conta já está na sua wallet.",
             "invalid_mnemonic_title": "Passphrase inválida",
@@ -2377,9 +2379,12 @@
             "select_all": "Selecionar todos",
             "already_imported": "já importado",
             "import_button": "Importar contas",
+            "go_to_wallet": "Ir para a wallet",
             "total_value": "<0/> no total",
             "all_imported_title": "Já está na sua wallet",
-            "all_imported_body": "Todos os endereços que esta wallet deriva já estão na Pera, incluindo os que você apenas observa. Remova um endereço para adicioná-lo novamente com a chave privada dele."
+            "all_imported_body": "Todas as contas desta wallet já estão na Pera. Se alguma foi adicionada como conta de observação, remova-a primeiro e importe novamente para adicioná-la com acesso completo.",
+            "unchecked_networks_title": "Não foi possível verificar: {{networks}}",
+            "unchecked_networks_body": "As contas das outras redes estão listadas. Você pode buscar novas contas novamente mais tarde."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} contas com rekey encontradas",
@@ -2935,7 +2940,7 @@
         "empty_prompt_body": "Busque em suas contas, contatos e ativos",
         "show_more": "Mostrar {{count}} mais",
         "no_results_title": "Nenhum resultado",
-        "no_results_body": "Tente outro termo de busca",
+        "no_results_body": "Tente buscar por nome da conta, endereço ou rede",
         "sections": {
             "accounts": "Contas",
             "contacts": "Contatos",
@@ -2945,7 +2950,8 @@
             "title": "Opções de busca",
             "accounts": "Incluir contas",
             "contacts": "Incluir contatos",
-            "assets": "Incluir ativos"
+            "assets": "Incluir ativos",
+            "network": "Rede"
         }
     },
     "security": {
@@ -3440,7 +3446,15 @@
             "spender_label": "Endereço autorizado",
             "unlimited": "Ilimitado",
             "deadline_label": "Prazo",
-            "never": "Nunca"
+            "never": "Nunca",
+            "known_title": "Sobre esta autorização",
+            "known_description": "{{name}} é um contrato conhecido",
+            "known_spend_note": "{{name}} é um contrato conhecido. Ele só pode movimentar este token como parte de uma transação ou assinatura que você aprovar.",
+            "known_unlimited_note": "O valor é ilimitado, então você não vai precisar autorizar este token para {{name}} de novo.",
+            "allow_title": "Permitir que {{spender}} use seus {{asset}}",
+            "allow_title_assets": "Permitir que {{spender}} use seus ativos",
+            "allow_title_unknown": "Permitir que outro endereço use seus {{asset}}",
+            "allow_title_unknown_assets": "Permitir que outro endereço use seus ativos"
         },
         "collection_approval": {
             "warning": "Isso permite que o operador transfira todos os itens que você tem nesta coleção, inclusive os que receber depois, até você revogar.",
@@ -3850,7 +3864,7 @@
             "origin_unverified": "A Pera não conseguiu verificar o site deste app."
         },
         "permissions": {
-            "heading": "Este app poderá",
+            "heading": "Este app pode",
             "view_accounts": "Ver seu endereço e saldos",
             "approve_transactions": "Pedir que você aprove transações",
             "sign_messages": "Pedir que você assine mensagens",

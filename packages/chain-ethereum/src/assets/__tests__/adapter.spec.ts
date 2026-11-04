@@ -1723,6 +1723,32 @@ describe('search on every EVM chain and network', () => {
     )
 
     it.each(NETWORKS)(
+        '%s: a scope its deployment refuses asks nothing and rejects as a chain refusal',
+        async (_network, chain, tier) => {
+            const requested: string[] = []
+            server.use(
+                http.get(tokenListPath, ({ params }) => {
+                    requested.push(String(params.chainId))
+                    return HttpResponse.json({ results: [] })
+                }),
+            )
+            const adapter = createEthereumAssetsAdapter(
+                testChainContext({ chain, isChainRefused: true }),
+                chain,
+            )
+
+            const error = await adapter.search!(
+                { query: '', hasCollectible: false },
+                evmScopeOf(chain, tier),
+            ).catch((caught: unknown) => caught)
+
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(isAssetSearchUnavailableError(error)).toBe(true)
+            expect(requested).toEqual([])
+        },
+    )
+
+    it.each(NETWORKS)(
         '%s: a build listing no assets service asks nothing and rejects as a missing service, which keeps the default copy',
         async (_network, chain, tier) => {
             const requested: string[] = []

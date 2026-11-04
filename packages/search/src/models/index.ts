@@ -13,14 +13,34 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export const SEARCH_SCOPES = ['accounts', 'contacts', 'assets'] as const
 export type SearchScope = (typeof SEARCH_SCOPES)[number]
 
+export type AccountSearchResult = {
+    account: WalletAccount
+    /**
+     * The chain whose address the result shows, picked by an address match,
+     * then a network-name match, then the network filter; undefined when only
+     * the name matched with no filter, so the account shows its own chain.
+     */
+    chainId: Optional<ChainId>
+}
+
+export type AssetSearchResult = {
+    asset: PeraAsset
+    scope: ChainScope
+}
+
 export type GlobalSearchResults = {
-    accounts: WalletAccount[]
+    accounts: AccountSearchResult[]
     contacts: Contact[]
-    assets: PeraAsset[]
+    assets: AssetSearchResult[]
 }
 
 export const EMPTY_GLOBAL_SEARCH_RESULTS: GlobalSearchResults = {

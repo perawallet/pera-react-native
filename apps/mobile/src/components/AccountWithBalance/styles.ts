@@ -38,6 +38,10 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
         alignItems: 'flex-end',
         flexShrink: 0,
     },
+    secondaryLabel: {
+        flexShrink: 1,
+        color: theme.colors.textGray,
+    },
     fiatBalance: {
         color: theme.colors.textGray,
     },

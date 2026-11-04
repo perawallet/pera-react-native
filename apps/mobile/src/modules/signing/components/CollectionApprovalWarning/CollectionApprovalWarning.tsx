@@ -40,14 +40,19 @@ export const CollectionApprovalWarning = ({
 
     const handleOpen = useCallback(() => {
         void requestBottomSheet({
-            contents: <SpendApprovalWarningContent rows={rows} />,
+            contents: (
+                <SpendApprovalWarningContent
+                    title={t('transactions.warning.title')}
+                    rows={rows}
+                />
+            ),
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, rows])
+    }, [requestBottomSheet, rows, t])
 
     return (
         <PWView style={styles.container}>

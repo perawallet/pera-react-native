@@ -63,6 +63,9 @@ const {
 }))
 
 vi.mock('@hooks/useLanguage')
+vi.mock('@modules/chain-ui', () => ({
+    networkListOf: (chainIds: string[]) => chainIds.join(' & '),
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -289,7 +292,10 @@ describe('useSearchAccountsScreen', () => {
                 },
             },
         ]
-        mockDiscoverImportAccounts.mockResolvedValue(discovered)
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: discovered,
+            failedChainIds: ['base'],
+        })
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -298,10 +304,70 @@ describe('useSearchAccountsScreen', () => {
                 mode: 'import',
                 walletKeyId: 'w-1',
                 accounts: discovered,
+                failedChainIds: ['base'],
             })
             expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
             expect(mockCancelImport).not.toHaveBeenCalled()
         })
+    })
+
+    it('in import mode, shows each network as the walk reports, with no Cancel button', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+        } as SearchAccountsParams
+        mockDiscoverImportAccounts.mockReturnValue(new Promise(() => undefined))
+
+        const { result } = renderHook(() => useSearchAccountsScreen())
+        await waitFor(() =>
+            expect(mockDiscoverImportAccounts).toHaveBeenCalled(),
+        )
+        const { onProgress } = mockDiscoverImportAccounts.mock.calls[0]![0] as {
+            onProgress: (progress: unknown) => void
+        }
+
+        act(() =>
+            onProgress({
+                chainIds: ['algorand', 'base'],
+                failedChainIds: ['base'],
+                checkedAccountCount: 5,
+                foundCount: 2,
+            }),
+        )
+
+        expect(result.current.networks).toEqual([
+            expect.objectContaining({
+                chainId: 'algorand',
+                status: 'checking',
+            }),
+            expect.objectContaining({ chainId: 'base', status: 'failed' }),
+        ])
+        expect(result.current.progressLabel).toBe(
+            'onboarding.searching_accounts.checked_accounts · onboarding.searching_accounts.new_found',
+        )
+        expect(result.current.canCancel).toBe(false)
+    })
+
+    it('in import mode, leaving mid-search aborts the walk through the signal it was given', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+        } as SearchAccountsParams
+        mockDiscoverImportAccounts.mockReturnValue(new Promise(() => undefined))
+
+        renderHook(() => useSearchAccountsScreen())
+        await waitFor(() => {
+            expect(mockBeforeRemoveListeners.current.length).toBeGreaterThan(0)
+            expect(mockDiscoverImportAccounts).toHaveBeenCalled()
+        })
+        const { signal } = mockDiscoverImportAccounts.mock.calls[0]![0] as {
+            signal: AbortSignal
+        }
+        expect(signal.aborted).toBe(false)
+
+        mockBeforeRemoveListeners.current.at(-1)!()
+
+        expect(signal.aborted).toBe(true)
     })
 
     it('in import mode, on empty discovery cancels the import session and goes back', async () => {
@@ -309,7 +375,10 @@ describe('useSearchAccountsScreen', () => {
             mode: 'import',
             walletKeyId: 'w-1',
         } as SearchAccountsParams
-        mockDiscoverImportAccounts.mockResolvedValue([])
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: [],
+            failedChainIds: [],
+        })
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -321,6 +390,28 @@ describe('useSearchAccountsScreen', () => {
             )
             expect(mockGoBack).toHaveBeenCalled()
             expect(mockReplace).not.toHaveBeenCalled()
+        })
+    })
+
+    it('in import mode, on empty discovery names the networks that could not be checked', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+        } as SearchAccountsParams
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: [],
+            failedChainIds: ['algorand', 'ethereum'],
+        })
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account.failed_title',
+                'onboarding.import_account.failed_networks_body',
+            )
+            expect(mockCancelImport).toHaveBeenCalled()
+            expect(mockGoBack).toHaveBeenCalled()
         })
     })
 
@@ -348,7 +439,7 @@ describe('useSearchAccountsScreen', () => {
             mode: 'import',
             walletKeyId: 'w-1',
         } as SearchAccountsParams
-        let finishDiscovery: (accounts: unknown[]) => void = () => undefined
+        let finishDiscovery: (walked: unknown) => void = () => undefined
         mockDiscoverImportAccounts.mockReturnValue(
             new Promise(resolve => {
                 finishDiscovery = resolve
@@ -361,7 +452,7 @@ describe('useSearchAccountsScreen', () => {
             expect(mockDiscoverImportAccounts).toHaveBeenCalled()
         })
         mockBeforeRemoveListeners.current.at(-1)!()
-        finishDiscovery([{ id: '1' }])
+        finishDiscovery({ accounts: [{ id: '1' }], failedChainIds: [] })
         await new Promise(resolve => setTimeout(resolve, 0))
 
         expect(mockCancelImport).toHaveBeenCalledOnce()

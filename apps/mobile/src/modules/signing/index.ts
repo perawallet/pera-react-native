@@ -23,6 +23,7 @@ export {
     SpendApprovalWarning,
     type SpendApprovalWarningProps,
 } from './components/SpendApprovalWarning'
+export { useSpendApprovalTitle } from './components/SpendApprovalTitle'
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
 export { TransactionDetailLayout } from './transactions/TransactionDetailLayout'
 export type { TransactionDetailLayoutProps } from './transactions/TransactionDetailLayout'

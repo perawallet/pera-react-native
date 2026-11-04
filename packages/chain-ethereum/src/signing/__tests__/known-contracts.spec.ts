@@ -17,6 +17,7 @@ import { EVM_CHAIN_NETWORKS } from '@perawallet/wallet-core-chain-contract'
 import {
     KNOWN_EVM_CONTRACTS,
     findKnownEvmContract,
+    knownSpenderOf,
     wrappedNativeOf,
 } from '../known-contracts'
 
@@ -146,5 +147,29 @@ describe('wrappedNativeOf', () => {
 
     it('is undefined on an unknown chain', () => {
         expect(wrappedNativeOf(11155111)).toBeUndefined()
+    })
+})
+
+describe('knownSpenderOf', () => {
+    it('labels a registry spender with its name and project domain', () => {
+        expect(knownSpenderOf(1, PERMIT2)).toEqual({
+            name: 'Permit2',
+            projectDomain: 'uniswap.org',
+        })
+    })
+
+    it('leaves wrapped native without a project domain', () => {
+        expect(knownSpenderOf(1, MAINNET_WETH)).toEqual({
+            name: 'Wrapped Ether',
+        })
+    })
+
+    it('is undefined with no chain, an unlisted chain, an unknown spender or a non-address', () => {
+        expect(knownSpenderOf(undefined, PERMIT2)).toBeUndefined()
+        expect(knownSpenderOf(11_155_111, PERMIT2)).toBeUndefined()
+        expect(
+            knownSpenderOf(1, '0x1111111111111111111111111111111111111111'),
+        ).toBeUndefined()
+        expect(knownSpenderOf(1, 'not-an-address')).toBeUndefined()
     })
 })

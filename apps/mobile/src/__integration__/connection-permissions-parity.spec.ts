@@ -53,9 +53,11 @@ describe('connection permissions cover every signing method', () => {
         ).toEqual([])
     })
 
-    it('shows the in-app browser’s connect grant as reading accounts and switching networks', () => {
+    it('shows the in-app browser’s connect grant as every request a connected site can make', () => {
         expect(toConnectionPermissions(EIP1193_PERMISSION_METHODS)).toEqual([
             'view-accounts',
+            'approve-transactions',
+            'sign-messages',
             'switch-networks',
         ])
     })

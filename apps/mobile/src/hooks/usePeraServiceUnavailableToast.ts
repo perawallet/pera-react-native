@@ -11,7 +11,10 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { isPeraBackendSwitchedOff } from '@perawallet/wallet-core-config'
+import {
+    isPeraBackendSwitchedOff,
+    isPeraScopeRefused,
+} from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { setOnPeraBackendUnavailable } from '@providers/queryClient'
@@ -22,9 +25,10 @@ import { setOnPeraBackendUnavailable } from '@providers/queryClient'
  * request made on BetaNet or a custom node) for a given target: a scope, or a
  * deployment for the chain-agnostic endpoints.
  *
- * Silent for a chain's remote kill switch: it is a backend pause, which the
- * affected surfaces already show, and the wording here is about the network.
- * The switch is read here as well as off the error, since adapters raise this
+ * Silent for a chain's remote kill switch, and for a chain the backend doesn't
+ * serve: each is a backend pause, which the affected surfaces already show,
+ * and the wording here is about the network.
+ * Both are read here as well as off the error, since adapters raise this
  * error themselves for a scope that lists no services.
  *
  * Deduped per target because an ungated Pera query — the preferred-currency
@@ -50,10 +54,13 @@ export const usePeraServiceUnavailableToast = (): void => {
 
     useEffect(() => {
         return setOnPeraBackendUnavailable(error => {
-            const { targetKey, scope, isSwitchedOff } = error
+            const { targetKey, scope, isSwitchedOff, isChainRefused } = error
             if (
                 isSwitchedOff ||
-                (scope && isPeraBackendSwitchedOff(scope.chainId))
+                isChainRefused ||
+                (scope &&
+                    (isPeraBackendSwitchedOff(scope.chainId) ||
+                        isPeraScopeRefused(scope)))
             ) {
                 return
             }

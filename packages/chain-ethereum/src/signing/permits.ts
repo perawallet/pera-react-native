@@ -23,6 +23,7 @@ import { toEvmNftAssetId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { isRecord } from './adapter'
 import { toAllowanceAmount } from './allowance'
+import { knownSpenderOf } from './known-contracts'
 
 const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
 
@@ -316,6 +317,7 @@ export const spendApprovalOf = (
     typedData: TypedDataDefinition,
     now: number,
     chain: EvmChain,
+    eip155ChainId?: number,
 ): Optional<SpendApproval> => {
     try {
         const parsed = parseTypedData(typedData)
@@ -331,8 +333,10 @@ export const spendApprovalOf = (
         }
         const ms = parsed.expiry * 1000n
         const deadline = ms > MAX_DATE_MS ? undefined : Number(ms)
+        const knownSpender = knownSpenderOf(eip155ChainId, spender)
         return {
             spender,
+            ...(knownSpender && { knownSpender }),
             allowances: (parsed.allowances as TokenAllowance[]).map(
                 ({ assetId, ...allowance }) => ({
                     ...allowance,

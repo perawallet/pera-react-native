@@ -512,6 +512,7 @@
         "type_watch": "Beobachtungskonto",
         "type_ledger": "Ledger-Konto",
         "type_multisig": "Gemeinschaftskonto",
+        "type_multisig_signers": "Gemeinsam · {{threshold}} von {{total}} Signierern",
         "type_quantum": "Quantum-Konto",
         "type_rekeyed": "Rekeyed Konto",
         "type_rekeyed_signer": "Rekeyed (Signiert von {{to}})",
@@ -2275,6 +2276,7 @@
             "button": "Wiederherstellen",
             "failed_title": "Import fehlgeschlagen",
             "failed_body": "Beim Importieren deines Wallets ist ein Fehler aufgetreten",
+            "failed_networks_body": "Nicht geprüft werden konnten: {{networks}}. Prüfe deine Verbindung und versuche es erneut.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Dieses Konto befindet sich bereits in deinem Wallet.",
             "invalid_mnemonic_title": "Ungültige Passphrase",
@@ -2365,9 +2367,12 @@
             "select_all": "Alle auswählen",
             "already_imported": "bereits importiert",
             "import_button": "Konten importieren",
+            "go_to_wallet": "Zum Wallet",
             "total_value": "<0/> insgesamt",
             "all_imported_title": "Bereits in deinem Wallet",
-            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
+            "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
+            "unchecked_networks_title": "Nicht geprüft: {{networks}}",
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",
@@ -2911,7 +2916,7 @@
         "empty_prompt_body": "Durchsuche deine Konten, Kontakte und Assets",
         "show_more": "{{count}} weitere anzeigen",
         "no_results_title": "Keine Ergebnisse",
-        "no_results_body": "Versuche einen anderen Suchbegriff",
+        "no_results_body": "Suche nach Kontoname, Adresse oder Netzwerk",
         "sections": {
             "accounts": "Konten",
             "contacts": "Kontakte",
@@ -2921,7 +2926,8 @@
             "title": "Suchoptionen",
             "accounts": "Konten einschließen",
             "contacts": "Kontakte einschließen",
-            "assets": "Assets einschließen"
+            "assets": "Assets einschließen",
+            "network": "Netzwerk"
         }
     },
     "security": {
@@ -3416,7 +3422,15 @@
             "spender_label": "Berechtigte Adresse",
             "unlimited": "Unbegrenzt",
             "deadline_label": "Frist",
-            "never": "Nie"
+            "never": "Nie",
+            "known_title": "Über diese Freigabe",
+            "known_description": "{{name}} ist ein bekannter Smart Contract",
+            "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
+            "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
+            "allow_title_assets": "{{spender}} erlauben, deine Assets zu verwenden",
+            "allow_title_unknown": "Einer anderen Adresse erlauben, deine {{asset}} zu verwenden",
+            "allow_title_unknown_assets": "Einer anderen Adresse erlauben, deine Assets zu verwenden"
         },
         "collection_approval": {
             "warning": "Damit kann der Operator jedes Objekt dieser Sammlung übertragen, das du besitzt, auch künftige, bis du die Freigabe widerrufst.",

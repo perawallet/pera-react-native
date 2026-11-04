@@ -181,6 +181,23 @@ describe('useEthereumStandardCall', () => {
         })
     })
 
+    it("carries the view's well-known spender onto the spend approval", () => {
+        mockRecords({ [TOKEN]: USDC })
+        const knownSpender = { name: 'Permit2', projectDomain: 'uniswap.org' }
+
+        const { result } = renderHook(() =>
+            useEthereumStandardCall(
+                { ...viewWith(approve(2n ** 256n - 1n)), knownSpender },
+                SCOPE,
+            ),
+        )
+
+        expect(result.current.standardCall).toMatchObject({
+            kind: 'token-approval',
+            spendApproval: { spender: SPENDER, knownSpender },
+        })
+    })
+
     it('presents an approve with no fungible record as an NFT approval when the token id has one', () => {
         mockRecords({ [`${TOKEN}/7`]: APE })
 

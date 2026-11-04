@@ -23,4 +23,12 @@ export const useStyles = makeStyles(theme => ({
     asset: {
         gap: theme.spacing.xs,
     },
+    spender: {
+        gap: theme.spacing.xs,
+    },
+    spenderName: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
 }))

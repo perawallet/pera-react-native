@@ -55,6 +55,8 @@ export type ImportSelectAddressesParams =
           mode: 'import'
           walletKeyId: string
           accounts: LocalAccount[]
+          /** Networks the search couldn't check, named on the selection. */
+          failedChainIds?: ChainId[]
       }
 
 /**
