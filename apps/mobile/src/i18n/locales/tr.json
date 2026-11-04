@@ -95,7 +95,9 @@
         "display_nfts": "NFT’leri varlık listesinde göster",
         "display_nfts_description": "NFT varlıkları hesabının varlık listesinde gösterilecek",
         "display_opted_in_nfts": "Opt-in olduğun NFT’leri göster",
-        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin"
+        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin",
+        "show_suspicious": "Şüpheli varlıkları göster",
+        "show_suspicious_description": "Pera’nın olası spam veya dolandırıcılık olarak işaretlediği token’ları gösterir. Bakiyene asla dahil edilmezler"
     },
     "add_asset": {
         "title": "Varlık ekle",
@@ -266,7 +268,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)"
+        "deleted_label": "(Silindi)",
+        "unverified_label": "Doğrulanmamış"
     },
     "asset_details": {
         "about": {
@@ -509,6 +512,7 @@
         "type_watch": "İzleme hesabı",
         "type_ledger": "Ledger hesabı",
         "type_multisig": "Paylaşılan hesap",
+        "type_multisig_signers": "Paylaşılan · {{threshold}}/{{total}} imzalayan",
         "type_quantum": "Quantum hesabı",
         "type_rekeyed": "Rekey yapılmış hesap",
         "type_rekeyed_signer": "Rekey yapıldı ({{to}} imzalıyor)",
@@ -3629,7 +3633,6 @@
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
-            "advanced": "Gelişmiş",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },
@@ -4804,6 +4807,13 @@
             "fee_share": "Swap çıktısının {{percent}} kadarı",
             "fee_recipient": "Alıcı",
             "base_units": "temel birim"
+        },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas limiti",
+            "max_fee_per_gas": "Gas başına maks. ücret",
+            "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
         },
         "known_contract": {
             "title": "Sözleşme",

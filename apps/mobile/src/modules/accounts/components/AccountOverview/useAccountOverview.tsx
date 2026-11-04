@@ -15,14 +15,12 @@ import {
     addressOn,
     useAccountSummaryQuery,
     useEnsureAccountEnriched,
-    useAccountScope,
     useSelectedAccount,
     type WalletAccount,
+    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useReceiveFunds } from '@modules/transactions'
 import {
@@ -60,7 +58,7 @@ export const useAccountOverview = ({
     account,
 }: UseAccountOverviewParams): UseAccountOverviewResult => {
     const selectedAccount = useSelectedAccount()
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, useHomeChainScope().chainId)
     const address = addressOn(account, scope)
     const { setSelectedAccount, setCanSelectAccount, setChainId } =
         useReceiveFunds()

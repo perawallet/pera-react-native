@@ -16,7 +16,6 @@ import {
     type AssetPrice,
     type AssetRef,
     type ChainScope,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AssetAuthorities } from '../chain-adapter'
 import {
@@ -46,7 +45,7 @@ const USDC: PeraAsset = {
     },
 }
 
-const FAKE_CHAIN_ID = LEGACY_CHAIN_ID
+const FAKE_CHAIN_ID = 'algorand'
 
 // A real chain rejects a scope or ref that isn't its own before any request.
 const check = (scope: ChainScope, refs: AssetRef[] = []): void => {
@@ -100,7 +99,7 @@ assetMetadataContractTests(
             },
         }),
     {
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+        scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         nativeAssetId: FAKE_NATIVE_ASSET.assetId,
         token: TOKEN,
         tokenAuthorities: NO_AUTHORITIES,
@@ -111,7 +110,7 @@ assetMetadataContractTests(
     'fake',
 )
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
 const native: AssetRef = { chainId: scope.chainId, assetId: '0' }
 const priced: AssetPrice = {
     assetRef: { chainId: scope.chainId, assetId: '31566704' },

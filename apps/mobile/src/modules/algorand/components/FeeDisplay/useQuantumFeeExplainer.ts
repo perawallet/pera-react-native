@@ -19,9 +19,9 @@ import {
     encodeAlgorandAddress,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useCapability } from '@hooks/useCapability'
 
 type UseQuantumFeeExplainerResult = {
@@ -38,7 +38,7 @@ const authorizerAddressOf = (
             : transaction.sender
     }
     if (!resolved) return undefined
-    return chainAccountOf(resolved.signerAccount, LEGACY_CHAIN_ID)?.address
+    return chainAccountOf(resolved.signerAccount, ALGORAND_CHAIN_ID)?.address
 }
 
 /**
@@ -66,12 +66,12 @@ export const useQuantumFeeExplainer = (
 
     const authorizerAddress = authorizerAddressOf(transaction, resolved)
 
-    const signer = useSignerFor(authorizerAddress, LEGACY_CHAIN_ID)
+    const signer = useSignerFor(authorizerAddress, ALGORAND_CHAIN_ID)
 
     const isQuantumFee =
         enabled &&
         signer !== null &&
-        usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
+        usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
 
     return { isQuantumFee }
 }

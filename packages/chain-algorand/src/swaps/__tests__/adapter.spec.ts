@@ -18,7 +18,6 @@ import type {
 } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandSwapAdapter } from '../adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     explorerUrl: 'https://explorer.test' as string | undefined,
@@ -50,7 +49,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
 
 const params = { quote: { quoteIdStr: 'q' } } as unknown as ExecuteSwapParams
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 
 const context: SwapExecutionContext = {
     scope,

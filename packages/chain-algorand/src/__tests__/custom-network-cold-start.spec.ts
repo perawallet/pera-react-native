@@ -11,11 +11,9 @@
  */
 
 import { describe, expect, test, vi } from 'vitest'
-import {
-    CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { CUSTOM_NETWORK_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 const CONFIG = {
     algodUrl: 'http://192.168.1.50:4001',
@@ -32,14 +30,14 @@ const coldStartCustomChainConfig = async () => {
     await import('../register')
     const { getChainConfig } = await import('@perawallet/wallet-core-config')
     return getChainConfig({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         networkId: 'custom',
     } as const)
 }
 
 describe('custom node cold start', () => {
     test('resolves a saved custom node after a cold start', async () => {
-        useNetworkStore.getState().setCustomNetwork(LEGACY_CHAIN_ID, {
+        useNetworkStore.getState().setCustomNetwork(ALGORAND_CHAIN_ID, {
             ...CONFIG,
             id: CUSTOM_NETWORK_ID,
         })

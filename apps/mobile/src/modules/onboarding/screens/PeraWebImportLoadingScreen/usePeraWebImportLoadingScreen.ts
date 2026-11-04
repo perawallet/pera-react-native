@@ -19,11 +19,11 @@ import {
     PeraWebImportErrorReason,
     usePeraWebAccountImport,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
@@ -48,7 +48,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
     const { t } = useLanguage()
     const deployment = useWalletDeployment()
     const canImportPeraWeb = useCapability({ anyChain: 'peraWebImport' })
-    const { importAccount } = usePeraWebAccountImport(LEGACY_CHAIN_ID)
+    const { importAccount } = usePeraWebAccountImport(ALGORAND_CHAIN_ID)
     const setPayload = usePeraWebImportFlowStore(state => state.setPayload)
     const reset = usePeraWebImportFlowStore(state => state.reset)
 
@@ -118,7 +118,7 @@ export const usePeraWebImportLoadingScreen = (): void => {
                 payload = decryptPeraWebBackupPayload(
                     response,
                     qr.encryptionKey,
-                    LEGACY_CHAIN_ID,
+                    ALGORAND_CHAIN_ID,
                 )
             } catch (error) {
                 if (cancelled) return

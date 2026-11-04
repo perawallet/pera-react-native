@@ -16,11 +16,9 @@ import {
     SecureBackupImportError,
     parseBackupEnvelope,
 } from '@perawallet/wallet-core-backup'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -83,7 +81,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
             try {
                 const envelope = parseBackupEnvelope(
                     rawContents,
-                    LEGACY_CHAIN_ID,
+                    ALGORAND_CHAIN_ID,
                 )
                 setEnvelope(envelope)
                 setLoadedFile({ name: fileName, contents: rawContents })

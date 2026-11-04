@@ -30,10 +30,7 @@ import {
     seedNativeAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    type ChainScopeKey,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScopeKey } from '@perawallet/wallet-core-chain-contract'
 import {
     AccountAssetHoldingsSchema,
     refreshAccountHoldings,
@@ -48,11 +45,11 @@ import {
 import { cleanupRemovedAccountData } from '../cleanupRemovedAccountData'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'testnet',
 } as const
 

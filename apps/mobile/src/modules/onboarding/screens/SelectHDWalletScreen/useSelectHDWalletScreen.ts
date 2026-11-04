@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useHdSeedGroups,
     useCreateAccount,
-    useAccountBalancesQuery,
     type HdSeedGroup,
-    type AccountBalances,
     hdIndexOf,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -25,12 +23,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSelectHDWalletScreenResult = {
     hdSeedGroups: HdSeedGroup[]
-    accountBalances: AccountBalances
     isCreatingWallet: boolean
     /** A wallet is being selected and its next account built. */
     isSelectingWallet: boolean
@@ -51,24 +47,13 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const { hdSeedGroups } = useHdSeedGroups()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(route.params.chainId)
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
     const [isSelectingWallet, setIsSelectingWallet] = useState(false)
     // Set when auto-select fails, so the picker is revealed for a manual retry.
     const [autoSelectFailed, setAutoSelectFailed] = useState(false)
     const autoSelectedRef = useRef(false)
-
-    const allGroupAccounts = useMemo(
-        () => hdSeedGroups.flatMap(g => g.accounts),
-        [hdSeedGroups],
-    )
-
-    const { accountBalances } = useAccountBalancesQuery(
-        allGroupAccounts,
-        scope,
-        true,
-    )
 
     const handleSelectWallet = useCallback(
         async (group: HdSeedGroup) => {
@@ -137,7 +122,6 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
 
     return {
         hdSeedGroups,
-        accountBalances,
         isCreatingWallet,
         isSelectingWallet,
         isAutoSelecting,

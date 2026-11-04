@@ -33,9 +33,9 @@ import {
     type ChainId,
     type UnsignedTransaction,
     type TransactionIntent,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import {
     createWalletAlgorandClient,
     encodeTransactionRaw,
@@ -65,7 +65,7 @@ import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 // `readAlgorandTransaction`'s network check.
 const transactionOf = (built: UnsignedTransaction): PeraTransaction =>
     (built.payload as { transaction: PeraTransaction }).transaction
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 const SUGGESTED_MIN_FEE = 1000n
 const CONFIG = { configMinTxnFee: 1000n, pqMultiplier: 3n }
 

@@ -24,6 +24,7 @@ import {
     eligibleChainsInFamily,
 } from '../credentials/eligibility'
 import type { WalletAccount } from '../models'
+import { useCanSignWithCheck } from './useCanSignWith'
 
 export type AccountChainOption = {
     chainId: ChainId
@@ -85,18 +86,36 @@ export const accountChainOptions = (
     return [...enabled, ...options.filter(option => !option.isEnabled)]
 }
 
+export type AccountChainOptionsResolverOptions = {
+    reach?: AccountChainReach
+    /**
+     * Drops the enabled chains nothing held signs for the account on, such as
+     * one delegated to an account not held, for a flow that signs.
+     */
+    isSignerRequired?: boolean
+}
+
 export const useAccountChainOptionsResolver = (
     capability: ChainCapability,
-    reach: AccountChainReach = 'family',
+    {
+        reach = 'family',
+        isSignerRequired = false,
+    }: AccountChainOptionsResolverOptions = {},
 ): ((account: WalletAccount) => AccountChainOption[]) => {
     const check = useChainCapabilityCheck()
+    const canSignOn = useCanSignWithCheck()
     return useCallback(
         (account: WalletAccount) =>
             accountChainOptions(
                 account,
                 chainId => check({ chain: { chainId, capability } }),
                 reach,
+            ).filter(
+                option =>
+                    !isSignerRequired ||
+                    !option.isEnabled ||
+                    canSignOn(account, option.chainId),
             ),
-        [check, capability, reach],
+        [check, canSignOn, capability, reach, isSignerRequired],
     )
 }

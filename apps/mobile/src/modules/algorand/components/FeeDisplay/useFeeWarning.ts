@@ -22,8 +22,8 @@ import {
 } from '@perawallet/wallet-core-remote-config'
 import { readAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 type UseFeeWarningResult = {
     showWarning: boolean
@@ -31,7 +31,7 @@ type UseFeeWarningResult = {
 }
 
 export const useFeeWarning = (): UseFeeWarningResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const {
         totalFee: fee,
         allTransactions,

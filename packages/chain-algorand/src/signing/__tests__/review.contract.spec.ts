@@ -28,15 +28,15 @@ import {
     makeTestAddress,
     makeTestPaymentTx,
 } from './transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 const WALLET = makeTestAddress(1)
 const OTHER = makeTestAddress(2)
 // Real mainnet transactions, so the decoder's genesis check runs unmocked.
 const MAINNET_GENESIS = decodeFromBase64(
     getAlgorandChainConfig({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         networkId: 'mainnet',
     } as const).genesisHash,
 )
@@ -82,7 +82,7 @@ const groupOf = (signer: Address, transactions: Transaction[]): SignableGroup =>
 
 reviewerContractTests(() => algorandReviewerAdapter, {
     context: {
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const,
         accounts: [standaloneAccount(WALLET.toString())],
     },
     plainGroup: groupOf(WALLET, [payment(WALLET)]),

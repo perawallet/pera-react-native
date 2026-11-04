@@ -24,10 +24,9 @@ import { TermsAndConditionsSheet } from '../../components/TermsAndConditionsShee
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type UseOnboardingScreenResult = {
     handleTermsPress: () => void
@@ -47,7 +46,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         close: closeCreatingAccount,
     } = useModalState()
     const { setIsOnboarding } = useIsOnboarding()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const { showError } = useErrorToast()
     const { t, currentLanguage } = useLanguage()

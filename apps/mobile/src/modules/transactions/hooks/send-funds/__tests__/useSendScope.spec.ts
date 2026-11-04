@@ -19,6 +19,10 @@ import {
 import { useSendFundsStore } from '../useSendFunds'
 import { useSendScope } from '../useSendScope'
 
+vi.mock('@hooks/useHomeChainScope', () => ({
+    useHomeChainScope: () => ({ chainId: 'ethereum', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountChainId: vi.fn(),
@@ -52,6 +56,14 @@ describe('useSendScope', () => {
         expect(result.current.chainId).toBe('ethereum')
     })
 
+    it("falls back to the wallet's home chain while no account is selected", () => {
+        vi.mocked(useSelectedAccount).mockReturnValue(undefined as never)
+
+        renderHook(() => useSendScope())
+
+        expect(useAccountChainId).toHaveBeenCalledWith(undefined, 'ethereum')
+    })
+
     it('runs the send on the chosen network before an asset is picked', () => {
         useSendFundsStore.getState().setChainId('ethereum')
 
@@ -76,7 +88,7 @@ describe('useSendScope', () => {
 
         expect(useAccountChainId).toHaveBeenCalledWith(
             TWO_CHAIN_ACCOUNT,
-            'algorand',
+            'ethereum',
         )
         expect(result.current.chainId).toBe('algorand')
     })

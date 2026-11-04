@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 
 /** The scope the bench seeds and measures: Algorand on the selected network. */
-export const benchScope = (): ChainScope => getSelectedScope(LEGACY_CHAIN_ID)
+export const benchScope = (): ChainScope => getSelectedScope(ALGORAND_CHAIN_ID)

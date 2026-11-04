@@ -13,10 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { configuredScopes } from '@perawallet/wallet-core-config'
-import {
-    ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import {
     runMigrations,
     migrations,
@@ -35,7 +32,7 @@ import { FAKE_NATIVE_ASSET } from '../../__tests__/fakeAssetsChain'
 import { seedNativeAssets } from '../seed'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 
@@ -63,7 +60,7 @@ describe('seedNativeAssets', () => {
         await seedNativeAssets(db)
 
         const scopes = configuredScopes().filter(
-            scope => scope.chainId === LEGACY_CHAIN_ID,
+            scope => scope.chainId === 'algorand',
         )
         expect(scopes.length).toBeGreaterThan(2)
 

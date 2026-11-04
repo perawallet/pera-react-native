@@ -11,10 +11,7 @@
  */
 
 import type { Database } from '@perawallet/wallet-core-database'
-import {
-    LEGACY_CHAIN_ID,
-    LEGACY_SCOPES,
-} from '@perawallet/wallet-core-chain-contract'
+import { LEGACY_SCOPES } from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor } from '../chain-adapter'
 import { DEFAULT_ASSET_METADATA } from '../models'
 import { upsertAssets } from './metadataRepository'
@@ -42,20 +39,19 @@ import { upsertAssets } from './metadataRepository'
  * also excluded from the device-scoped bulk sync, so nothing would restore it.
  */
 export async function seedNativeAssets(db: Database): Promise<void> {
-    const nativeAsset = nativeAssetFor(LEGACY_CHAIN_ID)
-    const items = [
-        {
-            ...nativeAsset,
-            peraMetadata: {
-                ...DEFAULT_ASSET_METADATA,
-                ...nativeAsset.peraMetadata,
-                isFavorited: undefined,
-                isPriceAlertEnabled: undefined,
-            },
-        },
-    ]
-
     for (const scope of LEGACY_SCOPES) {
+        const nativeAsset = nativeAssetFor(scope.chainId)
+        const items = [
+            {
+                ...nativeAsset,
+                peraMetadata: {
+                    ...DEFAULT_ASSET_METADATA,
+                    ...nativeAsset.peraMetadata,
+                    isFavorited: undefined,
+                    isPriceAlertEnabled: undefined,
+                },
+            },
+        ]
         await upsertAssets({ db, items, scope })
     }
 }

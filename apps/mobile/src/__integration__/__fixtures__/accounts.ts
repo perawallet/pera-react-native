@@ -15,17 +15,19 @@ import {
     signingKeyOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // Flow fixtures seed accounts on the legacy chain only, so a missing entry is
 // a broken fixture rather than a case to tolerate.
 export const addressOf = (account: WalletAccount): string => {
-    const address = chainAccountOf(account, LEGACY_CHAIN_ID)?.address
+    const address = chainAccountOf(account, ALGORAND_CHAIN_ID)?.address
     if (address === undefined) {
-        throw new Error(`Account ${account.id} has no ${LEGACY_CHAIN_ID} entry`)
+        throw new Error(
+            `Account ${account.id} has no ${ALGORAND_CHAIN_ID} entry`,
+        )
     }
     return address
 }
 
 export const keyPairIdOf = (account: WalletAccount): string | undefined =>
-    signingKeyOn(account, LEGACY_CHAIN_ID)
+    signingKeyOn(account, ALGORAND_CHAIN_ID)

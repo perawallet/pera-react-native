@@ -13,7 +13,6 @@
 import { useCallback, useMemo } from 'react'
 import {
     CHAIN_FAMILIES,
-    LEGACY_CHAIN_ID,
     type ChainDescriptor,
     type ChainFamily,
     type ChainId,
@@ -28,6 +27,7 @@ import {
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactNetworkContent } from '@modules/contacts/components/ContactNetworkContent'
@@ -70,7 +70,7 @@ const chainsOfFamily = (family: ChainFamily): ChainDescriptor[] => {
 
 export const useViewContactScreen = (): UseViewContactScreenResult => {
     // NFDs name Algorand addresses only.
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { selectedContact } = useContacts()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()

@@ -11,10 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-    ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import {
     submitCosignedSwapGroup,
     swapAdapterFor,
@@ -34,7 +31,7 @@ describe('swapAdapterFor', () => {
 
         expect(
             swapAdapterFor({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const),
         ).toBe(adapter)
@@ -43,13 +40,13 @@ describe('swapAdapterFor', () => {
     it('names the missing feature when no adapter is registered', () => {
         expect(() =>
             swapAdapterFor({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toThrow(ChainAdapterNotRegisteredError)
         expect(() =>
             swapAdapterFor({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).toThrow('No swap adapter is registered for chain "algorand"')
@@ -70,7 +67,7 @@ describe('submitCosignedSwapGroup', () => {
         swapChainAdapters.register(fakeSwapAdapter())
         const signed = [new Uint8Array([1])]
         const scope = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const
 
@@ -87,7 +84,7 @@ describe('submitCosignedSwapGroup', () => {
 
         await expect(
             submitCosignedSwapGroup(
-                { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+                { chainId: 'algorand', networkId: 'mainnet' } as const,
                 [new Uint8Array([1])],
             ),
         ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)

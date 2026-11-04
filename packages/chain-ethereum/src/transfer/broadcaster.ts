@@ -31,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
+import type { TokenSightings } from '../accounts/token-detection'
 import type { EvmChain } from '../chains/types'
 import {
     reconcileEthereumSubmissions,
@@ -49,6 +50,7 @@ export { ETHEREUM_CONFIRMATION_TIMEOUT_MS }
 
 export type EthereumBroadcasterOptions = {
     confirmationTimeoutMs?: number
+    tokenSightings?: TokenSightings
 }
 
 export const createEvmBroadcasterAdapter = (
@@ -205,6 +207,7 @@ export const createEvmBroadcasterAdapter = (
                 settleHandlers,
                 probeFailures,
                 getClient: clientFor,
+                tokenSightings: options.tokenSightings,
             })
             void resumeEthereumCallBatches(ctx, chain, {
                 confirmationTimeoutMs: timeout,

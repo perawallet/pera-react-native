@@ -21,7 +21,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { http, HttpResponse, server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
@@ -29,6 +28,7 @@ import {
     mockSwapProviders,
 } from '@perawallet/wallet-core-swaps/test-handlers'
 import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const SWAPPER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -169,7 +169,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
         server.use(mockCreateQuotes({ response: ALGO_USDC_QUOTES }))
 
         const { result } = renderHook(
-            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            () => useCreateQuotesMutation(useSelectedScope(ALGORAND_CHAIN_ID)),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -229,7 +229,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
         server.use(mockCreateQuotes({ response: { results: [] } }))
 
         const { result } = renderHook(
-            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            () => useCreateQuotesMutation(useSelectedScope(ALGORAND_CHAIN_ID)),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -265,7 +265,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
         )
 
         const { result } = renderHook(
-            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            () => useCreateQuotesMutation(useSelectedScope(ALGORAND_CHAIN_ID)),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -314,7 +314,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
         )
 
         const { result } = renderHook(
-            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            () => useCreateQuotesMutation(useSelectedScope(ALGORAND_CHAIN_ID)),
             {
                 wrapper: createQueryClientWrapper(),
             },

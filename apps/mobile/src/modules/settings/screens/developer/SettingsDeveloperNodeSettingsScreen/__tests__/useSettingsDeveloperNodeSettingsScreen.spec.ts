@@ -23,13 +23,13 @@ import {
     getSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     allCapabilities,
     ETHEREUM_CHAIN_ID,
     fixtureEthereumDescriptor,
 } from '@test-utils/chain-fixtures'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const mocks = vi.hoisted(() => ({
     restart: vi.fn(),
@@ -72,7 +72,7 @@ const SEPOLIA_RPC = 'https://sepolia.rpc.example/v3/key'
 
 const registerAlgorandEndpoints = () =>
     nodeEndpointAdapters.register({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         endpointUrl: networkId => ALGORAND_ENDPOINTS[networkId],
     })
 
@@ -373,7 +373,9 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
                 await result.current.selectNetwork('algorand', 'betanet')
             })
 
-            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('betanet')
+            expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe(
+                'betanet',
+            )
             expect(
                 sectionFor(result, 'algorand')?.networks.find(
                     network => network.isSelected,
@@ -393,7 +395,9 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
                 await result.current.selectNetwork('algorand', 'testnet')
             })
 
-            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('testnet')
+            expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe(
+                'testnet',
+            )
         })
 
         it('restores the BetaNet choice when developer mode goes off and on again', async () => {
@@ -404,11 +408,15 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             })
 
             act(() => result.current.setDeveloperMode(false))
-            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('mainnet')
+            expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe(
+                'mainnet',
+            )
             expect(result.current.chainSections).toEqual([])
 
             act(() => result.current.setDeveloperMode(true))
-            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('betanet')
+            expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe(
+                'betanet',
+            )
         })
     })
 })

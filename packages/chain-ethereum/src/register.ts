@@ -72,6 +72,7 @@ import {
     createEvmKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { createTokenSightings } from './accounts/token-detection'
 import { cachedWhitelist } from './assets/api/whitelist-cache'
 import { createEvmNodeEndpointAdapter } from './blockchain/node-endpoint'
 import type { EvmChain } from './chains/types'
@@ -118,6 +119,8 @@ const buildAdapters = (
     const reviewer = createEthereumReviewer({ chain })
     // Account sync and asset search read the same token list.
     const listedTokens = cachedWhitelist(chain)
+    // The broadcaster sees a swap's tokens arrive; the account read picks them up.
+    const tokenSightings = createTokenSightings()
     return {
         addressCodec: createEvmAddressCodec(chain),
         keyDerivation: createEvmKeyDerivation(chain),
@@ -129,10 +132,17 @@ const buildAdapters = (
             chain,
             createEvmMessageSignerAdapter(chain),
         ),
-        accounts: createEthereumAccountsAdapter(ctx, chain, listedTokens),
+        accounts: createEthereumAccountsAdapter(
+            ctx,
+            chain,
+            listedTokens,
+            tokenSightings,
+        ),
         assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),
-        broadcaster: createEvmBroadcasterAdapter(ctx, chain),
+        broadcaster: createEvmBroadcasterAdapter(ctx, chain, {
+            tokenSightings,
+        }),
         history: createEvmHistoryAdapter(chain, ctx),
         dappRequest: createEthereumDappRequestAdapter(ctx, chain),
         nodeEndpoint: createEvmNodeEndpointAdapter(ctx, chain),

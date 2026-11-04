@@ -34,8 +34,8 @@ import {
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
 } from '@perawallet/wallet-core-swaps'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const QUOTE_ID = 'quote-tinyman-1'
 const SWAP_ID = '12345'
@@ -77,7 +77,7 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
         const { result } = renderHook(
             () =>
                 usePrepareTransactionsMutation(
-                    useSelectedScope(LEGACY_CHAIN_ID),
+                    useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             {
                 wrapper: createQueryClientWrapper(),
@@ -132,7 +132,7 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
         const { result } = renderHook(
             () =>
                 usePrepareTransactionsMutation(
-                    useSelectedScope(LEGACY_CHAIN_ID),
+                    useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             {
                 wrapper: createQueryClientWrapper(),
@@ -171,7 +171,9 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
 
         const { result } = renderHook(
             () =>
-                useUpdateSwapStatusMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+                useUpdateSwapStatusMutation(
+                    useSelectedScope(ALGORAND_CHAIN_ID),
+                ),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -214,7 +216,9 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
 
         const { result } = renderHook(
             () =>
-                useUpdateSwapStatusMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+                useUpdateSwapStatusMutation(
+                    useSelectedScope(ALGORAND_CHAIN_ID),
+                ),
             {
                 wrapper: createQueryClientWrapper(),
             },
@@ -272,7 +276,7 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
         const { result } = renderHook(
             () =>
                 usePrepareTransactionsMutation(
-                    useSelectedScope(LEGACY_CHAIN_ID),
+                    useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             {
                 wrapper: createQueryClientWrapper(),

@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatList } from '@components/core'
 import {
     addressOn,
+    useAccountCapabilityScope,
     useAccountScope,
     useSelectedAccount,
     useAccountCollectiblesQuery,
@@ -24,7 +25,6 @@ import {
     type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     toScopeKey,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -41,7 +41,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import type { FilterOption } from '@components/FilterSelection'
-import { useCapability } from '@hooks/useCapability'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -128,15 +128,16 @@ const listEmptyCopy = ({
 export const useAccountNfts = (): UseAccountNftsResult => {
     const { t } = useLanguage()
     const account = useSelectedAccount()
-    // The account's own chain: opt-in and acquisition order act here.
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    // Opt-in and acquisition order act on the first chain the account holds
+    // that can manage assets, so a first chain without it doesn't hide them.
+    const home = useHomeChainScope()
+    const manageScope = useAccountCapabilityScope(account, 'manageAssets')
+    const accountScope = useAccountScope(account, home.chainId)
+    const scope = manageScope ?? accountScope
     const sources = useNftHoldingSources(account)
     const address = account ? addressOn(account, scope) : undefined
     const canSign = useCanSignWith(account, scope.chainId)
-    const canManageAssets = useCapability({
-        chain: { chainId: scope.chainId, capability: 'manageAssets' },
-    })
-    const canOptIn = canSign && canManageAssets
+    const canOptIn = canSign && manageScope !== null
     const isMultiChain = sources.length > 1
     // Shared with Overview and History, so a chip picked there carries here;
     // a chain the account holds no NFTs on reads as All.

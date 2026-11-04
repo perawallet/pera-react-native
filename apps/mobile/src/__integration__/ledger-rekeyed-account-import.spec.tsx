@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
@@ -34,6 +33,7 @@ import {
     mockAlgodStatus,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
 import { findEnabledByTestId } from '@test-utils/rnw'
@@ -152,10 +152,10 @@ describe('Flow: Ledger rekeyed-account import', () => {
                 const hw = accounts.find(a => addressOf(a) === LEDGER_ADDRESS)
                 expect(watch?.custody).toEqual({ kind: 'watch' })
                 expect(
-                    authorityOf(watch!, getSelectedScope(LEGACY_CHAIN_ID)),
+                    authorityOf(watch!, getSelectedScope(ALGORAND_CHAIN_ID)),
                 ).toBe(LEDGER_ADDRESS)
                 expect(hw?.custody).toMatchObject({ kind: 'hardware' })
-                expect(canSignWith(watch!, accounts, LEGACY_CHAIN_ID)).toBe(
+                expect(canSignWith(watch!, accounts, ALGORAND_CHAIN_ID)).toBe(
                     true,
                 )
             },

@@ -12,7 +12,6 @@
 
 import { customNodeAdapters } from '@perawallet/wallet-core-chain-shared'
 import {
-    LEGACY_CHAIN_ID,
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -22,6 +21,7 @@ import {
     createNoopDappTransport,
 } from '@perawallet/wallet-core-dapp'
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 type AlgorandDescriptorHandlersDeps = {
     getNetworkId: (chainId: ChainId) => NetworkId
@@ -37,16 +37,16 @@ export const createAlgorandDescriptorHandlers = ({
     getNetworkId,
 }: AlgorandDescriptorHandlersDeps): ConnectionHandler[] => [
     createWalletConnectV1Handler({
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         getNetworkId,
     }),
     createDappConnectionHandler({
         transport: createNoopDappTransport(),
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         getNetworkId,
         getCustomNetworkGenesisHash: () =>
-            customNodeAdapters.has(LEGACY_CHAIN_ID)
-                ? customNodeAdapters.get(LEGACY_CHAIN_ID).read()?.genesisHash
+            customNodeAdapters.has(ALGORAND_CHAIN_ID)
+                ? customNodeAdapters.get(ALGORAND_CHAIN_ID).read()?.genesisHash
                 : undefined,
         getAccounts: () => [],
     }),

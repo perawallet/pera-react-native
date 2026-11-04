@@ -16,10 +16,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import {
-    type AssetRef,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type AssetRef } from '@perawallet/wallet-core-chain-contract'
 import {
     transferChainAdapters,
     type ChainNotice,
@@ -28,7 +25,7 @@ import {
 } from '../../transfer-adapter'
 import { useRecipientWarningQuery } from '../useRecipientWarningQuery'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ALGO: AssetRef = { chainId: SCOPE.chainId, assetId: '0' }
 const INPUT: RecipientWarningInput = {
     recipient: 'RECEIVER',

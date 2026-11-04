@@ -11,15 +11,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { renderHook, act } from '@testing-library/react'
 import { useBidaliWebViewScreen } from '../useBidaliWebViewScreen'
 import { useBidali } from '../../../hooks/useBidali'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // useBidaliClose dismisses the host sheet via useBottomSheetResult, which needs
 // a bottom-sheet context this hook-only render doesn't provide — mock it to a
@@ -140,7 +138,7 @@ const mockAccount: WalletAccount = {
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         isValid: address => /^[A-Z2-7]{58}$/.test(address),
     })
 })

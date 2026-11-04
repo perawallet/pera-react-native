@@ -28,16 +28,13 @@ vi.mock('../../api/auth', () => ({
     confirmPasswordReset,
 }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useRequestPasswordResetMutation } from '../useRequestPasswordResetMutation'
 import { useVerifyPasswordResetMutation } from '../useVerifyPasswordResetMutation'
 import { useConfirmPasswordResetMutation } from '../useConfirmPasswordResetMutation'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'algorand', networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

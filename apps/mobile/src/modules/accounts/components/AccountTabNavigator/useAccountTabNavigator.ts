@@ -24,11 +24,11 @@ import {
     type SharedValue,
 } from 'react-native-reanimated'
 import {
-    useAccountChainId,
     type WalletAccount,
+    useAccountCapabilityScope,
+    useAccountChainId,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
@@ -59,9 +59,10 @@ export const useAccountTabNavigator = (
     account: WalletAccount,
 ): UseAccountTabNavigatorResult => {
     const { t } = useLanguage()
-    const chainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const chainId = useAccountChainId(account, useHomeChainScope().chainId)
+    // A tab, and its queries, drops only once no chain the account holds serves it.
     const hasNfts = useNftHoldingSources(account).length > 0
-    const hasHistory = useChainCapability(chainId, 'history')
+    const hasHistory = useAccountCapabilityScope(account, 'history') !== null
     const offset = useSharedValue(0)
 
     const tabs = useMemo<AccountTab[]>(

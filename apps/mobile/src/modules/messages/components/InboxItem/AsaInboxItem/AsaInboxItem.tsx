@@ -16,7 +16,7 @@ import {
     getAccountDisplayName,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountIcon } from '@components/AccountIcon'
@@ -39,7 +39,7 @@ export const AsaInboxItem = ({
     const accounts = useAllAccounts()
     const account = findAccountByAddressOn(
         accounts,
-        LEGACY_CHAIN_ID,
+        ALGORAND_CHAIN_ID,
         item.data.address,
     )
 
@@ -66,7 +66,7 @@ export const AsaInboxItem = ({
             title={t('messages.inbox.asa_requests', {
                 count: item.data.requestCount,
             })}
-            subtitle={getAccountDisplayName(account ?? null, LEGACY_CHAIN_ID)}
+            subtitle={getAccountDisplayName(account ?? null, ALGORAND_CHAIN_ID)}
         />
     )
 }

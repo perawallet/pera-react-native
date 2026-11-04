@@ -19,9 +19,9 @@ import {
     useResolveMnemonicForBackup,
     useRestoreCloudBackupMutation,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLocalKeyTransactionSigner } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 import { resetBenchState } from './data/resetBenchState'
 import type { FixtureNetwork } from './network/fixtureNetwork'
 import type { ScenarioContext } from './runner/types'
@@ -36,7 +36,7 @@ import type { ScenarioContext } from './runner/types'
 export const useScenarioContext = (
     network: FixtureNetwork,
 ): ScenarioContext => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { signTransactions } = useLocalKeyTransactionSigner()
     const { createHdWalletAccount, createSingleKeyAccount } =
         useCreateAccount(scope)
@@ -44,8 +44,8 @@ export const useScenarioContext = (
         useRestoreCloudBackupMutation(scope)
     const { importAccounts } = useCloudBackupImport(scope)
     const { importContacts } = useCloudBackupContactImport()
-    const resolveMnemonic = useResolveMnemonicForBackup(LEGACY_CHAIN_ID)
-    const resolveHd = useResolveHdSeedForBackup(LEGACY_CHAIN_ID)
+    const resolveMnemonic = useResolveMnemonicForBackup(ALGORAND_CHAIN_ID)
+    const resolveHd = useResolveHdSeedForBackup(ALGORAND_CHAIN_ID)
 
     const latest = useRef({
         signTransactions,

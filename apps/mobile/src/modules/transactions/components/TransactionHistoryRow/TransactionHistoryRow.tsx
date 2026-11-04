@@ -46,6 +46,7 @@ export const TransactionHistoryRow = ({
             return (
                 <TransactionListItem
                     transaction={row.transaction}
+                    scope={row.scope}
                     onPress={onTransactionPress}
                     suspectedPoisoning={suspectedPoisoning}
                     networkChainId={row.networkChainId}

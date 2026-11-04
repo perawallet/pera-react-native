@@ -13,11 +13,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    useWalletDeployment,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import {
     ALGO_ASSET_NAME,
     isIntegrityRequiredError,
@@ -32,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-currencies'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type UseSettingsCurrencyScreenResult = {
     setCurrency: (currency: Currency) => void
@@ -55,7 +52,7 @@ type UseSettingsCurrencyScreenResult = {
 
 export const useSettingsCurrencyScreen =
     (): UseSettingsCurrencyScreenResult => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useHomeChainScope()
         const deployment = useWalletDeployment()
         const { setCurrencyPreference, fallbackCurrency, preferredCurrency } =
             useCurrency(scope)

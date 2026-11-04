@@ -15,11 +15,7 @@ import {
     useCreateAccount,
     useCreateNextHDAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapability } from '@hooks/useCapability'
@@ -27,11 +23,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
 import { useWatchableChainIds } from '@modules/onboarding/hooks'
 import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AccountOption } from '@modules/onboarding/types'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useRunCreateAccount } from '../../hooks/useRunCreateAccount'
 import { useLocalKeyCreateOptions } from '../../hooks/useLocalKeyCreateOptions'
 
@@ -49,7 +45,7 @@ export type UseAddAccountScreenResult = {
 
 export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const navigation = useAppNavigation()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const { buildHdWalletAccount } = useCreateAccount(scope)
     const { hasHDWallet } = useCreateNextHDAccount(scope)
     const { currentLanguage } = useLanguage()

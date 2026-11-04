@@ -26,6 +26,7 @@ const initialState = {
     hideZeroBalance: false,
     displayNfts: false,
     displayOptedInNfts: false,
+    showSuspicious: false,
 }
 
 export const useAssetPreferencesStore: UseBoundStore<
@@ -46,6 +47,9 @@ export const useAssetPreferencesStore: UseBoundStore<
             setDisplayOptedInNfts: (display: boolean) => {
                 set({ displayOptedInNfts: display })
             },
+            setShowSuspicious: (show: boolean) => {
+                set({ showSuspicious: show })
+            },
             resetState: () => set(initialState),
         }),
         {
@@ -57,6 +61,7 @@ export const useAssetPreferencesStore: UseBoundStore<
                 hideZeroBalance: state.hideZeroBalance,
                 displayNfts: state.displayNfts,
                 displayOptedInNfts: state.displayOptedInNfts,
+                showSuspicious: state.showSuspicious,
             }),
         },
     ),

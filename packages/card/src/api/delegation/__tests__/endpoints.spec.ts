@@ -24,7 +24,6 @@ import {
 } from '../endpoints'
 import { AutoDrawDelegationRejectedError } from '../errors'
 import { registerFakeCardAdapter } from '../../../__tests__/fakeCardAdapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -114,7 +113,7 @@ describe('postDelegationApproval', () => {
         token: 'ABC_tok',
     }
     const params = {
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+        scope: { chainId: 'algorand', networkId: 'testnet' } as const,
         ...approval,
     }
 
@@ -181,7 +180,7 @@ describe('postDelegationApproval', () => {
 describe('postCardDelegation', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+    const scope = { chainId: 'algorand', networkId: 'testnet' } as const
     const delegation = {
         path: '/v1/delegation/chain/delegator-lsig',
         data: { body: 'chain' },
@@ -228,7 +227,7 @@ describe('postCardDelegation', () => {
 describe('postAutoDrawDelegation', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+    const scope = { chainId: 'algorand', networkId: 'testnet' } as const
     const delegation = {
         path: '/v1/delegation/chain/delegator-lsig',
         data: { body: 'chain' },

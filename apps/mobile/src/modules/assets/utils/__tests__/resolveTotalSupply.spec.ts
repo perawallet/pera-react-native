@@ -15,16 +15,14 @@
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainDescriptor,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainDescriptor } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { resolveTotalSupply } from '../resolveTotalSupply'
 
 const supplyOf = (totalSupply: Decimal) =>
     resolveTotalSupply({
         asset: { assetId: '1', decimals: 6, totalSupply } as PeraAsset,
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' },
         descriptor: {} as ChainDescriptor,
         isNativeAsset: false,
     })

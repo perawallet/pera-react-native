@@ -24,6 +24,7 @@ import {
     isPeraNetworkError,
 } from '../network'
 import { IntegrityRequiredError } from '../integrity'
+import { PeraServiceUnavailableError } from '../pera-service'
 
 // Minimal ky HTTPError builder — ky's isHTTPError checks `instanceof HTTPError`.
 const makeHttpError = (status: number): HTTPError => {
@@ -325,6 +326,28 @@ describe('isChainRefusedError', () => {
             ),
         ).toBe(false)
         expect(isChainRefusedError(new Error('chain_not_enabled'))).toBe(false)
+    })
+
+    it('is true for a service error raised for a refused chain, and false for any other', () => {
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        expect(
+            isChainRefusedError(
+                new PeraServiceUnavailableError(scope, 'assets', {
+                    isChainRefused: true,
+                }),
+            ),
+        ).toBe(true)
+        expect(
+            isChainRefusedError(
+                new PeraServiceUnavailableError(scope, 'assets', {
+                    isSwitchedOff: true,
+                }),
+            ),
+        ).toBe(false)
+        expect(
+            isChainRefusedError(new PeraServiceUnavailableError(scope)),
+        ).toBe(false)
     })
 })
 

@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type AddressCodec,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
@@ -41,7 +40,7 @@ vi.mock('../db/repository', async importOriginal => ({
     getCounterpartyTransfers: vi.fn(),
 }))
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const DUST_CEILING = new Decimal(1000)
 const isNative = (assetId: Nullable<string>) =>
     assetId === null || assetId === '0'

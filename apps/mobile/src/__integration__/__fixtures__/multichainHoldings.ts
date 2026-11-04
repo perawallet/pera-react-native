@@ -25,10 +25,8 @@ import {
     upsertAssets,
     type AssetGroup,
 } from '@perawallet/wallet-core-assets'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     seedAlgoAsset,
     seedAlgorandAccountState,
@@ -42,7 +40,7 @@ export const ETH_SCOPE: ChainScope = {
     networkId: 'mainnet',
 }
 export const ALGO_SCOPE: ChainScope = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 }
 

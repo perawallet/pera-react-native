@@ -180,6 +180,7 @@ export const useTransactionProcessingScreen =
             ) {
                 registerTabResumeIntent({
                     flow: 'send',
+                    chainId: scope.chainId,
                     accountAddress:
                         chainAccountOf(selectedAccount, scope.chainId)
                             ?.address ?? '',

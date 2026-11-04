@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import {
     getHttpStatus,
+    isChainRefusedError,
     logger,
     mapWithConcurrency,
     type Nullable,
@@ -103,7 +104,7 @@ export const logPhaseFailures = (
         if (result.status !== 'rejected') return
         // Rate limits are handled separately via backoff — skip noise.
         if (isRateLimitError(result.reason)) return
-        logger.warn('Sync step failed', {
+        const context = {
             phase,
             scope,
             subject: subject(index),
@@ -114,7 +115,13 @@ export const logPhaseFailures = (
                           stack: result.reason.stack,
                       }
                     : result.reason,
-        })
+        }
+        // The backend refusing the chain is expected, and the scope stops asking.
+        if (isChainRefusedError(result.reason)) {
+            logger.debug('Sync step failed', context)
+        } else {
+            logger.warn('Sync step failed', context)
+        }
     })
 }
 

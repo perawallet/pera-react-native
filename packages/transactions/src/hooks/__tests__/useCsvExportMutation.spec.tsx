@@ -22,7 +22,6 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: vi.fn(() => true),
@@ -63,7 +62,7 @@ describe('useCsvExportMutation', () => {
     })
 
     it.each([
-        { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+        { chainId: 'algorand', networkId: 'mainnet' } as const,
         { chainId: 'ethereum', networkId: 'sepolia' } as const,
     ])('successfully exports CSV for $chainId', async scope => {
         const mockResult = {
@@ -107,7 +106,7 @@ describe('useCsvExportMutation', () => {
             () =>
                 useCsvExportMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                     onSuccess: mockOnSuccess,
@@ -134,7 +133,7 @@ describe('useCsvExportMutation', () => {
             () =>
                 useCsvExportMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                     onSuccess: mockOnSuccess,
@@ -159,7 +158,7 @@ describe('useCsvExportMutation', () => {
             () =>
                 useCsvExportMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -182,7 +181,7 @@ describe('useCsvExportMutation', () => {
             () =>
                 useCsvExportMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 }),
@@ -217,7 +216,7 @@ describe('useCsvExportMutation', () => {
             () =>
                 useCsvExportMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                     onSuccess: mockOnSuccess,
@@ -239,7 +238,7 @@ describe('useCsvExportMutation', () => {
             dateRange: undefined,
             filename: undefined,
             assetId: '12345',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         })
         expect(result.current.result?.assetId).toBe('12345')
     })
@@ -253,7 +252,7 @@ describe('useCsvExportMutation', () => {
                     () =>
                         useCsvExportMutation({
                             scope: {
-                                chainId: LEGACY_CHAIN_ID,
+                                chainId: 'algorand',
                                 networkId: network,
                             } as const,
                             onSuccess: mockOnSuccess,
@@ -290,7 +289,7 @@ describe('useCsvExportMutation', () => {
                     () =>
                         useCsvExportMutation({
                             scope: {
-                                chainId: LEGACY_CHAIN_ID,
+                                chainId: 'algorand',
                                 networkId: network,
                             } as const,
                         }),

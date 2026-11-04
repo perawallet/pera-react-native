@@ -22,11 +22,9 @@ import {
     aggregateTransactionWarnings,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import {
-    type ChainId,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 // The history view only surfaces the per-transaction, address-based warnings.
 // High fee is a signing-review concern (see useSigningPipeline) and is never
@@ -51,18 +49,20 @@ export const useTransactionWarnings = (
     transaction: AlgorandTransactionView,
 ): UseTransactionWarningsResult => {
     const allAccounts = useAllAccounts()
-    const signingAccounts = useSigningAccounts(LEGACY_CHAIN_ID)
+    const signingAccounts = useSigningAccounts(ALGORAND_CHAIN_ID)
 
     const userAccountAddresses = useMemo(
         () =>
-            new Set(allAccounts.flatMap(a => addressesOn(a, LEGACY_CHAIN_ID))),
+            new Set(
+                allAccounts.flatMap(a => addressesOn(a, ALGORAND_CHAIN_ID)),
+            ),
         [allAccounts],
     )
 
     const signableAddresses = useMemo(
         () =>
             new Set(
-                signingAccounts.flatMap(a => addressesOn(a, LEGACY_CHAIN_ID)),
+                signingAccounts.flatMap(a => addressesOn(a, ALGORAND_CHAIN_ID)),
             ),
         [signingAccounts],
     )

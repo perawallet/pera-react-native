@@ -11,7 +11,6 @@
  */
 
 import { vi } from 'vitest'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AppError, concatBytes } from '@perawallet/wallet-core-shared'
 import {
     broadcasterChainAdapters,
@@ -51,7 +50,7 @@ export const algodBackedTransport = (
 export const fakeBroadcasterAdapter = (
     overrides: Partial<BroadcasterChainAdapter> = {},
 ): BroadcasterChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     createSubmitTransport: vi.fn(() => ({
         send: async () => ({ type: 'submitted', txIds: [] }),
     })),

@@ -25,7 +25,6 @@ import {
     TEST_CUSTODY,
     testAccount,
 } from '../../__tests__/accountFactory'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -259,7 +258,7 @@ describe('useRemoveAccount', () => {
                 'owned-asset-ids',
                 {
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 },
@@ -271,7 +270,7 @@ describe('useRemoveAccount', () => {
                 {
                     assetIDs: [],
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 },
@@ -318,7 +317,7 @@ describe('useRemoveAccount', () => {
                 {
                     address: 'LEDGER2',
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 },
@@ -331,7 +330,7 @@ describe('useRemoveAccount', () => {
                 {
                     address: 'LEDGER1',
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'mainnet',
                     } as const,
                 },

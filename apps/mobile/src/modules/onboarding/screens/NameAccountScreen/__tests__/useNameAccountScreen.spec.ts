@@ -33,12 +33,20 @@ const mockStoredAccounts = vi.hoisted(() => ({ accounts: [] as unknown[] }))
 const mockRegisteredChainIds = vi.hoisted(() => ({
     chainIds: ['algorand'] as string[],
 }))
+const mockHomeChain = vi.hoisted(() => ({ chainId: 'algorand' }))
 const mockGetAccountDisplayName = vi.hoisted(() =>
     vi.fn(
         (account: { name?: string }, _chainId: string) =>
             account?.name ?? 'Account 1',
     ),
 )
+
+vi.mock('@hooks/useHomeChainScope', () => ({
+    useHomeChainScope: () => ({
+        chainId: mockHomeChain.chainId,
+        networkId: 'mainnet',
+    }),
+}))
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -143,6 +151,7 @@ describe('useNameAccountScreen', () => {
         mockRouteParams = undefined
         mockStoredAccounts.accounts = []
         mockRegisteredChainIds.chainIds = ['algorand']
+        mockHomeChain.chainId = 'algorand'
     })
 
     describe('with several chains registered', () => {
@@ -205,6 +214,14 @@ describe('useNameAccountScreen', () => {
             })
             expect(mockSaveAccount).not.toHaveBeenCalled()
         })
+    })
+
+    it("names and creates on the wallet's home chain when the route names none", () => {
+        mockHomeChain.chainId = 'ethereum'
+
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        expect(result.current.chainId).toBe('ethereum')
     })
 
     it('lists no chains with a single chain registered', () => {

@@ -70,6 +70,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSelectTargetScreen'
 import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
 import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSuccessScreen'
@@ -89,10 +90,9 @@ import {
     QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 

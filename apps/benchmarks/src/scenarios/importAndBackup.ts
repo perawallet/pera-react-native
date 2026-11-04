@@ -30,7 +30,7 @@ import {
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand'
 import { benchScope } from '../data/scope'
 import { fastLookupHandlers } from '../network/discoveryFixtures'
 import { buildSyncHandlers } from '../network/handlers'
@@ -153,8 +153,8 @@ const prepareBackup = async (
         deviceId: DEVICE_ID,
     })
     const manager = initializeBackupSyncManager({
-        chainId: LEGACY_CHAIN_ID,
-        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
+        chainId: ALGORAND_CHAIN_ID,
+        sources: createBackupSyncStoreSources(ALGORAND_CHAIN_ID),
         ...ctx.backupSyncDeps,
         isLocked: () => false,
         listPasskeys: async () => [],

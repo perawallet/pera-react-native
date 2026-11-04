@@ -30,14 +30,12 @@ import {
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAddressSelection } from '@hooks/useAddressSelection'
@@ -82,7 +80,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { t } = useLanguage()
     const { errorToast } = useToast()
     const allAccounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const addressOf = useCallback(
         (account: WalletAccount) => addressOn(account, scope.chainId),
         [scope.chainId],

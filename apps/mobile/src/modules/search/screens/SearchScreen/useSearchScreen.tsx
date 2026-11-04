@@ -20,20 +20,17 @@ import {
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
     useGlobalSearch,
     type SearchScope,
 } from '@perawallet/wallet-core-search'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { SearchFilterContent } from '../../components/SearchFilterContent'
 
 const MIN_SECTION_LIMIT = 5
@@ -94,7 +91,7 @@ type SectionConfig = {
 }
 
 export const useSearchScreen = (): UseSearchScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const [scopes, setScopes] = useState<SearchScope[]>([...SEARCH_SCOPES])
     const toggleScope = useCallback((scope: SearchScope) => {
         setScopes(prev =>

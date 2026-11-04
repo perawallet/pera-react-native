@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { CopyableText } from '@components/CopyableText'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     TransactionDetailAddress,
@@ -34,7 +34,7 @@ export const AssetConfigDisplay = ({
     transaction,
 }: AssetConfigDisplayProps) => {
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
     const { assetConfig, configType, assetId, supply, metadataHash } =
         useAssetConfigDisplay(transaction)

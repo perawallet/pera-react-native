@@ -31,7 +31,6 @@ import {
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     useIsNativeAssetId,
@@ -44,6 +43,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useStyles } from './styles'
 
 type UseRemoveAssetsScreenResult = {
@@ -68,7 +68,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const { t } = useLanguage()
     const styles = useStyles()
     const listRef = useRef<PWFlatListRef>(null)
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const isNativeAssetId = useIsNativeAssetId(scope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
@@ -221,6 +221,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
                     <PWView style={styles.assetInfo}>
                         <AccountAssetItemView
                             accountBalance={item}
+                            scope={scope}
                             iconSize='md'
                         />
                     </PWView>
@@ -230,7 +231,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
                 </PWTouchableOpacity>
             )
         },
-        [selectedAssetIds, handleToggleSelect, styles],
+        [selectedAssetIds, handleToggleSelect, scope, styles],
     )
 
     // Header Select All and footer Remove Selected only make sense when there

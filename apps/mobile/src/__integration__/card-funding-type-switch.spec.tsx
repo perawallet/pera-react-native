@@ -65,12 +65,12 @@ import {
     useCardSessionStore,
     useCardStore,
 } from '@perawallet/wallet-core-card'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PeraCardDetails } from '@modules/card/components/PeraCardDetails'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ACCOUNT: WalletAccount = {
     id: 'funding-account',
@@ -120,8 +120,8 @@ describe('Flow: Card funding type switch', () => {
             cardAddress: CARD_ADDRESS,
             ownerAddress: addressOf(ACCOUNT),
             scope: {
-                chainId: LEGACY_CHAIN_ID,
-                networkId: getSelectedScope(LEGACY_CHAIN_ID).networkId,
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: getSelectedScope(ALGORAND_CHAIN_ID).networkId,
             } as const,
             txId: 'CARD_TX_ID',
         })

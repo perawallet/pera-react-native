@@ -37,8 +37,8 @@ const account = {
 } as unknown as WalletAccount
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountChainOptionsResolver: (capability: string) => {
-        mocks.resolverCapability(capability)
+    useAccountChainOptionsResolver: (capability: string, options: unknown) => {
+        mocks.resolverCapability(capability, options)
         return () => mocks.options
     },
     useEnableChain: () => mocks.enableChain,
@@ -76,6 +76,7 @@ describe('useAccountChainSelection', () => {
             useAccountChainSelection({
                 account: selectedAccount,
                 capability: 'send',
+                isSignerRequired: true,
                 onSelectChain,
                 onChainEnabled,
             }),
@@ -92,7 +93,9 @@ describe('useAccountChainSelection', () => {
     it('lists the chains the capability offers, with their names and truncated addresses', () => {
         const { result } = renderSelection(account)
 
-        expect(mocks.resolverCapability).toHaveBeenCalledWith('send')
+        expect(mocks.resolverCapability).toHaveBeenCalledWith('send', {
+            isSignerRequired: true,
+        })
         expect(result.current.rows).toEqual([
             {
                 chainId: 'algorand',

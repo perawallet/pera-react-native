@@ -11,10 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-    ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     sendFlowChainAdapters,
@@ -23,7 +20,7 @@ import {
     type SendFlowChainAdapter,
 } from '../chain-adapter'
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const scope = { chainId: 'algorand', networkId: 'testnet' } as const
 
 const fakeAssetInbox = (): AssetInboxSendFlow => ({
     buildSendTxs: vi.fn(),

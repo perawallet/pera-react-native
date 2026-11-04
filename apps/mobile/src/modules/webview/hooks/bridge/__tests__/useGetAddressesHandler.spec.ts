@@ -19,8 +19,8 @@ import {
     type AccountCustody,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { algorandDappRequestAdapter } from '@packages/chain-algorand/src/connect/dappRequestAdapter'
 import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { useGetAddressesHandler } from '../useGetAddressesHandler'
@@ -72,7 +72,7 @@ const account = (
     id: `id-${address}`,
     custody,
     chains: {
-        [LEGACY_CHAIN_ID]:
+        [ALGORAND_CHAIN_ID]:
             custody.kind === 'local'
                 ? { address, keyPairId: `kp-${address}` }
                 : { address },
@@ -81,7 +81,7 @@ const account = (
 })
 
 const addressOf = (a: WalletAccount): string | undefined =>
-    a.chains[LEGACY_CHAIN_ID]?.address
+    a.chains[ALGORAND_CHAIN_ID]?.address
 
 // useSigningAccounts owns the Watch/Unsignable filtering — the bridge just
 // maps. These cases pin the mapping and assume the filter is covered by the

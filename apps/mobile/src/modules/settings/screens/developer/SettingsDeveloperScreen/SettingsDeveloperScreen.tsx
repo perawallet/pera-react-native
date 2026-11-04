@@ -17,10 +17,10 @@ import {
     useSelectedScope,
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { PWListItem, PWScreen } from '@components/core'
 import { UserPreferences } from '@constants/user-preferences'
@@ -33,7 +33,7 @@ export const SettingsDeveloperScreen = () => {
     const { t } = useLanguage()
     const { getPreference } = usePreferences()
     const { pushWebView } = useWebView()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const isLive = useWalletDeployment() === 'live'
     const { dispenserUrl } = getAlgorandChainConfig(scope)
 

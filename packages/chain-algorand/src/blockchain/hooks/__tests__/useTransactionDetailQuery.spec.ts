@@ -12,13 +12,13 @@
 
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 import { useTransactionDetailQuery } from '../useTransactionDetailQuery'
 import { useAlgorandClient } from '../useAlgorandClient'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Mock dependencies
 vi.mock('../useAlgorandClient')
@@ -53,7 +53,7 @@ describe('useTransactionDetailQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useSelectedScope.mockReturnValue({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const)
 
@@ -163,7 +163,7 @@ describe('useTransactionDetailQuery', () => {
 
     test('refetches when network changes', async () => {
         mocks.useSelectedScope.mockReturnValue({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const)
 
@@ -181,7 +181,7 @@ describe('useTransactionDetailQuery', () => {
         // Switch network — query key changes, so React Query refetches
         mockLookupTransactionById.mockClear()
         mocks.useSelectedScope.mockReturnValue({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
         rerender()

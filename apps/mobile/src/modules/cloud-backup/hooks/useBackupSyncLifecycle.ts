@@ -30,7 +30,6 @@ import {
     type SerializeMnemonicResolver,
     type SerializePrivateKeyResolver,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { isAppLocked, useSecurityStore } from '@perawallet/wallet-core-security'
 import {
@@ -40,6 +39,7 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
@@ -149,7 +149,7 @@ const subscribePasskeyChanges = (onChange: () => void): (() => void) => {
 const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { importAccounts } = useCloudBackupImport(scope)
     const { importContacts } = useCloudBackupContactImport()
     const resolveHd = useResolveHdSeedForBackup(scope.chainId)
@@ -208,8 +208,8 @@ const useBackupSyncManagerSetup = () => {
 
     useEffect(() => {
         initializeBackupSyncManager({
-            chainId: LEGACY_CHAIN_ID,
-            sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
+            chainId: ALGORAND_CHAIN_ID,
+            sources: createBackupSyncStoreSources(ALGORAND_CHAIN_ID),
             importAccounts: accounts => latest.current.importAccounts(accounts),
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: (account, seedSecrets) =>

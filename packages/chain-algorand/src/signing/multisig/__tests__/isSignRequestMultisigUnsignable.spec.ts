@@ -12,10 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Address } from 'algosdk'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigUnsignable } from '@perawallet/wallet-core-accounts'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { multisigAccount } from '../../../__tests__/algorandAccounts'
 import { algorandAddressOf } from '../../../accounts/vocabulary'
 import { isSignRequestMultisigUnsignable } from '../isSignRequestMultisigUnsignable'
@@ -74,7 +74,7 @@ describe('isSignRequestMultisigUnsignable', () => {
         expect(isMultisigUnsignable).toHaveBeenCalledWith(
             accounts[0],
             accounts,
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
         )
     })
 
@@ -126,7 +126,7 @@ describe('isSignRequestMultisigUnsignable', () => {
             expect(isMultisigUnsignable).toHaveBeenCalledWith(
                 neutralAccounts[0],
                 neutralAccounts,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )
         })
 
@@ -148,7 +148,7 @@ describe('isSignRequestMultisigUnsignable', () => {
             expect(isMultisigUnsignable).toHaveBeenCalledWith(
                 accounts[0],
                 [...neutralAccounts, ...accounts],
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )
         })
 

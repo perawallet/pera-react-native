@@ -59,6 +59,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useResolveAssetHolderAddress: () => mockResolveAssetHolderAddress,
 }))
 
+vi.mock('@hooks/useHomeChainScope', () => ({
+    useHomeChainScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-search', () => ({
     SEARCH_SCOPES: ['accounts', 'contacts', 'assets'],
     useGlobalSearch: () => ({

@@ -23,7 +23,7 @@ const ENTRIES = new Set(['', 'index', 'routes', 'shell', 'web'])
 // ChainIcon that draws them) because the assets barrel renders them and must
 // not load the registry.
 const EXTRA_ENTRIES: Record<string, readonly string[]> = {
-    algorand: ['icons', 'chain-ui', 'chain-icons'],
+    algorand: ['icons', 'chain-ui', 'chain-icons', 'chain-id'],
     banners: ['carousel'],
     'chain-ui': ['icon'],
     deeplink: ['core'],

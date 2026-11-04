@@ -76,6 +76,11 @@ export const useStyles = makeStyles(
                 backgroundColor: theme.colors.background,
                 borderRadius: theme.spacing.lg,
             },
+            // A caller's badge (participant count, chain icon) hangs lower than the
+            // backup warning so it clears the account glyph.
+            customAvatarBadge: {
+                transform: [{ translateY: theme.spacing.xs }],
+            },
             addressText,
         }
     },

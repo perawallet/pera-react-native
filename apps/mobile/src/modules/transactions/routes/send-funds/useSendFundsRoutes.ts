@@ -53,7 +53,9 @@ export const useSendFundsRoutes = (): UseSendFundsRoutesResult => {
     const account = useSelectedAccount()
     const { canSelectAsset, selectedAssetId, chainId, setChainId } =
         useSendFunds()
-    const optionsOf = useAccountChainOptionsResolver('send')
+    const optionsOf = useAccountChainOptionsResolver('send', {
+        isSignerRequired: true,
+    })
 
     const { data: assets } = useAssetsQuery(
         scope,

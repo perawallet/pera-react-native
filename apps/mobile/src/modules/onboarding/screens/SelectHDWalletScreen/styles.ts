@@ -12,53 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    const algoBalance = {
-        lineHeight: theme.spacing.lg,
-    }
-    const fiatBalance = {
-        color: theme.colors.textGray,
-    }
-    return {
-        content: {
-            flex: 1,
-        },
-        list: {
-            flex: 1,
-        },
-        walletItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        walletIconContainer: {
-            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: xl icon plus sm padding on each side
-            width: theme.spacing.xl + 2 * theme.spacing.sm,
-            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: xl icon plus sm padding on each side
-            height: theme.spacing.xl + 2 * theme.spacing.sm,
-            borderRadius: theme.borderRadius.full,
-            marginRight: theme.spacing.md,
-        },
-        rowContent: {
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: theme.spacing.md,
-            borderBottomWidth: theme.borders.sm,
-            borderBottomColor: theme.colors.layerGrayLighter,
-        },
-        walletTextContainer: {
-            flex: 1,
-            paddingRight: theme.spacing.md,
-        },
-        walletSubtitle: {
-            color: theme.colors.textGray,
-            marginTop: theme.spacing.xxs,
-        },
-        balanceContainer: {
-            gap: theme.spacing.xs,
-            alignItems: 'flex-end',
-        },
-        algoBalance,
-        fiatBalance,
-    }
-})
+export const useStyles = makeStyles(() => ({
+    content: {
+        flex: 1,
+    },
+    list: {
+        flex: 1,
+    },
+}))

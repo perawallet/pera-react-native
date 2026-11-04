@@ -22,10 +22,7 @@ import {
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 import type { InboxResponse } from '../../api/inbox'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -505,7 +502,7 @@ describe('useInboxQuery', () => {
             'disables the query and flags isUnavailableOnNetwork on %s',
             network => {
                 scopeState.current = {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: network,
                 } as const
 
@@ -529,7 +526,7 @@ describe('useInboxQuery', () => {
             'reports isPending false while unavailable on %s',
             network => {
                 scopeState.current = {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: network,
                 } as const
 
@@ -549,7 +546,7 @@ describe('useInboxQuery', () => {
             'does not invoke fetchInbox when refetch is called on %s',
             async network => {
                 scopeState.current = {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: network,
                 } as const
 

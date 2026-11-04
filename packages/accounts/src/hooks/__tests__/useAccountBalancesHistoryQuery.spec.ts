@@ -21,7 +21,6 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
@@ -82,7 +81,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             const addresses = ['ADDR1', 'ADDR2']
             const period = 'one-day'
             const scope = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const
             const key = getAccountBalancesHistoryQueryKey(

@@ -12,12 +12,12 @@
 
 import { useCallback } from 'react'
 import {
-    useAccountScope,
     type WalletAccount,
+    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useBackupFlowLauncher } from '@modules/backup'
 
 export type UseBackupReminderBannerResult = {
@@ -28,7 +28,7 @@ export type UseBackupReminderBannerResult = {
 export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, useHomeChainScope().chainId)
     const isVisible = useShouldPromptMnemonicBackup(account, scope)
     const launch = useBackupFlowLauncher()
 

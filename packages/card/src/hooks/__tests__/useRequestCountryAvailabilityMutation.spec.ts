@@ -21,14 +21,11 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/waitlist', () => api)
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useRequestCountryAvailabilityMutation } from '../useRequestCountryAvailabilityMutation'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'algorand', networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

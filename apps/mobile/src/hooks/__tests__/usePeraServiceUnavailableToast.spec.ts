@@ -12,7 +12,11 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { setPeraBackendSwitch } from '@perawallet/wallet-core-config'
+import {
+    markPeraScopeRefused,
+    resetPeraScopeRefusals,
+    setPeraBackendSwitch,
+} from '@perawallet/wallet-core-config'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 
 const { mockShowError, mockSetOnPeraBackendUnavailable } = vi.hoisted(() => ({
@@ -126,6 +130,51 @@ describe('usePeraServiceUnavailableToast', () => {
             betanet,
             'common.network_unavailable.title',
         )
+    })
+
+    it('stays silent for a chain the backend refuses', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        capturedHandler?.(
+            new PeraServiceUnavailableError(scope, 'history', {
+                isChainRefused: true,
+            }),
+        )
+
+        expect(mockShowError).not.toHaveBeenCalled()
+    })
+
+    it('stays silent for an error an adapter raised itself for a chain the backend refuses', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+        markPeraScopeRefused(scope)
+
+        try {
+            capturedHandler?.(new PeraServiceUnavailableError(scope, 'assets'))
+
+            expect(mockShowError).not.toHaveBeenCalled()
+        } finally {
+            resetPeraScopeRefusals()
+        }
     })
 
     it('stays silent for an error an adapter raised itself while the chain kill switch is on', () => {

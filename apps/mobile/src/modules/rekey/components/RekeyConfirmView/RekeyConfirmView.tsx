@@ -11,10 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    LEGACY_CHAIN_ID,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
@@ -28,6 +25,7 @@ import type { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // Shared presentation for the rekey-to-{ledger,shared,standard} confirm screens.
 // They share an identical layout and differ only in their copy, testID prefix,
@@ -71,7 +69,7 @@ export const RekeyConfirmView = ({
     isUnderfunded,
     onConfirmPress,
 }: RekeyConfirmViewProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()

@@ -23,8 +23,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { fetchAssetPrices } from '../endpoints'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 describe('pricing endpoints', () => {
     beforeEach(() => {
@@ -46,7 +46,7 @@ describe('pricing endpoints', () => {
                 url: '/api/v3/asset-prices',
                 params: { asset_ids: '123,456' },
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const,
             }),

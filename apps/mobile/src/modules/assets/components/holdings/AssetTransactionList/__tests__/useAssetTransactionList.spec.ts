@@ -37,10 +37,10 @@ import {
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import {
-    LEGACY_CHAIN_ID,
     i18nKey,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
 const mockRequestBottomSheet = vi.fn()
@@ -121,7 +121,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -239,7 +239,7 @@ describe('useAssetTransactionList', () => {
 
         it('reads the history on the scope it is given', () => {
             const testnet = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'testnet',
             } as const
 
@@ -890,7 +890,7 @@ describe('useAssetTransactionList', () => {
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
                         scope: {
-                            chainId: LEGACY_CHAIN_ID,
+                            chainId: ALGORAND_CHAIN_ID,
                             networkId: network,
                         } as const,
                         account: mockAccount,
@@ -910,7 +910,7 @@ describe('useAssetTransactionList', () => {
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
                         scope: {
-                            chainId: LEGACY_CHAIN_ID,
+                            chainId: ALGORAND_CHAIN_ID,
                             networkId: network,
                         } as const,
                         account: mockAccount,

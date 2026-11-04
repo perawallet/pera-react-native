@@ -213,6 +213,9 @@ export const useAccountAssetList = ({
         state => state.displayOptedInNfts,
     )
     const assetSortMode = useAssetPreferencesStore(state => state.assetSortMode)
+    const showSuspicious = useAssetPreferencesStore(
+        state => state.showSuspicious,
+    )
     const effectiveDisplayOptedInNfts = displayNfts && displayOptedInNfts
     const balanceFilters = useMemo(
         () => ({
@@ -221,12 +224,14 @@ export const useAccountAssetList = ({
             keepZeroNative: selectedChainId !== null,
             hideNfts: !displayNfts,
             hideZeroBalanceNfts: !effectiveDisplayOptedInNfts,
+            hideSuspicious: !showSuspicious,
         }),
         [
             hideZeroBalance,
             selectedChainId,
             displayNfts,
             effectiveDisplayOptedInNfts,
+            showSuspicious,
         ],
     )
 

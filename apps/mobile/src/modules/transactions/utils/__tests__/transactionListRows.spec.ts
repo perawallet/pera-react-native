@@ -13,8 +13,13 @@
 // @vitest-environment node
 
 import { describe, it, expect, vi } from 'vitest'
-import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
@@ -42,10 +47,10 @@ const makeTransaction = (id: string, roundTime: number) =>
 
 describe('buildTransactionListRows', () => {
     it('emits a header before each date group', () => {
-        const rows = buildTransactionListRows([
-            makeTransaction('1', JAN_1),
-            makeTransaction('2', JAN_2),
-        ])
+        const rows = buildTransactionListRows(
+            [makeTransaction('1', JAN_1), makeTransaction('2', JAN_2)],
+            SCOPE,
+        )
 
         expect(rows.map(row => row.kind)).toEqual([
             'header',
@@ -56,21 +61,24 @@ describe('buildTransactionListRows', () => {
     })
 
     it('orders date groups newest first', () => {
-        const rows = buildTransactionListRows([
-            makeTransaction('1', JAN_1),
-            makeTransaction('2', JAN_2),
-        ])
+        const rows = buildTransactionListRows(
+            [makeTransaction('1', JAN_1), makeTransaction('2', JAN_2)],
+            SCOPE,
+        )
 
         expect(rows[0].key).toBe('2024-01-02')
         expect(rows[2].key).toBe('2024-01-01')
     })
 
     it('keeps transactions from the same day under one header, in order', () => {
-        const rows = buildTransactionListRows([
-            makeTransaction('1', JAN_1),
-            makeTransaction('2', JAN_1 + 60),
-            makeTransaction('3', JAN_1 + 120),
-        ])
+        const rows = buildTransactionListRows(
+            [
+                makeTransaction('1', JAN_1),
+                makeTransaction('2', JAN_1 + 60),
+                makeTransaction('3', JAN_1 + 120),
+            ],
+            SCOPE,
+        )
 
         expect(rows.filter(row => row.kind === 'header')).toHaveLength(1)
         expect(
@@ -79,11 +87,14 @@ describe('buildTransactionListRows', () => {
     })
 
     it('groups same-day transactions that arrive interleaved with another day', () => {
-        const rows = buildTransactionListRows([
-            makeTransaction('1', JAN_2),
-            makeTransaction('2', JAN_1),
-            makeTransaction('3', JAN_2 + 60),
-        ])
+        const rows = buildTransactionListRows(
+            [
+                makeTransaction('1', JAN_2),
+                makeTransaction('2', JAN_1),
+                makeTransaction('3', JAN_2 + 60),
+            ],
+            SCOPE,
+        )
 
         expect(rows.map(row => row.key)).toEqual([
             '2024-01-02',
@@ -95,7 +106,7 @@ describe('buildTransactionListRows', () => {
     })
 
     it('returns no rows for an empty history', () => {
-        expect(buildTransactionListRows([])).toEqual([])
+        expect(buildTransactionListRows([], SCOPE)).toEqual([])
     })
 })
 
@@ -131,9 +142,10 @@ describe('buildRecordListRows', () => {
 
 describe('row identity', () => {
     it('pools record rows with transaction rows, which render the same item', () => {
-        const [, transactionRow] = buildTransactionListRows([
-            makeTransaction('1', JAN_1),
-        ])
+        const [, transactionRow] = buildTransactionListRows(
+            [makeTransaction('1', JAN_1)],
+            SCOPE,
+        )
         const [, recordRow] = buildRecordListRows([makeRecord('2', JAN_1)])
 
         expect(getTransactionRowType(recordRow)).toBe(
@@ -142,7 +154,10 @@ describe('row identity', () => {
     })
 
     it('pools headers and transactions separately', () => {
-        const rows = buildTransactionListRows([makeTransaction('1', JAN_1)])
+        const rows = buildTransactionListRows(
+            [makeTransaction('1', JAN_1)],
+            SCOPE,
+        )
 
         expect(getTransactionRowType(rows[0])).not.toBe(
             getTransactionRowType(rows[1]),
@@ -150,9 +165,10 @@ describe('row identity', () => {
     })
 
     it('namespaces keys so a header and a transaction can never collide', () => {
-        const rows = buildTransactionListRows([
-            makeTransaction('2024-01-01', JAN_1),
-        ])
+        const rows = buildTransactionListRows(
+            [makeTransaction('2024-01-01', JAN_1)],
+            SCOPE,
+        )
 
         expect(getTransactionRowKey(rows[0])).not.toBe(
             getTransactionRowKey(rows[1]),

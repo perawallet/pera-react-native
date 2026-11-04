@@ -40,10 +40,7 @@ import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import {
-    LEGACY_CHAIN_ID,
-    type UnsignedTransaction,
-} from '@perawallet/wallet-core-chain-contract'
+import { type UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     useSigningRequest,
@@ -54,6 +51,7 @@ import {
     encodeToBase64,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { server } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -294,7 +292,9 @@ describe('Flow: key registration from a deeplink', () => {
                 genesisId: CUSTOM_GENESIS_ID,
             })
             useNetworkStore.getState().setMode('developer')
-            useNetworkStore.getState().selectNetwork(LEGACY_CHAIN_ID, 'custom')
+            useNetworkStore
+                .getState()
+                .selectNetwork(ALGORAND_CHAIN_ID, 'custom')
             // Answered only by the custom node; anything built elsewhere gets
             // the default mainnet genesis and fails the assertions below.
             server.use(

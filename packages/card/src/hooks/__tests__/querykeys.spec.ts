@@ -11,15 +11,12 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import {
-    queryKeyReferencesScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { CardWalletKind } from '../../models'
 import { cardQueryKeys, MODULE_PREFIX } from '../querykeys'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
-const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
 describe('cardQueryKeys', () => {
     test('status key carries the scope object', () => {

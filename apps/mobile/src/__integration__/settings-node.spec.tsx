@@ -28,7 +28,6 @@ import {
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
     resetTestDatabase,
@@ -43,16 +42,17 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'testnet',
 } as const
 
@@ -94,7 +94,7 @@ describe('Flow: Settings → Network selection', () => {
 
     it('Given the user is on mainnet, when the mode flips to developer, then the selected scope moves to testnet and the chain config exposes the testnet algod URL', async () => {
         const { result } = renderHook(() => ({
-            scope: useSelectedScope(LEGACY_CHAIN_ID),
+            scope: useSelectedScope(ALGORAND_CHAIN_ID),
             deployment: useWalletDeployment(),
         }))
 
@@ -164,7 +164,7 @@ describe('Flow: Settings → Network selection', () => {
         // the testnet row.
         const { result } = renderHook(
             () => {
-                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const scope = useSelectedScope(ALGORAND_CHAIN_ID)
                 const balances = useAccountBalancesQuery(
                     [SAME_ADDRESS_ACCOUNT],
                     scope,

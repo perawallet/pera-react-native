@@ -12,7 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountCapabilityScope,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import {
@@ -61,11 +64,19 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
 
 const keysOf = (tabs: { key: string }[]) => tabs.map(tab => tab.key)
 
+// The global mock turns every capability on; these cases switch them.
+const actualAccounts = await vi.importActual<
+    typeof import('@perawallet/wallet-core-accounts')
+>('@perawallet/wallet-core-accounts')
+
 describe('useAccountTabNavigator', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.routeParams = {}
         useRemoteConfigStore.getState().resetState()
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actualAccounts.useAccountCapabilityScope,
+        )
     })
 
     it('starts on the first tab with only that page mounted', () => {
@@ -154,6 +165,19 @@ describe('useAccountTabNavigator', () => {
         )
 
         expect(keysOf(result.current.tabs)).toEqual(keysOf(before.current.tabs))
+        expect(keysOf(result.current.tabs)).toContain('History')
+    })
+
+    it('keeps History while another chain the account holds serves it', () => {
+        registerEthereumChain()
+        act(() => setCapabilityOverrides({ history: false }, 'algorand'))
+        const onBoth: WalletAccount = {
+            ...ALGORAND_ACCOUNT,
+            chains: { ...ALGORAND_ACCOUNT.chains, ...ETHEREUM_ACCOUNT.chains },
+        }
+
+        const { result } = renderHook(() => useAccountTabNavigator(onBoth))
+
         expect(keysOf(result.current.tabs)).toContain('History')
     })
 

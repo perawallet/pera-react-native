@@ -14,10 +14,10 @@ import {
     useProvenPasskeysForBackupQuery,
     type UseProvenPasskeysForBackupQueryResult,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // The package takes the chain from its caller; this screen's passkeys are
-// still the legacy chain's.
+// still Algorand's.
 export const useProvenPasskeysQuery =
     (): UseProvenPasskeysForBackupQueryResult =>
-        useProvenPasskeysForBackupQuery(LEGACY_CHAIN_ID)
+        useProvenPasskeysForBackupQuery(ALGORAND_CHAIN_ID)

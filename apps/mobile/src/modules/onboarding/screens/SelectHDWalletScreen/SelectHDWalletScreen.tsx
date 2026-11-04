@@ -11,37 +11,23 @@
  */
 
 import React from 'react'
-import {
-    chainAccountOf,
-    type HdSeedGroup,
-} from '@perawallet/wallet-core-accounts'
+import type { HdSeedGroup } from '@perawallet/wallet-core-accounts'
 import {
     PWView,
-    PWText,
     PWFlatList,
-    PWRoundIcon,
-    PWTouchableOpacity,
     PWButton,
     PWLoadingOverlay,
     PWScreen,
 } from '@components/core'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { AssetAmount } from '@components/AssetAmount'
-import { PreferredAmount } from '@components/PreferredAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { Decimal } from 'decimal.js'
+import { HDWalletRow } from './HDWalletRow'
 import { useStyles } from './styles'
 import { useSelectHDWalletScreen } from './useSelectHDWalletScreen'
 
 export const SelectHDWalletScreen = () => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const {
         hdSeedGroups,
-        accountBalances,
         isCreatingWallet,
         isSelectingWallet,
         isAutoSelecting,
@@ -56,65 +42,13 @@ export const SelectHDWalletScreen = () => {
     }: {
         item: HdSeedGroup
         index: number
-    }) => {
-        const walletLabel = t('onboarding.select_hd_wallet.wallet_label', {
-            number: index + 1,
-        })
-
-        const groupAlgoValue = item.accounts.reduce(
-            (sum, acc) =>
-                sum.plus(
-                    accountBalances.get(
-                        chainAccountOf(acc, LEGACY_CHAIN_ID)?.address ?? '',
-                    )?.nativeValue ?? new Decimal(0),
-                ),
-            new Decimal(0),
-        )
-
-        return (
-            <PWTouchableOpacity
-                style={styles.walletItem}
-                onPress={() => handleSelectWallet(item)}
-                testID={`select_hd_wallet_item_${index}`}
-            >
-                <PWRoundIcon
-                    icon='wallet-with-algo'
-                    size='lg'
-                    style={styles.walletIconContainer}
-                />
-                <PWView style={styles.rowContent}>
-                    <PWView style={styles.walletTextContainer}>
-                        <PWText variant='h3'>{walletLabel}</PWText>
-                        <PWText
-                            variant='body'
-                            style={styles.walletSubtitle}
-                        >
-                            {t('onboarding.select_hd_wallet.account_count', {
-                                count: item.accountCount,
-                            })}
-                        </PWText>
-                    </PWView>
-                    <PWView style={styles.balanceContainer}>
-                        <AssetAmount
-                            chainId={scope.chainId}
-                            asset={nativeAsset}
-                            value={groupAlgoValue}
-                            density='compact'
-                            style={styles.algoBalance}
-                            variant='h4'
-                        />
-                        <PreferredAmount
-                            sourceAssetId={nativeAsset.assetId}
-                            sourceAmount={groupAlgoValue}
-                            density='compact'
-                            style={styles.fiatBalance}
-                            variant='body'
-                        />
-                    </PWView>
-                </PWView>
-            </PWTouchableOpacity>
-        )
-    }
+    }) => (
+        <HDWalletRow
+            group={item}
+            index={index}
+            onPress={handleSelectWallet}
+        />
+    )
 
     return (
         <>
@@ -149,7 +83,6 @@ export const SelectHDWalletScreen = () => {
                             data={hdSeedGroups}
                             renderItem={renderItem}
                             keyExtractor={item => item.seedKeyId}
-                            extraData={accountBalances}
                         />
                     </PWView>
                 )}

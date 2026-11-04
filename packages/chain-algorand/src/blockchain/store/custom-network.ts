@@ -12,7 +12,6 @@
 
 import {
     CUSTOM_NETWORK_ID,
-    LEGACY_CHAIN_ID,
     toScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -37,7 +36,11 @@ export type AlgorandCustomNetwork = CustomNetwork & CustomNetworkConfig
 export const selectAlgorandCustomNetwork = (
     state: Parameters<typeof selectCustomNetwork>[0],
 ): Optional<AlgorandCustomNetwork> => {
-    const entry = selectCustomNetwork(state, LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
+    const entry = selectCustomNetwork(
+        state,
+        ALGORAND_CHAIN_ID,
+        CUSTOM_NETWORK_ID,
+    )
     return entry !== undefined && isCustomNetworkConfig(entry)
         ? entry
         : undefined
@@ -55,7 +58,7 @@ export const isCustomNetworkConfigured = (): boolean =>
     getCustomNetworkConfig() !== undefined
 
 export const setCustomNetwork = (customConfig: CustomNetworkConfig): void =>
-    useNetworkStore.getState().setCustomNetwork(LEGACY_CHAIN_ID, {
+    useNetworkStore.getState().setCustomNetwork(ALGORAND_CHAIN_ID, {
         ...customConfig,
         id: CUSTOM_NETWORK_ID,
     })
@@ -70,7 +73,7 @@ export const algorandCustomNode: CustomNodeAdapter = {
 export const clearCustomNetwork = (): void =>
     useNetworkStore
         .getState()
-        .clearCustomNetwork(LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
+        .clearCustomNetwork(ALGORAND_CHAIN_ID, CUSTOM_NETWORK_ID)
 
 // A literal: module load must not touch config.
 const CUSTOM_SCOPE_KEY = toScopeKey(algorandScope('custom'))

@@ -12,10 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import {
-    toScopeKey,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import type { PeraAsset } from '../../models'
 
 const mockFetchAndPersistAssets = vi.hoisted(() => vi.fn())
@@ -32,11 +29,11 @@ vi.mock('../../db', () => ({
 import { assetBatchQueue } from '../assetBatchQueue'
 
 const MAINNET_KEY = toScopeKey({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const)
 const TESTNET_KEY = toScopeKey({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'testnet',
 } as const)
 
@@ -70,7 +67,7 @@ describe('assetBatchQueue (adapter)', () => {
         const [ids, scope] = mockFetchAndPersistAssets.mock.calls[0]
         expect(new Set(ids)).toEqual(new Set(['1', '2', '3']))
         expect(scope).toEqual({
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 

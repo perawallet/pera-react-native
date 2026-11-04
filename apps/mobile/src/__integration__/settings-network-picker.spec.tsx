@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     ETHEREUM_CHAIN_ID,
     allCapabilities,
@@ -33,7 +34,6 @@ import {
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { registerChainAdapters } from '../bootstrap/chain-adapters'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const renderScreen = () =>
     renderWithNavigation(SettingsDeveloperNodeSettingsScreen, 'NodeSettings')
@@ -87,7 +87,7 @@ describe('Flow: Settings → Developer Mode', () => {
             ).toBeTruthy()
         })
         expect(resolvedNetwork('algorand')).toBe('testnet')
-        expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('testnet')
+        expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe('testnet')
         expect(isRadioSelected('node_settings_algorand_testnet_radio')).toBe(
             true,
         )

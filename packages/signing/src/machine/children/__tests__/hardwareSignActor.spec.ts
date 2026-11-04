@@ -74,7 +74,6 @@ import type {
 } from '../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { algo25Account, ledgerAccount } from '../../../__tests__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { asUnsignedAlgorandTransaction } from '../../../__tests__/transactions'
 
 const HARDWARE_ADDRESS =
@@ -124,7 +123,6 @@ const makeInput = (
 ): HardwareSigningInput => ({
     groups: [makeGroup()],
     allAccounts: [hardwareAccount],
-    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
     hardwareWalletRegistry: {} as never,
     scope: { chainId: 'algorand', networkId: 'mainnet' },
     totalTxs: 1,

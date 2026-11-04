@@ -31,10 +31,10 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
-    LEGACY_CHAIN_ID,
     type ChainScope,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { testDatabaseService } from './sqlite-database'
 
 /**
@@ -80,8 +80,8 @@ export const seedAlgoAsset = async (
     networkId: NetworkId = 'mainnet',
 ): Promise<void> => {
     await upsertAssets({
-        items: [nativeAssetFor(LEGACY_CHAIN_ID)],
-        scope: { chainId: LEGACY_CHAIN_ID, networkId } as const,
+        items: [nativeAssetFor(ALGORAND_CHAIN_ID)],
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId } as const,
     })
 }
 
@@ -96,7 +96,7 @@ export const seedAssets = async (
     if (assets.length === 0) return
     await upsertAssets({
         items: assets,
-        scope: { chainId: LEGACY_CHAIN_ID, networkId } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId } as const,
     })
 }
 

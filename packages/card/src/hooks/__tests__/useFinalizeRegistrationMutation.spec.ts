@@ -31,16 +31,13 @@ vi.mock('../../api/auth', () => ({ loginRequest, acquireCardSessionTokens }))
 vi.mock('../../session', () => ({ setCardSession }))
 vi.mock('../../api/onboarding', () => ({ linkOnboardingConsent }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { OnboardingStep } from '../../models'
 import { useCardStore } from '../../store'
 import { useFinalizeRegistrationMutation } from '../useFinalizeRegistrationMutation'
 import { getLoginPassword } from '../../store/login-password'
 
-const SCOPE: ChainScope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' }
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const LOGIN_RESULT = {
     accessToken: 'login-token',

@@ -13,10 +13,7 @@
 import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Transaction, computeGroupID } from 'algosdk'
-import {
-    type UnsignedTransaction,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { bytesEqual, bytesToHex } from '@perawallet/wallet-core-shared'
 
 import {
@@ -105,7 +102,7 @@ const groupFactsOf = (
 export const fakePlannerAdapter = (
     overrides: Partial<PlannerChainAdapter> = {},
 ): PlannerChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     resolveDappRequest: vi.fn(notStubbed('resolveDappRequest')),
     enqueueDappRequest: vi.fn(notStubbed('enqueueDappRequest')),
     minFeeForSender: vi.fn(() => 0n),

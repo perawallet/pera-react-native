@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { chainAccountOf } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWFlatList, PWLoadingOverlay, PWScreen } from '@components/core'
 
 import { useStyles } from './styles'
@@ -64,7 +64,8 @@ export const ImportRekeyedAddressesScreen = () => {
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => {
                         const address =
-                            chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+                            chainAccountOf(item, ALGORAND_CHAIN_ID)?.address ??
+                            ''
                         return (
                             <ImportRekeyedAddressesItem
                                 account={item}

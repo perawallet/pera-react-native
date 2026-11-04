@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '../models'
 import { canSignWith } from '../signer-resolution'
-import { useAccountsStore } from '../store'
+import { useAccountChainStateStore, useAccountsStore } from '../store'
+import { useRegisteredChainIds } from './accountChainEntries'
 
 /** `account` need not be held; whatever signs for it on `chainId` must be. */
 export const useCanSignWith = (
@@ -27,4 +28,25 @@ export const useCanSignWith = (
         () => !!account && canSignWith(account, accounts, chainId),
         [account, accounts, chainId],
     )
+}
+
+/** {@link useCanSignWith} for checking several accounts or chains in one render. */
+export const useCanSignWithCheck = (): ((
+    account: WalletAccount,
+    chainId: ChainId,
+) => boolean) => {
+    const accounts = useAccountsStore(state => state.accounts)
+    const chainStates = useAccountChainStateStore(state => state.states)
+    return useCallback(
+        (account: WalletAccount, chainId: ChainId) =>
+            canSignWith(account, accounts, chainId),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-creates the check: canSignWith reads the chain-state store, not its arguments
+        [accounts, chainStates],
+    )
+}
+
+/** Whether something held signs for `account` on any registered chain it holds. */
+export const useCanSignOnAnyChain = (account: WalletAccount): boolean => {
+    const canSignOn = useCanSignWithCheck()
+    return useRegisteredChainIds().some(chainId => canSignOn(account, chainId))
 }
