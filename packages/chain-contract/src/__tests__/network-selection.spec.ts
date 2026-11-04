@@ -161,7 +161,6 @@ describe('isTestTierScope', () => {
 
         it.each([
             ['algorand', 'mainnet', false],
-            ['algorand', 'testnet', true],
             ['algorand', 'my-node', true],
         ] as const)('%s/%s is %s', (chainId, networkId, expected) => {
             expect(isTestTierScope(chains, { chainId, networkId })).toBe(

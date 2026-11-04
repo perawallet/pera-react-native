@@ -25,6 +25,7 @@ import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     registerEthereumChain,
     registerEvmChain,
+    restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
@@ -344,6 +345,21 @@ describe('useAccountOverviewHeader', () => {
         expect(
             result.current.chartSources.map(({ scope }) => scope.chainId),
         ).toEqual(['algorand', 'ethereum'])
+    })
+
+    it('has no fiat total for an Algorand-only build on a test network', () => {
+        restoreAlgorandOnlyChains()
+        act(() => useNetworkStore.getState().setMode('developer'))
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount, false),
+            { wrapper },
+        )
+
+        expect(result.current.hasFiatTotal).toBe(false)
+        expect(
+            result.current.chartSources.map(({ scope }) => scope.chainId),
+        ).toEqual(['algorand'])
     })
 
     it("counts a switched-off chain's synced value in the total, as its RPC balance keeps syncing", async () => {

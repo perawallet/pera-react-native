@@ -43,6 +43,7 @@ ${REMOVE_NEXT_STEP}                 xpath=//*[@content-desc='remove_account_back
 
 ${ACCOUNT_PORTFOLIO}                tid=account_portfolio
 ${ALGO_HOLDING_ROW}                 tid=asset_row_0
+${PORTFOLIO_PRIMARY_VALUE}          tid=portfolio_primary_value
 
 # Containers, icons and the drawer search trigger carry their testID without an accessibility
 # label, so Android exposes it only as resource-id and iOS only as name.
