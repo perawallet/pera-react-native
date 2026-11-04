@@ -93,7 +93,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/onboarding/screens/OnboardingScreen/useOnboardingScreen.tsx',
     'apps/mobile/src/modules/onboarding/screens/PeraWebImportLoadingScreen/usePeraWebImportLoadingScreen.ts',
     'apps/mobile/src/modules/onboarding/screens/SearchAccountsScreen/useSearchAccountsScreen.ts',
-    'apps/mobile/src/modules/onboarding/screens/SelectHDWalletScreen/SelectHDWalletScreen.tsx',
     'apps/mobile/src/modules/onboarding/screens/SelectHDWalletScreen/useSelectHDWalletScreen.ts',
     'apps/mobile/src/modules/onramp/components/OnrampAmountSection/useOnrampAmountSection.ts',
     'apps/mobile/src/modules/onramp/components/OnrampSourceSelectionContent/useOnrampSourceSelection.ts',

@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useHdSeedGroups,
     useCreateAccount,
-    useAccountBalancesQuery,
     type HdSeedGroup,
-    type AccountBalances,
     hdIndexOf,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -30,7 +28,6 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 type UseSelectHDWalletScreenResult = {
     hdSeedGroups: HdSeedGroup[]
-    accountBalances: AccountBalances
     isCreatingWallet: boolean
     /** A wallet is being selected and its next account built. */
     isSelectingWallet: boolean
@@ -58,17 +55,6 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     // Set when auto-select fails, so the picker is revealed for a manual retry.
     const [autoSelectFailed, setAutoSelectFailed] = useState(false)
     const autoSelectedRef = useRef(false)
-
-    const allGroupAccounts = useMemo(
-        () => hdSeedGroups.flatMap(g => g.accounts),
-        [hdSeedGroups],
-    )
-
-    const { accountBalances } = useAccountBalancesQuery(
-        allGroupAccounts,
-        scope,
-        true,
-    )
 
     const handleSelectWallet = useCallback(
         async (group: HdSeedGroup) => {
@@ -137,7 +123,6 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
 
     return {
         hdSeedGroups,
-        accountBalances,
         isCreatingWallet,
         isSelectingWallet,
         isAutoSelecting,

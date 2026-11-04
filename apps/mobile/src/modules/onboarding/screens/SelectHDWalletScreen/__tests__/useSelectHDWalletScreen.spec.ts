@@ -135,14 +135,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useCreateAccount: () => ({
             buildHdWalletAccount: mockBuildHdWalletAccount,
         }),
-        useAccountBalancesQuery: () => ({
-            accountBalances: new Map(),
-            portfolioNativeValue: 0,
-            isPending: false,
-            isFetched: true,
-            isRefetching: false,
-            isError: false,
-        }),
     }
 })
 
@@ -169,11 +161,6 @@ describe('useSelectHDWalletScreen', () => {
         expect(result.current.hdSeedGroups).toHaveLength(2)
         expect(result.current.hdSeedGroups[0].seedKeyId).toBe('wallet-1')
         expect(result.current.hdSeedGroups[1].seedKeyId).toBe('wallet-2')
-    })
-
-    it('returns account balances', () => {
-        const { result } = renderHook(() => useSelectHDWalletScreen())
-        expect(result.current.accountBalances).toBeInstanceOf(Map)
     })
 
     it('starts with isCreatingWallet as false', () => {
