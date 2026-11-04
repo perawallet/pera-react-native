@@ -3629,7 +3629,6 @@
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
             "call_data": "Call Data",
-            "advanced": "Advanced",
             "unchecked_warning": "Pera couldn't check what this transaction does. Only continue if you trust {{domain}}.",
             "unchecked_warning_no_source": "Pera couldn't check what this transaction does. Only continue if you trust the app that sent it."
         },

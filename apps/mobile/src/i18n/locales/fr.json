@@ -3629,7 +3629,6 @@
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
             "function_selector": "Sélecteur de fonction",
             "call_data": "Données de l’appel",
-            "advanced": "Avancé",
             "unchecked_warning": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à {{domain}}.",
             "unchecked_warning_no_source": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à l’application qui l’a envoyée."
         },

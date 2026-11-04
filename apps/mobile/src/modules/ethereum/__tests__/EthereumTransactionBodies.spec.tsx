@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import * as Clipboard from 'expo-clipboard'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
@@ -317,52 +318,20 @@ describe('Ethereum transaction bodies', () => {
             ).toEqual({})
         })
 
-        it('keeps the selector and call data under a collapsed Advanced section', () => {
+        it("leaves an unread call's selector and call data to the details screen", () => {
             render(
                 <TransactionReviewBody
                     transaction={natives['contract-call']}
                 />,
-            )
-
-            const advanced = screen.getByTestId(
-                'ethereum_contract_call_advanced',
-            )
-            const content = screen.getByTestId('ethereum_contract_call_data')
-            expect(advanced.textContent).toContain(
-                'transactions.contract_call.advanced',
-            )
-            expect(advanced.contains(content)).toBe(true)
-            expect(content.closest('[pointer-events="none"]')).not.toBeNull()
-        })
-
-        it('shows a preview of the call data once Advanced is opened, and all of it on request', () => {
-            render(
-                <TransactionReviewBody
-                    transaction={natives['contract-call']}
-                />,
-            )
-
-            fireEvent.click(
-                screen.getByText('transactions.contract_call.advanced'),
             )
 
             expect(
-                screen
-                    .getByTestId('ethereum_contract_call_data')
-                    .closest('[pointer-events="none"]'),
+                screen.queryByTestId('ethereum_contract_call_selector'),
             ).toBeNull()
-            expect(textOf('ethereum_contract_call_data')).toContain(
-                COLLAPSED_CALL_DATA,
-            )
-            expect(textOf('ethereum_contract_call_selector')).toContain(
-                '0x5ae401dc',
-            )
-
-            fireEvent.click(screen.getByText('common.show_more'))
-
-            expect(textOf('ethereum_contract_call_data')).toContain(
-                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
-            )
+            expect(
+                screen.queryByTestId('ethereum_contract_call_data'),
+            ).toBeNull()
+            expect(screen.getByTestId('ethereum_view_details')).toBeTruthy()
         })
 
         it("shows a held signer on Ethereum's chain, and no caption without one", () => {
@@ -469,9 +438,6 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('ethereum_contract_call_warning')).toBe(
                 'transactions.contract_call.warning',
             )
-            expect(
-                screen.queryByTestId('ethereum_contract_call_advanced'),
-            ).toBeNull()
             expect(textOf('ethereum_contract_call_selector')).toContain(
                 '0x5ae401dc',
             )
@@ -480,6 +446,45 @@ describe('Ethereum transaction bodies', () => {
             )
             expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_value')).toMatch(/ETH.*0/)
+
+            fireEvent.click(screen.getByText('common.show_more'))
+
+            expect(textOf('ethereum_contract_call_data')).toContain(
+                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+            )
+        })
+
+        it("lists a call's nonce, gas limit and per-gas fees", () => {
+            render(
+                <TransactionDetailBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            expect(textOf('ethereum_nonce')).toMatch(/nonce0$/)
+            expect(textOf('ethereum_gas_limit')).toMatch(/gas_limit60000$/)
+            expect(textOf('ethereum_max_fee_per_gas')).toMatch(
+                /gas20(\.0+)? ethereum\.pricing\.gwei$/,
+            )
+            expect(textOf('ethereum_max_priority_fee_per_gas')).toMatch(
+                /gas1(\.0+)? ethereum\.pricing\.gwei$/,
+            )
+        })
+
+        it('copies the full call data from its copy button', () => {
+            render(
+                <TransactionDetailBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            fireEvent.click(
+                screen.getByTestId('ethereum_contract_call_data_copy'),
+            )
+
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+            )
         })
 
         it('shows a contract creation without a target and with its calldata in full', () => {

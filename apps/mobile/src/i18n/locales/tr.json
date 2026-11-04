@@ -3629,7 +3629,6 @@
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
-            "advanced": "Gelişmiş",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },

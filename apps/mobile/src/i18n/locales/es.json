@@ -3629,7 +3629,6 @@
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
             "function_selector": "Selector de función",
             "call_data": "Datos de la llamada",
-            "advanced": "Avanzado",
             "unchecked_warning": "Pera no pudo comprobar qué hace esta transacción. Continúa solo si confías en {{domain}}.",
             "unchecked_warning_no_source": "Pera no pudo comprobar qué hace esta transacción. Continúa solo si confías en la app que la envió."
         },
