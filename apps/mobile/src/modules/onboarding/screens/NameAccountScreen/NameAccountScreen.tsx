@@ -14,7 +14,7 @@ import { PWText, PWView } from '@components/core'
 import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { ChainIcon } from '@modules/chain-ui'
+import { ChainIconStack } from '@modules/chain-ui/icon'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
 
@@ -26,7 +26,7 @@ export const NameAccountScreen = () => {
         isCreating,
         handleNameChange,
         handleFinish,
-        accountTitle,
+        previewName,
         account,
         enabledChainIds,
         nameError,
@@ -48,28 +48,21 @@ export const NameAccountScreen = () => {
         >
             <PWView style={styles.walletNameContainer}>
                 <AccountIcon account={account} />
-                <PWText
-                    variant='h4'
-                    style={styles.nameText}
-                >
-                    {accountTitle}
-                </PWText>
-            </PWView>
-            {enabledChainIds.length > 0 && (
-                <PWView
-                    style={styles.chainIconRow}
-                    testID='name_account_chain_icons'
-                >
-                    {enabledChainIds.map(chainId => (
-                        <ChainIcon
-                            key={chainId}
-                            chainId={chainId}
-                            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: chain icon size (20)
-                            size={20}
-                        />
-                    ))}
+                <PWView style={styles.walletNameDetails}>
+                    <PWText
+                        variant='h4'
+                        style={styles.nameText}
+                        truncate
+                    >
+                        {previewName}
+                    </PWText>
+                    {enabledChainIds.length > 0 && (
+                        <PWView testID='name_account_chain_icons'>
+                            <ChainIconStack chainIds={enabledChainIds} />
+                        </PWView>
+                    )}
                 </PWView>
-            )}
+            </PWView>
         </NameAccountForm>
     )
 }

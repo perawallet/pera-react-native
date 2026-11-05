@@ -595,6 +595,39 @@ describe('useNameAccountScreen', () => {
         expect(result.current.walletDisplay).toBe('New Name')
     })
 
+    it('previews the typed name on the account card', () => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange('New Name')
+        })
+
+        expect(result.current.previewName).toBe('New Name')
+    })
+
+    it.each([
+        ['empty', ''],
+        ['blank', '   '],
+    ])('previews the offered name while the field is %s', (_, typed) => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange(typed)
+        })
+
+        expect(result.current.previewName).toBe('Wallet 1')
+    })
+
+    it('previews the typed name without surrounding spaces', () => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange('  New Name  ')
+        })
+
+        expect(result.current.previewName).toBe('New Name')
+    })
+
     it('handleFinish updates account name and exits when account is provided', async () => {
         const account = {
             id: '1',
