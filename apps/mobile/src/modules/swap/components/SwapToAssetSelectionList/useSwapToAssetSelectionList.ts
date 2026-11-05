@@ -26,17 +26,16 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    useAvailableAssetsQuery,
-    type DexSwapAsset,
+    useSwapPairsInfiniteQuery,
+    type SwapAsset,
 } from '@perawallet/wallet-core-swaps'
 import {
-    uint64IdToNumber,
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 export type AvailableAssetWithBalance = {
-    dexAsset: DexSwapAsset
+    swapAsset: SwapAsset
     balance: Nullable<Decimal>
 }
 
@@ -54,6 +53,7 @@ type UseSwapToAssetSelectionListResult = {
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
     isLoading: boolean
+    handleEndReached: () => void
     handleAssetSelected: (item: AvailableAssetWithBalance) => void
 }
 
@@ -74,23 +74,31 @@ export const useSwapToAssetSelectionList = ({
         }
     }, [isVisible])
 
-    // uint64IdToNumber throws on ids above 2^53 - 1 (Number() would silently
-    // round to a different asset id); disable the query instead of crashing
-    // the render for such an id.
-    const fromAssetIdNumber = useMemo(() => {
-        try {
-            return uint64IdToNumber(fromAssetId)
-        } catch {
-            return null
-        }
-    }, [fromAssetId])
-
-    const { data: availableAssets, isLoading } = useAvailableAssetsQuery(
-        fromAssetIdNumber ?? 0,
-        scope,
-        debouncedSearchFilter || undefined,
-        Boolean(fromAssetId) && fromAssetIdNumber !== null,
+    const anchor = useMemo(
+        () =>
+            fromAssetId
+                ? {
+                      chainId: scope.chainId,
+                      networkId: scope.networkId,
+                      assetId: fromAssetId,
+                  }
+                : null,
+        [fromAssetId, scope.chainId, scope.networkId],
     )
+    const {
+        assets: availableAssets,
+        isLoading,
+        hasNextPage,
+        fetchNextPage,
+    } = useSwapPairsInfiniteQuery({
+        anchor,
+        scope,
+        q: debouncedSearchFilter || undefined,
+    })
+
+    const handleEndReached = useCallback(() => {
+        if (hasNextPage) fetchNextPage()
+    }, [hasNextPage, fetchNextPage])
 
     const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
@@ -110,22 +118,21 @@ export const useSwapToAssetSelectionList = ({
     }, [accountBalances, selectedAddress])
 
     const items = useMemo((): AvailableAssetWithBalance[] => {
-        const assets = availableAssets ?? []
-        return assets
+        return availableAssets
             .filter(
                 asset =>
                     excludeAssetId === undefined ||
                     asset.assetId !== excludeAssetId,
             )
-            .map(dexAsset => ({
-                dexAsset,
-                balance: balanceMap.get(dexAsset.assetId) ?? null,
+            .map(swapAsset => ({
+                swapAsset,
+                balance: balanceMap.get(swapAsset.assetId) ?? null,
             }))
     }, [availableAssets, balanceMap, excludeAssetId])
 
     const handleAssetSelected = useCallback(
         (item: AvailableAssetWithBalance) => {
-            const assetId = item.dexAsset.assetId
+            const assetId = item.swapAsset.assetId
             // Seed the AssetSelector's cache entry so the selection renders
             // without waiting on the network fetch for an unowned asset.
             const queryKey = getAssetsQueryKey([assetId], scope, {
@@ -138,16 +145,16 @@ export const useSwapToAssetSelectionList = ({
             if (!cached || cached.length === 0) {
                 const peraAsset: PeraAsset = {
                     assetId,
-                    decimals: item.dexAsset.decimals ?? 0,
+                    decimals: item.swapAsset.decimals ?? 0,
                     creator: { address: '' },
                     totalSupply: new Decimal(0),
-                    name: item.dexAsset.name,
-                    unitName: item.dexAsset.unitName,
+                    name: item.swapAsset.name,
+                    unitName: item.swapAsset.unitName,
                     peraMetadata: {
                         isDeleted: false,
-                        verificationTier: item.dexAsset
+                        verificationTier: item.swapAsset
                             .verificationTier as PeraAssetVerificationTier,
-                        logo: item.dexAsset.logo,
+                        logo: item.swapAsset.logo,
                     },
                 }
                 queryClient.setQueryData(queryKey, [peraAsset])
@@ -169,6 +176,7 @@ export const useSwapToAssetSelectionList = ({
         setSearchFilter,
         debouncedSearchFilter,
         isLoading,
+        handleEndReached,
         handleAssetSelected,
     }
 }

@@ -12,14 +12,17 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Optional, Nullable, Maybe } from '@perawallet/wallet-core-shared'
-import { fetchSwapHistory } from '../api'
-import type { SwapHistoryItem } from '../models'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { fetchSwapHistory, routerAccountId, type SwapHistoryPage } from '../api'
+import type { SwapHistoryItem, SwapStatus } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 const PAGE_SIZE = 20
-
-type FetchSwapHistoryResult = Awaited<ReturnType<typeof fetchSwapHistory>>
+// Bounds the read-ahead over pages the status filter empties, so a history of
+// only hidden rows can't loop the query forever.
+const MAX_SKIPPED_PAGES = 10
 
 export type UseSwapHistoryInfiniteQueryResult = {
     swaps: SwapHistoryItem[]
@@ -32,30 +35,58 @@ export type UseSwapHistoryInfiniteQueryResult = {
     refetch: () => void
 }
 
-// API returns the next page as a full URL — we only need the cursor query param.
-const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
-    if (!nextUrl) return undefined
-    try {
-        return new URL(nextUrl).searchParams.get('cursor') ?? undefined
-    } catch {
-        return undefined
+const fetchVisiblePage = async (
+    fetchPage: (cursor: Optional<string>) => Promise<SwapHistoryPage>,
+    statuses: Optional<SwapStatus[]>,
+    cursor: Optional<string>,
+): Promise<SwapHistoryPage> => {
+    const visibleOf = (page: SwapHistoryPage): SwapHistoryPage => ({
+        results: statuses
+            ? page.results.filter(item => statuses.includes(item.status))
+            : page.results,
+        next: page.next,
+    })
+    let page = await fetchPage(cursor)
+    for (let skipped = 0; skipped < MAX_SKIPPED_PAGES; skipped++) {
+        const visible = visibleOf(page)
+        if (visible.results.length > 0 || page.next === null) return visible
+        page = await fetchPage(page.next)
     }
+    return visibleOf(page)
 }
 
+/**
+ * The router has no status filter, so `statuses` narrows each page, reading
+ * ahead past pages it empties.
+ */
 export const useSwapHistoryInfiniteQuery = (
     address: string,
     scope: ChainScope,
-    statuses?: string,
-    enabled: boolean = true,
+    statuses?: SwapStatus[],
+    isEnabled: boolean = true,
 ): UseSwapHistoryInfiniteQueryResult => {
+    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.historyInfinite(address, statuses, scope),
+        queryKey: swapQueryKeys.historyInfinite(address, scope, statuses),
         queryFn: ({ pageParam }: { pageParam: Optional<string> }) =>
-            fetchSwapHistory(address, scope, statuses, pageParam, PAGE_SIZE),
+            fetchVisiblePage(
+                cursor =>
+                    fetchSwapHistory(
+                        {
+                            deviceId: deviceId ?? '',
+                            accounts: [routerAccountId(scope, address)],
+                            cursor,
+                            limit: PAGE_SIZE,
+                        },
+                        scope,
+                    ),
+                statuses,
+                pageParam,
+            ),
         initialPageParam: undefined as Optional<string>,
-        getNextPageParam: (lastPage: FetchSwapHistoryResult) =>
-            extractCursor(lastPage.next),
-        enabled: enabled && address.length > 0,
+        getNextPageParam: (lastPage: SwapHistoryPage) =>
+            lastPage.next ?? undefined,
+        enabled: isEnabled && address.length > 0 && !!deviceId,
     })
 
     const swaps = query.data?.pages.flatMap(page => page.results) ?? []
@@ -66,7 +97,7 @@ export const useSwapHistoryInfiniteQuery = (
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         error: query.error,
-        hasNextPage: query.hasNextPage ?? false,
+        hasNextPage: query.hasNextPage,
         fetchNextPage: () => void query.fetchNextPage(),
         refetch: () => void query.refetch(),
     }

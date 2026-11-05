@@ -18,7 +18,7 @@ import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
-const mockUseAvailableAssetsQuery = vi.hoisted(() => vi.fn())
+const mockUseSwapPairsInfiniteQuery = vi.hoisted(() => vi.fn())
 const mockGetQueryData = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 const mockUseQueryClient = vi.hoisted(() =>
@@ -48,7 +48,7 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useAvailableAssetsQuery: mockUseAvailableAssetsQuery,
+    useSwapPairsInfiniteQuery: mockUseSwapPairsInfiniteQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -60,6 +60,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         useDebouncedValue: (value: unknown) => value,
     }
 })
+
+const mockFetchNextPage = vi.fn()
 
 const mockAvailableAssets = [
     {
@@ -113,9 +115,11 @@ describe('useSwapToAssetSelectionList', () => {
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
             ]),
         })
-        mockUseAvailableAssetsQuery.mockReturnValue({
-            data: mockAvailableAssets,
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: mockAvailableAssets,
             isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
         })
     })
 
@@ -127,12 +131,12 @@ describe('useSwapToAssetSelectionList', () => {
         expect(result.current.items).toHaveLength(3)
 
         const usdc = result.current.items.find(
-            i => i.dexAsset.assetId === '31566704',
+            i => i.swapAsset.assetId === '31566704',
         )
         const wsol = result.current.items.find(
-            i => i.dexAsset.assetId === '887406851',
+            i => i.swapAsset.assetId === '887406851',
         )
-        const algo = result.current.items.find(i => i.dexAsset.assetId === '0')
+        const algo = result.current.items.find(i => i.swapAsset.assetId === '0')
 
         expect(usdc?.balance?.toString()).toBe('500')
         expect(wsol?.balance).toBeNull()
@@ -149,12 +153,12 @@ describe('useSwapToAssetSelectionList', () => {
         )
 
         expect(
-            result.current.items.every(i => i.dexAsset.assetId !== '31566704'),
+            result.current.items.every(i => i.swapAsset.assetId !== '31566704'),
         ).toBe(true)
         expect(result.current.items).toHaveLength(2)
     })
 
-    it('passes search query to useAvailableAssetsQuery', () => {
+    it('asks what the pay asset swaps into, on the scope, with the search text', () => {
         const { result } = renderHook(() =>
             useSwapToAssetSelectionList(defaultParams),
         )
@@ -163,23 +167,59 @@ describe('useSwapToAssetSelectionList', () => {
             result.current.setSearchFilter('USDC')
         })
 
-        expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31_566_704,
-            expect.objectContaining({ chainId: 'algorand' }),
-            'USDC',
-            true,
+        expect(mockUseSwapPairsInfiniteQuery).toHaveBeenLastCalledWith({
+            anchor: {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+                assetId: '31566704',
+            },
+            scope: defaultParams.scope,
+            q: 'USDC',
+        })
+    })
+
+    it('sends no search text when the search is empty', () => {
+        renderHook(() => useSwapToAssetSelectionList(defaultParams))
+
+        expect(mockUseSwapPairsInfiniteQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ q: undefined }),
         )
     })
 
-    it('passes undefined as query when search is empty', () => {
-        renderHook(() => useSwapToAssetSelectionList(defaultParams))
-
-        expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31_566_704,
-            expect.objectContaining({ chainId: 'algorand' }),
-            undefined,
-            true,
+    it('has no anchor to ask about before a pay asset is picked', () => {
+        renderHook(() =>
+            useSwapToAssetSelectionList({ ...defaultParams, fromAssetId: '' }),
         )
+
+        expect(mockUseSwapPairsInfiniteQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ anchor: null }),
+        )
+    })
+
+    it('loads the next page at the end of the list while there is one', () => {
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: mockAvailableAssets,
+            isLoading: false,
+            hasNextPage: true,
+            fetchNextPage: mockFetchNextPage,
+        })
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+
+        act(() => result.current.handleEndReached())
+
+        expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops paging after the last page', () => {
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+
+        act(() => result.current.handleEndReached())
+
+        expect(mockFetchNextPage).not.toHaveBeenCalled()
     })
 
     it('returns empty items when no account is selected', () => {
@@ -199,9 +239,11 @@ describe('useSwapToAssetSelectionList', () => {
     })
 
     it('returns empty items when available assets API returns nothing', () => {
-        mockUseAvailableAssetsQuery.mockReturnValue({
-            data: [],
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [],
             isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
         })
 
         const { result } = renderHook(() =>
@@ -230,9 +272,11 @@ describe('useSwapToAssetSelectionList', () => {
     })
 
     it('exposes isLoading from the query', () => {
-        mockUseAvailableAssetsQuery.mockReturnValue({
-            data: undefined,
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [],
             isLoading: true,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
         })
 
         const { result } = renderHook(() =>
@@ -248,7 +292,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -271,7 +315,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -295,7 +339,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -312,7 +356,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -327,7 +371,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const wsol = result.current.items.find(
-                i => i.dexAsset.assetId === '887406851',
+                i => i.swapAsset.assetId === '887406851',
             )!
 
             act(() => {

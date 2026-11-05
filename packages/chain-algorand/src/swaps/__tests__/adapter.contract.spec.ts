@@ -20,6 +20,13 @@ import { algorandSwapAdapter } from '../adapter'
 vi.mock('../quantumSwapGate', () => ({
     isAlgorandQuantumSwapEnabled: () => false,
 }))
+// No ledger storage here: no earlier attempt is open.
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    getOpenSubmissionAttempts: async () => [],
+}))
 vi.mock('../../blockchain', async importOriginal => ({
     ...(await importOriginal<typeof import('../../blockchain')>()),
     getMinimumFeeConfig: () => ({ assetMbr: 100_000n }),
@@ -28,19 +35,23 @@ vi.mock('../../blockchain', async importOriginal => ({
 swapContractTests(() => algorandSwapAdapter, {
     params: {
         quote: {
-            quoteIdStr: 'quote-1',
+            quoteId: 'quote-1',
             fetchedAt: Date.now(),
+            expiresAt: null,
+            request: { sourceAddress: 'SENDER' },
             assetIn: { assetId: '0' },
             assetOut: { assetId: '31566704' },
+            fees: [],
         },
+        onProgress: vi.fn(),
         isCancelled: () => false,
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
         scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const,
         deviceId: null,
         addSignRequest: vi.fn(),
-        prepareTransactions: vi.fn(),
-        updateSwapStatus: vi.fn(),
+        createOrder: vi.fn(),
+        reportOrder: vi.fn(),
         registerHandoff: vi.fn(),
     }),
 })

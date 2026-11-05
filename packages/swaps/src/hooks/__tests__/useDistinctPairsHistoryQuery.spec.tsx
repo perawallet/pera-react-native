@@ -17,21 +17,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useDistinctPairsHistoryQuery } from '../useDistinctPairsHistoryQuery'
-import { fetchDistinctPairsHistory } from '../../api'
+import { fetchSwapHistory } from '../../api'
+import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
-vi.mock('../../api', () => ({
-    fetchDistinctPairsHistory: vi.fn(),
+vi.mock('../../api', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../api')>()),
+    fetchSwapHistory: vi.fn(),
 }))
 
-const mockAsset = { assetId: 0, verificationTier: 'verified' as const }
-const mockPairItem = {
-    assetIn: mockAsset,
-    assetOut: { assetId: 31566704, verificationTier: 'verified' as const },
-    swapDatetime: '2024-01-01T00:00:00Z',
-    pairKey: '0-31566704',
-}
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceIdLookup: () => () => 'device-1',
+}))
 
 function createWrapper() {
     const queryClient = new QueryClient({
@@ -47,39 +45,49 @@ function createWrapper() {
 
 describe('swaps/useDistinctPairsHistoryQuery', () => {
     beforeEach(() => {
-        vi.mocked(fetchDistinctPairsHistory).mockResolvedValue([mockPairItem])
+        vi.mocked(fetchSwapHistory).mockReset()
     })
 
-    test('returns distinct pairs on success', async () => {
+    test('derives the distinct pairs from the newest history page', async () => {
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: [
+                makeSwapHistoryItem({ orderId: 'a' }),
+                makeSwapHistoryItem({ orderId: 'b' }),
+                makeSwapHistoryItem({ orderId: 'c', status: 'failed' }),
+            ],
+            next: 'more',
+        })
+
         const { result } = renderHook(
             () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
             { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isFetched).toBe(true))
-
-        expect(result.current.data).toEqual([mockPairItem])
-        expect(result.current.isError).toBe(false)
+        expect(fetchSwapHistory).toHaveBeenCalledWith(
+            {
+                deviceId: 'device-1',
+                accounts: ['fake-a:main:ADDRESS'],
+                limit: 50,
+            },
+            SCOPE,
+        )
+        expect(result.current.data).toHaveLength(1)
+        expect(result.current.data?.[0].pairKey).toBe(
+            'algorand/native|algorand/31566704',
+        )
     })
 
-    test('data is undefined while pending', () => {
-        vi.mocked(fetchDistinctPairsHistory).mockReturnValue(
-            new Promise(() => {}),
-        )
+    test('is disabled without an address', () => {
+        renderHook(() => useDistinctPairsHistoryQuery('', SCOPE), {
+            wrapper: createWrapper(),
+        })
 
-        const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
-            { wrapper: createWrapper() },
-        )
-
-        expect(result.current.data).toBeUndefined()
-        expect(result.current.isPending).toBe(true)
+        expect(fetchSwapHistory).not.toHaveBeenCalled()
     })
 
     test('sets isError on failure', async () => {
-        vi.mocked(fetchDistinctPairsHistory).mockRejectedValue(
-            new Error('Network error'),
-        )
+        vi.mocked(fetchSwapHistory).mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(
             () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
@@ -87,8 +95,5 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-
-        expect(result.current.data).toBeUndefined()
-        expect(result.current.error).toBeInstanceOf(Error)
     })
 })

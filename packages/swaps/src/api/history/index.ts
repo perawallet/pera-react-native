@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-export { fetchSwapHistory, fetchDistinctPairsHistory } from './endpoints'
-export type {
-    SwapHistoryItemApiResponse,
-    SwapHistoryApiResponse,
-    SwapDistinctPairItemApiResponse,
-    SwapDistinctPairsHistoryApiResponse,
-} from './schema'
+export {
+    fetchSwapHistory,
+    type FetchSwapHistoryParams,
+    type SwapHistoryPage,
+} from './endpoints'
+export type { SwapHistoryApiResponse } from './schema'

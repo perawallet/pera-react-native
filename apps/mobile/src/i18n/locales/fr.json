@@ -4027,11 +4027,6 @@
                     "body": "Nous n’avons pas pu charger votre historique de swaps. Veuillez réessayer."
                 }
             }
-        },
-        "top_pairs": {
-            "title": "Top 5 des swaps",
-            "volume_24h": "Volume (24 h)",
-            "error": "Impossible de charger le top des swaps"
         }
     },
     "onramp": {

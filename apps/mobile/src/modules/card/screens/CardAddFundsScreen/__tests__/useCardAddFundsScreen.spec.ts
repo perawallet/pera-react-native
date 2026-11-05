@@ -225,7 +225,7 @@ describe('useCardAddFundsScreen', () => {
 
     it('selecting a non-USDC asset switches to swap mode and navigates to confirm on Deposit', async () => {
         mockRequestSheet.mockResolvedValue('algo-id')
-        mockSwap.quote = { quoteIdStr: 'q1' }
+        mockSwap.quote = { quoteId: 'q1' }
         const { result } = renderHook(() => useCardAddFundsScreen())
 
         await act(async () => {

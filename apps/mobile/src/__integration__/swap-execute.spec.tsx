@@ -9,303 +9,213 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+// The router order a swap runs on: place the order for the quote, sign and
+// submit its steps, and report the outcome back (`sent` with the transaction
+// ids, or `cancelled` when nothing was broadcast).
 
-// The two wallet <-> Pera-API boundaries that bookend a swap:
-// `usePrepareTransactionsMutation` (POST prepare-transactions, returning the
-// opt-in/swap/fee groups plus swap_id_str) and `useUpdateSwapStatusMutation`
-// (PATCH the outcome back so the backend can mark the swap).
-//
-// The signing in between reuses send-algo.spec.tsx's pipeline and isn't
-// re-tested here.
-
-import { afterEach, describe, expect, it } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
+import React, { useEffect, useRef } from 'react'
+import { renderHook } from '@testing-library/react'
 import { onlineManager } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
+import {
+    seedAlgo25Signer,
+    waitFor,
+    REVIEW_RECEIVER_ADDRESS,
+} from '@test-utils/signing-review'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import {
+    useAccountChainStateStore,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
-    mockPrepareTransactions,
-    mockUpdateSwapStatus,
-} from '@perawallet/wallet-core-swaps/test-handlers'
-import {
-    usePrepareTransactionsMutation,
-    useUpdateSwapStatusMutation,
+    useCreateSwapOrderMutation,
+    type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
+import { mockCreateSwapOrder } from '@perawallet/wallet-core-swaps/test-handlers'
+import { SigningOverlays } from '@modules/signing/shell'
+import {
+    useSwapExecution,
+    type SwapExecutionOutcome,
+} from '@modules/swap/hooks/useSwapExecution'
 
-const QUOTE_ID = 'quote-tinyman-1'
-const SWAP_ID = '12345'
+import { addressOf } from './__fixtures__/accounts'
+import {
+    ALGORAND_MAINNET_CAIP2,
+    buildRouterSwapQuote,
+    mockSwapOrderWithPayment,
+    spyOnSwapSubmissionAndReports,
+} from './__fixtures__/swapRouter'
 
-describe('Flow: Swap execute (prepare → submit → status)', () => {
+let executeSwap: ((quote: SwapQuote) => Promise<SwapExecutionOutcome>) | null =
+    null
+
+const SwapHost = () => {
+    const { execute } = useSwapExecution()
+    const { setPreference } = usePreferences()
+    const prepared = useRef(false)
+    useEffect(() => {
+        if (!prepared.current) {
+            prepared.current = true
+            setPreference('hasSeenTransactionRequestFAQ', true)
+        }
+        executeSwap = execute
+    }, [execute, setPreference])
+    return <SigningOverlays />
+}
+
+const startSwapHost = async (): Promise<string> => {
+    const signer = await seedAlgo25Signer()
+    useAccountsStore.getState().setAccounts([signer])
+    useAccountsStore.getState().setSelectedAccountId(signer.id)
+    renderWithNavigation(SwapHost, 'SwapExecuteHost')
+    await waitFor(() => expect(executeSwap).not.toBeNull())
+    return addressOf(signer)
+}
+
+describe('Flow: Swap execute (order → sign → submit → report)', () => {
+    beforeAll(async () => {
+        await setupTestDatabase()
+    })
+    afterAll(async () => {
+        await teardownTestDatabase()
+    })
+    beforeEach(async () => {
+        await resetTestDatabase()
+        await seedAlgoAsset('mainnet')
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useAccountChainStateStore.getState().resetState()
+    })
     afterEach(() => {
+        executeSwap = null
         // Never leak offline state into sibling tests/files.
         onlineManager.setOnline(true)
     })
 
-    it('Given a quote ID, when the user kicks off swap execution, then prepare-transactions returns the multi-group atomic structure (opt-in + swap) with swap_id and the per-group txn arrays preserved', async () => {
-        // Two-group response: an opt-in group (one txn) followed by
-        // a swap group (two txns — atomic on Algorand). The
-        // production signing pipeline iterates groups in order so
-        // the user opts in to USDC before the swap that gives them
-        // USDC. Asserting both groups round-trip catches a regression
-        // where the parser flattens groups or drops the opt-in.
-        const response = {
-            transaction_groups: [
+    const fund = (address: string) =>
+        server.use(
+            mockAlgodAccountInformation({
+                address,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
+
+    it("Given an order whose step pays exactly the quote's amount, when the swap runs, then it submits and reports the order sent with the transaction and its step's purpose", async () => {
+        const sender = await startSwapHost()
+        fund(sender)
+        mockSwapOrderWithPayment({ sender, receiver: REVIEW_RECEIVER_ADDRESS })
+        const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
+
+        const outcome = await executeSwap!(buildRouterSwapQuote(sender))
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(algodBodies).toHaveLength(1)
+        await waitFor(() => expect(reports).toHaveLength(1))
+        expect(reports[0]).toEqual({
+            status: 'sent',
+            transactions: [
                 {
-                    purpose: 'opt-in' as const,
-                    transaction_group_id: 'group-optin-1',
-                    transactions: ['BASE64OPTIN'],
-                    signed_transactions: [null],
-                },
-                {
-                    purpose: 'swap' as const,
-                    transaction_group_id: 'group-swap-1',
-                    transactions: ['BASE64SWAP1', 'BASE64SWAP2'],
-                    signed_transactions: [null, null],
+                    chain: ALGORAND_MAINNET_CAIP2,
+                    tx_hash: expect.any(String),
+                    purpose: 'swap',
                 },
             ],
-            swap_id: 12_345,
-            swap_id_str: SWAP_ID,
-            swap_version: 'v2',
-        }
-        server.use(mockPrepareTransactions({ response }))
-
-        const { result } = renderHook(
-            () =>
-                usePrepareTransactionsMutation(
-                    useSelectedScope(ALGORAND_CHAIN_ID),
-                ),
-            {
-                wrapper: createQueryClientWrapper(),
-            },
-        )
-
-        result.current.mutate({ quote: QUOTE_ID })
-
-        await waitFor(
-            () => {
-                expect(result.current.isSuccess).toBe(true)
-            },
-            { timeout: 5000 },
-        )
-
-        const data = result.current.data!
-        expect(data.swapIdStr).toBe(SWAP_ID)
-        expect(data.transactionGroups).toHaveLength(2)
-
-        // Opt-in group is first — production signs it first so the
-        // user can hold the destination asset before the swap clears.
-        expect(data.transactionGroups![0].purpose).toBe('opt-in')
-        expect(data.transactionGroups![0].transactions).toEqual(['BASE64OPTIN'])
-
-        // Swap group has both legs of the atomic exchange. If the
-        // schema's `transactions` field were dropped or coerced to
-        // a string, this length assertion would fail.
-        expect(data.transactionGroups![1].purpose).toBe('swap')
-        expect(data.transactionGroups![1].transactions).toEqual([
-            'BASE64SWAP1',
-            'BASE64SWAP2',
-        ])
+        })
     })
 
-    it('Given the backend rejects the prepare request, when the user kicks off swap execution, then the mutation surfaces the error and yields no transaction groups to sign', async () => {
-        // The Pera API can refuse to prepare a swap (stale quote, slippage
-        // re-check, pool liquidity, etc). The endpoint client throws on a
-        // non-2xx, and the mutation opts out of `throwOnError` (handled by
-        // the caller), so the failure surfaces as `isError` with no data —
-        // the signing pipeline is never handed any groups. Use a raw
-        // handler (the typed mock factory only emits schema-valid success
-        // bodies).
+    it('Given the router no longer has the quote, when the swap runs, then it resolves as a stale quote and nothing is signed, submitted or reported', async () => {
+        const sender = await startSwapHost()
+        fund(sender)
         server.use(
-            http.post('*/v2/dex-swap/prepare-transactions/', () =>
-                HttpResponse.json(
-                    { message: 'Quote expired' },
-                    { status: 400 },
-                ),
-            ),
-        )
-
-        const { result } = renderHook(
-            () =>
-                usePrepareTransactionsMutation(
-                    useSelectedScope(ALGORAND_CHAIN_ID),
-                ),
-            {
-                wrapper: createQueryClientWrapper(),
-            },
-        )
-
-        result.current.mutate({ quote: QUOTE_ID })
-
-        await waitFor(
-            () => {
-                expect(result.current.isError).toBe(true)
-            },
-            { timeout: 5000 },
-        )
-        expect(result.current.data).toBeUndefined()
-    })
-
-    it('Given a successful broadcast, when the wallet reports the swap status, then PATCH /v2/dex-swap/swaps/:id/ is called with the submitted txn IDs and the response surfaces', async () => {
-        const submittedTxIds = [
-            'OPTINTXID000000000000000000000000000000000000000000001',
-            'SWAPTXID0000000000000000000000000000000000000000000002',
-            'SWAPTXID0000000000000000000000000000000000000000000003',
-        ]
-        server.use(
-            mockUpdateSwapStatus({
-                swapId: SWAP_ID,
-                response: {
-                    status: 'completed',
-                    submitted_transaction_ids: submittedTxIds,
-                    app_version: '7.0.0',
-                    platform: 'ios',
-                    swap_version: 'v2',
-                },
+            mockCreateSwapOrder({
+                response: { error: 'Quote not found', code: 'quote_not_found' },
+                status: 404,
             }),
         )
+        const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
 
-        const { result } = renderHook(
-            () =>
-                useUpdateSwapStatusMutation(
-                    useSelectedScope(ALGORAND_CHAIN_ID),
-                ),
-            {
-                wrapper: createQueryClientWrapper(),
-            },
-        )
+        const outcome = await executeSwap!(buildRouterSwapQuote(sender))
 
-        result.current.mutate({
-            swapId: SWAP_ID,
-            data: {
-                status: 'completed',
-                submitted_transaction_ids: submittedTxIds,
-                app_version: '7.0.0',
-                platform: 'ios',
-                swap_version: 'v2',
-            },
-        })
-
-        await waitFor(
-            () => {
-                expect(result.current.isSuccess).toBe(true)
-            },
-            { timeout: 5000 },
-        )
-        expect(result.current.data?.status).toBe('completed')
-        expect(result.current.data?.submittedTransactionIds).toEqual(
-            submittedTxIds,
-        )
+        expect(outcome).toEqual({ kind: 'stale-quote' })
+        expect(algodBodies).toHaveLength(0)
+        expect(reports).toHaveLength(0)
     })
 
-    it('Given the user cancels mid-flow, when the wallet reports the swap status, then the failure reason propagates back through the response', async () => {
-        server.use(
-            mockUpdateSwapStatus({
-                swapId: SWAP_ID,
-                response: {
-                    status: 'failed',
-                    reason: 'user_cancelled',
-                    swap_version: 'v2',
-                },
-            }),
-        )
-
-        const { result } = renderHook(
-            () =>
-                useUpdateSwapStatusMutation(
-                    useSelectedScope(ALGORAND_CHAIN_ID),
-                ),
-            {
-                wrapper: createQueryClientWrapper(),
-            },
-        )
-
-        result.current.mutate({
-            swapId: SWAP_ID,
-            data: {
-                status: 'failed',
-                reason: 'user_cancelled',
-                swap_version: 'v2',
-            },
+    it('Given an order whose step spends more than the app asked to swap, when the swap runs, then it refuses before signing and reports the order cancelled', async () => {
+        const sender = await startSwapHost()
+        fund(sender)
+        // The quote asks for 1 ALGO; the step pays 4.
+        mockSwapOrderWithPayment({
+            sender,
+            receiver: REVIEW_RECEIVER_ADDRESS,
+            amount: 4_000_000n,
         })
+        const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
 
-        await waitFor(
-            () => {
-                expect(result.current.isSuccess).toBe(true)
-            },
-            { timeout: 5000 },
-        )
-        expect(result.current.data?.status).toBe('failed')
-        expect(result.current.data?.reason).toBe('user_cancelled')
+        const outcome = await executeSwap!(buildRouterSwapQuote(sender))
+
+        expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
+        expect(algodBodies).toHaveLength(0)
+        await waitFor(() => expect(reports).toEqual([{ status: 'cancelled' }]))
     })
 
-    it('Given the prepare was attempted offline, when connectivity returns without a fresh user action, then the prepare transport is never called (no auto-resume)', async () => {
-        // AC: offline-attempted mutations do not auto-fire on reconnect.
-        // Count real hits to the prepare endpoint. `assertOnline()` rejects
-        // before any transport, so an offline attempt must leave this at 0,
-        // and it must STAY 0 after reconnect since no code re-triggers it.
-        let prepareHits = 0
+    it('Given the order was attempted offline, when connectivity returns without a fresh user action, then the order is never placed (no auto-resume)', async () => {
+        let orderHits = 0
         server.use(
-            http.post('*/v2/dex-swap/prepare-transactions/', () => {
-                prepareHits += 1
+            http.post('*/api/v4/swap/orders/', () => {
+                orderHits += 1
                 return HttpResponse.json(
                     {
-                        transaction_groups: [
-                            {
-                                purpose: 'swap' as const,
-                                transaction_group_id: 'group-swap-1',
-                                transactions: ['BASE64SWAP1'],
-                                signed_transactions: [null],
-                            },
-                        ],
-                        swap_id: 12_345,
-                        swap_id_str: SWAP_ID,
-                        swap_version: 'v2',
+                        order_id: 'o',
+                        status: 'pending',
+                        expires_at: null,
+                        steps: [],
                     },
-                    { status: 200 },
+                    { status: 201 },
                 )
             }),
         )
-
         onlineManager.setOnline(false)
 
-        const { result } = renderHook(
-            () =>
-                usePrepareTransactionsMutation(
-                    useSelectedScope(ALGORAND_CHAIN_ID),
-                ),
-            {
-                wrapper: createQueryClientWrapper(),
-            },
-        )
+        const { result } = renderHook(() => useCreateSwapOrderMutation(), {
+            wrapper: createQueryClientWrapper(),
+        })
+        result.current.mutate({
+            quoteId: 'quote-1',
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        })
 
-        // User kicks off prepare while offline: it fails fast (rejects)
-        // rather than pausing. The transport is never reached.
-        result.current.mutate({ quote: QUOTE_ID })
-
-        await waitFor(
-            () => {
-                expect(result.current.isError).toBe(true)
-            },
-            { timeout: 5000 },
-        )
+        await waitFor(() => expect(result.current.isError).toBe(true), {
+            timeout: 5000,
+        })
         expect(result.current.error).toBeInstanceOf(NoConnectionError)
-        // Did NOT pause — a paused mutation is what auto-resumes on
-        // reconnect, which the policy forbids.
         expect(result.current.isPaused).toBe(false)
-        expect(prepareHits).toBe(0)
 
-        // Simulate reconnect WITHOUT any new user action.
         onlineManager.setOnline(true)
-
-        // Give any (forbidden) auto-resume a chance to fire, then confirm
-        // the transport was still never called.
         await new Promise(resolve => setTimeout(resolve, 100))
-        expect(prepareHits).toBe(0)
+        expect(orderHits).toBe(0)
         expect(result.current.isError).toBe(true)
     })
 })

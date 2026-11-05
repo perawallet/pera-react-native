@@ -9,49 +9,29 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import { useTheme } from '@rneui/themed'
-import { useProvidersQuery } from '@perawallet/wallet-core-swaps'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWImage, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type SwapProviderDisplayProps = {
-    scope: ChainScope
-    providerName: Optional<string>
-    providerDisplayName: Optional<string>
+    /** The router's id for the offer's provider, shown as it comes. */
+    provider: Optional<string>
     testID?: string
 }
 
 export const SwapProviderDisplay = ({
-    scope,
-    providerName,
-    providerDisplayName,
+    provider,
     testID,
 }: SwapProviderDisplayProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
-    const { data: providers } = useProvidersQuery(scope)
-
-    const provider = providers?.find(item => item.name === providerName)
-    const label = providerDisplayName ?? providerName ?? '-'
 
     return (
         <PWView style={styles.container}>
-            {provider?.iconUrl && (
-                <PWImage
-                    source={{ uri: provider.iconUrl }}
-                    width={theme.spacing.lg}
-                    height={theme.spacing.lg}
-                    containerStyle={styles.logo}
-                />
-            )}
             <PWText
                 style={styles.label}
                 testID={testID}
             >
-                {label}
+                {provider ?? '-'}
             </PWText>
         </PWView>
     )

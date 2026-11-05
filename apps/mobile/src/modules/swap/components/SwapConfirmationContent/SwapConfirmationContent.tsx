@@ -138,7 +138,6 @@ export const SwapConfirmationContent = ({
             <PWDivider style={styles.detailsDivider} />
 
             <SwapDetailsSection
-                scope={scope}
                 quote={quote}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}

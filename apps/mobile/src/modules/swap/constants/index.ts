@@ -12,6 +12,4 @@
 
 import type { SwapStatus } from '@perawallet/wallet-core-swaps'
 
-const VISIBLE_SWAP_STATUSES_LIST: SwapStatus[] = ['completed', 'in_progress']
-
-export const VISIBLE_SWAP_STATUSES = VISIBLE_SWAP_STATUSES_LIST.join(',')
+export const VISIBLE_SWAP_STATUSES: SwapStatus[] = ['completed', 'in_progress']

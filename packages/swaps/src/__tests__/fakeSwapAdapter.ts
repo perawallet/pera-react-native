@@ -15,7 +15,9 @@ import {
     broadcasterChainAdapters,
     type BroadcasterChainAdapter,
 } from '@perawallet/wallet-core-signing'
+import { Decimal } from 'decimal.js'
 import { swapChainAdapters, type SwapChainAdapter } from '../chain-adapter'
+import { fakeCaip2Of, fakeRouterAssetId } from './fakeRouterChains'
 
 export const FAKE_NATIVE_ASSET_ID = 'native'
 export const FAKE_RECEIVE_ASSET_ID = 'receive'
@@ -29,6 +31,15 @@ export const fakeSwapAdapter = (
     swapExplorerUrl: vi.fn(),
     executeSwap: vi.fn(),
     supportsCosignedSwaps: true,
+    toRouterAssetId: (assetId, scope) => fakeRouterAssetId(scope, assetId),
+    fromRouterAssetId: (routerAssetId, scope) => {
+        const prefix = `${fakeCaip2Of(scope)}/token:`
+        return routerAssetId.startsWith(prefix)
+            ? routerAssetId.slice(prefix.length)
+            : null
+    },
+    maxAmountFeeReserve: new Decimal(1000),
+    holdingReserve: () => new Decimal(0),
     ...overrides,
 })
 
@@ -37,6 +48,13 @@ export const registerFakeSwapAdapter = (
 ): SwapChainAdapter => {
     const adapter = fakeSwapAdapter(overrides)
     swapChainAdapters.reset()
+    swapChainAdapters.register(adapter)
+    return adapter
+}
+
+/** Adds a second swap chain next to the default one, for cross-chain rows. */
+export const registerSecondFakeSwapAdapter = (): SwapChainAdapter => {
+    const adapter = fakeSwapAdapter({ chainId: 'ethereum' })
     swapChainAdapters.register(adapter)
     return adapter
 }

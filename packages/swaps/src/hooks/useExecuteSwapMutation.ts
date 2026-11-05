@@ -31,13 +31,9 @@ import {
     SwapCosignUnsupportedError,
 } from '../chain-adapter'
 import type { ExecuteSwapParams, ExecuteSwapResult } from '../execution'
-import {
-    updateSwapStatus,
-    type PrepareTransactionsRequest,
-    type SwapStatusUpdateRequest,
-} from '../api'
 import { useSwapHandoffStore } from '../store'
-import { prepareSwapTransactions } from './usePrepareTransactionsMutation'
+import { useCreateSwapOrderMutation } from './useCreateSwapOrderMutation'
+import { useReportSwapOrderMutation } from './useReportSwapOrderMutation'
 import { useSwapScope } from './useSwapScope'
 
 export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
@@ -61,29 +57,9 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     // Mutations rather than bare calls, so a failure reaches the app's
-    // mutation-cache logging the way it did as standalone hooks.
-    const { mutateAsync: prepareOnScope } = useMutation({
-        mutationFn: ({
-            data,
-            scope: target,
-        }: {
-            data: PrepareTransactionsRequest
-            scope: ChainScope
-        }) => prepareSwapTransactions(data, target),
-        throwOnError: false,
-    })
-    const { mutateAsync: updateStatusOnScope } = useMutation({
-        mutationFn: ({
-            swapId,
-            data,
-            scope: target,
-        }: {
-            swapId: string
-            data: SwapStatusUpdateRequest
-            scope: ChainScope
-        }) => updateSwapStatus(swapId, data, target),
-        throwOnError: false,
-    })
+    // mutation-cache logging.
+    const { mutateAsync: createOrderOnScope } = useCreateSwapOrderMutation()
+    const { mutateAsync: reportOrderOnScope } = useReportSwapOrderMutation()
 
     const { mutateAsync, reset } = useMutation<
         ExecuteSwapResult,
@@ -112,10 +88,10 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                     scope,
                     deviceId: deviceIdOf(deploymentOf(scope)),
                     addSignRequest,
-                    prepareTransactions: data =>
-                        prepareOnScope({ data, scope }),
-                    updateSwapStatus: ({ swapId, data }) =>
-                        updateStatusOnScope({ swapId, data, scope }),
+                    createOrder: quoteId =>
+                        createOrderOnScope({ quoteId, scope }),
+                    reportOrder: ({ orderId, report }) =>
+                        reportOrderOnScope({ orderId, report, scope }),
                     registerHandoff,
                 },
             )

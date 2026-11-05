@@ -10,20 +10,23 @@
  limitations under the License
  */
 
-import { useCallback, type ReactElement } from 'react'
+import { useCallback, useMemo, type ReactElement } from 'react'
 import {
     useDistinctPairsHistoryQuery,
     useSwaps,
+    type SwapAsset,
     type SwapDistinctPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
-import { VISIBLE_SWAP_STATUSES } from '../../constants'
 import { SwapPairChip } from './SwapPairChip'
 import { useStyles } from './styles'
 
@@ -54,9 +57,16 @@ export const useSwapPairHistoryWidget = (
     const { data, isLoading, isError } = useDistinctPairsHistoryQuery(
         address,
         scope,
-        VISIBLE_SWAP_STATUSES,
-        address.length > 0,
     )
+    // A chip refills this scope's pair, so a pair with a leg elsewhere can't be one.
+    const scopeKey = toScopeKey(scope)
+    const pairs = useMemo(() => {
+        const isOnScope = (asset: SwapAsset) =>
+            toScopeKey(asset.ref) === scopeKey
+        return (data ?? []).filter(
+            pair => isOnScope(pair.assetIn) && isOnScope(pair.assetOut),
+        )
+    }, [data, scopeKey])
 
     const handlePairPress = useCallback(
         (pair: SwapDistinctPairItem) => {
@@ -64,8 +74,8 @@ export const useSwapPairHistoryWidget = (
                 [AnalyticsMetadataKey.ChainId]: scope.chainId,
                 [AnalyticsMetadataKey.SwapPairing]: `${pair.assetIn.unitName}/${pair.assetOut.unitName}`,
             })
-            setFromAsset(String(pair.assetIn.assetId))
-            setToAsset(String(pair.assetOut.assetId))
+            setFromAsset(pair.assetIn.assetId)
+            setToAsset(pair.assetOut.assetId)
         },
         [scope.chainId, setFromAsset, setToAsset],
     )
@@ -113,7 +123,7 @@ export const useSwapPairHistoryWidget = (
     )
 
     return {
-        pairs: data ?? [],
+        pairs,
         isLoading,
         isError,
         isEnabled: address.length > 0,

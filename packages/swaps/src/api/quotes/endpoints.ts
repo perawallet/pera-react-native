@@ -10,151 +10,72 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
-
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { SwapQuote, SwapQuoteRequest } from '../../models'
+import { SwapQuoteMismatchError } from '../../errors'
+import { routerRequest } from '../router-request'
 import {
-    queryClient,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+    routerAccountId,
+    routerAssetIdOf,
+    scopeOfSwapAsset,
+    swapAssetRefOf,
+    type ResolveSwapAssetRef,
+} from '../router-ids'
 import {
-    calculatePeraFeeResponseSchema,
-    calculateSwapAmountResponseSchema,
-    createQuotesResponseSchema,
-    type CalculatePeraFeeRequest,
-    type CalculateSwapAmountRequest,
-    type CreateQuotesRequest,
-    type CalculatePeraFeeApiResponse,
-    type CalculateSwapAmountApiResponse,
-    type CreateQuotesApiResponse,
+    createSwapQuotesResponseSchema,
+    type CreateSwapQuotesRequest,
 } from './schema'
-import { swapAdapterFor } from '../../chain-adapter'
-import { transformDexSwapAsset } from '../available-assets/transformers'
-import type {
-    CalculatePeraFeeResult,
-    CalculateSwapAmountResult,
-    SwapProviderItem,
-    SwapQuote,
-} from '../../models'
+import { transformSwapQuote } from './transformers'
 
-export const calculatePeraFee = async (
-    data: CalculatePeraFeeRequest,
-    scope: ChainScope,
-): Promise<CalculatePeraFeeResult> => {
-    const response = await queryClient<CalculatePeraFeeApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'POST',
-        url: `/v1/dex-swap/calculate-pera-fee/`,
-        data,
-    })
+export const toCreateSwapQuotesRequest = (
+    request: SwapQuoteRequest,
+): CreateSwapQuotesRequest => ({
+    source_asset_id: routerAssetIdOf(request.sourceAsset),
+    destination_asset_id: routerAssetIdOf(request.destinationAsset),
+    source_amount: request.sourceAmount.toFixed(0),
+    source_account: routerAccountId(
+        scopeOfSwapAsset(request.sourceAsset),
+        request.sourceAddress,
+    ),
+    destination_account: routerAccountId(
+        scopeOfSwapAsset(request.destinationAsset),
+        request.destinationAddress,
+    ),
+    ...(request.slippage !== null ? { slippage: request.slippage } : {}),
+})
 
-    const parsed = calculatePeraFeeResponseSchema.parse(response.data)
-    return {
-        peraFeeAmount:
-            parsed.pera_fee_amount !== undefined
-                ? new Decimal(parsed.pera_fee_amount)
-                : undefined,
-        peraFeeAssetId: parsed.pera_fee_asset_id,
-    }
-}
-
-export const calculateSwapAmount = async (
-    data: CalculateSwapAmountRequest,
-    scope: ChainScope,
-): Promise<CalculateSwapAmountResult> => {
-    const response = await queryClient<CalculateSwapAmountApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'POST',
-        url: `/v1/dex-swap/calculate-swap-amount/`,
-        data,
-    })
-
-    const parsed = calculateSwapAmountResponseSchema.parse(response.data)
-    return {
-        amount:
-            parsed.amount !== undefined
-                ? new Decimal(parsed.amount)
-                : undefined,
-        peraFee:
-            parsed.pera_fee !== undefined
-                ? new Decimal(parsed.pera_fee)
-                : undefined,
-        peraFeeAssetId: parsed.pera_fee_asset_id,
-    }
-}
-
-export const createQuotes = async (
-    data: CreateQuotesRequest,
-    scope: ChainScope,
-    providers: SwapProviderItem[],
+/**
+ * Offers best first; empty when no route answers for the amount. Each offer
+ * keeps the request it answers: execution validates against that, never
+ * against the offer's own figures.
+ */
+export const createSwapQuotes = async (
+    request: SwapQuoteRequest,
+    resolve: ResolveSwapAssetRef = swapAssetRefOf,
 ): Promise<SwapQuote[]> => {
-    const response = await queryClient<CreateQuotesApiResponse>({
-        backend: 'pera',
-        scope,
+    const body = toCreateSwapQuotesRequest(request)
+    const data = await routerRequest({
+        scope: scopeOfSwapAsset(request.sourceAsset),
         method: 'POST',
-        url: `/v2/dex-swap/quotes/`,
-        data,
+        path: 'quotes/',
+        data: body,
     })
+    const parsed = createSwapQuotesResponseSchema.parse(data)
 
-    const toOptionalDecimal = (v?: Nullable<string>): Optional<Decimal> =>
-        v != null ? new Decimal(v) : undefined
-
-    const toNullableDecimal = (v?: Nullable<string>): Nullable<Decimal> =>
-        v != null ? new Decimal(v) : null
-
-    const parsed = createQuotesResponseSchema.parse(response.data)
-
-    // `swapperAddress` is the wallet's own trust anchor for
-    // `validateSwapGroupAgainstQuote` (swaps sign headlessly). It must come
-    // from the request we sent, never the response body — a backend that
-    // returns a different swapper would silently disable that validator and
-    // could rekey/drain the account. Hard-fail on divergence so a lying
-    // backend surfaces as an error rather than being silently corrected.
-    //
-    for (const quote of parsed.results) {
+    // An offer for another asset or amount than the one asked for is not an
+    // answer to this request: refuse it rather than silently correcting it.
+    for (const offer of parsed.results) {
         if (
-            quote.swapper_address &&
-            quote.swapper_address !== data.swapper_address
+            offer.source_asset.asset_id !== body.source_asset_id ||
+            offer.destination_asset.asset_id !== body.destination_asset_id ||
+            offer.source_amount !== body.source_amount
         ) {
-            throw new Error(
-                'Quote swapper address does not match the requested address',
+            throw new SwapQuoteMismatchError(
+                'Quote does not match the requested assets and amount',
             )
         }
     }
 
-    const { nativeAssetId } = swapAdapterFor(scope)
-    return parsed.results.map(quote => ({
-        id: quote.id,
-        quoteIdStr: quote.quote_id_str,
-        provider: quote.provider,
-        providerDisplayName: providers.find(p => p.name === quote.provider)
-            ?.displayName,
-        swapType: quote.swap_type,
-        swapperAddress: data.swapper_address,
-        device: quote.device,
-        assetIn: transformDexSwapAsset(quote.asset_in, nativeAssetId),
-        assetOut: transformDexSwapAsset(quote.asset_out, nativeAssetId),
-        amountIn: toOptionalDecimal(quote.amount_in),
-        amountInWithSlippage: toOptionalDecimal(quote.amount_in_with_slippage),
-        amountInUsdValue: quote.amount_in_usd_value,
-        amountOut: toOptionalDecimal(quote.amount_out),
-        amountOutWithSlippage: toOptionalDecimal(
-            quote.amount_out_with_slippage,
-        ),
-        amountOutUsdValue: quote.amount_out_usd_value,
-        slippage: toOptionalDecimal(quote.slippage),
-        price: toOptionalDecimal(quote.price),
-        priceImpact: toOptionalDecimal(quote.price_impact),
-        peraFeeAmount: toOptionalDecimal(quote.pera_fee_amount),
-        peraFeeAsset: quote.pera_fee_asset
-            ? transformDexSwapAsset(quote.pera_fee_asset, nativeAssetId)
-            : undefined,
-        transactionFees: toNullableDecimal(quote.transaction_fees),
-        // Client-stamped: the wire schema has no expiry, and the
-        // confirm-time freshness guard needs a reference point.
-        fetchedAt: Date.now(),
-    }))
+    return parsed.results.map(offer =>
+        transformSwapQuote(offer, request, resolve),
+    )
 }

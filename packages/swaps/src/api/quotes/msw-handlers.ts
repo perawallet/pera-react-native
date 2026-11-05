@@ -16,91 +16,36 @@ import {
     validateMockRequest,
     validateMockResponse,
 } from '@perawallet/wallet-core-shared/test-utils'
+import { SWAP_ROUTER_PATH } from '../router-request'
 import {
-    calculatePeraFeeRequestSchema,
-    calculatePeraFeeResponseSchema,
-    calculateSwapAmountRequestSchema,
-    calculateSwapAmountResponseSchema,
-    createQuotesRequestSchema,
-    createQuotesResponseSchema,
+    createSwapQuotesRequestSchema,
+    createSwapQuotesResponseSchema,
 } from './schema'
 
-// Mock payloads are typed with the schema *input* (wire) shape — asset ids
-// may be numbers on the wire but are normalized to strings during parsing.
-export type MockCalculatePeraFeeParams = {
-    response: z.input<typeof calculatePeraFeeResponseSchema>
-    status?: number
-}
+export type SwapRouterErrorBody = { error: string; code?: string }
 
-export const mockCalculatePeraFee = ({
-    response,
-    status = 200,
-}: MockCalculatePeraFeeParams): HttpHandler => {
-    validateMockResponse(
-        calculatePeraFeeResponseSchema,
-        response,
-        'mockCalculatePeraFee',
-    )
-    return http.post(
-        '*/v1/dex-swap/calculate-pera-fee/',
-        async ({ request }) => {
-            const validated = await validateMockRequest(
-                calculatePeraFeeRequestSchema,
-                request,
-            )
-            if (!validated.ok) return validated.response
-            return HttpResponse.json(response, { status })
-        },
-    )
-}
+export type MockCreateSwapQuotesParams =
+    | { response: z.input<typeof createSwapQuotesResponseSchema>; status?: 200 }
+    | { response: SwapRouterErrorBody; status: number }
 
-export type MockCalculateSwapAmountParams = {
-    response: z.input<typeof calculateSwapAmountResponseSchema>
-    status?: number
-}
-
-export const mockCalculateSwapAmount = ({
-    response,
-    status = 200,
-}: MockCalculateSwapAmountParams): HttpHandler => {
-    validateMockResponse(
-        calculateSwapAmountResponseSchema,
-        response,
-        'mockCalculateSwapAmount',
-    )
-    return http.post(
-        '*/v1/dex-swap/calculate-swap-amount/',
-        async ({ request }) => {
-            const validated = await validateMockRequest(
-                calculateSwapAmountRequestSchema,
-                request,
-            )
-            if (!validated.ok) return validated.response
-            return HttpResponse.json(response, { status })
-        },
-    )
-}
-
-export type MockCreateQuotesParams = {
-    response: z.input<typeof createQuotesResponseSchema>
-    status?: number
-}
-
-export const mockCreateQuotes = ({
-    response,
-    status = 200,
-}: MockCreateQuotesParams): HttpHandler => {
-    validateMockResponse(
-        createQuotesResponseSchema,
-        response,
-        'mockCreateQuotes',
-    )
-    return http.post('*/v2/dex-swap/quotes/', async ({ request }) => {
+export const mockCreateSwapQuotes = (
+    params: MockCreateSwapQuotesParams,
+): HttpHandler => {
+    if (params.status === undefined || params.status === 200) {
+        validateMockResponse(
+            createSwapQuotesResponseSchema,
+            params.response,
+            'mockCreateSwapQuotes',
+        )
+    }
+    return http.post(`*${SWAP_ROUTER_PATH}quotes/`, async ({ request }) => {
         const validated = await validateMockRequest(
-            createQuotesRequestSchema,
+            createSwapQuotesRequestSchema,
             request,
         )
         if (!validated.ok) return validated.response
-        return HttpResponse.json(response, { status })
+        return HttpResponse.json(params.response, {
+            status: params.status ?? 200,
+        })
     })
 }

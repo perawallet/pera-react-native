@@ -37,4 +37,3 @@ export type {
     SwapProviderContentProps,
     SwapProviderResult,
 } from './SwapProviderContent'
-export { SwapTopPairs } from './SwapTopPairs'

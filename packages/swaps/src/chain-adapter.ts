@@ -15,9 +15,11 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Decimal } from 'decimal.js'
 import {
     AppError,
     ErrorCategory,
+    type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { submitSignedGroup } from '@perawallet/wallet-core-signing'
@@ -31,13 +33,21 @@ import type { SwapHistoryItem } from './models'
 /** The chain-specific legs of a swap; registered by the chain package. */
 export interface SwapChainAdapter {
     chainId: ChainId
-    /**
-     * The chain's native asset id: what the swap backend's missing `asset_id`
-     * stands for, and the default asset to pay with.
-     */
+    /** The chain's native asset id: the default asset to pay with. */
     nativeAssetId: string
     /** The asset a swap receives until the user picks one. */
     defaultReceiveAssetId: string
+    /** The swap router's id (CAIP-19) for one of this chain's assets on `scope`. */
+    toRouterAssetId(assetId: string, scope: ChainScope): string
+    /** Null for a router id this chain can't read as an asset on `scope`. */
+    fromRouterAssetId(
+        routerAssetId: string,
+        scope: ChainScope,
+    ): Nullable<string>
+    /** Base units of the native asset held back when the user swaps a share of it. */
+    maxAmountFeeReserve: Decimal
+    /** Base units of the native asset a first holding of an asset locks; zero where holdings lock nothing. */
+    holdingReserve(scope: ChainScope): Decimal
     /** Undefined when the item has nothing to link to or the network has no explorer. */
     swapExplorerUrl(scope: ChainScope, item: SwapHistoryItem): Optional<string>
     /**

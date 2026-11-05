@@ -11,69 +11,48 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient } from '@perawallet/wallet-core-shared'
-import {
-    swapHistoryResponseSchema,
-    swapDistinctPairsHistoryResponseSchema,
-    type SwapHistoryApiResponse,
-    type SwapDistinctPairsHistoryApiResponse,
-} from './schema'
-import { swapAdapterFor } from '../../chain-adapter'
-import {
-    transformSwapHistoryItem,
-    transformSwapDistinctPairItem,
-} from './transformers'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { SwapHistoryItem } from '../../models'
+import { transformSwapOrderItem } from '../orders/transformers'
+import { cursorOf, routerRequest } from '../router-request'
+import { swapAssetRefOf, type ResolveSwapAssetRef } from '../router-ids'
+import { swapHistoryResponseSchema } from './schema'
 
+export type FetchSwapHistoryParams = {
+    deviceId: string
+    /** Router account ids (CAIP-10) to narrow to; empty for every account on the device. */
+    accounts: string[]
+    cursor?: string
+    limit?: number
+}
+
+export type SwapHistoryPage = {
+    results: SwapHistoryItem[]
+    next: Nullable<string>
+}
+
+/** Every route and status, newest first; the router has no status filter. */
 export const fetchSwapHistory = async (
-    address: string,
+    { deviceId, accounts, cursor, limit }: FetchSwapHistoryParams,
     scope: ChainScope,
-    statuses?: string,
-    cursor?: string,
-    limit?: number,
-) => {
-    const response = await queryClient<SwapHistoryApiResponse>({
-        backend: 'pera',
+    resolve: ResolveSwapAssetRef = swapAssetRefOf,
+): Promise<SwapHistoryPage> => {
+    const data = await routerRequest({
         scope,
         method: 'GET',
-        url: `/v2/dex-swap/history/`,
+        path: 'history/',
         params: {
-            address,
-            ...(statuses ? { statuses } : {}),
+            device_id: deviceId,
+            ...(accounts.length > 0 ? { accounts: accounts.join(',') } : {}),
             ...(cursor ? { cursor } : {}),
             ...(limit !== undefined ? { limit } : {}),
         },
     })
-
-    const parsed = swapHistoryResponseSchema.parse(response.data)
-    const { nativeAssetId } = swapAdapterFor(scope)
+    const parsed = swapHistoryResponseSchema.parse(data)
     return {
         results: parsed.results.map(item =>
-            transformSwapHistoryItem(item, nativeAssetId),
+            transformSwapOrderItem(item, resolve),
         ),
-        next: parsed.next,
-        previous: parsed.previous,
+        next: cursorOf(parsed.next),
     }
-}
-
-export const fetchDistinctPairsHistory = async (
-    address: string,
-    scope: ChainScope,
-    statuses?: string,
-) => {
-    const response = await queryClient<SwapDistinctPairsHistoryApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'GET',
-        url: `/v2/dex-swap/distinct-pairs-history/`,
-        params: {
-            address,
-            ...(statuses ? { statuses } : {}),
-        },
-    })
-
-    const parsed = swapDistinctPairsHistoryResponseSchema.parse(response.data)
-    const { nativeAssetId } = swapAdapterFor(scope)
-    return parsed.results.map(pair =>
-        transformSwapDistinctPairItem(pair, nativeAssetId),
-    )
 }

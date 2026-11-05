@@ -52,6 +52,7 @@ export const SwapToAssetSelectionList = ({
         setSearchFilter,
         debouncedSearchFilter,
         isLoading,
+        handleEndReached,
         handleAssetSelected,
     } = useSwapToAssetSelectionList({
         scope,
@@ -64,12 +65,12 @@ export const SwapToAssetSelectionList = ({
     const renderItem = useCallback(
         ({ item }: { item: AvailableAssetWithBalance }) => (
             <SwapToAssetItemView
-                dexAsset={item.dexAsset}
+                swapAsset={item.swapAsset}
                 balance={item.balance}
                 scope={scope}
                 onPress={() => handleAssetSelected(item)}
                 style={styles.item}
-                testID={`swap-asset-item-${item.dexAsset.assetId}`}
+                testID={`swap-asset-item-${item.swapAsset.assetId}`}
             />
         ),
         [handleAssetSelected, scope, styles],
@@ -79,11 +80,12 @@ export const SwapToAssetSelectionList = ({
         <AssetSelectionList
             data={items}
             renderItem={renderItem}
-            keyExtractor={item => item.dexAsset.assetId}
+            keyExtractor={item => item.swapAsset.assetId}
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}
             isLoading={isLoading && items.length === 0}
+            onEndReached={handleEndReached}
             skeletonCount={3}
             cardLayout
             inBottomSheet={inBottomSheet}

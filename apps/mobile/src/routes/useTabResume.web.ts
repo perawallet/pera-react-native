@@ -103,9 +103,10 @@ export const useTabResume = (
             if (!account) return
             // The Swap tab isn't registered while the capability is off, and
             // the swap would run on the account's own chain.
+            const swapChainId = swapChainOf(account)
             if (
                 intent.flow === 'swap' &&
-                (!canSwap || swapChainOf(account) === undefined)
+                (!canSwap || swapChainId === undefined)
             ) {
                 return
             }
@@ -114,11 +115,19 @@ export const useTabResume = (
             setSelectedAccountId(account.id)
 
             if (intent.flow === 'swap') {
+                // Already guaranteed above; repeated so the type narrows.
+                if (swapChainId === undefined) return
                 navigate('TabBar', {
                     screen: 'Swap',
                     params: {
-                        assetInId: intent.assetInId,
-                        assetOutId: intent.assetOutId,
+                        assetIn: {
+                            chainId: swapChainId,
+                            assetId: intent.assetInId,
+                        },
+                        assetOut: {
+                            chainId: swapChainId,
+                            assetId: intent.assetOutId,
+                        },
                         payAmount: intent.payAmount,
                     },
                 })

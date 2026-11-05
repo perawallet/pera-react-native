@@ -12,11 +12,7 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    formatNumber,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -25,11 +21,9 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    apiSlippageToPercent,
-    type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
+import { formatSwapRate, type SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
+import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
 import { useStyles } from './styles'
 
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
@@ -127,35 +121,25 @@ export const useSwapConfirmation = ({
         [quote?.amountOutUsdValue, usdToPreferred],
     )
 
-    const rateDisplay = useMemo(() => {
-        if (!quote?.price) return '-'
-        const outDecimals = quote.assetOut.decimals ?? 6
-        const { sign, integer, fraction } = formatNumber(
-            quote.price,
-            outDecimals,
-            undefined,
-            2,
-        )
-        return `1 ${quote.assetIn.unitName ?? ''} ≈ ${sign}${integer}${fraction} ${quote.assetOut.unitName ?? ''}`
-    }, [quote?.price, quote?.assetIn, quote?.assetOut])
+    const rateDisplay = useMemo(
+        () => (quote ? formatSwapRate(quote) : '-'),
+        [quote],
+    )
 
     const minimumReceivedDisplay = useMemo(() => {
-        if (!quote?.amountOutWithSlippage) return '-'
-        return formatAssetAmount(quote.amountOutWithSlippage, quote.assetOut)
-    }, [quote?.amountOutWithSlippage, quote?.assetOut])
+        if (!quote?.minimumAmountOut) return '-'
+        return formatAssetAmount(quote.minimumAmountOut, quote.assetOut)
+    }, [quote?.minimumAmountOut, quote?.assetOut])
 
-    const peraFeeDisplay = useMemo(() => {
-        if (!quote?.peraFeeAmount) return '-'
-        return formatAssetAmount(
-            quote.peraFeeAmount,
-            quote.peraFeeAsset ?? quote.assetIn,
-        )
-    }, [quote?.peraFeeAmount, quote?.peraFeeAsset, quote?.assetIn])
+    const peraFeeDisplay = useMemo(
+        () => (quote ? (formatSwapFee(quote, 'pera') ?? '-') : '-'),
+        [quote],
+    )
 
-    const slippageDisplay = useMemo(() => {
-        if (!quote?.slippage) return '-'
-        return `${apiSlippageToPercent(quote.slippage)}%`
-    }, [quote?.slippage])
+    const slippageDisplay = useMemo(
+        () => (quote ? formatSwapSlippage(quote) : '-'),
+        [quote],
+    )
 
     const hasHighPriceImpact = useMemo(
         () =>

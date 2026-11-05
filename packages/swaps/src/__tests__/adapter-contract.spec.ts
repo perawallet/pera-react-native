@@ -12,33 +12,38 @@
 
 import { vi } from 'vitest'
 import { fakeSwapAdapter } from './fakeSwapAdapter'
-import type { ExecuteSwapParams } from '../execution'
+import { signableStepsOn, type ExecuteSwapParams } from '../execution'
 import { isQuoteFresh } from '../utils/quoteFreshness'
 import { swapContractTests } from './adapter-contract'
 
 const adapter = fakeSwapAdapter({
-    executeSwap: async ({ quote }) => {
-        if (!quote.quoteIdStr) {
+    executeSwap: async ({ quote }, context) => {
+        if (!isQuoteFresh(quote)) return { kind: 'stale-quote' }
+        const order = await context.createOrder(quote.quoteId)
+        if (!signableStepsOn(order, context.scope.chainId)) {
+            await context.reportOrder({
+                orderId: order.orderId,
+                report: { status: 'cancelled' },
+            })
             return {
                 kind: 'failed',
-                failure: { phase: 'prepare', reason: 'missing-quote-id' },
+                failure: { phase: 'prepare', reason: 'unsupported-steps' },
             }
         }
-        if (!isQuoteFresh(quote)) return { kind: 'stale-quote' }
         return { kind: 'success', txIds: [] }
     },
 })
 
 swapContractTests(() => adapter, {
     params: {
-        quote: { quoteIdStr: 'quote-1', fetchedAt: Date.now() },
+        quote: { quoteId: 'quote-1', fetchedAt: Date.now(), expiresAt: null },
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
         scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         deviceId: null,
         addSignRequest: vi.fn(),
-        prepareTransactions: vi.fn(),
-        updateSwapStatus: vi.fn(),
+        createOrder: vi.fn(),
+        reportOrder: vi.fn(),
         registerHandoff: vi.fn(),
     }),
 })

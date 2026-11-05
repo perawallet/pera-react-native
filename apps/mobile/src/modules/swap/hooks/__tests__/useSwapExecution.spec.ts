@@ -102,8 +102,8 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const makeQuote = (quoteIdStr: string): SwapQuote =>
-    ({ quoteIdStr }) as unknown as SwapQuote
+const makeQuote = (quoteId: string): SwapQuote =>
+    ({ quoteId }) as unknown as SwapQuote
 
 const resolveWith = (result: ExecuteSwapResult) =>
     mockExecuteSwap.mockResolvedValue(result)
@@ -538,12 +538,12 @@ describe('useSwapExecution', () => {
 
     it.each([
         [
-            { phase: 'prepare', reason: 'missing-quote-id' } as const,
-            'Swap quote is missing its id',
+            { phase: 'prepare', reason: 'no-signable-steps' } as const,
+            'swap.execution.error_body',
         ],
         [
-            { phase: 'prepare', reason: 'no-transaction-groups' } as const,
-            'No transaction groups returned',
+            { phase: 'prepare', reason: 'unsupported-steps' } as const,
+            'swap.execution.error_body',
         ],
         [
             { phase: 'prepare', reason: 'quote-mismatch' } as const,

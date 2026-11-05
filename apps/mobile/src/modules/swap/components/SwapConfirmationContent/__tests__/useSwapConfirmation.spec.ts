@@ -42,16 +42,32 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ) => `${amount.toString()} ${options.unitName ?? `d${options.decimals}`}`,
 }))
 
-const ALGO = { assetId: '0', unitName: 'ALGO', decimals: 6 }
-const USDC = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
-const PERA = { assetId: '99', unitName: 'PERA', decimals: 6 }
+const refOf = (assetId: string) => ({
+    chainId: 'algorand' as const,
+    networkId: 'mainnet' as const,
+    assetId,
+})
+const ALGO = { assetId: '0', ref: refOf('0'), unitName: 'ALGO', decimals: 6 }
+const USDC = {
+    assetId: '31566704',
+    ref: refOf('31566704'),
+    unitName: 'USDC',
+    decimals: 6,
+}
 const ASSETS: Record<string, { assetId: string; name: string }> = {
     '0': { assetId: '0', name: 'Algo' },
     '31566704': { assetId: '31566704', name: 'USD Coin' },
 }
 
 const makeQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote =>
-    ({ assetIn: ALGO, assetOut: USDC, ...overrides }) as SwapQuote
+    ({
+        assetIn: ALGO,
+        assetOut: USDC,
+        amountIn: new Decimal(0),
+        request: { slippage: null },
+        fees: [],
+        ...overrides,
+    }) as unknown as SwapQuote
 
 const renderConfirmation = (
     quote: SwapQuote | null,
@@ -189,60 +205,64 @@ describe('useSwapConfirmation', () => {
         expect(result.current.receiveFiatValue).toBeNull()
     })
 
-    it('formats the rate at the out asset precision', () => {
-        const price = new Decimal('0.25')
-
-        const { result } = renderConfirmation(makeQuote({ price }))
-
-        expect(result.current.rateDisplay).toBe('1 ALGO ≈ 0.25 USDC')
-        expect(formatNumber).toHaveBeenCalledWith(price, 6, undefined, 2)
-    })
-
-    it('falls back to six decimals and blank units for an unknown out asset', () => {
-        const price = new Decimal('0.25')
+    it('formats the rate from the quote amounts', () => {
         const quote = makeQuote({
-            price,
-            assetIn: { assetId: '0' } as SwapQuote['assetIn'],
-            assetOut: { assetId: '31566704' } as SwapQuote['assetOut'],
+            amountIn: new Decimal('4000000'),
+            amountOut: new Decimal('1000000'),
         })
 
         const { result } = renderConfirmation(quote)
 
-        expect(result.current.rateDisplay).toBe('1  ≈ 0.25 ')
-        expect(formatNumber).toHaveBeenCalledWith(price, 6, undefined, 2)
+        expect(result.current.rateDisplay).toBe('1 ALGO ≈ 0.25 USDC')
+        expect(vi.mocked(formatNumber).mock.calls[0][0]).toEqual(
+            new Decimal('0.25'),
+        )
+    })
+
+    it('shows no rate when an asset has unknown decimals', () => {
+        const quote = makeQuote({
+            amountIn: new Decimal('4000000'),
+            amountOut: new Decimal('1000000'),
+            assetOut: {
+                ...USDC,
+                decimals: undefined,
+            } as unknown as SwapQuote['assetOut'],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.rateDisplay).toBe('-')
     })
 
     it('formats the minimum received in the out asset', () => {
-        const quote = makeQuote({
-            amountOutWithSlippage: new Decimal('240000'),
-        })
+        const quote = makeQuote({ minimumAmountOut: new Decimal('240000') })
 
         const { result } = renderConfirmation(quote)
 
         expect(result.current.minimumReceivedDisplay).toBe('240000 USDC')
     })
 
-    it('formats the Pera fee in the fee asset', () => {
+    it('formats the Pera fee in the asset it is charged in', () => {
         const quote = makeQuote({
-            peraFeeAmount: new Decimal('1500'),
-            peraFeeAsset: PERA as SwapQuote['assetIn'],
+            fees: [
+                {
+                    kind: 'pera',
+                    asset: refOf('0'),
+                    amount: new Decimal('1500'),
+                    usdValue: null,
+                },
+            ],
         })
-
-        const { result } = renderConfirmation(quote)
-
-        expect(result.current.peraFeeDisplay).toBe('1500 PERA')
-    })
-
-    it('formats the Pera fee in the input asset when no fee asset is given', () => {
-        const quote = makeQuote({ peraFeeAmount: new Decimal('1500') })
 
         const { result } = renderConfirmation(quote)
 
         expect(result.current.peraFeeDisplay).toBe('1500 ALGO')
     })
 
-    it('shows the slippage fraction as a percent', () => {
-        const quote = makeQuote({ slippage: new Decimal('0.01') })
+    it('shows the requested slippage as a percent', () => {
+        const quote = makeQuote({
+            request: { slippage: '1' } as SwapQuote['request'],
+        })
 
         const { result } = renderConfirmation(quote)
 

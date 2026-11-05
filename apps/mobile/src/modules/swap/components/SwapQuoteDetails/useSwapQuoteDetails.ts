@@ -12,17 +12,13 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import {
-    apiSlippageToPercent,
-    formatSwapRate,
-    type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
+import { formatSwapRate, type SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
 
 export type PriceImpactLevel = 'none' | 'low' | 'medium' | 'high'
 
@@ -77,16 +73,9 @@ export const useSwapQuoteDetails = (
                 lowThreshold,
                 highThreshold,
             ),
-            slippageDisplay: quote.slippage
-                ? `${apiSlippageToPercent(quote.slippage)}%`
-                : '-',
-            peraFeeDisplay: quote.peraFeeAmount
-                ? formatAssetAmount(
-                      quote.peraFeeAmount,
-                      quote.peraFeeAsset ?? quote.assetIn,
-                  )
-                : '-',
-            providerDisplay: quote.providerDisplayName ?? quote.provider ?? '-',
+            slippageDisplay: formatSwapSlippage(quote),
+            peraFeeDisplay: formatSwapFee(quote, 'pera') ?? '-',
+            providerDisplay: quote.provider,
         }),
         [quote, lowThreshold, highThreshold],
     )

@@ -14,40 +14,14 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Decimal } from 'decimal.js'
 import React from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCreateQuotesMutation } from '../useCreateQuotesMutation'
-import { createQuotes, fetchProviders } from '../../api'
+import { createSwapQuotes } from '../../api'
+import { makeSwapQuote } from '../../__tests__/swapQuoteFixture'
 
-const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+vi.mock('../../api', () => ({ createSwapQuotes: vi.fn() }))
 
-vi.mock('../../api', () => ({
-    createQuotes: vi.fn(),
-    fetchProviders: vi.fn(),
-}))
-
-const mockAsset = { assetId: 0, verificationTier: 'verified' as const }
-const mockProviders = [
-    { name: 'deflex', displayName: 'Deflex', iconUrl: 'https://x/deflex.png' },
-]
-const mockQuote = {
-    id: 1,
-    provider: 'deflex',
-    providerDisplayName: 'Deflex',
-    assetIn: mockAsset,
-    assetOut: mockAsset,
-    amountIn: new Decimal('1000000'),
-    amountOut: new Decimal('2000000'),
-}
-
-const mockRequest = {
-    swapper_address: 'ALGO_ADDRESS',
-    swap_type: 'fixed-input' as const,
-    asset_in_id: 0,
-    asset_out_id: 31566704,
-    amount: '1000000',
-}
+const quote = makeSwapQuote()
 
 function createWrapper() {
     const queryClient = new QueryClient()
@@ -61,39 +35,34 @@ function createWrapper() {
 
 describe('swaps/useCreateQuotesMutation', () => {
     beforeEach(() => {
-        vi.mocked(createQuotes).mockResolvedValue([mockQuote])
-        vi.mocked(fetchProviders).mockResolvedValue(mockProviders)
+        vi.mocked(createSwapQuotes).mockResolvedValue([quote])
     })
 
-    test('calls createQuotes with correct args and returns data', async () => {
-        const { result } = renderHook(() => useCreateQuotesMutation(SCOPE), {
+    test('quotes the request and returns the offers', async () => {
+        const { result } = renderHook(() => useCreateQuotesMutation(), {
             wrapper: createWrapper(),
         })
 
         act(() => {
-            result.current.mutate(mockRequest)
+            result.current.mutate(quote.request)
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(fetchProviders).toHaveBeenCalledWith(SCOPE)
-        expect(createQuotes).toHaveBeenCalledWith(
-            mockRequest,
-            SCOPE,
-            mockProviders,
-        )
-        expect(result.current.data).toEqual([mockQuote])
+        expect(createSwapQuotes).toHaveBeenCalledWith(quote.request)
+        expect(result.current.data).toEqual([quote])
     })
 
     test('sets isError on failure', async () => {
-        vi.mocked(createQuotes).mockRejectedValue(new Error('Network error'))
+        vi.mocked(createSwapQuotes).mockRejectedValue(
+            new Error('Network error'),
+        )
 
-        const { result } = renderHook(() => useCreateQuotesMutation(SCOPE), {
+        const { result } = renderHook(() => useCreateQuotesMutation(), {
             wrapper: createWrapper(),
         })
 
         act(() => {
-            result.current.mutate(mockRequest)
+            result.current.mutate(quote.request)
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))

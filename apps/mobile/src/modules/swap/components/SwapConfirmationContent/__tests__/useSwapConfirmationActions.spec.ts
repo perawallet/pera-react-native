@@ -16,9 +16,11 @@ import { useSwapConfirmationActions } from '../useSwapConfirmationActions'
 import type { SwapExecutionOutcome } from '../../../hooks/useSwapExecution'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 
-const makeQuote = (quoteIdStr?: string): SwapQuote =>
+const makeQuote = (quoteId = 'quote-1'): SwapQuote =>
     ({
-        quoteIdStr,
+        quoteId,
+        request: { sourceAddress: 'SWAPPER' },
+        fees: [],
         assetIn: {
             assetId: '0',
             unitName: 'ALGO',
@@ -29,7 +31,7 @@ const makeQuote = (quoteIdStr?: string): SwapQuote =>
             unitName: 'USDC',
             verificationTier: 'trusted',
         },
-    }) as SwapQuote
+    }) as unknown as SwapQuote
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -43,8 +45,7 @@ vi.mock('@analytics', async importOriginal => ({
 const mockResolve = vi.fn()
 const mockDismiss = vi.fn()
 const mockInfoToast = vi.fn()
-const mockExecute =
-    vi.fn<(quoteIdStr: string) => Promise<SwapExecutionOutcome>>()
+const mockExecute = vi.fn<(quote: SwapQuote) => Promise<SwapExecutionOutcome>>()
 const mockReset = vi.fn()
 const mockSchedule = vi.fn((callback: () => void, _delayMs: number) => {
     callback()
@@ -162,7 +163,7 @@ describe('useSwapConfirmationActions', () => {
         })
 
         expect(mockExecute).toHaveBeenCalledWith(
-            expect.objectContaining({ quoteIdStr: 'quote-1' }),
+            expect.objectContaining({ quoteId: 'quote-1' }),
         )
         expect(mockSchedule).toHaveBeenCalled()
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
@@ -238,19 +239,6 @@ describe('useSwapConfirmationActions', () => {
             message: 'may have landed',
             title: 'errors.submission.unknown_outcome.title',
         })
-    })
-
-    it('does nothing when quoteIdStr is missing', async () => {
-        const { result } = renderHook(() =>
-            useSwapConfirmationActions({ scope: SCOPE, quote: makeQuote() }),
-        )
-
-        await act(async () => {
-            await result.current.handleSlideConfirm()
-        })
-
-        expect(mockExecute).not.toHaveBeenCalled()
-        expect(mockResolve).not.toHaveBeenCalled()
     })
 
     it('in-flight guard prevents a second concurrent execute', async () => {

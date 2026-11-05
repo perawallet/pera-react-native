@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-export {
-    calculatePeraFee,
-    calculateSwapAmount,
-    createQuotes,
-} from './endpoints'
+export { createSwapQuotes, toCreateSwapQuotesRequest } from './endpoints'
+export { transformSwapQuote } from './transformers'
 export type {
-    CalculatePeraFeeRequest,
-    CalculateSwapAmountRequest,
-    CreateQuotesRequest,
+    CreateSwapQuotesRequest,
+    CreateSwapQuotesApiResponse,
+    SwapOfferApiResponse,
 } from './schema'

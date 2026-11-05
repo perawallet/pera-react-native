@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-export * from './available-assets'
+export * from './assets'
+export * from './pairs'
 export * from './quotes'
+export * from './orders'
 export * from './history'
-export * from './providers'
-export * from './transactions'
-export * from './swaps'
+export {
+    routerAccountId,
+    routerAssetIdOf,
+    routerChainIdOf,
+    scopeOfRouterChain,
+    scopeOfSwapAsset,
+    swapAssetRefOf,
+    type ResolveSwapAssetRef,
+} from './router-ids'
