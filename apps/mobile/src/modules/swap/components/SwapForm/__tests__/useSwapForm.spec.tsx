@@ -1191,11 +1191,12 @@ describe('useSwapForm', () => {
             )
         })
 
-        it('registers no resume for a cross-chain pair, which the intent cannot hold', async () => {
+        it('registers a cross-chain resume with where the output lands and who receives it', async () => {
             mockReceiveTarget = {
                 ...sameScopeTarget(),
                 receiveScope: ETH_SCOPE,
                 isCrossChain: true,
+                receivingAddress: '0xRECEIVER',
             }
             const result = await selectAQuote()
             mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'cancelled' })
@@ -1204,7 +1205,30 @@ describe('useSwapForm', () => {
                 await result.current.handleOpenConfirm()
             })
 
-            expect(mockRegisterTabResume).not.toHaveBeenCalled()
+            expect(mockRegisterTabResume).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    flow: 'swap',
+                    chainId: SCOPE.chainId,
+                    receive: {
+                        scope: ETH_SCOPE,
+                        accountAddress: '0xRECEIVER',
+                    },
+                }),
+            )
+        })
+
+        it('registers no receive target for a same-chain pair', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'cancelled' })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockRegisterTabResume).toHaveBeenCalledOnce()
+            expect(mockRegisterTabResume.mock.calls[0][0]).not.toHaveProperty(
+                'receive',
+            )
         })
 
         it('hands a successful swap back to the popup with its toast copy', async () => {

@@ -62,6 +62,9 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         useNavigation<NavigationProp<{ Swap: Optional<SwapScreenParams> }>>()
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
+    const setReceivingAccountId = useSwapsStore(
+        state => state.setReceivingAccountId,
+    )
     const sourceChainId = useSwapsStore(state => state.sourceChainId)
     const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
     const selectedAccount = useSelectedAccount()
@@ -107,6 +110,7 @@ export const useSwapScreen = (): UseSwapScreenResult => {
             navigation.setParams({
                 assetIn: undefined,
                 assetOut: undefined,
+                receive: undefined,
                 payAmount: undefined,
             })
         }
@@ -127,8 +131,14 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         resolvedAssets?.assetInId ??
         (routeScope ? routeAssetInIdOn(route.params, routeScope) : undefined)
     const assetOutId = resolvedAssets?.assetOutId
+    const routeReceive = route.params?.receive
 
-    useSeedSwapRouteAssets({ assetInId, assetOutId, scope: routeScope })
+    useSeedSwapRouteAssets({
+        assetInId,
+        assetOutId: routeReceive?.assetId ?? assetOutId,
+        assetOutScope: routeReceive?.scope,
+        scope: routeScope,
+    })
 
     // The tab stays mounted once opened, and the selection is app-wide: switching
     // while another screen is in front would undo an account picked there.
@@ -148,8 +158,20 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         if (!assetInId) return
 
         setFromAsset(assetInId)
+        if (routeReceive) {
+            setToAsset(routeReceive.assetId, routeReceive.scope)
+            setReceivingAccountId(routeReceive.accountId)
+            return
+        }
         if (assetOutId) setToAsset(assetOutId)
-    }, [assetInId, assetOutId, setFromAsset, setToAsset])
+    }, [
+        assetInId,
+        assetOutId,
+        routeReceive,
+        setFromAsset,
+        setToAsset,
+        setReceivingAccountId,
+    ])
 
     const payAmount = route.params?.payAmount
     // The form reads this once on mount, which can be before the chain is pinned.

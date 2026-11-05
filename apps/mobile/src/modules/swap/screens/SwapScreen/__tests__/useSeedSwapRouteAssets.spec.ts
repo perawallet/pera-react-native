@@ -118,6 +118,31 @@ describe('useSeedSwapRouteAssets', () => {
         expect(mockSetQueryData).not.toHaveBeenCalled()
     })
 
+    it('reads and seeds a cross-chain output asset on its own scope', () => {
+        const receiveScope = {
+            chainId: 'ethereum',
+            networkId: 'testnet',
+        } as const
+
+        renderHook(() =>
+            useSeedSwapRouteAssets({
+                scope: SCOPE,
+                assetOutId: OUT_ID,
+                assetOutScope: receiveScope,
+            }),
+        )
+
+        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith(
+            OUT_ID,
+            receiveScope,
+        )
+        const [key] = mockSetQueryData.mock.calls[0]
+        expect(key).toEqual([
+            'assets',
+            { assetIDs: [OUT_ID], network: 'testnet' },
+        ])
+    })
+
     it('seeds a non-ALGO input asset as well', () => {
         renderHook(() =>
             useSeedSwapRouteAssets({

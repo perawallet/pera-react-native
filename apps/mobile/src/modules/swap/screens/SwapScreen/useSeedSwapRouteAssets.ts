@@ -19,12 +19,14 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type UseSeedSwapRouteAssetsParams = {
     assetInId?: string
     assetOutId?: string
+    /** Where a cross-chain output lives; `scope` otherwise. */
+    assetOutScope?: ChainScope
     /** Nothing is seeded without one. */
     scope: Nullable<ChainScope>
 }
@@ -48,34 +50,39 @@ const seedAssetCache = (
 export const useSeedSwapRouteAssets = ({
     assetInId,
     assetOutId,
+    assetOutScope,
     scope,
 }: UseSeedSwapRouteAssetsParams): void => {
     // Without a swap scope every route id is '' and both queries stay
     // disabled; the home scope only fills the hook's required argument.
     const homeScope = useHomeChainScope()
     const queryScope = scope ?? homeScope
+    const outScope = scope && (assetOutScope ?? scope)
     const queryClient = useQueryClient()
 
     // The native asset is always in the DB and the API skips it, so only seed
     // other ids. An empty-string id disables the query via its
     // `enabled: !!assetId.length`.
-    const routeAssetId = (id?: string): string =>
-        id && scope && !isNativeAssetId(scope.chainId, id) ? id : ''
+    const routeAssetId = (
+        id: Optional<string>,
+        idScope: Nullable<ChainScope>,
+    ): string =>
+        id && idScope && !isNativeAssetId(idScope.chainId, id) ? id : ''
 
     const { data: outAsset } = useSingleAssetDetailsQuery(
-        routeAssetId(assetOutId),
-        queryScope,
+        routeAssetId(assetOutId, outScope),
+        outScope ?? queryScope,
     )
     const { data: inAsset } = useSingleAssetDetailsQuery(
-        routeAssetId(assetInId),
+        routeAssetId(assetInId, scope),
         queryScope,
     )
 
     useEffect(() => {
-        if (scope && assetOutId && outAsset) {
-            seedAssetCache(queryClient, scope, assetOutId, outAsset)
+        if (outScope && assetOutId && outAsset) {
+            seedAssetCache(queryClient, outScope, assetOutId, outAsset)
         }
-    }, [assetOutId, outAsset, queryClient, scope])
+    }, [assetOutId, outAsset, queryClient, outScope])
 
     useEffect(() => {
         if (scope && assetInId && inAsset) {
