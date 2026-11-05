@@ -164,6 +164,21 @@ describe('BalanceLineChart', () => {
         expect(onRetry).toHaveBeenCalledTimes(1)
     })
 
+    it('keeps the error state up and disables its retry button while the read is asked again', () => {
+        const onRetry = vi.fn()
+        renderChart({
+            isError: true,
+            isRetrying: true,
+            errorBody: 'could not load chart',
+            onRetry,
+        })
+
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(screen.getByText('could not load chart')).toBeTruthy()
+        expect(onRetry).not.toHaveBeenCalled()
+    })
+
     it('renders the offline state instead of the spinner when paused with no data', () => {
         renderChart({ series: undefined, isPending: true, isPaused: true })
 

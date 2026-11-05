@@ -70,6 +70,8 @@ type BalanceLineChartProps<T> = {
     emptyBody: string
     /** When true, render an error state (with retry) instead of the empty copy. */
     isError?: boolean
+    /** The failed read is being asked again: the error view stays up, and its Retry button shows it. */
+    isRetrying?: boolean
     /** True while the query's fetch is offline-paused (fetchStatus 'paused'). */
     isPaused?: boolean
     /** True when the active network has no Pera backend — renders the
@@ -92,6 +94,7 @@ export const BalanceLineChart = <T,>({
     isPending,
     emptyBody,
     isError = false,
+    isRetrying = false,
     isPaused = false,
     isUnavailableOnNetwork = false,
     isIntegrityBlocked = false,
@@ -136,6 +139,7 @@ export const BalanceLineChart = <T,>({
             variant='link'
             title={t('common.retry.label')}
             onPress={handleRetry}
+            isLoading={isRetrying}
             testID='balance-chart-retry'
         />
     ) : undefined
