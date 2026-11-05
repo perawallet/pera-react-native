@@ -98,8 +98,18 @@ describe('usePortfolioHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(history).toHaveBeenCalledTimes(2)
-        expect(history).toHaveBeenCalledWith(['ALGO'], 'one-week', ALGORAND)
-        expect(history).toHaveBeenCalledWith(['0xeth'], 'one-week', ETHEREUM)
+        expect(history).toHaveBeenCalledWith(
+            ['ALGO'],
+            'one-week',
+            ALGORAND,
+            expect.any(AbortSignal),
+        )
+        expect(history).toHaveBeenCalledWith(
+            ['0xeth'],
+            'one-week',
+            ETHEREUM,
+            expect.any(AbortSignal),
+        )
         expect(result.current.data).toEqual([
             { datetime: new Date(1), preferredValue: new Decimal(220) },
             { datetime: new Date(2), preferredValue: new Decimal(440) },
@@ -120,7 +130,12 @@ describe('usePortfolioHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(history).toHaveBeenCalledTimes(1)
-        expect(history).toHaveBeenCalledWith(['A', 'B'], 'one-day', ALGORAND)
+        expect(history).toHaveBeenCalledWith(
+            ['A', 'B'],
+            'one-day',
+            ALGORAND,
+            expect.any(AbortSignal),
+        )
         expect(result.current.data).toEqual([])
     })
 

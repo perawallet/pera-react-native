@@ -307,7 +307,6 @@ describe('the adapter methods', () => {
             ALICE,
             USDC,
             'one-day',
-            'USD',
             SCOPE,
         )
 
@@ -459,7 +458,6 @@ describe('the adapter methods', () => {
                     ALICE,
                     USDC,
                     'one-month',
-                    'USD',
                     SCOPE,
                 ),
             ).rejects.toThrow()
@@ -511,17 +509,46 @@ describe('the adapter methods', () => {
         expect(points.map(p => p.usdValue.toFixed())).toEqual(['2', '0'])
     })
 
+    it('sends no balance or price request once its signal has aborted', async () => {
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '3000000' }]
+        const requests = recordRequests()
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-20T15:00:00Z', {
+                            [ALICE.toLowerCase()]: { [USDC_CAIP19]: '1000000' },
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [USDC_CAIP19]: [chartPoint('2026-10-20T15:00:00Z', '1')],
+                },
+            }),
+        )
+        const cancelled = new AbortController()
+        cancelled.abort()
+
+        await expect(
+            ops().fetchPortfolioHistory!(
+                [ALICE],
+                'one-day',
+                SCOPE,
+                cancelled.signal,
+            ),
+        ).rejects.toThrow()
+
+        expect(
+            requests.filter(({ url }) => /balance-history|chart/.test(url)),
+        ).toEqual([])
+    })
+
     it('answers no points on a chain the backend serves no balance history for, and no portfolio source at all', async () => {
         server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
 
         await expect(
-            ops().fetchHoldingBalanceHistory!(
-                ALICE,
-                USDC,
-                'one-day',
-                'USD',
-                SCOPE,
-            ),
+            ops().fetchHoldingBalanceHistory!(ALICE, USDC, 'one-day', SCOPE),
         ).resolves.toEqual([])
         await expect(
             ops().fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
@@ -539,7 +566,6 @@ describe('the adapter methods', () => {
                 ALICE,
                 USDC,
                 'one-day',
-                'USD',
                 SCOPE,
             ),
         ).resolves.toEqual([])

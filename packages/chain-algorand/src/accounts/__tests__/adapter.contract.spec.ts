@@ -131,7 +131,6 @@ accountsContractTests(() => algorandAccountsAdapter, {
         addresses: [FUNDED],
         assetId: '31566704',
         period: 'one-week',
-        currency: 'USD',
         handlers: [
             mockAccountsBalanceHistory({
                 response: {

@@ -146,12 +146,11 @@ export const getAccountAssetBalanceHistoryQueryKey = (
     account_address: string,
     asset_id: string,
     period: HistoryPeriod,
-    currency: string,
 ) => [
     MODULE_PREFIX,
     'assets',
     'balance-history',
-    { period, currency, scope, asset_id, account_address },
+    { period, scope, asset_id, account_address },
 ]
 
 export const getInvalidateAccountBalancesPredicate = (query: Query) =>

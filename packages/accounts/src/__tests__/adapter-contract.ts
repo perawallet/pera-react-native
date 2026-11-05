@@ -73,7 +73,6 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
         addresses: string[]
         assetId: string
         period: HistoryPeriod
-        currency: string
         /** Handlers under which each declared history operation answers with `portfolio` and `balance`. */
         handlers: readonly RequestHandler[]
         /** `null` where the scope serves no portfolio history. */
@@ -425,13 +424,7 @@ export const accountsContractTests = (
                     fetchPortfolioHistory(['ANY'], 'one-day', scope),
                 ).resolves.toBeNull()
                 await expect(
-                    fetchHoldingBalanceHistory(
-                        'ANY',
-                        'ANY',
-                        'one-day',
-                        'USD',
-                        scope,
-                    ),
+                    fetchHoldingBalanceHistory('ANY', 'ANY', 'one-day', scope),
                 ).resolves.toEqual([])
                 return
             }
@@ -451,7 +444,6 @@ export const accountsContractTests = (
                         history.addresses[0]!,
                         history.assetId,
                         history.period,
-                        history.currency,
                         scope,
                     ),
                 ).resolves.toEqual(history.balance)

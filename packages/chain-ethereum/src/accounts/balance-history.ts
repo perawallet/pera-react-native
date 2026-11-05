@@ -110,6 +110,7 @@ const requestBalanceHistory = async (
     addresses: string[],
     caip19Ids: string[],
     period: HistoryPeriod,
+    signal?: AbortSignal,
 ) => {
     try {
         const { data } = await queryClient<unknown>({
@@ -120,6 +121,7 @@ const requestBalanceHistory = async (
             url: balanceHistoryPath(eip155ChainIdOf(scope, chain)),
             headers: buildIntegrityHeaders(),
             data: { addresses, asset_ids: caip19Ids, period },
+            signal,
             timeout: CHART_QUERY_TIMEOUT_MS,
         })
         return balanceHistorySchema.parse(data).results
@@ -146,6 +148,7 @@ export const fetchGridBalances = async (
     addresses: string[],
     caip19Ids: string[],
     period: HistoryPeriod,
+    signal?: AbortSignal,
 ): Promise<Nullable<GridPoint[]>> => {
     const { points } = GRIDS[period]
     const calls = partition(
@@ -161,7 +164,9 @@ export const fetchGridBalances = async (
                     Math.floor(MAX_READS / (group.length * points)),
                 ),
             ),
-        ).map(ids => requestBalanceHistory(scope, chain, group, ids, period)),
+        ).map(ids =>
+            requestBalanceHistory(scope, chain, group, ids, period, signal),
+        ),
     )
     const answers = await Promise.all(calls)
     if (answers.some(answer => answer === null)) return null
@@ -323,6 +328,7 @@ export const createEthereumBalanceHistoryOps = (
         // A portfolio leaves out a token it can't price rather than fail the
         // chain; a holding's own chart is that one token, so it fails instead.
         { shouldSkipFailedTokens }: { shouldSkipFailedTokens: boolean },
+        signal?: AbortSignal,
     ): Promise<Map<string, PricedAsset>> => {
         const query = {
             from: toUtcDay(points[0]!.timestamp),
@@ -348,14 +354,15 @@ export const createEthereumBalanceHistoryOps = (
         const unknown = tokenIds.filter(id => !decimals.has(id))
         for (const batch of partition(unknown, ASSETS_MAX_IDS)) {
             try {
-                const items = await fetchAssetItems(scope, chain, batch)
+                const items = await fetchAssetItems(scope, chain, batch, signal)
                 items.forEach((item, index) => {
                     if (item && item.fraction_decimals !== null) {
                         decimals.set(batch[index]!, item.fraction_decimals)
                     }
                 })
             } catch (error) {
-                if (!shouldSkipFailedTokens) throw error
+                // An abort is the deadline or a cancel, not a token to skip.
+                if (!shouldSkipFailedTokens || signal?.aborted) throw error
                 logger.warn('ethereum balance history: asset read failed', {
                     error,
                 })
@@ -372,9 +379,11 @@ export const createEthereumBalanceHistoryOps = (
                     chain,
                     assetId,
                     query,
+                    signal,
                 ).catch((error: unknown) => {
                     if (
                         !shouldSkipFailedTokens ||
+                        signal?.aborted ||
                         assetId === chain.nativeAsset.assetId
                     ) {
                         throw error
@@ -392,7 +401,7 @@ export const createEthereumBalanceHistoryOps = (
     }
 
     const fetchPortfolioHistory: AccountsChainAdapter['fetchPortfolioHistory'] =
-        async (addresses, period, scope) => {
+        async (addresses, period, scope, signal) => {
             eip155ChainIdOf(scope, chain)
             if (!hasServices(ctx, scope)) return null
             if (addresses.length === 0) return []
@@ -417,6 +426,7 @@ export const createEthereumBalanceHistoryOps = (
                 addresses,
                 [...assetIdByCaip19.keys()],
                 period,
+                signal,
             )
             if (grid === null) return null
             if (grid.length === 0) return []
@@ -441,17 +451,25 @@ export const createEthereumBalanceHistoryOps = (
                 points,
                 period,
                 { shouldSkipFailedTokens: true },
+                signal,
             )
             return valuePortfolio(points, assets, nativeCaip19)
         }
 
     const fetchHoldingBalanceHistory: AccountsChainAdapter['fetchHoldingBalanceHistory'] =
-        async (address, assetId, period, _currency, scope) => {
+        async (address, assetId, period, scope, signal) => {
             eip155ChainIdOf(scope, chain)
             if (isEvmNftAssetId(assetId) || !hasServices(ctx, scope)) return []
             const caip19 = caip19Of(scope, assetId)
             const [grid, holdings] = await Promise.all([
-                fetchGridBalances(scope, chain, [address], [caip19], period),
+                fetchGridBalances(
+                    scope,
+                    chain,
+                    [address],
+                    [caip19],
+                    period,
+                    signal,
+                ),
                 readHoldings(scope, [address]),
             ])
             const current = sumBalances(scope, holdings)
@@ -472,6 +490,7 @@ export const createEthereumBalanceHistoryOps = (
                     points,
                     period,
                     { shouldSkipFailedTokens: false },
+                    signal,
                 )
             ).get(caip19)
             return asset ? valueHolding(points, caip19, asset) : []

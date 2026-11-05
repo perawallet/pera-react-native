@@ -163,4 +163,56 @@ describe('useBalanceLineChart', () => {
 
         expect(result.current.handleRetry).toBeUndefined()
     })
+
+    describe('recovering the chart boundary', () => {
+        const withBoundary = (points: unknown) => {
+            const reset = vi.fn()
+            const hook = renderHook(
+                ({ points: current }) =>
+                    useBalanceLineChart({ ...defaultParams, points: current }),
+                { initialProps: { points } },
+            )
+            ;(
+                hook.result.current.chartBoundary as { current: unknown }
+            ).current = { reset }
+            return { ...hook, reset }
+        }
+
+        it('resets the boundary when new points arrive after the chart threw', () => {
+            const { result, rerender, reset } = withBoundary([1])
+            result.current.handleChartError()
+
+            rerender({ points: [2] })
+
+            expect(reset).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not reset it again for the points that threw', () => {
+            const failed = [1]
+            const { result, rerender, reset } = withBoundary(failed)
+            result.current.handleChartError()
+
+            rerender({ points: failed })
+
+            expect(reset).not.toHaveBeenCalled()
+        })
+
+        it('does not reset it when the chart never threw', () => {
+            const { rerender, reset } = withBoundary([1])
+
+            rerender({ points: [2] })
+
+            expect(reset).not.toHaveBeenCalled()
+        })
+
+        it('resets once per failure, not on every later change', () => {
+            const { result, rerender, reset } = withBoundary([1])
+            result.current.handleChartError()
+
+            rerender({ points: [2] })
+            rerender({ points: [3] })
+
+            expect(reset).toHaveBeenCalledTimes(1)
+        })
+    })
 })

@@ -14,6 +14,7 @@ import { memo, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
+import { useChartCurrencyFallback } from '@hooks/useChartCurrencyFallback'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import {
@@ -70,6 +71,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         period,
         scope,
     )
+    const fallback = useChartCurrencyFallback(scope, { isError, refetch })
 
     // See WealthChart: an unpriced point has no rate behind it and must not be
     // plotted as 0.
@@ -85,12 +87,13 @@ export const AssetWealthChart = memo(function AssetWealthChart({
             getDatetime={getDatetime}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
-            isError={isError}
+            isError={fallback.isError}
             isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
             isPaused={isPaused}
             isUnavailableOnNetwork={isUnavailableOnNetwork}
-            onRetry={() => void refetch()}
+            onRetry={fallback.onRetry}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
+            errorBody={fallback.errorBody}
             style={themeStyle.container}
         />
     )

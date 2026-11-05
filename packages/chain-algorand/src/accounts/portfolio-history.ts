@@ -60,6 +60,7 @@ export const fetchAlgorandPortfolioHistory = async (
     addresses: string[],
     period: HistoryPeriod,
     network: AlgorandNetworkId,
+    signal?: AbortSignal,
 ): Promise<PortfolioHistoryPoint[]> => {
     const response = await queryClient<PortfolioHistoryResponse>({
         backend: 'pera',
@@ -70,6 +71,7 @@ export const fetchAlgorandPortfolioHistory = async (
             account_addresses: addresses,
             period,
         },
+        signal,
         timeout: CHART_QUERY_TIMEOUT_MS,
     })
     return (
@@ -85,18 +87,16 @@ export const fetchAlgorandHoldingBalanceHistory = async (
     address: string,
     assetId: string,
     period: HistoryPeriod,
-    currency: string,
     network: AlgorandNetworkId,
+    signal?: AbortSignal,
 ): Promise<HoldingBalanceHistoryPoint[]> => {
     const response = await queryClient<HoldingBalanceHistoryResponse>({
         backend: 'pera',
         scope: algorandScope(network),
         method: 'GET',
         url: getHoldingBalanceHistoryEndpointPath(address, assetId),
-        params: {
-            period,
-            currency,
-        },
+        params: { period },
+        signal,
         timeout: CHART_QUERY_TIMEOUT_MS,
     })
     return (

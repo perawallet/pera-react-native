@@ -15,6 +15,7 @@ import { LinearGradient, vec } from '@shopify/react-native-skia'
 import { Area, CartesianChart, Line, useChartPressState } from 'victory-native'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWView } from '@components/core'
+import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
 import { IntegrityBlockedView } from '@components/OfflineTolerantView'
 import { LoadingView } from '@components/LoadingView'
@@ -119,14 +120,16 @@ export const BalanceLineChart = <T,>({
     })
     useChartPressSelection(pressState, series, onSelectionChanged)
 
-    const { renderState, handleRetry } = useBalanceLineChart({
-        hasData: dataPoints.length > 0,
-        isPaused,
-        isError,
-        isPending,
-        isUnavailableOnNetwork,
-        onRetry,
-    })
+    const { renderState, handleRetry, chartBoundary, handleChartError } =
+        useBalanceLineChart({
+            points: dataPoints,
+            hasData: dataPoints.length > 0,
+            isPaused,
+            isError,
+            isPending,
+            isUnavailableOnNetwork,
+            onRetry,
+        })
 
     const retryButton = handleRetry ? (
         <PWButton
@@ -139,70 +142,97 @@ export const BalanceLineChart = <T,>({
 
     const renderContent = () => {
         switch (renderState) {
+            // A render throw in the chart subtree becomes this chart's error
+            // state instead of unmounting the screen; native failures pass through.
             case 'chart': {
                 return (
-                    <PWView style={styles.canvas}>
-                        <ChartDateLabel
-                            pressState={pressState}
-                            series={series}
-                            getDatetime={getDatetime}
-                        />
-                        <CartesianChart
-                            data={dataPoints}
-                            xKey='index'
-                            yKeys={['value']}
-                            domain={{ y: yDomain }}
-                            yAxis={HIDDEN_Y_AXIS}
-                            padding={0}
-                            domainPadding={0}
-                            chartPressState={pressState}
-                            // Without an explicit pan config victory applies
-                            // activateAfterLongPress(100), i.e. a hold before
-                            // the scrub starts — the lag we're removing.
-                            chartPressConfig={{
-                                pan: {
-                                    activeOffsetX: CHART_PRESS_ACTIVE_OFFSET_X,
-                                    failOffsetY: CHART_PRESS_FAIL_OFFSET_Y,
-                                },
-                            }}
-                        >
-                            {({ points, chartBounds }) => (
-                                <>
-                                    <Area
-                                        points={points.value}
-                                        y0={chartBounds.bottom}
-                                        curveType='linear'
-                                        animate={CHART_ANIMATION}
-                                    >
-                                        <LinearGradient
-                                            start={vec(0, chartBounds.top)}
-                                            end={vec(0, chartBounds.bottom)}
-                                            colors={[
-                                                `${theme.colors.chartAreaFill}${AREA_FILL_TOP_OPACITY}`,
-                                                `${theme.colors.chartAreaFill}${AREA_FILL_BOTTOM_OPACITY}`,
-                                            ]}
+                    <BaseErrorBoundary
+                        ref={chartBoundary}
+                        t={t}
+                        onError={handleChartError}
+                        fallback={(_error, reset) => (
+                            <EmptyView
+                                title={t('common.error.title')}
+                                body={t('common.error.body')}
+                                button={
+                                    <PWButton
+                                        variant='link'
+                                        title={t('common.retry.label')}
+                                        onPress={() => {
+                                            reset()
+                                            onRetry?.()
+                                        }}
+                                        testID='balance-chart-retry'
+                                    />
+                                }
+                                shouldTruncateBody={false}
+                            />
+                        )}
+                    >
+                        <PWView style={styles.canvas}>
+                            <ChartDateLabel
+                                pressState={pressState}
+                                series={series}
+                                getDatetime={getDatetime}
+                            />
+                            <CartesianChart
+                                data={dataPoints}
+                                xKey='index'
+                                yKeys={['value']}
+                                domain={{ y: yDomain }}
+                                yAxis={HIDDEN_Y_AXIS}
+                                padding={0}
+                                domainPadding={0}
+                                chartPressState={pressState}
+                                // Without an explicit pan config victory applies
+                                // activateAfterLongPress(100), i.e. a hold before
+                                // the scrub starts — the lag we're removing.
+                                chartPressConfig={{
+                                    pan: {
+                                        activeOffsetX:
+                                            CHART_PRESS_ACTIVE_OFFSET_X,
+                                        failOffsetY: CHART_PRESS_FAIL_OFFSET_Y,
+                                    },
+                                }}
+                            >
+                                {({ points, chartBounds }) => (
+                                    <>
+                                        <Area
+                                            points={points.value}
+                                            y0={chartBounds.bottom}
+                                            curveType='linear'
+                                            animate={CHART_ANIMATION}
+                                        >
+                                            <LinearGradient
+                                                start={vec(0, chartBounds.top)}
+                                                end={vec(0, chartBounds.bottom)}
+                                                colors={[
+                                                    `${theme.colors.chartAreaFill}${AREA_FILL_TOP_OPACITY}`,
+                                                    `${theme.colors.chartAreaFill}${AREA_FILL_BOTTOM_OPACITY}`,
+                                                ]}
+                                            />
+                                        </Area>
+                                        <Line
+                                            points={points.value}
+                                            color={theme.colors.positive}
+                                            strokeWidth={CHART_LINE_THICKNESS}
+                                            curveType='linear'
+                                            animate={CHART_ANIMATION}
                                         />
-                                    </Area>
-                                    <Line
-                                        points={points.value}
-                                        color={theme.colors.positive}
-                                        strokeWidth={CHART_LINE_THICKNESS}
-                                        curveType='linear'
-                                        animate={CHART_ANIMATION}
-                                    />
-                                    <ChartPressIndicator
-                                        pressState={pressState}
-                                        top={chartBounds.top}
-                                        bottom={chartBounds.bottom}
-                                        stripColor={
-                                            theme.colors.textGrayLighter
-                                        }
-                                        dotColor={theme.colors.positive}
-                                    />
-                                </>
-                            )}
-                        </CartesianChart>
-                    </PWView>
+                                        <ChartPressIndicator
+                                            pressState={pressState}
+                                            top={chartBounds.top}
+                                            bottom={chartBounds.bottom}
+                                            stripColor={
+                                                theme.colors.textGrayLighter
+                                            }
+                                            dotColor={theme.colors.positive}
+                                        />
+                                    </>
+                                )}
+                            </CartesianChart>
+                        </PWView>
+                    </BaseErrorBoundary>
                 )
             }
             // No Pera backend exists for this network, so the query never

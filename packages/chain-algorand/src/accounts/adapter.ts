@@ -59,19 +59,20 @@ export const algorandAccountsAdapter: AccountsChainAdapter = {
     fetchHoldingAcquisitionOrder: (address, scope) =>
         fetchAssetOptInRounds(address, algorandNetworkOf(scope)),
     describeHolding: describeAlgorandHolding,
-    fetchPortfolioHistory: (addresses, period, scope) =>
+    fetchPortfolioHistory: (addresses, period, scope, signal) =>
         fetchAlgorandPortfolioHistory(
             addresses,
             period,
             algorandNetworkOf(scope),
+            signal,
         ),
-    fetchHoldingBalanceHistory: (address, assetId, period, currency, scope) =>
+    fetchHoldingBalanceHistory: (address, assetId, period, scope, signal) =>
         fetchAlgorandHoldingBalanceHistory(
             address,
             assetId,
             period,
-            currency,
             algorandNetworkOf(scope),
+            signal,
         ),
     // Pera's fast lookup, not algod: it throws when unreachable, which the
     // Ledger gap scan reads as "probe unavailable" rather than "no footprint".

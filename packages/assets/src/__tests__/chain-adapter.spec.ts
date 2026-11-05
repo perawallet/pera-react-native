@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    CHART_QUERY_TIMEOUT_MS,
     PeraNetworkError,
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
@@ -27,6 +28,7 @@ import {
     fetchAndPersistAssets,
     fetchAssetAuthorities,
     fetchAssetMetadata,
+    fetchAssetPriceHistory,
     fetchOnChainAsset,
     findNativeAsset,
     isNativeAssetId,
@@ -528,5 +530,41 @@ describe('with no adapter registered', () => {
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+    })
+})
+
+describe('fetchAssetPriceHistory deadline', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+    it('rejects with a TimeoutError once the chain has not answered in time, and not before', async () => {
+        vi.useFakeTimers()
+        registerFakeAssetsAdapter({
+            getPriceHistory: () => new Promise<never>(() => {}),
+        })
+        const rejection = fetchAssetPriceHistory('1', 'one-day', scope).catch(
+            (error: Error) => error,
+        )
+        let isSettled = false
+        void rejection.then(() => {
+            isSettled = true
+        })
+
+        await vi.advanceTimersByTimeAsync(CHART_QUERY_TIMEOUT_MS - 1)
+        expect(isSettled).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(await rejection).toMatchObject({ name: 'TimeoutError' })
+    })
+
+    it('returns the points of a history that answers in time', async () => {
+        registerFakeAssetsAdapter({ getPriceHistory: vi.fn(async () => []) })
+
+        await expect(
+            fetchAssetPriceHistory('1', 'one-day', scope),
+        ).resolves.toEqual([])
     })
 })

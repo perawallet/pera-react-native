@@ -25,12 +25,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
-import { http, HttpResponse } from 'msw'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { delay, http, HttpResponse } from 'msw'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     ETH_ADDRESS,
     ETH_SCOPE,
@@ -69,6 +70,8 @@ const { insertAssetHolding, upsertAccountChainState, useAccountsStore } =
 const { nativeAssetFor, upsertAssets } =
     await import('@perawallet/wallet-core-assets')
 const { Decimal } = await import('decimal.js')
+const { useCurrenciesStore } =
+    await import('@perawallet/wallet-core-currencies')
 const { mockAccountsBalanceHistory } =
     await import('@perawallet/wallet-core-chain-algorand/test-handlers')
 const { peraEvmHandlers } =
@@ -95,6 +98,13 @@ const OTHER_ACCOUNT: WalletAccount = {
     name: 'Other',
 }
 
+const ALGORAND_ONLY_ACCOUNT: WalletAccount = {
+    id: 'algorand-only',
+    custody: { kind: 'watch' },
+    chains: { algorand: { address: ALGO25_TEST_ADDRESS } },
+    name: 'Algorand only',
+}
+
 const noop = () => {}
 
 // The backend never answers "now": the adapter adds that point from the
@@ -116,12 +126,15 @@ const seedEthereumHolding = async (baseUnits: string) => {
     })
 }
 
-const renderHeader = (chartVisible: boolean) =>
+const renderHeader = (
+    chartVisible: boolean,
+    account: WalletAccount = TWO_CHAIN_ACCOUNT,
+) =>
     renderWithNavigation(
         () => (
             <AccountOverviewModalContext.Provider
                 value={{
-                    account: TWO_CHAIN_ACCOUNT,
+                    account,
                     openSendFunds: noop,
                     openReceiveFunds: noop,
                     openReceiveFundsOn: noop,
@@ -129,7 +142,7 @@ const renderHeader = (chartVisible: boolean) =>
                 }}
             >
                 <AccountOverviewHeader
-                    account={TWO_CHAIN_ACCOUNT}
+                    account={account}
                     chartVisible={chartVisible}
                     isLoading={false}
                 />
@@ -210,13 +223,53 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         })
         useAccountsStore
             .getState()
-            .setAccounts([TWO_CHAIN_ACCOUNT, OTHER_ACCOUNT])
+            .setAccounts([
+                TWO_CHAIN_ACCOUNT,
+                ALGORAND_ONLY_ACCOUNT,
+                OTHER_ACCOUNT,
+            ])
     })
 
     afterEach(() => {
         server.events.removeAllListeners('request:start')
         useAccountsStore.getState().setAccounts([])
+        useCurrenciesStore.getState().resetState()
     })
+
+    const serveRate = (currency: string, usdValue: string, delayMs = 0) =>
+        server.use(
+            http.get(`*/v1/currencies/${currency}/`, async () => {
+                await delay(delayMs)
+                return HttpResponse.json({
+                    currency_id: currency,
+                    name: currency,
+                    symbol: currency,
+                    exchange_price: usdValue,
+                    usd_value: usdValue,
+                })
+            }),
+        )
+
+    const failRate = (currency: string) =>
+        server.use(
+            http.get(`*/v1/currencies/${currency}/`, () =>
+                HttpResponse.json({}, { status: 500 }),
+            ),
+        )
+
+    const switchCurrency = (currency: string) =>
+        act(() => useCurrenciesStore.getState().setPreferredCurrency(currency))
+
+    const SUM_HISTORY = {
+        algorand: [
+            { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
+            { datetime: '2026-10-21T00:00:00Z', usd_value: '12' },
+        ],
+        ethereum: [
+            { timestamp: '2026-10-20T00:00:00Z', wei: '500000000000000000' },
+            { timestamp: '2026-10-21T00:00:00Z', wei: '600000000000000000' },
+        ],
+    }
 
     it('Given both chains serve history, when the chart is shown, then it plots their sum with its trend', async () => {
         serveHistory({
@@ -349,5 +402,151 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
             expect(periods).toHaveLength(requests.algorand + requests.ethereum)
         })
         expect(new Set(periods)).toEqual(new Set(['one-day']))
+    })
+
+    describe('switching the display currency', () => {
+        it('Given the chart is shown in USD, when the user picks ARS, then the change is converted without asking the history again', async () => {
+            serveHistory(SUM_HISTORY)
+            serveRate('ARS', '1000')
+            await seedEthereumHolding('600000000000000000')
+            renderHeader(true)
+            await screen.findByTestId('wealth_trend', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+            const { algorand, ethereum } = requests
+
+            switchCurrency('ARS')
+
+            await waitFor(
+                () =>
+                    expect(
+                        screen.getByTestId('wealth_trend').textContent,
+                    ).toMatch(/\+.*202.?000.*\(\+20\.00%\)/),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(requests).toEqual({ algorand, ethereum })
+        })
+
+        it('Given several quick switches with a slow answer for ARS, when the last one lands, then only its currency is shown', async () => {
+            serveHistory(SUM_HISTORY)
+            serveRate('EUR', '0.9')
+            serveRate('ARS', '1000', 400)
+            serveRate('JPY', '150')
+            await seedEthereumHolding('600000000000000000')
+            renderHeader(true)
+            await screen.findByTestId('wealth_trend', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+
+            switchCurrency('EUR')
+            switchCurrency('ARS')
+            switchCurrency('USD')
+            switchCurrency('JPY')
+
+            await waitFor(
+                () =>
+                    expect(
+                        screen.getByTestId('wealth_trend').textContent,
+                    ).toMatch(/\+.*30.?300.*\(\+20\.00%\)/),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            // The ARS answer was slow on purpose: give it time to land late.
+            await new Promise(resolve => setTimeout(resolve, 600))
+            expect(screen.getByTestId('wealth_trend').textContent).toMatch(
+                /30.?300/,
+            )
+        })
+
+        it.each([
+            [
+                'an account on Algorand and Ethereum',
+                TWO_CHAIN_ACCOUNT,
+                /202.?000/,
+            ],
+            ['an Algorand-only account', ALGORAND_ONLY_ACCOUNT, /2.?000\.00/],
+        ])(
+            'Given the rate for ARS fails, when the user picks ARS on %s, then the chart says it is unavailable with a Retry that recovers it, and USD brings it back',
+            async (_, account, expectedChange) => {
+                serveHistory(SUM_HISTORY)
+                failRate('ARS')
+                await seedEthereumHolding('600000000000000000')
+                renderHeader(true, account)
+                await screen.findByTestId('wealth_trend', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+
+                switchCurrency('ARS')
+
+                expect(
+                    await screen.findByText(
+                        'common.wealth_chart.currency_unavailable_body',
+                        undefined,
+                        { timeout: SLOW_WAIT_TIMEOUT_MS },
+                    ),
+                ).toBeTruthy()
+                expect(screen.queryByTestId('wealth_trend')).toBeNull()
+
+                serveRate('ARS', '1000')
+                fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+                await waitFor(
+                    () =>
+                        expect(
+                            screen.getByTestId('wealth_trend').textContent,
+                        ).toMatch(expectedChange),
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(
+                    screen.queryByText(
+                        'common.wealth_chart.currency_unavailable_body',
+                    ),
+                ).toBeNull()
+            },
+        )
+
+        it('Given the backend has no rate for ARS, when the user picks ARS, then the chart says it is unavailable instead of plotting zeros', async () => {
+            serveHistory(SUM_HISTORY)
+            serveRate('ARS', '0')
+            await seedEthereumHolding('600000000000000000')
+            renderHeader(true)
+            await screen.findByTestId('wealth_trend', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+
+            switchCurrency('ARS')
+
+            expect(
+                await screen.findByText(
+                    'common.wealth_chart.currency_unavailable_body',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                ),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('wealth_trend')).toBeNull()
+        })
+
+        it('Given the rate for ARS fails, when the user goes back to USD, then the chart plots again at once', async () => {
+            serveHistory(SUM_HISTORY)
+            failRate('ARS')
+            await seedEthereumHolding('600000000000000000')
+            renderHeader(true)
+            await screen.findByTestId('wealth_trend', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+            switchCurrency('ARS')
+            await screen.findByText(
+                'common.wealth_chart.currency_unavailable_body',
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+
+            switchCurrency('USD')
+
+            expect(
+                await screen.findByTestId('wealth_trend', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                }),
+            ).toBeTruthy()
+        })
     })
 })

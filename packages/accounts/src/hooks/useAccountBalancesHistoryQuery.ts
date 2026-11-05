@@ -51,8 +51,8 @@ export const useAccountBalancesHistoryQuery = (
         // Gated by callers on chart visibility — this hits a slow network
         // endpoint and is only needed to render the wealth chart/trend.
         enabled: isEnabled,
-        queryFn: (): Promise<Nullable<PortfolioHistoryPoint[]>> =>
-            fetchPortfolioHistory(addresses, period, scope),
+        queryFn: ({ signal }): Promise<Nullable<PortfolioHistoryPoint[]>> =>
+            fetchPortfolioHistory(addresses, period, scope, signal),
         select: useCallback(
             (
                 points: Nullable<PortfolioHistoryPoint[]>,

@@ -1075,7 +1075,8 @@
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
-            "excludes_networks": "This chart doesn't include {{networks}} assets yet"
+            "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
         },
         "webview": {
             "failed_title": "Failed to load page",

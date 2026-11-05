@@ -93,7 +93,7 @@ describe('fetchAlgorandPortfolioHistory', () => {
 })
 
 describe('fetchAlgorandHoldingBalanceHistory', () => {
-    it('requests the balance-history endpoint with the period and currency', async () => {
+    it('requests the balance-history endpoint with the period only', async () => {
         const seen = record('*/v1/accounts/ADDR/assets/31566704/*', {
             results: [],
         })
@@ -102,7 +102,6 @@ describe('fetchAlgorandHoldingBalanceHistory', () => {
             'ADDR',
             '31566704',
             'one-month',
-            'USD',
             'testnet',
         )
 
@@ -112,7 +111,6 @@ describe('fetchAlgorandHoldingBalanceHistory', () => {
         )
         expect(Object.fromEntries(seen[0]!.searchParams)).toEqual({
             period: 'one-month',
-            currency: 'USD',
         })
     })
 
@@ -139,7 +137,6 @@ describe('fetchAlgorandHoldingBalanceHistory', () => {
                 'ADDR',
                 '7',
                 'one-day',
-                'USD',
                 'mainnet',
             ),
         ).resolves.toEqual([
@@ -164,7 +161,6 @@ describe('fetchAlgorandHoldingBalanceHistory', () => {
                 'ADDR',
                 '7',
                 'one-day',
-                'USD',
                 'mainnet',
             ),
         ).resolves.toEqual([])
