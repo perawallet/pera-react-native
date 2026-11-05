@@ -29,6 +29,7 @@ import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     formatSwapRate,
+    swapRate,
     scopeOfSwapAsset,
     useSwapSourceCostQuery,
     type SwapQuote,
@@ -69,7 +70,8 @@ type UseSwapConfirmationResult = {
     /** In the preferred currency; null until a rate resolves. */
     payFiatValue: Nullable<Decimal>
     receiveFiatValue: Nullable<Decimal>
-    rateDisplay: string
+    /** Null when an asset's decimals are unknown. */
+    rateDisplay: Nullable<string>
     /** Null when the route sets no minimum. */
     minimumReceivedDisplay: Nullable<string>
     /** Null when the quote carries no Pera fee. */
@@ -170,7 +172,10 @@ export const useSwapConfirmation = ({
         [quote.amountOutUsdValue, usdToPreferred],
     )
 
-    const rateDisplay = useMemo(() => formatSwapRate(quote), [quote])
+    const rateDisplay = useMemo(
+        () => (swapRate(quote) ? formatSwapRate(quote) : null),
+        [quote],
+    )
 
     const minimumReceivedDisplay = useMemo(() => {
         if (!quote.minimumAmountOut) return null

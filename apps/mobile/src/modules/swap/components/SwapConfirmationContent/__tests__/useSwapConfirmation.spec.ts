@@ -358,7 +358,7 @@ describe('useSwapConfirmation', () => {
 
         const { result } = renderConfirmation(quote)
 
-        expect(result.current.rateDisplay).toBe('-')
+        expect(result.current.rateDisplay).toBeNull()
     })
 
     it('formats the minimum received in the out asset', () => {

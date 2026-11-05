@@ -27,7 +27,7 @@ type SwapDetailsSectionProps = {
     quote: SwapQuote
     sourceChainId: ChainId
     receiveTarget: Nullable<SwapReceiveTarget>
-    rateDisplay: string
+    rateDisplay: Nullable<string>
     minimumReceivedDisplay: Nullable<string>
     peraFeeDisplay: Nullable<string>
     providerFeeDisplay: Nullable<string>
@@ -91,22 +91,24 @@ export const SwapDetailsSection = ({
                     </PWView>
                 </DetailRow>
             )}
-            <DetailRow label={t('swap.quote.rate')}>
-                <PWView style={styles.rateValueRow}>
-                    <PWText
-                        style={styles.detailValue}
-                        testID='swap-confirm-rate'
-                    >
-                        {rateDisplay}
-                    </PWText>
-                    <PWView style={styles.rateIcon}>
-                        <PWIcon
-                            name='swap'
-                            size='xs'
-                        />
+            {rateDisplay && (
+                <DetailRow label={t('swap.quote.rate')}>
+                    <PWView style={styles.rateValueRow}>
+                        <PWText
+                            style={styles.detailValue}
+                            testID='swap-confirm-rate'
+                        >
+                            {rateDisplay}
+                        </PWText>
+                        <PWView style={styles.rateIcon}>
+                            <PWIcon
+                                name='swap'
+                                size='xs'
+                            />
+                        </PWView>
                     </PWView>
-                </PWView>
-            </DetailRow>
+                </DetailRow>
+            )}
             <DetailRow label={t('swap.quote.provider')}>
                 <SwapProviderDisplay
                     provider={quote.provider}
