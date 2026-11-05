@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { useCollectibleMetadataQuery } from '@perawallet/wallet-core-assets'
 import {
     i18nKey,
     type TransactionRecord,
@@ -36,7 +36,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-assets')
     >()),
-    useSingleAssetDetailsQuery: vi.fn(),
+    useCollectibleMetadataQuery: vi.fn(),
+}))
+
+let mockHasNfts = true
+vi.mock('@hooks/useCapability', () => ({
+    useCapability: () => mockHasNfts,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -77,11 +82,18 @@ const recordOf = (
     ...overrides,
 })
 
-const serveAsset = (data: unknown, isPending = false) =>
-    vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
-        data,
-        isPending,
-    } as unknown as ReturnType<typeof useSingleAssetDetailsQuery>)
+const serveAsset = (asset: unknown) =>
+    vi.mocked(useCollectibleMetadataQuery).mockReturnValue({
+        data: asset ?? null,
+        isPending: false,
+    } as ReturnType<typeof useCollectibleMetadataQuery>)
+
+const shortenIds = () =>
+    vi
+        .mocked(truncateAlgorandAddress)
+        .mockImplementation(
+            value => `${value.slice(0, 5)}...${value.slice(-5)}`,
+        )
 
 const NURI = {
     assetId: ASSET_ID,
@@ -105,7 +117,9 @@ describe('useEthereumRecordNft', () => {
             integer: value.toFixed(0),
             fraction: '',
         }))
+        vi.mocked(truncateAlgorandAddress).mockImplementation(value => value)
         navigate.mockClear()
+        mockHasNfts = true
         serveAsset(undefined)
     })
 
@@ -114,7 +128,7 @@ describe('useEthereumRecordNft', () => {
 
         const { result } = renderHook(() => useEthereumRecordNft(recordOf()))
 
-        expect(vi.mocked(useSingleAssetDetailsQuery)).toHaveBeenCalledWith(
+        expect(vi.mocked(useCollectibleMetadataQuery)).toHaveBeenCalledWith(
             ASSET_ID,
             SCOPE,
         )
@@ -131,9 +145,7 @@ describe('useEthereumRecordNft', () => {
     })
 
     it('Given no metadata, then it reads by collection and the shortened token id, with no image', () => {
-        vi.mocked(truncateAlgorandAddress).mockImplementationOnce(
-            value => `${value.slice(0, 5)}...${value.slice(-5)}`,
-        )
+        shortenIds()
 
         const { result } = renderHook(() => useEthereumRecordNft(recordOf()))
 
@@ -146,9 +158,8 @@ describe('useEthereumRecordNft', () => {
     })
 
     it('Given no collection name anywhere, then the shortened contract stands in for it', () => {
-        vi.mocked(truncateAlgorandAddress).mockImplementation(
-            value => `${value.slice(0, 5)}...${value.slice(-5)}`,
-        )
+        shortenIds()
+
         const { result } = renderHook(() =>
             useEthereumRecordNft(
                 recordOf({
@@ -160,7 +171,6 @@ describe('useEthereumRecordNft', () => {
         expect(result.current.nft?.title).toContain(
             '"collection":"0x495...b7b5e"',
         )
-        vi.mocked(truncateAlgorandAddress).mockImplementation(value => value)
     })
 
     it('Given metadata, when the NFT is opened, then its detail screen opens on its own chain', () => {
@@ -176,6 +186,16 @@ describe('useEthereumRecordNft', () => {
                 params: { assetId: ASSET_ID, chainId: 'ethereum' },
             },
         })
+    })
+
+    it("Given the chain's NFTs are off, then a known NFT still reads by name but does not open", () => {
+        mockHasNfts = false
+        serveAsset(NURI)
+
+        const { result } = renderHook(() => useEthereumRecordNft(recordOf()))
+
+        expect(result.current.nft?.title).toBe('Nuri Launch #75')
+        expect(result.current.handleOpen).toBeUndefined()
     })
 
     it.each([
@@ -202,7 +222,7 @@ describe('useEthereumRecordNft', () => {
             )
 
             expect(result.current.nft).toBeUndefined()
-            expect(vi.mocked(useSingleAssetDetailsQuery)).toHaveBeenCalledWith(
+            expect(vi.mocked(useCollectibleMetadataQuery)).toHaveBeenCalledWith(
                 '',
                 SCOPE,
             )

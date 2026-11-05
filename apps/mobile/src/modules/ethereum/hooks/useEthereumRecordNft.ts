@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { useCollectibleMetadataQuery } from '@perawallet/wallet-core-assets'
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import {
     EVM_NFT_STANDARD_LABELS,
@@ -24,6 +24,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapability } from '@hooks/useCapability'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type EthereumRecordNft = {
@@ -42,13 +43,14 @@ export type EthereumRecordNft = {
 export type UseEthereumRecordNftResult = {
     /** Unset unless the record moves a single NFT. */
     nft: Optional<EthereumRecordNft>
-    /** Unset until the NFT's metadata is read, since its detail screen has nothing else to show. */
+    /** Unset without metadata, since the detail screen has nothing else to show, or while the chain's NFTs are off. */
     handleOpen: Optional<() => void>
 }
 
 /**
  * The metadata is the NFTs tab's: the Pera NFT service, never the node, so a
- * page that makes no node read of its own still makes none.
+ * page that makes no node read of its own still makes none. An NFT the service
+ * doesn't know reads by its collection and token id.
  */
 export const useEthereumRecordNft = (
     record: TransactionRecord,
@@ -65,10 +67,13 @@ export const useEthereumRecordNft = (
         () => (assetId ? parseEvmNftAssetId(assetId) : null),
         [assetId],
     )
-    const { data: asset } = useSingleAssetDetailsQuery(
+    const { data: asset } = useCollectibleMetadataQuery(
         parsed && assetId ? assetId : '',
         scope,
     )
+    const hasNfts = useCapability({
+        chain: { chainId: scope.chainId, capability: 'nft' },
+    })
 
     const nft = useMemo((): Optional<EthereumRecordNft> => {
         if (!facts || !assetId || !parsed || !summary.amount) return undefined
@@ -118,5 +123,8 @@ export const useEthereumRecordNft = (
         })
     }, [navigation, assetId, scope.chainId])
 
-    return { nft, handleOpen: nft && asset ? handleOpen : undefined }
+    return {
+        nft,
+        handleOpen: nft && asset && hasNfts ? handleOpen : undefined,
+    }
 }
