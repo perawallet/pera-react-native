@@ -83,7 +83,14 @@ export type SwapExecutionOutcome =
       }
 
 type UseSwapExecutionResult = {
-    execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
+    /**
+     * `prepareDestination` runs before the order exists; false, or a cancel
+     * while it runs, abandons the swap with nothing created.
+     */
+    execute: (
+        quote: SwapQuote,
+        prepareDestination?: () => Promise<boolean>,
+    ) => Promise<SwapExecutionOutcome>
     /**
      * Abandons an execution that has not committed yet: effective while
      * `preparing` (checked after the balance preflight and after the prepare
@@ -205,10 +212,36 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     )
 
     const execute = useCallback(
-        async (quote: SwapQuote): Promise<SwapExecutionOutcome> => {
+        async (
+            quote: SwapQuote,
+            prepareDestination?: () => Promise<boolean>,
+        ): Promise<SwapExecutionOutcome> => {
             setError(null)
             setTxIds([])
             cancelRequestedRef.current = false
+
+            if (prepareDestination) {
+                setStatus('preparing')
+                let isPrepared: boolean
+                try {
+                    isPrepared = await prepareDestination()
+                } catch (error) {
+                    const { message, title } = describeFailure({
+                        phase: 'prepare',
+                        reason: 'prepare-failed',
+                        error,
+                    })
+                    setStatus('error')
+                    setError({ phase: 'prepare', message })
+                    return title === undefined
+                        ? { kind: 'error', phase: 'prepare', message }
+                        : { kind: 'error', phase: 'prepare', message, title }
+                }
+                if (!isPrepared || cancelRequestedRef.current) {
+                    setStatus('idle')
+                    return { kind: 'cancelled' }
+                }
+            }
 
             let result: ExecuteSwapResult
             try {

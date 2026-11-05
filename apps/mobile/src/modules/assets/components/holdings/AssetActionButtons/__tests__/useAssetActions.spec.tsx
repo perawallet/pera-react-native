@@ -12,7 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { useSwapSourceScope } from '@perawallet/wallet-core-swaps'
 import { useAssetActions } from '../useAssetActions'
 
 const mocks = vi.hoisted(() => ({
@@ -57,6 +58,8 @@ vi.mock('@modules/transactions/routes', () => ({
 }))
 
 const asset = { assetId: '31566704' } as PeraAsset
+const ETHEREUM_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const NATIVE_ETH = nativeAssetFor('ethereum').assetId
 
 describe('useAssetActions', () => {
     beforeEach(() => {
@@ -95,5 +98,44 @@ describe('useAssetActions', () => {
             'TabBar',
             expect.objectContaining({ screen: 'Swap' }),
         )
+    })
+
+    it('opens swap plain for the native asset of the chain it would use', () => {
+        vi.mocked(useSwapSourceScope).mockReturnValueOnce(ETHEREUM_SCOPE)
+        const { result } = renderHook(() =>
+            useAssetActions({
+                asset: { assetId: NATIVE_ETH },
+                chainId: 'ethereum',
+                account: null,
+            } as unknown as Parameters<typeof useAssetActions>[0]),
+        )
+
+        act(() => result.current.handleSwap())
+
+        expect(mocks.replace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: undefined,
+        })
+    })
+
+    it("pins swap to the asset's chain for a native asset off the default", () => {
+        vi.mocked(useSwapSourceScope).mockReturnValueOnce({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
+        const { result } = renderHook(() =>
+            useAssetActions({
+                asset: { assetId: NATIVE_ETH },
+                chainId: 'ethereum',
+                account: null,
+            } as unknown as Parameters<typeof useAssetActions>[0]),
+        )
+
+        act(() => result.current.handleSwap())
+
+        expect(mocks.replace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: { assetIn: { chainId: 'ethereum', assetId: NATIVE_ETH } },
+        })
     })
 })

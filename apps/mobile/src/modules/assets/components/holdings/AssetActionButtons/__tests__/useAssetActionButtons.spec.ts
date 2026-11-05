@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@test-utils/render'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
@@ -29,8 +30,8 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         typeof import('@perawallet/wallet-core-accounts')
     >('@perawallet/wallet-core-accounts')
     return {
-        useSwapScope: (account: WalletAccount | null) =>
-            useAccountCapabilityScope(account, 'swap'),
+        useSwapScope: (account: WalletAccount | null, chainId?: ChainId) =>
+            useAccountCapabilityScope(account, 'swap', chainId),
     }
 })
 
@@ -92,7 +93,7 @@ describe('useAssetActionButtons', () => {
         },
     )
 
-    it("offers neither swap nor buy on an asset off the account's swap and onramp chain, but sends on the asset's chain", () => {
+    it("swaps and sends on the asset's own chain, and buys only on an onramp chain", () => {
         const { result } = renderHook(() =>
             useAssetActionButtons(
                 {
@@ -107,7 +108,7 @@ describe('useAssetActionButtons', () => {
         )
 
         expect(result.current).toEqual({
-            canSwap: false,
+            canSwap: true,
             canBuy: false,
             canSend: true,
             canReceive: true,
@@ -141,9 +142,19 @@ describe('useAssetActionButtons', () => {
         expect(result.current.canReceive).toBe(false)
     })
 
-    it('drops swap for an account with no address on a swap chain', () => {
+    it('drops swap on a chain whose swap capability is off', () => {
+        setCapabilityOverrides({ swap: false }, 'ethereum')
+
         const { result } = renderHook(() =>
             useAssetActionButtons(onEthereumOnly, 'ethereum'),
+        )
+
+        expect(result.current.canSwap).toBe(false)
+    })
+
+    it('drops swap for an account with no address on the asset chain', () => {
+        const { result } = renderHook(() =>
+            useAssetActionButtons(account, 'ethereum'),
         )
 
         expect(result.current.canSwap).toBe(false)

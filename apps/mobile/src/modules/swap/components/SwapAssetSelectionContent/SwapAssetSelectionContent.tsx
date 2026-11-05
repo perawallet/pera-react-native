@@ -94,6 +94,7 @@ export const SwapAssetSelectionContent = (
                     />
                 ) : (
                     <AccountAssetSelectionList
+                        chainId={scope.chainId}
                         onAssetSelected={handleAssetSelected}
                         isVisible
                         excludeAssetId={excludeAssetId}

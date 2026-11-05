@@ -3967,7 +3967,8 @@
             "to": "Para",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Selecionar"
+            "select_asset": "Selecionar",
+            "pay_from": "Pagar com"
         },
         "asset_selection": {
             "swap_from_title": "Converter de",
@@ -3997,6 +3998,9 @@
             "price_impact": "Impacto no preço",
             "slippage_tolerance": "Tolerância de slippage",
             "pera_fee": "Taxa da Pera",
+            "network_fee": "Taxa de rede",
+            "spend_approval_note": "Primeiro você vai assinar uma aprovação para o valor desta conversão e, depois, a conversão.",
+            "insufficient_network_fee": "{{symbol}} insuficiente para pagar a taxa de rede.",
             "provider": "Provedor",
             "minimum_received": "Mínimo recebido",
             "confirm_swap": "Confirmar conversão",

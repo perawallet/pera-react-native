@@ -20,7 +20,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapSourceCostQuery,
+    type SwapQuote,
+    type SwapSourceCost,
+} from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../../hooks/useSwapExecution'
 import { useSwapConfirmation } from '../useSwapConfirmation'
 
@@ -63,6 +67,20 @@ const ASSETS: Record<string, { assetId: string; name: string }> = {
     '31566704': { assetId: '31566704', name: 'USD Coin' },
 }
 
+const SOURCE_COST: SwapSourceCost = {
+    networkFee: new Decimal(10).pow(15),
+    shortfall: null,
+    needsSpendApproval: false,
+    nativeSymbol: 'ETH',
+    nativeDecimals: 18,
+}
+
+const mockSourceCost = (sourceCost: SwapSourceCost | null) =>
+    vi.mocked(useSwapSourceCostQuery).mockReturnValue({
+        sourceCost,
+        isLoading: false,
+    })
+
 const makeQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote =>
     ({
         assetIn: ALGO,
@@ -74,7 +92,7 @@ const makeQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote =>
     }) as unknown as SwapQuote
 
 const renderConfirmation = (
-    quote: SwapQuote | null,
+    quote: SwapQuote,
     swapStatus: SwapExecutionStatus = 'idle',
 ) => renderHook(() => useSwapConfirmation({ scope: SCOPE, quote, swapStatus }))
 
@@ -91,11 +109,53 @@ describe('useSwapConfirmation', () => {
             data: new Map(ids.map(id => [id, ASSETS[id]])),
         }))
         mockCurrency(usd => usd.mul(2))
+        mockSourceCost(null)
         vi.mocked(formatNumber).mockReturnValue({
             sign: '',
             integer: '0',
             fraction: '.25',
         } as unknown as ReturnType<typeof formatNumber>)
+    })
+
+    describe('source cost', () => {
+        it('shows no fee and blocks nothing with no estimate', () => {
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current).toMatchObject({
+                networkFeeDisplay: null,
+                needsSpendApproval: false,
+                insufficientFeeMessage: null,
+            })
+        })
+
+        it('shows the network fee in the native asset', () => {
+            mockSourceCost(SOURCE_COST)
+
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.networkFeeDisplay).toBe(
+                `${SOURCE_COST.networkFee.toString()} ETH`,
+            )
+            expect(result.current.insufficientFeeMessage).toBeNull()
+        })
+
+        it('passes the spend approval on', () => {
+            mockSourceCost({ ...SOURCE_COST, needsSpendApproval: true })
+
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.needsSpendApproval).toBe(true)
+        })
+
+        it('names the shortfall so confirmation can stay off', () => {
+            mockSourceCost({ ...SOURCE_COST, shortfall: new Decimal(1) })
+
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.insufficientFeeMessage).toBe(
+                'swap.quote.insufficient_network_fee',
+            )
+        })
     })
 
     describe('receiveTarget', () => {
@@ -188,27 +248,6 @@ describe('useSwapConfirmation', () => {
         expect(result.current.outAsset).toBe(ASSETS['31566704'])
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(SCOPE, ['0'])
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(SCOPE, ['31566704'])
-    })
-
-    it('shows placeholders and queries no assets without a quote', () => {
-        const { result } = renderConfirmation(null)
-
-        expect(mockUseAssetsQuery).toHaveBeenCalledWith(SCOPE, [])
-        expect(result.current).toMatchObject({
-            inAsset: undefined,
-            outAsset: undefined,
-            payDisplay: '-',
-            receiveDisplay: '-',
-            payFiatValue: null,
-            receiveFiatValue: null,
-            rateDisplay: '-',
-            minimumReceivedDisplay: '-',
-            peraFeeDisplay: '-',
-            slippageDisplay: '-',
-            hasHighPriceImpact: false,
-            priceImpactDisplay: '-',
-            priceImpactStyle: STYLES.detailValue,
-        })
     })
 
     it('leaves the assets unresolved while the asset query has no data', () => {

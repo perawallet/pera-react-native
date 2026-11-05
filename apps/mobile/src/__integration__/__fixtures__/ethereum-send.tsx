@@ -89,6 +89,18 @@ export const SENDER_SIGNATURES: Record<string, string> = {
     // 12.5 UNLISTED_TOKEN to RECEIVER.
     d2f6cb427a35898a0965f278a65436e253f267b5df29927c082e2186ba2e653e:
         '4071153ceceaca69fc10b43e29eadd4e52d19d00c7df7591ceb2899a92ccbb0139554e73077ad2618491ad51afd419bfe56eb9fba126f59778b40761941a9ce500',
+    // swap-ethereum.spec's spend approval of 12.5 TOKEN to its router.
+    '03f630dd8a2d4b52b6e46e2df5a75573c6b2d760067fd1c019fcb1c1a5eb2298':
+        '2194433408a452c3a9efab5716f094198696e2e75ee94d4eca75d2354252a5f100a4f58b71b84ed3cd121583186161f17be30bad2db098471bb833b07924596c01',
+    // Its token swap with nonce 0, where the allowance already covers it.
+    '393659e2ba4d154e1c9e10368f32ae57938d5ced24fa48a954dadb521195cbe5':
+        '0459c870a914336d91357bce04fbf9256a728f726526acb8ca85391a73caea3c753cd20dd356510f40b59364f9b1b98aaf82ab2b900c42b7abb13880b74273cf00',
+    // Its ether swap.
+    '985de06a9bb64b1bc972ef1568dfb135eac9410fa148ea272b8a97f59979e5c7':
+        '057e0d329eff2cc09432512751deeb6a916c4cf0a36143b3996e995b3c398a7e692c2fed477d3f967cfc0a030d99f0770988d93c6d0bd832eb9bd45eb412b35c01',
+    // Its token swap with nonce 1, after that approval.
+    '145988f3f10f6fac76917939006b17d3460372b96d47350ba72e69f4dd2dcc68':
+        'a7240ade3fd0663e4a0dc33976a0a99576f7c64e686ecfd2f2da62e193188409468137b6c8a7ec9887de6c02770043de07f754c7b5ad17de62364e12e36366e901',
 }
 
 export const signWithSenderKey = async (

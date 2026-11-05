@@ -27,6 +27,7 @@ type SwapDetailsSectionProps = {
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
+    networkFeeDisplay: Nullable<string>
     slippageDisplay: string
     priceImpactDisplay: string
     priceImpactStyle: object
@@ -38,6 +39,7 @@ export const SwapDetailsSection = ({
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
+    networkFeeDisplay,
     slippageDisplay,
     priceImpactDisplay,
     priceImpactStyle,
@@ -116,6 +118,14 @@ export const SwapDetailsSection = ({
                 value={peraFeeDisplay}
                 valueStyle={styles.detailValue}
             />
+            {networkFeeDisplay && (
+                <DetailRow
+                    label={t('swap.quote.network_fee')}
+                    testID='swap-confirm-network-fee'
+                    value={networkFeeDisplay}
+                    valueStyle={styles.detailValue}
+                />
+            )}
         </PWView>
     )
 }

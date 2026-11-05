@@ -279,7 +279,7 @@ describe('Flow: Account list with Ethereum registered', () => {
         ).toBeTruthy()
     })
 
-    it('Given an Ethereum account is opened, when its actions render, then it offers send and receive but no Algorand-only action', () => {
+    it('Given an Ethereum account is opened, when its actions render, then it offers send, receive and swap', () => {
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
@@ -303,6 +303,6 @@ describe('Flow: Account list with Ethereum registered', () => {
 
         expect(screen.getByTestId('receive_button')).toBeTruthy()
         expect(screen.getByTestId('send_button')).toBeTruthy()
-        expect(screen.queryByTestId('swap_button')).toBeNull()
+        expect(screen.getByTestId('swap_button')).toBeTruthy()
     })
 })

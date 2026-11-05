@@ -37,6 +37,28 @@ const USDC = {
     assetId: '31566704',
 } as const
 
+/** An order whose one step carries `transactions` on Ethereum mainnet. */
+export const mockEthereumSwapOrder = (transactions: string[]): void => {
+    server.use(
+        mockCreateSwapOrder({
+            response: {
+                order_id: SWAP_ORDER_ID,
+                status: 'pending',
+                expires_at: null,
+                steps: [
+                    {
+                        kind: 'sign_transactions',
+                        chain: 'eip155:1',
+                        purpose: 'swap',
+                        transactions,
+                        signed_transactions: transactions.map(() => null),
+                    },
+                ],
+            },
+        }),
+    )
+}
+
 /** A fresh ALGO → USDC quote for `sourceAmount` microAlgos. */
 export const buildRouterSwapQuote = (
     swapperAddress: string,

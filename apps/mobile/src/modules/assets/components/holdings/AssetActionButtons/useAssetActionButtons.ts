@@ -31,16 +31,14 @@ export const useAssetActionButtons = (
     account: Maybe<WalletAccount>,
     chainId: ChainId,
 ): UseAssetActionButtonsResult => {
-    // The account's scope can resolve to another of its chains; the action
-    // only belongs on this screen when it runs on the asset's own chain.
-    const swapChainId = useSwapScope(account ?? null)?.chainId
+    const canSwapOnChain = useSwapScope(account ?? null, chainId) !== null
     const onrampChainId = useOnrampScope(account?.chains ?? null)?.chainId
     // A send runs on the asset's chain, whichever of the account's chains that is.
     const canSendOnChain = useChainCapability(chainId, 'send')
     const canReceiveOnChain = useChainCapability(chainId, 'receive')
     const isOnChain = !account || chainAccountOf(account, chainId) !== undefined
     return {
-        canSwap: swapChainId === chainId,
+        canSwap: canSwapOnChain,
         canBuy: onrampChainId === chainId,
         canSend: canSendOnChain && isOnChain,
         canReceive: canReceiveOnChain && isOnChain,

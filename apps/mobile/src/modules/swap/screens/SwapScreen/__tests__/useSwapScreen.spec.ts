@@ -23,6 +23,7 @@ const {
     routeParams,
     mockSetFromAsset,
     mockSetToAsset,
+    mockSetSourceChainId,
     mockSetSelectedAccountId,
     mockRequestBottomSheet,
     mockPushWebView,
@@ -32,6 +33,7 @@ const {
     routeParams: { current: undefined as Record<string, unknown> | undefined },
     mockSetFromAsset: vi.fn(),
     mockSetToAsset: vi.fn(),
+    mockSetSourceChainId: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     mockPushWebView: vi.fn(),
@@ -53,13 +55,15 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         selector: (store: {
             setFromAsset: typeof mockSetFromAsset
             setToAsset: typeof mockSetToAsset
+            setSourceChainId: typeof mockSetSourceChainId
         }) => unknown,
     ) =>
         selector({
             setFromAsset: mockSetFromAsset,
             setToAsset: mockSetToAsset,
+            setSourceChainId: mockSetSourceChainId,
         }),
-    useSwapScope: (account: Account | null) =>
+    useSwapSourceScope: (account: Account | null) =>
         account && state.swapChainAccounts.has(account.id) ? SCOPE : null,
     useSwapSigningAccounts: () => state.signers,
 }))
@@ -121,6 +125,26 @@ describe('useSwapScreen', () => {
         const { result } = renderHook(() => useSwapScreen())
 
         expect(result.current.scope).toEqual(SCOPE)
+    })
+
+    it('pins the source chain to the route asset, before seeding the pair', () => {
+        routeParams.current = {
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
+        }
+
+        renderHook(() => useSwapScreen())
+
+        expect(mockSetSourceChainId).toHaveBeenCalledWith('algorand')
+        expect(mockSetSourceChainId.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSetFromAsset.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('leaves the source chain alone for an ordinary visit', () => {
+        renderHook(() => useSwapScreen())
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
     })
 
     it('has no scope when the selected account is on no swap chain', () => {

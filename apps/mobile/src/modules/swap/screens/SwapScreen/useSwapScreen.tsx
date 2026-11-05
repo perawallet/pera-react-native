@@ -14,8 +14,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
 import {
-    useSwapScope,
     useSwapSigningAccounts,
+    useSwapSourceScope,
     useSwapsStore,
 } from '@perawallet/wallet-core-swaps'
 import {
@@ -36,7 +36,10 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapIntroductionContent } from '@modules/swap/components'
 import { config } from '@perawallet/wallet-core-config'
 import type { SwapFormInitialPayAmount } from '@modules/swap/components/SwapForm/useSwapForm'
-import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
+import {
+    resolveSwapRouteAssets,
+    routeAssetInIdOn,
+} from './resolveSwapRouteAssets'
 
 export type UseSwapScreenResult = {
     /** Null when the selected account is on no chain that has swap. */
@@ -51,16 +54,27 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
+    const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
     const selectedAccount = useSelectedAccount()
-    const scope = useSwapScope(selectedAccount)
+    const scope = useSwapSourceScope(selectedAccount)
     const signingAccounts = useSwapSigningAccounts()
     const accountPicker = useAccountListPicker(signingAccounts)
     const { setSelectedAccountId } = useSelectedAccountId()
 
+    // Before the seeding effects: a chain change clears the pair they write.
+    const routeSourceChainId = route.params?.assetIn?.chainId
+    useEffect(() => {
+        if (routeSourceChainId) setSourceChainId(routeSourceChainId)
+    }, [routeSourceChainId, setSourceChainId])
+
     const resolvedAssets = scope
         ? resolveSwapRouteAssets(route.params, scope)
         : null
-    const assetInId = resolvedAssets?.assetInId
+    // A chain with no known default output still opens on the route's input,
+    // and the form pairs it with the chain's own receive asset.
+    const assetInId =
+        resolvedAssets?.assetInId ??
+        (scope ? routeAssetInIdOn(route.params, scope) : undefined)
     const assetOutId = resolvedAssets?.assetOutId
 
     useSeedSwapRouteAssets({ assetInId, assetOutId, scope })
@@ -76,10 +90,10 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     }, [selectedAccount, signingAccounts, setSelectedAccountId])
 
     useEffect(() => {
-        if (!assetInId || !assetOutId) return
+        if (!assetInId) return
 
         setFromAsset(assetInId)
-        setToAsset(assetOutId)
+        if (assetOutId) setToAsset(assetOutId)
     }, [assetInId, assetOutId, setFromAsset, setToAsset])
 
     const payAmount = route.params?.payAmount

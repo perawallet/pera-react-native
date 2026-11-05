@@ -28,6 +28,7 @@ import React, { useEffect, useRef } from 'react'
 import { renderHook } from '@testing-library/react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
+import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 
 import { server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
@@ -231,7 +232,11 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         registerEthereumAccountsAdapter()
         if (!swapChainAdapters.has('ethereum')) {
             swapChainAdapters.register(
-                createEvmSwapAdapter(evmChainOf('ethereum')),
+                // Only ever the payout side here, so it reads no node.
+                createEvmSwapAdapter(
+                    {} as ChainContext,
+                    evmChainOf('ethereum'),
+                ),
             )
         }
         await resetTestDatabase()

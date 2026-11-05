@@ -3945,7 +3945,8 @@
             "to": "Vers",
             "balance_label": "Solde : <0/>",
             "max": "MAX",
-            "select_asset": "Choisir"
+            "select_asset": "Choisir",
+            "pay_from": "Payer depuis"
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",
@@ -3975,6 +3976,9 @@
             "price_impact": "Impact sur le prix",
             "slippage_tolerance": "Tolérance de slippage",
             "pera_fee": "Frais Pera",
+            "network_fee": "Frais de réseau",
+            "spend_approval_note": "Vous signerez d’abord une autorisation pour le montant de ce swap, puis le swap.",
+            "insufficient_network_fee": "Pas assez de {{symbol}} pour payer les frais de réseau.",
             "provider": "Fournisseur",
             "minimum_received": "Minimum reçu",
             "confirm_swap": "Confirmer le swap",

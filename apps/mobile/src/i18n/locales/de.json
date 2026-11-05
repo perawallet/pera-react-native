@@ -3937,7 +3937,8 @@
             "to": "An",
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
-            "select_asset": "Auswählen"
+            "select_asset": "Auswählen",
+            "pay_from": "Bezahlen von"
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",
@@ -3967,6 +3968,9 @@
             "price_impact": "Preisauswirkung",
             "slippage_tolerance": "Slippage-Toleranz",
             "pera_fee": "Pera-Gebühr",
+            "network_fee": "Netzwerkgebühr",
+            "spend_approval_note": "Du signierst zuerst eine Freigabe für den Betrag dieses Tauschs und danach den Tausch selbst.",
+            "insufficient_network_fee": "Nicht genug {{symbol}}, um die Netzwerkgebühr zu bezahlen.",
             "provider": "Anbieter",
             "minimum_received": "Mindestbetrag erhalten",
             "confirm_swap": "Tausch bestätigen",

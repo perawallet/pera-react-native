@@ -31,10 +31,15 @@ const mockSuccessToast = vi.fn()
 
 // Captured so a test can run the cleanup React Navigation would run on blur.
 let focusEffectCleanup: Nullable<() => void> = null
+let mockIsFocused = false
 vi.mock('@react-navigation/native', () => ({
     useFocusEffect: (effect: () => () => void) => {
         focusEffectCleanup = effect()
     },
+}))
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({ isFocused: () => mockIsFocused }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -290,6 +295,7 @@ describe('useSwapForm', () => {
         mockIsPayBalanceFetched = true
         mockIsPayBalanceError = false
         focusEffectCleanup = null
+        mockIsFocused = false
         mockReceiveTarget = sameScopeTarget()
     })
 
@@ -840,6 +846,17 @@ describe('useSwapForm', () => {
 
         expect(result.current.payAmount).toBeNull()
         expect(mockResetAssetPair).toHaveBeenCalled()
+    })
+
+    it('keeps the pair when the form unmounts while its screen stays focused', () => {
+        mockIsFocused = true
+        renderHook(() => useSwapForm(SCOPE))
+
+        act(() => {
+            focusEffectCleanup?.()
+        })
+
+        expect(mockResetAssetPair).not.toHaveBeenCalled()
     })
 
     it('tells the user why MAX produced nothing when the account holds no pay asset', async () => {

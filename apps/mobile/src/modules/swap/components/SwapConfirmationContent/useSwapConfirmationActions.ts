@@ -27,7 +27,9 @@ import {
 } from '@analytics'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
+    scopeOfSwapAsset,
     swapFeeOf,
+    useEnsureSwapDestination,
     useSwapHistoryInvalidator,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
@@ -82,6 +84,8 @@ export const useSwapConfirmationActions = ({
     const inFlightRef = useRef(false)
     const { t } = useLanguage()
     const { infoToast } = useToast()
+    const destinationScope = scopeOfSwapAsset(quote.request.destinationAsset)
+    const { ensureReceivable } = useEnsureSwapDestination(destinationScope)
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
     const handleSlideConfirm = useCallback(async () => {
@@ -91,7 +95,18 @@ export const useSwapConfirmationActions = ({
         })
         inFlightRef.current = true
         try {
-            const outcome = await execute(quote)
+            // A same-chain payout is readied by the source chain's own order
+            // steps; only another chain needs it done here.
+            const outcome =
+                quote.routeKind === 'cross-chain'
+                    ? await execute(quote, () =>
+                          ensureReceivable({
+                              address: quote.request.destinationAddress,
+                              scope: destinationScope,
+                              assetId: quote.assetOut.assetId,
+                          }),
+                      )
+                    : await execute(quote)
             if (outcome.kind === 'success') {
                 // The pair chips and the "see all" list are both derived from
                 // the account's swap record, which this swap just changed.
@@ -157,6 +172,8 @@ export const useSwapConfirmationActions = ({
         scope,
         quote,
         execute,
+        ensureReceivable,
+        destinationScope,
         successCloseTimer,
         resolve,
         t,
