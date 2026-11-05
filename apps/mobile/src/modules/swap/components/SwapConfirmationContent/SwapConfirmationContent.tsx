@@ -71,6 +71,7 @@ export const SwapConfirmationContent = ({
         networkFeeDisplay,
         needsSpendApproval,
         insufficientFeeMessage,
+        isConfirmDisabled,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
@@ -191,7 +192,7 @@ export const SwapConfirmationContent = ({
                     title={t('swap.quote.slide_to_confirm')}
                     onConfirm={() => void handleSlideConfirm()}
                     isLoading={isProcessing}
-                    isDisabled={insufficientFeeMessage !== null}
+                    isDisabled={isConfirmDisabled}
                     isConfirmed={swapStatus === 'success'}
                     style={CONFIRM_ACTION_LAYOUT}
                     testID='swap-confirm-slide'

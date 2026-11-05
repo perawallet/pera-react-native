@@ -74,8 +74,9 @@ type UseSwapConfirmationResult = {
     /** Null when the source chain charges nothing here or the read failed. */
     networkFeeDisplay: Nullable<string>
     needsSpendApproval: boolean
-    /** Non-null while the account can't pay the source chain's fee: confirm stays off. */
+    /** Non-null while the account may not cover the source chain's fee ceiling. */
     insufficientFeeMessage: Nullable<string>
+    isConfirmDisabled: boolean
     slippageDisplay: string
     hasHighPriceImpact: boolean
     priceImpactDisplay: string
@@ -182,11 +183,19 @@ export const useSwapConfirmation = ({
         })
     }, [sourceCost])
 
+    const needsSpendApproval = sourceCost?.needsSpendApproval ?? false
+    const hasFeeShortfall = !!sourceCost?.shortfall
     const insufficientFeeMessage = sourceCost?.shortfall
-        ? t('swap.quote.insufficient_network_fee', {
-              symbol: sourceCost.nativeSymbol,
-          })
+        ? t(
+              needsSpendApproval
+                  ? 'swap.quote.insufficient_network_fee'
+                  : 'swap.quote.possible_insufficient_network_fee',
+              { symbol: sourceCost.nativeSymbol },
+          )
         : null
+    // The shortfall is against a ceiling, and execution checks the real cost
+    // before each signature. Only an approval spends gas before the swap's check.
+    const isConfirmDisabled = hasFeeShortfall && needsSpendApproval
 
     const slippageDisplay = useMemo(() => formatSwapSlippage(quote), [quote])
 
@@ -227,8 +236,9 @@ export const useSwapConfirmation = ({
         minimumReceivedDisplay,
         peraFeeDisplay,
         networkFeeDisplay,
-        needsSpendApproval: sourceCost?.needsSpendApproval ?? false,
+        needsSpendApproval,
         insufficientFeeMessage,
+        isConfirmDisabled,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,

@@ -3979,6 +3979,7 @@
             "network_fee": "Ağ ücreti",
             "spend_approval_note": "Önce bu swap tutarı için bir onay, ardından swap işlemini imzalayacaksın.",
             "insufficient_network_fee": "Ağ ücretini ödemek için yeterli {{symbol}} yok.",
+            "possible_insufficient_network_fee": "Ağ ücretini ödemek için yeterli {{symbol}} olmayabilir.",
             "provider": "Sağlayıcı",
             "minimum_received": "Minimum alınacak miktar",
             "confirm_swap": "Swap’ı onayla",

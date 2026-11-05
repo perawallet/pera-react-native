@@ -412,7 +412,7 @@ const openConfirmation = async () => {
         mockCreateSwapQuotes({ response: { results: [tokenToEtherOffer] } }),
     )
     mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
-    spyOnSwapSubmissionAndReports()
+    const { reports } = spyOnSwapSubmissionAndReports()
     renderWithNavigation(SwapFormHost, 'SwapFormHost')
     await waitFor(() => expect(host).not.toBeNull())
 
@@ -420,6 +420,7 @@ const openConfirmation = async () => {
         target: { value: '12.5' },
     })
     fireEvent.click(await findEnabledByTestId('swap-button', FORM_TIMEOUT))
+    return { reports }
 }
 
 describe('Flow: Swap from an Ethereum account', () => {
@@ -507,7 +508,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         )
     })
 
-    it('Given too little ether for the network fee, when the confirmation opens, then it says so and cannot be confirmed', async () => {
+    it('Given too little ether for the network fee and an approval to sign, when the confirmation opens, then it says so and cannot be confirmed', async () => {
         fakeNode(0n, '0x1')
         await openConfirmation()
 
@@ -521,6 +522,27 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(
             isElementDisabled(screen.getByTestId('swap-confirm-slide')),
         ).toBe(true)
+    })
+
+    it('Given too little ether for the network fee and no approval to sign, when the user confirms anyway, then nothing is signed and the order is cancelled', async () => {
+        const sent = fakeNode(TOKEN_UNITS, '0x1')
+        const { reports } = await openConfirmation()
+
+        await screen.findByTestId(
+            'swap-confirm-insufficient-fee',
+            undefined,
+            FORM_TIMEOUT,
+        )
+        fireEvent.click(
+            await findEnabledByTestId('swap-confirm-slide', FORM_TIMEOUT),
+        )
+
+        await waitFor(
+            () => expect(reports).toEqual([{ status: 'cancelled' }]),
+            FORM_TIMEOUT,
+        )
+        expect(sent).toEqual([])
+        expect(kmsCore.sign).not.toHaveBeenCalled()
     })
 
     it('Given an account on two chains, when it picks Ethereum on the swap screen, then the form stays on Ethereum', async () => {

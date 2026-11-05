@@ -3979,6 +3979,7 @@
             "network_fee": "Frais de réseau",
             "spend_approval_note": "Vous signerez d’abord une autorisation pour le montant de ce swap, puis le swap.",
             "insufficient_network_fee": "Pas assez de {{symbol}} pour payer les frais de réseau.",
+            "possible_insufficient_network_fee": "Vous n'avez peut-être pas assez de {{symbol}} pour payer les frais de réseau.",
             "provider": "Fournisseur",
             "minimum_received": "Minimum reçu",
             "confirm_swap": "Confirmer le swap",

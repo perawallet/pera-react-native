@@ -341,14 +341,17 @@ const preflightShortfall = async (
     { scope }: SwapExecutionContext,
 ): Promise<ReturnType<typeof evmShortfallOf>> => {
     try {
-        const { shortfall } = await estimateEvmSwapSourceCost({
-            client,
-            chain,
-            quote,
-            scope,
-            routeContracts,
-        })
-        return shortfall
+        const { shortfall, needsSpendApproval } =
+            await estimateEvmSwapSourceCost({
+                client,
+                chain,
+                quote,
+                scope,
+                routeContracts,
+            })
+        // Only against a ceiling here; without an approval to pay for first,
+        // the real cost is checked before anything is signed.
+        return needsSpendApproval ? shortfall : null
     } catch (error) {
         // Advisory: the node still refuses what the account can't pay.
         logger.warn('[swap] balance preflight lookup failed', {

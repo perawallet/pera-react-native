@@ -108,9 +108,10 @@ const assertApproval = (
 }
 
 /**
- * Throws {@link SwapQuoteMismatchError} unless `calls` do no more than
- * `request` asked: the same chain, only the route's contracts, at most an
- * approval of the source token for this amount, then the swap, last.
+ * Throws {@link SwapQuoteMismatchError} unless `calls` keep to `request`'s
+ * shape: the same chain, only the route's contracts, at most an approval of the
+ * source token for this amount, then the swap, last. The swap's calldata stays
+ * unread, so its recipient, input amount and minimum output are the backend's.
  */
 export const validateEvmSwapTransactions = ({
     calls,
