@@ -3647,6 +3647,13 @@
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
+            "function": "Fonksiyon",
+            "arguments": "Argümanlar",
+            "argument_index": "Argüman {{index}}",
+            "implementation": "Uygulama sözleşmesi",
+            "verified_source": "Ad, sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "verified_source_proxy": "Bu sözleşme bir proxy. Ad, yönlendirdiği sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "lookup_failed": "Pera bu sözleşmenin fonksiyon adını sorgulayamadı.",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },

@@ -24,4 +24,7 @@ export const useStyles = makeStyles(theme => ({
     callDataText: {
         flex: 1,
     },
+    caption: {
+        color: theme.colors.textGray,
+    },
 }))

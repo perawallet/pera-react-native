@@ -3647,6 +3647,13 @@
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
             "call_data": "Call Data",
+            "function": "Function",
+            "arguments": "Arguments",
+            "argument_index": "Argument {{index}}",
+            "implementation": "Implementation",
+            "verified_source": "Named from the contract's verified source code.",
+            "verified_source_proxy": "This contract is a proxy. Named from the verified source code of the contract it forwards to.",
+            "lookup_failed": "Pera couldn't look up this contract's function name.",
             "unchecked_warning": "Pera couldn't check what this transaction does. Only continue if you trust {{domain}}.",
             "unchecked_warning_no_source": "Pera couldn't check what this transaction does. Only continue if you trust the app that sent it."
         },
