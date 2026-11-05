@@ -14,7 +14,6 @@ import { PWText, PWView } from '@components/core'
 import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { ChainIconStack } from '@modules/chain-ui/icon'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
 
@@ -28,7 +27,6 @@ export const NameAccountScreen = () => {
         handleFinish,
         previewName,
         account,
-        enabledChainIds,
         nameError,
         isFinishDisabled,
     } = useNameAccountScreen()
@@ -48,20 +46,13 @@ export const NameAccountScreen = () => {
         >
             <PWView style={styles.walletNameContainer}>
                 <AccountIcon account={account} />
-                <PWView style={styles.walletNameDetails}>
-                    <PWText
-                        variant='h4'
-                        style={styles.nameText}
-                        truncate
-                    >
-                        {previewName}
-                    </PWText>
-                    {enabledChainIds.length > 0 && (
-                        <PWView testID='name_account_chain_icons'>
-                            <ChainIconStack chainIds={enabledChainIds} />
-                        </PWView>
-                    )}
-                </PWView>
+                <PWText
+                    variant='h4'
+                    style={styles.nameText}
+                    truncate
+                >
+                    {previewName}
+                </PWText>
             </PWView>
         </NameAccountForm>
     )

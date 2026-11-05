@@ -22,11 +22,8 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.sm,
     },
-    walletNameDetails: {
-        flex: 1,
-        gap: theme.spacing.xs,
-    },
     nameText: {
+        flex: 1,
         color: theme.colors.textGray,
     },
 }))
