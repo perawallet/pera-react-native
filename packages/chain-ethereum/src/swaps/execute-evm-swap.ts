@@ -358,6 +358,9 @@ const preflightShortfall = async (
     }
 }
 
+const isOrderExpired = ({ expiresAt }: SwapOrder): boolean =>
+    expiresAt !== null && Date.now() >= expiresAt
+
 const isRefusedUnsent = (error: unknown): boolean =>
     error instanceof SubmissionLedgerUnreadableError ||
     (error instanceof SubmissionError &&
@@ -494,6 +497,13 @@ export const executeEvmSwap = async ({
             return outcome
         }
         reported.push({ scope, txHash: outcome, purpose: APPROVAL_PURPOSE })
+
+        // The wait can outlast the swap's deadline, and past it the swap reverts
+        // at the user's gas. The grant stays: it covers the re-quoted swap too.
+        if (!isQuoteFresh(quote) || isOrderExpired(order)) {
+            cancelOrder()
+            return { kind: 'stale-quote' }
+        }
     }
 
     const { sourceAsset, sourceAmount } = quote.request

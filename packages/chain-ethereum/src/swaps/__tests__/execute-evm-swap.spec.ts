@@ -381,6 +381,39 @@ describe('executeEvmSwap', () => {
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
     })
 
+    it('cancels with a stale quote when the order expires during the approval', async () => {
+        const node = fakeNode({ balance: RICH })
+        const context = contextOf({
+            ...orderOf([APPROVE_TX, SWAP_TX]),
+            expiresAt: Date.now() - 1,
+        })
+
+        const result = await run(context)
+
+        expect(result).toEqual({ kind: 'stale-quote' })
+        expect(node.sentCount()).toBe(1)
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('cancels with a stale quote when the quote ages out during the approval', async () => {
+        const node = fakeNode({ balance: RICH })
+        const order = orderOf([APPROVE_TX, SWAP_TX])
+        const context = contextOf(order)
+        const quote = quoteOf()
+        vi.mocked(context.createOrder).mockImplementation(async () => {
+            quote.expiresAt = Date.now() - 1
+            return order
+        })
+
+        const result = await run(context, inputOf({ quote }))
+
+        expect(result).toEqual({ kind: 'stale-quote' })
+        expect(node.sentCount()).toBe(1)
+        await flushCancelReport()
+        expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
     it('cancels when the swap is rejected after the approval landed', async () => {
         const node = fakeNode({ balance: RICH })
         const context = contextOf(
