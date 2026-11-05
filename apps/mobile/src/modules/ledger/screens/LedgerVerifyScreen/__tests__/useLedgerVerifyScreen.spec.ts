@@ -829,6 +829,49 @@ describe('useLedgerVerifyScreen', () => {
                 .accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
             expect(added?.name).toBe('ledger.default_account_name#2')
         })
+
+        it('skips a number another account already shows, as when an earlier Ledger account was removed', async () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'hw-existing',
+                    name: 'ledger.default_account_name#2',
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'other-dev',
+                            deviceName: 'Nano S',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 1,
+                    },
+                    chains: { algorand: { address: 'OLDLEDGER' } },
+                } as WalletAccount,
+            ])
+            routeParams.current = {
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'ble',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived('LEDGER0', 0) },
+                    { kind: 'derived', account: derived('LEDGER1', 1) },
+                ],
+            }
+
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+            await act(async () => {})
+            act(() => {
+                result.current.handleAdd()
+            })
+
+            const nameOf = (address: string) =>
+                useAccountsStore
+                    .getState()
+                    .accounts.find(a => a.chains.algorand?.address === address)
+                    ?.name
+            expect(nameOf('LEDGER0')).toBe('ledger.default_account_name#3')
+            expect(nameOf('LEDGER1')).toBe('ledger.default_account_name#4')
+        })
     })
 
     it('imports another seed at a device position the wallet holds as a new account', async () => {

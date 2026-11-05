@@ -44,6 +44,7 @@ import {
 } from '@hooks/useChainAvailability'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
+import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 
 export type CrossChainTotal =
     /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
@@ -80,8 +81,10 @@ export type UseAccountWithBalanceResult = {
     jointParticipantCount: Optional<number>
     /** A joint account's required approvals out of its members, e.g. "Shared · 2 of 3 signers"; unset once it is rekeyed, as its members no longer sign. */
     jointSignersLabel: Optional<string>
-    /** A whole-account row names only a watch account's type or network under it; the name and value say the rest. */
+    /** A whole-account row names only a watch account's type or network under it, unless its name is shared; the name and value say the rest. */
     shouldShowSecondaryLabel: boolean
+    /** A whole-account row whose name another account also shows, so it shows its address to tell them apart. */
+    hasDuplicateName: boolean
 }
 
 /**
@@ -152,6 +155,8 @@ export const useAccountWithBalance = (
             ? sources[0]?.scope.chainId
             : undefined
     const { t } = useLanguage()
+    const { hasDuplicateName: isNameShared } = useUniqueAccountName()
+    const hasDuplicateName = isChainAgnostic && isNameShared(account)
     const authority = useAuthorityOf(account, scope)
     const multisig = isChainAgnostic
         ? multisigParametersOf(account, accountChainId)
@@ -179,6 +184,8 @@ export const useAccountWithBalance = (
         singleNetworkChainId,
         jointParticipantCount,
         jointSignersLabel,
-        shouldShowSecondaryLabel: !isChainAgnostic || isWatchAccount(account),
+        shouldShowSecondaryLabel:
+            !isChainAgnostic || isWatchAccount(account) || hasDuplicateName,
+        hasDuplicateName,
     }
 }

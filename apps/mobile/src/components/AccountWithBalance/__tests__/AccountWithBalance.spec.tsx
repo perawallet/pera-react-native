@@ -32,6 +32,8 @@ const mockHookResult = {
     singleNetworkChainId: undefined as string | undefined,
     jointParticipantCount: undefined as number | undefined,
     jointSignersLabel: undefined as string | undefined,
+    shouldShowSecondaryLabel: false,
+    hasDuplicateName: false,
 }
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
 const mockAccountDisplay = vi.fn((_props: unknown) => null)
@@ -90,6 +92,8 @@ describe('AccountWithBalance', () => {
         mockHookResult.singleNetworkChainId = undefined
         mockHookResult.jointParticipantCount = undefined
         mockHookResult.jointSignersLabel = undefined
+        mockHookResult.shouldShowSecondaryLabel = false
+        mockHookResult.hasDuplicateName = false
         mockPreferredAmount.mockClear()
         mockAssetAmount.mockClear()
         mockAccountDisplay.mockClear()
@@ -107,6 +111,34 @@ describe('AccountWithBalance', () => {
         expect(
             within(screen.getByTestId('account_display')).getByText('Algorand'),
         ).toBeTruthy()
+    })
+
+    it('lets a whole-account row with a shared name show its address instead of its type or network', () => {
+        mockHookResult.crossChainTotal = { kind: 'fiat', value: new Decimal(1) }
+        mockHookResult.singleNetworkChainId = 'algorand'
+        mockHookResult.hasDuplicateName = true
+        mockHookResult.shouldShowSecondaryLabel = true
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({
+                alwaysShowAccountType: false,
+                shouldShowSecondaryLabel: true,
+                secondaryContent: undefined,
+            }),
+        )
+        expect(screen.queryByTestId('chain_label_algorand')).toBeNull()
+    })
+
+    it('keeps the type label on a whole-account row with a unique name', () => {
+        mockHookResult.crossChainTotal = { kind: 'fiat', value: new Decimal(1) }
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ alwaysShowAccountType: true }),
+        )
     })
 
     it('passes no badges to a single-chain mainnet row', () => {

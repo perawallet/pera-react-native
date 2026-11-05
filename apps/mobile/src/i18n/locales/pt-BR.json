@@ -507,6 +507,7 @@
         "viewing": "Atual",
         "wallet_label": "Wallet nº {{number}}",
         "account_number": "Conta nº {{number}}",
+        "name_taken": "Você já tem uma conta com este nome. Escolha outro nome para poder diferenciá-las.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Conta Algo25",
         "type_watch": "Conta de observação",
@@ -2126,7 +2127,6 @@
             "finish_button": "Concluir criação da conta",
             "creating": "Criando conta compartilhada...",
             "error_title": "Não foi possível criar a conta",
-            "error_name_taken": "Já existe uma conta com este nome.",
             "duplicate_account_title": "Conta já adicionada",
             "duplicate_account_body": "Uma conta compartilhada com estes participantes e este limiar já está na sua wallet."
         },

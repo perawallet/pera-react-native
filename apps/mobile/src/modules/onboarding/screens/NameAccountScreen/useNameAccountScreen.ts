@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import {
+    accountNumberOf,
     clearPendingAccountRollback,
     consumePendingAccountRollback,
     chainAccountOf,
@@ -34,6 +35,10 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAccountName } from '@hooks/useAccountName'
+import {
+    normalizeAccountName,
+    useUniqueAccountName,
+} from '@hooks/useUniqueAccountName'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { OnboardingStackParamList } from '../../routes'
@@ -58,6 +63,22 @@ const accountCreationTypeOf = (
     return isWatchAccount(account) ? 'watch' : 'create'
 }
 
+// Watched, derived and imported accounts are persisted before naming, so the
+// route copy can lack chains enabled since it was made: match by id, then by
+// the address on `chainId`.
+const storedRecordOf = (
+    accounts: readonly WalletAccount[],
+    account: WalletAccount,
+    chainId: ChainId,
+): Optional<WalletAccount> => {
+    const byId = accounts.find(a => a.id === account.id)
+    if (byId) return byId
+    const address = chainAccountOf(account, chainId)?.address
+    return address === undefined
+        ? undefined
+        : findAccountByAddressOn(accounts, chainId, address)
+}
+
 export const useNameAccountScreen = () => {
     const route = useRoute<NameAccountScreenRouteProp>()
 
@@ -67,6 +88,7 @@ export const useNameAccountScreen = () => {
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
     const { getAccountName } = useAccountName()
+    const { isAccountNameTaken, nextFreeAccountName } = useUniqueAccountName()
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
@@ -90,8 +112,15 @@ export const useNameAccountScreen = () => {
     // The stored record, once there is one: discovery can add chains to it
     // after the route param was made.
     const storedAccount = account
-        ? accounts.find(a => a.id === account.id)
+        ? storedRecordOf(accounts, account, chainId)
         : undefined
+    const ownRecordId = storedAccount?.id ?? account?.id
+    // A name the stored record already has isn't a new collision: accounts
+    // that share a name before naming are left as they are.
+    const ownStoredName = normalizeAccountName(storedAccount?.name ?? '')
+    const isTakenByAnother = (name: string) =>
+        normalizeAccountName(name) !== ownStoredName &&
+        isAccountNameTaken(name, ownRecordId)
     const enabledChainIds = useMemo((): ChainId[] => {
         const shown = storedAccount ?? account
         if (!shown || registeredChainIds.length < 2) return []
@@ -120,18 +149,32 @@ export const useNameAccountScreen = () => {
         return hdSeedIds.size + otherAccountsCount
     }, [accounts, seedIdOf, scope.chainId])
 
-    const accountTitle = account
+    const baseTitle = account
         ? getAccountName(account, chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
+    const accountTitle = isTakenByAnother(baseTitle)
+        ? nextFreeAccountName(
+              account ? (accountNumberOf(account) ?? 1) : 1,
+              ownRecordId,
+          )
+        : baseTitle
     // A generated "Account #N" is left unstored, so it follows the language
-    // and isn't backed up as a name the user chose.
+    // and isn't backed up as a name the user chose. A bumped number can't be
+    // rebuilt from the account, so it is stored like a typed name.
     const generatedTitle =
-        account && accountTitle !== getAccountDisplayName(account, chainId)
-            ? accountTitle
+        account &&
+        accountTitle === baseTitle &&
+        baseTitle !== getAccountDisplayName(account, chainId)
+            ? baseTitle
             : undefined
 
     const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
+
+    const trimmedName = walletDisplay.trim()
+    const isNameTaken = isTakenByAnother(trimmedName)
+    const nameError = isNameTaken ? t('account_info.name_taken') : undefined
+    const isFinishDisabled = isCreating || trimmedName === '' || isNameTaken
 
     const handleNameChange = (value: string) => {
         setWalletDisplay(value)
@@ -148,7 +191,7 @@ export const useNameAccountScreen = () => {
     }, [])
 
     const handleFinish = async () => {
-        if (isCreating) return
+        if (isFinishDisabled) return
 
         trackEvent(OnboardingEvent.NameAccount, {
             [AnalyticsMetadataKey.ChainId]: chainId,
@@ -163,26 +206,14 @@ export const useNameAccountScreen = () => {
                 account ||
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
-            const storedAccounts = getAllAccounts()
-            const targetAddress = chainAccountOf(
+            const stored = storedRecordOf(
+                getAllAccounts(),
                 targetAccount,
                 chainId,
-            )?.address
-            // Watched, derived and imported accounts are persisted before
-            // naming, so naming renames the stored record: the route copy can
-            // lack chains enabled since it was made.
-            const stored =
-                storedAccounts.find(a => a.id === targetAccount.id) ??
-                (targetAddress !== undefined
-                    ? findAccountByAddressOn(
-                          storedAccounts,
-                          chainId,
-                          targetAddress,
-                      )
-                    : undefined)
+            )
 
             const name =
-                walletDisplay === generatedTitle ? undefined : walletDisplay
+                trimmedName === generatedTitle ? undefined : trimmedName
             if (stored) {
                 updateAccount({ ...stored, name })
             } else {
@@ -222,5 +253,7 @@ export const useNameAccountScreen = () => {
         account,
         chainId,
         enabledChainIds,
+        nameError,
+        isFinishDisabled,
     }
 }

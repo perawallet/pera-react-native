@@ -100,7 +100,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account: { chains: Record<string, unknown> },
         chainId: string,
     ) => account.chains[chainId],
-    findAccountByAddressOn: () => undefined,
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address?: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
     preferDefaultChain: (chainIds: string[]) => chainIds[0],
     isWatchAccount: (account: { custody?: { kind: string } }) =>
         account?.custody?.kind === 'watch',
@@ -137,6 +141,9 @@ vi.mock('react-i18next', async () => {
                     opts?.count
                 ) {
                     return `Wallet ${opts.count}`
+                }
+                if (key === 'account_info.account_number' && opts?.number) {
+                    return `${key} ${opts.number}`
                 }
                 return key
             },
@@ -353,10 +360,10 @@ describe('useNameAccountScreen', () => {
             const { result } = renderHook(() => useNameAccountScreen())
 
             expect(result.current.walletDisplay).toBe(
-                'account_info.account_number',
+                'account_info.account_number 1',
             )
             expect(result.current.accountTitle).toBe(
-                'account_info.account_number',
+                'account_info.account_number 1',
             )
         })
 
@@ -427,6 +434,148 @@ describe('useNameAccountScreen', () => {
             expect(mockSaveAccount).toHaveBeenCalledWith(
                 expect.objectContaining({ id: 'numbered', name: 'Savings' }),
             )
+        })
+
+        describe('uniqueness', () => {
+            const hdRouteAccount = (
+                id: string,
+                address: string,
+                name?: string,
+            ) => ({
+                id,
+                name,
+                chains: { algorand: { address, keyPairId: 'kp' } },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            })
+            const stored = (id: string, address: string, name: string) => ({
+                id,
+                name,
+                chains: { algorand: { address } },
+                custody: { kind: 'watch' },
+            })
+
+            it('suggests the next free number when another account already shows the generated one', async () => {
+                mockStoredAccounts.accounts = [
+                    stored('other', 'OTHER', 'account_info.account_number 1'),
+                    stored('third', 'THIRD', 'account_info.account_number 2'),
+                ]
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.walletDisplay).toBe(
+                    'account_info.account_number 3',
+                )
+                expect(result.current.accountTitle).toBe(
+                    'account_info.account_number 3',
+                )
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockSaveAccount).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        id: 'new',
+                        name: 'account_info.account_number 3',
+                    }),
+                )
+            })
+
+            it('flags a typed name another account shows, ignoring case and spaces, and blocks Finish', async () => {
+                mockStoredAccounts.accounts = [
+                    stored('other', 'OTHER', 'Savings'),
+                ]
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                act(() => {
+                    result.current.handleNameChange('  sAVINGS ')
+                })
+
+                expect(result.current.nameError).toBe('account_info.name_taken')
+                expect(result.current.isFinishDisabled).toBe(true)
+
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockSaveAccount).not.toHaveBeenCalled()
+                expect(mockUpdateAccount).not.toHaveBeenCalled()
+            })
+
+            it('does not count the stored record being named, found by id', () => {
+                mockStoredAccounts.accounts = [stored('new', 'ADDR', 'Savings')]
+                mockRouteParams = {
+                    account: hdRouteAccount('new', 'ADDR', 'Savings'),
+                }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.walletDisplay).toBe('Savings')
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+            })
+
+            it('does not count the stored record being named, found by address', () => {
+                mockStoredAccounts.accounts = [
+                    stored('stored', 'ADDR', 'Savings'),
+                ]
+                mockRouteParams = {
+                    account: hdRouteAccount('route-copy', 'ADDR', 'Savings'),
+                }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+            })
+
+            it('keeps the name an already-stored record has, even when another account shares it', () => {
+                mockStoredAccounts.accounts = [
+                    stored('watched', 'WATCHED', 'Alice'),
+                    stored('other', 'OTHER', 'Alice'),
+                ]
+                mockRouteParams = {
+                    account: stored('watched', 'WATCHED', 'Alice'),
+                }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.walletDisplay).toBe('Alice')
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+            })
+
+            it('blocks Finish on an empty or blank name', () => {
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                act(() => {
+                    result.current.handleNameChange('   ')
+                })
+
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(true)
+            })
+
+            it('saves the name trimmed', async () => {
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                act(() => {
+                    result.current.handleNameChange('  Savings  ')
+                })
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockSaveAccount).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: 'Savings' }),
+                )
+            })
         })
 
         it('offers a wallet name when no account is handed over', () => {

@@ -62,6 +62,7 @@ import {
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { normalizeAccountName } from '@hooks/useUniqueAccountName'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     type AddAccountStackParamList,
@@ -385,9 +386,25 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }> = []
 
         // Default names number on from the ledger accounts already in the
-        // wallet ("Ledger 3" after two prior imports) — count-based, so
-        // renames/removals can repeat a number; names are not unique.
+        // wallet ("Ledger 3" after two prior imports); a number another
+        // account already shows is skipped, since removals and renames
+        // leave the count short of the highest number.
         let nextDefaultNameNumber = current.filter(isLedgerAccount).length + 1
+        const nextDefaultName = (): string => {
+            const taken = new Set(
+                getAllAccounts().map(a => normalizeAccountName(a.name ?? '')),
+            )
+            let name = t('ledger.default_account_name', {
+                number: nextDefaultNameNumber,
+            })
+            while (taken.has(normalizeAccountName(name))) {
+                nextDefaultNameNumber++
+                name = t('ledger.default_account_name', {
+                    number: nextDefaultNameNumber,
+                })
+            }
+            return name
+        }
 
         const detailsFor = (
             acc: HardwareWalletDerivedAccount,
@@ -560,9 +577,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 details,
                 chainId,
                 address,
-                t('ledger.default_account_name', {
-                    number: nextDefaultNameNumber,
-                }),
+                nextDefaultName(),
                 undefined,
                 joinIdOf(proofs[upgrades.length + rebinds.length + i]),
             )

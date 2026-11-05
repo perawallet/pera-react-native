@@ -507,6 +507,7 @@
         "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
         "account_number": "Hesap #{{number}}",
+        "name_taken": "Bu isimde bir hesabın zaten var. Birbirinden ayırt edebilmek için farklı bir isim seç.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
         "type_watch": "İzleme hesabı",
@@ -2123,7 +2124,6 @@
             "finish_button": "Hesap oluşturmayı tamamla",
             "creating": "Paylaşılan hesap oluşturuluyor...",
             "error_title": "Hesap oluşturulamadı",
-            "error_name_taken": "Bu isimde bir hesap zaten var.",
             "duplicate_account_title": "Hesap zaten eklenmiş",
             "duplicate_account_body": "Bu katılımcılara ve bu eşiğe sahip bir paylaşılan hesap cüzdanında zaten var."
         },

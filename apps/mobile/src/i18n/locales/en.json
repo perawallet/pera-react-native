@@ -507,6 +507,7 @@
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
         "account_number": "Account #{{number}}",
+        "name_taken": "You already have an account with this name. Choose a different name so you can tell them apart.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
@@ -2123,7 +2124,6 @@
             "finish_button": "Finish Account Creation",
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_name_taken": "An account with this name already exists.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
         },
