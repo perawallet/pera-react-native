@@ -14,6 +14,7 @@ import { memo, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
+import { useChartCurrencyFallback } from '@hooks/useChartCurrencyFallback'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import {
@@ -27,7 +28,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type AssetWealthChartProps = {
     account: WalletAccount
@@ -56,8 +56,6 @@ export const AssetWealthChart = memo(function AssetWealthChart({
 }: AssetWealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const { preferredCurrency, isRateUnavailable, refetchRate } =
-        useCurrency(scope)
 
     const {
         data,
@@ -73,6 +71,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         period,
         scope,
     )
+    const fallback = useChartCurrencyFallback(scope, { isError, refetch })
 
     // See WealthChart: an unpriced point has no rate behind it and must not be
     // plotted as 0.
@@ -88,22 +87,13 @@ export const AssetWealthChart = memo(function AssetWealthChart({
             getDatetime={getDatetime}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
-            isError={isError || isRateUnavailable}
+            isError={fallback.isError}
             isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
             isPaused={isPaused}
             isUnavailableOnNetwork={isUnavailableOnNetwork}
-            onRetry={() => {
-                if (isRateUnavailable) refetchRate()
-                if (isError) void refetch()
-            }}
+            onRetry={fallback.onRetry}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
-            errorBody={
-                isRateUnavailable
-                    ? t('common.wealth_chart.currency_unavailable_body', {
-                          currency: preferredCurrency,
-                      })
-                    : undefined
-            }
+            errorBody={fallback.errorBody}
             style={themeStyle.container}
         />
     )

@@ -13,6 +13,7 @@
 import { memo, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
+import { useChartCurrencyFallback } from '@hooks/useChartCurrencyFallback'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import { PWText } from '@components/core'
@@ -28,7 +29,6 @@ import {
     usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type WealthChartProps = {
     /** Plotted as one summed series. */
@@ -62,8 +62,6 @@ export const WealthChart = memo(function WealthChart({
 }: WealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const { preferredCurrency, isRateUnavailable, refetchRate } =
-        useCurrency(currencyScope)
 
     const {
         data,
@@ -75,6 +73,10 @@ export const WealthChart = memo(function WealthChart({
         isUnavailableOnNetwork,
         excludedChainIds,
     } = usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
+    const fallback = useChartCurrencyFallback(currencyScope, {
+        isError,
+        refetch,
+    })
 
     // A point with no preferred value has no rate behind it (offline, never
     // synced). Plotting it as 0 would draw a cliff to the axis, so drop it —
@@ -97,22 +99,13 @@ export const WealthChart = memo(function WealthChart({
                 getDatetime={getDatetime}
                 onSelectionChanged={onSelectionChanged}
                 isPending={isPending}
-                isError={isError || isRateUnavailable}
+                isError={fallback.isError}
                 isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
                 isPaused={isPaused}
                 isUnavailableOnNetwork={isUnavailableOnNetwork}
-                onRetry={() => {
-                    if (isRateUnavailable) refetchRate()
-                    if (isError) void refetch()
-                }}
+                onRetry={fallback.onRetry}
                 emptyBody={t('common.wealth_chart.empty_body')}
-                errorBody={
-                    isRateUnavailable
-                        ? t('common.wealth_chart.currency_unavailable_body', {
-                              currency: preferredCurrency,
-                          })
-                        : undefined
-                }
+                errorBody={fallback.errorBody}
                 style={themeStyle.container}
             />
             {shouldShowExcludedNetworks && excludedNetworks !== '' && (
