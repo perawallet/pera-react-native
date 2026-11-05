@@ -26,6 +26,7 @@ const {
     mockSetToAsset,
     mockSetSourceChainId,
     mockSetSelectedAccountId,
+    mockSetParams,
     mockRequestBottomSheet,
     mockPushWebView,
     mockMarkIntroductionSeen,
@@ -36,6 +37,7 @@ const {
     mockSetToAsset: vi.fn(),
     mockSetSourceChainId: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
+    mockSetParams: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     mockPushWebView: vi.fn(),
     mockMarkIntroductionSeen: vi.fn(),
@@ -51,6 +53,7 @@ const {
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
+    useNavigation: () => ({ setParams: mockSetParams }),
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -154,6 +157,60 @@ describe('useSwapScreen', () => {
 
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
         expect(mockSetToAsset).toHaveBeenCalledWith('31566704')
+    })
+
+    describe('once a pick moves the swap off the route chain', () => {
+        beforeEach(() => {
+            routeParams.current = {
+                assetIn: { chainId: 'algorand', assetId: '123' },
+                assetOut: { chainId: 'algorand', assetId: '31566704' },
+                payAmount: '5',
+            }
+            mockSetParams.mockImplementation(() => {
+                routeParams.current = undefined
+            })
+        })
+
+        it('spends the route', () => {
+            const { rerender } = renderHook(() => useSwapScreen())
+            rerender()
+
+            state.sourceChainId = 'ethereum'
+            rerender()
+
+            expect(mockSetParams).toHaveBeenCalledWith({
+                assetIn: undefined,
+                assetOut: undefined,
+                payAmount: undefined,
+            })
+        })
+
+        it('leaves a later pick back on the route chain alone', () => {
+            const { rerender } = renderHook(() => useSwapScreen())
+            rerender()
+            state.sourceChainId = 'ethereum'
+            rerender()
+            rerender()
+            mockSetFromAsset.mockClear()
+            mockSetToAsset.mockClear()
+
+            state.sourceChainId = 'algorand'
+            rerender()
+
+            expect(mockSetFromAsset).not.toHaveBeenCalled()
+            expect(mockSetToAsset).not.toHaveBeenCalled()
+        })
+    })
+
+    it('keeps the route while pinning its chain', () => {
+        routeParams.current = {
+            assetIn: { chainId: 'algorand', assetId: '123' },
+        }
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        rerender()
+
+        expect(mockSetParams).not.toHaveBeenCalled()
     })
 
     it('clears the pair when an account switch moves the swap chain', () => {
