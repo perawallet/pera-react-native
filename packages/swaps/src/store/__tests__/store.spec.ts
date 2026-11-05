@@ -83,6 +83,7 @@ describe('swaps/store', () => {
             receivingAccountId: null,
             slippage: '0.5',
         })
+        useSwapsStore.getState().setSlippage(null)
     })
 
     test('resetState forgets the chosen source chain', () => {

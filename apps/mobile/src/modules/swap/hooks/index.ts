@@ -18,9 +18,3 @@ export type {
 } from './useSwapExecution'
 export { useSwapQuotes } from './useSwapQuotes'
 export { useSwapLocalCurrency } from './useSwapLocalCurrency'
-export { useSwapSourceChains } from './useSwapSourceChains'
-export { useSwapChainFilter } from './useSwapChainFilter'
-export type {
-    UseSwapChainFilterParams,
-    UseSwapChainFilterResult,
-} from './useSwapChainFilter'
