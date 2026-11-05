@@ -38,8 +38,13 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
 ])
 
 // Off by default but safe for remote config to switch on: no Algorand-only code,
-// and no Pera endpoint outside config's EVM_PERA_SERVICES. Anything else stays off.
-const SWITCHABLE: readonly ChainCapability[] = ['contractDecoding', 'discover']
+// and no Pera endpoint a scope without a deployment could reach. Anything else
+// stays off.
+const SWITCHABLE: readonly ChainCapability[] = [
+    'contractDecoding',
+    'discover',
+    'swap',
+]
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 

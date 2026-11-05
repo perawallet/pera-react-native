@@ -12,11 +12,14 @@
 
 export {
     DEFAULT_EVM_RPC_RESPONSES,
+    encodeErc20Approve,
+    encodeUnsignedEvmCall,
     erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmRpcTransaction,
     evmTransactionReceipt,
+    readRawEvmTransaction,
     type Erc20Fixture,
     type EvmRpcFixtures,
     type EvmRpcMethod,

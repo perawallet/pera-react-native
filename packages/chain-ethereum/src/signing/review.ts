@@ -49,7 +49,12 @@ import {
     encodeEvmNftTransfer,
     readEvmNftTransferAsset,
 } from '../transfer/nft-transfer'
-import { nftSendSubtitle, sendSummary } from '../transfer/summary'
+import {
+    nftSendSubtitle,
+    sendSummary,
+    spendApprovalSummary,
+    swapSummary,
+} from '../transfer/summary'
 import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
 import {
     contractActionSummary,
@@ -148,6 +153,8 @@ const AUTO_APPROVED_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
     'transfer',
     'token-transfer',
     'nft-transfer',
+    'swap',
+    'approval',
 ])
 
 const viewOfNative = (
@@ -495,6 +502,27 @@ const verifiedNftTransfer = (
     }
 }
 
+// A swap's own calls: its confirmation sheet showed them and the swap flow
+// checked them against the request, so nothing here re-reads the route. An
+// approval still has to be one, since its summary is only a claim.
+const walletSwapSummary = (
+    summary: Optional<TransactionSummary>,
+    call: Call,
+    chain: EvmChain,
+): Optional<TransactionSummary> => {
+    if (!call.to || !summary?.amount) return undefined
+    if (summary.kind === 'swap') {
+        return swapSummary(call.from, call.to, summary.amount)
+    }
+    const standard = decodeEvmStandardCall(call)
+    return summary.kind === 'approval' && standard?.kind === 'approve'
+        ? spendApprovalSummary(call.from, standard.spender, {
+              assetRef: { chainId: chain.row.id, assetId: standard.contract },
+              value: standard.value,
+          })
+        : undefined
+}
+
 /** The view a review screen reads, or null for a payload review would refuse. Never a verified token or NFT transfer: that needs the request's summary. */
 export const ethereumViewOf = (
     unsigned: UnsignedTransaction,
@@ -596,6 +624,15 @@ const reviewCall = async (
                 ),
             ),
             native: toEthereumNative(viewOf(call, 'nft-transfer', { nft })),
+        }
+    }
+    const walletSwap = context.isWalletBuilt
+        ? walletSwapSummary(summary, call, chain)
+        : undefined
+    if (walletSwap) {
+        return {
+            summary: walletSwap,
+            native: toEthereumNative(viewOf(call, 'swap-call')),
         }
     }
     const view = contractCallView(

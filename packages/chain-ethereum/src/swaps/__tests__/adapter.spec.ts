@@ -11,17 +11,16 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type {
-    ExecuteSwapParams,
-    SwapExecutionContext,
-} from '@perawallet/wallet-core-swaps'
+import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
+import { testChainContext } from '../../__tests__/context'
 import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEvmSwapAdapter } from '../adapter'
 
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
 describe('createEvmSwapAdapter', () => {
-    const adapter = createEvmSwapAdapter(ETHEREUM)
+    const ctx = testChainContext()
+    const adapter = createEvmSwapAdapter(ctx, ETHEREUM)
     const scope = evmScopeOf(ETHEREUM)
 
     it('round-trips the native asset through its router id', () => {
@@ -41,7 +40,7 @@ describe('createEvmSwapAdapter', () => {
     })
 
     it("reads another chain's router id as nothing", () => {
-        const baseId = createEvmSwapAdapter(BASE).toRouterAssetId(
+        const baseId = createEvmSwapAdapter(ctx, BASE).toRouterAssetId(
             BASE.nativeAsset.assetId,
             evmScopeOf(BASE),
         )
@@ -55,24 +54,44 @@ describe('createEvmSwapAdapter', () => {
         ).toBeNull()
     })
 
-    it('receives only: refuses to run a swap from this chain', async () => {
-        const result = await adapter.executeSwap(
-            {} as ExecuteSwapParams,
-            {} as SwapExecutionContext,
+    it("defaults the receive side to the row's asset, or the native one", () => {
+        expect(adapter.defaultReceiveAssetId).toBe(USDC)
+        expect(createEvmSwapAdapter(ctx, BASE).defaultReceiveAssetId).toBe(
+            BASE.nativeAsset.assetId,
         )
-
-        expect(result).toEqual({
-            kind: 'failed',
-            failure: { phase: 'prepare', reason: 'unsupported-steps' },
-        })
-        expect(adapter.supportsCosignedSwaps).toBe(false)
     })
 
-    it('reserves nothing and links nowhere', () => {
+    it('holds back 0.005 of the native unit, and no holding reserve', () => {
         expect(adapter.chainId).toBe('ethereum')
-        expect(adapter.defaultReceiveAssetId).toBe(adapter.nativeAssetId)
-        expect(adapter.maxAmountFeeReserve.isZero()).toBe(true)
+        expect(adapter.maxAmountFeeReserve.toString()).toBe('5000000000000000')
         expect(adapter.holdingReserve(scope).isZero()).toBe(true)
-        expect(adapter.swapExplorerUrl(scope, {} as never)).toBeUndefined()
+        expect(adapter.supportsCosignedSwaps).toBe(false)
+        expect(adapter.useEnsureReceivable).toBeUndefined()
+    })
+
+    it("links the item's swap transaction on this chain", () => {
+        const swapTx = { role: 'swap', scope, txHash: '0xabc' }
+        const url = adapter.swapExplorerUrl(scope, {
+            transactions: [
+                { role: 'approval', scope, txHash: '0xdef' },
+                swapTx,
+            ],
+        } as unknown as SwapHistoryItem)
+
+        expect(url).toContain('0xabc')
+    })
+
+    it('links nowhere when no swap transaction is on this chain', () => {
+        const url = adapter.swapExplorerUrl(scope, {
+            transactions: [
+                {
+                    role: 'swap',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    txHash: 'ALGO',
+                },
+            ],
+        } as unknown as SwapHistoryItem)
+
+        expect(url).toBeUndefined()
     })
 })

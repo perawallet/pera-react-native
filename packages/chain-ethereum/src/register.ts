@@ -155,7 +155,7 @@ const buildAdapters = (
         deeplink: createEvmDeeplinkAdapter(chain),
         device: createEvmDeviceAdapter(chain),
         ledgerDriver: createEvmLedgerAppDriver(chain),
-        swap: createEvmSwapAdapter(chain),
+        swap: createEvmSwapAdapter(ctx, chain),
     }
 }
 
