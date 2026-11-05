@@ -56,12 +56,14 @@ export const ContactAddressFields = ({
 }: ContactAddressFieldsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { scanChainIds, handlePaste } = useContactAddressFields({
-        pendingReplacement,
-        onAddressInputChange: onInputChange,
-        confirmReplacement: onConfirmReplacement,
-        cancelReplacement: onCancelReplacement,
-    })
+    const { scanChainIds, canAddAddress, handlePaste } =
+        useContactAddressFields({
+            rows,
+            pendingReplacement,
+            onAddressInputChange: onInputChange,
+            confirmReplacement: onConfirmReplacement,
+            cancelReplacement: onCancelReplacement,
+        })
 
     return (
         <PWView style={styles.container}>
@@ -139,7 +141,8 @@ export const ContactAddressFields = ({
                         testID='contact_address_paste_button'
                     />
                 </PWView>
-            ) : (
+            ) : null}
+            {!isInputVisible && canAddAddress ? (
                 <PWButton
                     variant='helper'
                     icon='plus'
@@ -149,7 +152,7 @@ export const ContactAddressFields = ({
                     style={styles.add}
                     testID='contact_add_address_button'
                 />
-            )}
+            ) : null}
         </PWView>
     )
 }
