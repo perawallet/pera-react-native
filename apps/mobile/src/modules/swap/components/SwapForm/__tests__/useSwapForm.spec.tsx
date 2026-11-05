@@ -19,6 +19,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mockSetFromAsset = vi.fn()
+const mockSetSourceAsset = vi.fn()
 const mockSetToAsset = vi.fn()
 const mockSetSlippage = vi.fn()
 const mockResetQuoteMutation = vi.fn()
@@ -93,6 +94,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         isLocalCurrencyInput: false,
         setFromAsset: mockSetFromAsset,
         setToAsset: mockSetToAsset,
+        setSourceAsset: mockSetSourceAsset,
         setSlippage: mockSetSlippage,
         setIsLocalCurrencyInput: mockSetIsLocalCurrencyInput,
         resetAssetPair: mockResetAssetPair,
@@ -242,8 +244,9 @@ let mockReceiveTarget: MockReceiveTarget
 vi.mock('../../../hooks/useSwapReceiveTarget', () => ({
     useSwapReceiveTarget: () => mockReceiveTarget,
 }))
-vi.mock('@hooks/useIsCrossChainSwapEnabled', () => ({
-    useIsCrossChainSwapEnabled: () => true,
+let mockSourceChainIds: string[] = ['algorand']
+vi.mock('../../../hooks/useSwapSourceChains', () => ({
+    useSwapSourceChains: () => mockSourceChainIds,
 }))
 
 vi.mock('../../SwapConfigurationContent', () => ({
@@ -287,6 +290,7 @@ describe('useSwapForm', () => {
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
+        mockSourceChainIds = ['algorand']
         mockSelectedAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
         mockSpendableMax = new Decimal('5000000')
@@ -319,10 +323,11 @@ describe('useSwapForm', () => {
 
             expect(result.current.isDirectionDisabled).toBe(true)
             expect(result.current.isChainShown).toBe(true)
+            expect(result.current.isReceivingAccountShown).toBe(true)
             expect(mockSetFromAsset).not.toHaveBeenCalled()
         })
 
-        it('leaves the pay picker whole, since the receive id means nothing on the pay chain', async () => {
+        it('hides the receive asset from the pay picker on its own chain only', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -331,7 +336,10 @@ describe('useSwapForm', () => {
             })
 
             const { contents } = mockRequestBottomSheet.mock.calls[0][0]
-            expect(contents.props.excludeAssetId).toBeUndefined()
+            expect(contents.props.excludeAsset).toEqual({
+                chainId: 'ethereum',
+                assetId: '0',
+            })
         })
 
         it('keeps the scope of a receive asset picked on another chain', async () => {
@@ -365,6 +373,46 @@ describe('useSwapForm', () => {
 
         expect(result.current.isDirectionDisabled).toBe(false)
         expect(result.current.isChainShown).toBe(false)
+        expect(result.current.isReceivingAccountShown).toBe(false)
+    })
+
+    it('names the chains once the account can pay from more than one', () => {
+        mockSourceChainIds = ['algorand', 'ethereum']
+
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        expect(result.current.isChainShown).toBe(true)
+        expect(result.current.isReceivingAccountShown).toBe(false)
+    })
+
+    it('moves the swap to the chain of a pay asset picked there', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: 'native',
+            scope: ETH_SCOPE,
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetSourceAsset).toHaveBeenCalledWith('ethereum', 'native')
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+    })
+
+    it('keeps the source chain for a pay asset picked on it', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '31566704',
+            scope: SCOPE,
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetFromAsset).toHaveBeenCalledWith('31566704')
+        expect(mockSetSourceAsset).not.toHaveBeenCalled()
     })
 
     it('initializes with null amounts and canSwap false', () => {

@@ -3945,15 +3945,15 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select",
-            "pay_from": "Pay from"
+            "select_asset": "Select"
         },
         "asset_selection": {
             "swap_from_title": "Swap From",
             "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
-            "no_results_body": "No assets matched your search term"
+            "no_results_body": "No assets matched your search term",
+            "no_chain_results_body": "No assets available on this network"
         },
         "configuration": {
             "title": "Swap settings",
@@ -3977,6 +3977,9 @@
             "slippage_tolerance": "Slippage Tolerance",
             "pera_fee": "Pera Fee",
             "network_fee": "Network fee",
+            "provider_fee": "Provider fee",
+            "route": "Route",
+            "cross_chain_note": "Your {{asset}} arrives on {{network}} once the provider completes the swap. You can follow it on the Swap screen.",
             "spend_approval_note": "You'll sign an approval for this swap's amount first, then the swap.",
             "insufficient_network_fee": "Not enough {{symbol}} to pay the network fee.",
             "provider": "Provider",

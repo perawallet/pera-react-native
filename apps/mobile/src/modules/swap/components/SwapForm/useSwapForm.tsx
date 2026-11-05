@@ -21,7 +21,10 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
@@ -43,7 +46,6 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
@@ -52,6 +54,7 @@ import {
 } from '@utils/tabResumeIntent'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
 import { useSwapReceiveTarget } from '../../hooks/useSwapReceiveTarget'
+import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
 import {
     SwapAssetSelectionContent,
     type SwapAssetSelection,
@@ -76,6 +79,7 @@ type UseSwapFormResult = {
     receivingAccount: Nullable<WalletAccount>
     isDirectionDisabled: boolean
     isChainShown: boolean
+    isReceivingAccountShown: boolean
     payAmount: Nullable<Decimal>
     receiveAmount: Nullable<Decimal>
     payBalance: Nullable<Decimal>
@@ -121,6 +125,7 @@ export const useSwapForm = (
         isLocalCurrencyInput,
         setFromAsset,
         setToAsset,
+        setSourceAsset,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
@@ -156,7 +161,7 @@ export const useSwapForm = (
         fromAsset,
         scope,
     )
-    const isCrossChainEnabled = useIsCrossChainSwapEnabled()
+    const sourceChainIds = useSwapSourceChains(selectedAccount)
     const {
         receiveScope,
         isCrossChain,
@@ -488,7 +493,10 @@ export const useSwapForm = (
                 <SwapAssetSelectionContent
                     scope={scope}
                     variant='from'
-                    excludeAssetId={isCrossChain ? undefined : toAsset}
+                    excludeAsset={{
+                        chainId: receiveScope.chainId,
+                        assetId: toAsset,
+                    }}
                 />
             ),
             options: {
@@ -500,7 +508,12 @@ export const useSwapForm = (
         // Re-picking the current asset must be a full no-op: clearing the
         // quotes without changing any quote input would strand the fetch
         // state as loading with nothing in flight.
-        if (!selection || selection.assetId === fromAsset) return
+        if (!selection) return
+        if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
+            setSourceAsset(selection.scope.chainId, selection.assetId)
+            return
+        }
+        if (selection.assetId === fromAsset) return
         setFromAsset(selection.assetId)
         // The effect above also resets, but only after a paint; reset here
         // too so no frame shows the old amount against the new asset.
@@ -509,8 +522,9 @@ export const useSwapForm = (
         requestBottomSheet,
         scope,
         toAsset,
-        isCrossChain,
+        receiveScope.chainId,
         setFromAsset,
+        setSourceAsset,
         fromAsset,
         resetAmounts,
     ])
@@ -526,7 +540,10 @@ export const useSwapForm = (
                     scope={scope}
                     variant='to'
                     fromAssetId={fromAsset}
-                    excludeAssetId={fromAsset}
+                    excludeAsset={{
+                        chainId: scope.chainId,
+                        assetId: fromAsset,
+                    }}
                 />
             ),
             options: {
@@ -749,7 +766,8 @@ export const useSwapForm = (
         receiveScope,
         receivingAccount,
         isDirectionDisabled: isCrossChain,
-        isChainShown: isCrossChainEnabled && isCrossChain,
+        isChainShown: isCrossChain || sourceChainIds.length > 1,
+        isReceivingAccountShown: isCrossChain,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,

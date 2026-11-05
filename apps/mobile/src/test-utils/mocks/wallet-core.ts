@@ -589,6 +589,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             discoverDelegatedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
+        useAccountHoldingsAcrossChainsQuery: vi.fn(() => ({
+            assetBalances: [],
+            isPending: false,
+            isError: false,
+        })),
         useHoldingAcquisitionOrderQuery: vi.fn(() => ({
             acquisitionOrder: new Map(),
             isPending: false,

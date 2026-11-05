@@ -138,6 +138,9 @@ const { capabilityRequirementForDeeplink } =
 const { useCapabilityCheck } = await import('@hooks/useCapability')
 const { SigningOverlays } = await import('@modules/signing/shell')
 const { SwapForm } = await import('@modules/swap/components/SwapForm')
+const { SwapConfirmationContent } =
+    await import('@modules/swap/components/SwapConfirmationContent')
+const { BottomSheetIdContext } = await import('@modules/bottom-sheet')
 const { SwapScreen } =
     await import('@modules/swap/screens/SwapScreen/SwapScreen')
 const { useSwapExecution } =
@@ -523,21 +526,30 @@ describe('Flow: Swap from an Ethereum account', () => {
         ).toBe(true)
     })
 
-    it('Given an account on two chains, when it picks Ethereum on the swap screen, then the form stays on Ethereum', async () => {
+    it('Given an account on two chains, when it picks an Ethereum asset in the pay picker, then the form moves to Ethereum and stays there', async () => {
         await selectTwoChainAccount()
+        await seedSenderEther('10000000000000000000')
+        await insertAssetHolding({
+            accountAddress: SENDER,
+            assetId: TOKEN,
+            scope: ETH_SCOPE,
+            amount: new Decimal('100000000'),
+        })
         fakeNode()
         renderWithNavigation(SwapScreen, 'Swap')
 
-        fireEvent.click(await screen.findByTestId('swap_source_chain'))
+        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
         fireEvent.click(
-            await screen.findByTestId('swap_source_chain_row_ethereum'),
+            await screen.findByTestId('swap_from_chain_filter_ethereum'),
         )
+        fireEvent.click(await screen.findByTestId(`asset-list-item-${TOKEN}`))
 
         await waitFor(() =>
             expect(useSwapsStore.getState().sourceChainId).toBe('ethereum'),
         )
         await settleRender()
         expect(useSwapsStore.getState().sourceChainId).toBe('ethereum')
+        expect(useSwapsStore.getState().fromAsset).toBe(TOKEN)
     })
 
     it('Given an allowance that covers the amount, when the swap runs, then only the swap is sent', async () => {
@@ -604,6 +616,30 @@ describe('Flow: Swap from an Ethereum account', () => {
                 useSwapTrackingStore.getState().orders[SWAP_ORDER_ID].status,
             ).toBe('completed'),
         )
+    })
+
+    it('Given a cross-chain quote, when the confirmation opens, then it names the route and the later payout and leaves out what the provider does not report', async () => {
+        const account = await selectTwoChainAccount()
+        useSwapsStore.getState().setSourceChainId('ethereum')
+        await seedSenderEther('10000000000000000000')
+        fakeNode()
+        const quote = etherToAlgoQuote(account.chains.algorand?.address ?? '')
+
+        renderWithNavigation(
+            () => (
+                <BottomSheetIdContext.Provider value='swap-confirmation'>
+                    <SwapConfirmationContent
+                        scope={ETH_SCOPE}
+                        quote={quote}
+                    />
+                </BottomSheetIdContext.Provider>
+            ),
+            'SwapConfirmation',
+        )
+
+        expect(await screen.findByTestId('swap-confirm-route')).toBeTruthy()
+        expect(screen.getByTestId('swap-confirm-cross-chain-note')).toBeTruthy()
+        expect(screen.queryByTestId('swap-confirm-provider-fee')).toBeNull()
     })
 
     it('Given no override, then an Ethereum account can reach swap', () => {

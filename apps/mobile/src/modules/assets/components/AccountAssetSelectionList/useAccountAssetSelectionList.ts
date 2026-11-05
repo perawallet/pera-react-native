@@ -16,13 +16,18 @@ import {
     type ChainAssetBalance,
     useAccountBalancesQuery,
     useAccountChainId,
+    useAccountHoldingsAcrossChainsQuery,
     useSelectedAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    assetRefKey,
+    type AssetRef,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
@@ -31,10 +36,12 @@ const isNativeOn = (balance: ChainAssetBalance): boolean =>
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
-    excludeAssetId?: string
+    excludeAsset?: AssetRef
     filterAsset?: (asset: AssetWithAccountBalance) => boolean
     /** Lists holdings on this chain, at its selected network; unset uses the account's own chain. */
     chainId?: ChainId
+    /** Lists holdings across these chains, at each one's selected network; wins over `chainId`. */
+    chainIds?: readonly ChainId[]
 }
 
 type UseAccountAssetSelectionListResult = {
@@ -49,9 +56,10 @@ type UseAccountAssetSelectionListResult = {
 
 export const useAccountAssetSelectionList = ({
     isVisible,
-    excludeAssetId,
+    excludeAsset,
     filterAsset,
     chainId,
+    chainIds,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
     const selectedAccount = useSelectedAccount()
     const home = useHomeChainScope()
@@ -60,17 +68,28 @@ export const useAccountAssetSelectionList = ({
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, scope.chainId)?.address
         : undefined
-    const { accountBalances, isPending, isError } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
+    const singleChain = useAccountBalancesQuery(
+        selectedAccount && !chainIds ? [selectedAccount] : [],
         scope,
     )
+    const acrossChains = useAccountHoldingsAcrossChainsQuery(
+        chainIds ? selectedAccount : null,
+    )
+    const { accountBalances } = singleChain
+    const { assetBalances: heldAcrossChains } = acrossChains
+    const { isPending, isError } = chainIds ? acrossChains : singleChain
 
     const balanceData = useMemo<ChainAssetBalance[]>(() => {
+        if (chainIds) {
+            return heldAcrossChains.filter(balance =>
+                chainIds.includes(balance.scope.chainId),
+            )
+        }
         const own = selectedAddress
             ? accountBalances.get(selectedAddress)?.assetBalances
             : undefined
         return (own ?? []).map(balance => ({ ...balance, scope }))
-    }, [accountBalances, selectedAddress, scope])
+    }, [accountBalances, chainIds, heldAcrossChains, selectedAddress, scope])
 
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
@@ -94,9 +113,14 @@ export const useAccountAssetSelectionList = ({
               })
             : items
 
-        const excluded = excludeAssetId
-            ? filtered.filter(item => item.assetId !== excludeAssetId)
-            : filtered
+        const excludedKey = excludeAsset ? assetRefKey(excludeAsset) : null
+        const excluded = filtered.filter(
+            item =>
+                assetRefKey({
+                    chainId: item.scope.chainId,
+                    assetId: item.assetId,
+                }) !== excludedKey,
+        )
 
         const predicated = filterAsset ? excluded.filter(filterAsset) : excluded
 
@@ -110,7 +134,7 @@ export const useAccountAssetSelectionList = ({
         }
 
         return [...predicated].sort(byNativeFirst)
-    }, [balanceData, debouncedSearchFilter, excludeAssetId, filterAsset])
+    }, [balanceData, debouncedSearchFilter, excludeAsset, filterAsset])
 
     return {
         filteredBalanceData,

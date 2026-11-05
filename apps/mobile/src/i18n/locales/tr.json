@@ -3945,15 +3945,15 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç",
-            "pay_from": "Ödeme ağı"
+            "select_asset": "Seç"
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
             "swap_to_title": "Hedef varlık",
             "search_placeholder": "Ada veya ID’ye göre ara",
             "no_results_title": "Eşleşen varlık yok",
-            "no_results_body": "Arama terimine uyan varlık bulunamadı"
+            "no_results_body": "Arama terimine uyan varlık bulunamadı",
+            "no_chain_results_body": "Bu ağda kullanılabilir varlık yok"
         },
         "configuration": {
             "title": "Swap ayarları",
@@ -3977,6 +3977,9 @@
             "slippage_tolerance": "Kayma toleransı",
             "pera_fee": "Pera ücreti",
             "network_fee": "Ağ ücreti",
+            "provider_fee": "Sağlayıcı ücreti",
+            "route": "Rota",
+            "cross_chain_note": "Sağlayıcı swap işlemini tamamladığında {{asset}} varlığın {{network}} ağına ulaşır. İşlemi Swap ekranından takip edebilirsin.",
             "spend_approval_note": "Önce bu swap tutarı için bir onay, ardından swap işlemini imzalayacaksın.",
             "insufficient_network_fee": "Ağ ücretini ödemek için yeterli {{symbol}} yok.",
             "provider": "Sağlayıcı",

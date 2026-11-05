@@ -25,7 +25,7 @@ import {
     vi,
 } from 'vitest'
 import React, { useEffect, useRef } from 'react'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
@@ -56,7 +56,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
@@ -245,16 +244,10 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
         useSwapTrackingStore.getState().resetState()
-        // Hydration landing after the override would clobber it.
-        await useRemoteConfigStore.persist.rehydrate()
-        useRemoteConfigStore
-            .getState()
-            .setConfigOverride('enable_cross_chain_swap', true)
     })
     afterEach(() => {
         host = null
         vi.restoreAllMocks()
-        useRemoteConfigStore.getState().resetState()
         getProvider().chains.reset()
         registerChainAdapters()
     })
@@ -323,7 +316,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
     })
 
     describe('the receive picker', () => {
-        const offeredChains = async (account: WalletAccount) => {
+        const openPicker = async (account: WalletAccount) => {
             selectAccount(account)
             server.use(
                 mockSwapPairs({
@@ -355,33 +348,35 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
                 { wrapper: createQueryClientWrapper() },
             )
             await waitFor(() => expect(result.current.isLoading).toBe(false))
-            return result.current.items.map(item => item.swapAsset.ref.chainId)
+            return result
         }
 
+        const chainsOf = (picker: Awaited<ReturnType<typeof openPicker>>) =>
+            picker.current.items.map(item => item.swapAsset.ref.chainId)
+
         it('Given an account with a signing Ethereum address, when the picker lists pairs, then ETH is offered', async () => {
-            const chains = await offeredChains(
+            const picker = await openPicker(
                 withEthereum(await seedAlgo25Signer()),
             )
 
-            expect(chains).toEqual(['ethereum', 'algorand'])
+            expect(chainsOf(picker)).toEqual(['ethereum', 'algorand'])
         })
 
-        it('Given no account on Ethereum, when the picker lists pairs, then ETH is not offered', async () => {
-            const chains = await offeredChains(await seedAlgo25Signer())
-
-            expect(chains).toEqual(['algorand'])
-        })
-
-        it('Given the flag is off, when the picker lists pairs, then ETH is not offered', async () => {
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride('enable_cross_chain_swap', false)
-
-            const chains = await offeredChains(
+        it('Given an account with a signing Ethereum address, when the Ethereum chip is picked, then only Ethereum pairs remain', async () => {
+            const picker = await openPicker(
                 withEthereum(await seedAlgo25Signer()),
             )
 
-            expect(chains).toEqual(['algorand'])
+            act(() => picker.current.handleSelectChain('ethereum'))
+
+            await waitFor(() => expect(chainsOf(picker)).toEqual(['ethereum']))
+        })
+
+        it('Given no account on Ethereum, when the picker lists pairs, then ETH is not offered and no chips show', async () => {
+            const picker = await openPicker(await seedAlgo25Signer())
+
+            expect(chainsOf(picker)).toEqual(['algorand'])
+            expect(picker.current.chainOptions).toEqual([])
         })
     })
 })

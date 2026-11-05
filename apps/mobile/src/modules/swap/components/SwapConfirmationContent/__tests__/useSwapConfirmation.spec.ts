@@ -416,6 +416,26 @@ describe('useSwapConfirmation', () => {
         expect(result.current.networkFeeDisplay).toBe('1000 ALGO')
     })
 
+    it("prefers the source chain's estimate over the quote's network fee", () => {
+        mockSourceCost(SOURCE_COST)
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: refOf('0'),
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBe(
+            `${SOURCE_COST.networkFee.toString()} ETH`,
+        )
+    })
+
     it('formats the Pera fee in the asset it is charged in', () => {
         const quote = makeQuote({
             fees: [

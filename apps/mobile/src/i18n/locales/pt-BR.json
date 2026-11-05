@@ -3967,15 +3967,15 @@
             "to": "Para",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Selecionar",
-            "pay_from": "Pagar com"
+            "select_asset": "Selecionar"
         },
         "asset_selection": {
             "swap_from_title": "Converter de",
             "swap_to_title": "Converter para",
             "search_placeholder": "Buscar por nome ou ID",
             "no_results_title": "Nenhum ativo encontrado",
-            "no_results_body": "Nenhum ativo corresponde à sua busca"
+            "no_results_body": "Nenhum ativo corresponde à sua busca",
+            "no_chain_results_body": "Nenhum ativo disponível nesta rede"
         },
         "configuration": {
             "title": "Configurações de conversão",
@@ -3999,6 +3999,9 @@
             "slippage_tolerance": "Tolerância de slippage",
             "pera_fee": "Taxa da Pera",
             "network_fee": "Taxa de rede",
+            "provider_fee": "Taxa do provedor",
+            "route": "Rota",
+            "cross_chain_note": "Seu {{asset}} chega em {{network}} assim que o provedor concluir a conversão. Acompanhe na tela Converter.",
             "spend_approval_note": "Primeiro você vai assinar uma aprovação para o valor desta conversão e, depois, a conversão.",
             "insufficient_network_fee": "{{symbol}} insuficiente para pagar a taxa de rede.",
             "provider": "Provedor",
