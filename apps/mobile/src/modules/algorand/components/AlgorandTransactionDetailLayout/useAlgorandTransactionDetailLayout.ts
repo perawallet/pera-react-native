@@ -147,8 +147,10 @@ export const useAlgorandTransactionDetailLayout = (
 
         // An inner transaction has a round but no id of its own.
         const isOnChain = !!transaction.id || !!transaction.confirmedRound
-        // Only the sender pays the fee; one still to be signed shows it whoever is viewing.
-        const isFeeShown = !isOnChain || transaction.sender === viewer
+        // Only the sender pays the fee. One still to be signed, or seen with no
+        // account to compare, shows it.
+        const isFeeShown =
+            !isOnChain || !viewer || transaction.sender === viewer
 
         return {
             scope,

@@ -89,7 +89,6 @@ describe('useAlgorandTransactionDetailLayout', () => {
     })
 
     it('Given a confirmed payment, then it carries the id, round, time, parties and fee in display units', () => {
-        mockViewer = FIXTURE_SENDER
         const summary = summaryOf(
             viewOf('payment', {
                 confirmedRound: 42n,
@@ -116,6 +115,14 @@ describe('useAlgorandTransactionDetailLayout', () => {
         expect(
             summaryOf(viewOf('payment', { confirmedRound: 42n })).fee,
         ).toBeUndefined()
+    })
+
+    it('Given no account viewing it, then a confirmed payment keeps its fee, since who paid it is unknown', () => {
+        expect(
+            summaryOf(
+                viewOf('payment', { confirmedRound: 42n }),
+            ).fee?.value.toString(),
+        ).toBe('0.001')
     })
 
     it('Given an unsigned transaction, then it keeps its fee whoever is viewing, since it is about to be signed', () => {

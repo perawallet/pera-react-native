@@ -155,23 +155,6 @@ describe('TransactionDetailBody', () => {
         mockNetworkConfig.explorerUrl = 'https://explorer.test'
     })
 
-    describe.each(DETAIL_KINDS)('%s still to be signed', kind => {
-        it('renders the fee', () => {
-            renderDetail(
-                buildAlgorandDisplayFixture(kind, {
-                    id: '',
-                    confirmedRound: undefined,
-                }),
-            )
-
-            const feeRow = screen.getByTestId('transaction_detail_fee')
-            expect(
-                within(feeRow).getByText('transactions.common.fee'),
-            ).toBeTruthy()
-            expect(within(feeRow).getByText(/0\.001/)).toBeTruthy()
-        })
-    })
-
     describe.each(DETAIL_KINDS)('%s', (kind, expected) => {
         beforeEach(() => {
             renderDetail(buildAlgorandDisplayFixture(kind))
@@ -191,8 +174,12 @@ describe('TransactionDetailBody', () => {
             ).toBeTruthy()
         })
 
-        it('shows no fee, since no account viewing it sent it', () => {
-            expect(screen.queryByTestId('transaction_detail_fee')).toBeNull()
+        it('renders the fee', () => {
+            const feeRow = screen.getByTestId('transaction_detail_fee')
+            expect(
+                within(feeRow).getByText('transactions.common.fee'),
+            ).toBeTruthy()
+            expect(within(feeRow).getByText(/0\.001/)).toBeTruthy()
         })
 
         if (expected.participants.length > 0) {
@@ -223,12 +210,7 @@ describe('TransactionDetailBody', () => {
     ] as const)(
         'renders the asset %s row alongside the fee',
         (variant, title, label, address) => {
-            renderDetail(
-                buildAlgorandAssetTransferFixture(variant, {
-                    id: '',
-                    confirmedRound: undefined,
-                }),
-            )
+            renderDetail(buildAlgorandAssetTransferFixture(variant))
 
             expect(screen.getByText(title)).toBeTruthy()
             expect(screen.getByText(label)).toBeTruthy()
