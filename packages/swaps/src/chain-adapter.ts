@@ -93,6 +93,9 @@ export class SwapAccountUnsupportedError extends AppError {
 export const swapChainAdapters =
     createChainAdapterRegistry<SwapChainAdapter>('swap')
 
+export const isSwapChain = (chainId: ChainId): boolean =>
+    swapChainAdapters.has(chainId)
+
 export const swapAdapterFor = (scope: ChainScope): SwapChainAdapter =>
     swapChainAdapters.get(scope.chainId)
 

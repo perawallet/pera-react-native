@@ -25,6 +25,7 @@ import { useCapability, type CapabilityRequirement } from '@hooks/useCapability'
 import { useIsCardAutoFundingEnabled } from '../useIsCardAutoFundingEnabled'
 import { useIsCardPushProvisioningEnabled } from '../useIsCardPushProvisioningEnabled'
 import { useIsCloudBackupEnabled } from '../useIsCloudBackupEnabled'
+import { useIsCrossChainSwapEnabled } from '../useIsCrossChainSwapEnabled'
 import { useIsGiftCardsEnabled } from '../useIsGiftCardsEnabled'
 import { useIsLanguageSelectionEnabled } from '../useIsLanguageSelectionEnabled'
 import { useIsPeraCardEnabled } from '../useIsPeraCardEnabled'
@@ -105,6 +106,12 @@ const FLAG_HOOKS: FlagHookCase[] = [
         name: 'useIsCardPushProvisioningEnabled',
         hook: useIsCardPushProvisioningEnabled,
         key: 'enable_card_push_provisioning',
+        enabledWhenUnsetIn: ['__DEV__', 'appEnvironment staging'],
+    },
+    {
+        name: 'useIsCrossChainSwapEnabled',
+        hook: useIsCrossChainSwapEnabled,
+        key: 'enable_cross_chain_swap',
         enabledWhenUnsetIn: ['__DEV__', 'appEnvironment staging'],
     },
     {

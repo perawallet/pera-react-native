@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { AccountAssetItemView } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 
 import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -37,13 +38,16 @@ const isVerificationTier = (
 export type SwapToAssetItemViewProps = {
     swapAsset: SwapAsset
     balance: Nullable<Decimal>
+    /** The scope the asset lives on, which may differ from the swap scope. */
     scope: ChainScope
+    isChainShown?: boolean
 } & PWTouchableOpacityProps
 
 export const SwapToAssetItemView = ({
     swapAsset,
     balance,
     scope,
+    isChainShown,
     ...rest
 }: SwapToAssetItemViewProps) => {
     const accountBalance = useMemo<AssetWithAccountBalance>(() => {
@@ -79,6 +83,11 @@ export const SwapToAssetItemView = ({
             scope={scope}
             logoUrl={swapAsset.logo}
             showBalance={balance !== null}
+            subtitle={
+                isChainShown ? (
+                    <ChainLabel chainId={scope.chainId} />
+                ) : undefined
+            }
             {...rest}
         />
     )

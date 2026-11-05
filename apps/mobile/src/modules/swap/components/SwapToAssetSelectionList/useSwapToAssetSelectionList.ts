@@ -24,8 +24,12 @@ import {
     type PeraAssetVerificationTier,
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    scopeOfSwapAsset,
     useSwapPairsInfiniteQuery,
     type SwapAsset,
 } from '@perawallet/wallet-core-swaps'
@@ -33,6 +37,7 @@ import {
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
 
 export type AvailableAssetWithBalance = {
     swapAsset: SwapAsset
@@ -44,7 +49,7 @@ type UseSwapToAssetSelectionListParams = {
     fromAssetId: string
     isVisible?: boolean
     excludeAssetId?: string
-    onAssetSelected: (asset: AssetWithAccountBalance) => void
+    onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
 }
 
 type UseSwapToAssetSelectionListResult = {
@@ -85,6 +90,8 @@ export const useSwapToAssetSelectionList = ({
                 : null,
         [fromAssetId, scope.chainId, scope.networkId],
     )
+    const selectedAccount = useSelectedAccount()
+    const destinationScopes = useSwapDestinationScopes(selectedAccount, scope)
     const {
         assets: availableAssets,
         isLoading,
@@ -93,6 +100,7 @@ export const useSwapToAssetSelectionList = ({
     } = useSwapPairsInfiniteQuery({
         anchor,
         scope,
+        destinationScopes,
         q: debouncedSearchFilter || undefined,
     })
 
@@ -100,7 +108,6 @@ export const useSwapToAssetSelectionList = ({
         if (hasNextPage) fetchNextPage()
     }, [hasNextPage, fetchNextPage])
 
-    const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
         scope,
@@ -118,24 +125,33 @@ export const useSwapToAssetSelectionList = ({
     }, [accountBalances, selectedAddress])
 
     const items = useMemo((): AvailableAssetWithBalance[] => {
+        const scopeKey = toScopeKey(scope)
+        // Asset ids are only unique within a scope: every EVM chain's native
+        // asset is 'native'.
         return availableAssets
-            .filter(
-                asset =>
-                    excludeAssetId === undefined ||
-                    asset.assetId !== excludeAssetId,
-            )
             .map(swapAsset => ({
                 swapAsset,
-                balance: balanceMap.get(swapAsset.assetId) ?? null,
+                isOnScope: toScopeKey(swapAsset.ref) === scopeKey,
             }))
-    }, [availableAssets, balanceMap, excludeAssetId])
+            .filter(
+                ({ swapAsset, isOnScope }) =>
+                    !isOnScope || swapAsset.assetId !== excludeAssetId,
+            )
+            .map(({ swapAsset, isOnScope }) => ({
+                swapAsset,
+                balance: isOnScope
+                    ? (balanceMap.get(swapAsset.assetId) ?? null)
+                    : null,
+            }))
+    }, [availableAssets, balanceMap, excludeAssetId, scope])
 
     const handleAssetSelected = useCallback(
         (item: AvailableAssetWithBalance) => {
             const assetId = item.swapAsset.assetId
+            const assetScope = scopeOfSwapAsset(item.swapAsset.ref)
             // Seed the AssetSelector's cache entry so the selection renders
             // without waiting on the network fetch for an unowned asset.
-            const queryKey = getAssetsQueryKey([assetId], scope, {
+            const queryKey = getAssetsQueryKey([assetId], assetScope, {
                 fetchMissing: true,
             })
             // An empty array counts as "not cached": the asset may be absent
@@ -159,15 +175,18 @@ export const useSwapToAssetSelectionList = ({
                 }
                 queryClient.setQueryData(queryKey, [peraAsset])
             }
-            onAssetSelected({
-                assetId,
-                amount: item.balance ?? new Decimal(0),
-                nativeValue: null,
-                fiatValue: null,
-                restriction: null,
-            })
+            onAssetSelected(
+                {
+                    assetId,
+                    amount: item.balance ?? new Decimal(0),
+                    nativeValue: null,
+                    fiatValue: null,
+                    restriction: null,
+                },
+                assetScope,
+            )
         },
-        [onAssetSelected, queryClient, scope],
+        [onAssetSelected, queryClient],
     )
 
     return {

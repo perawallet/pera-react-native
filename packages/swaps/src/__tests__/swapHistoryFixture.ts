@@ -35,6 +35,7 @@ export const makeSwapHistoryItem = (
     amountInUsdValue: '1.00',
     amountOutUsdValue: '2.00',
     transactions: [],
+    fundingMethod: null,
     createdAt: '2026-10-01T10:00:00Z',
     updatedAt: '2026-10-01T10:01:00Z',
     ...overrides,

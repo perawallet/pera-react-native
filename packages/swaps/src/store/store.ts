@@ -11,6 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapsState } from '../models'
 import {
     guardedPersist,
@@ -26,6 +27,8 @@ const STORE_NAME = 'swaps-store'
 const initialState = {
     fromAsset: null as Nullable<string>,
     toAsset: null as Nullable<string>,
+    toAssetScope: null as Nullable<ChainScope>,
+    receivingAccountId: null as Nullable<string>,
     slippage: null as Nullable<string>,
     isLocalCurrencyInput: false,
 }
@@ -37,7 +40,12 @@ export const useSwapsStore: UseBoundStore<
         set => ({
             ...initialState,
             setFromAsset: (fromAsset: string) => set({ fromAsset }),
-            setToAsset: (toAsset: string) => set({ toAsset }),
+            setToAsset: (
+                toAsset: string,
+                toAssetScope: Nullable<ChainScope> = null,
+            ) => set({ toAsset, toAssetScope }),
+            setReceivingAccountId: (receivingAccountId: Nullable<string>) =>
+                set({ receivingAccountId }),
             setSlippage: (slippage: Nullable<string>) => set({ slippage }),
             setIsLocalCurrencyInput: (value: boolean) =>
                 set({ isLocalCurrencyInput: value }),

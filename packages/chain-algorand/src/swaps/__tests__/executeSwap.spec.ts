@@ -53,21 +53,33 @@ const mockSendRawTransaction = vi.fn()
 const mockCreateOrder = vi.fn()
 const mockReportOrder = vi.fn()
 const mockRegisterHandoff = vi.fn()
+const mockOnOrderSubmitting = vi.fn()
+const mockOnOrderRejected = vi.fn()
 const mockOnProgress = vi.fn()
 const mockIsMultisigAccount = vi.fn()
 const mockGetHoldingRestriction = vi.fn()
 // Hoisted so they're initialized before the (hoisted) mock factories run.
-const { mockValidate, mockComputeShortfall, mockGetOpenSubmissionAttempts } =
-    vi.hoisted(() => ({
-        mockValidate: vi.fn(),
-        mockComputeShortfall: vi.fn(),
-        mockGetOpenSubmissionAttempts: vi.fn(),
-    }))
+const {
+    mockValidate,
+    mockComputeShortfall,
+    mockGetOpenSubmissionAttempts,
+    MockSubmissionError,
+} = vi.hoisted(() => ({
+    mockValidate: vi.fn(),
+    mockComputeShortfall: vi.fn(),
+    mockGetOpenSubmissionAttempts: vi.fn(),
+    MockSubmissionError: class extends Error {
+        constructor(readonly classification: string) {
+            super(classification)
+        }
+    },
+}))
 
 // Re-implements the few lines of the broadcaster's `submitAndAutoRefresh` this
 // flow relies on instead of importing the signing package, whose store graph
 // this narrow mock can't satisfy.
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    SubmissionError: MockSubmissionError,
     getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
     submitAndAutoRefresh: async (
@@ -168,6 +180,8 @@ const makeContext = (
     createOrder: mockCreateOrder,
     reportOrder: mockReportOrder,
     registerHandoff: mockRegisterHandoff,
+    onOrderSubmitting: mockOnOrderSubmitting,
+    onOrderRejected: mockOnOrderRejected,
 })
 
 type RunOptions = {
@@ -239,8 +253,8 @@ const makeQuote = (quoteId: string): SwapQuote =>
             destinationAddress: 'SWAPPER',
             slippage: null,
         },
-        assetIn: { assetId: '0' },
-        assetOut: { assetId: '999' },
+        assetIn: { assetId: '0', ref: { ...SCOPE, assetId: '0' } },
+        assetOut: { assetId: '999', ref: { ...SCOPE, assetId: '999' } },
         fees: [],
         expiresAt: null,
         // Freshly stamped: the confirm-time freshness guard refuses
@@ -355,10 +369,31 @@ describe('executeAlgorandSwap', () => {
         mockComputeShortfall.mockReturnValue(null)
     })
 
+    it('announces the order before broadcasting, and not at all when nothing is signed', async () => {
+        await run(makeQuote('quote-123'))
+
+        expect(mockOnOrderSubmitting).toHaveBeenCalledWith('12345')
+        expect(mockOnOrderSubmitting.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSendRawTransaction.mock.invocationCallOrder[0],
+        )
+
+        mockOnOrderSubmitting.mockClear()
+        mockValidate.mockImplementationOnce(() => {
+            throw new Error('refused')
+        })
+        await run(makeQuote('quote-124'))
+
+        expect(mockOnOrderSubmitting).not.toHaveBeenCalled()
+    })
+
     it('executes full flow: order → pipeline sign → submit → order report', async () => {
         const result = await run(makeQuote('quote-123'))
 
-        expect(result).toEqual({ kind: 'success', txIds: ['submitted-tx-id'] })
+        expect(result).toEqual({
+            kind: 'success',
+            orderId: '12345',
+            txIds: ['submitted-tx-id'],
+        })
         expect(mockOnProgress.mock.calls.map(([p]) => p)).toEqual([
             'preparing',
             'signing',
@@ -505,6 +540,7 @@ describe('executeAlgorandSwap', () => {
 
         expect(result).toEqual({
             kind: 'success',
+            orderId: '12345',
             txIds: ['group-1-id', 'group-2-id'],
         })
         expect(mockSendRawTransaction).toHaveBeenCalledTimes(2)
@@ -776,11 +812,37 @@ describe('executeAlgorandSwap', () => {
         expect(input.optInMbr).toBeUndefined()
     })
 
+    it('leaves an output paid out on another chain out of the holding checks', async () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const quote = {
+            ...makeQuote('quote-cross-chain'),
+            routeKind: 'cross-chain',
+            assetOut: { assetId: '0', ref: { ...ETH, assetId: '0' } },
+        } as unknown as SwapQuote
+        mockAccountInformation.mockResolvedValue({
+            amount: 700_000n,
+            minBalance: 200_000n,
+            assets: [],
+        })
+
+        await run(quote, { account: senderAccount })
+
+        expect(
+            mockGetHoldingRestriction.mock.calls.map(
+                ([args]) => (args as { assetId: string }).assetId,
+            ),
+        ).toEqual(['0'])
+        const input = mockComputeShortfall.mock.calls[0][0] as {
+            optInMbr?: Decimal
+        }
+        expect(input.optInMbr).toBeUndefined()
+    })
+
     it('skips the opt-in reserve when the receive asset is ALGO', async () => {
         const quote = {
             ...makeQuote('quote-to-algo'),
-            assetIn: { assetId: '999' },
-            assetOut: { assetId: '0' },
+            assetIn: { assetId: '999', ref: { ...SCOPE, assetId: '999' } },
+            assetOut: { assetId: '0', ref: { ...SCOPE, assetId: '0' } },
         } as unknown as SwapQuote
 
         await run(quote, { account: senderAccount })
@@ -1039,6 +1101,26 @@ describe('executeAlgorandSwap', () => {
         })
         // A group may already be on chain: the router settles it from there.
         expect(mockReportOrder).not.toHaveBeenCalled()
+    })
+
+    it('gives up the order when a node refuses the first group', async () => {
+        mockSendRawTransaction.mockRejectedValue(
+            new MockSubmissionError('rejected-by-node'),
+        )
+
+        await run(makeQuote('quote-node-refused'))
+
+        expect(mockOnOrderRejected).toHaveBeenCalledWith('12345')
+    })
+
+    it('keeps the order when the submit got no node verdict', async () => {
+        mockSendRawTransaction.mockRejectedValue(
+            new MockSubmissionError('unknown-outcome'),
+        )
+
+        await run(makeQuote('quote-lost-response'))
+
+        expect(mockOnOrderRejected).not.toHaveBeenCalled()
     })
 
     it('still succeeds if status update fails (non-fatal)', async () => {

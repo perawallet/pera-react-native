@@ -4026,6 +4026,20 @@
                     "body": "Wir konnten deinen Tauschverlauf nicht laden. Bitte versuche es erneut."
                 }
             }
+        },
+        "tracking": {
+            "started": "Cross-Chain-Swap gesendet",
+            "in_progress": "Läuft. Dein Guthaben ist unterwegs.",
+            "completed": "Abgeschlossen. Dein {{toAsset}} ist angekommen.",
+            "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",
+            "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
+            "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "dismiss": "Ausblenden"
+        },
+        "receiving_account": {
+            "title": "Empfangskonto",
+            "label": "Empfangen auf"
         }
     },
     "onramp": {

@@ -105,11 +105,10 @@ export const useSwapPairHistoryWidget = (
             <SwapPairChip
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
-                chainId={scope.chainId}
                 onPress={() => handlePairPress(item)}
             />
         ),
-        [handlePairPress, scope.chainId],
+        [handlePairPress],
     )
 
     const keyExtractor = useCallback(

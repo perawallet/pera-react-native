@@ -12,7 +12,11 @@
 
 import { useCallback } from 'react'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets'
 import {
@@ -25,7 +29,7 @@ import { useStyles } from './styles'
 export type SwapToAssetSelectionListProps = {
     scope: ChainScope
     fromAssetId: string
-    onAssetSelected: (asset: AssetWithAccountBalance) => void
+    onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
     isVisible?: boolean
     excludeAssetId?: string
     searchPlaceholder: string
@@ -63,16 +67,25 @@ export const SwapToAssetSelectionList = ({
     })
 
     const renderItem = useCallback(
-        ({ item }: { item: AvailableAssetWithBalance }) => (
-            <SwapToAssetItemView
-                swapAsset={item.swapAsset}
-                balance={item.balance}
-                scope={scope}
-                onPress={() => handleAssetSelected(item)}
-                style={styles.item}
-                testID={`swap-asset-item-${item.swapAsset.assetId}`}
-            />
-        ),
+        ({ item }: { item: AvailableAssetWithBalance }) => {
+            const { ref } = item.swapAsset
+            const isOnScope = toScopeKey(ref) === toScopeKey(scope)
+            return (
+                <SwapToAssetItemView
+                    swapAsset={item.swapAsset}
+                    balance={item.balance}
+                    scope={scopeOfSwapAsset(ref)}
+                    isChainShown={!isOnScope}
+                    onPress={() => handleAssetSelected(item)}
+                    style={styles.item}
+                    testID={
+                        isOnScope
+                            ? `swap-asset-item-${item.swapAsset.assetId}`
+                            : `swap-asset-item-${ref.chainId}-${item.swapAsset.assetId}`
+                    }
+                />
+            )
+        },
         [handleAssetSelected, scope, styles],
     )
 
@@ -80,7 +93,10 @@ export const SwapToAssetSelectionList = ({
         <AssetSelectionList
             data={items}
             renderItem={renderItem}
-            keyExtractor={item => item.swapAsset.assetId}
+            // Ids repeat across chains: every EVM chain's native asset is 'native'.
+            keyExtractor={item =>
+                `${toScopeKey(item.swapAsset.ref)}/${item.swapAsset.assetId}`
+            }
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}

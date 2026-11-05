@@ -78,6 +78,23 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
     })
 
+    test('leaves out orders the wallet did not fund itself', async () => {
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: [
+                makeSwapHistoryItem({ orderId: 'a', fundingMethod: 'deposit' }),
+            ],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(result.current.data).toEqual([])
+    })
+
     test('is disabled without an address', () => {
         renderHook(() => useDistinctPairsHistoryQuery('', SCOPE), {
             wrapper: createWrapper(),

@@ -14,7 +14,11 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../../hooks/useSwapExecution'
@@ -92,6 +96,78 @@ describe('useSwapConfirmation', () => {
             integer: '0',
             fraction: '.25',
         } as unknown as ReturnType<typeof formatNumber>)
+    })
+
+    describe('receiveTarget', () => {
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const RECEIVER = {
+            id: 'receiver',
+            chains: { ethereum: { address: '0xRECEIVER' } },
+        } as unknown as WalletAccount
+
+        const crossChainQuote = (destinationAddress: string) =>
+            makeQuote({
+                routeKind: 'cross-chain',
+                request: {
+                    slippage: null,
+                    destinationAddress,
+                    destinationAsset: { ...ETH_SCOPE, assetId: '0' },
+                },
+            } as unknown as Partial<SwapQuote>)
+
+        it('names the account the payout goes to, on the receive chain', () => {
+            vi.mocked(useAllAccounts).mockReturnValue([RECEIVER])
+
+            const { result } = renderConfirmation(crossChainQuote('0xRECEIVER'))
+
+            expect(result.current.receiveTarget).toEqual({
+                account: RECEIVER,
+                address: '0xRECEIVER',
+                scope: ETH_SCOPE,
+            })
+        })
+
+        it('still gives the address when no account holds it', () => {
+            vi.mocked(useAllAccounts).mockReturnValue([RECEIVER])
+
+            const { result } = renderConfirmation(crossChainQuote('0xOTHER'))
+
+            expect(result.current.receiveTarget).toEqual({
+                account: null,
+                address: '0xOTHER',
+                scope: ETH_SCOPE,
+            })
+        })
+
+        it('is null on a same-chain swap', () => {
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.receiveTarget).toBeNull()
+        })
+    })
+
+    it('reads the receive asset on the chain it pays out on', () => {
+        const ethRef = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+            assetId: '0',
+        } as const
+
+        renderConfirmation(
+            makeQuote({
+                assetOut: {
+                    assetId: '0',
+                    ref: ethRef,
+                    unitName: 'ETH',
+                    decimals: 18,
+                } as unknown as SwapQuote['assetOut'],
+            }),
+        )
+
+        expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            { chainId: 'ethereum', networkId: 'mainnet' },
+            ['0'],
+        )
     })
 
     it('exposes the selected account', () => {

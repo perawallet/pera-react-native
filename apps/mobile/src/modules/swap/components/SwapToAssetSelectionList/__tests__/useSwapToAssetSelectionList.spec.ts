@@ -49,6 +49,23 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapPairsInfiniteQuery: mockUseSwapPairsInfiniteQuery,
+    scopeOfSwapAsset: ({
+        chainId,
+        networkId,
+    }: {
+        chainId: string
+        networkId: string
+    }) => ({ chainId, networkId }),
+}))
+
+const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+const mockDestinationScopes = vi.hoisted(() => ({
+    current: [] as { chainId: string; networkId: string }[],
+}))
+vi.mock('../../../hooks/useSwapDestinationScopes', () => ({
+    useSwapDestinationScopes: () => mockDestinationScopes.current,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -65,6 +82,7 @@ const mockFetchNextPage = vi.fn()
 
 const mockAvailableAssets = [
     {
+        ref: { ...ALGO_SCOPE, assetId: '31566704' },
         assetId: '31566704',
         name: 'USD Coin',
         unitName: 'USDC',
@@ -73,6 +91,7 @@ const mockAvailableAssets = [
         logo: 'https://example.com/usdc.png',
     },
     {
+        ref: { ...ALGO_SCOPE, assetId: '887406851' },
         assetId: '887406851',
         name: 'Wrapped SOL',
         unitName: 'wSOL',
@@ -81,6 +100,7 @@ const mockAvailableAssets = [
         logo: null,
     },
     {
+        ref: { ...ALGO_SCOPE, assetId: '0' },
         assetId: '0',
         name: 'Algo',
         unitName: 'ALGO',
@@ -90,6 +110,16 @@ const mockAvailableAssets = [
     },
 ]
 
+const ETH_NATIVE = {
+    ref: { ...ETH_SCOPE, assetId: '0' },
+    assetId: '0',
+    name: 'Ether',
+    unitName: 'ETH',
+    decimals: 18,
+    verificationTier: 'verified',
+    logo: null,
+}
+
 const mockAssetBalances = [
     { assetId: '31566704', amount: new Decimal('500') },
     { assetId: '0', amount: new Decimal('1000000') },
@@ -98,7 +128,7 @@ const mockAssetBalances = [
 const mockOnAssetSelected = vi.fn()
 
 const defaultParams = {
-    scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
+    scope: ALGO_SCOPE,
     fromAssetId: '31566704',
     onAssetSelected: mockOnAssetSelected,
 }
@@ -106,6 +136,7 @@ const defaultParams = {
 describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockDestinationScopes.current = [ALGO_SCOPE]
         mockGetQueryData.mockReturnValue(undefined)
         mockUseSelectedAccount.mockReturnValue({
             chains: { algorand: { address: 'TEST_ADDRESS' } },
@@ -174,6 +205,7 @@ describe('useSwapToAssetSelectionList', () => {
                 assetId: '31566704',
             },
             scope: defaultParams.scope,
+            destinationScopes: [ALGO_SCOPE],
             q: 'USDC',
         })
     })
@@ -299,13 +331,48 @@ describe('useSwapToAssetSelectionList', () => {
                 result.current.handleAssetSelected(usdc)
             })
 
-            expect(mockOnAssetSelected).toHaveBeenCalledWith({
-                assetId: '31566704',
-                amount: new Decimal('500'),
-                nativeValue: null,
-                fiatValue: null,
-                restriction: null,
+            expect(mockOnAssetSelected).toHaveBeenCalledWith(
+                {
+                    assetId: '31566704',
+                    amount: new Decimal('500'),
+                    nativeValue: null,
+                    fiatValue: null,
+                    restriction: null,
+                },
+                ALGO_SCOPE,
+            )
+        })
+
+        it('passes the scope of an asset on another chain, unbalanced and cached there', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [...mockAvailableAssets, ETH_NATIVE],
+                isLoading: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
             })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            const eth = result.current.items.find(
+                i => i.swapAsset.unitName === 'ETH',
+            )!
+
+            act(() => {
+                result.current.handleAssetSelected(eth)
+            })
+
+            // ALGO shares the id '0' and has a balance; it isn't this asset's.
+            expect(eth.balance).toBeNull()
+            expect(mockGetAssetsQueryKey).toHaveBeenCalledWith(
+                ['0'],
+                ETH_SCOPE,
+                { fetchMissing: true },
+            )
+            expect(mockOnAssetSelected).toHaveBeenCalledWith(
+                expect.objectContaining({ assetId: '0' }),
+                ETH_SCOPE,
+            )
         })
 
         it('seeds the query cache when the asset is not already cached', () => {
@@ -380,6 +447,7 @@ describe('useSwapToAssetSelectionList', () => {
 
             expect(mockOnAssetSelected).toHaveBeenCalledWith(
                 expect.objectContaining({ amount: new Decimal(0) }),
+                ALGO_SCOPE,
             )
         })
     })

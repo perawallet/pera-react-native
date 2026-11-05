@@ -4056,6 +4056,20 @@
                     "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
                 }
             }
+        },
+        "tracking": {
+            "started": "Conversão entre redes enviada",
+            "in_progress": "Em andamento. Seus fundos estão a caminho.",
+            "completed": "Concluída. Seu {{toAsset}} chegou.",
+            "failed": "A conversão não pôde ser concluída. Se seus fundos foram enviados, o provedor vai devolvê-los para sua conta.",
+            "refunded": "A conversão foi reembolsada. Seu {{fromAsset}} voltou para sua conta.",
+            "expired": "A conversão expirou antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias.",
+            "cancelled": "A conversão foi cancelada antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias.",
+            "dismiss": "Dispensar"
+        },
+        "receiving_account": {
+            "title": "Conta de recebimento",
+            "label": "Receber em"
         }
     },
     "onramp": {

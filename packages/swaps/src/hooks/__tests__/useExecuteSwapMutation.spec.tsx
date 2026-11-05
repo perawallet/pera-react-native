@@ -27,6 +27,7 @@ import {
 } from '../../chain-adapter'
 import { createSwapOrder, reportSwapOrder } from '../../api'
 import { registerFakeSwapAdapter } from '../../__tests__/fakeSwapAdapter'
+import { makeSwapQuote } from '../../__tests__/swapQuoteFixture'
 import { useExecuteSwapMutation } from '../useExecuteSwapMutation'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
@@ -36,9 +37,13 @@ const {
     mockCreateSwapOrder,
     mockReportSwapOrder,
     mockRegisterHandoff,
+    mockTrackOrder,
+    mockRemoveOrder,
     mockSelectedAccount,
     mockSwapScope,
 } = vi.hoisted(() => ({
+    mockTrackOrder: vi.fn(),
+    mockRemoveOrder: vi.fn(),
     mockAddSignRequest: vi.fn(),
     mockCreateSwapOrder: vi.fn(),
     mockReportSwapOrder: vi.fn(),
@@ -86,6 +91,12 @@ vi.mock('../../store', () => ({
             registerHandoff: typeof mockRegisterHandoff
         }) => unknown,
     ) => selector({ registerHandoff: mockRegisterHandoff }),
+    useSwapTrackingStore: (
+        selector: (state: {
+            trackOrder: typeof mockTrackOrder
+            removeOrder: typeof mockRemoveOrder
+        }) => unknown,
+    ) => selector({ trackOrder: mockTrackOrder, removeOrder: mockRemoveOrder }),
 }))
 
 vi.mock('../../api', () => ({
@@ -122,6 +133,7 @@ describe('useExecuteSwapMutation', () => {
         mockSwapScope.current = SCOPE
         mockCreateSwapOrder.mockReset()
         mockReportSwapOrder.mockReset()
+        mockTrackOrder.mockReset()
         executeSwap = vi.fn()
         registerFakeSwapAdapter({ executeSwap })
     })
@@ -129,6 +141,7 @@ describe('useExecuteSwapMutation', () => {
     test("hands the selected account, its signer and the wired context to its swap chain's adapter", async () => {
         vi.mocked(executeSwap).mockResolvedValue({
             kind: 'success',
+            orderId: 'O',
             txIds: ['T'],
         })
         const { result } = renderHook(() => useExecuteSwapMutation(), {
@@ -140,7 +153,7 @@ describe('useExecuteSwapMutation', () => {
             outcome = await result.current.mutateAsync(variables)
         })
 
-        expect(outcome).toEqual({ kind: 'success', txIds: ['T'] })
+        expect(outcome).toEqual({ kind: 'success', orderId: 'O', txIds: ['T'] })
         expect(executeSwap).toHaveBeenCalledWith(
             {
                 ...variables,
@@ -154,6 +167,8 @@ describe('useExecuteSwapMutation', () => {
                 createOrder: expect.any(Function),
                 reportOrder: expect.any(Function),
                 registerHandoff: mockRegisterHandoff,
+                onOrderSubmitting: expect.any(Function),
+                onOrderRejected: mockRemoveOrder,
             },
         )
     })
@@ -165,7 +180,7 @@ describe('useExecuteSwapMutation', () => {
                 orderId: 'S',
                 report: { status: 'cancelled' },
             })
-            return { kind: 'success', txIds: [] }
+            return { kind: 'success', orderId: 'S', txIds: [] }
         })
         const { result } = renderHook(() => useExecuteSwapMutation(), {
             wrapper,
@@ -251,6 +266,7 @@ describe('useExecuteSwapMutation', () => {
     test('executes on the account, signer and scope it was called with when the selection changes mid-swap', async () => {
         vi.mocked(executeSwap).mockResolvedValue({
             kind: 'success',
+            orderId: 'O',
             txIds: ['T'],
         })
         const original = mockSelectedAccount.current
@@ -281,5 +297,95 @@ describe('useExecuteSwapMutation', () => {
             },
             expect.objectContaining({ scope: SCOPE }),
         )
+    })
+
+    test('tracks a cross-chain order before its broadcast, so one that dies mid-submit is still followed', async () => {
+        vi.useFakeTimers({ now: 1_700_000_000_000, toFake: ['Date'] })
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const quote = makeSwapQuote({
+            routeKind: 'cross-chain',
+            request: {
+                sourceAsset: { ...SCOPE, assetId: '0' },
+                destinationAsset: { ...ETH, assetId: 'native' },
+                sourceAddress: 'ALGO_ADDR',
+                destinationAddress: '0xETH',
+            },
+            assetIn: { ref: { ...SCOPE, assetId: '0' }, unitName: 'ALGO' },
+            assetOut: { ref: { ...ETH, assetId: 'native' }, unitName: 'ETH' },
+        })
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderSubmitting('O')
+            return {
+                kind: 'failed',
+                failure: {
+                    phase: 'submission',
+                    reason: 'submission-failed',
+                    error: new Error('unknown outcome'),
+                },
+            }
+        })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.mutateAsync({ ...variables, quote })
+        })
+        vi.useRealTimers()
+
+        expect(mockTrackOrder).toHaveBeenCalledWith({
+            orderId: 'O',
+            sourceScope: SCOPE,
+            destinationScope: ETH,
+            sourceAddress: 'ALGO_ADDR',
+            destinationAddress: '0xETH',
+            assetIn: { ref: { ...SCOPE, assetId: '0' }, unitName: 'ALGO' },
+            assetOut: { ref: { ...ETH, assetId: 'native' }, unitName: 'ETH' },
+            status: 'pending',
+            createdAt: 1_700_000_000_000,
+            checkedAt: 1_700_000_000_000,
+        })
+    })
+
+    test('stops tracking an order a node refused', async () => {
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderRejected('O')
+            return {
+                kind: 'failed',
+                failure: {
+                    phase: 'submission',
+                    reason: 'submission-failed',
+                    error: new Error('rejected'),
+                },
+            }
+        })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.mutateAsync(variables)
+        })
+
+        expect(mockRemoveOrder).toHaveBeenCalledWith('O')
+    })
+
+    test('leaves a single-chain order untracked', async () => {
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderSubmitting('O')
+            return { kind: 'success', orderId: 'O', txIds: ['T'] }
+        })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.mutateAsync({
+                ...variables,
+                quote: makeSwapQuote(),
+            })
+        })
+
+        expect(mockTrackOrder).not.toHaveBeenCalled()
     })
 })

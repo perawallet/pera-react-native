@@ -16,8 +16,10 @@ import { Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     addressOn,
+    ownAddressOf,
     useAccountBalancesInvalidator,
     useSelectedAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -40,6 +42,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
+import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
@@ -47,7 +50,12 @@ import {
     registerTabResumeIntent,
 } from '@utils/tabResumeIntent'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
-import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
+import { useSwapReceiveTarget } from '../../hooks/useSwapReceiveTarget'
+import {
+    SwapAssetSelectionContent,
+    type SwapAssetSelection,
+} from '../SwapAssetSelectionContent'
+import { SwapReceivingAccountContent } from '../SwapReceivingAccountContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'
 import {
     SwapConfirmationContent,
@@ -61,6 +69,11 @@ import {
 type UseSwapFormResult = {
     payAssetId: string
     receiveAssetId: string
+    /** Where the receive asset lives: the swap scope, or another chain's. */
+    receiveScope: ChainScope
+    receivingAccount: Nullable<WalletAccount>
+    isDirectionDisabled: boolean
+    isChainShown: boolean
     payAmount: Nullable<Decimal>
     receiveAmount: Nullable<Decimal>
     payBalance: Nullable<Decimal>
@@ -79,6 +92,7 @@ type UseSwapFormResult = {
     handleMaxPress: () => void
     handleOpenPayAssetSelection: () => void
     handleOpenReceiveAssetSelection: () => void
+    handleOpenReceivingAccount: () => void
     handleOpenConfig: () => void
     handleOpenProvider: () => void
     handleOpenConfirm: () => void
@@ -140,16 +154,25 @@ export const useSwapForm = (
         fromAsset,
         scope,
     )
+    const isCrossChainEnabled = useIsCrossChainSwapEnabled()
+    const {
+        receiveScope,
+        isCrossChain,
+        receivingAccount,
+        receivingAddress,
+        receivingAccounts,
+        selectReceivingAccount,
+    } = useSwapReceiveTarget(scope)
     const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
+        receivingAccount ?? undefined,
         toAsset,
-        scope,
+        receiveScope,
     )
 
     // A percentage of what the account can spend, less the chain's fee reserve
     // and, for a first holding of the receive asset, the reserve it locks. An
     // unsettled receive balance reserves too: short of MAX beats failing at
-    // confirm.
+    // confirm. A holding on another chain locks nothing on this one.
     const swapAdapter = swapAdapterFor(scope)
     const { data: spendable, isPending: isSpendablePending } =
         useSpendableBalanceQuery(
@@ -158,11 +181,12 @@ export const useSwapForm = (
                       account: selectedAccount,
                       asset: { chainId: scope.chainId, assetId: fromAsset },
                       scope,
-                      fee: receiveAssetBalance
-                          ? swapAdapter.maxAmountFeeReserve
-                          : swapAdapter.maxAmountFeeReserve.add(
-                                swapAdapter.holdingReserve(scope),
-                            ),
+                      fee:
+                          isCrossChain || receiveAssetBalance
+                              ? swapAdapter.maxAmountFeeReserve
+                              : swapAdapter.maxAmountFeeReserve.add(
+                                    swapAdapter.holdingReserve(scope),
+                                ),
                   }
                 : undefined,
         )
@@ -179,6 +203,8 @@ export const useSwapForm = (
         swapperAddress: selectedAddress ?? null,
         fromAssetId: fromAsset,
         toAssetId: toAsset,
+        toAssetScope: receiveScope,
+        destinationAddress: receivingAddress,
         payAmount,
         payDecimals: payAsset?.decimals ?? null,
         slippage,
@@ -334,6 +360,7 @@ export const useSwapForm = (
     }, [scope.chainId])
 
     const handleSwapDirection = useCallback(() => {
+        if (isCrossChain) return
         previousFromAssetRef.current = toAsset
         isPercentageFillRef.current = false
         setFromAsset(toAsset)
@@ -343,6 +370,7 @@ export const useSwapForm = (
         setSelectedProviderName(null)
         resetQuotes()
     }, [
+        isCrossChain,
         fromAsset,
         toAsset,
         payAmount,
@@ -450,12 +478,12 @@ export const useSwapForm = (
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.AssetId]: fromAsset,
         })
-        const assetId = await requestBottomSheet<string>({
+        const selection = await requestBottomSheet<SwapAssetSelection>({
             contents: (
                 <SwapAssetSelectionContent
                     scope={scope}
                     variant='from'
-                    excludeAssetId={toAsset}
+                    excludeAssetId={isCrossChain ? undefined : toAsset}
                 />
             ),
             options: {
@@ -467,8 +495,8 @@ export const useSwapForm = (
         // Re-picking the current asset must be a full no-op: clearing the
         // quotes without changing any quote input would strand the fetch
         // state as loading with nothing in flight.
-        if (!assetId || assetId === fromAsset) return
-        setFromAsset(assetId)
+        if (!selection || selection.assetId === fromAsset) return
+        setFromAsset(selection.assetId)
         // The effect above also resets, but only after a paint; reset here
         // too so no frame shows the old amount against the new asset.
         resetAmounts()
@@ -476,6 +504,7 @@ export const useSwapForm = (
         requestBottomSheet,
         scope,
         toAsset,
+        isCrossChain,
         setFromAsset,
         fromAsset,
         resetAmounts,
@@ -486,7 +515,7 @@ export const useSwapForm = (
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.AssetId]: toAsset,
         })
-        const assetId = await requestBottomSheet<string>({
+        const selection = await requestBottomSheet<SwapAssetSelection>({
             contents: (
                 <SwapAssetSelectionContent
                     scope={scope}
@@ -501,12 +530,40 @@ export const useSwapForm = (
                 autoCreateContainer: false,
             },
         })
-        if (!assetId) return
-        setToAsset(assetId)
+        if (!selection) return
+        setToAsset(selection.assetId, selection.scope)
         setReceiveAmount(null)
         setSelectedProviderName(null)
         resetQuotes()
     }, [requestBottomSheet, scope, fromAsset, setToAsset, toAsset, resetQuotes])
+
+    const handleOpenReceivingAccount = useCallback(async () => {
+        await requestBottomSheet<string>({
+            contents: (
+                <SwapReceivingAccountContent
+                    accounts={receivingAccounts}
+                    chainId={receiveScope.chainId}
+                    selectedAddress={
+                        receivingAccount
+                            ? (ownAddressOf(receivingAccount) ?? null)
+                            : null
+                    }
+                    onSelect={selectReceivingAccount}
+                />
+            ),
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [
+        requestBottomSheet,
+        receivingAccounts,
+        receiveScope.chainId,
+        receivingAccount,
+        selectReceivingAccount,
+    ])
 
     const handleOpenProvider = useCallback(async () => {
         trackEvent(SwapEvent.SelectProviderOpen, {
@@ -612,11 +669,17 @@ export const useSwapForm = (
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
 
-        const successTitle = t('swap.execution.success_title')
-        const successBody = t('swap.execution.success_body', {
-            fromAsset: fromUnit,
-            toAsset: toUnit,
-        })
+        // A cross-chain payout lands minutes later; the tracked list follows it.
+        const isTracked = selectedQuote.routeKind === 'cross-chain'
+        const successTitle = isTracked
+            ? t('swap.tracking.started')
+            : t('swap.execution.success_title')
+        const successBody = isTracked
+            ? t('swap.tracking.in_progress')
+            : t('swap.execution.success_body', {
+                  fromAsset: fromUnit,
+                  toAsset: toUnit,
+              })
         successToast(successTitle, successBody)
         completeTabResume({ title: successTitle, body: successBody })
         resetAmounts()
@@ -677,6 +740,10 @@ export const useSwapForm = (
     return {
         payAssetId: fromAsset,
         receiveAssetId: toAsset,
+        receiveScope,
+        receivingAccount,
+        isDirectionDisabled: isCrossChain,
+        isChainShown: isCrossChainEnabled && isCrossChain,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,
@@ -695,6 +762,7 @@ export const useSwapForm = (
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>
             void handleOpenReceiveAssetSelection(),
+        handleOpenReceivingAccount: () => void handleOpenReceivingAccount(),
         handleOpenConfig: () => void handleOpenConfig(),
         handleOpenProvider: () => void handleOpenProvider(),
         handleOpenConfirm: () => void handleOpenConfirm(),

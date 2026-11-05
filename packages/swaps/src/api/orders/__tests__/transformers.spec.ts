@@ -105,4 +105,15 @@ describe('transformSwapOrderItem', () => {
             { scope: null, txHash: 'H2', role: 'payout' },
         ])
     })
+
+    test('passes the funding method through', () => {
+        const item = transformSwapOrderItem(
+            swapOrderItemSchema.parse(
+                routerOrderItem({ funding_method: 'deposit' }),
+            ),
+            swapAssetRefOf,
+        )
+
+        expect(item.fundingMethod).toBe('deposit')
+    })
 })

@@ -61,6 +61,8 @@ const context: SwapExecutionContext = {
     createOrder: vi.fn(),
     reportOrder: vi.fn(),
     registerHandoff: vi.fn(),
+    onOrderSubmitting: vi.fn(),
+    onOrderRejected: vi.fn(),
 }
 
 const caip2Of = (networkId: string): string => {

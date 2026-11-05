@@ -30,7 +30,7 @@ const adapter = fakeSwapAdapter({
                 failure: { phase: 'prepare', reason: 'unsupported-steps' },
             }
         }
-        return { kind: 'success', txIds: [] }
+        return { kind: 'success', orderId: order.orderId, txIds: [] }
     },
 })
 
@@ -45,5 +45,7 @@ swapContractTests(() => adapter, {
         createOrder: vi.fn(),
         reportOrder: vi.fn(),
         registerHandoff: vi.fn(),
+        onOrderSubmitting: vi.fn(),
+        onOrderRejected: vi.fn(),
     }),
 })

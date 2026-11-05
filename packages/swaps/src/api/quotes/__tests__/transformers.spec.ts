@@ -34,19 +34,37 @@ const request: SwapQuoteRequest = {
     slippage: '0.5',
 }
 
+const crossChainRequest: SwapQuoteRequest = {
+    ...request,
+    destinationAsset: { ...SCOPE_B, assetId: 'usdc' },
+    destinationAddress: 'RECEIVER',
+}
+
 describe('transformSwapQuote', () => {
     test('carries each leg on its own chain for a cross-chain offer', () => {
         registerSecondFakeSwapAdapter()
 
         const quote = transformSwapQuote(
             routerOffer({ destination_asset: routerAsset(SCOPE_B, 'usdc') }),
-            request,
+            crossChainRequest,
             swapAssetRefOf,
         )
 
         expect(quote.assetIn.ref).toEqual({ ...SCOPE_A, assetId: 'native' })
         expect(quote.assetOut.ref).toEqual({ ...SCOPE_B, assetId: 'usdc' })
         expect(quote.assetOut.assetId).toBe('usdc')
+        expect(quote.routeKind).toBe('cross-chain')
+    })
+
+    test('takes the route from the request, so an offer on one chain cannot escape the cross-chain rules', () => {
+        registerSecondFakeSwapAdapter()
+
+        const quote = transformSwapQuote(
+            routerOffer(),
+            crossChainRequest,
+            swapAssetRefOf,
+        )
+
         expect(quote.routeKind).toBe('cross-chain')
     })
 
@@ -133,5 +151,21 @@ describe('transformSwapQuote', () => {
                 swapAssetRefOf,
             ),
         ).toThrow(SwapQuoteMismatchError)
+    })
+
+    test('reads the deposit address the offer names', () => {
+        const quote = transformSwapQuote(
+            { ...routerOffer(), deposit_address: 'DEPOSIT' },
+            request,
+            swapAssetRefOf,
+        )
+
+        expect(quote.depositAddress).toBe('DEPOSIT')
+    })
+
+    test('leaves the deposit address null when the offer names none', () => {
+        const quote = transformSwapQuote(routerOffer(), request, swapAssetRefOf)
+
+        expect(quote.depositAddress).toBeNull()
     })
 })

@@ -27,6 +27,7 @@ const mockSetIsLocalCurrencyInput = vi.fn()
 const mockResetAssetPair = vi.fn()
 const mockInfoToast = vi.fn()
 const mockErrorToast = vi.fn()
+const mockSuccessToast = vi.fn()
 
 // Captured so a test can run the cleanup React Navigation would run on blur.
 let focusEffectCleanup: Nullable<() => void> = null
@@ -38,7 +39,7 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        successToast: vi.fn(),
+        successToast: mockSuccessToast,
         errorToast: mockErrorToast,
         infoToast: mockInfoToast,
         showToast: vi.fn(),
@@ -210,6 +211,36 @@ vi.mock('../../SwapAssetSelectionContent', () => ({
     SwapAssetSelectionContent: () => null,
 }))
 
+vi.mock('../../SwapReceivingAccountContent', () => ({
+    SwapReceivingAccountContent: () => null,
+}))
+
+const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const ETH_ACCOUNT = { id: 'eth', chains: { ethereum: { address: '0xETH' } } }
+type MockReceiveTarget = {
+    receiveScope: { chainId: string; networkId: string }
+    isCrossChain: boolean
+    receivingAccount: unknown
+    receivingAddress: Nullable<string>
+    receivingAccounts: unknown[]
+    selectReceivingAccount: () => void
+}
+const sameScopeTarget = (): MockReceiveTarget => ({
+    receiveScope: SCOPE,
+    isCrossChain: false,
+    receivingAccount: mockSelectedAccount,
+    receivingAddress: 'TESTADDRESS123',
+    receivingAccounts: [mockSelectedAccount],
+    selectReceivingAccount: vi.fn(),
+})
+let mockReceiveTarget: MockReceiveTarget
+vi.mock('../../../hooks/useSwapReceiveTarget', () => ({
+    useSwapReceiveTarget: () => mockReceiveTarget,
+}))
+vi.mock('@hooks/useIsCrossChainSwapEnabled', () => ({
+    useIsCrossChainSwapEnabled: () => true,
+}))
+
 vi.mock('../../SwapConfigurationContent', () => ({
     SwapConfigurationContent: () => null,
 }))
@@ -259,6 +290,75 @@ describe('useSwapForm', () => {
         mockIsPayBalanceFetched = true
         mockIsPayBalanceError = false
         focusEffectCleanup = null
+        mockReceiveTarget = sameScopeTarget()
+    })
+
+    describe('receiving on another chain', () => {
+        beforeEach(() => {
+            mockToAsset = '0'
+            mockReceiveTarget = {
+                ...sameScopeTarget(),
+                receiveScope: ETH_SCOPE,
+                isCrossChain: true,
+                receivingAccount: ETH_ACCOUNT,
+                receivingAddress: '0xETH',
+                receivingAccounts: [ETH_ACCOUNT],
+            }
+        })
+
+        it('disables the direction swap, since the account can only pay on its own chain', () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            act(() => result.current.handleSwapDirection())
+
+            expect(result.current.isDirectionDisabled).toBe(true)
+            expect(result.current.isChainShown).toBe(true)
+            expect(mockSetFromAsset).not.toHaveBeenCalled()
+        })
+
+        it('leaves the pay picker whole, since the receive id means nothing on the pay chain', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                await result.current.handleOpenPayAssetSelection()
+            })
+
+            const { contents } = mockRequestBottomSheet.mock.calls[0][0]
+            expect(contents.props.excludeAssetId).toBeUndefined()
+        })
+
+        it('keeps the scope of a receive asset picked on another chain', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                assetId: '0',
+                scope: ETH_SCOPE,
+            })
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                await result.current.handleOpenReceiveAssetSelection()
+            })
+
+            expect(mockSetToAsset).toHaveBeenCalledWith('0', ETH_SCOPE)
+        })
+
+        it('reserves no first holding, since the receive asset locks nothing on the pay chain', () => {
+            mockToAsset = '31566704'
+            mockUnheldAssetId = '31566704'
+
+            renderHook(() => useSwapForm(SCOPE))
+
+            expect(mockUseSpendableBalanceQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({ fee: new Decimal(100_000) }),
+            )
+        })
+    })
+
+    it('leaves the direction swap on for a pair on one chain', () => {
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        expect(result.current.isDirectionDisabled).toBe(false)
+        expect(result.current.isChainShown).toBe(false)
     })
 
     it('initializes with null amounts and canSwap false', () => {
@@ -307,7 +407,10 @@ describe('useSwapForm', () => {
     // the pay asset changing: quoting the old number against the new asset
     // produces a wrong quote.
     it('handleOpenPayAssetSelection resets both amounts and the quote when a new asset is picked', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('123')
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '123',
+            scope: SCOPE,
+        })
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
         act(() => {
@@ -338,7 +441,10 @@ describe('useSwapForm', () => {
 
     it('handleOpenPayAssetSelection does not re-quote the stale amount against the new asset', async () => {
         mockCreateQuotes.mockResolvedValue([])
-        mockRequestBottomSheet.mockResolvedValueOnce('123')
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '123',
+            scope: SCOPE,
+        })
 
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -482,7 +588,10 @@ describe('useSwapForm', () => {
 
     it('handleOpenReceiveAssetSelection triggers quote re-fetch when pay amount exists', async () => {
         mockCreateQuotes.mockResolvedValue([])
-        mockRequestBottomSheet.mockResolvedValueOnce('456')
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '456',
+            scope: SCOPE,
+        })
 
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -501,14 +610,17 @@ describe('useSwapForm', () => {
     })
 
     it('handleOpenReceiveAssetSelection clears receive amount and quote when an asset is picked', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('456')
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '456',
+            scope: SCOPE,
+        })
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
         await act(async () => {
             await result.current.handleOpenReceiveAssetSelection()
         })
 
-        expect(mockSetToAsset).toHaveBeenCalledWith('456')
+        expect(mockSetToAsset).toHaveBeenCalledWith('456', SCOPE)
         expect(result.current.receiveAmount).toBeNull()
         expect(result.current.selectedQuote).toBeNull()
         expect(mockResetQuoteMutation).toHaveBeenCalled()
@@ -917,6 +1029,32 @@ describe('useSwapForm', () => {
             expect(mockErrorToast).toHaveBeenCalledWith(
                 'resolved.title',
                 'body text',
+            )
+        })
+
+        it('says a cross-chain swap is on its way rather than complete', async () => {
+            mockCreateQuotes.mockResolvedValue([
+                {
+                    provider: 'xo',
+                    routeKind: 'cross-chain',
+                    amountOut: new Decimal('7000000'),
+                    assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+                    assetOut: { assetId: '0', unitName: 'ETH', decimals: 18 },
+                },
+            ])
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(5))
+            })
+            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'success' })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockSuccessToast).toHaveBeenCalledWith(
+                'swap.tracking.started',
+                'swap.tracking.in_progress',
             )
         })
 

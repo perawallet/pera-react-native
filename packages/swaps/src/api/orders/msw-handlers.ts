@@ -77,3 +77,24 @@ export const mockReportSwapOrder = (
         },
     )
 }
+
+export type MockFetchSwapOrderParams =
+    | { order: z.input<typeof swapOrderItemSchema> }
+    | { response: SwapRouterErrorBody; status: number }
+
+export const mockFetchSwapOrder = (
+    params: MockFetchSwapOrderParams,
+): HttpHandler => {
+    if ('order' in params) {
+        validateMockResponse(
+            swapOrderItemSchema,
+            params.order,
+            'mockFetchSwapOrder',
+        )
+    }
+    return http.get(`*${SWAP_ROUTER_PATH}orders/:orderId/`, () =>
+        'order' in params
+            ? HttpResponse.json(params.order)
+            : HttpResponse.json(params.response, { status: params.status }),
+    )
+}

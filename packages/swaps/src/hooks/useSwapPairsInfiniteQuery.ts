@@ -28,6 +28,8 @@ const MAX_SKIPPED_PAGES = 10
 export type UseSwapPairsInfiniteQueryParams = {
     anchor: Nullable<SwapAssetRef>
     scope: ChainScope
+    /** Where a pair's asset may live; defaults to `[scope]`. */
+    destinationScopes?: ChainScope[]
     q?: string
     isEnabled?: boolean
 }
@@ -39,15 +41,16 @@ export type UseSwapPairsInfiniteQueryResult = {
     fetchNextPage: () => void
 }
 
-const isOnScope = (asset: SwapAsset, scope: ChainScope): boolean =>
-    toScopeKey(asset.ref) === toScopeKey(scope)
+const isOnAnyScope = (asset: SwapAsset, scopeKeys: Set<string>): boolean =>
+    scopeKeys.has(toScopeKey(asset.ref))
 
 const fetchVisiblePage = async (
     anchor: SwapAssetRef,
-    scope: ChainScope,
+    scopes: ChainScope[],
     q: Optional<string>,
     cursor: Optional<string>,
 ): Promise<SwapPairsPage> => {
+    const scopeKeys = new Set(scopes.map(toScopeKey))
     let page = await fetchSwapPairs({
         anchor,
         direction: 'source',
@@ -56,7 +59,9 @@ const fetchVisiblePage = async (
         limit: PAGE_SIZE,
     })
     for (let skipped = 0; skipped < MAX_SKIPPED_PAGES; skipped++) {
-        const assets = page.assets.filter(asset => isOnScope(asset, scope))
+        const assets = page.assets.filter(asset =>
+            isOnAnyScope(asset, scopeKeys),
+        )
         if (assets.length > 0 || page.next === null) {
             return { assets, next: page.next }
         }
@@ -69,24 +74,26 @@ const fetchVisiblePage = async (
         })
     }
     return {
-        assets: page.assets.filter(asset => isOnScope(asset, scope)),
+        assets: page.assets.filter(asset => isOnAnyScope(asset, scopeKeys)),
         next: page.next,
     }
 }
 
-/** What `anchor` swaps into, on `scope` only. */
+/** What `anchor` swaps into, on `destinationScopes` only. */
 export const useSwapPairsInfiniteQuery = ({
     anchor,
     scope,
+    destinationScopes,
     q,
     isEnabled = true,
 }: UseSwapPairsInfiniteQueryParams): UseSwapPairsInfiniteQueryResult => {
+    const scopes = destinationScopes ?? [scope]
     const query = useInfiniteQuery({
-        queryKey: swapQueryKeys.pairs(anchor, q, scope),
+        queryKey: swapQueryKeys.pairs(anchor, q, scope, scopes),
         queryFn:
             isEnabled && anchor
                 ? ({ pageParam }: { pageParam: Optional<string> }) =>
-                      fetchVisiblePage(anchor, scope, q, pageParam)
+                      fetchVisiblePage(anchor, scopes, q, pageParam)
                 : skipToken,
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: SwapPairsPage) =>

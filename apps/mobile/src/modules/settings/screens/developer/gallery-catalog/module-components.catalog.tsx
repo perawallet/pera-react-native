@@ -445,11 +445,12 @@ const mockSwapQuote: SwapQuote = {
     priceImpact: new Decimal('1'),
     expiresAt: null,
     fetchedAt: 0,
+    depositAddress: null,
 }
 
 registerPreview({
     id: 'comp-swap-asset-pair-icon',
-    render: () => <SwapAssetPairIconPreview chainId={ALGORAND_CHAIN_ID} />,
+    render: () => <SwapAssetPairIconPreview />,
 })
 
 registerPreview({

@@ -25,10 +25,15 @@ export type SwapsState = BaseStoreState & {
     fromAsset: Nullable<string>
     /** null until the user picks one: the chain adapter's default receive asset. */
     toAsset: Nullable<string>
+    /** Where `toAsset` lives; null means the swap scope. */
+    toAssetScope: Nullable<ChainScope>
+    /** The account receiving a cross-chain swap; null picks the default. */
+    receivingAccountId: Nullable<string>
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
-    setToAsset: (toAsset: string) => void
+    setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
+    setReceivingAccountId: (id: Nullable<string>) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
 }
@@ -110,6 +115,8 @@ export interface SwapQuote {
     expiresAt: Nullable<number>
     /** Epoch ms, client-stamped: the reference point for `isQuoteFresh`. */
     fetchedAt: number
+    /** The source-chain address the source leg must pay; null when the router names none. */
+    depositAddress: Nullable<string>
 }
 
 export type SwapSignTransactionsStep = {
@@ -170,8 +177,48 @@ export interface SwapHistoryItem {
     amountInUsdValue: Nullable<string>
     amountOutUsdValue: Nullable<string>
     transactions: SwapOrderTransaction[]
+    /** The router's `funding_method`, passed through unread. */
+    fundingMethod: Nullable<string>
     createdAt: string
     updatedAt: string
+}
+
+export interface SwapAccountAddress {
+    scope: ChainScope
+    address: string
+}
+
+export interface SwapTrackedAsset {
+    ref: SwapAssetRef
+    unitName: Nullable<string>
+}
+
+/** Holds no amounts: those come from the live order. */
+export interface SwapTrackedOrder {
+    orderId: string
+    sourceScope: ChainScope
+    destinationScope: ChainScope
+    sourceAddress: string
+    destinationAddress: string
+    assetIn: SwapTrackedAsset
+    assetOut: SwapTrackedAsset
+    status: SwapStatus
+    /** Epoch ms. */
+    createdAt: number
+    /** Epoch ms of the last status change. */
+    checkedAt: number
+}
+
+export type SwapTrackingState = BaseStoreState & {
+    orders: Record<string, SwapTrackedOrder>
+    trackOrder: (order: SwapTrackedOrder) => void
+    updateOrderStatus: (
+        orderId: string,
+        status: SwapStatus,
+        checkedAt: number,
+    ) => void
+    removeOrder: (orderId: string) => void
+    pruneSettledOrders: (now: number) => void
 }
 
 export interface SwapDistinctPairItem {

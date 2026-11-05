@@ -37,6 +37,7 @@ const fee = (
 type QuoteShape = {
     assetIn?: string
     assetOut?: string
+    assetOutScope?: { chainId: string; networkId: string }
     sourceAmount?: number
     amountIn?: number
     amountOut?: number
@@ -50,6 +51,7 @@ type QuoteShape = {
 const makeQuote = ({
     assetIn = ALGO,
     assetOut = USDC,
+    assetOutScope = SCOPE,
     sourceAmount = 200_000,
     amountIn = sourceAmount,
     amountOut = 17_000,
@@ -67,7 +69,10 @@ const makeQuote = ({
             slippage: null,
         },
         assetIn: { assetId: assetIn },
-        assetOut: { assetId: assetOut },
+        assetOut: {
+            assetId: assetOut,
+            ref: { ...assetOutScope, assetId: assetOut },
+        },
         amountIn: d(amountIn),
         amountOut: d(amountOut),
         minimumAmountOut:
@@ -185,6 +190,22 @@ describe('computeSwapAlgoShortfall', () => {
         })
 
         expect(shortfall).toBeNull()
+    })
+
+    it('gives no ALGO credit to an output on another chain whose id reads as native', () => {
+        const shortfall = computeSwapAlgoShortfall({
+            quote: makeQuote({
+                assetIn: USDC,
+                assetOut: ALGO,
+                assetOutScope: { chainId: 'ethereum', networkId: 'mainnet' },
+                amountOut: 1_000_000,
+                minimumAmountOut: 990_000,
+            }),
+            algoBalance: d(204_000),
+            minBalance: d(200_000),
+        })
+
+        expect(shortfall?.toString()).toBe('1000')
     })
 
     it('credits the expected output when the route sets no minimum', () => {

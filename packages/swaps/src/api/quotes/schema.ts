@@ -46,6 +46,7 @@ const swapOfferSchema = z.object({
     fees: z.array(swapFeeSchema),
     funding_method: z.string(),
     expires_at: z.string().nullable(),
+    deposit_address: z.string().nullish(),
     extras: z
         .object({ price_impact: z.union([z.string(), z.number()]).nullish() })
         .passthrough()

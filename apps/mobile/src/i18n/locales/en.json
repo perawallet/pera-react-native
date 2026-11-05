@@ -4034,6 +4034,20 @@
                     "body": "We couldn't load your swap history. Please try again."
                 }
             }
+        },
+        "tracking": {
+            "started": "Cross-chain swap sent",
+            "in_progress": "In progress. Your funds are on their way.",
+            "completed": "Completed. Your {{toAsset}} has arrived.",
+            "failed": "The swap couldn't complete. If your funds were sent, the provider returns them to your account.",
+            "refunded": "The swap was refunded. Your {{fromAsset}} is back in your account.",
+            "expired": "The swap expired before it started. If your funds left your account, the status can still change for up to 7 days.",
+            "cancelled": "The swap was cancelled before it started. If your funds left your account, the status can still change for up to 7 days.",
+            "dismiss": "Dismiss"
+        },
+        "receiving_account": {
+            "title": "Receiving account",
+            "label": "Receive to"
         }
     },
     "onramp": {

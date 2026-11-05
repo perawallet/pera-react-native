@@ -21,6 +21,8 @@ import { fetchSwapHistory } from '../../api'
 import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const ACCOUNTS = [{ scope: SCOPE, address: 'ADDRESS' }]
 
 vi.mock('../../api', async importOriginal => ({
     ...(await importOriginal<typeof import('../../api')>()),
@@ -60,7 +62,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         })
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE),
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS),
             { wrapper: createWrapper() },
         )
 
@@ -90,7 +92,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
 
         const { result } = renderHook(
             () =>
-                useSwapHistoryInfiniteQuery('ADDRESS', SCOPE, [
+                useSwapHistoryInfiniteQuery(ACCOUNTS, [
                     'completed',
                     'refunded',
                 ]),
@@ -120,7 +122,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
             })
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE, ['completed']),
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS, ['completed']),
             { wrapper: createWrapper() },
         )
 
@@ -139,7 +141,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         })
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE, ['completed']),
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS, ['completed']),
             { wrapper: createWrapper() },
         )
 
@@ -160,7 +162,7 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
             })
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE),
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS),
             { wrapper: createWrapper() },
         )
 
@@ -175,12 +177,12 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         )
     })
 
-    test('waits for an address and a device id', () => {
+    test('waits for an account and a device id', () => {
         mockDeviceId.current = null
-        renderHook(() => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE), {
+        renderHook(() => useSwapHistoryInfiniteQuery(ACCOUNTS), {
             wrapper: createWrapper(),
         })
-        renderHook(() => useSwapHistoryInfiniteQuery('', SCOPE), {
+        renderHook(() => useSwapHistoryInfiniteQuery([]), {
             wrapper: createWrapper(),
         })
 
@@ -191,11 +193,66 @@ describe('swaps/useSwapHistoryInfiniteQuery', () => {
         vi.mocked(fetchSwapHistory).mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(
-            () => useSwapHistoryInfiniteQuery('ADDRESS', SCOPE),
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS),
             { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.swaps).toEqual([])
+    })
+
+    test('lists a cross-chain swap for an account holding addresses on two chains', async () => {
+        vi.mocked(fetchSwapHistory).mockResolvedValueOnce({
+            results: [makeSwapHistoryItem({ orderId: 'cross' })],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapHistoryInfiniteQuery([
+                    { scope: SCOPE, address: 'ADDRESS' },
+                    { scope: ETH_SCOPE, address: '0xETH' },
+                ]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(vi.mocked(fetchSwapHistory).mock.calls[0]).toEqual([
+            expect.objectContaining({
+                accounts: ['fake-a:main:ADDRESS', 'fake-b:main:0xETH'],
+            }),
+            SCOPE,
+        ])
+        expect(result.current.swaps.map(item => item.orderId)).toEqual([
+            'cross',
+        ])
+    })
+
+    test('drops orders the user funded outside a wallet transaction', async () => {
+        vi.mocked(fetchSwapHistory).mockResolvedValueOnce({
+            results: [
+                makeSwapHistoryItem({ orderId: 'swap' }),
+                makeSwapHistoryItem({
+                    orderId: 'deposit',
+                    fundingMethod: 'deposit',
+                }),
+                makeSwapHistoryItem({
+                    orderId: 'wallet',
+                    fundingMethod: 'wallet_transaction',
+                }),
+            ],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useSwapHistoryInfiniteQuery(ACCOUNTS),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.swaps.map(item => item.orderId)).toEqual([
+            'swap',
+            'wallet',
+        ])
     })
 })

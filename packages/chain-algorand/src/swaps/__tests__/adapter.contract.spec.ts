@@ -53,5 +53,7 @@ swapContractTests(() => algorandSwapAdapter, {
         createOrder: vi.fn(),
         reportOrder: vi.fn(),
         registerHandoff: vi.fn(),
+        onOrderSubmitting: vi.fn(),
+        onOrderRejected: vi.fn(),
     }),
 })

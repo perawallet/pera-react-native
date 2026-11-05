@@ -63,5 +63,6 @@ export const makeSwapQuote = ({
     priceImpact: null,
     expiresAt: null,
     fetchedAt: Date.now(),
+    depositAddress: null,
     ...overrides,
 })

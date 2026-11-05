@@ -38,6 +38,56 @@ const toBig = (value: bigint | number | undefined): bigint => {
 const ceilToBig = (value: Optional<Decimal>): bigint =>
     value ? BigInt(value.ceil().toFixed(0)) : 0n
 
+// A cross-chain source leg only moves funds to the provider; the router
+// accepts nothing else and caps the leg's fees at the same 0.1 ALGO.
+const CROSS_CHAIN_TX_TYPES: ReadonlySet<string> = new Set(['pay', 'axfer'])
+const CROSS_CHAIN_FEE_LIMIT_MICRO_ALGO = 100_000n
+
+const receiverOf = (tx: PeraDisplayableTransaction): Optional<string> => {
+    const payment = tx.paymentTransaction
+    if (payment && toBig(payment.amount) > 0n) return payment.receiver
+    const axfer = tx.assetTransferTransaction
+    if (axfer && toBig(axfer.amount) > 0n) return axfer.receiver
+    return undefined
+}
+
+/**
+ * The rules a cross-chain source leg adds: pay/axfer only, every non-zero
+ * transfer to the quote's deposit address, and the summed fee within the
+ * router's cap. A Pera fee sent as a transfer of its own fails here: a fee
+ * has to be folded into the deposit.
+ */
+const validateCrossChainSourceLeg = (
+    signableTransactions: PeraDisplayableTransaction[],
+    depositAddress: SwapQuote['depositAddress'],
+): void => {
+    if (!depositAddress) {
+        throw new SwapQuoteMismatchError(
+            'Cross-chain swap quote names no deposit address',
+        )
+    }
+    let fees = 0n
+    for (const tx of signableTransactions) {
+        if (!tx.txType || !CROSS_CHAIN_TX_TYPES.has(tx.txType)) {
+            throw new SwapQuoteMismatchError(
+                'Cross-chain swap leg contains a transaction that is not a transfer',
+            )
+        }
+        fees += toBig(tx.fee)
+        const receiver = receiverOf(tx)
+        if (receiver !== undefined && receiver !== depositAddress) {
+            throw new SwapQuoteMismatchError(
+                'Cross-chain swap leg pays an address other than the deposit address',
+            )
+        }
+    }
+    if (fees > CROSS_CHAIN_FEE_LIMIT_MICRO_ALGO) {
+        throw new SwapQuoteMismatchError(
+            'Cross-chain swap leg fees exceed the allowed total',
+        )
+    }
+}
+
 /**
  * Fail-closed check that a backend-assembled swap group only spends what the
  * app asked the router for. Swap flows trust the group built by the backend and
@@ -57,6 +107,9 @@ const ceilToBig = (value: Optional<Decimal>): bigint =>
  *    input bound is the request's own amount, never the router's figures; the
  *    Pera fee is the one the confirmation showed. Bounds are additive, so when
  *    the input and Pera-fee asset are the same the allowance is their sum.
+ *
+ * A cross-chain route adds the source-leg rules of
+ * {@link validateCrossChainSourceLeg} on top.
  *
  * Throws {@link SwapQuoteMismatchError} on any violation; callers must treat a
  * throw as "do not sign".
@@ -152,5 +205,9 @@ export const validateSwapGroupAgainstQuote = (
                 `Swap spends more of asset ${assetId} than the quote allows`,
             )
         }
+    }
+
+    if (quote.routeKind === 'cross-chain') {
+        validateCrossChainSourceLeg(signableTransactions, quote.depositAddress)
     }
 }

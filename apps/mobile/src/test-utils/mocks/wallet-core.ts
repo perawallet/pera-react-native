@@ -90,12 +90,23 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { swapFeeOf } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapFees')
     >('@packages/swaps/src/utils/swapFees')
+    const { isSwapOrderSettled } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapOrderSettlement')
+    >('@packages/swaps/src/utils/swapOrderSettlement')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
         formatSwapRate,
         swapRate,
         swapFeeOf,
+        isSwapOrderSettled,
+        scopeOfSwapAsset: ({
+            chainId,
+            networkId,
+        }: {
+            chainId: string
+            networkId: string
+        }) => ({ chainId, networkId }),
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
         // An account on Algorand swaps there, as it does at the build defaults.
         useSwapScope: vi.fn(
@@ -109,6 +120,15 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
                 account.chains?.algorand ? 'algorand' : undefined,
         ),
         useSwapSigningAccounts: vi.fn(() => []),
+        isSwapChain: vi.fn((chainId: string) =>
+            ['algorand', 'ethereum'].includes(chainId),
+        ),
+        // Specs that load the real chain packages register their adapters here.
+        swapChainAdapters: { register: vi.fn(), has: vi.fn(() => false) },
+        useSwapsStore: vi.fn(),
+        useSwapTrackedOrders: vi.fn(() => []),
+        useSwapTrackingStore: vi.fn(),
+        useSwapOrderTracker: vi.fn(),
     }
 })
 

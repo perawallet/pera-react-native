@@ -11,7 +11,10 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     mapToDisplayableTransaction,
     type getAlgorandClient,
@@ -23,6 +26,7 @@ import {
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
+    SubmissionError,
     submitAndAutoRefresh,
 } from '@perawallet/wallet-core-signing'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
@@ -121,9 +125,16 @@ export const executeAlgorandSwap = async (
         createOrder,
         reportOrder,
         registerHandoff,
+        onOrderSubmitting,
+        onOrderRejected,
     }: AlgorandSwapExecutionContext,
 ): Promise<ExecuteSwapResult> => {
     const accountAddress = account ? algorandAddressOf(account) : undefined
+    // A cross-chain output lands on another chain: this account never holds
+    // it, so neither its freeze state nor its opt-in applies here.
+    const isAssetOutOnScope =
+        accountAddress !== undefined &&
+        toScopeKey(quote.assetOut.ref) === toScopeKey(scope)
 
     const [inRestriction, outRestriction] = accountAddress
         ? await Promise.all([
@@ -132,11 +143,13 @@ export const executeAlgorandSwap = async (
                   assetId: quote.assetIn.assetId,
                   scope,
               }),
-              getHoldingRestriction({
-                  accountAddress,
-                  assetId: quote.assetOut.assetId,
-                  scope,
-              }),
+              isAssetOutOnScope
+                  ? getHoldingRestriction({
+                        accountAddress,
+                        assetId: quote.assetOut.assetId,
+                        scope,
+                    })
+                  : null,
           ])
         : [null, null]
     const isInFrozen = inRestriction !== null
@@ -173,6 +186,7 @@ export const executeAlgorandSwap = async (
                 .accountInformation(accountAddress)
                 .do()
             const holdsAssetOut =
+                !isAssetOutOnScope ||
                 isAlgorandNativeAssetId(quote.assetOut.assetId) ||
                 (info.assets ?? []).some(
                     holding =>
@@ -391,6 +405,7 @@ export const executeAlgorandSwap = async (
     }))
     const txIds: string[] = []
     const reported: SwapReportedTransaction[] = []
+    onOrderSubmitting(orderId)
     try {
         onProgress('submitting')
         for (const [index, signedGroup] of allSignedGroups.entries()) {
@@ -410,6 +425,15 @@ export const executeAlgorandSwap = async (
             )
         }
     } catch (e) {
+        // Only a node's refusal proves the funds stayed: a lost response can
+        // still land, and a later group's failure leaves earlier ones on chain.
+        if (
+            txIds.length === 0 &&
+            e instanceof SubmissionError &&
+            e.classification === 'rejected-by-node'
+        ) {
+            onOrderRejected(orderId)
+        }
         // A group may already be on chain; the router settles the order from
         // the chain, so nothing is reported.
         return failed({
@@ -435,5 +459,5 @@ export const executeAlgorandSwap = async (
         )
     }
 
-    return { kind: 'success', txIds }
+    return { kind: 'success', orderId, txIds }
 }

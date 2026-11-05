@@ -183,4 +183,32 @@ describe('swaps/store', () => {
             fromAsset: null,
         })
     })
+
+    test('setToAsset keeps the scope the asset lives on, and forgets it when none is given', () => {
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        useSwapsStore.getState().setToAsset('native', scope)
+        expect(useSwapsStore.getState()).toMatchObject({
+            toAsset: 'native',
+            toAssetScope: scope,
+        })
+
+        useSwapsStore.getState().setToAsset('31566704')
+        expect(useSwapsStore.getState().toAssetScope).toBeNull()
+    })
+
+    test('resetState clears the receive scope and receiving account', () => {
+        useSwapsStore.getState().setToAsset('native', {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+        useSwapsStore.getState().setReceivingAccountId('account-2')
+
+        useSwapsStore.getState().resetState()
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            toAssetScope: null,
+            receivingAccountId: null,
+        })
+    })
 })

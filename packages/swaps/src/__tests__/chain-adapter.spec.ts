@@ -13,6 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
 import {
+    isSwapChain,
     submitCosignedSwapGroup,
     swapAdapterFor,
     swapChainAdapters,
@@ -89,5 +90,18 @@ describe('submitCosignedSwapGroup', () => {
             ),
         ).rejects.toBeInstanceOf(SwapCosignUnsupportedError)
         expect(submit).not.toHaveBeenCalled()
+    })
+})
+
+describe('isSwapChain', () => {
+    beforeEach(() => {
+        swapChainAdapters.reset()
+    })
+
+    it('is true only for a chain with a registered swap adapter', () => {
+        swapChainAdapters.register(fakeSwapAdapter())
+
+        expect(isSwapChain('algorand')).toBe(true)
+        expect(isSwapChain('ethereum')).toBe(false)
     })
 })

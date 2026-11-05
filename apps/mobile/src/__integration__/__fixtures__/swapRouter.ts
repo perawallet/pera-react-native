@@ -81,6 +81,7 @@ export const buildRouterSwapQuote = (
     expiresAt: null,
     // execute() refuses a quote without a recent `fetchedAt` as stale.
     fetchedAt: Date.now(),
+    depositAddress: null,
 })
 
 /** An order whose one step is a single user-signed payment of `amount` from `sender`. */

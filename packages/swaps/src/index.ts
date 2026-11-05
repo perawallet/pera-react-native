@@ -18,6 +18,7 @@ export * from './api'
 export * from './utils'
 export * from './execution'
 export {
+    isSwapChain,
     swapAdapterFor,
     swapChainAdapters,
     swapExplorerUrlFor,
@@ -26,4 +27,8 @@ export {
     type SwapChainAdapter,
 } from './chain-adapter'
 export { SwapQuoteMismatchError } from './errors'
-export { useSwapsStore, useSwapHandoffStore } from './store'
+export {
+    useSwapsStore,
+    useSwapHandoffStore,
+    useSwapTrackingStore,
+} from './store'

@@ -12,6 +12,7 @@
 
 export {
     createSwapOrder,
+    fetchSwapOrder,
     reportSwapOrder,
     toReportSwapOrderRequest,
 } from './endpoints'

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import React from 'react'
 import { useTheme } from '@rneui/themed'
 
@@ -18,17 +17,12 @@ import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 
 import { mockSwapAssetAlgo, mockSwapAssetUsdc } from '../mockSwapAssets'
 
-export type SwapAssetPairIconPreviewProps = { chainId: ChainId }
-
-export const SwapAssetPairIconPreview = ({
-    chainId,
-}: SwapAssetPairIconPreviewProps) => {
+export const SwapAssetPairIconPreview = () => {
     const { theme } = useTheme()
     return (
         <SwapAssetPairIcon
             assetIn={mockSwapAssetAlgo}
             assetOut={mockSwapAssetUsdc}
-            chainId={chainId}
             surfaceColor={theme.colors.background}
         />
     )
