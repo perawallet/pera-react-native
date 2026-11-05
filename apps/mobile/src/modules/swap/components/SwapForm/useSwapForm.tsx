@@ -505,14 +505,14 @@ export const useSwapForm = (
                 autoCreateContainer: false,
             },
         })
-        // Re-picking the current asset must be a full no-op: clearing the
-        // quotes without changing any quote input would strand the fetch
-        // state as loading with nothing in flight.
         if (!selection) return
         if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
             setSourceAsset(selection.scope.chainId, selection.assetId)
             return
         }
+        // Re-picking the current asset must be a full no-op: clearing the
+        // quotes without changing any quote input would strand the fetch
+        // state as loading with nothing in flight.
         if (selection.assetId === fromAsset) return
         setFromAsset(selection.assetId)
         // The effect above also resets, but only after a paint; reset here
@@ -625,7 +625,9 @@ export const useSwapForm = (
         })
         // Signing runs while this sheet is open; a Bluetooth Ledger in the
         // extension popup can't sign, and this lets its tab reopen the swap.
-        if (selectedAddress && payAmount) {
+        // The intent holds both assets on one chain, so a cross-chain pair can't
+        // come back from it.
+        if (selectedAddress && payAmount && !isCrossChain) {
             registerTabResumeIntent({
                 flow: 'swap',
                 chainId: scope.chainId,
@@ -706,6 +708,7 @@ export const useSwapForm = (
         completeTabResume({ title: successTitle, body: successBody })
         resetAmounts()
     }, [
+        isCrossChain,
         scope,
         selectedQuote,
         requestBottomSheet,

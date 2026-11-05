@@ -1158,6 +1158,22 @@ describe('useSwapForm', () => {
             )
         })
 
+        it('registers no resume for a cross-chain pair, which the intent cannot hold', async () => {
+            mockReceiveTarget = {
+                ...sameScopeTarget(),
+                receiveScope: ETH_SCOPE,
+                isCrossChain: true,
+            }
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'cancelled' })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockRegisterTabResume).not.toHaveBeenCalled()
+        })
+
         it('hands a successful swap back to the popup with its toast copy', async () => {
             const result = await selectAQuote()
             mockRequestBottomSheet.mockResolvedValueOnce({ kind: 'success' })
