@@ -123,6 +123,7 @@ const { setCapabilityOverrides } =
 const { TransactionDetailsScreen } = await import('@modules/signing/routes')
 const { useWebViewStore } = await import('@modules/webview')
 const { closestPressable } = await import('@test-utils/rnw')
+const { useRoute } = await import('@react-navigation/native')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
 const { evmNftItem, peraEvmAssetHandlers } =
@@ -414,6 +415,13 @@ describe('Flow: History on an Ethereum account', () => {
         beforeEach(() => server.events.on('request:start', trackRpc))
         afterEach(() => server.events.removeListener('request:start', trackRpc))
 
+        // Stands in for the tab bar, so the route an NFT opens can be read.
+        const TabBarProbe = () => (
+            <div data-testid='tab_bar_route'>
+                {JSON.stringify(useRoute().params)}
+            </div>
+        )
+
         const renderHistory = () =>
             renderWithNavigation(AccountHistory, 'AccountHistory', {
                 additionalScreens: [
@@ -421,6 +429,7 @@ describe('Flow: History on an Ethereum account', () => {
                         name: 'TransactionDetails',
                         component: TransactionDetailsScreen,
                     },
+                    { name: 'TabBar', component: TabBarProbe },
                 ],
             })
 
@@ -710,6 +719,22 @@ describe('Flow: History on an Ethereum account', () => {
                         ?.getAttribute('recyclingkey'),
                 ).toContain('bayc/1234-preview.png')
                 expect(nodeReads).toEqual([])
+
+                const card = screen.getByTestId('ethereum_record_nft_open')
+                fireEvent.click(closestPressable(card) ?? card)
+
+                const route = await screen.findByTestId('tab_bar_route')
+                expect(JSON.parse(route.textContent ?? '{}')).toEqual({
+                    screen: 'Home',
+                    params: {
+                        screen: 'CollectibleDetails',
+                        params: {
+                            assetId:
+                                '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D/1234',
+                            chainId: 'ethereum',
+                        },
+                    },
+                })
             })
 
             it('Given an NFT the NFT service does not know, when its row is opened, then it reads by its collection and token id with a placeholder image', async () => {
