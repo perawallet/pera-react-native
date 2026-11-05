@@ -394,14 +394,48 @@ describe('validateSwapGroupAgainstQuote', () => {
             ).toThrow(SwapQuoteMismatchError)
         })
 
-        it('rejects transfers to two receivers when the router names no deposit address', () => {
+        it('rejects a second receiver beside the deposit address', () => {
             expect(() =>
                 validateSwapGroupAgainstQuote(
                     [
-                        axfer({ receiver: 'FIRST', amount: 2_500_000n }),
+                        axfer({ receiver: DEPOSIT, amount: 2_500_000n }),
                         axfer({ receiver: 'SECOND', amount: 2_500_000n }),
                     ],
+                    crossChain(DEPOSIT),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('rejects a quote that names no deposit address', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: 'ANYONE' })],
                     crossChain(null),
+                ),
+            ).toThrow(SwapQuoteMismatchError)
+        })
+
+        it('accepts a Pera fee folded into the deposit transfer', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [axfer({ receiver: DEPOSIT, amount: 5_100_000n })],
+                    crossChain(DEPOSIT, {
+                        fees: [peraFee('31566704', 100_000)],
+                    }),
+                ),
+            ).not.toThrow()
+        })
+
+        it('rejects a Pera fee sent as a transfer of its own', () => {
+            expect(() =>
+                validateSwapGroupAgainstQuote(
+                    [
+                        axfer({ receiver: DEPOSIT }),
+                        axfer({ receiver: 'FEE_ADDRESS', amount: 100_000n }),
+                    ],
+                    crossChain(DEPOSIT, {
+                        fees: [peraFee('31566704', 100_000)],
+                    }),
                 ),
             ).toThrow(SwapQuoteMismatchError)
         })
@@ -410,10 +444,10 @@ describe('validateSwapGroupAgainstQuote', () => {
             expect(() =>
                 validateSwapGroupAgainstQuote(
                     [
-                        axfer({ receiver: 'ONLY' }),
+                        axfer({ receiver: DEPOSIT }),
                         payment({ receiver: 'ANYONE', amount: 0n }),
                     ],
-                    crossChain(null),
+                    crossChain(DEPOSIT),
                 ),
             ).not.toThrow()
         })

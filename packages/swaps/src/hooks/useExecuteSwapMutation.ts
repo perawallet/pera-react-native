@@ -81,6 +81,7 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const trackOrder = useSwapTrackingStore(s => s.trackOrder)
+    const removeTrackedOrder = useSwapTrackingStore(s => s.removeOrder)
     // Mutations rather than bare calls, so a failure reaches the app's
     // mutation-cache logging.
     const { mutateAsync: createOrderOnScope } = useCreateSwapOrderMutation()
@@ -130,6 +131,7 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                             ),
                         )
                     },
+                    onOrderRejected: removeTrackedOrder,
                 },
             )
             return result

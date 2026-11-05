@@ -15,6 +15,9 @@ import type { SwapStatus, SwapTrackedOrder } from '../models'
 /** How long a provider may still overturn an expired or cancelled order. */
 export const SWAP_STATUS_REVERSIBLE_MS = 7 * 24 * 60 * 60 * 1000
 
+/** Past this, an order the router never finished stops being followed. */
+export const SWAP_ORDER_TRACKING_LIMIT_MS = 30 * 24 * 60 * 60 * 1000
+
 const FINAL_STATUSES: ReadonlySet<SwapStatus> = new Set([
     'completed',
     'failed',
@@ -32,6 +35,8 @@ export const isSwapOrderSettled = (
     now: number,
 ): boolean => {
     if (FINAL_STATUSES.has(order.status)) return true
-    if (!REVERSIBLE_STATUSES.has(order.status)) return false
-    return now - order.createdAt >= SWAP_STATUS_REVERSIBLE_MS
+    const limit = REVERSIBLE_STATUSES.has(order.status)
+        ? SWAP_STATUS_REVERSIBLE_MS
+        : SWAP_ORDER_TRACKING_LIMIT_MS
+    return now - order.createdAt >= limit
 }

@@ -19,12 +19,19 @@ import {
     QueryClientProvider,
 } from '@tanstack/react-query'
 import React from 'react'
-import { invalidateAccountQueriesForAddresses } from '@perawallet/wallet-core-accounts'
+import {
+    invalidateAccountQueriesForAddresses,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { fetchSwapOrder } from '../../api'
 import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 import type { SwapStatus, SwapTrackedOrder } from '../../models'
 import { useSwapTrackingStore } from '../../store'
-import { SWAP_STATUS_REVERSIBLE_MS } from '../../utils/swapOrderSettlement'
+import {
+    SWAP_ORDER_TRACKING_LIMIT_MS,
+    SWAP_STATUS_REVERSIBLE_MS,
+} from '../../utils/swapOrderSettlement'
 import { useSwapOrderTracker } from '../useSwapOrderTracker'
 
 vi.mock('../../api', async importOriginal => ({
@@ -43,6 +50,11 @@ const NOW = 1_700_000_000_000
 const POLL_MS = 30_000
 const SOURCE_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const DESTINATION_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+const PAYING_ACCOUNT = {
+    id: 'paying',
+    chains: { algorand: { address: 'ALGO_ADDR' } },
+} as unknown as WalletAccount
 
 const trackedOrder = (
     overrides: Partial<SwapTrackedOrder> = {},
@@ -99,6 +111,7 @@ describe('swaps/useSwapOrderTracker', () => {
         vi.mocked(fetchSwapOrder).mockReset()
         vi.mocked(invalidateAccountQueriesForAddresses).mockReset()
         useSwapTrackingStore.getState().resetState()
+        useAccountsStore.setState({ accounts: [PAYING_ACCOUNT] })
         onlineManager.setOnline(true)
     })
 
@@ -163,6 +176,33 @@ describe('swaps/useSwapOrderTracker', () => {
 
         expect(statusOf()).toBe('expired')
         expect(fetchSwapOrder).toHaveBeenCalledTimes(2)
+    })
+
+    test('skips an order whose paying account left the wallet, and keeps it for a re-import', async () => {
+        useAccountsStore.setState({ accounts: [] })
+        useSwapTrackingStore.getState().trackOrder(trackedOrder())
+
+        render()
+        await flush()
+        await nextPoll()
+
+        expect(fetchSwapOrder).not.toHaveBeenCalled()
+        expect(statusOf()).toBe('in_progress')
+    })
+
+    test('drops an unfinished order past the tracking limit on mount', async () => {
+        useSwapTrackingStore.getState().trackOrder(
+            trackedOrder({
+                createdAt: NOW - SWAP_ORDER_TRACKING_LIMIT_MS,
+            }),
+        )
+
+        render()
+        await flush()
+        await nextPoll()
+
+        expect(fetchSwapOrder).not.toHaveBeenCalled()
+        expect(useSwapTrackingStore.getState().orders).toEqual({})
     })
 
     test('drops a settled order past the reversible window on mount', async () => {

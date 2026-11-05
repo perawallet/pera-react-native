@@ -14,7 +14,12 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    addressOn,
+    useAllAccounts,
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     formatAssetAmount,
@@ -38,8 +43,17 @@ type UseSwapConfirmationParams = {
     swapStatus: SwapExecutionStatus
 }
 
+export type SwapReceiveTarget = {
+    /** Null when no account in the wallet holds `address`. */
+    account: Nullable<WalletAccount>
+    address: string
+    scope: ChainScope
+}
+
 type UseSwapConfirmationResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
+    /** Where a cross-chain payout lands; null on a same-chain swap, which pays the swapper. */
+    receiveTarget: Nullable<SwapReceiveTarget>
     inAsset: Optional<PeraAsset>
     outAsset: Optional<PeraAsset>
     isProcessing: boolean
@@ -68,6 +82,7 @@ export const useSwapConfirmation = ({
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
+    const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
 
     const assetInId = quote?.assetIn.assetId
@@ -81,6 +96,21 @@ export const useSwapConfirmation = ({
         assetOutRef ? scopeOfSwapAsset(assetOutRef) : scope,
         assetOutId ? [assetOutId] : [],
     )
+    const receiveTarget = useMemo<Nullable<SwapReceiveTarget>>(() => {
+        if (quote?.routeKind !== 'cross-chain') return null
+        const { destinationAddress, destinationAsset } = quote.request
+        const receiveScope = scopeOfSwapAsset(destinationAsset)
+        return {
+            account:
+                accounts.find(
+                    account =>
+                        addressOn(account, receiveScope) === destinationAddress,
+                ) ?? null,
+            address: destinationAddress,
+            scope: receiveScope,
+        }
+    }, [quote, accounts])
+
     const inAsset = assetInId ? inAssets?.get(assetInId) : undefined
     const outAsset = assetOutId ? outAssets?.get(assetOutId) : undefined
 
@@ -169,6 +199,7 @@ export const useSwapConfirmation = ({
 
     return {
         selectedAccount,
+        receiveTarget,
         inAsset,
         outAsset,
         isProcessing,

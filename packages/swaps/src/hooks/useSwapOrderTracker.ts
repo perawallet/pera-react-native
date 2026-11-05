@@ -12,7 +12,11 @@
 
 import { useEffect } from 'react'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
-import { invalidateAccountQueriesForAddresses } from '@perawallet/wallet-core-accounts'
+import {
+    addressOn,
+    invalidateAccountQueriesForAddresses,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchSwapOrder } from '../api'
 import type { SwapStatus, SwapTrackedOrder } from '../models'
@@ -35,9 +39,12 @@ const addressRefreshedOn = (
  * Follows every tracked cross-chain order until the router settles it. Mounted
  * once, app-wide, so orders restored from storage after a relaunch resume.
  * Each order is read on the scope it was placed on, not the selected network.
+ * An order whose paying account left the wallet is skipped rather than dropped,
+ * so it resumes if that account is imported again; the tracking limit ends it.
  */
 export const useSwapOrderTracker = (): void => {
     const queryClient = useQueryClient()
+    const accounts = useAllAccounts()
     const orders = useSwapTrackingStore(s => s.orders)
     const updateOrderStatus = useSwapTrackingStore(s => s.updateOrderStatus)
     const pruneSettledOrders = useSwapTrackingStore(s => s.pruneSettledOrders)
@@ -47,7 +54,13 @@ export const useSwapOrderTracker = (): void => {
     }, [pruneSettledOrders])
 
     const open = Object.values(orders).filter(
-        order => !isSwapOrderSettled(order, Date.now()),
+        order =>
+            !isSwapOrderSettled(order, Date.now()) &&
+            accounts.some(
+                account =>
+                    addressOn(account, order.sourceScope) ===
+                    order.sourceAddress,
+            ),
     )
 
     // Read during render: TanStack re-renders only for fields read there.

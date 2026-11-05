@@ -11,14 +11,19 @@
  */
 
 import { PWIcon, PWText, PWView } from '@components/core'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { DetailRow } from './DetailRow'
 import { useStyles } from './styles'
+import type { SwapReceiveTarget } from './useSwapConfirmation'
 
 type SwapDetailsSectionProps = {
     quote: SwapQuote
+    receiveTarget: Nullable<SwapReceiveTarget>
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
@@ -29,6 +34,7 @@ type SwapDetailsSectionProps = {
 
 export const SwapDetailsSection = ({
     quote,
+    receiveTarget,
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
@@ -41,6 +47,27 @@ export const SwapDetailsSection = ({
 
     return (
         <PWView style={styles.detailsSection}>
+            {receiveTarget && (
+                <DetailRow label={t('swap.receiving_account.label')}>
+                    {receiveTarget.account ? (
+                        <AccountDisplay
+                            account={receiveTarget.account}
+                            chainId={receiveTarget.scope.chainId}
+                            showChainBadge
+                            showChevron={false}
+                            iconProps={{ size: 'sm' }}
+                            textProps={{ variant: 'caption' }}
+                            testID='swap-confirm-receive-account'
+                        />
+                    ) : (
+                        <AddressDisplay
+                            address={receiveTarget.address}
+                            scope={receiveTarget.scope}
+                            unnamedAddressFormat='full'
+                        />
+                    )}
+                </DetailRow>
+            )}
             <DetailRow label={t('swap.quote.rate')}>
                 <PWView style={styles.rateValueRow}>
                     <PWText

@@ -38,10 +38,12 @@ const {
     mockReportSwapOrder,
     mockRegisterHandoff,
     mockTrackOrder,
+    mockRemoveOrder,
     mockSelectedAccount,
     mockSwapScope,
 } = vi.hoisted(() => ({
     mockTrackOrder: vi.fn(),
+    mockRemoveOrder: vi.fn(),
     mockAddSignRequest: vi.fn(),
     mockCreateSwapOrder: vi.fn(),
     mockReportSwapOrder: vi.fn(),
@@ -90,8 +92,11 @@ vi.mock('../../store', () => ({
         }) => unknown,
     ) => selector({ registerHandoff: mockRegisterHandoff }),
     useSwapTrackingStore: (
-        selector: (state: { trackOrder: typeof mockTrackOrder }) => unknown,
-    ) => selector({ trackOrder: mockTrackOrder }),
+        selector: (state: {
+            trackOrder: typeof mockTrackOrder
+            removeOrder: typeof mockRemoveOrder
+        }) => unknown,
+    ) => selector({ trackOrder: mockTrackOrder, removeOrder: mockRemoveOrder }),
 }))
 
 vi.mock('../../api', () => ({
@@ -163,6 +168,7 @@ describe('useExecuteSwapMutation', () => {
                 reportOrder: expect.any(Function),
                 registerHandoff: mockRegisterHandoff,
                 onOrderSubmitting: expect.any(Function),
+                onOrderRejected: mockRemoveOrder,
             },
         )
     })
@@ -339,6 +345,29 @@ describe('useExecuteSwapMutation', () => {
             createdAt: 1_700_000_000_000,
             checkedAt: 1_700_000_000_000,
         })
+    })
+
+    test('stops tracking an order a node refused', async () => {
+        vi.mocked(executeSwap).mockImplementation(async (_params, context) => {
+            context.onOrderRejected('O')
+            return {
+                kind: 'failed',
+                failure: {
+                    phase: 'submission',
+                    reason: 'submission-failed',
+                    error: new Error('rejected'),
+                },
+            }
+        })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.mutateAsync(variables)
+        })
+
+        expect(mockRemoveOrder).toHaveBeenCalledWith('O')
     })
 
     test('leaves a single-chain order untracked', async () => {

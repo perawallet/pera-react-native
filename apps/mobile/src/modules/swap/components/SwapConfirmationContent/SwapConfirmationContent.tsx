@@ -55,6 +55,7 @@ export const SwapConfirmationContent = ({
 
     const {
         selectedAccount,
+        receiveTarget,
         inAsset,
         outAsset,
         isProcessing,
@@ -139,6 +140,7 @@ export const SwapConfirmationContent = ({
 
             <SwapDetailsSection
                 quote={quote}
+                receiveTarget={receiveTarget}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}
                 peraFeeDisplay={peraFeeDisplay}

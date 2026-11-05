@@ -26,6 +26,7 @@ import {
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
+    SubmissionError,
     submitAndAutoRefresh,
 } from '@perawallet/wallet-core-signing'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
@@ -125,6 +126,7 @@ export const executeAlgorandSwap = async (
         reportOrder,
         registerHandoff,
         onOrderSubmitting,
+        onOrderRejected,
     }: AlgorandSwapExecutionContext,
 ): Promise<ExecuteSwapResult> => {
     const accountAddress = account ? algorandAddressOf(account) : undefined
@@ -423,6 +425,15 @@ export const executeAlgorandSwap = async (
             )
         }
     } catch (e) {
+        // Only a node's refusal proves the funds stayed: a lost response can
+        // still land, and a later group's failure leaves earlier ones on chain.
+        if (
+            txIds.length === 0 &&
+            e instanceof SubmissionError &&
+            e.classification === 'rejected-by-node'
+        ) {
+            onOrderRejected(orderId)
+        }
         // A group may already be on chain; the router settles the order from
         // the chain, so nothing is reported.
         return failed({

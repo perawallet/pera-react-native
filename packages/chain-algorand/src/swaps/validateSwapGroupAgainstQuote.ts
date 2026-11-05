@@ -53,14 +53,19 @@ const receiverOf = (tx: PeraDisplayableTransaction): Optional<string> => {
 
 /**
  * The rules a cross-chain source leg adds: pay/axfer only, every non-zero
- * transfer to one receiver (the quote's deposit address when it names one),
- * and the summed fee within the router's cap.
+ * transfer to the quote's deposit address, and the summed fee within the
+ * router's cap. A Pera fee sent as a transfer of its own fails here: a fee
+ * has to be folded into the deposit.
  */
 const validateCrossChainSourceLeg = (
     signableTransactions: PeraDisplayableTransaction[],
     depositAddress: SwapQuote['depositAddress'],
 ): void => {
-    const receivers = new Set<string>()
+    if (!depositAddress) {
+        throw new SwapQuoteMismatchError(
+            'Cross-chain swap quote names no deposit address',
+        )
+    }
     let fees = 0n
     for (const tx of signableTransactions) {
         if (!tx.txType || !CROSS_CHAIN_TX_TYPES.has(tx.txType)) {
@@ -70,22 +75,11 @@ const validateCrossChainSourceLeg = (
         }
         fees += toBig(tx.fee)
         const receiver = receiverOf(tx)
-        if (receiver !== undefined) receivers.add(receiver)
-    }
-    if (receivers.size > 1) {
-        throw new SwapQuoteMismatchError(
-            'Cross-chain swap leg pays more than one receiver',
-        )
-    }
-    const [receiver] = receivers
-    if (
-        depositAddress &&
-        receiver !== undefined &&
-        receiver !== depositAddress
-    ) {
-        throw new SwapQuoteMismatchError(
-            'Cross-chain swap leg pays an address other than the deposit address',
-        )
+        if (receiver !== undefined && receiver !== depositAddress) {
+            throw new SwapQuoteMismatchError(
+                'Cross-chain swap leg pays an address other than the deposit address',
+            )
+        }
     }
     if (fees > CROSS_CHAIN_FEE_LIMIT_MICRO_ALGO) {
         throw new SwapQuoteMismatchError(

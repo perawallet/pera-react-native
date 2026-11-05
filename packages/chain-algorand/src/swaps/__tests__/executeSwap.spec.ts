@@ -54,21 +54,32 @@ const mockCreateOrder = vi.fn()
 const mockReportOrder = vi.fn()
 const mockRegisterHandoff = vi.fn()
 const mockOnOrderSubmitting = vi.fn()
+const mockOnOrderRejected = vi.fn()
 const mockOnProgress = vi.fn()
 const mockIsMultisigAccount = vi.fn()
 const mockGetHoldingRestriction = vi.fn()
 // Hoisted so they're initialized before the (hoisted) mock factories run.
-const { mockValidate, mockComputeShortfall, mockGetOpenSubmissionAttempts } =
-    vi.hoisted(() => ({
-        mockValidate: vi.fn(),
-        mockComputeShortfall: vi.fn(),
-        mockGetOpenSubmissionAttempts: vi.fn(),
-    }))
+const {
+    mockValidate,
+    mockComputeShortfall,
+    mockGetOpenSubmissionAttempts,
+    MockSubmissionError,
+} = vi.hoisted(() => ({
+    mockValidate: vi.fn(),
+    mockComputeShortfall: vi.fn(),
+    mockGetOpenSubmissionAttempts: vi.fn(),
+    MockSubmissionError: class extends Error {
+        constructor(readonly classification: string) {
+            super(classification)
+        }
+    },
+}))
 
 // Re-implements the few lines of the broadcaster's `submitAndAutoRefresh` this
 // flow relies on instead of importing the signing package, whose store graph
 // this narrow mock can't satisfy.
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    SubmissionError: MockSubmissionError,
     getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
     submitAndAutoRefresh: async (
@@ -170,6 +181,7 @@ const makeContext = (
     reportOrder: mockReportOrder,
     registerHandoff: mockRegisterHandoff,
     onOrderSubmitting: mockOnOrderSubmitting,
+    onOrderRejected: mockOnOrderRejected,
 })
 
 type RunOptions = {
@@ -1089,6 +1101,26 @@ describe('executeAlgorandSwap', () => {
         })
         // A group may already be on chain: the router settles it from there.
         expect(mockReportOrder).not.toHaveBeenCalled()
+    })
+
+    it('gives up the order when a node refuses the first group', async () => {
+        mockSendRawTransaction.mockRejectedValue(
+            new MockSubmissionError('rejected-by-node'),
+        )
+
+        await run(makeQuote('quote-node-refused'))
+
+        expect(mockOnOrderRejected).toHaveBeenCalledWith('12345')
+    })
+
+    it('keeps the order when the submit got no node verdict', async () => {
+        mockSendRawTransaction.mockRejectedValue(
+            new MockSubmissionError('unknown-outcome'),
+        )
+
+        await run(makeQuote('quote-lost-response'))
+
+        expect(mockOnOrderRejected).not.toHaveBeenCalled()
     })
 
     it('still succeeds if status update fails (non-fatal)', async () => {

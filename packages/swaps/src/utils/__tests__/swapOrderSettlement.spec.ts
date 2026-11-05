@@ -13,6 +13,7 @@
 import { describe, expect, test } from 'vitest'
 import {
     isSwapOrderSettled,
+    SWAP_ORDER_TRACKING_LIMIT_MS,
     SWAP_STATUS_REVERSIBLE_MS,
 } from '../swapOrderSettlement'
 
@@ -32,14 +33,22 @@ describe('isSwapOrderSettled', () => {
     )
 
     test.each(['pending', 'in_progress'] as const)(
-        'keeps %s open however old it is',
+        'keeps %s open until the tracking limit',
         status => {
+            const order = { status, createdAt: CREATED_AT }
+
             expect(
                 isSwapOrderSettled(
-                    { status, createdAt: CREATED_AT },
-                    CREATED_AT + SWAP_STATUS_REVERSIBLE_MS * 2,
+                    order,
+                    CREATED_AT + SWAP_ORDER_TRACKING_LIMIT_MS - 1,
                 ),
             ).toBe(false)
+            expect(
+                isSwapOrderSettled(
+                    order,
+                    CREATED_AT + SWAP_ORDER_TRACKING_LIMIT_MS,
+                ),
+            ).toBe(true)
         },
     )
 
