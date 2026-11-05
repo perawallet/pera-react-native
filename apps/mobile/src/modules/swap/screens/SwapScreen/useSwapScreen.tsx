@@ -62,6 +62,23 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     const accountPicker = useAccountListPicker(signingAccounts)
     const { setSelectedAccountId } = useSelectedAccountId()
 
+    // A chain change the store didn't make, such as an account switch, keeps the
+    // old chain's pair: the form remounts while focused, past both of its resets.
+    const swapChainId = scope?.chainId
+    const previousChainsRef = useRef({ swapChainId, sourceChainId })
+    useEffect(() => {
+        const previous = previousChainsRef.current
+        previousChainsRef.current = { swapChainId, sourceChainId }
+        if (
+            previous.swapChainId &&
+            swapChainId &&
+            previous.swapChainId !== swapChainId &&
+            previous.sourceChainId === sourceChainId
+        ) {
+            setSourceChainId(sourceChainId)
+        }
+    }, [swapChainId, sourceChainId, setSourceChainId])
+
     // Before the seeding effects: a chain change clears the pair they write.
     const routeSourceChainId = route.params?.assetIn?.chainId
     useEffect(() => {

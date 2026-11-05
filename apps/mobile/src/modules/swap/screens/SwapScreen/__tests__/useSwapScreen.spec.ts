@@ -18,6 +18,7 @@ import { useSwapScreen } from '../useSwapScreen'
 type Account = { id: string }
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const OTHER_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
 const {
     routeParams,
@@ -43,6 +44,7 @@ const {
         signers: [] as Account[],
         swapChainAccounts: new Set<string>(),
         sourceChainId: null as string | null,
+        swapScope: null as { chainId: string; networkId: string } | null,
         isIntroductionSeen: false,
     },
 }))
@@ -67,7 +69,9 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
             setSourceChainId: mockSetSourceChainId,
         }),
     useSwapSourceScope: (account: Account | null) =>
-        account && state.swapChainAccounts.has(account.id) ? SCOPE : null,
+        account && state.swapChainAccounts.has(account.id)
+            ? (state.swapScope ?? SCOPE)
+            : null,
     useSwapSigningAccounts: () => state.signers,
 }))
 
@@ -122,6 +126,7 @@ describe('useSwapScreen', () => {
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
         state.isIntroductionSeen = false
         state.sourceChainId = null
+        state.swapScope = null
         mockSetSourceChainId.mockImplementation((chainId: string) => {
             state.sourceChainId = chainId
         })
@@ -149,6 +154,35 @@ describe('useSwapScreen', () => {
 
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
         expect(mockSetToAsset).toHaveBeenCalledWith('31566704')
+    })
+
+    it('clears the pair when an account switch moves the swap chain', () => {
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.swapScope = OTHER_SCOPE
+        rerender()
+
+        expect(mockSetSourceChainId).toHaveBeenCalledWith(null)
+    })
+
+    it('leaves the pair to the store when the source chain moved', () => {
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.sourceChainId = 'ethereum'
+        state.swapScope = OTHER_SCOPE
+        rerender()
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
+    })
+
+    it('leaves the pair alone when the first scope resolves', () => {
+        state.selected = null
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.selected = { id: 'acc-1' }
+        rerender()
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
     })
 
     it('leaves the source chain alone for an ordinary visit', () => {

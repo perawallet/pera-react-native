@@ -23,7 +23,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { act, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 
 import {
     useAccountChainStateStore,
@@ -111,5 +111,19 @@ describe('Flow: Swap opened on an Ethereum asset', () => {
         expect(useSwapsStore.getState().fromAsset).toBe(TOKEN)
         // Null falls back to this chain's own receive asset.
         expect(useSwapsStore.getState().toAsset).toBeNull()
+    })
+
+    it('Given a token pair on an Ethereum-only account, when an Algorand-only account is selected, then the pair is cleared', async () => {
+        const algorandAccount = await seedAlgo25Signer()
+        selectSender(ETHEREUM_SENDER)
+        useSwapsStore.getState().setFromAsset(TOKEN)
+        renderWithNavigation(SwapScreen, 'Swap')
+        await screen.findByTestId('swap-pay-input')
+
+        act(() => selectSender(algorandAccount))
+
+        await waitFor(() =>
+            expect(useSwapsStore.getState().fromAsset).toBeNull(),
+        )
     })
 })
