@@ -19,6 +19,9 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
+
+const PASSWORD = 'e2e-popup-sizing-password-1'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -115,4 +118,34 @@ test('global CSS disables text selection but keeps inputs selectable', async () 
 
     expect(styles.inputUserSelect).toBe('text')
     expect(styles.labelUserSelect).toBe('none')
+})
+
+// Last on purpose: it creates the vault, which the tests above need absent.
+// The real popup's viewport is 360x600; Playwright's 1280x720 default would
+// hide a window-dimension unit mismatch, so size it before loading.
+test('popup welcome header art spans the full popup width', async () => {
+    const page = await context.newPage()
+    const pageErrors = trackPageErrors(page)
+    await page.setViewportSize({ width: 360, height: 600 })
+    await page.goto(`chrome-extension://${extensionId}/popup.html`)
+
+    await page.getByTestId('create-password-input').fill(PASSWORD)
+    await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
+    await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
+
+    const header = page.getByTestId('onboarding_header_image')
+    await expect(header).toBeVisible({ timeout: 20_000 })
+    const box = await header.boundingBox()
+
+    expect(box?.x).toBeCloseTo(0, 0)
+    expect(box?.width).toBeCloseTo(360, 0)
+
+    // The image is sized from the window, so only the card (the 100%-wide
+    // header container) shows a width cap leaving a gutter at the right.
+    const card = await page
+        .getByTestId('onboarding_header_container')
+        .boundingBox()
+    expect((card?.x ?? 0) + (card?.width ?? 0)).toBeCloseTo(360, 0)
+    expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
