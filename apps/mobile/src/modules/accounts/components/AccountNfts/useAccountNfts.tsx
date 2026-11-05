@@ -43,7 +43,7 @@ import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import type { FilterOption } from '@components/FilterSelection'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSyncRefresh } from '@hooks/useSyncRefresh'
+import { useSyncRefreshAll } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetContent } from '@modules/assets'
 import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
@@ -244,14 +244,17 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         sortMode === 'recentlyAdded',
     )
 
-    const refreshAddresses = useMemo(
-        () => (address ? [address] : []),
-        [address],
+    // Every network the gallery shows, not only the one opt-ins act on.
+    const refreshSources = useMemo(
+        () =>
+            sources.map(({ address, scope }) => ({
+                addresses: [address],
+                scope,
+            })),
+        [sources],
     )
-    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
-        addresses: refreshAddresses,
-        scope,
-    })
+    const { isRefreshing, refresh: handleRefresh } =
+        useSyncRefreshAll(refreshSources)
 
     useEffect(() => {
         setSearchFilter('')

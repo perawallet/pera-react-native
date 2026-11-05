@@ -31,6 +31,9 @@ export const useRootComponent = ({
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
+    // Since the poll last started. iOS can come back through `inactive`, so
+    // the previous state alone can't tell a background stay from a blip.
+    const hasBeenInBackground = useRef(false)
     const appStatePlatform = useRef(getAppStatePlatform()).current
 
     // The Zustand `accounts` array gets a new reference on every store write
@@ -50,6 +53,17 @@ export const useRootComponent = ({
             logger.error('Sync action failed in RootComponent', {
                 source: 'RootComponent',
                 action,
+                error,
+            })
+        }
+    }, [])
+
+    const markScopesStale = useCallback(() => {
+        try {
+            getSyncService().markAllScopesStale()
+        } catch (error) {
+            logger.error('Marking sync scopes stale failed in RootComponent', {
+                source: 'RootComponent',
                 error,
             })
         }
@@ -77,7 +91,18 @@ export const useRootComponent = ({
                     appStatePlatform,
                 )
 
+                if (nextAppState === 'background') {
+                    hasBeenInBackground.current = true
+                }
+
                 if (action === 'start') {
+                    // Only a real background stay: iOS goes inactive for a
+                    // Face ID prompt or Control Center, and reading every
+                    // network on each of those would be wasted work.
+                    if (hasBeenInBackground.current) {
+                        hasBeenInBackground.current = false
+                        markScopesStale()
+                    }
                     runSyncAction('start')
                 } else if (action === 'stop') {
                     runSyncAction('stop')
@@ -91,5 +116,11 @@ export const useRootComponent = ({
             runSyncAction('stop')
             subscription.remove()
         }
-    }, [appStatePlatform, hasAccounts, migrationInProgress, runSyncAction])
+    }, [
+        appStatePlatform,
+        hasAccounts,
+        markScopesStale,
+        migrationInProgress,
+        runSyncAction,
+    ])
 }
