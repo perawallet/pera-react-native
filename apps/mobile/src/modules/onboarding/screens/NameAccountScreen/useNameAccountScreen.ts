@@ -26,7 +26,6 @@ import {
     getAllAccounts,
     useAllAccounts,
     useCreateAccount,
-    useRegisteredChainIds,
     useSelectedAccountId,
     useUpdateAccount,
     type WalletAccount,
@@ -107,7 +106,6 @@ export const useNameAccountScreen = () => {
     const { buildHdWalletAccount, saveAccount } = useCreateAccount(scope)
     const didFinishRef = useRef(false)
     const [account] = useState<Optional<WalletAccount>>(routeAccount)
-    const registeredChainIds = useRegisteredChainIds()
 
     // The stored record, once there is one: discovery can add chains to it
     // after the route param was made.
@@ -121,13 +119,6 @@ export const useNameAccountScreen = () => {
     const isTakenByAnother = (name: string) =>
         normalizeAccountName(name) !== ownStoredName &&
         isAccountNameTaken(name, ownRecordId)
-    const enabledChainIds = useMemo((): ChainId[] => {
-        const shown = storedAccount ?? account
-        if (!shown || registeredChainIds.length < 2) return []
-        return registeredChainIds.filter(chainId =>
-            chainAccountOf(shown, chainId),
-        )
-    }, [storedAccount, account, registeredChainIds])
 
     const numWallets = useMemo(() => {
         // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
@@ -172,6 +163,7 @@ export const useNameAccountScreen = () => {
     const [isCreating, setIsCreating] = useState(false)
 
     const trimmedName = walletDisplay.trim()
+    const previewName = trimmedName || accountTitle
     const isNameTaken = isTakenByAnother(trimmedName)
     const nameError = isNameTaken ? t('account_info.name_taken') : undefined
     const isFinishDisabled = isCreating || trimmedName === '' || isNameTaken
@@ -250,9 +242,9 @@ export const useNameAccountScreen = () => {
         handleNameChange,
         handleFinish,
         accountTitle,
+        previewName,
         account,
         chainId,
-        enabledChainIds,
         nameError,
         isFinishDisabled,
     }

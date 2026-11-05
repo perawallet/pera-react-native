@@ -319,6 +319,10 @@ patchedDependencies:
   # so `WebViewProps & undefined` is `never` and every JSX prop fails to
   # type-check. 13.x defaulted it to `{}`. Drop once upstream restores it.
   "react-native-webview@14.0.1": patches/react-native-webview@14.0.1.patch
+  # The popup lays out under `html { zoom: 0.85 }`, which `Dimensions` doesn't see:
+  # it divides window size by the root's computed zoom (a no-op at 1), in both
+  # builds (`dist` for Metro web, `dist/cjs` for vitest). Drop if the zoom goes.
+  "react-native-web@0.21.4": patches/react-native-web@0.21.4.patch
   # RN 0.88 removed the legacy `RCTBaseTextInputView.h`; the Swift bridging
   # header still imports it though no source uses the class. Drop once
   # upstream ships a release without the import.

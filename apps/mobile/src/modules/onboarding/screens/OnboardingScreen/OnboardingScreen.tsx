@@ -51,11 +51,15 @@ export const OnboardingScreen = () => {
                             : onboardingHeaderLight
                     }
                     style={styles.headerImage}
+                    testID='onboarding_header_image'
                     showLoadingIndicator={false}
                     transition={false}
                 />
                 <PWView style={styles.rootContainer}>
-                    <PWView style={styles.headerContainer}>
+                    <PWView
+                        style={styles.headerContainer}
+                        testID='onboarding_header_container'
+                    >
                         <PWText
                             style={styles.headerTitle}
                             variant='h1'

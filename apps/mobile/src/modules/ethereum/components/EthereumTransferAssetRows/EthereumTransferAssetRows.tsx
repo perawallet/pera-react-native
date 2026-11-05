@@ -23,11 +23,14 @@ import { useStyles } from './styles'
 type EthereumTransferAssetRowsProps = {
     presentation: EthereumTransactionPresentation
     testIDPrefix: 'ethereum_review' | 'ethereum_detail'
+    /** False when another card already shows the asset, leaving only the holder. */
+    isAssetShown?: boolean
 }
 
 export const EthereumTransferAssetRows = ({
     presentation,
     testIDPrefix,
+    isAssetShown = true,
 }: EthereumTransferAssetRowsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -55,6 +58,10 @@ export const EthereumTransferAssetRows = ({
             />
         </KeyValueRow>
     ) : null
+
+    if (!isAssetShown) {
+        return senderRow
+    }
 
     if (tokenContract) {
         return (

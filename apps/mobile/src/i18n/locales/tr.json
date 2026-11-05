@@ -3641,7 +3641,10 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
-            "transaction_id": "İşlem Kimliği"
+            "transaction_id": "İşlem Kimliği",
+            "quantity": "Adet",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",

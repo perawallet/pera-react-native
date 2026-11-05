@@ -30,9 +30,6 @@ let mockRouteParams: Optional<{
     chainId?: string
 }>
 const mockStoredAccounts = vi.hoisted(() => ({ accounts: [] as unknown[] }))
-const mockRegisteredChainIds = vi.hoisted(() => ({
-    chainIds: ['algorand'] as string[],
-}))
 const mockHomeChain = vi.hoisted(() => ({ chainId: 'algorand' }))
 const mockGetAccountDisplayName = vi.hoisted(() =>
     vi.fn(
@@ -63,7 +60,6 @@ vi.mock('@analytics', async () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockStoredAccounts.accounts,
-    useRegisteredChainIds: () => mockRegisteredChainIds.chainIds,
     useCreateAccount: () => ({
         buildHdWalletAccount: mockBuildHdWalletAccount,
         saveAccount: mockSaveAccount,
@@ -157,11 +153,10 @@ describe('useNameAccountScreen', () => {
         vi.clearAllMocks()
         mockRouteParams = undefined
         mockStoredAccounts.accounts = []
-        mockRegisteredChainIds.chainIds = ['algorand']
         mockHomeChain.chainId = 'algorand'
     })
 
-    describe('with several chains registered', () => {
+    describe('with chains added after the hand-over', () => {
         const routeAccount = {
             id: 'imported',
             chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
@@ -178,30 +173,6 @@ describe('useNameAccountScreen', () => {
                 ethereum: { address: '0xabc', keyPairId: 'kp-evm' },
             },
         }
-
-        beforeEach(() => {
-            mockRegisteredChainIds.chainIds = ['algorand', 'ethereum', 'base']
-        })
-
-        it("lists the stored account's chains, including one added after it was handed over", () => {
-            mockStoredAccounts.accounts = [storedAccount]
-            mockRouteParams = { account: routeAccount }
-
-            const { result } = renderHook(() => useNameAccountScreen())
-
-            expect(result.current.enabledChainIds).toEqual([
-                'algorand',
-                'ethereum',
-            ])
-        })
-
-        it("lists the handed-over account's chains before it is stored", () => {
-            mockRouteParams = { account: routeAccount }
-
-            const { result } = renderHook(() => useNameAccountScreen())
-
-            expect(result.current.enabledChainIds).toEqual(['algorand'])
-        })
 
         it('renames the stored account, keeping chains the handed-over copy lacks', async () => {
             mockStoredAccounts.accounts = [storedAccount]
@@ -229,20 +200,6 @@ describe('useNameAccountScreen', () => {
         const { result } = renderHook(() => useNameAccountScreen())
 
         expect(result.current.chainId).toBe('ethereum')
-    })
-
-    it('lists no chains with a single chain registered', () => {
-        mockRouteParams = {
-            account: {
-                id: '1',
-                chains: { algorand: { address: 'ADDR', keyPairId: 'kp1' } },
-                custody: { kind: 'watch' },
-            },
-        }
-
-        const { result } = renderHook(() => useNameAccountScreen())
-
-        expect(result.current.enabledChainIds).toEqual([])
     })
 
     describe('on another chain', () => {
@@ -593,6 +550,39 @@ describe('useNameAccountScreen', () => {
         })
 
         expect(result.current.walletDisplay).toBe('New Name')
+    })
+
+    it('previews the typed name on the account card', () => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange('New Name')
+        })
+
+        expect(result.current.previewName).toBe('New Name')
+    })
+
+    it.each([
+        ['empty', ''],
+        ['blank', '   '],
+    ])('previews the offered name while the field is %s', (_, typed) => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange(typed)
+        })
+
+        expect(result.current.previewName).toBe('Wallet 1')
+    })
+
+    it('previews the typed name without surrounding spaces', () => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange('  New Name  ')
+        })
+
+        expect(result.current.previewName).toBe('New Name')
     })
 
     it('handleFinish updates account name and exits when account is provided', async () => {
