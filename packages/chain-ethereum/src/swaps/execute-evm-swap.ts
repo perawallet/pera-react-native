@@ -392,6 +392,11 @@ export const executeEvmSwap = async ({
 
     if (!isQuoteFresh(quote)) return { kind: 'stale-quote' }
 
+    // With nothing declared the check would refuse any order, so don't create one.
+    if (routeContracts.length === 0) {
+        return failed({ phase: 'prepare', reason: 'quote-mismatch' })
+    }
+
     const client = createEvmClient(scope, ctx, chain)
     const sender = getAddress(quote.request.sourceAddress)
 
