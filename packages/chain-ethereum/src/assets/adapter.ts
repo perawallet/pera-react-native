@@ -560,6 +560,18 @@ export const createEthereumAssetsAdapter = (
         getNativeAsset: () => chain.nativeAsset,
         syncAssets: syncAssets(ctx, chain),
         getAssetMetadata: getAssetMetadata(ctx, chain),
+        findCollectibleMetadata: async (ref, scope) => {
+            eip155ChainIdOf(scope, chain)
+            const assetId = evmAssetIdOf(chain, ref)
+            if (!isEvmNftAssetId(assetId)) return null
+            try {
+                return await getNftMetadata(ctx, chain, assetId, scope)
+            } catch (error) {
+                // The lookup's own miss: no NFT service, or one that doesn't know the NFT.
+                if (error instanceof InvalidCaip19Error) return null
+                throw error
+            }
+        },
         fetchOnChainAsset: async (ref, scope) => {
             eip155ChainIdOf(scope, chain)
             const assetId = evmAssetIdOf(chain, ref)

@@ -44,6 +44,7 @@ import {
     historyEntryOfSigned,
     submitAndRecordEthereumTransactions,
     submitEthereumTransactions,
+    waitForEvmReceipt,
 } from './submission'
 
 export { ETHEREUM_CONFIRMATION_TIMEOUT_MS }
@@ -108,16 +109,9 @@ export const createEvmBroadcasterAdapter = (
         waitForConfirmation: async (scope, txIds) => {
             const client = clientFor(scope)
             await Promise.all(
-                txIds.map(async hash => {
-                    const receipt = await client.waitForTransactionReceipt({
-                        hash: hash as Hex,
-                        timeout,
-                        checkReplacement: false,
-                    })
-                    if (receipt.status === 'reverted') {
-                        throw new EvmError(EvmErrorCode.REVERTED)
-                    }
-                }),
+                txIds.map(hash =>
+                    waitForEvmReceipt(client, hash as Hex, timeout),
+                ),
             )
         },
         createSubmitTransport: (capturedScope): DataTransport => ({

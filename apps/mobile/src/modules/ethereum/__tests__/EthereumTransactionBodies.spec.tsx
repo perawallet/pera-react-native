@@ -13,7 +13,13 @@
 import { Decimal } from 'decimal.js'
 import * as Clipboard from 'expo-clipboard'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@test-utils/render'
+import {
+    createQueryClientWrapper,
+    fireEvent,
+    render,
+    renderHook,
+    screen,
+} from '@test-utils/render'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import * as assets from '@perawallet/wallet-core-assets'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
@@ -36,6 +42,8 @@ import {
 import { TransactionDetailBody } from '@modules/signing/transactions/TransactionDetailBody'
 import { TransactionPreviewRow } from '@modules/signing/transactions/TransactionPreviewRow'
 import { TransactionReviewBody } from '@modules/signing/transactions/TransactionReviewBody'
+import { EthereumTransactionDetailSection } from '../components/EthereumTransactionDetailSection'
+import { useEthereumTransactionPresentation } from '../hooks/useEthereumTransactionPresentation'
 
 const mockNavigate = vi.hoisted(() => vi.fn())
 // The suffix has its own spec; here the hero's title is the row label it wraps.
@@ -668,6 +676,57 @@ describe('Ethereum transaction bodies', () => {
             expect(
                 screen.queryByTestId('ethereum_contract_call_warning'),
             ).toBeNull()
+        })
+
+        describe('with the NFT shown in its own card', () => {
+            const presentationOf = (from: string) => {
+                vi.mocked(useChainCapability).mockReturnValue(true)
+                const { result } = renderHook(
+                    () =>
+                        useEthereumTransactionPresentation(
+                            withCall({
+                                kind: 'erc721-safe-transfer',
+                                contract: ETHEREUM_FIXTURE_TOKEN,
+                                from,
+                                to: ETHEREUM_FIXTURE_RECIPIENT,
+                                tokenId: '7',
+                            }),
+                        ),
+                    { wrapper: createQueryClientWrapper() },
+                )
+                return result.current!
+            }
+
+            it('keeps the holder an approved operator moved it for, and drops the asset and amount rows the card repeats', () => {
+                render(
+                    <EthereumTransactionDetailSection
+                        presentation={presentationOf(HOLDER)}
+                        isAssetInCard
+                    />,
+                )
+
+                expect(textOf('ethereum_detail_sender')).toContain(
+                    shortOnEthereum(HOLDER),
+                )
+                expect(screen.queryByTestId('ethereum_detail_nft')).toBeNull()
+                expect(
+                    screen.queryByTestId('ethereum_detail_amount'),
+                ).toBeNull()
+            })
+
+            it('names no holder when the signer moved its own NFT', () => {
+                render(
+                    <EthereumTransactionDetailSection
+                        presentation={presentationOf(ETHEREUM_FIXTURE_SENDER)}
+                        isAssetInCard
+                    />,
+                )
+
+                expect(
+                    screen.queryByTestId('ethereum_detail_sender'),
+                ).toBeNull()
+                expect(screen.queryByTestId('ethereum_detail_nft')).toBeNull()
+            })
         })
 
         it('lists every item of an NFT batch, a repeated token id included, while contractDecoding is on', () => {

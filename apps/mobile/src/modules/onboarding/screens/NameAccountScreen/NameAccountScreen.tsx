@@ -14,7 +14,6 @@ import { PWText, PWView } from '@components/core'
 import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { ChainIcon } from '@modules/chain-ui'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
 
@@ -26,9 +25,10 @@ export const NameAccountScreen = () => {
         isCreating,
         handleNameChange,
         handleFinish,
-        accountTitle,
+        previewName,
         account,
-        enabledChainIds,
+        nameError,
+        isFinishDisabled,
     } = useNameAccountScreen()
 
     return (
@@ -41,31 +41,19 @@ export const NameAccountScreen = () => {
             onChangeText={handleNameChange}
             onFinish={() => void handleFinish()}
             isLoading={isCreating}
+            isDisabled={isFinishDisabled}
+            errorMessage={nameError}
         >
             <PWView style={styles.walletNameContainer}>
                 <AccountIcon account={account} />
                 <PWText
                     variant='h4'
                     style={styles.nameText}
+                    truncate
                 >
-                    {accountTitle}
+                    {previewName}
                 </PWText>
             </PWView>
-            {enabledChainIds.length > 0 && (
-                <PWView
-                    style={styles.chainIconRow}
-                    testID='name_account_chain_icons'
-                >
-                    {enabledChainIds.map(chainId => (
-                        <ChainIcon
-                            key={chainId}
-                            chainId={chainId}
-                            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: chain icon size (20)
-                            size={20}
-                        />
-                    ))}
-                </PWView>
-            )}
         </NameAccountForm>
     )
 }

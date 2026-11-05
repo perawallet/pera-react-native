@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { useState } from 'react'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { PWButton, PWInput, PWSheetLayout, PWView } from '@components/core'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { useRenameAccountContent } from './useRenameAccountContent'
 
 export type RenameAccountContentProps = {
     accountId: string
@@ -26,21 +25,9 @@ export const RenameAccountContent = ({
     accountId,
 }: RenameAccountContentProps) => {
     const { t } = useLanguage()
-    const account = useAccountsStore(s =>
-        s.accounts.find(a => a.id === accountId),
-    )
-    const initialName = account?.name ?? ''
-    const [name, setName] = useState(initialName)
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
-
-    const trimmed = name.trim()
-    const isSaveDisabled = trimmed.length === 0
-
-    const handleSave = () => {
-        if (isSaveDisabled) return
-        resolve(trimmed)
-    }
+    const { name, nameError, isSaveDisabled, handleNameChange, handleSave } =
+        useRenameAccountContent(accountId)
 
     return (
         <PWSheetLayout
@@ -51,7 +38,8 @@ export const RenameAccountContent = ({
                 <PWInput
                     testID='rename_account_input'
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={handleNameChange}
+                    errorMessage={nameError}
                     placeholder={t('account_options.rename_label')}
                     autoFocus
                     inputStyle={styles.input}

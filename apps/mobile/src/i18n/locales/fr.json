@@ -507,6 +507,7 @@
         "viewing": "Actuel",
         "wallet_label": "Wallet n° {{number}}",
         "account_number": "Compte n° {{number}}",
+        "name_taken": "Vous avez déjà un compte portant ce nom. Choisissez un autre nom pour pouvoir les distinguer.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Compte Algo25",
         "type_watch": "Compte de suivi",
@@ -1075,7 +1076,8 @@
         "wealth_chart": {
             "empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
             "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
-            "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}"
+            "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
+            "currency_unavailable_body": "Ce graphique n'est pas disponible en {{currency}} pour le moment"
         },
         "webview": {
             "failed_title": "Échec du chargement de la page",
@@ -2122,7 +2124,6 @@
             "finish_button": "Terminer la création du compte",
             "creating": "Création du compte partagé...",
             "error_title": "Échec de la création du compte",
-            "error_name_taken": "Un compte portant ce nom existe déjà.",
             "duplicate_account_title": "Compte déjà ajouté",
             "duplicate_account_body": "Un compte partagé avec ces participants et ce seuil se trouve déjà dans votre wallet."
         },
@@ -3640,12 +3641,22 @@
         },
         "record_detail": {
             "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
-            "transaction_id": "ID de transaction"
+            "transaction_id": "ID de transaction",
+            "quantity": "Quantité",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · ID du token {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
             "function_selector": "Sélecteur de fonction",
             "call_data": "Données de l’appel",
+            "function": "Fonction",
+            "arguments": "Arguments",
+            "argument_index": "Argument {{index}}",
+            "implementation": "Implémentation",
+            "verified_source": "Nom tiré du code source vérifié du contrat.",
+            "verified_source_proxy": "Ce contrat est un proxy. Nom tiré du code source vérifié du contrat vers lequel il redirige.",
+            "lookup_failed": "Pera n’a pas pu récupérer le nom de fonction de ce contrat.",
             "unchecked_warning": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à {{domain}}.",
             "unchecked_warning_no_source": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à l’application qui l’a envoyée."
         },
@@ -3937,7 +3948,8 @@
             "to": "Vers",
             "balance_label": "Solde : <0/>",
             "max": "MAX",
-            "select_asset": "Choisir"
+            "select_asset": "Choisir",
+            "pay_from": "Payer depuis"
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",
@@ -3967,6 +3979,9 @@
             "price_impact": "Impact sur le prix",
             "slippage_tolerance": "Tolérance de slippage",
             "pera_fee": "Frais Pera",
+            "network_fee": "Frais de réseau",
+            "spend_approval_note": "Vous signerez d’abord une autorisation pour le montant de ce swap, puis le swap.",
+            "insufficient_network_fee": "Pas assez de {{symbol}} pour payer les frais de réseau.",
             "provider": "Fournisseur",
             "minimum_received": "Minimum reçu",
             "confirm_swap": "Confirmer le swap",
@@ -4027,10 +4042,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "Top 5 des swaps",
-            "volume_24h": "Volume (24 h)",
-            "error": "Impossible de charger le top des swaps"
+        "tracking": {
+            "started": "Swap inter-chaînes envoyé",
+            "in_progress": "En cours. Vos fonds sont en route.",
+            "completed": "Terminé. Vos fonds en {{toAsset}} sont arrivés.",
+            "failed": "Le swap n’a pas pu aboutir. Si vos fonds ont été envoyés, le fournisseur les restituera sur votre compte.",
+            "refunded": "Le swap a été remboursé. Vos fonds en {{fromAsset}} sont de retour sur votre compte.",
+            "expired": "Le swap a expiré avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
+            "cancelled": "Le swap a été annulé avant de commencer. Si vos fonds ont quitté votre compte, le statut peut encore changer pendant 7 jours maximum.",
+            "dismiss": "Masquer"
+        },
+        "receiving_account": {
+            "title": "Compte de réception",
+            "label": "Recevoir sur"
         }
     },
     "onramp": {

@@ -26,17 +26,12 @@ let mockAssetsQueryResult: {
 }
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    percentToApiSlippage: (value: string) => value,
     useCreateQuotesMutation: () => ({
         mutateAsync: mockCreateQuotes,
         isPending: false,
         isError: mockIsQuoteMutationError,
         reset: mockResetQuoteMutation,
     }),
-}))
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceIdLookup: () => () => 'device-1',
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -81,16 +76,43 @@ describe('useSwapQuotes', () => {
         mockCreateQuotes.mockResolvedValue([])
     })
 
-    it('fetches quotes for a valid pair', async () => {
+    it('asks for the pair on the scope in base units, receiving to the swapper', async () => {
+        renderHook(() => useSwapQuotes({ ...baseParams, slippage: '0.5' }))
+
+        await waitFor(() => expect(mockCreateQuotes).toHaveBeenCalledTimes(1))
+        expect(mockCreateQuotes).toHaveBeenCalledWith({
+            sourceAsset: {
+                chainId: 'algorand',
+                networkId: 'testnet',
+                assetId: '0',
+            },
+            destinationAsset: {
+                chainId: 'algorand',
+                networkId: 'testnet',
+                assetId: '31566704',
+            },
+            sourceAmount: new Decimal(1_000_000),
+            sourceAddress: 'SWAPPER',
+            destinationAddress: 'SWAPPER',
+            slippage: '0.5',
+        })
+    })
+
+    it('leaves slippage to the router when none is set', async () => {
         renderHook(() => useSwapQuotes(baseParams))
 
         await waitFor(() => expect(mockCreateQuotes).toHaveBeenCalledTimes(1))
-        expect(mockCreateQuotes).toHaveBeenCalledWith(
-            expect.objectContaining({
-                asset_in_id: 0,
-                asset_out_id: 31_566_704,
-            }),
-        )
+        expect(mockCreateQuotes.mock.calls[0][0].slippage).toBeNull()
+    })
+
+    it('clears the quotes when the request itself is refused, e.g. on a custom node', async () => {
+        mockCreateQuotes.mockRejectedValue(new Error('service unavailable'))
+
+        const { result } = renderHook(() => useSwapQuotes(baseParams))
+
+        await waitFor(() => expect(mockCreateQuotes).toHaveBeenCalledTimes(1))
+        expect(result.current.allQuotes).toEqual([])
+        expect(result.current.quotedAmount).toBeNull()
     })
 
     it('treats a quote 404 as terminal for the current pair', async () => {
@@ -214,5 +236,57 @@ describe('useSwapQuotes', () => {
 
         expect(mockCreateQuotes).not.toHaveBeenCalled()
         expect(result.current.isQuoteError).toBe(false)
+    })
+
+    describe('a receive asset on another chain', () => {
+        const ETH = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        beforeEach(() => {
+            mockUseAssetsQuery.mockImplementation(
+                (scope: { chainId: string }) =>
+                    makeAssetsResult(
+                        scope.chainId === 'ethereum' ? ['native'] : ['0'],
+                    ),
+            )
+        })
+
+        it('asks for the asset on its own chain, paid out to the receiving address', async () => {
+            renderHook(() =>
+                useSwapQuotes({
+                    ...baseParams,
+                    toAssetId: 'native',
+                    toAssetScope: ETH,
+                    destinationAddress: '0xETH',
+                }),
+            )
+
+            await waitFor(() =>
+                expect(mockCreateQuotes).toHaveBeenCalledTimes(1),
+            )
+            expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+                ETH,
+                ['native'],
+                expect.objectContaining({ fetchMissing: true }),
+            )
+            expect(mockCreateQuotes.mock.calls[0][0]).toMatchObject({
+                sourceAsset: { ...baseParams.scope, assetId: '0' },
+                destinationAsset: { ...ETH, assetId: 'native' },
+                sourceAddress: 'SWAPPER',
+                destinationAddress: '0xETH',
+            })
+        })
+
+        it('waits for a receiving address', () => {
+            renderHook(() =>
+                useSwapQuotes({
+                    ...baseParams,
+                    toAssetId: 'native',
+                    toAssetScope: ETH,
+                    destinationAddress: null,
+                }),
+            )
+
+            expect(mockCreateQuotes).not.toHaveBeenCalled()
+        })
     })
 })

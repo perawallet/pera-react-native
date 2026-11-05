@@ -141,15 +141,13 @@ vi.mock('react-i18next', async () => {
 import { useCardConfirmSwapScreen } from '../useCardConfirmSwapScreen'
 
 const QUOTE = {
-    quoteIdStr: 'q1',
+    quoteId: 'q1',
+    request: { slippage: '0.5' },
     amountIn: new Decimal('200'),
     amountOut: new Decimal('60'),
-    amountOutWithSlippage: new Decimal('59'),
-    price: new Decimal('0.305685'),
-    slippage: new Decimal('0.005'),
+    minimumAmountOut: new Decimal('59'),
     priceImpact: new Decimal('0.306'),
-    transactionFees: new Decimal('0.24'),
-    peraFeeAmount: new Decimal('0'),
+    fees: [],
     assetIn: { unitName: 'ALGO', decimals: 6 },
     assetOut: { unitName: 'USDC', decimals: 6 },
 }

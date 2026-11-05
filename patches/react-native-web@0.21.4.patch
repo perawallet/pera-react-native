@@ -1,0 +1,32 @@
+diff --git a/dist/cjs/exports/Dimensions/index.js b/dist/cjs/exports/Dimensions/index.js
+index 0866a1eb75c7174595405d09f9b335aecaa9bb13..a21bc217d2438912e2e4a85a753f2d58f1aea5a6 100644
+--- a/dist/cjs/exports/Dimensions/index.js
++++ b/dist/cjs/exports/Dimensions/index.js
+@@ -53,8 +53,9 @@ function update() {
+      * behaviour, since originally documentElement client height and width were used,
+      * and they do not react to pinch zoom.
+      */
+-    height = Math.round(visualViewport.height * visualViewport.scale);
+-    width = Math.round(visualViewport.width * visualViewport.scale);
++    var rootZoom = parseFloat(win.getComputedStyle(win.document.documentElement).zoom) || 1;
++    height = Math.round(visualViewport.height * visualViewport.scale) / rootZoom;
++    width = Math.round(visualViewport.width * visualViewport.scale) / rootZoom;
+   } else {
+     var docEl = win.document.documentElement;
+     height = docEl.clientHeight;
+diff --git a/dist/exports/Dimensions/index.js b/dist/exports/Dimensions/index.js
+index 9c38f81b447537dc404c2e556bb3c84c2c86d5b6..6fb20ed6a63999522a31721dfb824de05e94a83a 100644
+--- a/dist/exports/Dimensions/index.js
++++ b/dist/exports/Dimensions/index.js
+@@ -49,8 +49,9 @@ function update() {
+      * behaviour, since originally documentElement client height and width were used,
+      * and they do not react to pinch zoom.
+      */
+-    height = Math.round(visualViewport.height * visualViewport.scale);
+-    width = Math.round(visualViewport.width * visualViewport.scale);
++    var rootZoom = parseFloat(win.getComputedStyle(win.document.documentElement).zoom) || 1;
++    height = Math.round(visualViewport.height * visualViewport.scale) / rootZoom;
++    width = Math.round(visualViewport.width * visualViewport.scale) / rootZoom;
+   } else {
+     var docEl = win.document.documentElement;
+     height = docEl.clientHeight;

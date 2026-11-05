@@ -242,9 +242,10 @@ describe('useNameMultisigScreen', () => {
         expect(result.current.accountName).toBe('My Wallet')
     })
 
-    it('allows a name already used by another account (names need not be unique)', () => {
+    it('blocks a name another account already shows, ignoring case and spaces', () => {
         mockUseAllAccounts.mockReturnValue([
             {
+                id: 'other',
                 chains: { algorand: { address: 'A' } },
                 name: 'my account',
                 custody: { kind: 'watch' },
@@ -257,7 +258,40 @@ describe('useNameMultisigScreen', () => {
             result.current.handleNameChange('  MY ACCOUNT  ')
         })
 
-        expect(result.current.isFinishDisabled).toBe(false)
+        expect(result.current.nameError).toBe('account_info.name_taken')
+        expect(result.current.isFinishDisabled).toBe(true)
+    })
+
+    it('does not flag the saved account as a duplicate once it is in the store', async () => {
+        mockMutateAsync.mockResolvedValue({})
+        const { result, rerender } = renderHook(() => useNameMultisigScreen())
+
+        act(() => {
+            result.current.handleNameChange('Family fund')
+        })
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+        const saved = mockSetAccounts.mock.calls[0]![0] as WalletAccount[]
+        mockUseAllAccounts.mockReturnValue(saved)
+        rerender()
+
+        expect(result.current.nameError).toBeUndefined()
+    })
+
+    it('saves the typed name trimmed', async () => {
+        mockMutateAsync.mockResolvedValue({})
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        act(() => {
+            result.current.handleNameChange('  Family fund  ')
+        })
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        const saved = mockSetAccounts.mock.calls[0]![0] as WalletAccount[]
+        expect(saved.at(-1)?.name).toBe('Family fund')
     })
 
     it('isFinishDisabled is true when name is empty', () => {

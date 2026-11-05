@@ -11,4 +11,7 @@
  */
 
 export { SwapAssetSelectionContent } from './SwapAssetSelectionContent'
-export type { SwapAssetSelectionContentProps } from './SwapAssetSelectionContent'
+export type {
+    SwapAssetSelection,
+    SwapAssetSelectionContentProps,
+} from './SwapAssetSelectionContent'

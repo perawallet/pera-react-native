@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import type { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /** Which of the chart container's mutually exclusive surfaces to render. */
 export type BalanceLineChartRenderState =
@@ -26,6 +28,8 @@ export type BalanceLineChartRenderState =
     | 'empty'
 
 type UseBalanceLineChartParams = {
+    /** The plotted points; a new identity is new data to try drawing. Unused where there is no boundary to reset. */
+    points?: unknown
     /** True when the series has at least one point to plot (fresh or stale). */
     hasData: boolean
     /** True while the query's fetch is offline-paused (fetchStatus 'paused'). */
@@ -43,6 +47,9 @@ type UseBalanceLineChartParams = {
 type UseBalanceLineChartResult = {
     renderState: BalanceLineChartRenderState
     handleRetry?: () => void
+    /** Goes on the boundary around the drawn chart, which new points reset after a throw. */
+    chartBoundary: RefObject<Nullable<BaseErrorBoundary>>
+    handleChartError: () => void
 }
 
 /**
@@ -52,6 +59,7 @@ type UseBalanceLineChartResult = {
  * forever, so offline MUST be resolved before the spinner.
  */
 export const useBalanceLineChart = ({
+    points,
     hasData,
     isPaused,
     isError,
@@ -59,6 +67,19 @@ export const useBalanceLineChart = ({
     isUnavailableOnNetwork,
     onRetry,
 }: UseBalanceLineChartParams): UseBalanceLineChartResult => {
+    const chartBoundary = useRef<BaseErrorBoundary>(null)
+    const failedPoints = useRef<unknown>(null)
+    // The points that threw don't get another try, or this would loop on them.
+    useEffect(() => {
+        if (failedPoints.current && failedPoints.current !== points) {
+            failedPoints.current = null
+            chartBoundary.current?.reset()
+        }
+    }, [points])
+    const handleChartError = () => {
+        failedPoints.current = points
+    }
+
     const { hasInternet } = useNetworkStatus()
     const { request: requestBottomSheet } = useBottomSheet()
     const { t } = useLanguage()
@@ -117,5 +138,5 @@ export const useBalanceLineChart = ({
         }
     }, [onRetry, requestBottomSheet, t])
 
-    return { renderState, handleRetry }
+    return { renderState, handleRetry, chartBoundary, handleChartError }
 }

@@ -507,6 +507,7 @@
         "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
         "account_number": "Hesap #{{number}}",
+        "name_taken": "Bu isimde bir hesabın zaten var. Birbirinden ayırt edebilmek için farklı bir isim seç.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
         "type_watch": "İzleme hesabı",
@@ -1075,7 +1076,8 @@
         "wealth_chart": {
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
-            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor"
+            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",
@@ -2122,7 +2124,6 @@
             "finish_button": "Hesap oluşturmayı tamamla",
             "creating": "Paylaşılan hesap oluşturuluyor...",
             "error_title": "Hesap oluşturulamadı",
-            "error_name_taken": "Bu isimde bir hesap zaten var.",
             "duplicate_account_title": "Hesap zaten eklenmiş",
             "duplicate_account_body": "Bu katılımcılara ve bu eşiğe sahip bir paylaşılan hesap cüzdanında zaten var."
         },
@@ -3640,12 +3641,22 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
-            "transaction_id": "İşlem Kimliği"
+            "transaction_id": "İşlem Kimliği",
+            "quantity": "Adet",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
+            "function": "Fonksiyon",
+            "arguments": "Argümanlar",
+            "argument_index": "Argüman {{index}}",
+            "implementation": "Uygulama sözleşmesi",
+            "verified_source": "Ad, sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "verified_source_proxy": "Bu sözleşme bir proxy. Ad, yönlendirdiği sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "lookup_failed": "Pera bu sözleşmenin fonksiyon adını sorgulayamadı.",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },
@@ -3937,7 +3948,8 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "pay_from": "Ödeme ağı"
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -3967,6 +3979,9 @@
             "price_impact": "Fiyat etkisi",
             "slippage_tolerance": "Kayma toleransı",
             "pera_fee": "Pera ücreti",
+            "network_fee": "Ağ ücreti",
+            "spend_approval_note": "Önce bu swap tutarı için bir onay, ardından swap işlemini imzalayacaksın.",
+            "insufficient_network_fee": "Ağ ücretini ödemek için yeterli {{symbol}} yok.",
             "provider": "Sağlayıcı",
             "minimum_received": "Minimum alınacak miktar",
             "confirm_swap": "Swap’ı onayla",
@@ -4027,10 +4042,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "En popüler 5 swap",
-            "volume_24h": "Hacim (24s)",
-            "error": "En popüler swap’lar yüklenemedi"
+        "tracking": {
+            "started": "Zincirler arası swap gönderildi",
+            "in_progress": "Devam ediyor. Varlıkların yolda.",
+            "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
+            "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",
+            "refunded": "Swap iade edildi. {{fromAsset}} varlığın hesabına geri döndü.",
+            "expired": "Swap başlamadan süresi doldu. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
+            "cancelled": "Swap başlamadan iptal edildi. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
+            "dismiss": "Kapat"
+        },
+        "receiving_account": {
+            "title": "Alıcı hesap",
+            "label": "Alınacak hesap"
         }
     },
     "onramp": {

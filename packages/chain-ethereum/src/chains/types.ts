@@ -51,6 +51,8 @@ export type EvmChainRow = {
     enabledByDefault: boolean
     /** Layered over the EVM defaults for this chain alone. */
     capabilities?: Partial<ChainCapabilities>
+    /** Checksummed contract of the token a fresh swap receives here; the native asset when absent. */
+    defaultSwapReceiveAssetId?: string
     /** The developer modes a capability is off in, on this chain alone. */
     restrictions?: ChainCapabilityRestrictions
 }

@@ -14,11 +14,22 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSwapConfirmationActions } from '../useSwapConfirmationActions'
 import type { SwapExecutionOutcome } from '../../../hooks/useSwapExecution'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    useEnsureSwapDestination,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 
-const makeQuote = (quoteIdStr?: string): SwapQuote =>
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+const makeQuote = (quoteId = 'quote-1'): SwapQuote =>
     ({
-        quoteIdStr,
+        quoteId,
+        request: {
+            sourceAddress: 'SWAPPER',
+            destinationAddress: 'SWAPPER',
+            destinationAsset: { ...SCOPE, assetId: '31566704' },
+        },
+        fees: [],
         assetIn: {
             assetId: '0',
             unitName: 'ALGO',
@@ -29,9 +40,7 @@ const makeQuote = (quoteIdStr?: string): SwapQuote =>
             unitName: 'USDC',
             verificationTier: 'trusted',
         },
-    }) as SwapQuote
-
-const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+    }) as unknown as SwapQuote
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
 
@@ -44,7 +53,12 @@ const mockResolve = vi.fn()
 const mockDismiss = vi.fn()
 const mockInfoToast = vi.fn()
 const mockExecute =
-    vi.fn<(quoteIdStr: string) => Promise<SwapExecutionOutcome>>()
+    vi.fn<
+        (
+            quote: SwapQuote,
+            prepareDestination?: () => Promise<boolean>,
+        ) => Promise<SwapExecutionOutcome>
+    >()
 const mockReset = vi.fn()
 const mockSchedule = vi.fn((callback: () => void, _delayMs: number) => {
     callback()
@@ -93,6 +107,47 @@ vi.mock('../../../hooks/useSwapExecution', () => ({
 describe('useSwapConfirmationActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+    })
+
+    it('readies nothing for a same-chain swap', async () => {
+        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+        const quote = makeQuote()
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ scope: SCOPE, quote }),
+        )
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockExecute).toHaveBeenCalledWith(quote)
+    })
+
+    it('readies the destination of a cross-chain swap through execute', async () => {
+        const ensureReceivable = vi.fn(async () => true)
+        vi.mocked(useEnsureSwapDestination).mockReturnValue({
+            ensureReceivable,
+        })
+        mockExecute.mockResolvedValueOnce({ kind: 'success' })
+        const quote = {
+            ...makeQuote(),
+            routeKind: 'cross-chain',
+        } as SwapQuote
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ scope: SCOPE, quote }),
+        )
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+        const prepareDestination = mockExecute.mock.calls[0][1]
+        await prepareDestination?.()
+
+        expect(ensureReceivable).toHaveBeenCalledWith({
+            address: 'SWAPPER',
+            scope: SCOPE,
+            assetId: '31566704',
+        })
     })
 
     it('reports a completed swap with its chain, keeping the existing properties', async () => {
@@ -162,7 +217,7 @@ describe('useSwapConfirmationActions', () => {
         })
 
         expect(mockExecute).toHaveBeenCalledWith(
-            expect.objectContaining({ quoteIdStr: 'quote-1' }),
+            expect.objectContaining({ quoteId: 'quote-1' }),
         )
         expect(mockSchedule).toHaveBeenCalled()
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
@@ -238,19 +293,6 @@ describe('useSwapConfirmationActions', () => {
             message: 'may have landed',
             title: 'errors.submission.unknown_outcome.title',
         })
-    })
-
-    it('does nothing when quoteIdStr is missing', async () => {
-        const { result } = renderHook(() =>
-            useSwapConfirmationActions({ scope: SCOPE, quote: makeQuote() }),
-        )
-
-        await act(async () => {
-            await result.current.handleSlideConfirm()
-        })
-
-        expect(mockExecute).not.toHaveBeenCalled()
-        expect(mockResolve).not.toHaveBeenCalled()
     })
 
     it('in-flight guard prevents a second concurrent execute', async () => {

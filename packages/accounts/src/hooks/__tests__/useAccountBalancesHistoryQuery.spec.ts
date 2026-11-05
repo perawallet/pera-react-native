@@ -277,6 +277,7 @@ describe('useAccountBalancesHistoryQuery', () => {
                 ['ADDR1'],
                 'one-day',
                 { chainId: 'algorand', networkId: 'testnet' },
+                expect.any(AbortSignal),
             )
         })
 

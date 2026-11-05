@@ -18,8 +18,8 @@ import {
 } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
 import {
-    useSwapScope,
     useSwapSigningAccounts,
+    useSwapSourceScope,
     useSwapsStore,
 } from '@perawallet/wallet-core-swaps'
 import {
@@ -40,7 +40,10 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapIntroductionContent } from '@modules/swap/components'
 import { config } from '@perawallet/wallet-core-config'
 import type { SwapFormInitialPayAmount } from '@modules/swap/components/SwapForm/useSwapForm'
-import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
+import {
+    resolveSwapRouteAssets,
+    routeAssetInIdOn,
+} from './resolveSwapRouteAssets'
 
 export type UseSwapScreenResult = {
     /** Null when the selected account is on no chain that has swap. */
@@ -55,19 +58,54 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
+    const sourceChainId = useSwapsStore(state => state.sourceChainId)
+    const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
     const selectedAccount = useSelectedAccount()
-    const scope = useSwapScope(selectedAccount)
+    const scope = useSwapSourceScope(selectedAccount)
     const signingAccounts = useSwapSigningAccounts()
     const accountPicker = useAccountListPicker(signingAccounts)
     const { setSelectedAccountId } = useSelectedAccountId()
 
-    const resolvedAssets = scope
-        ? resolveSwapRouteAssets(route.params, scope)
+    // A chain change the store didn't make, such as an account switch, keeps the
+    // old chain's pair: the form remounts while focused, past both of its resets.
+    const swapChainId = scope?.chainId
+    const previousChainsRef = useRef({ swapChainId, sourceChainId })
+    useEffect(() => {
+        const previous = previousChainsRef.current
+        previousChainsRef.current = { swapChainId, sourceChainId }
+        if (
+            previous.swapChainId &&
+            swapChainId &&
+            previous.swapChainId !== swapChainId &&
+            previous.sourceChainId === sourceChainId
+        ) {
+            setSourceChainId(sourceChainId)
+        }
+    }, [swapChainId, sourceChainId, setSourceChainId])
+
+    // Before the seeding effects: a chain change clears the pair they write.
+    const routeSourceChainId = route.params?.assetIn?.chainId
+    useEffect(() => {
+        if (routeSourceChainId) setSourceChainId(routeSourceChainId)
+    }, [routeSourceChainId, setSourceChainId])
+
+    // Until the store holds the route's chain, scope is still the previous one,
+    // and a pair seeded from it would outlive the chain change.
+    const routeScope =
+        !routeSourceChainId || sourceChainId === routeSourceChainId
+            ? scope
+            : null
+    const resolvedAssets = routeScope
+        ? resolveSwapRouteAssets(route.params, routeScope)
         : null
-    const assetInId = resolvedAssets?.assetInId
+    // A chain with no known default output still opens on the route's input,
+    // and the form pairs it with the chain's own receive asset.
+    const assetInId =
+        resolvedAssets?.assetInId ??
+        (routeScope ? routeAssetInIdOn(route.params, routeScope) : undefined)
     const assetOutId = resolvedAssets?.assetOutId
 
-    useSeedSwapRouteAssets({ assetInId, assetOutId, scope })
+    useSeedSwapRouteAssets({ assetInId, assetOutId, scope: routeScope })
 
     // The tab stays mounted once opened, and the selection is app-wide: switching
     // while another screen is in front would undo an account picked there.
@@ -84,19 +122,21 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     }, [isFocused, selectedAccount, signingAccounts, setSelectedAccountId])
 
     useEffect(() => {
-        if (!assetInId || !assetOutId) return
+        if (!assetInId) return
 
         setFromAsset(assetInId)
-        setToAsset(assetOutId)
+        if (assetOutId) setToAsset(assetOutId)
     }, [assetInId, assetOutId, setFromAsset, setToAsset])
 
     const payAmount = route.params?.payAmount
+    // The form reads this once on mount, which can be before the chain is pinned.
+    const payAssetId = assetInId ?? route.params?.assetIn?.assetId
     const initialPayAmount = useMemo(
         () =>
-            payAmount && assetInId
-                ? { assetId: assetInId, amount: new Decimal(payAmount) }
+            payAmount && payAssetId
+                ? { assetId: payAssetId, amount: new Decimal(payAmount) }
                 : undefined,
-        [payAmount, assetInId],
+        [payAmount, payAssetId],
     )
 
     const { pushWebView } = useWebView()

@@ -12,14 +12,16 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { describe, it, expect, vi } from 'vitest'
-import { resolveSwapRouteAssets } from '../resolveSwapRouteAssets'
+import {
+    resolveSwapRouteAssets,
+    routeAssetInIdOn,
+} from '../resolveSwapRouteAssets'
 
 const USDC_MAINNET = '31566704'
 const USDC_TESTNET = '10458941'
 const TOKEN = '887406851'
+const algo = (assetId: string) => ({ chainId: 'algorand' as const, assetId })
 
 // Mirrors the real getKnownAssetId: an id only on the Pera-backed networks,
 // `null` everywhere else. A catch-all that handed back MainNet's id for any
@@ -53,7 +55,7 @@ describe('resolveSwapRouteAssets', () => {
     it('keeps a distinct output asset (ALGO -> token)', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0', assetOutId: TOKEN },
+                { assetIn: algo('0'), assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
@@ -62,7 +64,7 @@ describe('resolveSwapRouteAssets', () => {
     it('falls back to USDC when the output is missing (ALGO page → ALGO/USDC)', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0' },
+                { assetIn: algo('0') },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({
@@ -74,7 +76,7 @@ describe('resolveSwapRouteAssets', () => {
     it('falls back to USDC when the output equals the input', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0', assetOutId: '0' },
+                { assetIn: algo('0'), assetOut: algo('0') },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: USDC_MAINNET })
@@ -83,7 +85,7 @@ describe('resolveSwapRouteAssets', () => {
     it('uses the network-specific USDC id on testnet', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0' },
+                { assetIn: algo('0') },
                 { chainId: 'algorand', networkId: 'testnet' },
             ),
         ).toEqual({
@@ -95,13 +97,13 @@ describe('resolveSwapRouteAssets', () => {
     it('returns null on a network with no known USDC to default the output to', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0' },
+                { assetIn: algo('0') },
                 { chainId: 'algorand', networkId: 'betanet' },
             ),
         ).toBeNull()
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0', assetOutId: '0' },
+                { assetIn: algo('0'), assetOut: algo('0') },
                 { chainId: 'algorand', networkId: 'custom' },
             ),
         ).toBeNull()
@@ -112,7 +114,7 @@ describe('resolveSwapRouteAssets', () => {
         // route needs no known id at all.
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '0', assetOutId: TOKEN },
+                { assetIn: algo('0'), assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'betanet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
@@ -121,18 +123,50 @@ describe('resolveSwapRouteAssets', () => {
     it('defaults the input to ALGO when only an output is provided', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetOutId: TOKEN },
+                { assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
     })
 
+    it('treats a ref on another chain as absent', () => {
+        expect(
+            resolveSwapRouteAssets(
+                {
+                    assetIn: { chainId: 'ethereum' as const, assetId: '0xabc' },
+                    assetOut: {
+                        chainId: 'ethereum' as const,
+                        assetId: '0xdef',
+                    },
+                },
+                { chainId: 'algorand', networkId: 'mainnet' },
+            ),
+        ).toEqual({ assetInId: '0', assetOutId: USDC_MAINNET })
+    })
+
     it('normalises an empty-string input to ALGO', () => {
         expect(
             resolveSwapRouteAssets(
-                { assetInId: '', assetOutId: TOKEN },
+                { assetIn: algo(''), assetOut: algo(TOKEN) },
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
+    })
+
+    it('reads the route input only on its own chain', () => {
+        const params = { assetIn: algo(TOKEN) }
+
+        expect(
+            routeAssetInIdOn(params, {
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
+        ).toBe(TOKEN)
+        expect(
+            routeAssetInIdOn(params, {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }),
+        ).toBeUndefined()
     })
 })

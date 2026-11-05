@@ -12,18 +12,38 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { fetchDistinctPairsHistory } from '../api'
+import { deploymentOf } from '@perawallet/wallet-core-config'
+import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
+import { fetchSwapHistory, routerAccountId } from '../api'
+import { distinctSwapPairs } from '../utils/distinctSwapPairs'
+import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
 import { swapQueryKeys } from './querykeys'
+
+const DISTINCT_PAIRS_LIMIT = 10
+// The pairs are read off the newest history page; the router has no pair view.
+const HISTORY_PAGE_SIZE = 50
 
 export const useDistinctPairsHistoryQuery = (
     address: string,
     scope: ChainScope,
-    statuses?: string,
-    enabled: boolean = true,
 ) => {
+    const deviceId = useDeviceIdLookup()(deploymentOf(scope))
     return useQuery({
-        queryKey: swapQueryKeys.distinctPairsHistory(address, statuses, scope),
-        queryFn: () => fetchDistinctPairsHistory(address, scope, statuses),
-        enabled,
+        queryKey: swapQueryKeys.distinctPairsHistory(address, scope),
+        queryFn: async () => {
+            const page = await fetchSwapHistory(
+                {
+                    deviceId: deviceId ?? '',
+                    accounts: [routerAccountId(scope, address)],
+                    limit: HISTORY_PAGE_SIZE,
+                },
+                scope,
+            )
+            return distinctSwapPairs(
+                page.results.filter(isSwapHistoryRow),
+                DISTINCT_PAIRS_LIMIT,
+            )
+        },
+        enabled: address.length > 0 && !!deviceId,
     })
 }

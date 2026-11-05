@@ -461,7 +461,10 @@ describe('usePeraCardOverview', () => {
         // The spec runs on the default (mainnet) network, where USDC is 31566704.
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
-            params: { assetInId: '0', assetOutId: '31566704' },
+            params: {
+                assetIn: { chainId: 'algorand', assetId: '0' },
+                assetOut: { chainId: 'algorand', assetId: '31566704' },
+            },
         })
     })
 

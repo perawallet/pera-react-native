@@ -139,10 +139,11 @@ export const PROMPT_REVEAL_OFFSET = 32
 // Web-only: caps the app's content width on the wide "expanded" browser-tab
 // surface (the UI is designed for a 360px popup and looks broken stretched
 // edge-to-edge across a full desktop tab). Shared by app-root/styles.web.ts (the
-// app's own root card) and PWBottomSheet.web.tsx (so sheets, which portal to
+// app's own root card), PWBottomSheet/styles.web.ts (so sheets, which portal to
 // document.body and would otherwise fill the whole viewport, match the same
-// card width). Never binds in the popup, which is already narrower than it.
-export const WEB_EXPANDED_CARD_MAX_WIDTH = 420
+// card width) and PromptContainer/styles.web.ts. Must stay above the popup's 423.53px layout width (see
+// POPUP_CSS in apps/browser/scripts/build.mjs), or it leaves a gutter there.
+export const WEB_EXPANDED_CARD_MAX_WIDTH = 424
 
 /** The expanded check frame, clamped to the viewport by maxWidth and maxHeight. */
 export const INTEGRITY_CHECK_MODAL_WIDTH = 440

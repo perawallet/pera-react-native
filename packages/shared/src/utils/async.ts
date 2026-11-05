@@ -176,3 +176,46 @@ export function withTimeout<T>(
         if (timerId !== undefined) clearTimeout(timerId)
     })
 }
+
+/** Named `TimeoutError` so the expected-error filter treats a missed deadline as connectivity, not a defect. */
+export const timeoutErrorOf = (operation: string, ms: number): Error => {
+    const error = new Error(`${operation} timed out after ${ms}ms`)
+    error.name = 'TimeoutError'
+    return error
+}
+
+/**
+ * Runs `run` with a signal that aborts when `ms` pass or `outer` aborts, so the
+ * requests it started stop rather than run on after the deadline. A missed
+ * deadline rejects with `timeoutErrorOf`; an `outer` abort rejects with
+ * whatever `run` throws for it.
+ */
+export function withDeadline<T>(
+    run: (signal: AbortSignal) => Promise<T>,
+    ms: number,
+    operation: string,
+    outer?: AbortSignal,
+): Promise<T> {
+    const controller = new AbortController()
+    const abortWithOuter = () => controller.abort(outer?.reason)
+    if (outer?.aborted) abortWithOuter()
+    else outer?.addEventListener('abort', abortWithOuter, { once: true })
+
+    // Reject before aborting, so the deadline's error wins over the abort's.
+    const deadline = new Promise<never>((_, reject) => {
+        const timer = setTimeout(() => {
+            const error = timeoutErrorOf(operation, ms)
+            reject(error)
+            controller.abort(error)
+        }, ms)
+        controller.signal.addEventListener('abort', () => clearTimeout(timer), {
+            once: true,
+        })
+    })
+    const work = run(controller.signal)
+    return Promise.race([work, deadline]).finally(() => {
+        outer?.removeEventListener('abort', abortWithOuter)
+        // Stops the timer once `work` has settled first.
+        controller.abort()
+    })
+}

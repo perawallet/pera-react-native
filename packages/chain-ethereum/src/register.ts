@@ -56,6 +56,10 @@ import {
     type DeviceChainAdapter,
 } from '@perawallet/wallet-core-device'
 import {
+    swapChainAdapters,
+    type SwapChainAdapter,
+} from '@perawallet/wallet-core-swaps'
+import {
     historyChainAdapters,
     transferChainAdapters,
     type HistoryChainAdapter,
@@ -87,6 +91,7 @@ import { withMessageSigningGate } from './signing/messageSigningGate'
 import { createEvmMessageSignerAdapter } from './signing/messages'
 import { createEthereumReviewer } from './signing/review'
 import { createEvmSigningReviewerAdapter } from './signing/signingReviewer'
+import { createEvmSwapAdapter } from './swaps'
 import {
     createEvmBroadcasterAdapter,
     createEvmTransferAdapter,
@@ -110,6 +115,7 @@ type EvmChainAdapters = {
     deeplink: DeeplinkChainAdapter
     device: DeviceChainAdapter
     ledgerDriver: LedgerAppDriver
+    swap: SwapChainAdapter
 }
 
 const buildAdapters = (
@@ -149,6 +155,7 @@ const buildAdapters = (
         deeplink: createEvmDeeplinkAdapter(chain),
         device: createEvmDeviceAdapter(chain),
         ledgerDriver: createEvmLedgerAppDriver(chain),
+        swap: createEvmSwapAdapter(ctx, chain),
     }
 }
 
@@ -187,6 +194,7 @@ export const createEvmChainRegistration = (
         nodeEndpointAdapters.register(adapters.nodeEndpoint)
         ledgerAppDriverRegistry.register(adapters.ledgerDriver)
         deviceChainAdapters.register(adapters.device)
+        swapChainAdapters.register(adapters.swap)
         // The first EVM chain registered serves every EVM chain's links.
         if (!isSchemeClaimed(chain)) {
             deeplinkAdapters.register(adapters.deeplink)

@@ -14,15 +14,14 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type { SwapProviderItem, SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSwapProviderContent } from '../useSwapProviderContent'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-const { mockTrackEvent, mockProviders } = vi.hoisted(() => ({
+const { mockTrackEvent } = vi.hoisted(() => ({
     mockTrackEvent: vi.fn(),
-    mockProviders: { data: undefined as SwapProviderItem[] | undefined },
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -36,7 +35,6 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
             typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
         >('@packages/swaps/src/utils/swapQuoteHelpers')
     ).sortQuotesByAmountOutDesc,
-    useProvidersQuery: () => mockProviders,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -62,7 +60,6 @@ const renderContent = (
 describe('useSwapProviderContent', () => {
     beforeEach(() => {
         mockTrackEvent.mockClear()
-        mockProviders.data = undefined
         vi.mocked(useCurrency).mockReturnValue({
             preferredCurrency: 'USD',
             usdToPreferred: (usd: Decimal) => usd.mul(2),
@@ -126,36 +123,7 @@ describe('useSwapProviderContent', () => {
         expect(result.current.rows).toEqual([])
     })
 
-    it('prefers the quote display name over the provider list', () => {
-        mockProviders.data = [
-            {
-                name: 'mid',
-                displayName: 'Mid Router',
-                iconUrl: 'https://x/mid.png',
-            },
-        ] as SwapProviderItem[]
-        const quote = makeQuote({
-            provider: 'mid',
-            providerDisplayName: 'Mid (quote)',
-            amountOut: new Decimal('200'),
-        })
-
-        const { result } = renderContent([BEST, quote])
-
-        expect(result.current.rows[0]).toMatchObject({
-            displayName: 'Mid (quote)',
-            iconUrl: 'https://x/mid.png',
-        })
-    })
-
-    it('names the row from the provider list when the quote has no display name', () => {
-        mockProviders.data = [
-            {
-                name: 'mid',
-                displayName: 'Mid Router',
-                iconUrl: 'https://x/mid.png',
-            },
-        ] as SwapProviderItem[]
+    it("names the row by the router's provider id", () => {
         const quote = makeQuote({
             provider: 'mid',
             amountOut: new Decimal('200'),
@@ -163,10 +131,10 @@ describe('useSwapProviderContent', () => {
 
         const { result } = renderContent([BEST, quote])
 
-        expect(result.current.rows[0].displayName).toBe('Mid Router')
+        expect(result.current.rows[0].displayName).toBe('mid')
     })
 
-    it('falls back to the raw provider name when the provider is unlisted', () => {
+    it('omits the fiat line while the exchange rate is unresolved', () => {
         const quote = makeQuote({
             provider: 'mid',
             amountOut: new Decimal('200'),
@@ -174,20 +142,7 @@ describe('useSwapProviderContent', () => {
 
         const { result } = renderContent([BEST, quote])
 
-        expect(result.current.rows[0]).toMatchObject({
-            displayName: 'mid',
-            iconUrl: undefined,
-        })
-    })
-
-    it('shows placeholders for a quote with no provider or amount', () => {
-        const { result } = renderContent([BEST, makeQuote({})])
-
-        expect(result.current.rows[0]).toMatchObject({
-            displayName: '-',
-            amountDisplay: '-',
-            fiatValue: null,
-        })
+        expect(result.current.rows[0].fiatValue).toBeNull()
     })
 
     it('formats the amount and converts its fiat value to the preferred currency', () => {

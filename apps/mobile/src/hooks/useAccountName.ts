@@ -18,7 +18,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type UseAccountNameResult = {
@@ -26,6 +26,11 @@ export type UseAccountNameResult = {
         account: Nullable<WalletAccount>,
         chainId: ChainId,
     ) => string
+    /**
+     * The name the account shows on every chain: the one it was given, or
+     * "Account #N" when unnamed. `undefined` when it is shown by its address.
+     */
+    getOwnName: (account: WalletAccount) => Optional<string>
 }
 
 /**
@@ -35,18 +40,25 @@ export type UseAccountNameResult = {
 export const useAccountName = (): UseAccountNameResult => {
     const { t } = useLanguage()
 
-    const getAccountName = useCallback(
-        (account: Nullable<WalletAccount>, chainId: ChainId): string => {
-            if (account && (!account.name || isNamedAfterOwnAddress(account))) {
-                const number = accountNumberOf(account)
-                if (number !== undefined) {
-                    return t('account_info.account_number', { number })
-                }
+    const getOwnName = useCallback(
+        (account: WalletAccount): Optional<string> => {
+            if (account.name && !isNamedAfterOwnAddress(account)) {
+                return account.name
             }
-            return getAccountDisplayName(account, chainId)
+            const number = accountNumberOf(account)
+            return number === undefined
+                ? undefined
+                : t('account_info.account_number', { number })
         },
         [t],
     )
 
-    return { getAccountName }
+    const getAccountName = useCallback(
+        (account: Nullable<WalletAccount>, chainId: ChainId): string =>
+            (account ? getOwnName(account) : undefined) ??
+            getAccountDisplayName(account, chainId),
+        [getOwnName],
+    )
+
+    return { getAccountName, getOwnName }
 }

@@ -1799,7 +1799,10 @@ describe('useDeepLink', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
-            params: { assetInId: '0', assetOutId: '123' },
+            params: {
+                assetIn: { chainId: 'algorand', assetId: '0' },
+                assetOut: { chainId: 'algorand', assetId: '123' },
+            },
         })
     })
 
@@ -1832,7 +1835,10 @@ describe('useDeepLink', () => {
         )
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
-            params: { assetInId: '0', assetOutId: '123' },
+            params: {
+                assetIn: { chainId: 'algorand', assetId: '0' },
+                assetOut: { chainId: 'algorand', assetId: '123' },
+            },
         })
     })
 
@@ -2719,7 +2725,10 @@ describe('useDeepLink', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
-            params: { assetInId: '0', assetOutId: '123' },
+            params: {
+                assetIn: { chainId: 'algorand', assetId: '0' },
+                assetOut: { chainId: 'algorand', assetId: '123' },
+            },
         })
     })
 

@@ -55,6 +55,7 @@ export const SwapConfirmationContent = ({
 
     const {
         selectedAccount,
+        receiveTarget,
         inAsset,
         outAsset,
         isProcessing,
@@ -67,6 +68,9 @@ export const SwapConfirmationContent = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        networkFeeDisplay,
+        needsSpendApproval,
+        insufficientFeeMessage,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
@@ -127,7 +131,7 @@ export const SwapConfirmationContent = ({
 
                 <SwapAssetSection
                     asset={outAsset}
-                    chainId={scope.chainId}
+                    chainId={quote.assetOut.ref.chainId}
                     amountDisplay={receiveDisplay}
                     fiatValue={receiveFiatValue}
                     unitName={quote.assetOut.unitName}
@@ -138,11 +142,12 @@ export const SwapConfirmationContent = ({
             <PWDivider style={styles.detailsDivider} />
 
             <SwapDetailsSection
-                scope={scope}
                 quote={quote}
+                receiveTarget={receiveTarget}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}
                 peraFeeDisplay={peraFeeDisplay}
+                networkFeeDisplay={networkFeeDisplay}
                 slippageDisplay={slippageDisplay}
                 priceImpactDisplay={priceImpactDisplay}
                 priceImpactStyle={priceImpactStyle}
@@ -159,11 +164,34 @@ export const SwapConfirmationContent = ({
                 </PWView>
             )}
 
+            {needsSpendApproval && (
+                <PWView
+                    style={styles.noteBanner}
+                    testID='swap-confirm-spend-approval-note'
+                >
+                    <PWText variant='caption'>
+                        {t('swap.quote.spend_approval_note')}
+                    </PWText>
+                </PWView>
+            )}
+
+            {insufficientFeeMessage && (
+                <PWView
+                    style={styles.warningBanner}
+                    testID='swap-confirm-insufficient-fee'
+                >
+                    <PWText style={styles.warningText}>
+                        {insufficientFeeMessage}
+                    </PWText>
+                </PWView>
+            )}
+
             <PWView style={styles.confirmButton}>
                 <ConfirmAction
                     title={t('swap.quote.slide_to_confirm')}
                     onConfirm={() => void handleSlideConfirm()}
                     isLoading={isProcessing}
+                    isDisabled={insufficientFeeMessage !== null}
                     isConfirmed={swapStatus === 'success'}
                     style={CONFIRM_ACTION_LAYOUT}
                     testID='swap-confirm-slide'

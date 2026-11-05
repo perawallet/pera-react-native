@@ -25,6 +25,12 @@ import { useStyles } from './styles'
 const filterSwappable = (item: AssetWithAccountBalance) =>
     isSwappableAsset(item.asset)
 
+/** The picked asset, on the scope it lives on. */
+export type SwapAssetSelection = {
+    assetId: string
+    scope: ChainScope
+}
+
 type BaseProps = {
     scope: ChainScope
     excludeAssetId?: string
@@ -39,10 +45,10 @@ export const SwapAssetSelectionContent = (
     const { scope, variant, excludeAssetId } = props
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
+    const { resolve } = useBottomSheetResult<SwapAssetSelection>()
 
     const handleAssetSelected = useCallback(
-        (asset: AssetWithAccountBalance) => {
+        (asset: AssetWithAccountBalance, assetScope: ChainScope = scope) => {
             const assetName =
                 asset.asset?.unitName ?? asset.asset?.name ?? asset.assetId
             trackEvent(
@@ -50,13 +56,13 @@ export const SwapAssetSelectionContent = (
                     ? SwapEvent.SelectTopAsset
                     : SwapEvent.SelectBottomAsset,
                 {
-                    [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    [AnalyticsMetadataKey.ChainId]: assetScope.chainId,
                     [AnalyticsMetadataKey.AssetName]: assetName,
                 },
             )
-            resolve(asset.assetId)
+            resolve({ assetId: asset.assetId, scope: assetScope })
         },
-        [resolve, scope.chainId, variant],
+        [resolve, scope, variant],
     )
 
     const title =
@@ -88,6 +94,7 @@ export const SwapAssetSelectionContent = (
                     />
                 ) : (
                     <AccountAssetSelectionList
+                        chainId={scope.chainId}
                         onAssetSelected={handleAssetSelected}
                         isVisible
                         excludeAssetId={excludeAssetId}

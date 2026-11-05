@@ -13,6 +13,7 @@
 import { memo, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
+import { useChartCurrencyFallback } from '@hooks/useChartCurrencyFallback'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import { PWText } from '@components/core'
@@ -72,6 +73,10 @@ export const WealthChart = memo(function WealthChart({
         isUnavailableOnNetwork,
         excludedChainIds,
     } = usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
+    const fallback = useChartCurrencyFallback(currencyScope, {
+        isError,
+        refetch,
+    })
 
     // A point with no preferred value has no rate behind it (offline, never
     // synced). Plotting it as 0 would draw a cliff to the axis, so drop it —
@@ -94,12 +99,13 @@ export const WealthChart = memo(function WealthChart({
                 getDatetime={getDatetime}
                 onSelectionChanged={onSelectionChanged}
                 isPending={isPending}
-                isError={isError}
+                isError={fallback.isError}
                 isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
                 isPaused={isPaused}
                 isUnavailableOnNetwork={isUnavailableOnNetwork}
-                onRetry={() => void refetch()}
+                onRetry={fallback.onRetry}
                 emptyBody={t('common.wealth_chart.empty_body')}
+                errorBody={fallback.errorBody}
                 style={themeStyle.container}
             />
             {shouldShowExcludedNetworks && excludedNetworks !== '' && (

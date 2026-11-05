@@ -15,13 +15,18 @@ import {
     decodeAbiParameters,
     decodeFunctionData,
     encodeAbiParameters,
+    encodeFunctionData,
     encodeFunctionResult,
+    erc20Abi,
     getAddress,
     isAddress,
     isAddressEqual,
     keccak256,
     multicall3Abi,
+    parseTransaction,
+    serializeTransaction,
     toFunctionSelector,
+    type Address,
     type Hex,
     type RpcFeeHistory,
     type RpcTransaction,
@@ -390,3 +395,34 @@ export const erc20CallResponder =
             new EvmRpcErrorFixture(3, 'execution reverted')
         )
     }
+
+/** An unsigned type 2 call on mainnet, as a router sends it: nonce and gas meant to be replaced. */
+export const encodeUnsignedEvmCall = (
+    to: Address,
+    data: Hex,
+    value = 0n,
+): Hex =>
+    serializeTransaction({
+        type: 'eip1559',
+        chainId: 1,
+        to,
+        value,
+        data,
+        nonce: 99,
+        gas: 1n,
+        maxFeePerGas: 1n,
+        maxPriorityFeePerGas: 1n,
+    })
+
+export const encodeErc20Approve = (spender: Address, amount: bigint): Hex =>
+    encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'approve',
+        args: [spender, amount],
+    })
+
+/** What a node sees in a raw transaction, `hash` as it answers with it. */
+export const readRawEvmTransaction = (raw: Hex) => {
+    const { to, nonce, value } = parseTransaction(raw)
+    return { hash: keccak256(raw), to, nonce, value }
+}

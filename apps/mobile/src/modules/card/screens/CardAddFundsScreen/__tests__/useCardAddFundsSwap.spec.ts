@@ -38,20 +38,17 @@ vi.mock('@modules/swap/hooks', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    pickBestByAmountOut: (quotes: { quoteIdStr: string }[]) =>
-        quotes[0] ?? null,
-    formatSwapRate: (quote: { quoteIdStr: string }) =>
-        `rate:${quote.quoteIdStr}`,
+    pickBestByAmountOut: (quotes: { quoteId: string }[]) => quotes[0] ?? null,
+    formatSwapRate: (quote: { quoteId: string }) => `rate:${quote.quoteId}`,
 }))
 
 import { useCardAddFundsSwap } from '../useCardAddFundsSwap'
 
 const QUOTE = {
-    quoteIdStr: 'q1',
+    quoteId: 'q1',
     amountOut: new Decimal('5000000'), // 5 USDC in base units (6 decimals)
     assetIn: { unitName: 'ALGO' },
     assetOut: { unitName: 'USDC' },
-    price: new Decimal('0.3'),
 }
 
 const baseParams = {
@@ -96,7 +93,7 @@ describe('useCardAddFundsSwap', () => {
 
         const success = await result.current.executeSwap()
         expect(mockExecute).toHaveBeenCalledWith(
-            expect.objectContaining({ quoteIdStr: 'q1' }),
+            expect.objectContaining({ quoteId: 'q1' }),
         )
         expect(success).toEqual({ kind: 'success' })
 

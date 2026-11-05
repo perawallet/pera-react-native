@@ -168,7 +168,6 @@ const suites = (chain: EvmChain): void => {
                 addresses: [FUNDED],
                 assetId: USDC,
                 period: 'one-day',
-                currency: 'USD',
                 handlers: [],
                 portfolio: null,
                 balance: [],

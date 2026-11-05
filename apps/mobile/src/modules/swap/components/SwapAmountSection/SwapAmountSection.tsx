@@ -16,6 +16,7 @@ import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -25,8 +26,14 @@ import { useTheme } from '@rneui/themed'
 import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
-type SwapAmountSectionPayProps = {
+type SwapAmountSectionBaseProps = {
+    /** Where `assetId` lives. */
     scope: ChainScope
+    /** Names the asset's chain beside it, for a swap across two chains. */
+    isChainShown?: boolean
+}
+
+type SwapAmountSectionPayProps = SwapAmountSectionBaseProps & {
     variant: 'pay'
     assetId: string
     balance: Nullable<Decimal>
@@ -40,8 +47,7 @@ type SwapAmountSectionPayProps = {
     assetToFiat?: (asset: Nullable<Decimal>) => Nullable<Decimal>
 }
 
-type SwapAmountSectionReceiveProps = {
-    scope: ChainScope
+type SwapAmountSectionReceiveProps = SwapAmountSectionBaseProps & {
     variant: 'receive'
     assetId: string
     balance: Nullable<Decimal>
@@ -55,7 +61,15 @@ export type SwapAmountSectionProps =
     | SwapAmountSectionReceiveProps
 
 export const SwapAmountSection = (props: SwapAmountSectionProps) => {
-    const { scope, variant, assetId, balance, amount, onAssetPress } = props
+    const {
+        scope,
+        variant,
+        assetId,
+        balance,
+        amount,
+        onAssetPress,
+        isChainShown = false,
+    } = props
     const payProps = variant === 'pay' ? props : undefined
     const receiveProps = variant === 'receive' ? props : undefined
 
@@ -183,17 +197,21 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
             }
             amount={renderAmount()}
             selector={
-                <AssetSelector
-                    assetId={assetId}
-                    variant={variant}
-                    onPress={onAssetPress}
-                    fallbackLabel={t('swap.form.select_asset')}
-                    testID={
-                        isPay
-                            ? 'swap-pay-asset-selector'
-                            : 'swap-receive-asset-selector'
-                    }
-                />
+                <PWView style={styles.selector}>
+                    <AssetSelector
+                        asset={asset}
+                        chainId={scope.chainId}
+                        label={asset?.unitName ?? t('swap.form.select_asset')}
+                        variant={variant}
+                        onPress={onAssetPress}
+                        testID={
+                            isPay
+                                ? 'swap-pay-asset-selector'
+                                : 'swap-receive-asset-selector'
+                        }
+                    />
+                    {isChainShown && <ChainLabel chainId={scope.chainId} />}
+                </PWView>
             }
             fiat={
                 isFiatInput ? (
@@ -208,6 +226,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <PreferredAmount
                         sourceAmount={amount ?? new Decimal(0)}
                         sourceAssetId={assetId}
+                        scope={scope}
                         showSymbol
                         isLoading={isLoading}
                         style={styles.fiatValue}

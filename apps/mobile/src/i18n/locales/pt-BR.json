@@ -507,6 +507,7 @@
         "viewing": "Atual",
         "wallet_label": "Wallet nº {{number}}",
         "account_number": "Conta nº {{number}}",
+        "name_taken": "Você já tem uma conta com este nome. Escolha outro nome para poder diferenciá-las.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Conta Algo25",
         "type_watch": "Conta de observação",
@@ -1075,7 +1076,8 @@
         "wealth_chart": {
             "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
             "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
-            "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}"
+            "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
+            "currency_unavailable_body": "Este gráfico não está disponível em {{currency}} no momento"
         },
         "webview": {
             "failed_title": "Falha ao carregar a página",
@@ -2125,7 +2127,6 @@
             "finish_button": "Concluir criação da conta",
             "creating": "Criando conta compartilhada...",
             "error_title": "Não foi possível criar a conta",
-            "error_name_taken": "Já existe uma conta com este nome.",
             "duplicate_account_title": "Conta já adicionada",
             "duplicate_account_body": "Uma conta compartilhada com estes participantes e este limiar já está na sua wallet."
         },
@@ -3657,12 +3658,22 @@
         },
         "record_detail": {
             "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
-            "transaction_id": "ID da transação"
+            "transaction_id": "ID da transação",
+            "quantity": "Quantidade",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · ID do token {{tokenId}}"
         },
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
             "function_selector": "Seletor de função",
             "call_data": "Dados da chamada",
+            "function": "Função",
+            "arguments": "Argumentos",
+            "argument_index": "Argumento {{index}}",
+            "implementation": "Implementação",
+            "verified_source": "Nome obtido do código-fonte verificado do contrato.",
+            "verified_source_proxy": "Este contrato é um proxy. Nome obtido do código-fonte verificado do contrato para o qual ele encaminha.",
+            "lookup_failed": "O Pera não conseguiu consultar o nome da função deste contrato.",
             "unchecked_warning": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar em {{domain}}.",
             "unchecked_warning_no_source": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar no app que a enviou."
         },
@@ -3959,7 +3970,8 @@
             "to": "Para",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Selecionar"
+            "select_asset": "Selecionar",
+            "pay_from": "Pagar com"
         },
         "asset_selection": {
             "swap_from_title": "Converter de",
@@ -3989,6 +4001,9 @@
             "price_impact": "Impacto no preço",
             "slippage_tolerance": "Tolerância de slippage",
             "pera_fee": "Taxa da Pera",
+            "network_fee": "Taxa de rede",
+            "spend_approval_note": "Primeiro você vai assinar uma aprovação para o valor desta conversão e, depois, a conversão.",
+            "insufficient_network_fee": "{{symbol}} insuficiente para pagar a taxa de rede.",
             "provider": "Provedor",
             "minimum_received": "Mínimo recebido",
             "confirm_swap": "Confirmar conversão",
@@ -4049,10 +4064,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "Top 5 conversões",
-            "volume_24h": "Volume (24h)",
-            "error": "Não foi possível carregar as principais conversões"
+        "tracking": {
+            "started": "Conversão entre redes enviada",
+            "in_progress": "Em andamento. Seus fundos estão a caminho.",
+            "completed": "Concluída. Seu {{toAsset}} chegou.",
+            "failed": "A conversão não pôde ser concluída. Se seus fundos foram enviados, o provedor vai devolvê-los para sua conta.",
+            "refunded": "A conversão foi reembolsada. Seu {{fromAsset}} voltou para sua conta.",
+            "expired": "A conversão expirou antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias.",
+            "cancelled": "A conversão foi cancelada antes de começar. Se seus fundos saíram da sua conta, o status ainda pode mudar por até 7 dias.",
+            "dismiss": "Dispensar"
+        },
+        "receiving_account": {
+            "title": "Conta de recebimento",
+            "label": "Receber em"
         }
     },
     "onramp": {

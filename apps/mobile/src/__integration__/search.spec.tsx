@@ -66,6 +66,18 @@ const SEARCH_ACCOUNT: WalletAccount = {
     name: `${SHARED_QUERY} account`,
 }
 
+// An unsynced account is fetched from a live node, whose late answer lands in a
+// later test and replaces the holdings seeded for the same address.
+const seedSyncedAccounts = async (accounts: WalletAccount[]) => {
+    for (const account of accounts) {
+        await seedAlgorandAccountState({
+            accountAddress: addressOf(account),
+            scope: MAINNET_SCOPE,
+            nativeBalance: new Decimal(1_000_000),
+        })
+    }
+}
+
 const addTestContact = (name: string, address: string) => {
     const { result } = renderHook(() => useContacts())
     result.current.addContact({ name, addresses: { algorand: address } })
@@ -96,6 +108,7 @@ describe('Flow: Global search', () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
+        await seedSyncedAccounts([SEARCH_ACCOUNT])
         resetTestContacts()
     })
 
@@ -133,6 +146,7 @@ describe('Flow: Global search', () => {
         }
         useAccountsStore.getState().setAccounts([otherAccount, SEARCH_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(otherAccount.id)
+        await seedSyncedAccounts([otherAccount])
 
         renderWithNavigation(SearchScreen, 'Search')
 
@@ -184,14 +198,7 @@ describe('Flow: Global search', () => {
         useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
         await seedAlgoAsset()
         await seedAssets([NFT_TEST_ASSET])
-        // A synced account is read as it is; an unsynced one is fetched first.
-        for (const account of [SEARCH_ACCOUNT, nftHolder]) {
-            await seedAlgorandAccountState({
-                accountAddress: addressOf(account),
-                scope: MAINNET_SCOPE,
-                nativeBalance: new Decimal(1_000_000),
-            })
-        }
+        await seedSyncedAccounts([nftHolder])
         await insertAssetHolding({
             accountAddress: addressOf(nftHolder),
             assetId: NFT_TEST_ASSET_ID,

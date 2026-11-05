@@ -117,6 +117,13 @@ export const useStyles = makeStyles(theme => {
         warningText: {
             color: theme.colors.negative,
         },
+        noteBanner: {
+            marginHorizontal: theme.spacing.lg,
+            marginTop: theme.spacing.md,
+            padding: theme.spacing.md,
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.spacing.sm,
+        },
         confirmButton: {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.xxl,

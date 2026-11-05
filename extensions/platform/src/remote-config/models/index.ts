@@ -27,6 +27,7 @@ export const RemoteConfigKeys = {
     enable_pera_card: 'enable_pera_card',
     enable_card_auto_funding: 'enable_card_auto_funding',
     enable_card_push_provisioning: 'enable_card_push_provisioning',
+    enable_cross_chain_swap: 'enable_cross_chain_swap',
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_language_selection: 'enable_language_selection',
     enable_gift_cards: 'enable_gift_cards',
@@ -74,6 +75,8 @@ export const RemoteConfigDefaults: Readonly<
     // keep the flow dormant regardless until Pera is accredited, so the flag
     // can stay on in dev/staging via the hook fallback.
     enable_card_push_provisioning: false,
+    // Off in prod; the hook's fallback keeps it on in dev and staging.
+    enable_cross_chain_swap: false,
     // SSL public-key pinning for perawallet.app API hosts. getBooleanValue only
     // trusts genuinely fetched values, so pinning stays OFF until Firebase has
     // delivered an explicit true at least once (fetched values persist across

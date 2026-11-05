@@ -43,11 +43,9 @@ const selectedScope = (): ChainScope => ({
 
 // Mock currencies
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(2))
-const mockPreferredCurrency = 'USD'
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: () => ({
         usdToPreferred: mockUsdToPreferred,
-        preferredCurrency: mockPreferredCurrency,
     }),
 }))
 
@@ -191,7 +189,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             expect(result.current.error).toEqual(new Error('API Error'))
         })
 
-        it('fetches once with exactly the address, asset, period, currency and scope', async () => {
+        it('fetches once with exactly the address, asset, period and scope', async () => {
             holdingHistory().mockResolvedValue([])
 
             renderHook(
@@ -212,9 +210,46 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                 'TEST_ADDRESS_123',
                 '999',
                 'one-day',
-                'USD',
                 { chainId: 'algorand', networkId: 'mainnet' },
+                expect.any(AbortSignal),
             )
+        })
+
+        it('re-converts the points without fetching again when the rate changes', async () => {
+            holdingHistory().mockResolvedValue([
+                {
+                    timestamp: Date.parse('2024-01-01T00:00:00Z'),
+                    amount: new Decimal('1'),
+                    usdValue: new Decimal('25'),
+                },
+            ])
+
+            const { result, rerender } = renderHook(
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '456',
+                        'one-week',
+                        selectedScope(),
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            expect(result.current.data[0]?.preferredValue).toEqual(
+                new Decimal(50),
+            )
+
+            mockUsdToPreferred.mockImplementation((amount: Decimal) =>
+                amount.mul(1000),
+            )
+            rerender()
+
+            await waitFor(() =>
+                expect(result.current.data[0]?.preferredValue).toEqual(
+                    new Decimal(25_000),
+                ),
+            )
+            expect(holdingHistory()).toHaveBeenCalledTimes(1)
         })
 
         it.each(['betanet', 'custom'])(

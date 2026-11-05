@@ -12,7 +12,6 @@
 
 import { Decimal } from 'decimal.js'
 import {
-    BaseError,
     getAddress,
     InvalidAddressError,
     isAddress,
@@ -289,7 +288,7 @@ const isScanDue = (detection: Detection, key: string): boolean => {
 // the received-token scan finds new ones every TOKEN_SCAN_INTERVAL_MS.
 const LISTED_PASS_INTERVAL_MS = 10 * 60_000
 
-// A pass that failed or whose read wasn't saved: soon enough that a new
+// A pass that failed or whose read was rejected: soon enough that a new
 // account doesn't wait the whole interval for its tokens, not every tick.
 const LISTED_PASS_RETRY_MS = 2 * 60_000
 
@@ -502,7 +501,7 @@ const readBatch = async (
                 read.isFirstSync ||
                 isListedPassDue(detection, readKeys[index]!)),
     )
-    // Stamped as a retry at the attempt and as a pass once its read is saved,
+    // Stamped as a retry at the attempt and as a pass once its read resolves,
     // so a failure anywhere in between is retried after LISTED_PASS_RETRY_MS.
     readKeys.forEach((key, index) => {
         if (isPassDue[index]) {
@@ -560,15 +559,9 @@ const readBatch = async (
                 heldListed,
                 blockNumber,
             )
-            // viem's full message carries the aggregate's calldata, hundreds
-            // of KB that would land in the crash report.
             logger.warn(
                 'Token list balances unreadable; read the held tokens alone',
-                {
-                    scope,
-                    error:
-                        error instanceof BaseError ? error.shortMessage : error,
-                },
+                { scope, error },
             )
             return { balances, isWholeList: false }
         }

@@ -83,13 +83,30 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-swaps', async () => {
-    const { Decimal } = await import('decimal.js')
+    // Pure quote helpers stay real, by path: the barrel pulls in stores.
+    const { formatSwapRate, swapRate } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
+    >('@packages/swaps/src/utils/swapQuoteHelpers')
+    const { swapFeeOf } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapFees')
+    >('@packages/swaps/src/utils/swapFees')
+    const { isSwapOrderSettled } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapOrderSettlement')
+    >('@packages/swaps/src/utils/swapOrderSettlement')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
-        apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
-            slippage.mul(100).toString(),
-        useProvidersQuery: vi.fn(() => ({ data: [] })),
+        formatSwapRate,
+        swapRate,
+        swapFeeOf,
+        isSwapOrderSettled,
+        scopeOfSwapAsset: ({
+            chainId,
+            networkId,
+        }: {
+            chainId: string
+            networkId: string
+        }) => ({ chainId, networkId }),
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
         // An account on Algorand swaps there, as it does at the build defaults.
         useSwapScope: vi.fn(
@@ -98,11 +115,33 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
                     ? { chainId: 'algorand', networkId: 'mainnet' }
                     : null,
         ),
+        useSwapSourceScope: vi.fn(
+            (account: { chains?: { algorand?: unknown } } | null) =>
+                account?.chains?.algorand
+                    ? { chainId: 'algorand', networkId: 'mainnet' }
+                    : null,
+        ),
+        useSwapSourceCostQuery: vi.fn(() => ({
+            sourceCost: null,
+            isLoading: false,
+        })),
+        useEnsureSwapDestination: vi.fn(() => ({
+            ensureReceivable: vi.fn(async () => true),
+        })),
         useSwapChainResolver: vi.fn(
             () => (account: { chains?: { algorand?: unknown } }) =>
                 account.chains?.algorand ? 'algorand' : undefined,
         ),
         useSwapSigningAccounts: vi.fn(() => []),
+        isSwapChain: vi.fn((chainId: string) =>
+            ['algorand', 'ethereum'].includes(chainId),
+        ),
+        // Specs that load the real chain packages register their adapters here.
+        swapChainAdapters: { register: vi.fn(), has: vi.fn(() => false) },
+        useSwapsStore: vi.fn(),
+        useSwapTrackedOrders: vi.fn(() => []),
+        useSwapTrackingStore: vi.fn(),
+        useSwapOrderTracker: vi.fn(),
     }
 })
 
@@ -850,6 +889,8 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             setCurrencyPreference: vi.fn(),
             portfolioPreferredValue: '0',
             usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+            isRateUnavailable: false,
+            refetchRate: vi.fn(),
         })),
         usePreferredCurrencyPriceQuery: vi.fn(() => ({
             data: { usdPrice: new Decimal(1) },

@@ -11,30 +11,35 @@
  */
 
 import { PWIcon, PWText, PWView } from '@components/core'
+import { AccountDisplay } from '@components/AccountDisplay'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { DetailRow } from './DetailRow'
 import { useStyles } from './styles'
+import type { SwapReceiveTarget } from './useSwapConfirmation'
 
 type SwapDetailsSectionProps = {
-    scope: ChainScope
     quote: SwapQuote
+    receiveTarget: Nullable<SwapReceiveTarget>
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
+    networkFeeDisplay: Nullable<string>
     slippageDisplay: string
     priceImpactDisplay: string
     priceImpactStyle: object
 }
 
 export const SwapDetailsSection = ({
-    scope,
     quote,
+    receiveTarget,
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
+    networkFeeDisplay,
     slippageDisplay,
     priceImpactDisplay,
     priceImpactStyle,
@@ -44,6 +49,27 @@ export const SwapDetailsSection = ({
 
     return (
         <PWView style={styles.detailsSection}>
+            {receiveTarget && (
+                <DetailRow label={t('swap.receiving_account.label')}>
+                    {receiveTarget.account ? (
+                        <AccountDisplay
+                            account={receiveTarget.account}
+                            chainId={receiveTarget.scope.chainId}
+                            showChainBadge
+                            showChevron={false}
+                            iconProps={{ size: 'sm' }}
+                            textProps={{ variant: 'caption' }}
+                            testID='swap-confirm-receive-account'
+                        />
+                    ) : (
+                        <AddressDisplay
+                            address={receiveTarget.address}
+                            scope={receiveTarget.scope}
+                            unnamedAddressFormat='full'
+                        />
+                    )}
+                </DetailRow>
+            )}
             <DetailRow label={t('swap.quote.rate')}>
                 <PWView style={styles.rateValueRow}>
                     <PWText
@@ -62,9 +88,7 @@ export const SwapDetailsSection = ({
             </DetailRow>
             <DetailRow label={t('swap.quote.provider')}>
                 <SwapProviderDisplay
-                    scope={scope}
-                    providerName={quote.provider}
-                    providerDisplayName={quote.providerDisplayName}
+                    provider={quote.provider}
                     testID='swap-confirm-provider'
                 />
             </DetailRow>
@@ -94,6 +118,14 @@ export const SwapDetailsSection = ({
                 value={peraFeeDisplay}
                 valueStyle={styles.detailValue}
             />
+            {networkFeeDisplay && (
+                <DetailRow
+                    label={t('swap.quote.network_fee')}
+                    testID='swap-confirm-network-fee'
+                    value={networkFeeDisplay}
+                    valueStyle={styles.detailValue}
+                />
+            )}
         </PWView>
     )
 }

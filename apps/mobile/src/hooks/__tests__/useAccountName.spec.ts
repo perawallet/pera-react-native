@@ -113,4 +113,31 @@ describe('useAccountName', () => {
     it('reads "No Account" without an account', () => {
         expect(nameOf(null)).toBe('No Account')
     })
+
+    describe('getOwnName', () => {
+        const ownNameOf = (account: WalletAccount) => {
+            const { result } = renderHook(() => useAccountName())
+            return result.current.getOwnName(account)
+        }
+
+        it('gives the name the user chose, or the number of an unnamed account', () => {
+            expect(ownNameOf(hdAccount(0, 0, { name: 'Savings' }))).toBe(
+                'Savings',
+            )
+            expect(ownNameOf(hdAccount(1, 0))).toBe(numbered(2))
+        })
+
+        it('gives nothing for an account shown by its address', () => {
+            expect(ownNameOf(accountForType('watch', ADDRESS))).toBeUndefined()
+            expect(
+                ownNameOf(
+                    accountForType('watch', ADDRESS, {
+                        name: addressCodecs
+                            .get(ALGORAND_CHAIN_ID)
+                            .truncate(ADDRESS),
+                    }),
+                ),
+            ).toBeUndefined()
+        })
+    })
 })

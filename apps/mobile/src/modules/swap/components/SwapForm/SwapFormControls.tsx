@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWIcon,
-    PWText,
-    PWTouchableIcon,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -24,26 +18,34 @@ type SwapFormControlsProps = {
     onSwapPress: () => void
     onMaxPress: () => void
     onConfigurePress: () => void
+    /** A cross-chain pair can't flip: the account pays only from its swap scope. */
+    isDirectionDisabled?: boolean
 }
 
 export const SwapFormControls = ({
     onSwapPress,
     onMaxPress,
     onConfigurePress,
+    isDirectionDisabled = false,
 }: SwapFormControlsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     return (
         <PWView style={styles.controlsRow}>
-            <PWTouchableIcon
-                containerStyle={styles.swapDirectionButton}
-                name='swap'
-                size='sm'
-                style={styles.swapDirectionIcon}
+            <PWTouchableOpacity
+                style={styles.swapDirectionButton}
                 onPress={onSwapPress}
+                disabled={isDirectionDisabled}
                 testID='swap-flip-button'
-            />
+            >
+                <PWIcon
+                    name='swap'
+                    size='sm'
+                    style={styles.swapDirectionIcon}
+                    disabled={isDirectionDisabled}
+                />
+            </PWTouchableOpacity>
 
             <PWView style={styles.maxRow}>
                 <PWTouchableOpacity

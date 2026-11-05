@@ -507,6 +507,7 @@
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
         "account_number": "Konto Nr. {{number}}",
+        "name_taken": "Du hast bereits ein Konto mit diesem Namen. Wähle einen anderen Namen, damit du sie unterscheiden kannst.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
         "type_watch": "Beobachtungskonto",
@@ -1067,7 +1068,8 @@
         "wealth_chart": {
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
-            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets"
+            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
+            "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
         },
         "webview": {
             "failed_title": "Seite konnte nicht geladen werden",
@@ -2114,7 +2116,6 @@
             "finish_button": "Kontoerstellung abschließen",
             "creating": "Gemeinschaftskonto wird erstellt...",
             "error_title": "Konto konnte nicht erstellt werden",
-            "error_name_taken": "Ein Konto mit diesem Namen existiert bereits.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Ein Gemeinschaftskonto mit diesen Teilnehmern und diesem Schwellenwert befindet sich bereits in deinem Wallet."
         },
@@ -3632,12 +3633,22 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
-            "transaction_id": "Transaktions-ID"
+            "transaction_id": "Transaktions-ID",
+            "quantity": "Menge",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
+            "function": "Funktion",
+            "arguments": "Argumente",
+            "argument_index": "Argument {{index}}",
+            "implementation": "Implementierung",
+            "verified_source": "Benannt nach dem verifizierten Quellcode des Smart Contracts.",
+            "verified_source_proxy": "Dieser Smart Contract ist ein Proxy. Benannt nach dem verifizierten Quellcode des Smart Contracts, an den er weiterleitet.",
+            "lookup_failed": "Pera konnte den Funktionsnamen dieses Smart Contracts nicht abrufen.",
             "unchecked_warning": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du {{domain}} vertraust.",
             "unchecked_warning_no_source": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du der App vertraust, die sie gesendet hat."
         },
@@ -3929,7 +3940,8 @@
             "to": "An",
             "balance_label": "Guthaben: <0/>",
             "max": "MAX",
-            "select_asset": "Auswählen"
+            "select_asset": "Auswählen",
+            "pay_from": "Bezahlen von"
         },
         "asset_selection": {
             "swap_from_title": "Tauschen von",
@@ -3959,6 +3971,9 @@
             "price_impact": "Preisauswirkung",
             "slippage_tolerance": "Slippage-Toleranz",
             "pera_fee": "Pera-Gebühr",
+            "network_fee": "Netzwerkgebühr",
+            "spend_approval_note": "Du signierst zuerst eine Freigabe für den Betrag dieses Tauschs und danach den Tausch selbst.",
+            "insufficient_network_fee": "Nicht genug {{symbol}}, um die Netzwerkgebühr zu bezahlen.",
             "provider": "Anbieter",
             "minimum_received": "Mindestbetrag erhalten",
             "confirm_swap": "Tausch bestätigen",
@@ -4019,10 +4034,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "Top 5 Tauschpaare",
-            "volume_24h": "Volumen (24H)",
-            "error": "Top-Tauschpaare konnten nicht geladen werden"
+        "tracking": {
+            "started": "Cross-Chain-Swap gesendet",
+            "in_progress": "Läuft. Dein Guthaben ist unterwegs.",
+            "completed": "Abgeschlossen. Dein {{toAsset}} ist angekommen.",
+            "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",
+            "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
+            "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "dismiss": "Ausblenden"
+        },
+        "receiving_account": {
+            "title": "Empfangskonto",
+            "label": "Empfangen auf"
         }
     },
     "onramp": {

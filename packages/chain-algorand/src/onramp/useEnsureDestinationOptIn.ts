@@ -11,25 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
-import { useAlgorandClient, useMinimumFeeConfig } from '../blockchain'
-import {
-    FeeDelegationAttestationRequiredError,
-    useFeeDelegation,
-} from '../fee-delegation'
+import { FeeDelegationAttestationRequiredError } from '../fee-delegation'
 import {
     RampAttestationRequiredError,
     type EnsureCanReceive,
     type EnsureCanReceiveParams,
 } from '@perawallet/wallet-core-onramp'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
-import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
-import {
-    algorandRampTokenAssetId,
-    isAlgorandNativeRampToken,
-} from './tokenAsset'
+import { useEnsureAssetOptIn } from '../swaps/useEnsureSwapAssetOptIn'
+import { algorandRampTokenAssetId } from './tokenAsset'
 
 export type UseEnsureDestinationOptInResult = {
     ensureOptIn: EnsureCanReceive
@@ -42,29 +31,13 @@ const SOURCE = {
 
 /**
  * Ensures the receiving account is opted into the destination asset before an
- * onramp order is created.
- *
- * Decision tree:
- * 1. ALGO destination needs no opt-in.
- * 2. Already opted in → no-op.
- * 3. Not opted in + enough spare ALGO → self-funded opt-in.
- * 4. Not opted in + insufficient ALGO → fee-delegated opt-in via
- *    `../fee-delegation` (sponsor covers fees + MBR;
- *    requires a valid device attestation token, throws the onramp's
- *    `RampAttestationRequiredError` otherwise). The opt-in itself is built
- *    with a zero fee — the sponsor tops the group's fee pool up to the full
- *    requirement, so the (underfunded) account pays nothing.
- *
- * Paths 3 and 4 run the `confirm` gate first when provided.
+ * onramp order is created. An opt-in runs the `confirm` gate first when
+ * provided; a sponsored one needs a valid device attestation token, and throws
+ * the onramp's `RampAttestationRequiredError` otherwise.
  */
 export const useEnsureDestinationOptIn =
     (): UseEnsureDestinationOptInResult => {
-        const algokit = useAlgorandClient()
-        // The scope `algokit` builds for, so the payload's genesis matches it.
-        const selectedScope = useSelectedScope(ALGORAND_CHAIN_ID)
-        const { optIn } = useAssetOptInMutation(selectedScope)
-        const { submitWithFeeDelegation } = useFeeDelegation()
-        const { assetMbr } = useMinimumFeeConfig()
+        const ensureAssetOptIn = useEnsureAssetOptIn()
 
         const ensureOptIn = useCallback(
             async ({
@@ -73,76 +46,18 @@ export const useEnsureDestinationOptIn =
                 destinationToken,
                 confirm,
             }: EnsureCanReceiveParams): Promise<boolean> => {
-                // 1. ALGO never requires an opt-in.
-                if (isAlgorandNativeRampToken(destinationToken)) {
-                    return true
-                }
                 // No ASA on this network: nothing to opt into or receive.
-                const destinationAssetId = algorandRampTokenAssetId(
+                const assetId = algorandRampTokenAssetId(
                     destinationToken,
                     scope,
                 )
-                if (destinationAssetId === null) {
-                    return false
-                }
-                const assetId = BigInt(destinationAssetId)
-
-                // 2. Already opted in → nothing to do.
-                const accountInfo = await algokit.client.algod
-                    .accountInformation(address)
-                    .do()
-                const isOptedIn = accountInfo.assets?.some(
-                    a => a.assetId === assetId,
-                )
-                if (isOptedIn) {
-                    return true
-                }
-
-                // 3. Enough spare ALGO → self-funded opt-in (matches the
-                // balance formula used by useAssetOptInMutation).
-                const suggestedParams = await algokit.getSuggestedParams()
-                const balanceNeeded =
-                    accountInfo.minBalance +
-                    assetMbr +
-                    BigInt(suggestedParams.minFee)
-                const isSponsored = accountInfo.amount < balanceNeeded
-
-                if (confirm) {
-                    const confirmed = await confirm({
-                        assetId: destinationAssetId,
-                        isSponsored,
-                    })
-                    if (!confirmed) {
-                        return false
-                    }
-                }
-
-                if (!isSponsored) {
-                    await optIn({ sender: address, assetId })
-                    return true
-                }
-
-                // 4. Insufficient ALGO → fee-delegated opt-in. The opt-in
-                // carries a ZERO fee: the sponsor tops the group's fee pool up
-                // to the full requirement (top-up-shortfall policy), and the
-                // account can't afford a fee of its own anyway.
-                const composer = algokit.newGroup()
-                composer.addAssetOptIn({
-                    sender: address,
-                    assetId,
-                    staticFee: AlgoAmount.MicroAlgo(0),
-                })
-                const { transactions } = await composer.build()
-
+                if (assetId === null) return false
                 try {
-                    await submitWithFeeDelegation({
-                        account: address,
-                        transactions: toUnsignedAlgorandTransactions(
-                            transactions.map(t => t.txn),
-                            selectedScope,
-                        ),
-                        includeAssetOptInMbr: true,
-                        optInAssetIds: [assetId],
+                    return await ensureAssetOptIn({
+                        address,
+                        scope,
+                        assetId,
+                        confirm,
                         sourceMetadata: SOURCE,
                     })
                 } catch (error) {
@@ -153,9 +68,8 @@ export const useEnsureDestinationOptIn =
                     }
                     throw error
                 }
-                return true
             },
-            [algokit, optIn, submitWithFeeDelegation, assetMbr, selectedScope],
+            [ensureAssetOptIn],
         )
 
         return { ensureOptIn }

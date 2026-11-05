@@ -11,7 +11,10 @@
  */
 
 import { getKnownAssetId, nativeAssetFor } from '@perawallet/wallet-core-assets'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetRef,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 
@@ -20,18 +23,35 @@ export type ResolvedSwapRouteAssets = {
     assetOutId: string
 }
 
-// Input defaults to ALGO; output falls back to the network's USDC when it's
-// missing or the same as the input. Returns null when no params are present.
+const idOnScope = (
+    ref: Optional<AssetRef>,
+    scope: ChainScope,
+): Optional<string> =>
+    ref && ref.chainId === scope.chainId && ref.assetId
+        ? ref.assetId
+        : undefined
+
+export const routeAssetInIdOn = (
+    params: Optional<SwapScreenParams>,
+    scope: ChainScope,
+): Optional<string> => idOnScope(params?.assetIn, scope)
+
+// Input defaults to the native asset; output falls back to the network's USDC
+// when it's missing or the same as the input. A ref on another chain counts as
+// missing. Returns null when no params are present.
 export const resolveSwapRouteAssets = (
     params: Optional<SwapScreenParams>,
     scope: ChainScope,
 ): Nullable<ResolvedSwapRouteAssets> => {
-    if (!params?.assetInId && !params?.assetOutId) return null
+    if (!params?.assetIn && !params?.assetOut) return null
 
-    const assetInId = params.assetInId || nativeAssetFor(scope.chainId).assetId
+    const assetInId =
+        idOnScope(params.assetIn, scope) ??
+        nativeAssetFor(scope.chainId).assetId
+    const routeOutId = idOnScope(params.assetOut, scope)
     const assetOutId =
-        params.assetOutId && params.assetOutId !== assetInId
-            ? params.assetOutId
+        routeOutId && routeOutId !== assetInId
+            ? routeOutId
             : getKnownAssetId('USDC', scope)
 
     // No known USDC to default the output side to — no route to resolve.

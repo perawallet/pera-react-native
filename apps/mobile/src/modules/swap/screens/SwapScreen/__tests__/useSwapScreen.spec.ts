@@ -18,20 +18,23 @@ import { useSwapScreen } from '../useSwapScreen'
 type Account = { id: string }
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const OTHER_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
 const {
     routeParams,
     mockSetFromAsset,
     mockSetToAsset,
+    mockSetSourceChainId,
     mockSetSelectedAccountId,
     mockRequestBottomSheet,
     mockPushWebView,
     mockMarkIntroductionSeen,
     state,
 } = vi.hoisted(() => ({
-    routeParams: { current: undefined as Record<string, string> | undefined },
+    routeParams: { current: undefined as Record<string, unknown> | undefined },
     mockSetFromAsset: vi.fn(),
     mockSetToAsset: vi.fn(),
+    mockSetSourceChainId: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
     mockPushWebView: vi.fn(),
@@ -40,6 +43,8 @@ const {
         selected: null as Account | null,
         signers: [] as Account[],
         swapChainAccounts: new Set<string>(),
+        sourceChainId: null as string | null,
+        swapScope: null as { chainId: string; networkId: string } | null,
         isIntroductionSeen: false,
         isFocused: true,
     },
@@ -55,14 +60,20 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         selector: (store: {
             setFromAsset: typeof mockSetFromAsset
             setToAsset: typeof mockSetToAsset
+            sourceChainId: string | null
+            setSourceChainId: typeof mockSetSourceChainId
         }) => unknown,
     ) =>
         selector({
             setFromAsset: mockSetFromAsset,
             setToAsset: mockSetToAsset,
+            sourceChainId: state.sourceChainId,
+            setSourceChainId: mockSetSourceChainId,
         }),
-    useSwapScope: (account: Account | null) =>
-        account && state.swapChainAccounts.has(account.id) ? SCOPE : null,
+    useSwapSourceScope: (account: Account | null) =>
+        account && state.swapChainAccounts.has(account.id)
+            ? (state.swapScope ?? SCOPE)
+            : null,
     useSwapSigningAccounts: () => state.signers,
 }))
 
@@ -117,6 +128,11 @@ describe('useSwapScreen', () => {
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
         state.isIntroductionSeen = false
         state.isFocused = true
+        state.sourceChainId = null
+        state.swapScope = null
+        mockSetSourceChainId.mockImplementation((chainId: string) => {
+            state.sourceChainId = chainId
+        })
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
@@ -124,6 +140,58 @@ describe('useSwapScreen', () => {
         const { result } = renderHook(() => useSwapScreen())
 
         expect(result.current.scope).toEqual(SCOPE)
+    })
+
+    it('pins the source chain to the route asset, before seeding the pair', () => {
+        routeParams.current = {
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
+        }
+
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        expect(mockSetSourceChainId).toHaveBeenCalledWith('algorand')
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+
+        rerender()
+
+        expect(mockSetFromAsset).toHaveBeenCalledWith('123')
+        expect(mockSetToAsset).toHaveBeenCalledWith('31566704')
+    })
+
+    it('clears the pair when an account switch moves the swap chain', () => {
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.swapScope = OTHER_SCOPE
+        rerender()
+
+        expect(mockSetSourceChainId).toHaveBeenCalledWith(null)
+    })
+
+    it('leaves the pair to the store when the source chain moved', () => {
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.sourceChainId = 'ethereum'
+        state.swapScope = OTHER_SCOPE
+        rerender()
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
+    })
+
+    it('leaves the pair alone when the first scope resolves', () => {
+        state.selected = null
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.selected = { id: 'acc-1' }
+        rerender()
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
+    })
+
+    it('leaves the source chain alone for an ordinary visit', () => {
+        renderHook(() => useSwapScreen())
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
     })
 
     it('has no scope when the selected account is on no swap chain', () => {
@@ -185,24 +253,27 @@ describe('useSwapScreen', () => {
 
     it('hands a resumed amount to the form, tied to the route pay asset', () => {
         routeParams.current = {
-            assetInId: '123',
-            assetOutId: '31566704',
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
             payAmount: '2.5',
         }
 
-        const { result } = renderHook(() => useSwapScreen())
+        const { result, rerender } = renderHook(() => useSwapScreen())
 
         expect(result.current.initialPayAmount).toEqual({
             assetId: '123',
             amount: new Decimal('2.5'),
         })
+
+        rerender()
+
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
     })
 
     it('returns the same resumed amount across renders', () => {
         routeParams.current = {
-            assetInId: '123',
-            assetOutId: '31566704',
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
             payAmount: '2.5',
         }
 
@@ -214,7 +285,10 @@ describe('useSwapScreen', () => {
     })
 
     it('has no amount to restore for an ordinary visit', () => {
-        routeParams.current = { assetInId: '123', assetOutId: '31566704' }
+        routeParams.current = {
+            assetIn: { chainId: 'algorand', assetId: '123' },
+            assetOut: { chainId: 'algorand', assetId: '31566704' },
+        }
 
         const { result } = renderHook(() => useSwapScreen())
 

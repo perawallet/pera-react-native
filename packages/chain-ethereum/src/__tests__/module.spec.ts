@@ -83,7 +83,9 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
             .filter(([, isOn]) => isOn)
             .map(([capability]) => capability)
 
-        expect(enabled.sort()).toEqual([...ENABLED].sort())
+        // The one row that defaults swap on, in this test environment.
+        const launch = id === 'ethereum' ? [...ENABLED, 'swap'] : ENABLED
+        expect(enabled.sort()).toEqual([...launch].sort())
     })
 
     it('supports nothing that reaches Algorand-only code or a Pera endpoint EVM lacks, so remote config cannot switch it on', () => {
@@ -206,13 +208,13 @@ describe('a row override', () => {
     })
 
     it('supports a capability its row switches on, for its own chain only', () => {
-        const withSwap = createEvmChainModule(
-            createEvmChain({ ...BASE.row, capabilities: { swap: true } }),
+        const withStaking = createEvmChainModule(
+            createEvmChain({ ...BASE.row, capabilities: { staking: true } }),
         )
 
-        expect(withSwap.supportedCapabilities).toContain('swap')
+        expect(withStaking.supportedCapabilities).toContain('staking')
         expect(evmChainModules.ethereum.supportedCapabilities).not.toContain(
-            'swap',
+            'staking',
         )
     })
 

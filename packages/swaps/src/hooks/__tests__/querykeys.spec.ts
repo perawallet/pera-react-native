@@ -17,15 +17,19 @@ import { getInvalidateSwapHistoryPredicate, swapQueryKeys } from '../querykeys'
 
 const mainnet = { chainId: 'algorand', networkId: 'mainnet' } as const
 const testnet = { chainId: 'algorand', networkId: 'testnet' } as const
+const accounts = [{ scope: mainnet, address: 'ADDR' }]
 
 describe('swaps/hooks/querykeys', () => {
     test('every builder carries the scope object in its key', () => {
         const keys = [
-            swapQueryKeys.availableAssets(1, 'q', mainnet),
-            swapQueryKeys.historyInfinite('ADDR', 'completed', mainnet),
-            swapQueryKeys.distinctPairsHistory('ADDR', undefined, mainnet),
-            swapQueryKeys.providers(mainnet),
-            swapQueryKeys.topPairs(5, mainnet),
+            swapQueryKeys.pairs(
+                { ...mainnet, assetId: 'native' },
+                'q',
+                mainnet,
+            ),
+            swapQueryKeys.historyInfinite(accounts),
+            swapQueryKeys.distinctPairsHistory('ADDR', mainnet),
+            swapQueryKeys.order('order-1', mainnet),
         ]
 
         for (const key of keys) {
@@ -35,31 +39,24 @@ describe('swaps/hooks/querykeys', () => {
     })
 
     test('keeps the prefix and sub-key in the first two positions', () => {
-        expect(swapQueryKeys.providers(mainnet)).toEqual([
+        expect(swapQueryKeys.historyInfinite(accounts)).toEqual([
             'swaps',
-            'providers',
-            { scope: mainnet },
-        ])
-        expect(swapQueryKeys.topPairs(5, mainnet)).toEqual([
-            'swaps',
-            'top-pairs',
-            { limit: 5, scope: mainnet },
+            'history-infinite',
+            { accounts, scope: mainnet, statuses: undefined },
         ])
     })
 
-    test('the swap-history predicate matches history and top pairs only', () => {
+    test('the swap-history predicate matches history only', () => {
         const matches = (queryKey: readonly unknown[]) =>
             getInvalidateSwapHistoryPredicate({ queryKey } as unknown as Query)
 
+        expect(matches(swapQueryKeys.historyInfinite(accounts))).toBe(true)
         expect(
-            matches(swapQueryKeys.historyInfinite('ADDR', undefined, mainnet)),
+            matches(swapQueryKeys.distinctPairsHistory('ADDR', mainnet)),
         ).toBe(true)
-        expect(
-            matches(
-                swapQueryKeys.distinctPairsHistory('ADDR', undefined, mainnet),
-            ),
-        ).toBe(true)
-        expect(matches(swapQueryKeys.topPairs(5, mainnet))).toBe(true)
-        expect(matches(swapQueryKeys.providers(mainnet))).toBe(false)
+        expect(matches(swapQueryKeys.pairs(null, undefined, mainnet))).toBe(
+            false,
+        )
+        expect(matches(swapQueryKeys.order('order-1', mainnet))).toBe(false)
     })
 })

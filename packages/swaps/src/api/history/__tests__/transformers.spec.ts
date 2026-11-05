@@ -10,92 +10,70 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import { Decimal } from 'decimal.js'
+import { describe, expect, test } from 'vitest'
+import { registerSecondFakeSwapAdapter } from '../../../__tests__/fakeSwapAdapter'
+import { swapHistoryResponseSchema } from '../schema'
+import { transformSwapOrderItem } from '../../orders/transformers'
+import { swapAssetRefOf } from '../../router-ids'
 import {
-    transformSwapHistoryItem,
-    transformSwapDistinctPairItem,
-} from '../transformers'
-import type {
-    SwapHistoryItemApiResponse,
-    SwapDistinctPairItemApiResponse,
-} from '../schema'
+    routerAsset,
+    routerOrderItem,
+    SCOPE_B,
+} from '../../__tests__/routerFixtures'
 
-const apiAsset = (assetId: string) => ({
-    asset_id: assetId,
-    logo: null,
-    name: `Asset ${assetId}`,
-    unit_name: `A${assetId}`,
-    total: '1000',
-    fraction_decimals: 6,
-    verification_tier: 'verified',
-    usd_value: '1.00',
-})
+const parseRows = (results: unknown[]) =>
+    swapHistoryResponseSchema
+        .parse({ results })
+        .results.map(item => transformSwapOrderItem(item, swapAssetRefOf))
 
-describe('transformSwapHistoryItem', () => {
-    const apiItem = (
-        overrides: Partial<SwapHistoryItemApiResponse> = {},
-    ): SwapHistoryItemApiResponse =>
-        ({
-            // Production always sees a string here — `uint64IdSchema` converts
-            // the backend's >2^53 numeric id before the transformer runs.
-            id: '1',
-            id_str: '1',
-            provider: 'tinyman',
-            status: 'completed',
-            completed_datetime: '2026-01-01T00:00:00Z',
-            transaction_group_id: 'GROUP1',
-            asset_in: apiAsset('0'),
-            asset_out: apiAsset('31566704'),
-            amount_in: '1.5',
-            amount_out: '1.499',
-            amount_in_usd_value: '1.50',
-            amount_out_usd_value: '1.49',
-            ...overrides,
-        }) as unknown as SwapHistoryItemApiResponse
+describe('swap history rows', () => {
+    test('reads a pre-router row with no assets, accounts or amounts', () => {
+        const [item] = parseRows([
+            routerOrderItem({
+                aggregator: null,
+                provider: null,
+                funding_method: null,
+                source_account: null,
+                destination_account: null,
+                source_asset: null,
+                destination_asset: null,
+                source_amount: null,
+                destination_amount_expected: null,
+                destination_amount_minimum: null,
+                source_amount_usd_value: null,
+                destination_amount_usd_value: null,
+            }),
+        ])
 
-    it('maps fields and transforms the nested in/out assets', () => {
-        const result = transformSwapHistoryItem(apiItem())
-
-        expect(result.id).toBe('1')
-        expect(result.idStr).toBe('1')
-        expect(result.provider).toBe('tinyman')
-        expect(result.status).toBe('completed')
-        expect(result.completedDatetime).toBe('2026-01-01T00:00:00Z')
-        expect(result.transactionGroupId).toBe('GROUP1')
-        expect(result.assetIn.assetId).toBe('0')
-        expect(result.assetOut.assetId).toBe('31566704')
-        expect(result.assetOut.unitName).toBe('A31566704')
-        expect(result.amountInUsdValue).toBe('1.50')
-        expect(result.amountOutUsdValue).toBe('1.49')
+        expect(item).toMatchObject({
+            orderId: 'order-1',
+            provider: null,
+            assetIn: null,
+            assetOut: null,
+            amountIn: null,
+            amountOut: null,
+        })
     })
 
-    it('parses amounts into Decimal preserving precision beyond float range', () => {
-        const highPrecision = '1234567890.123456789012345'
-        const result = transformSwapHistoryItem(
-            apiItem({ amount_in: highPrecision, amount_out: '0.000001' }),
-        )
+    test('reads a row whose legs sit on two chains', () => {
+        registerSecondFakeSwapAdapter()
 
-        expect(result.amountIn).toBeInstanceOf(Decimal)
-        expect(result.amountIn.toString()).toBe(highPrecision)
-        expect(result.amountOut.equals(new Decimal('0.000001'))).toBe(true)
+        const [item] = parseRows([
+            routerOrderItem({
+                destination_asset: routerAsset(SCOPE_B, 'usdc'),
+            }),
+        ])
+
+        expect(item.assetIn?.ref.chainId).toBe('algorand')
+        expect(item.assetOut?.ref.chainId).toBe('ethereum')
     })
-})
 
-describe('transformSwapDistinctPairItem', () => {
-    it('transforms the nested asset pair and passes through pair metadata', () => {
-        const data = {
-            asset_in: apiAsset('0'),
-            asset_out: apiAsset('31566704'),
-            swap_datetime: '2026-01-01T00:00:00Z',
-            pair_key: '0-31566704',
-        } as unknown as SwapDistinctPairItemApiResponse
+    test('accepts the expired and refunded statuses', () => {
+        const items = parseRows([
+            routerOrderItem({ status: 'expired' }),
+            routerOrderItem({ status: 'refunded' }),
+        ])
 
-        const result = transformSwapDistinctPairItem(data)
-
-        expect(result.assetIn.assetId).toBe('0')
-        expect(result.assetOut.assetId).toBe('31566704')
-        expect(result.swapDatetime).toBe('2026-01-01T00:00:00Z')
-        expect(result.pairKey).toBe('0-31566704')
+        expect(items.map(item => item.status)).toEqual(['expired', 'refunded'])
     })
 })

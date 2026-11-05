@@ -32,7 +32,7 @@ import {
     useCardUsdcCreditQuery,
 } from '@perawallet/wallet-core-card'
 import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
-import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
+import { swapRate } from '@perawallet/wallet-core-swaps'
 import {
     logger,
     type Maybe,
@@ -43,6 +43,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { formatSwapFee } from '@modules/swap'
 import { useCardScope } from '../../hooks/useCardScope'
 import {
     useCardErrorToast,
@@ -204,16 +205,17 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     }, [quote?.amountOut, usdcDecimals, usdcUnit])
 
     const priceDisplay = useMemo(() => {
-        if (!quote?.price) return EMPTY_VALUE
-        return `${quote.price.toDecimalPlaces(usdcDecimals).toString()} ${usdcUnit} per ${sourceUnit}`
-    }, [quote?.price, usdcDecimals, usdcUnit, sourceUnit])
+        const price = quote ? swapRate(quote) : null
+        if (!price) return EMPTY_VALUE
+        return `${price.toDecimalPlaces(usdcDecimals).toString()} ${usdcUnit} per ${sourceUnit}`
+    }, [quote, usdcDecimals, usdcUnit, sourceUnit])
 
     const slippageDisplay = useMemo(
         () =>
-            quote?.slippage
-                ? `${apiSlippageToPercent(quote.slippage)}%`
+            quote?.request.slippage
+                ? `${quote.request.slippage}%`
                 : EMPTY_VALUE,
-        [quote?.slippage],
+        [quote?.request.slippage],
     )
 
     const priceImpactDisplay = useMemo(
@@ -225,28 +227,21 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     )
 
     const minimumReceivedDisplay = useMemo(() => {
-        if (!quote?.amountOutWithSlippage) return EMPTY_VALUE
-        return formatAssetAmount(quote.amountOutWithSlippage, {
+        if (!quote?.minimumAmountOut) return EMPTY_VALUE
+        return formatAssetAmount(quote.minimumAmountOut, {
             decimals: usdcDecimals,
             unitName: usdcUnit,
         })
-    }, [quote?.amountOutWithSlippage, usdcDecimals, usdcUnit])
+    }, [quote?.minimumAmountOut, usdcDecimals, usdcUnit])
 
-    const exchangeFeeDisplay = useMemo(() => {
-        if (quote?.transactionFees == null) return EMPTY_VALUE
-        return formatAssetAmount(quote.transactionFees, {
-            decimals: sourceDecimals,
-            unitName: sourceUnit,
-        })
-    }, [quote?.transactionFees, sourceDecimals, sourceUnit])
+    const exchangeFeeDisplay = useMemo(
+        () => (quote && formatSwapFee(quote, 'network')) ?? EMPTY_VALUE,
+        [quote],
+    )
 
     const peraFeeDisplay = useMemo(
-        () =>
-            formatAssetAmount(quote?.peraFeeAmount ?? new Decimal(0), {
-                decimals: quote?.peraFeeAsset?.decimals ?? sourceDecimals,
-                unitName: quote?.peraFeeAsset?.unitName ?? sourceUnit,
-            }),
-        [quote?.peraFeeAmount, quote?.peraFeeAsset, sourceDecimals, sourceUnit],
+        () => (quote && formatSwapFee(quote, 'pera')) ?? EMPTY_VALUE,
+        [quote],
     )
 
     // Moves the swapped USDC onto the card. The swap pays the linked account,
@@ -260,8 +255,8 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                 (await waitForUsdcCredit({
                     address: accountAddress,
                     before: balanceBeforeRef.current ?? 0n,
-                    minimum: quote?.amountOutWithSlippage
-                        ? BigInt(quote.amountOutWithSlippage.toFixed(0))
+                    minimum: quote?.minimumAmountOut
+                        ? BigInt(quote.minimumAmountOut.toFixed(0))
                         : 0n,
                 }))
             creditedRef.current = credited

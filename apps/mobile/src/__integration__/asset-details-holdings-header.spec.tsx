@@ -20,7 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { act, fireEvent, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { useRoute } from '@react-navigation/native'
 
@@ -28,6 +28,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
@@ -41,6 +42,7 @@ import {
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { USDC_TEST_ASSET } from './__fixtures__/assets'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 import {
     ETH_USDC,
     LOOKALIKE,
@@ -132,6 +134,19 @@ const renderDetails = (params: { assetId: string; chainId: string }) =>
         additionalScreens: [{ name: 'TabBar', component: TabBarStub }],
     })
 
+// Other charts on the screen can be in an error state of their own, each with
+// its own Retry; this finds the one in the same chart as `message`.
+const retryBeside = (message: HTMLElement): HTMLElement => {
+    let node = message.parentElement
+    while (
+        node &&
+        within(node).queryAllByTestId('balance-chart-retry').length === 0
+    ) {
+        node = node.parentElement
+    }
+    return within(node as HTMLElement).getByTestId('balance-chart-retry')
+}
+
 const trend = async () =>
     (await screen.findByTestId('wealth_trend')).textContent ?? ''
 
@@ -156,6 +171,7 @@ describe('Flow: Asset details header leads with the fiat value', () => {
 
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
+        useCurrenciesStore.getState().resetState()
     })
 
     it('Given an Algorand asset with the chart shown, when it opens, then the fiat value leads, the token amount follows, and the change follows the chart period', async () => {
@@ -181,6 +197,52 @@ describe('Flow: Asset details header leads with the fiat value', () => {
         fireEvent.click(screen.getAllByText('chart.one_month.label')[0])
 
         await vi.waitFor(async () => expect(await trend()).toContain('150.00%'))
+    })
+
+    it('Given the chart is shown, when the rate for the new currency fails, then the holding chart says it is unavailable, and Retry brings it back once the rate answers', async () => {
+        useSettingsStore
+            .getState()
+            .setPreference(UserPreferences.chartVisible, true)
+        selectAccount(ALGORAND_ACCOUNT)
+        server.use(
+            http.get('*/v1/currencies/ARS/', () =>
+                HttpResponse.json({}, { status: 500 }),
+            ),
+        )
+        renderDetails({
+            assetId: USDC_TEST_ASSET.assetId,
+            chainId: 'algorand',
+        })
+        expect(await trend()).toContain('25.00%')
+
+        act(() => useCurrenciesStore.getState().setPreferredCurrency('ARS'))
+
+        const unavailable = await screen.findByText(
+            'common.wealth_chart.currency_unavailable_body',
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        server.use(
+            http.get('*/v1/currencies/ARS/', () =>
+                HttpResponse.json({
+                    currency_id: 'ARS',
+                    name: 'ARS',
+                    symbol: 'ARS',
+                    exchange_price: '1000',
+                    usd_value: '1000',
+                }),
+            ),
+        )
+        fireEvent.click(retryBeside(unavailable))
+
+        await vi.waitFor(() =>
+            expect(
+                screen.queryByText(
+                    'common.wealth_chart.currency_unavailable_body',
+                ),
+            ).toBeNull(),
+        )
+        expect(await trend()).toContain('25.00%')
     })
 
     it("Given the global chart preference is off, when an Algorand asset opens, then the change line shows the last 24 hours' change", async () => {

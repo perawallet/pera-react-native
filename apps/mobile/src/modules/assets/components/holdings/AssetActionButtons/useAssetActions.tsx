@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapSourceScope } from '@perawallet/wallet-core-swaps'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -64,6 +65,7 @@ export const useAssetActions = ({
     } = useReceiveFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
+    const swapChainId = useSwapSourceScope(account ?? null)?.chainId
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive, {
@@ -105,13 +107,15 @@ export const useAssetActions = ({
                 [AnalyticsMetadataKey.ChainId]: chainId,
             })
         }
+        const assetIn = { chainId, assetId: nativeAsset.assetId }
+        const params = isAlgo
+            ? { assetIn }
+            : { assetIn, assetOut: { chainId, assetId: asset.assetId } }
         navigation.replace('TabBar', {
             screen: 'Swap',
-            params: isAlgo
-                ? undefined
-                : { assetInId: nativeAsset.assetId, assetOutId: asset.assetId },
+            params: isAlgo && swapChainId === chainId ? undefined : params,
         })
-    }, [asset.assetId, chainId, navigation])
+    }, [asset.assetId, chainId, navigation, swapChainId])
 
     const handleSend = useCallback(() => {
         trackEvent(AssetDetailsEvent.Send, {

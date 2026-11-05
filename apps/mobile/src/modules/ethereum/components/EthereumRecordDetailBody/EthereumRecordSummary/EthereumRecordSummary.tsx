@@ -14,7 +14,9 @@ import type { ReactNode } from 'react'
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import { TransactionDetailLayout } from '@modules/signing'
 import { useEthereumRecordLayout } from '@modules/ethereum/hooks/useEthereumRecordLayout'
+import { useEthereumRecordNft } from '@modules/ethereum/hooks/useEthereumRecordNft'
 import { EthereumRecordAmountCard } from '../EthereumRecordAmountCard'
+import { EthereumRecordNftCard } from '../EthereumRecordNftCard'
 
 type EthereumRecordSummaryProps = {
     record: TransactionRecord
@@ -27,17 +29,26 @@ export const EthereumRecordSummary = ({
     warnings,
 }: EthereumRecordSummaryProps) => {
     const { summary, amountRows, assetLabel } = useEthereumRecordLayout(record)
+    const { nft, handleOpen } = useEthereumRecordNft(record)
 
     return (
         <TransactionDetailLayout
             summary={summary}
             warnings={warnings}
             chainSection={
-                <EthereumRecordAmountCard
-                    changes={amountRows}
-                    scope={record.scope}
-                    assetLabel={assetLabel}
-                />
+                nft ? (
+                    <EthereumRecordNftCard
+                        nft={nft}
+                        scope={record.scope}
+                        onPress={handleOpen}
+                    />
+                ) : (
+                    <EthereumRecordAmountCard
+                        changes={amountRows}
+                        scope={record.scope}
+                        assetLabel={assetLabel}
+                    />
+                )
             }
         />
     )

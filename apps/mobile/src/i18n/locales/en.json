@@ -507,6 +507,7 @@
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
         "account_number": "Account #{{number}}",
+        "name_taken": "You already have an account with this name. Choose a different name so you can tell them apart.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
@@ -1075,7 +1076,8 @@
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
-            "excludes_networks": "This chart doesn't include {{networks}} assets yet"
+            "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "currency_unavailable_body": "This chart isn't available in {{currency}} right now"
         },
         "webview": {
             "failed_title": "Failed to load page",
@@ -2122,7 +2124,6 @@
             "finish_button": "Finish Account Creation",
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_name_taken": "An account with this name already exists.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
         },
@@ -3640,12 +3641,22 @@
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
-            "transaction_id": "Transaction ID"
+            "transaction_id": "Transaction ID",
+            "quantity": "Quantity",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
             "call_data": "Call Data",
+            "function": "Function",
+            "arguments": "Arguments",
+            "argument_index": "Argument {{index}}",
+            "implementation": "Implementation",
+            "verified_source": "Named from the contract's verified source code.",
+            "verified_source_proxy": "This contract is a proxy. Named from the verified source code of the contract it forwards to.",
+            "lookup_failed": "Pera couldn't look up this contract's function name.",
             "unchecked_warning": "Pera couldn't check what this transaction does. Only continue if you trust {{domain}}.",
             "unchecked_warning_no_source": "Pera couldn't check what this transaction does. Only continue if you trust the app that sent it."
         },
@@ -3937,7 +3948,8 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select"
+            "select_asset": "Select",
+            "pay_from": "Pay from"
         },
         "asset_selection": {
             "swap_from_title": "Swap From",
@@ -3967,6 +3979,9 @@
             "price_impact": "Price Impact",
             "slippage_tolerance": "Slippage Tolerance",
             "pera_fee": "Pera Fee",
+            "network_fee": "Network fee",
+            "spend_approval_note": "You'll sign an approval for this swap's amount first, then the swap.",
+            "insufficient_network_fee": "Not enough {{symbol}} to pay the network fee.",
             "provider": "Provider",
             "minimum_received": "Minimum Received",
             "confirm_swap": "Confirm Swap",
@@ -4027,10 +4042,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "Top 5 Swaps",
-            "volume_24h": "Volume (24H)",
-            "error": "Couldn't load top swaps"
+        "tracking": {
+            "started": "Cross-chain swap sent",
+            "in_progress": "In progress. Your funds are on their way.",
+            "completed": "Completed. Your {{toAsset}} has arrived.",
+            "failed": "The swap couldn't complete. If your funds were sent, the provider returns them to your account.",
+            "refunded": "The swap was refunded. Your {{fromAsset}} is back in your account.",
+            "expired": "The swap expired before it started. If your funds left your account, the status can still change for up to 7 days.",
+            "cancelled": "The swap was cancelled before it started. If your funds left your account, the status can still change for up to 7 days.",
+            "dismiss": "Dismiss"
+        },
+        "receiving_account": {
+            "title": "Receiving account",
+            "label": "Receive to"
         }
     },
     "onramp": {

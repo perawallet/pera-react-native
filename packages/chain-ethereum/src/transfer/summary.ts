@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { Address } from 'viem'
 import {
     type AssetRef,
     type LocalizedText,
@@ -22,6 +23,8 @@ import { areEvmAddressesEqual } from '../accounts/address-codec'
 const SEND_TITLE_KEY = i18nKey('transactions.list_item.send')
 const NFT_SUBTITLE_KEY = i18nKey('transactions.list_item.nft_subtitle')
 const CANCEL_TITLE_KEY = i18nKey('transactions.list_item.cancel_transaction')
+const SWAP_TITLE_KEY = i18nKey('transactions.list_item.swap')
+const APPROVAL_TITLE_KEY = i18nKey('transactions.list_item.approval')
 
 export const nftSendSubtitle = (
     collection: string,
@@ -62,4 +65,32 @@ export const cancelSummary = (
         value: new Decimal(0),
     }),
     title: { key: CANCEL_TITLE_KEY },
+})
+
+/** `to` is the contract the swap calls; `amount` what the swap pays. */
+export const swapSummary = (
+    _from: string,
+    to: Address,
+    amount: NonNullable<TransactionSummary['amount']>,
+): TransactionSummary => ({
+    kind: 'swap',
+    title: { key: SWAP_TITLE_KEY },
+    direction: 'out',
+    icon: 'swap',
+    counterparty: to,
+    amount,
+})
+
+/** `amount` is what the allowance covers, in base units of its asset. */
+export const spendApprovalSummary = (
+    _from: string,
+    spender: Address,
+    amount: NonNullable<TransactionSummary['amount']>,
+): TransactionSummary => ({
+    kind: 'approval',
+    title: { key: APPROVAL_TITLE_KEY },
+    direction: 'none',
+    icon: 'approval',
+    counterparty: spender,
+    amount,
 })

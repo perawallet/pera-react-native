@@ -12,6 +12,11 @@
 
 export * from './isSwappableAsset'
 export * from './quoteFreshness'
-export * from './slippage'
 export * from './swapQuoteHelpers'
 export * from './resolveSwapHandoffOutcome'
+export * from './swapFees'
+export * from './swapSpendLimit'
+export * from './distinctSwapPairs'
+export * from './routerErrors'
+export * from './swapOrderSettlement'
+export * from './isSwapHistoryRow'

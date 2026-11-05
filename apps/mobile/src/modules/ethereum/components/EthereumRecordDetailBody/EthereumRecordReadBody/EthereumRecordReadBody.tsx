@@ -16,9 +16,11 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { TransactionDetailLayout } from '@modules/signing'
 import { useEthereumRecordLayout } from '@modules/ethereum/hooks/useEthereumRecordLayout'
+import { useEthereumRecordNft } from '@modules/ethereum/hooks/useEthereumRecordNft'
 import { useEthereumTransactionPresentation } from '@modules/ethereum/hooks/useEthereumTransactionPresentation'
 import { EthereumTransactionDetailSection } from '../../EthereumTransactionDetailSection'
 import { EthereumRecordAmountCard } from '../EthereumRecordAmountCard'
+import { EthereumRecordNftCard } from '../EthereumRecordNftCard'
 
 type EthereumRecordReadBodyProps = {
     record: TransactionRecord
@@ -39,6 +41,7 @@ export const EthereumRecordReadBody = ({
         record,
         presentation,
     )
+    const { nft, handleOpen } = useEthereumRecordNft(record)
 
     return (
         <TransactionDetailLayout
@@ -51,12 +54,21 @@ export const EthereumRecordReadBody = ({
                             isAmountInHero={
                                 !!summary.amount || !!summary.isAmountLoading
                             }
+                            isAssetInCard={!!nft}
                         />
                     )}
-                    <EthereumRecordAmountCard
-                        changes={amountRows}
-                        scope={record.scope}
-                    />
+                    {nft ? (
+                        <EthereumRecordNftCard
+                            nft={nft}
+                            scope={record.scope}
+                            onPress={handleOpen}
+                        />
+                    ) : (
+                        <EthereumRecordAmountCard
+                            changes={amountRows}
+                            scope={record.scope}
+                        />
+                    )}
                 </>
             }
         />

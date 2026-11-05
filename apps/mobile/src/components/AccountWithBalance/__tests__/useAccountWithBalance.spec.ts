@@ -31,6 +31,7 @@ const mockHoldingSources = vi.fn()
 const mockTotalsQuery = vi.fn()
 const mockMultisigParameters = vi.fn()
 const mockAuthority = vi.fn()
+const mockHasDuplicateName = vi.fn()
 const mockAccountValueTotals = new Map<
     string,
     {
@@ -45,6 +46,10 @@ vi.mock('@hooks/useLanguage', () => ({
         t: (key: string, params?: Record<string, unknown>) =>
             params ? `${key} ${JSON.stringify(params)}` : key,
     }),
+}))
+
+vi.mock('@hooks/useUniqueAccountName', () => ({
+    useUniqueAccountName: () => ({ hasDuplicateName: mockHasDuplicateName }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
@@ -128,6 +133,7 @@ describe('useAccountWithBalance', () => {
         mockTotalsQuery.mockReset()
         mockMultisigParameters.mockReset().mockReturnValue(undefined)
         mockAuthority.mockReset().mockReturnValue(null)
+        mockHasDuplicateName.mockReset().mockReturnValue(false)
         mockHoldingSources
             .mockReset()
             .mockImplementation((account: WalletAccount) =>
@@ -306,6 +312,24 @@ describe('useAccountWithBalance', () => {
             expect(watchRow.shouldShowSecondaryLabel).toBe(true)
             expect(signingRow.shouldShowSecondaryLabel).toBe(false)
             expect(chainRow.shouldShowSecondaryLabel).toBe(true)
+        })
+
+        it('shows the secondary label on a whole-account row whose name another account shows', () => {
+            const signing: WalletAccount = {
+                ...BOTH_CHAINS,
+                custody: { kind: 'local', seed: 'bip39' },
+            } as WalletAccount
+            mockHasDuplicateName.mockReturnValue(true)
+
+            const wholeRow = renderHook(() => useAccountWithBalance(signing))
+                .result.current
+            const chainRow = renderHook(() =>
+                useAccountWithBalance(signing, 'ethereum'),
+            ).result.current
+
+            expect(wholeRow.hasDuplicateName).toBe(true)
+            expect(wholeRow.shouldShowSecondaryLabel).toBe(true)
+            expect(chainRow.hasDuplicateName).toBe(false)
         })
 
         it('is unset on a row scoped to one chain', () => {

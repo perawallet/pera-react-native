@@ -341,7 +341,6 @@ describe('the adapter methods', () => {
             ALICE,
             USDC,
             'one-day',
-            'USD',
             SCOPE,
         )
 
@@ -586,6 +585,41 @@ describe('the adapter methods', () => {
             expect(chartRequestsFor(later, USDC_CAIP19)).toBe(1)
         })
 
+        it('asks once an hour for a chart the prices service answers chart_not_found for', async () => {
+            stored.holdings[ALICE] = [
+                { assetId: ETH_ID, amount: '1000000000000000000' },
+                { assetId: USDC, amount: '2000000' },
+            ]
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    balanceHistory: {
+                        results: [
+                            answered('2026-10-21T00:00:00Z', {
+                                [ALICE.toLowerCase()]: {
+                                    [ETH]: '1000000000000000000',
+                                    [USDC_CAIP19]: '2000000',
+                                },
+                            }),
+                        ],
+                    } as BalanceHistoryResponse,
+                    charts: {
+                        [ETH]: [chartPoint('2026-10-21T00:00:00Z', '2000')],
+                    },
+                }),
+            )
+            const charts = ops()
+            const first = recordRequests()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+            const askedFirst = chartRequestsFor(first, USDC_CAIP19)
+            const requests = recordRequests()
+
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+            expect(askedFirst).toBe(1)
+            expect(chartRequestsFor(requests, USDC_CAIP19)).toBe(0)
+        })
+
         it('asks again for a chart that failed for another reason', async () => {
             serveHistory(USDC_CAIP19, 500)
             const charts = ops()
@@ -605,7 +639,6 @@ describe('the adapter methods', () => {
                     ALICE,
                     USDC,
                     'one-month',
-                    'USD',
                     SCOPE,
                 ),
             ).rejects.toThrow()
@@ -657,17 +690,46 @@ describe('the adapter methods', () => {
         expect(points.map(p => p.usdValue.toFixed())).toEqual(['2', '0'])
     })
 
+    it('sends no balance or price request once its signal has aborted', async () => {
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '3000000' }]
+        const requests = recordRequests()
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-20T15:00:00Z', {
+                            [ALICE.toLowerCase()]: { [USDC_CAIP19]: '1000000' },
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [USDC_CAIP19]: [chartPoint('2026-10-20T15:00:00Z', '1')],
+                },
+            }),
+        )
+        const cancelled = new AbortController()
+        cancelled.abort()
+
+        await expect(
+            ops().fetchPortfolioHistory!(
+                [ALICE],
+                'one-day',
+                SCOPE,
+                cancelled.signal,
+            ),
+        ).rejects.toThrow()
+
+        expect(
+            requests.filter(({ url }) => /balance-history|chart/.test(url)),
+        ).toEqual([])
+    })
+
     it('answers no points on a chain the backend serves no balance history for, and no portfolio source at all', async () => {
         server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
 
         await expect(
-            ops().fetchHoldingBalanceHistory!(
-                ALICE,
-                USDC,
-                'one-day',
-                'USD',
-                SCOPE,
-            ),
+            ops().fetchHoldingBalanceHistory!(ALICE, USDC, 'one-day', SCOPE),
         ).resolves.toEqual([])
         await expect(
             ops().fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
@@ -685,7 +747,6 @@ describe('the adapter methods', () => {
                 ALICE,
                 USDC,
                 'one-day',
-                'USD',
                 SCOPE,
             ),
         ).resolves.toEqual([])

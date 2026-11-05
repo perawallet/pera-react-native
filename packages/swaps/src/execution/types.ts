@@ -20,12 +20,9 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
-    PrepareTransactionsRequest,
-    SwapStatusUpdateRequest,
-} from '../api'
-import type {
-    PrepareTransactionsResult,
     SwapHandoffRecord,
+    SwapOrder,
+    SwapOrderReport,
     SwapQuote,
 } from '../models'
 
@@ -42,7 +39,6 @@ export type SwapExecutionProgress =
  * (backend 4xx, offline, unknown-outcome submission).
  */
 export type SwapExecutionFailure =
-    | { phase: 'prepare'; reason: 'missing-quote-id' }
     | { phase: 'prepare'; reason: 'asset-frozen'; assetId: string }
     | {
           phase: 'prepare'
@@ -53,14 +49,16 @@ export type SwapExecutionFailure =
           shortfall: Decimal
       }
     | { phase: 'prepare'; reason: 'prepare-failed'; error: unknown }
-    | { phase: 'prepare'; reason: 'no-transaction-groups' }
+    | { phase: 'prepare'; reason: 'no-signable-steps' }
+    // A step this client can't run, or one on another chain: refused whole.
+    | { phase: 'prepare'; reason: 'unsupported-steps' }
     | { phase: 'prepare'; reason: 'quote-mismatch' }
     | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: I18nKey }
     | { phase: 'signing'; reason: 'signing-failed' }
     | { phase: 'submission'; reason: 'submission-failed'; error: unknown }
 
 export type ExecuteSwapResult =
-    | { kind: 'success'; txIds: string[] }
+    | { kind: 'success'; orderId: string; txIds: string[] }
     // Abandoned through `isCancelled` before anything was signed.
     | { kind: 'cancelled' }
     // The user declined the signing request (on screen or on a Ledger).
@@ -90,9 +88,9 @@ export type ExecuteSwapParams = {
     isCancelled: () => boolean
 }
 
-export type UpdateSwapStatusFn = (params: {
-    swapId: string
-    data: SwapStatusUpdateRequest
+export type ReportSwapOrderFn = (params: {
+    orderId: string
+    report: SwapOrderReport
 }) => Promise<unknown>
 
 /** The chain-neutral collaborators an execution needs from the app. */
@@ -100,9 +98,11 @@ export type SwapExecutionContext = {
     scope: ChainScope
     deviceId: Nullable<string>
     addSignRequest: (request: TransactionSignRequest) => void
-    prepareTransactions: (
-        request: PrepareTransactionsRequest,
-    ) => Promise<PrepareTransactionsResult>
-    updateSwapStatus: UpdateSwapStatusFn
+    createOrder: (quoteId: string) => Promise<SwapOrder>
+    reportOrder: ReportSwapOrderFn
     registerHandoff: (record: SwapHandoffRecord) => void
+    /** Called before the first broadcast: past it, a killed app or a submit with no node verdict can't say whether funds left. */
+    onOrderSubmitting: (orderId: string) => void
+    /** Called when a node refused the first group: nothing was broadcast, so no funds left. */
+    onOrderRejected: (orderId: string) => void
 }

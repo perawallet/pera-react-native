@@ -37,6 +37,10 @@ export type UseCurrencyResult = {
     usdToPreferred: (usdAmount: Maybe<Decimal>) => Nullable<Decimal>
     /** True while the rate `usdToPreferred` needs has not resolved. */
     isRatePending: boolean
+    /** The fiat rate request settled with no usable rate, so `usdToPreferred` stays `null` until `refetchRate` finds one. False while pending or paused, and for USD and the native symbol. */
+    isRateUnavailable: boolean
+    /** Asks again for the fiat rate; does nothing for USD and the native symbol. */
+    refetchRate: () => void
     /** `null` until the native-asset/USD rate is known. */
     nativeUsdPrice: Nullable<Decimal>
 }
@@ -59,8 +63,11 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
     const isNativePreferred =
         preferredCurrency === nativeCurrencyFor(scope).symbol
 
-    const { data: preferredRate, isPending: preferredRatePending } =
-        usePreferredCurrencyPriceQuery(preferredCurrency, !isNativePreferred)
+    const {
+        data: preferredRate,
+        isPending: preferredRatePending,
+        refetch: refetchPreferredRate,
+    } = usePreferredCurrencyPriceQuery(preferredCurrency, !isNativePreferred)
 
     const { data: nativeUsdPrice, isPending: nativeUsdPricePending } =
         useNativeUsdPriceQuery(scope, isNativePreferred)
@@ -90,6 +97,16 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
         )
     }
     const isRatePending = ratePendingOf()
+    const isRateUnavailable =
+        preferredCurrency !== USD_CURRENCY_ID &&
+        !isNativePreferred &&
+        !preferredRatePending &&
+        (!preferredRate?.usdPrice || preferredRate.usdPrice.isZero())
+
+    const refetchRate = useCallback(() => {
+        if (preferredCurrency === USD_CURRENCY_ID || isNativePreferred) return
+        void refetchPreferredRate()
+    }, [preferredCurrency, isNativePreferred, refetchPreferredRate])
 
     const usdToPreferred = useCallback<
         (usdAmount: Maybe<Decimal>) => Nullable<Decimal>
@@ -134,6 +151,8 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
         setCurrencyPreference,
         usdToPreferred,
         isRatePending,
+        isRateUnavailable,
+        refetchRate,
         nativeUsdPrice: nativeUsdPrice ?? null,
     }
 }

@@ -44,11 +44,11 @@ import {
     useHandoffResolver,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
-import { updateSwapStatus, type SwapStatusUpdateRequest } from '../api'
+import { reportSwapOrder } from '../api'
 import { submitCosignedSwapGroup, swapChainAdapters } from '../chain-adapter'
-import type { SwapHandoffRecord } from '../models'
+import type { SwapHandoffRecord, SwapOrderReport } from '../models'
 import { useSwapHandoffStore } from '../store'
-import { resolveSwapHandoffOutcome } from '../utils'
+import { resolveSwapHandoffOutcome, sentSwapReportOf } from '../utils'
 
 /** Stable accessors (module-level so the core's filter memo isn't busted). */
 const handoffKey = (handoff: SwapHandoffRecord): string => handoff.signRequestId
@@ -67,10 +67,10 @@ export type SettleCosignAttemptDeps = {
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
-    updateSwapStatus: (input: {
+    reportOrder: (input: {
         scope: ChainScope
-        swapId: string
-        data: SwapStatusUpdateRequest
+        orderId: string
+        report: SwapOrderReport
     }) => Promise<unknown>
     removeHandoff: (signRequestId: string) => void
 }
@@ -108,19 +108,21 @@ export const settleCosignAttempt = async (
                     }),
                 'mark-confirmed',
             )
-            await runBestEffort(
-                () =>
-                    deps.updateSwapStatus({
-                        scope: record.scope,
-                        swapId: record.swapIdStr,
-                        data: {
-                            status: 'in_progress',
-                            submitted_transaction_ids: txIds,
-                            swap_version: 'v2',
-                        },
-                    }),
-                'status update',
+            const report = sentSwapReportOf(
+                record,
+                record.submission?.txIds ?? txIds,
             )
+            if (report) {
+                await runBestEffort(
+                    () =>
+                        deps.reportOrder({
+                            scope: record.scope,
+                            orderId: record.swapIdStr,
+                            report,
+                        }),
+                    'order report',
+                )
+            }
         } else {
             // The poll detail isn't available at settle time, so the proposer
             // address needed to decline can't be derived — skip the decline
@@ -129,19 +131,7 @@ export const settleCosignAttempt = async (
                 'swap cosign settle: skipping decline (no proposer address at settle time)',
                 { signRequestId: record.signRequestId },
             )
-            await runBestEffort(
-                () =>
-                    deps.updateSwapStatus({
-                        scope: record.scope,
-                        swapId: record.swapIdStr,
-                        data: {
-                            status: 'failed',
-                            reason: 'blockchain_error',
-                            swap_version: 'v2',
-                        },
-                    }),
-                'status update',
-            )
+            // Broadcast but never landed: the router settles that from the chain.
         }
         deps.removeHandoff(record.signRequestId)
     }
@@ -282,8 +272,8 @@ export const useSwapCosignResolver = ({
                     markSubmitted: txIds =>
                         markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,
-                    updateSwapStatus: ({ swapId, data }) =>
-                        updateSwapStatus(swapId, data, handoff.scope),
+                    reportOrder: ({ orderId, report }) =>
+                        reportSwapOrder(orderId, report, handoff.scope),
                     markConfirmed,
                     removeHandoff,
                     reportError,
@@ -336,8 +326,8 @@ export const useSwapCosignResolver = ({
                         status,
                         {
                             markConfirmed,
-                            updateSwapStatus: ({ scope, swapId, data }) =>
-                                updateSwapStatus(swapId, data, scope),
+                            reportOrder: ({ scope, orderId, report }) =>
+                                reportSwapOrder(orderId, report, scope),
                             removeHandoff,
                         },
                     ),
