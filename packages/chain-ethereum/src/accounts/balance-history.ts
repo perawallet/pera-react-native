@@ -30,12 +30,16 @@ import type {
 import {
     CHART_QUERY_TIMEOUT_MS,
     baseUnitsToDisplayUnits,
+    createConcurrencyLimit,
+    isNotFoundError,
     isPeraNetworkError,
     logger,
     partition,
     queryClient,
+    type ConcurrencyLimit,
     type HistoryPeriod,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     eip155ChainIdOf,
@@ -48,9 +52,12 @@ import {
     ASSETS_SERVICE,
     fetchAssetItems,
     fetchPriceChart,
-    fetchWhitelist,
     PRICES_SERVICE,
 } from '../assets/api/endpoints'
+import {
+    cachedWhitelist,
+    type ListedTokens,
+} from '../assets/api/whitelist-cache'
 
 export const balanceHistoryPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/balance-history/`
@@ -103,6 +110,27 @@ export type GridPoint = {
     balances: Balances
 }
 
+// One gate for every chart on every EVM chain: the account screens load
+// several charts at once, each fanning out into one history call per 200
+// tokens and one price chart per token ever held, and a burst that size meets
+// the backend's rate limit and fails the chart.
+const CHART_REQUESTS_IN_FLIGHT = 4
+let chartRequestGate: Optional<ConcurrencyLimit>
+
+// Most tokens the prices service has no chart for are spam, held by the
+// hundred; asking again on every chart load costs a request each.
+const UNCHARTED_RETRY_MS = 60 * 60_000
+
+// Built on first use, so importing the adapter runs nothing.
+const gatedChartRequest: ConcurrencyLimit = task => {
+    chartRequestGate ??= createConcurrencyLimit(CHART_REQUESTS_IN_FLIGHT)
+    return chartRequestGate(task)
+}
+
+// A token's own chart: a few requests, too few to meet the rate limit, that
+// must not wait behind a portfolio's price charts.
+const ungatedChartRequest: ConcurrencyLimit = task => task()
+
 // Null when the chain has no balance history on the backend.
 const requestBalanceHistory = async (
     scope: ChainScope,
@@ -149,6 +177,7 @@ export const fetchGridBalances = async (
     caip19Ids: string[],
     period: HistoryPeriod,
     signal?: AbortSignal,
+    limit: ConcurrencyLimit = gatedChartRequest,
 ): Promise<Nullable<GridPoint[]>> => {
     const { points } = GRIDS[period]
     const calls = partition(
@@ -165,7 +194,9 @@ export const fetchGridBalances = async (
                 ),
             ),
         ).map(ids =>
-            requestBalanceHistory(scope, chain, group, ids, period, signal),
+            limit(() =>
+                requestBalanceHistory(scope, chain, group, ids, period, signal),
+            ),
         ),
     )
     const answers = await Promise.all(calls)
@@ -272,10 +303,12 @@ const hasServices = (ctx: ChainContext, scope: ChainScope): boolean => {
     return offered.has(ASSETS_SERVICE) && offered.has(PRICES_SERVICE)
 }
 
+/** `listedTokens` is the chain's token list, shared with its account reads. */
 export const createEthereumBalanceHistoryOps = (
     ctx: ChainContext,
     chain: EvmChain,
     now: () => number = Date.now,
+    listedTokens: ListedTokens = cachedWhitelist(chain, now),
 ): Required<
     Pick<
         AccountsChainAdapter,
@@ -320,6 +353,13 @@ export const createEthereumBalanceHistoryOps = (
         return balances
     }
 
+    /** When each token (by CAIP-19) last answered 404 for its price chart. */
+    const unchartedAt = new Map<string, number>()
+    const isUncharted = (caip19: string): boolean => {
+        const at = unchartedAt.get(caip19)
+        return at !== undefined && now() - at < UNCHARTED_RETRY_MS
+    }
+
     const priceAssets = async (
         scope: ChainScope,
         assetIdByCaip19: Map<string, string>,
@@ -327,7 +367,10 @@ export const createEthereumBalanceHistoryOps = (
         period: HistoryPeriod,
         // A portfolio leaves out a token it can't price rather than fail the
         // chain; a holding's own chart is that one token, so it fails instead.
-        { shouldSkipFailedTokens }: { shouldSkipFailedTokens: boolean },
+        {
+            shouldSkipFailedTokens,
+            limit,
+        }: { shouldSkipFailedTokens: boolean; limit: ConcurrencyLimit },
         signal?: AbortSignal,
     ): Promise<Map<string, PricedAsset>> => {
         const query = {
@@ -372,28 +415,25 @@ export const createEthereumBalanceHistoryOps = (
             [...assetIdByCaip19].map(async ([caip19, assetId]) => {
                 const assetDecimals = decimals.get(assetId)
                 if (assetDecimals === undefined) return null
+                const isSkippable =
+                    shouldSkipFailedTokens &&
+                    assetId !== chain.nativeAsset.assetId
+                if (isSkippable && isUncharted(caip19)) return null
                 // The native coin can't be skipped: without it the whole chain
                 // would read as worthless.
-                const prices = await fetchPriceChart(
-                    scope,
-                    chain,
-                    assetId,
-                    query,
-                    signal,
+                const prices = await limit(() =>
+                    fetchPriceChart(scope, chain, assetId, query, signal),
                 ).catch((error: unknown) => {
-                    if (
-                        !shouldSkipFailedTokens ||
-                        signal?.aborted ||
-                        assetId === chain.nativeAsset.assetId
-                    ) {
-                        throw error
-                    }
+                    if (isNotFoundError(error)) unchartedAt.set(caip19, now())
+                    if (!isSkippable || signal?.aborted) throw error
                     logger.warn('ethereum balance history: price read failed', {
                         error,
                     })
                     return null
                 })
                 if (prices === null) return null
+                // The service's chart_not_found answer arrives as no points.
+                if (prices.length === 0) unchartedAt.set(caip19, now())
                 return [caip19, { decimals: assetDecimals, prices }] as const
             }),
         )
@@ -406,7 +446,7 @@ export const createEthereumBalanceHistoryOps = (
             if (!hasServices(ctx, scope)) return null
             if (addresses.length === 0) return []
             const [listed, holdings] = await Promise.all([
-                fetchWhitelist(scope, chain),
+                listedTokens(scope),
                 readHoldings(scope, addresses),
             ])
             const nativeCaip19 = caip19Of(scope, chain.nativeAsset.assetId)
@@ -450,7 +490,7 @@ export const createEthereumBalanceHistoryOps = (
                 ),
                 points,
                 period,
-                { shouldSkipFailedTokens: true },
+                { shouldSkipFailedTokens: true, limit: gatedChartRequest },
                 signal,
             )
             return valuePortfolio(points, assets, nativeCaip19)
@@ -469,6 +509,7 @@ export const createEthereumBalanceHistoryOps = (
                     [caip19],
                     period,
                     signal,
+                    ungatedChartRequest,
                 ),
                 readHoldings(scope, [address]),
             ])
@@ -489,7 +530,10 @@ export const createEthereumBalanceHistoryOps = (
                     new Map([[caip19, assetId]]),
                     points,
                     period,
-                    { shouldSkipFailedTokens: false },
+                    {
+                        shouldSkipFailedTokens: false,
+                        limit: ungatedChartRequest,
+                    },
                     signal,
                 )
             ).get(caip19)

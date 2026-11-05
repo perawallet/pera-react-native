@@ -18,14 +18,16 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { Decimal } from 'decimal.js'
 import { getAccountHoldings } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
+    balanceHistoryPath,
     createEthereumBalanceHistoryOps,
     fetchGridBalances,
     priceAt,
@@ -261,6 +263,99 @@ describe('fetchGridBalances', () => {
         ])
     })
 
+    it('keeps at most four balance-history requests in flight across charts loading together', async () => {
+        // 2,000 ids at 200 a call: ten calls per chart.
+        const ids = Array.from(
+            { length: 2_000 },
+            (_, index) =>
+                `eip155:1/erc20:0x${index.toString(16).padStart(40, '0')}`,
+        )
+        const track = { inFlight: 0, peak: 0, total: 0 }
+        server.use(
+            http.post(`${TEST_PERA_URL}${balanceHistoryPath(1)}`, async () => {
+                track.total += 1
+                track.inFlight += 1
+                track.peak = Math.max(track.peak, track.inFlight)
+                await delay(20)
+                track.inFlight -= 1
+            }),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: () => ({
+                    results: [answered('2026-10-21T00:00:00Z', {})],
+                }),
+            }),
+        )
+
+        await Promise.all([
+            fetchGridBalances(SCOPE, ETHEREUM, [ALICE], ids, 'one-day'),
+            fetchGridBalances(SCOPE, ETHEREUM, [BOB], ids, 'one-day'),
+        ])
+
+        expect(track.total).toBe(20)
+        expect(track.peak).toBeLessThanOrEqual(4)
+    })
+
+    it("loads a token's own chart while a portfolio's requests fill the queue", async () => {
+        let releaseQueue = () => {}
+        const queueHeld = new Promise<void>(resolve => {
+            releaseQueue = resolve
+        })
+        const ids = Array.from(
+            { length: 2_000 },
+            (_, index) =>
+                `eip155:1/erc20:0x${index.toString(16).padStart(40, '0')}`,
+        )
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '1000000' }]
+        server.use(
+            http.post(
+                `${TEST_PERA_URL}${balanceHistoryPath(1)}`,
+                async ({ request }) => {
+                    const body = (await request.clone().text()).toLowerCase()
+                    if (body.includes(BOB.toLowerCase())) await queueHeld
+                },
+            ),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-21T14:00:00Z', {
+                            [ALICE.toLowerCase()]: { [USDC_CAIP19]: '1000000' },
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [USDC_CAIP19]: [chartPoint('2026-10-20T15:00:00Z', '1')],
+                },
+            }),
+        )
+        const portfolio = fetchGridBalances(
+            SCOPE,
+            ETHEREUM,
+            [BOB],
+            ids,
+            'one-day',
+        )
+
+        const charts = createEthereumBalanceHistoryOps(
+            testChainContext({ services: SERVICES }),
+            ETHEREUM,
+            () => NOW,
+        )
+        onTestFinished(releaseQueue)
+
+        const points = await charts.fetchHoldingBalanceHistory!(
+            ALICE,
+            USDC,
+            'one-day',
+            SCOPE,
+        )
+        releaseQueue()
+        await portfolio
+
+        expect(points.length).toBeGreaterThan(0)
+    })
+
     it('answers null on a chain the backend serves no balance history for', async () => {
         server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
 
@@ -378,6 +473,77 @@ describe('the adapter methods', () => {
         ])
     })
 
+    it('fetches at most four price charts at once for a portfolio of many tokens', async () => {
+        const tokens = Array.from(
+            { length: 8 },
+            (_, index) => `0x${(index + 1).toString(16).padStart(40, '0')}`,
+        )
+        const caip19Of = (id: string) => `eip155:1/erc20:${id.toLowerCase()}`
+        stored.holdings[ALICE] = tokens.map(assetId => ({
+            assetId,
+            amount: '1',
+        }))
+        tokens.forEach(id => {
+            stored.decimals[id] = 6
+        })
+        const track = { inFlight: 0, peak: 0, total: 0 }
+        server.use(
+            http.get(`${TEST_PERA_URL}${CHART_PATH}`, async () => {
+                track.total += 1
+                track.inFlight += 1
+                track.peak = Math.max(track.peak, track.inFlight)
+                await delay(20)
+                track.inFlight -= 1
+            }),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-21T00:00:00Z', {
+                            [ALICE.toLowerCase()]: Object.fromEntries(
+                                tokens.map(id => [caip19Of(id), '1']),
+                            ),
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: Object.fromEntries(
+                    [ETH, ...tokens.map(caip19Of)].map(id => [
+                        id,
+                        [chartPoint('2026-10-21T00:00:00Z', '1')],
+                    ]),
+                ),
+            }),
+        )
+
+        await ops().fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+        expect(track.total).toBe(9)
+        expect(track.peak).toBeLessThanOrEqual(4)
+    })
+
+    it('reads the token list once for charts loading within its cache window', async () => {
+        const requests = recordRequests()
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [answered('2026-10-21T00:00:00Z', {})],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [ETH]: [chartPoint('2026-10-21T00:00:00Z', '2000')],
+                },
+            }),
+        )
+        const history = ops()
+
+        await history.fetchPortfolioHistory!([ALICE], 'one-day', SCOPE)
+        await history.fetchPortfolioHistory!([BOB], 'one-week', SCOPE)
+
+        expect(
+            requests.filter(request => request.url.includes('/tokens/')),
+        ).toHaveLength(1)
+    })
+
     it('reads only holdings that count toward the total', async () => {
         stored.holdings[ALICE] = [{ assetId: USDC, amount: '2000000' }]
         server.use(
@@ -398,7 +564,7 @@ describe('the adapter methods', () => {
     })
 
     describe('when a price chart fails', () => {
-        const serveHistory = (failingId: string) => {
+        const serveHistory = (failingId: string, status = 500) => {
             stored.holdings[ALICE] = [
                 { assetId: ETH_ID, amount: '1000000000000000000' },
                 { assetId: USDC, amount: '2000000' },
@@ -429,7 +595,7 @@ describe('the adapter methods', () => {
                     new URL(request.url).searchParams
                         .get('id')
                         ?.toLowerCase() === failingId
-                        ? HttpResponse.json({}, { status: 500 })
+                        ? HttpResponse.json({}, { status })
                         : undefined,
                 ),
             )
@@ -448,6 +614,82 @@ describe('the adapter methods', () => {
                 '2000',
                 '2000',
             ])
+        })
+
+        const chartRequestsFor = (requests: Request[], caip19: string) =>
+            requests.filter(
+                request =>
+                    request.url.includes(CHART_PATH) &&
+                    new URL(request.url).searchParams
+                        .get('id')
+                        ?.toLowerCase() === caip19,
+            ).length
+
+        it('asks once an hour for a chart the prices service has none of', async () => {
+            serveHistory(USDC_CAIP19, 404)
+            const clock = { now: NOW }
+            const charts = createEthereumBalanceHistoryOps(
+                testChainContext({ services: SERVICES }),
+                ETHEREUM,
+                () => clock.now,
+            )
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+            const soon = recordRequests()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+            const askedSoon = chartRequestsFor(soon, USDC_CAIP19)
+            clock.now += 60 * 60_000
+            const later = recordRequests()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+            expect(askedSoon).toBe(0)
+            expect(chartRequestsFor(later, USDC_CAIP19)).toBe(1)
+        })
+
+        it('asks once an hour for a chart the prices service answers chart_not_found for', async () => {
+            stored.holdings[ALICE] = [
+                { assetId: ETH_ID, amount: '1000000000000000000' },
+                { assetId: USDC, amount: '2000000' },
+            ]
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    balanceHistory: {
+                        results: [
+                            answered('2026-10-21T00:00:00Z', {
+                                [ALICE.toLowerCase()]: {
+                                    [ETH]: '1000000000000000000',
+                                    [USDC_CAIP19]: '2000000',
+                                },
+                            }),
+                        ],
+                    } as BalanceHistoryResponse,
+                    charts: {
+                        [ETH]: [chartPoint('2026-10-21T00:00:00Z', '2000')],
+                    },
+                }),
+            )
+            const charts = ops()
+            const first = recordRequests()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+            const askedFirst = chartRequestsFor(first, USDC_CAIP19)
+            const requests = recordRequests()
+
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+            expect(askedFirst).toBe(1)
+            expect(chartRequestsFor(requests, USDC_CAIP19)).toBe(0)
+        })
+
+        it('asks again for a chart that failed for another reason', async () => {
+            serveHistory(USDC_CAIP19, 500)
+            const charts = ops()
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+            const requests = recordRequests()
+
+            await charts.fetchPortfolioHistory!([ALICE], 'one-month', SCOPE)
+
+            expect(chartRequestsFor(requests, USDC_CAIP19)).toBeGreaterThan(0)
         })
 
         it("fails a token's own chart rather than reading it as no history", async () => {

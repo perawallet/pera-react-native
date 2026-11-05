@@ -11,7 +11,7 @@
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import {
     encodeAbiParameters,
@@ -31,6 +31,7 @@ import {
 import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
 import {
     MULTICALL3_ADDRESS,
+    readBalances,
     readErc20,
     readErc20Decimals,
     readErc20TotalSupply,
@@ -492,5 +493,89 @@ describe('readErc20Decimals', () => {
         const decimals = await readErc20Decimals(client(), [USDC, DAI])
 
         expect(decimals).toEqual(new Map([[USDC, 6]]))
+    })
+})
+
+describe('readBalances', () => {
+    const HOLDER = '0x00000000000000000000000000000000000000aa'
+    // Enough tokens for ten aggregate chunks of 300 calls.
+    const TOKENS = Array.from(
+        { length: 2_999 },
+        (_, index) => `0x${(index + 1).toString(16).padStart(40, '0')}`,
+    )
+
+    const trackEthCallsInFlight = (track: {
+        inFlight: number
+        peak: number
+        total: number
+    }) =>
+        http.post(TEST_RPC_URL, async ({ request }) => {
+            const body = (await request.clone().json()) as { method?: string }
+            if (body.method !== 'eth_call') return
+            track.total += 1
+            track.inFlight += 1
+            track.peak = Math.max(track.peak, track.inFlight)
+            await delay(20)
+            track.inFlight -= 1
+        })
+
+    it('keeps at most four aggregate calls in flight for a long token list', async () => {
+        const track = { inFlight: 0, peak: 0, total: 0 }
+        server.use(
+            trackEthCallsInFlight(track),
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: usdcResponder,
+                    eth_getBalance: '0x2a',
+                },
+            }),
+        )
+        const client = createEvmClient(SCOPE, testChainContext(), ETHEREUM)
+
+        const balances = await readBalances(client, [HOLDER], TOKENS, 1n)
+
+        expect(balances.get(getAddress(HOLDER))?.wei).toBe(42n)
+        expect(track.total).toBe(10)
+        expect(track.peak).toBeLessThanOrEqual(4)
+    })
+
+    it('starts no further aggregate call once one has failed', async () => {
+        const track = { inFlight: 0, peak: 0, total: 0 }
+        server.use(
+            trackEthCallsInFlight(track),
+            http.post(
+                TEST_RPC_URL,
+                () => new HttpResponse(null, { status: 503 }),
+            ),
+        )
+        const client = createEvmClient(SCOPE, testChainContext(), ETHEREUM)
+
+        await expect(
+            readBalances(client, [HOLDER], TOKENS, 1n),
+        ).rejects.toThrow()
+        expect(track.total).toBeLessThanOrEqual(4)
+    })
+
+    it("rejects with an error that carries none of the chunk's calldata", async () => {
+        server.use(
+            http.post(
+                TEST_RPC_URL,
+                () => new HttpResponse(null, { status: 503 }),
+            ),
+        )
+        const client = createEvmClient(SCOPE, testChainContext(), ETHEREUM)
+
+        const error = await readBalances(client, [HOLDER], TOKENS, 1n).catch(
+            (reason: unknown) => reason,
+        )
+
+        expect(error).toBeInstanceOf(Error)
+        expect(String((error as Error).message)).toContain(
+            'HTTP request failed',
+        )
+        expect(JSON.stringify(error)).not.toContain(HOLDER.slice(2))
+        expect((error as Error).message).not.toContain(HOLDER.slice(2))
+        expect((error as Error).message).not.toContain(TOKENS[0]!.slice(2))
     })
 })

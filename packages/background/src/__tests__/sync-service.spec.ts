@@ -172,6 +172,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getAllHeldAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
     invalidateAccountQueries: vi.fn(),
     invalidateAccountQueriesForAddresses: vi.fn(),
+    invalidateAccountQueriesForScope: vi.fn(),
+    invalidateAccountChartsForAddresses: vi.fn(),
     fetchAndPersistAccount: vi.fn(() =>
         Promise.resolve({ changed: true, holdingsChanged: true }),
     ),
@@ -501,6 +503,7 @@ describe('SyncService', () => {
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             queryClient,
             mockAccounts.map(a => a.chains.algorand.address),
+            { includeCharts: false },
         )
     })
 
@@ -1503,8 +1506,8 @@ describe('SyncService', () => {
     it('does not invalidate account queries when all account fetches are rate-limited', async () => {
         const {
             fetchAndPersistAccount,
-            invalidateAccountQueries,
             invalidateAccountQueriesForAddresses,
+            invalidateAccountQueriesForScope,
         } = await import('@perawallet/wallet-core-accounts')
 
         vi.mocked(fetchAndPersistAccount).mockRejectedValue(
@@ -1518,10 +1521,51 @@ describe('SyncService', () => {
         // No account fetch succeeded, so no per-account invalidation: nothing
         // account-scoped changed in the DB, and eagerly invalidating would
         // force a wide re-read with no new data. The asset/price phase still
-        // ran and persisted, so its broad invalidation is owed — stop() flushes
-        // it rather than dropping it.
+        // ran and persisted, so its network's invalidation is owed — stop()
+        // flushes it rather than dropping it.
         expect(invalidateAccountQueriesForAddresses).not.toHaveBeenCalled()
-        expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
+        expect(invalidateAccountQueriesForScope).toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: false },
+        )
+    })
+
+    it("reloads only the synced network's account queries after its price pass, leaving its charts", async () => {
+        const { invalidateAccountQueries, invalidateAccountQueriesForScope } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(50)
+        service.stop()
+
+        expect(invalidateAccountQueriesForScope).toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: false },
+        )
+        expect(invalidateAccountQueries).not.toHaveBeenCalled()
+    })
+
+    it("reloads a network's charts with its prices once five minutes have passed", async () => {
+        const { invalidateAccountQueriesForScope } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(4 * 60_000)
+        expect(invalidateAccountQueriesForScope).not.toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: true },
+        )
+        await vi.advanceTimersByTimeAsync(60_000 + POLL_INTERVAL + 50)
+        service.stop()
+
+        expect(invalidateAccountQueriesForScope).toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: true },
+        )
     })
 
     it('does not invalidate asset queries when every asset and price batch fails', async () => {
@@ -1575,7 +1619,65 @@ describe('SyncService', () => {
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             queryClient,
             ['ADDR1'],
+            { includeCharts: false },
         )
+    })
+
+    it('reloads the charts of accounts that changed at most once a minute, holding a later change until then', async () => {
+        const { fetchAndPersistAccount, invalidateAccountChartsForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: true,
+            round: null,
+        })
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(400)
+        const afterFirstTick = vi.mocked(invalidateAccountChartsForAddresses)
+            .mock.calls.length
+        await vi.advanceTimersByTimeAsync(30_000)
+        const halfAMinuteLater = vi.mocked(invalidateAccountChartsForAddresses)
+            .mock.calls.length
+        await vi.advanceTimersByTimeAsync(31_000)
+        service.stop()
+
+        expect(afterFirstTick).toBe(1)
+        expect(halfAMinuteLater).toBe(1)
+        expect(invalidateAccountChartsForAddresses).toHaveBeenCalledTimes(2)
+        expect(invalidateAccountChartsForAddresses).toHaveBeenLastCalledWith(
+            queryClient,
+            ['ADDR1'],
+        )
+    })
+
+    it("reloads a held change's charts within the minute even when the ticks after it are quiet", async () => {
+        const { fetchAndPersistAccount, invalidateAccountChartsForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest
+            .mockResolvedValueOnce({ refresh: true, round: null })
+            .mockResolvedValue({ refresh: false, round: null })
+        // A synced scope, so a tick whose signal answers unchanged reads nothing.
+        service = new SyncService({
+            queryClient,
+            stores: { ...createSyncStorePorts(), getChangeCursor: () => 42 },
+            chains: chainsDep(),
+        })
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(61_000)
+        service.stop()
+
+        expect(invalidateAccountChartsForAddresses).toHaveBeenCalledTimes(2)
     })
 
     describe('pollIntervalMs', () => {
@@ -2252,10 +2354,14 @@ describe('SyncService', () => {
                 )
                 expect(
                     invalidateAccountQueriesForAddresses,
-                ).toHaveBeenCalledWith(queryClient, algorandAddresses)
+                ).toHaveBeenCalledWith(queryClient, algorandAddresses, {
+                    includeCharts: false,
+                })
                 expect(
                     invalidateAccountQueriesForAddresses,
-                ).toHaveBeenCalledWith(queryClient, ['0xabc'])
+                ).toHaveBeenCalledWith(queryClient, ['0xabc'], {
+                    includeCharts: false,
+                })
             })
 
             it("refreshes a records chain's History for the accounts that changed", async () => {
