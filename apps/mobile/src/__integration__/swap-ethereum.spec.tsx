@@ -539,6 +539,12 @@ describe('Flow: Swap from an Ethereum account', () => {
         renderWithNavigation(SwapScreen, 'Swap')
 
         fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
+        const namedRow = await screen.findByTestId(
+            `asset-list-item-ethereum-${TOKEN}`,
+        )
+        expect(namedRow.textContent).toContain(
+            'account_details.assets.chain_network',
+        )
         fireEvent.click(
             await screen.findByTestId('swap_from_chain_filter_ethereum'),
         )

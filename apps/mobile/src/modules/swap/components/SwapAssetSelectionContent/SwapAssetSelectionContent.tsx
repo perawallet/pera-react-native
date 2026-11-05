@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type {
+    AssetWithAccountBalance,
+    ChainAssetBalance,
+} from '@perawallet/wallet-core-accounts'
 import type {
     AssetRef,
     ChainScope,
@@ -64,6 +67,11 @@ export const SwapAssetSelectionContent = (
         [resolve, variant],
     )
 
+    const handleFromAssetSelected = useCallback(
+        (asset: ChainAssetBalance) => handleAssetSelected(asset, asset.scope),
+        [handleAssetSelected],
+    )
+
     const title =
         variant === 'from'
             ? t('swap.asset_selection.swap_from_title')
@@ -98,9 +106,7 @@ export const SwapAssetSelectionContent = (
                     <SwapFromAssetSelectionList
                         scope={scope}
                         excludeAsset={excludeAsset}
-                        onAssetSelected={asset =>
-                            handleAssetSelected(asset, asset.scope)
-                        }
+                        onAssetSelected={handleFromAssetSelected}
                         searchPlaceholder={t(
                             'swap.asset_selection.search_placeholder',
                         )}
