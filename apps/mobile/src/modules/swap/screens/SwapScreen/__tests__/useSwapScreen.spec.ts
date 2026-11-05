@@ -42,6 +42,7 @@ const {
         selected: null as Account | null,
         signers: [] as Account[],
         swapChainAccounts: new Set<string>(),
+        sourceChainId: null as string | null,
         isIntroductionSeen: false,
     },
 }))
@@ -55,12 +56,14 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         selector: (store: {
             setFromAsset: typeof mockSetFromAsset
             setToAsset: typeof mockSetToAsset
+            sourceChainId: string | null
             setSourceChainId: typeof mockSetSourceChainId
         }) => unknown,
     ) =>
         selector({
             setFromAsset: mockSetFromAsset,
             setToAsset: mockSetToAsset,
+            sourceChainId: state.sourceChainId,
             setSourceChainId: mockSetSourceChainId,
         }),
     useSwapSourceScope: (account: Account | null) =>
@@ -118,6 +121,10 @@ describe('useSwapScreen', () => {
         state.signers = [{ id: 'acc-1' }]
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
         state.isIntroductionSeen = false
+        state.sourceChainId = null
+        mockSetSourceChainId.mockImplementation((chainId: string) => {
+            state.sourceChainId = chainId
+        })
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
@@ -133,12 +140,15 @@ describe('useSwapScreen', () => {
             assetOut: { chainId: 'algorand', assetId: '31566704' },
         }
 
-        renderHook(() => useSwapScreen())
+        const { rerender } = renderHook(() => useSwapScreen())
 
         expect(mockSetSourceChainId).toHaveBeenCalledWith('algorand')
-        expect(mockSetSourceChainId.mock.invocationCallOrder[0]).toBeLessThan(
-            mockSetFromAsset.mock.invocationCallOrder[0],
-        )
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+
+        rerender()
+
+        expect(mockSetFromAsset).toHaveBeenCalledWith('123')
+        expect(mockSetToAsset).toHaveBeenCalledWith('31566704')
     })
 
     it('leaves the source chain alone for an ordinary visit', () => {
@@ -189,12 +199,15 @@ describe('useSwapScreen', () => {
             payAmount: '2.5',
         }
 
-        const { result } = renderHook(() => useSwapScreen())
+        const { result, rerender } = renderHook(() => useSwapScreen())
 
         expect(result.current.initialPayAmount).toEqual({
             assetId: '123',
             amount: new Decimal('2.5'),
         })
+
+        rerender()
+
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
     })
 

@@ -109,5 +109,7 @@ describe('Flow: Swap opened on an Ethereum asset', () => {
         await act(() => new Promise(resolve => setTimeout(resolve, 100)))
         expect(useSwapsStore.getState().sourceChainId).toBe('ethereum')
         expect(useSwapsStore.getState().fromAsset).toBe(TOKEN)
+        // Null falls back to this chain's own receive asset.
+        expect(useSwapsStore.getState().toAsset).toBeNull()
     })
 })

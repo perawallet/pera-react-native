@@ -54,6 +54,7 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
+    const sourceChainId = useSwapsStore(state => state.sourceChainId)
     const setSourceChainId = useSwapsStore(state => state.setSourceChainId)
     const selectedAccount = useSelectedAccount()
     const scope = useSwapSourceScope(selectedAccount)
@@ -67,17 +68,23 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         if (routeSourceChainId) setSourceChainId(routeSourceChainId)
     }, [routeSourceChainId, setSourceChainId])
 
-    const resolvedAssets = scope
-        ? resolveSwapRouteAssets(route.params, scope)
+    // Until the store holds the route's chain, scope is still the previous one,
+    // and a pair seeded from it would outlive the chain change.
+    const routeScope =
+        !routeSourceChainId || sourceChainId === routeSourceChainId
+            ? scope
+            : null
+    const resolvedAssets = routeScope
+        ? resolveSwapRouteAssets(route.params, routeScope)
         : null
     // A chain with no known default output still opens on the route's input,
     // and the form pairs it with the chain's own receive asset.
     const assetInId =
         resolvedAssets?.assetInId ??
-        (scope ? routeAssetInIdOn(route.params, scope) : undefined)
+        (routeScope ? routeAssetInIdOn(route.params, routeScope) : undefined)
     const assetOutId = resolvedAssets?.assetOutId
 
-    useSeedSwapRouteAssets({ assetInId, assetOutId, scope })
+    useSeedSwapRouteAssets({ assetInId, assetOutId, scope: routeScope })
 
     useEffect(() => {
         if (
@@ -97,12 +104,14 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     }, [assetInId, assetOutId, setFromAsset, setToAsset])
 
     const payAmount = route.params?.payAmount
+    // The form reads this once on mount, which can be before the chain is pinned.
+    const payAssetId = assetInId ?? route.params?.assetIn?.assetId
     const initialPayAmount = useMemo(
         () =>
-            payAmount && assetInId
-                ? { assetId: assetInId, amount: new Decimal(payAmount) }
+            payAmount && payAssetId
+                ? { assetId: payAssetId, amount: new Decimal(payAmount) }
                 : undefined,
-        [payAmount, assetInId],
+        [payAmount, payAssetId],
     )
 
     const { pushWebView } = useWebView()
