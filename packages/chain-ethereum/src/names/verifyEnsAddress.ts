@@ -76,6 +76,27 @@ const ensHostContext = (): Pick<ChainContext, 'getEndpoints' | 'timeouts'> => ({
     timeouts: config.chainRequestTimeouts[ENS_HOST_CHAIN_ID],
 })
 
+// viem's CCIP-Read fetch for an offchain name's gateway takes neither a timeout
+// nor a signal, so the wait is bounded here: a dead gateway ends as a failed read
+// instead of leaving the pick on a spinner.
+const withDeadline = <T>(
+    work: Promise<T>,
+    ms: number,
+    signal?: AbortSignal,
+): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(
+            () => reject(new Error(`ENS read exceeded ${ms}ms`)),
+            ms,
+        )
+        const onAbort = () => reject(abortError())
+        signal?.addEventListener('abort', onAbort, { once: true })
+        work.then(resolve, reject).finally(() => {
+            clearTimeout(timer)
+            signal?.removeEventListener('abort', onAbort)
+        })
+    })
+
 const scopeKey = (scope: ChainScope): string =>
     `${scope.chainId}/${scope.networkId}`
 
@@ -101,8 +122,8 @@ export const normalizeEnsName = (name: string): Optional<string> => {
 /**
  * Checks a name's backend-asserted address against ENS on Ethereum L1: the
  * chain's own address record, else the default one, read only when the chain
- * has none. Mainnet chains read
- * Ethereum mainnet and testnets read Sepolia, so the two never mix.
+ * has none. Mainnet chains read Ethereum mainnet and testnets read Sepolia,
+ * so the two never mix. The whole check ends within the host's read ceiling.
  */
 export const verifyEnsAddress = async (
     chain: EvmChain,
@@ -123,9 +144,10 @@ export const verifyEnsAddress = async (
             throw new Error(`No ENS host network for ${scopeKey(scope)}`)
         }
 
+        const hostContext = ensHostContext()
         const client = createEvmClient(
             { chainId: ENS_HOST_CHAIN_ID, networkId: hostNetwork.id },
-            ensHostContext(),
+            hostContext,
             host,
         )
         const read = async (coinType: bigint): Promise<Nullable<string>> => {
@@ -141,17 +163,25 @@ export const verifyEnsAddress = async (
                 throw error
             }
         }
-        const own = await read(ensCoinTypeOf(chain, eip155ChainId))
-        if (signal?.aborted) throw abortError()
-        // A failing default lookup must not block a chain whose own record answered.
-        const record = own ?? (await read(DEFAULT_EVM_COIN_TYPE))
+        const readRecord = async (): Promise<Nullable<string>> => {
+            const own = await read(ensCoinTypeOf(chain, eip155ChainId))
+            if (signal?.aborted) throw abortError()
+            // A failing default lookup must not block a chain whose own record answered.
+            return own ?? (await read(DEFAULT_EVM_COIN_TYPE))
+        }
+        // One read ceiling for the whole check, as for any node read.
+        const record = await withDeadline(
+            readRecord(),
+            hostContext.timeouts.readMs,
+            signal,
+        )
         if (signal?.aborted) throw abortError()
 
         return record && areEvmAddressesEqual(record, address)
             ? 'verified'
             : 'mismatch'
     } catch (error) {
-        // The signal never reaches the reads, so one that failed after the abort must not read as a verdict.
+        // A read that failed after the abort must not read as a verdict.
         if (signal?.aborted) throw abortError()
         if (error instanceof Error && error.name === 'AbortError') throw error
         logger.warn('ENS verification unavailable', {

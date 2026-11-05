@@ -337,6 +337,36 @@ describe('verifyEnsAddress', () => {
         expect(requested).toEqual([])
     })
 
+    it('reports a read that never finishes as unavailable once the read ceiling passes', async () => {
+        vi.useFakeTimers()
+        try {
+            server.use(http.post(L1_MAINNET, () => new Promise(() => {})))
+
+            const pending = verify(ETHEREUM, 'alice.eth', ETHEREUM_ADDRESS)
+            await vi.advanceTimersByTimeAsync(15_001)
+
+            await expect(pending).resolves.toBe('unavailable')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('stops waiting on a read that never finishes as soon as the pick is cancelled', async () => {
+        server.use(http.post(L1_MAINNET, () => new Promise(() => {})))
+        const controller = new AbortController()
+
+        const pending = verify(
+            ETHEREUM,
+            'alice.eth',
+            ETHEREUM_ADDRESS,
+            'mainnet',
+            controller.signal,
+        )
+        setTimeout(() => controller.abort(), 20)
+
+        await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    })
+
     it('throws instead of reporting unavailable when the read fails after an abort', async () => {
         const controller = new AbortController()
         server.use(
