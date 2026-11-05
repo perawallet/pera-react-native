@@ -325,7 +325,7 @@ describe('executeEvmSwap', () => {
         fakeNode({ balance: RICH })
         const context = contextOf(orderOf([SWAP_TX]))
 
-        const result = await run(context, inputOf(), [])
+        const result = await run(context, inputOf(), [TOKEN])
 
         expect(result).toEqual({
             kind: 'failed',
@@ -334,6 +334,19 @@ describe('executeEvmSwap', () => {
         expect(context.addSignRequest).not.toHaveBeenCalled()
         await flushCancelReport()
         expect(context.reportOrder).toHaveBeenCalledWith(CANCELLED)
+    })
+
+    it('creates no order while the route declares no contracts', async () => {
+        const context = contextOf(orderOf([SWAP_TX]))
+
+        const result = await run(context, inputOf(), [])
+
+        expect(result).toEqual({
+            kind: 'failed',
+            failure: { phase: 'prepare', reason: 'quote-mismatch' },
+        })
+        expect(context.createOrder).not.toHaveBeenCalled()
+        expect(context.reportOrder).not.toHaveBeenCalled()
     })
 
     it('refuses unreadable bytes the same way', async () => {
