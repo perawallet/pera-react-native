@@ -199,6 +199,18 @@ describe('useSwapConfirmation', () => {
             })
         })
 
+        it('notes where the payout lands', () => {
+            const { result } = renderConfirmation(crossChainQuote('0xRECEIVER'))
+
+            expect(result.current.crossChainNote).toEqual(expect.any(String))
+        })
+
+        it('has no note on a same-chain swap', () => {
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.crossChainNote).toBeNull()
+        })
+
         it('is null on a same-chain swap', () => {
             const { result } = renderConfirmation(makeQuote())
 
@@ -355,6 +367,53 @@ describe('useSwapConfirmation', () => {
         const { result } = renderConfirmation(quote)
 
         expect(result.current.minimumReceivedDisplay).toBe('240000 USDC')
+    })
+
+    it('leaves out every detail the route does not report', () => {
+        const { result } = renderConfirmation(makeQuote())
+
+        expect(result.current).toMatchObject({
+            minimumReceivedDisplay: null,
+            peraFeeDisplay: null,
+            providerFeeDisplay: null,
+            networkFeeDisplay: null,
+            slippageDisplay: null,
+            priceImpactDisplay: null,
+        })
+    })
+
+    it('shows the provider fee a quote charges separately', () => {
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'provider',
+                    asset: refOf('0'),
+                    amount: new Decimal('2500'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.providerFeeDisplay).toBe('2500 ALGO')
+    })
+
+    it('falls back to the network fee on the quote without a source estimate', () => {
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: refOf('0'),
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBe('1000 ALGO')
     })
 
     it('formats the Pera fee in the asset it is charged in', () => {

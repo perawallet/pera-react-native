@@ -25,6 +25,7 @@ import {
     formatAssetAmount,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     formatSwapRate,
@@ -69,17 +70,25 @@ type UseSwapConfirmationResult = {
     payFiatValue: Nullable<Decimal>
     receiveFiatValue: Nullable<Decimal>
     rateDisplay: string
-    minimumReceivedDisplay: string
-    peraFeeDisplay: string
-    /** Null when the source chain charges nothing here or the read failed. */
+    /** Null when the route sets no minimum. */
+    minimumReceivedDisplay: Nullable<string>
+    /** Null when the quote carries no Pera fee. */
+    peraFeeDisplay: Nullable<string>
+    /** Null when the quote carries no provider fee: some providers price theirs into the rate. */
+    providerFeeDisplay: Nullable<string>
+    /** The source chain's own estimate, else the quote's; null when neither has one. */
     networkFeeDisplay: Nullable<string>
     needsSpendApproval: boolean
     /** Non-null while the account can't pay the source chain's fee: confirm stays off. */
     insufficientFeeMessage: Nullable<string>
-    slippageDisplay: string
+    /** Null when the router chose the slippage. */
+    slippageDisplay: Nullable<string>
     hasHighPriceImpact: boolean
-    priceImpactDisplay: string
+    /** Null when the route reports no price impact. */
+    priceImpactDisplay: Nullable<string>
     priceImpactStyle: object
+    /** Set on a cross-chain swap, whose payout lands after this sheet closes. */
+    crossChainNote: Nullable<string>
 }
 
 export const useSwapConfirmation = ({
@@ -164,23 +173,25 @@ export const useSwapConfirmation = ({
     const rateDisplay = useMemo(() => formatSwapRate(quote), [quote])
 
     const minimumReceivedDisplay = useMemo(() => {
-        if (!quote.minimumAmountOut) return '-'
+        if (!quote.minimumAmountOut) return null
         return formatAssetAmount(quote.minimumAmountOut, quote.assetOut)
     }, [quote.minimumAmountOut, quote.assetOut])
 
-    const peraFeeDisplay = useMemo(
-        () => formatSwapFee(quote, 'pera') ?? '-',
+    const peraFeeDisplay = useMemo(() => formatSwapFee(quote, 'pera'), [quote])
+
+    const providerFeeDisplay = useMemo(
+        () => formatSwapFee(quote, 'provider'),
         [quote],
     )
 
     const networkFeeDisplay = useMemo(() => {
-        if (!sourceCost) return null
+        if (!sourceCost) return formatSwapFee(quote, 'network')
         const { networkFee, nativeDecimals, nativeSymbol } = sourceCost
         return formatAssetAmount(networkFee, {
             decimals: nativeDecimals,
             unitName: nativeSymbol,
         })
-    }, [sourceCost])
+    }, [sourceCost, quote])
 
     const insufficientFeeMessage = sourceCost?.shortfall
         ? t('swap.quote.insufficient_network_fee', {
@@ -188,7 +199,10 @@ export const useSwapConfirmation = ({
           })
         : null
 
-    const slippageDisplay = useMemo(() => formatSwapSlippage(quote), [quote])
+    const slippageDisplay = useMemo(
+        () => (quote.request.slippage ? formatSwapSlippage(quote) : null),
+        [quote],
+    )
 
     const hasHighPriceImpact = useMemo(
         () =>
@@ -199,7 +213,7 @@ export const useSwapConfirmation = ({
     )
 
     const priceImpactDisplay = useMemo(() => {
-        if (!quote.priceImpact) return '-'
+        if (!quote.priceImpact) return null
         return `${quote.priceImpact.toDecimalPlaces(2).toString()}%`
     }, [quote.priceImpact])
 
@@ -210,6 +224,15 @@ export const useSwapConfirmation = ({
             return styles.priceImpactMedium
         return styles.priceImpactHigh
     }, [quote.priceImpact, styles])
+
+    const crossChainNote = useMemo(() => {
+        if (!receiveTarget) return null
+        const { chainId } = receiveTarget.scope
+        return t('swap.quote.cross_chain_note', {
+            asset: quote.assetOut.unitName ?? quote.assetOut.assetId,
+            network: chainDisplayNameOf(chainId) ?? chainId,
+        })
+    }, [receiveTarget, quote.assetOut, t])
 
     return {
         selectedAccount,
@@ -226,6 +249,7 @@ export const useSwapConfirmation = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        providerFeeDisplay,
         networkFeeDisplay,
         needsSpendApproval: sourceCost?.needsSpendApproval ?? false,
         insufficientFeeMessage,
@@ -233,5 +257,6 @@ export const useSwapConfirmation = ({
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
+        crossChainNote,
     }
 }
