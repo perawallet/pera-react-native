@@ -38,6 +38,8 @@ export type UsePortfolioHistoryQueryResult = {
     isPending: boolean
     /** A chain failed with no points to fall back on, and stays failed while it is asked again; a failed refresh of one that still has points doesn't count. */
     isError: boolean
+    /** A chain that holds its error is being read again: `isError` stays true through it, so this is the only sign that a Retry went out. */
+    isRetrying: boolean
     isPaused: boolean
     error: Nullable<Error>
     /** True when a source's chain has no portfolio history: a chart without it would understate the total. */
@@ -167,6 +169,9 @@ export const usePortfolioHistoryQuery = (
                     index => results[index]?.isPending && !holdsError[index],
                 ),
                 isError: countedIndexes.some(index => holdsError[index]),
+                isRetrying: countedIndexes.some(
+                    index => holdsError[index] && results[index]?.isFetching,
+                ),
                 isPaused: counted.some(result => result.isPaused),
                 error:
                     failures[
@@ -213,6 +218,7 @@ export const usePortfolioHistoryQuery = (
                 ? false
                 : combined.isPending,
         isError: combined.isError,
+        isRetrying: combined.isRetrying,
         isPaused: combined.isPaused,
         error: combined.error,
         isUnavailableOnNetwork,

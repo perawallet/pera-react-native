@@ -379,6 +379,7 @@ describe('usePortfolioHistoryQuery', () => {
             ])
             expect(result.current.isPending).toBe(false)
             expect(result.current.isError).toBe(false)
+            expect(result.current.isRetrying).toBe(false)
             expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId])
 
             retried.resolve([point(1, '5')])
@@ -406,6 +407,7 @@ describe('usePortfolioHistoryQuery', () => {
                 { wrapper: stableWrapper() },
             )
             await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.isRetrying).toBe(false)
 
             act(() => result.current.refetch())
             await waitFor(() => expect(ethereumCalls).toBe(2))
@@ -413,10 +415,12 @@ describe('usePortfolioHistoryQuery', () => {
             expect(result.current.isError).toBe(true)
             expect(result.current.error).toEqual(new Error('history down'))
             expect(result.current.isPending).toBe(false)
+            expect(result.current.isRetrying).toBe(true)
 
             retried.resolve([point(1, '5')])
 
             await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.isRetrying).toBe(false)
             expect(result.current.error).toBeNull()
             expect(result.current.data).toEqual([
                 { datetime: new Date(1), preferredValue: new Decimal(10) },
@@ -451,6 +455,7 @@ describe('usePortfolioHistoryQuery', () => {
             expect(result.current.isError).toBe(true)
             expect(result.current.error).toBe(blocked)
             expect(result.current.isPending).toBe(false)
+            expect(result.current.isRetrying).toBe(true)
 
             retried.resolve([point(1, '5')])
 

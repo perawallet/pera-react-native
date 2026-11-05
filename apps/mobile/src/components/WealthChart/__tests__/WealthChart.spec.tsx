@@ -53,6 +53,7 @@ const mockHistory = (
         data: [],
         isPending: false,
         isError: false,
+        isRetrying: false,
         isPaused: false,
         error: null,
         isUnavailableOnNetwork: false,
