@@ -109,6 +109,32 @@ describe('useAlgorandTransactionDetailLayout', () => {
         expect(summary.fee?.asset.unitName).toBe('ALGO')
     })
 
+    it('Given a confirmed payment viewed by its receiver, then it shows no fee, since the sender paid it', () => {
+        mockViewer = FIXTURE_RECEIVER
+
+        expect(
+            summaryOf(viewOf('payment', { confirmedRound: 42n })).fee,
+        ).toBeUndefined()
+    })
+
+    it('Given no account viewing it, then a confirmed payment keeps its fee, since who paid it is unknown', () => {
+        expect(
+            summaryOf(
+                viewOf('payment', { confirmedRound: 42n }),
+            ).fee?.value.toString(),
+        ).toBe('0.001')
+    })
+
+    it('Given an unsigned transaction, then it keeps its fee whoever is viewing, since it is about to be signed', () => {
+        mockViewer = FIXTURE_RECEIVER
+
+        expect(
+            summaryOf(
+                viewOf('payment', { id: '', confirmedRound: undefined }),
+            ).fee?.value.toString(),
+        ).toBe('0.001')
+    })
+
     it('Given a payment viewed by its sender, then it is titled Send, as history names it', () => {
         mockViewer = FIXTURE_SENDER
 

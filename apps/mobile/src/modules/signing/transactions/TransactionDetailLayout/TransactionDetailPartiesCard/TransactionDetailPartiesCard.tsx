@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { KeyValueRow } from '@components/KeyValueRow'
-import { AssetAmount } from '@components/AssetAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '../../TransactionDetailCard'
 import type { TransactionDetailSummary } from '../../types'
 import { TransactionDetailAddressRow } from './TransactionDetailAddressRow'
+import { TransactionDetailFeeRow } from './TransactionDetailFeeRow'
 import { TransactionDetailNoteRow } from './TransactionDetailNoteRow'
 
 type TransactionDetailPartiesCardProps = {
@@ -51,18 +50,10 @@ export const TransactionDetailPartiesCard = ({
                 />
             )}
             {!!fee && (
-                <KeyValueRow
-                    testID='transaction_detail_fee'
-                    title={t('transactions.common.fee')}
-                >
-                    <AssetAmount
-                        chainId={scope.chainId}
-                        asset={fee.asset}
-                        value={fee.value}
-                        showSymbol
-                        ignorePrivacyMode
-                    />
-                </KeyValueRow>
+                <TransactionDetailFeeRow
+                    fee={fee}
+                    scope={scope}
+                />
             )}
             {!!note && <TransactionDetailNoteRow note={note} />}
         </TransactionDetailCard>

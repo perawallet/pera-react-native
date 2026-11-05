@@ -3633,7 +3633,10 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
-            "transaction_id": "Transaktions-ID"
+            "transaction_id": "Transaktions-ID",
+            "quantity": "Menge",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",

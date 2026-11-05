@@ -142,15 +142,18 @@ export const useAlgorandTransactionDetailLayout = (
             }
         }
 
+        // An inner transaction has a round but no id of its own.
+        const isOnChain = !!transaction.id || !!transaction.confirmedRound
+        // Only the sender pays the fee. One still to be signed, or seen with no
+        // account to compare, shows it.
+        const isFeeShown =
+            !isOnChain || !viewer || transaction.sender === viewer
+
         return {
             scope,
             iconName: algorandTransactionIconName(txType),
             title: heroTitle({ key: titleKeyOf(transaction, viewer) }),
-            // An inner transaction has a round but no id of its own.
-            status:
-                transaction.id || transaction.confirmedRound
-                    ? 'completed'
-                    : 'pending',
+            status: isOnChain ? 'completed' : 'pending',
             amount,
             isAmountLoading,
             transactionId: transaction.id || undefined,
@@ -163,13 +166,15 @@ export const useAlgorandTransactionDetailLayout = (
                 : undefined,
             from: transaction.sender,
             to,
-            fee: {
-                asset: nativeAsset,
-                value: baseUnitsToDisplayUnits(
-                    transaction.fee ?? 0n,
-                    nativeAsset.decimals,
-                ),
-            },
+            fee: isFeeShown
+                ? {
+                      asset: nativeAsset,
+                      value: baseUnitsToDisplayUnits(
+                          transaction.fee ?? 0n,
+                          nativeAsset.decimals,
+                      ),
+                  }
+                : undefined,
             note: decodeBytesToText(transaction.note) || undefined,
         }
     }, [

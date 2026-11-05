@@ -117,6 +117,12 @@ export const getRemoteAssetDetailsQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'detail-remote', { assetId, scope }]
 
+/** A collectible a screen names without holding it; settles on null for a miss. */
+export const getCollectibleMetadataQueryKey = (
+    assetId: string,
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'collectible-metadata', { assetId, scope }]
+
 /** Freeze/clawback authorities, read from the indexer's asset params. */
 export const getAssetAuthoritiesQueryKey = (
     assetId: string,

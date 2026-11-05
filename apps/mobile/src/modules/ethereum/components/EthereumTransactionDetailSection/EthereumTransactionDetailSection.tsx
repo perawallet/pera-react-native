@@ -28,12 +28,15 @@ type EthereumTransactionDetailSectionProps = {
     presentation: EthereumTransactionPresentation
     /** Whether the hero already carries the amount; the presentation's own when unset. */
     isAmountInHero?: boolean
+    /** A transfer's asset and amount are shown in their own card, so only its holder is listed here. */
+    isAssetInCard?: boolean
 }
 
 /** What only an EVM transaction has: the token or NFT moved, the call and approval it made, its nonce, gas limit and per-gas fees, and the most it can cost before it is mined. */
 export const EthereumTransactionDetailSection = ({
     presentation,
     isAmountInHero = !!presentation.amount?.asset,
+    isAssetInCard = false,
 }: EthereumTransactionDetailSectionProps) => {
     const { t } = useLanguage()
     const gwei = {
@@ -49,12 +52,18 @@ export const EthereumTransactionDetailSection = ({
         amount,
         isAmountLoading,
         maxFee,
+        sender,
     } = presentation
     const isMined = 'isMined' in view
+    const isAssetElsewhere = isTransfer && isAssetInCard
     // The hero carries a resolved amount, so a row repeats it only when it can't.
-    const hasAmountRow = !isAmountInHero && (isAmountLoading || !!amount)
+    const hasAmountRow =
+        !isAmountInHero && !isAssetElsewhere && (isAmountLoading || !!amount)
 
     if (view.kind === 'transfer' && isMined && !hasAmountRow) {
+        return null
+    }
+    if (isAssetElsewhere && isMined && !sender) {
         return null
     }
 
@@ -85,6 +94,7 @@ export const EthereumTransactionDetailSection = ({
                 <EthereumTransferAssetRows
                     presentation={presentation}
                     testIDPrefix='ethereum_detail'
+                    isAssetShown={!isAssetElsewhere}
                 />
                 {hasAmountRow && (
                     <KeyValueRow

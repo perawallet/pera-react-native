@@ -31,6 +31,7 @@ import {
     toEvmNftAssetId,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+import type { EvmRecordNft } from './record-nft'
 import type {
     EvmHistoryItem,
     EvmNftTransfer,
@@ -420,6 +421,24 @@ const summarizeNftTransfer = (
             value: new Decimal(leg.quantity),
             display: nftDisplayOf(leg),
         },
+    }
+}
+
+/** The leg's own facts for a record that moves one NFT, which its summary doesn't carry. */
+export const singleNftOf = (
+    item: EvmHistoryItem,
+    address: string,
+    summary: TransactionSummary,
+): Optional<EvmRecordNft> => {
+    if (summary.kind !== 'nft-transfer' || !summary.amount) return undefined
+    const { assetId } = summary.amount.assetRef
+    const only = nftLegsOf(item, address).find(leg => leg.assetId === assetId)
+    if (!only) return undefined
+    return {
+        standard: only.leg.standard,
+        ...(only.leg.collection_name !== null && {
+            collectionName: only.leg.collection_name,
+        }),
     }
 }
 

@@ -44,9 +44,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
 }))
 
+let mockOwnAddress: string | undefined = ME
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ id: 'a1' }),
-    chainAccountOf: () => ({ address: ME }),
+    chainAccountOf: () =>
+        mockOwnAddress === undefined ? undefined : { address: mockOwnAddress },
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -90,6 +92,7 @@ const layoutOf = (
 
 describe('useEthereumRecordLayout', () => {
     beforeEach(() => {
+        mockOwnAddress = ME
         vi.mocked(useAssetsQuery).mockReturnValue({
             data: new Map(),
             isPending: false,
@@ -253,14 +256,32 @@ describe('useEthereumRecordLayout', () => {
         expect(amountRows).toHaveLength(1)
     })
 
-    it('Given a payment received, then it still shows the fee the record carries, as every chain does', () => {
+    it('Given a payment received, then it shows no fee, since the sender paid it', () => {
+        const { summary } = layoutOf(
+            recordOf({ initiator: PEER }, { direction: 'in' }),
+        )
+
+        expect(summary.fee).toBeUndefined()
+        expect(summary.from).toBe(PEER)
+        expect(summary.to).toBe(ME)
+    })
+
+    it('Given an account with no Ethereum address, then a record keeps its fee, since who paid it is unknown', () => {
+        mockOwnAddress = undefined
+
         const { summary } = layoutOf(
             recordOf({ initiator: PEER }, { direction: 'in' }),
         )
 
         expect(summary.fee?.value.toString()).toBe('0.000021')
-        expect(summary.from).toBe(PEER)
-        expect(summary.to).toBe(ME)
+    })
+
+    it('Given a pending send the history names no signer for, then it keeps its fee', () => {
+        const { summary } = layoutOf(
+            recordOf({ initiator: undefined, status: 'pending' }),
+        )
+
+        expect(summary.fee?.value.toString()).toBe('0.000021')
     })
 
     it('Given a record with no fee, then it shows none', () => {
