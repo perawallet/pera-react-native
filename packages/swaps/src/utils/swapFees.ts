@@ -11,14 +11,25 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { assetRefKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    assetRefKey,
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { SwapFee, SwapFeeKind, SwapQuote } from '../models'
 
+/** The quote's first fee of `kind`; with `scope`, the first charged there. */
 export const swapFeeOf = (
     quote: SwapQuote,
     kind: SwapFeeKind,
-): Optional<SwapFee> => quote.fees.find(fee => fee.kind === kind)
+    scope?: ChainScope,
+): Optional<SwapFee> =>
+    quote.fees.find(
+        fee =>
+            fee.kind === kind &&
+            (!scope || toScopeKey(fee.asset) === toScopeKey(scope)),
+    )
 
 /**
  * Base units of the source asset the Pera fee takes on top of the swapped

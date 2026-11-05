@@ -377,7 +377,6 @@ describe('useSwapConfirmation', () => {
             peraFeeDisplay: null,
             providerFeeDisplay: null,
             networkFeeDisplay: null,
-            slippageDisplay: null,
             priceImpactDisplay: null,
         })
     })
@@ -414,6 +413,54 @@ describe('useSwapConfirmation', () => {
         const { result } = renderConfirmation(quote)
 
         expect(result.current.networkFeeDisplay).toBe('1000 ALGO')
+    })
+
+    it('leaves out a network fee charged on the receive chain', () => {
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: {
+                        chainId: 'ethereum',
+                        networkId: 'mainnet',
+                        assetId: 'native',
+                    },
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBeNull()
+    })
+
+    it("holds the quote's network fee while the source estimate loads", () => {
+        vi.mocked(useSwapSourceCostQuery).mockReturnValue({
+            sourceCost: null,
+            isLoading: true,
+        })
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: refOf('0'),
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBeNull()
+    })
+
+    it('labels a slippage the router chose as Auto', () => {
+        const { result } = renderConfirmation(makeQuote())
+
+        expect(result.current.slippageDisplay).toBe('swap.provider.auto_label')
     })
 
     it("prefers the source chain's estimate over the quote's network fee", () => {

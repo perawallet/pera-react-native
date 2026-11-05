@@ -9,7 +9,10 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import { assetRefKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    assetRefKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     formatAssetAmount,
     nativeAssetFor,
@@ -24,12 +27,14 @@ import {
 /**
  * Null when the quote has no such fee, or charges it in an asset that is
  * neither a leg nor the chain's native coin, whose decimals aren't known here.
+ * `scope` limits it to a fee charged there.
  */
 export const formatSwapFee = (
     quote: SwapQuote,
     kind: SwapFeeKind,
+    scope?: ChainScope,
 ): Nullable<string> => {
-    const fee = swapFeeOf(quote, kind)
+    const fee = swapFeeOf(quote, kind, scope)
     if (!fee) return null
     const feeKey = assetRefKey(fee.asset)
     const asset = [quote.assetIn, quote.assetOut].find(

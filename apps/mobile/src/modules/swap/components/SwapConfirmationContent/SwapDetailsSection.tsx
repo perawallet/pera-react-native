@@ -32,7 +32,7 @@ type SwapDetailsSectionProps = {
     peraFeeDisplay: Nullable<string>
     providerFeeDisplay: Nullable<string>
     networkFeeDisplay: Nullable<string>
-    slippageDisplay: Nullable<string>
+    slippageDisplay: string
     priceImpactDisplay: Nullable<string>
     priceImpactStyle: object
 }
@@ -115,15 +115,13 @@ export const SwapDetailsSection = ({
                     testID='swap-confirm-provider'
                 />
             </DetailRow>
-            {slippageDisplay && (
-                <DetailRow
-                    label={t('swap.quote.slippage_tolerance')}
-                    testID='swap-confirm-slippage'
-                    value={slippageDisplay}
-                    valueStyle={styles.detailValue}
-                    info={t('swap.info.slippage_tolerance')}
-                />
-            )}
+            <DetailRow
+                label={t('swap.quote.slippage_tolerance')}
+                testID='swap-confirm-slippage'
+                value={slippageDisplay}
+                valueStyle={styles.detailValue}
+                info={t('swap.info.slippage_tolerance')}
+            />
             {priceImpactDisplay && (
                 <DetailRow
                     label={t('swap.quote.price_impact')}

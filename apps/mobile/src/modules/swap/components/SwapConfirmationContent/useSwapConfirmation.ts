@@ -78,13 +78,12 @@ type UseSwapConfirmationResult = {
     peraFeeDisplay: Nullable<string>
     /** Null when the quote carries no provider fee: some providers price theirs into the rate. */
     providerFeeDisplay: Nullable<string>
-    /** The source chain's own estimate, else the quote's; null when neither has one. */
+    /** The source chain's own estimate, else the quote's source-chain fee; null while that estimate loads, or when neither has one. */
     networkFeeDisplay: Nullable<string>
     needsSpendApproval: boolean
     /** Non-null while the account can't pay the source chain's fee: confirm stays off. */
     insufficientFeeMessage: Nullable<string>
-    /** Null when the router chose the slippage. */
-    slippageDisplay: Nullable<string>
+    slippageDisplay: string
     hasHighPriceImpact: boolean
     /** Null when the route reports no price impact. */
     priceImpactDisplay: Nullable<string>
@@ -103,7 +102,8 @@ export const useSwapConfirmation = ({
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
-    const { sourceCost } = useSwapSourceCostQuery({ quote, scope })
+    const { sourceCost, isLoading: isSourceCostLoading } =
+        useSwapSourceCostQuery({ quote, scope })
 
     const assetInId = quote.assetIn.assetId
     const assetOutId = quote.assetOut.assetId
@@ -190,13 +190,17 @@ export const useSwapConfirmation = ({
     )
 
     const networkFeeDisplay = useMemo(() => {
-        if (!sourceCost) return formatSwapFee(quote, 'network')
+        if (!sourceCost) {
+            return isSourceCostLoading
+                ? null
+                : formatSwapFee(quote, 'network', scope)
+        }
         const { networkFee, nativeDecimals, nativeSymbol } = sourceCost
         return formatAssetAmount(networkFee, {
             decimals: nativeDecimals,
             unitName: nativeSymbol,
         })
-    }, [sourceCost, quote])
+    }, [sourceCost, isSourceCostLoading, quote, scope])
 
     const insufficientFeeMessage = sourceCost?.shortfall
         ? t('swap.quote.insufficient_network_fee', {
@@ -205,8 +209,11 @@ export const useSwapConfirmation = ({
         : null
 
     const slippageDisplay = useMemo(
-        () => (quote.request.slippage ? formatSwapSlippage(quote) : null),
-        [quote],
+        () =>
+            quote.request.slippage
+                ? formatSwapSlippage(quote)
+                : t('swap.provider.auto_label'),
+        [quote, t],
     )
 
     const hasHighPriceImpact = useMemo(
