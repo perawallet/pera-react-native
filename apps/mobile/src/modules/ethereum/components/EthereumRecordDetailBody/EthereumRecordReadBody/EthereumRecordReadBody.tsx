@@ -48,13 +48,13 @@ export const EthereumRecordReadBody = ({
             summary={summary}
             chainSection={
                 <>
-                    {/* A read NFT transfer's own rows name only what the card already shows. */}
-                    {!!presentation && !(nft && presentation.isTransfer) && (
+                    {!!presentation && (
                         <EthereumTransactionDetailSection
                             presentation={presentation}
                             isAmountInHero={
                                 !!summary.amount || !!summary.isAmountLoading
                             }
+                            isAssetInCard={!!nft}
                         />
                     )}
                     {nft ? (
