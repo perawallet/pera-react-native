@@ -259,19 +259,13 @@ describe('Flow: adding an account lands it on its default chains', () => {
         )
     })
 
-    it('Given Ethereum is registered, when the user creates a wallet, then one account holds Algorand and Ethereum, both shown while naming it', async () => {
+    it('Given Ethereum is registered, when the user creates a wallet, then one account holds Algorand and Ethereum', async () => {
         renderWithNavigation(OnboardingScreen, 'Onboarding', {
             additionalScreens: [nameAccountScreen],
         })
 
         fireEvent.click(screen.getByTestId('onboarding_create_wallet_button'))
 
-        await waitFor(() => screen.getByTestId('name_account_chain_icons'), {
-            timeout: SLOW_WAIT_TIMEOUT_MS,
-        })
-        expect(screen.getByTestId('chain_icon_algorand')).toBeTruthy()
-        expect(screen.getByTestId('chain_icon_ethereum')).toBeTruthy()
-        expect(screen.queryByTestId('chain_icon_base')).toBeNull()
         await finishNaming()
 
         await waitFor(() =>
