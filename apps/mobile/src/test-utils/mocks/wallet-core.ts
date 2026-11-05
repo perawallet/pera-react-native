@@ -115,6 +115,19 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
                     ? { chainId: 'algorand', networkId: 'mainnet' }
                     : null,
         ),
+        useSwapSourceScope: vi.fn(
+            (account: { chains?: { algorand?: unknown } } | null) =>
+                account?.chains?.algorand
+                    ? { chainId: 'algorand', networkId: 'mainnet' }
+                    : null,
+        ),
+        useSwapSourceCostQuery: vi.fn(() => ({
+            sourceCost: null,
+            isLoading: false,
+        })),
+        useEnsureSwapDestination: vi.fn(() => ({
+            ensureReceivable: vi.fn(async () => true),
+        })),
         useSwapChainResolver: vi.fn(
             () => (account: { chains?: { algorand?: unknown } }) =>
                 account.chains?.algorand ? 'algorand' : undefined,

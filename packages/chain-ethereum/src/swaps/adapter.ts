@@ -11,22 +11,40 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { Address } from 'viem'
+import type {
+    ChainContext,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import {
     fromCaip19,
     InvalidCaip19Error,
     toCaip19,
 } from '../blockchain/utils/caip19'
+import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
+import { executeEvmSwap } from './execute-evm-swap'
+import { evmSwapRouteContractsOf } from './route-contracts'
+import { estimateEvmSwapSourceCost } from './source-cost'
 
-/**
- * Receive-only: resolves this chain's router ids so a swap can pay out here,
- * but never runs one from here. The swap capability stays off for EVM chains.
- */
-export const createEvmSwapAdapter = (chain: EvmChain): SwapChainAdapter => ({
+// Of the native unit: held back from a percentage amount for a swap's gas.
+const MAX_AMOUNT_FEE_RESERVE = '0.005'
+
+export type EvmSwapAdapterOptions = {
+    routeContractsOf?: (scope: ChainScope) => readonly Address[]
+}
+
+export const createEvmSwapAdapter = (
+    ctx: ChainContext,
+    chain: EvmChain,
+    { routeContractsOf = evmSwapRouteContractsOf }: EvmSwapAdapterOptions = {},
+): SwapChainAdapter => ({
     chainId: chain.row.id,
     nativeAssetId: chain.nativeAsset.assetId,
-    defaultReceiveAssetId: chain.nativeAsset.assetId,
+    defaultReceiveAssetId:
+        chain.row.defaultSwapReceiveAssetId ?? chain.nativeAsset.assetId,
     toRouterAssetId: (assetId, scope) => toCaip19(assetId, scope, chain),
     fromRouterAssetId: (routerAssetId, scope) => {
         try {
@@ -36,12 +54,39 @@ export const createEvmSwapAdapter = (chain: EvmChain): SwapChainAdapter => ({
             throw error
         }
     },
-    maxAmountFeeReserve: new Decimal(0),
+    maxAmountFeeReserve: displayUnitsToBaseUnits(
+        MAX_AMOUNT_FEE_RESERVE,
+        chain.row.nativeAsset.decimals,
+    ),
     holdingReserve: () => new Decimal(0),
-    swapExplorerUrl: () => undefined,
-    executeSwap: async () => ({
-        kind: 'failed',
-        failure: { phase: 'prepare', reason: 'unsupported-steps' },
-    }),
+    swapExplorerUrl: (scope, item) => {
+        const swapTransaction = item.transactions.find(
+            transaction =>
+                transaction.role === 'swap' &&
+                transaction.scope?.chainId === chain.row.id,
+        )
+        return swapTransaction
+            ? chain.descriptor.explorer.transactionUrl(
+                  scope.networkId,
+                  swapTransaction.txHash,
+              )
+            : undefined
+    },
+    estimateSourceCost: ({ quote, scope }) =>
+        estimateEvmSwapSourceCost({
+            client: createEvmClient(scope, ctx, chain),
+            chain,
+            quote,
+            scope,
+            routeContracts: routeContractsOf(scope),
+        }),
+    executeSwap: (input, context) =>
+        executeEvmSwap({
+            ctx,
+            chain,
+            routeContracts: routeContractsOf(context.scope),
+            input,
+            context,
+        }),
     supportsCosignedSwaps: false,
 })

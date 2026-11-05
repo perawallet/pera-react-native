@@ -50,6 +50,31 @@ describe('swaps/store', () => {
         expect(result.current.toAsset).toBeNull()
     })
 
+    test('setSourceChainId clears the pair and where it was going', () => {
+        const store = useSwapsStore.getState()
+        store.setFromAsset('1234')
+        store.setToAsset('5678')
+        store.setReceivingAccountId('account-1')
+
+        store.setSourceChainId('ethereum')
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: null,
+            toAsset: null,
+            toAssetScope: null,
+            receivingAccountId: null,
+        })
+    })
+
+    test('resetState forgets the chosen source chain', () => {
+        useSwapsStore.getState().setSourceChainId('ethereum')
+
+        useSwapsStore.getState().resetState()
+
+        expect(useSwapsStore.getState().sourceChainId).toBeNull()
+    })
+
     test('setFromAsset updates fromAsset state', () => {
         const { result } = renderHook(() => useSwapsStore())
 

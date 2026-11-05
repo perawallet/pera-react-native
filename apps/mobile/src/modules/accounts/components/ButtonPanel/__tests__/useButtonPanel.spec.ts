@@ -104,6 +104,7 @@ describe('useButtonPanel', () => {
 
     it('removes swapping for an account with no address on a swap chain', () => {
         registerEthereumChain()
+        setCapabilityOverrides({ swap: false }, 'ethereum')
         overview.account = onEthereumOnly
 
         const { result } = renderHook(() => useButtonPanel())
@@ -118,13 +119,13 @@ describe('useButtonPanel', () => {
         expect(result.current.canReceive).toBe(true)
     })
 
-    it("offers only the actions an Ethereum account's chain has", () => {
+    it("offers the actions an Ethereum account's chain has", () => {
         registerEthereumChain()
         overview.account = onEthereumOnly
 
         const { result } = renderHook(() => useButtonPanel())
 
-        expect(result.current.canSwap).toBe(false)
+        expect(result.current.canSwap).toBe(true)
         expect(result.current.canSend).toBe(true)
         expect(result.current.canReceive).toBe(true)
     })

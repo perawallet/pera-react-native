@@ -66,7 +66,12 @@ export type EthereumMinedView = {
 }
 
 type EthereumTransactionViewBase = {
-    kind: 'transfer' | 'token-transfer' | 'nft-transfer' | 'contract-call'
+    kind:
+        | 'transfer'
+        | 'token-transfer'
+        | 'nft-transfer'
+        | 'contract-call'
+        | 'swap-call'
     from: Address
     /** Absent for a contract creation. */
     to?: Address
@@ -116,6 +121,7 @@ const KINDS: readonly string[] = [
     'token-transfer',
     'nft-transfer',
     'contract-call',
+    'swap-call',
 ]
 
 const isAddressValue = (value: unknown): value is Address =>

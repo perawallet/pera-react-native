@@ -13,7 +13,10 @@
 // @vitest-environment node
 
 import { describe, it, expect, vi } from 'vitest'
-import { resolveSwapRouteAssets } from '../resolveSwapRouteAssets'
+import {
+    resolveSwapRouteAssets,
+    routeAssetInIdOn,
+} from '../resolveSwapRouteAssets'
 
 const USDC_MAINNET = '31566704'
 const USDC_TESTNET = '10458941'
@@ -148,5 +151,22 @@ describe('resolveSwapRouteAssets', () => {
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).toEqual({ assetInId: '0', assetOutId: TOKEN })
+    })
+
+    it('reads the route input only on its own chain', () => {
+        const params = { assetIn: algo(TOKEN) }
+
+        expect(
+            routeAssetInIdOn(params, {
+                chainId: 'algorand',
+                networkId: 'betanet',
+            }),
+        ).toBe(TOKEN)
+        expect(
+            routeAssetInIdOn(params, {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }),
+        ).toBeUndefined()
     })
 })

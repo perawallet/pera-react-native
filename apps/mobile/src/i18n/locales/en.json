@@ -3948,7 +3948,8 @@
             "to": "To",
             "balance_label": "Balance: <0/>",
             "max": "MAX",
-            "select_asset": "Select"
+            "select_asset": "Select",
+            "pay_from": "Pay from"
         },
         "asset_selection": {
             "swap_from_title": "Swap From",
@@ -3978,6 +3979,9 @@
             "price_impact": "Price Impact",
             "slippage_tolerance": "Slippage Tolerance",
             "pera_fee": "Pera Fee",
+            "network_fee": "Network fee",
+            "spend_approval_note": "You'll sign an approval for this swap's amount first, then the swap.",
+            "insufficient_network_fee": "Not enough {{symbol}} to pay the network fee.",
             "provider": "Provider",
             "minimum_received": "Minimum Received",
             "confirm_swap": "Confirm Swap",

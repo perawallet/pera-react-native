@@ -16,6 +16,7 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { AssetGroup, MinimalAsset } from '@perawallet/wallet-core-assets'
 import type {
     AssetRef,
+    ChainId,
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -29,11 +30,15 @@ export type SwapsState = BaseStoreState & {
     toAssetScope: Nullable<ChainScope>
     /** The account receiving a cross-chain swap; null picks the default. */
     receivingAccountId: Nullable<string>
+    /** The chain the user chose to pay from; null picks the default. */
+    sourceChainId: Nullable<ChainId>
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
     setReceivingAccountId: (id: Nullable<string>) => void
+    /** Clears the pair and the receiving account: they belong to the old chain. */
+    setSourceChainId: (chainId: Nullable<ChainId>) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
 }

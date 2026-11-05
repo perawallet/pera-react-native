@@ -3948,7 +3948,8 @@
             "to": "Hedef",
             "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
-            "select_asset": "Seç"
+            "select_asset": "Seç",
+            "pay_from": "Ödeme ağı"
         },
         "asset_selection": {
             "swap_from_title": "Kaynak varlık",
@@ -3978,6 +3979,9 @@
             "price_impact": "Fiyat etkisi",
             "slippage_tolerance": "Kayma toleransı",
             "pera_fee": "Pera ücreti",
+            "network_fee": "Ağ ücreti",
+            "spend_approval_note": "Önce bu swap tutarı için bir onay, ardından swap işlemini imzalayacaksın.",
+            "insufficient_network_fee": "Ağ ücretini ödemek için yeterli {{symbol}} yok.",
             "provider": "Sağlayıcı",
             "minimum_received": "Minimum alınacak miktar",
             "confirm_swap": "Swap’ı onayla",

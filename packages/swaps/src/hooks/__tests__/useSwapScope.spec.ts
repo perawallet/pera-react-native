@@ -15,9 +15,11 @@ import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useSwapSigningAccounts } from '../useSwapScope'
+import { useSwapsStore } from '../../store'
+import { useSwapSigningAccounts, useSwapSourceScope } from '../useSwapScope'
 
 const mocks = vi.hoisted(() => ({
+    capabilityScope: vi.fn(),
     accounts: [] as WalletAccount[],
     swapChainOf: vi.fn<(account: WalletAccount) => ChainId | undefined>(),
     signable: new Set<string>(),
@@ -29,7 +31,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useCapabilityChainResolver: () => mocks.swapChainOf,
     useAccountChainStateStore: (selector: (state: unknown) => unknown) =>
         selector({ states: mocks.states }),
-    useAccountCapabilityScope: vi.fn(),
+    useAccountCapabilityScope: mocks.capabilityScope,
     useSelectedAccount: vi.fn(),
     canSignWith: (account: WalletAccount) => mocks.signable.has(account.id),
 }))
@@ -38,6 +40,59 @@ const account = (id: string): WalletAccount => ({
     id,
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address: id } },
+})
+
+const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
+const SECOND_CHAIN = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+describe('swaps/useSwapSourceScope', () => {
+    const held = account('held')
+
+    beforeEach(() => {
+        useSwapsStore.getState().resetState()
+        mocks.capabilityScope.mockReset()
+        mocks.capabilityScope.mockImplementation(
+            (
+                _account: WalletAccount,
+                _capability: string,
+                chainId?: ChainId,
+            ) =>
+                chainId === 'algorand'
+                    ? null
+                    : chainId
+                      ? SECOND_CHAIN
+                      : ALGORAND,
+        )
+    })
+
+    test('is the default scope with no chain chosen', () => {
+        const { result } = renderHook(() => useSwapSourceScope(held))
+
+        expect(result.current).toEqual(ALGORAND)
+    })
+
+    test('is the chosen chain where the account can swap', () => {
+        useSwapsStore.getState().setSourceChainId('ethereum')
+
+        const { result } = renderHook(() => useSwapSourceScope(held))
+
+        expect(result.current).toEqual(SECOND_CHAIN)
+    })
+
+    test('falls back to the default where it cannot', () => {
+        useSwapsStore.getState().setSourceChainId('algorand')
+        mocks.capabilityScope.mockImplementation(
+            (
+                _account: WalletAccount,
+                _capability: string,
+                chainId?: ChainId,
+            ) => (chainId ? null : SECOND_CHAIN),
+        )
+
+        const { result } = renderHook(() => useSwapSourceScope(held))
+
+        expect(result.current).toEqual(SECOND_CHAIN)
+    })
 })
 
 describe('swaps/useSwapSigningAccounts', () => {

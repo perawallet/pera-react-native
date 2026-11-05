@@ -41,6 +41,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
@@ -67,6 +68,7 @@ import {
 } from '../SwapProviderContent'
 
 type UseSwapFormResult = {
+    selectedAccount: Nullable<WalletAccount>
     payAssetId: string
     receiveAssetId: string
     /** Where the receive asset lives: the swap scope, or another chain's. */
@@ -299,14 +301,17 @@ export const useSwapForm = (
     }, [fromAsset])
 
     // Leaving the tab must clear the form: the screen stays mounted, so without
-    // this the next visit opens on the previous session's amounts.
+    // this the next visit opens on the previous session's amounts. A source
+    // chain change remounts the form while focused, and must keep what it set.
+    const { isFocused } = useAppNavigation()
     useFocusEffect(
         useCallback(
             () => () => {
+                if (isFocused()) return
                 resetAmounts()
                 resetAssetPair()
             },
-            [resetAmounts, resetAssetPair],
+            [isFocused, resetAmounts, resetAssetPair],
         ),
     )
 
@@ -738,6 +743,7 @@ export const useSwapForm = (
     ])
 
     return {
+        selectedAccount: selectedAccount ?? null,
         payAssetId: fromAsset,
         receiveAssetId: toAsset,
         receiveScope,

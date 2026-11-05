@@ -31,6 +31,11 @@ const idOnScope = (
         ? ref.assetId
         : undefined
 
+export const routeAssetInIdOn = (
+    params: Optional<SwapScreenParams>,
+    scope: ChainScope,
+): Optional<string> => idOnScope(params?.assetIn, scope)
+
 // Input defaults to the native asset; output falls back to the network's USDC
 // when it's missing or the same as the input. A ref on another chain counts as
 // missing. Returns null when no params are present.

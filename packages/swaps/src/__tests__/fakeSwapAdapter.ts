@@ -40,6 +40,7 @@ export const fakeSwapAdapter = (
     },
     maxAmountFeeReserve: new Decimal(1000),
     holdingReserve: () => new Decimal(0),
+    estimateSourceCost: async () => null,
     ...overrides,
 })
 

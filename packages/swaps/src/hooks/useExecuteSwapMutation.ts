@@ -36,7 +36,7 @@ import type { SwapAsset, SwapQuote, SwapTrackedOrder } from '../models'
 import { useSwapHandoffStore, useSwapTrackingStore } from '../store'
 import { useCreateSwapOrderMutation } from './useCreateSwapOrderMutation'
 import { useReportSwapOrderMutation } from './useReportSwapOrderMutation'
-import { useSwapScope } from './useSwapScope'
+import { useSwapSourceScope } from './useSwapScope'
 
 export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
 
@@ -77,7 +77,7 @@ export type UseExecuteSwapMutationResult = {
 export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     const { addSignRequest } = useSigningRequest()
     const account = useSelectedAccount()
-    const scope = useSwapScope(account)
+    const scope = useSwapSourceScope(account)
     const deviceIdOf = useDeviceIdLookup()
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const trackOrder = useSwapTrackingStore(s => s.trackOrder)

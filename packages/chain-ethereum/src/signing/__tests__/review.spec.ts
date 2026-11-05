@@ -39,6 +39,7 @@ import {
     type CallRecogniser,
 } from '../review'
 import { readEthereumNative } from '../transaction-view'
+import { spendApprovalSummary, swapSummary } from '../../transfer/summary'
 import {
     ATTACKER,
     V2_PORTION_UNWRAP,
@@ -396,6 +397,82 @@ describe('ethereumReviewerAdapter', () => {
             )
             expect(summary.subtitle).toBeUndefined()
         })
+    })
+
+    describe("the wallet's own swap and spend approval", () => {
+        const APPROVAL_DATA = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [SPENDER, TOKEN_UNITS],
+        })
+        const SWAP_CALL = NON_STANDARD_CALL
+        const BOUNDED_APPROVE = { ...APPROVE, data: APPROVAL_DATA }
+        const AMOUNT = {
+            assetRef: { chainId: 'ethereum' as const, assetId: TOKEN },
+            value: new Decimal(TOKEN_UNITS.toString()),
+        }
+
+        it('auto-approves a swap the wallet wrote', async () => {
+            const { reviewed, view } = await reviewOne(
+                unsigned(SWAP_CALL, {
+                    summary: swapSummary(SENDER, TOKEN, AMOUNT),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(view.kind).toBe('swap-call')
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(true)
+        })
+
+        it('auto-approves an approval whose calldata is one', async () => {
+            const { reviewed } = await reviewOne(
+                unsigned(BOUNDED_APPROVE, {
+                    summary: spendApprovalSummary(SENDER, SPENDER, AMOUNT),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(true)
+        })
+
+        it('does not take an approval summary over other calldata', async () => {
+            const { reviewed, view } = await reviewOne(
+                unsigned(SWAP_CALL, {
+                    summary: spendApprovalSummary(SENDER, SPENDER, AMOUNT),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(view.kind).toBe('contract-call')
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it.each([
+            ['swap', SWAP_CALL, swapSummary(SENDER, TOKEN, AMOUNT)],
+            [
+                'approval',
+                BOUNDED_APPROVE,
+                spendApprovalSummary(SENDER, SPENDER, AMOUNT),
+            ],
+        ])(
+            'leaves a dApp request with a %s summary to the user',
+            async (_kind, transaction, summary) => {
+                const { reviewed } = await reviewOne(
+                    unsigned(transaction, { summary }),
+                    CONTEXT,
+                )
+
+                expect(
+                    ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+                ).toBe(false)
+            },
+        )
     })
 
     // The claim is checked by re-encoding it with the ERC-20 encoder the wallet

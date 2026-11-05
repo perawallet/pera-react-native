@@ -152,6 +152,67 @@ describe('useSwapExecution', () => {
         expect(result.current.txIds).toEqual([])
     })
 
+    describe('readying the destination first', () => {
+        const run = async (
+            prepareDestination: () => Promise<boolean>,
+            current: {
+                execute: ReturnType<typeof useSwapExecution>['execute']
+            },
+        ) => {
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await current.execute(
+                    makeQuote('quote-1'),
+                    prepareDestination,
+                )
+            })
+            return outcome
+        }
+
+        it('runs the swap once the destination is ready', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => true, result.current)
+
+            expect(mockExecuteSwap).toHaveBeenCalledOnce()
+            expect(outcome).toEqual({ kind: 'success' })
+        })
+
+        it('creates no order when the user declines', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => false, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toEqual({ kind: 'cancelled' })
+            expect(result.current.status).toBe('idle')
+        })
+
+        it('creates no order when the sheet closed meanwhile', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                result.current.cancel()
+                return true
+            }, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toEqual({ kind: 'cancelled' })
+        })
+
+        it('fails in the prepare phase when it throws, with no order', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                throw new Error('attestation missing')
+            }, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
+            expect(result.current.status).toBe('error')
+        })
+    })
+
     it('runs the quote with localized signing copy', async () => {
         const { result } = renderHook(() => useSwapExecution())
 

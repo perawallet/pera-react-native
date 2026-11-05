@@ -58,6 +58,10 @@ export default defineConfig({
                 __dirname,
                 '../deeplinks/src/__tests__/adapter-contract.ts',
             ),
+            '@perawallet/wallet-core-swaps/testing': path.resolve(
+                __dirname,
+                '../swaps/src/__tests__/adapter-contract.ts',
+            ),
             '@perawallet/wallet-core-signing/testing': path.resolve(
                 __dirname,
                 '../signing/src/__tests__/testing.ts',

@@ -32,6 +32,7 @@ import { algorandNetworkOf } from '../network-id'
 import { algorandHoldingReserve } from '../transactions/spendable-balance'
 import { executeAlgorandSwap } from './executeSwap'
 import { isAlgorandQuantumSwapEnabled } from './quantumSwapGate'
+import { useEnsureSwapAssetOptIn } from './useEnsureSwapAssetOptIn'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
@@ -86,6 +87,8 @@ export const algorandSwapAdapter: SwapChainAdapter = {
             ? `${explorerUrl}/tx/${swapTransaction.txHash}/`
             : undefined
     },
+    estimateSourceCost: async () => null,
+    useEnsureReceivable: useEnsureSwapAssetOptIn,
     executeSwap: (params, { scope, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,
