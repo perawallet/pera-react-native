@@ -13,6 +13,7 @@
 import { onlineManager } from '@tanstack/react-query'
 import {
     accountsChainAdapters,
+    invalidateAccountChartsForAddresses,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
     invalidateAccountQueriesForScope,
@@ -92,6 +93,7 @@ const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
 // the balance as it is indefinitely. A scope not read for this long is read anyway.
 export const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
 const CHART_REFRESH_INTERVAL_MS = 5 * 60 * 1000
+const CHANGED_CHART_REFRESH_INTERVAL_MS = 60 * 1000
 
 type ScopeSyncOutcome = {
     hadTotalFailure: boolean
@@ -181,6 +183,40 @@ export class SyncService {
         }
         this.chartsRefreshedAt.set(scopeKey, nowMs)
         return last !== undefined
+    }
+
+    // A changed account's charts reload at most every
+    // CHANGED_CHART_REFRESH_INTERVAL_MS per network: an account that changes
+    // every block would otherwise reload them each tick. A change is held, not
+    // dropped, so its charts catch up within the interval.
+    private heldChartAddresses = new Map<ChainScopeKey, Set<string>>()
+    private changedChartsRefreshedAt = new Map<ChainScopeKey, number>()
+
+    private refreshChangedCharts(
+        scopeKey: ChainScopeKey,
+        changedAddresses: readonly string[],
+        nowMs: number,
+    ): void {
+        const held = this.heldChartAddresses.get(scopeKey) ?? new Set<string>()
+        changedAddresses.forEach(address => held.add(address))
+        this.heldChartAddresses.set(scopeKey, held)
+        const last = this.changedChartsRefreshedAt.get(scopeKey)
+        if (
+            held.size === 0 ||
+            (last !== undefined &&
+                nowMs - last < CHANGED_CHART_REFRESH_INTERVAL_MS)
+        ) {
+            return
+        }
+        const addresses = [...held]
+        held.clear()
+        this.changedChartsRefreshedAt.set(scopeKey, nowMs)
+        this.debouncedInvalidate(`account-charts:${scopeKey}`, () =>
+            invalidateAccountChartsForAddresses(
+                this.deps.queryClient,
+                addresses,
+            ),
+        )
     }
 
     private debouncedInvalidate(
@@ -553,6 +589,8 @@ export class SyncService {
             ) {
                 this.deps.stores.setChangeCursor(scope, signal.cursor)
             }
+            // Nothing new to read, but a change held earlier may now be due.
+            this.refreshChangedCharts(key, [], nowMs)
             return CLEAN_OUTCOME
         }
         this.scopeReadAt.set(key, nowMs)
@@ -656,6 +694,7 @@ export class SyncService {
         }
 
         const nowMs = Date.now()
+        this.refreshChangedCharts(toScopeKey(scope), changedAddresses, nowMs)
         const dueKinds = this.dueAssetKinds(
             scope,
             nowMs,

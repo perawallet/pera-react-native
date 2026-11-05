@@ -11,11 +11,12 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, QueryObserver } from '@tanstack/react-query'
 import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
 import {
     MODULE_PREFIX,
+    invalidateAccountChartsForAddresses,
     invalidateAccountQueriesForAddresses,
     invalidateAccountQueriesForScope,
     removeAccountQueriesForAddresses,
@@ -102,6 +103,80 @@ describe('query keys', () => {
             'summary',
             { address: 'ADDR1', scope: MAINNET },
         ])
+    })
+})
+
+describe('invalidateAccountChartsForAddresses', () => {
+    test('reloads every chart covering the accounts, and nothing else', () => {
+        const queryClient = new QueryClient()
+        const assetChart = getAccountAssetBalanceHistoryQueryKey(
+            MAINNET,
+            'ADDR1',
+            '123',
+            'one-day',
+            'USD',
+        )
+        const overview = getAccountBalancesHistoryQueryKey(
+            ['ADDR1'],
+            'one-day',
+            MAINNET,
+        )
+        const portfolio = getAccountBalancesHistoryQueryKey(
+            ['ADDR1', 'ADDR2'],
+            'one-day',
+            MAINNET,
+        )
+        const otherChart = getAccountBalancesHistoryQueryKey(
+            ['ADDR2'],
+            'one-day',
+            MAINNET,
+        )
+        const summary = getAccountSummaryQueryKey('ADDR1', MAINNET)
+        for (const key of [
+            assetChart,
+            overview,
+            portfolio,
+            otherChart,
+            summary,
+        ]) {
+            queryClient.setQueryData(key, { value: 1 })
+        }
+
+        invalidateAccountChartsForAddresses(queryClient, ['ADDR1'])
+
+        const isInvalidated = (key: readonly unknown[]) =>
+            queryClient.getQueryState(key)?.isInvalidated
+        expect(isInvalidated(assetChart)).toBe(true)
+        expect(isInvalidated(overview)).toBe(true)
+        expect(isInvalidated(portfolio)).toBe(true)
+        expect(isInvalidated(otherChart)).toBe(false)
+        expect(isInvalidated(summary)).toBe(false)
+    })
+
+    test('lets a chart that is still loading finish rather than restart it', async () => {
+        const queryClient = new QueryClient()
+        const overview = getAccountBalancesHistoryQueryKey(
+            ['ADDR1'],
+            'one-day',
+            MAINNET,
+        )
+        queryClient.setQueryData(overview, 1)
+        let loads = 0
+        const observer = new QueryObserver(queryClient, {
+            queryKey: overview,
+            queryFn: () => {
+                loads += 1
+                return new Promise<number>(() => {})
+            },
+        })
+        const unsubscribe = observer.subscribe(() => {})
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        invalidateAccountChartsForAddresses(queryClient, ['ADDR1'])
+        await new Promise(resolve => setTimeout(resolve, 0))
+        unsubscribe()
+
+        expect(loads).toBe(1)
     })
 })
 

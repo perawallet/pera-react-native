@@ -173,6 +173,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     invalidateAccountQueries: vi.fn(),
     invalidateAccountQueriesForAddresses: vi.fn(),
     invalidateAccountQueriesForScope: vi.fn(),
+    invalidateAccountChartsForAddresses: vi.fn(),
     fetchAndPersistAccount: vi.fn(() =>
         Promise.resolve({ changed: true, holdingsChanged: true }),
     ),
@@ -1620,6 +1621,63 @@ describe('SyncService', () => {
             ['ADDR1'],
             { includeCharts: false },
         )
+    })
+
+    it('reloads the charts of accounts that changed at most once a minute, holding a later change until then', async () => {
+        const { fetchAndPersistAccount, invalidateAccountChartsForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: true,
+            round: null,
+        })
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(400)
+        const afterFirstTick = vi.mocked(invalidateAccountChartsForAddresses)
+            .mock.calls.length
+        await vi.advanceTimersByTimeAsync(30_000)
+        const halfAMinuteLater = vi.mocked(invalidateAccountChartsForAddresses)
+            .mock.calls.length
+        await vi.advanceTimersByTimeAsync(31_000)
+        service.stop()
+
+        expect(afterFirstTick).toBe(1)
+        expect(halfAMinuteLater).toBe(1)
+        expect(invalidateAccountChartsForAddresses).toHaveBeenCalledTimes(2)
+        expect(invalidateAccountChartsForAddresses).toHaveBeenLastCalledWith(
+            queryClient,
+            ['ADDR1'],
+        )
+    })
+
+    it("reloads a held change's charts within the minute even when the ticks after it are quiet", async () => {
+        const { fetchAndPersistAccount, invalidateAccountChartsForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest
+            .mockResolvedValueOnce({ refresh: true, round: null })
+            .mockResolvedValue({ refresh: false, round: null })
+        // A synced scope, so a tick whose signal answers unchanged reads nothing.
+        service = new SyncService({
+            queryClient,
+            stores: { ...createSyncStorePorts(), getChangeCursor: () => 42 },
+            chains: chainsDep(),
+        })
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(61_000)
+        service.stop()
+
+        expect(invalidateAccountChartsForAddresses).toHaveBeenCalledTimes(2)
     })
 
     describe('pollIntervalMs', () => {

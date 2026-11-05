@@ -51,6 +51,7 @@ import {
 import { isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { readBalances, type HolderBalances } from '../blockchain/utils/erc20'
+import { isNodeReply } from '../blockchain/utils/nodeVerdict'
 import {
     BLOCK_FOLLOWING_SERVICE,
     fetchShouldRefresh,
@@ -563,6 +564,17 @@ const readBatch = async (
                 'Token list balances unreadable; read the held tokens alone',
                 { scope, error },
             )
+            // A node that answered and refused (out of gas, a revert) would
+            // refuse the same list again, so only a node that couldn't answer
+            // keeps the sooner retry.
+            if (isNodeReply(error)) {
+                passHolders.forEach(holder =>
+                    detection.listedPassAt.set(
+                        backfillKey(scope, holder),
+                        detection.now(),
+                    ),
+                )
+            }
             return { balances, isWholeList: false }
         }
     }

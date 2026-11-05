@@ -18,6 +18,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import { delay, http, HttpResponse } from 'msw'
@@ -293,6 +294,66 @@ describe('fetchGridBalances', () => {
 
         expect(track.total).toBe(20)
         expect(track.peak).toBeLessThanOrEqual(4)
+    })
+
+    it("loads a token's own chart while a portfolio's requests fill the queue", async () => {
+        let releaseQueue = () => {}
+        const queueHeld = new Promise<void>(resolve => {
+            releaseQueue = resolve
+        })
+        const ids = Array.from(
+            { length: 2_000 },
+            (_, index) =>
+                `eip155:1/erc20:0x${index.toString(16).padStart(40, '0')}`,
+        )
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '1000000' }]
+        server.use(
+            http.post(
+                `${TEST_PERA_URL}${balanceHistoryPath(1)}`,
+                async ({ request }) => {
+                    const body = (await request.clone().text()).toLowerCase()
+                    if (body.includes(BOB.toLowerCase())) await queueHeld
+                },
+            ),
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-21T14:00:00Z', {
+                            [ALICE.toLowerCase()]: { [USDC_CAIP19]: '1000000' },
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [USDC_CAIP19]: [chartPoint('2026-10-20T15:00:00Z', '1')],
+                },
+            }),
+        )
+        const portfolio = fetchGridBalances(
+            SCOPE,
+            ETHEREUM,
+            [BOB],
+            ids,
+            'one-day',
+        )
+
+        const charts = createEthereumBalanceHistoryOps(
+            testChainContext({ services: SERVICES }),
+            ETHEREUM,
+            () => NOW,
+        )
+        onTestFinished(releaseQueue)
+
+        const points = await charts.fetchHoldingBalanceHistory!(
+            ALICE,
+            USDC,
+            'one-day',
+            SCOPE,
+        )
+        releaseQueue()
+        await portfolio
+
+        expect(points.length).toBeGreaterThan(0)
     })
 
     it('answers null on a chain the backend serves no balance history for', async () => {

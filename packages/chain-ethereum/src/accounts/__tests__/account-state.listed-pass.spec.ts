@@ -43,6 +43,7 @@ import {
 import { peraEvmHandlers } from '../msw-handlers'
 import {
     erc20CallResponder,
+    EvmAggregateFailure,
     EvmCallBurnsGas,
     EvmRpcErrorFixture,
     evmRpcHandlers,
@@ -118,6 +119,13 @@ const holdsUsdcAndDai = erc20CallResponder({
 const daiBurnsGas: EvmRpcResponder<'eth_call'> = params =>
     getAddress((params[0] as { to: Hex }).to) === DAI
         ? new EvmCallBurnsGas()
+        : holdsUsdcAndDai(params)
+
+// DAI's balance call meets a node whose upstream is down: no verdict on the
+// list, so the pass is worth trying again soon.
+const daiUpstreamDown: EvmRpcResponder<'eth_call'> = params =>
+    getAddress((params[0] as { to: Hex }).to) === DAI
+        ? new EvmAggregateFailure(-32_603, 'upstream unavailable')
         : holdsUsdcAndDai(params)
 
 const server = setupServer()
@@ -311,7 +319,19 @@ describe('fetchAccountState passes over the whole token list', () => {
         ).resolves.toEqual({ changed: false, cursor: 100 })
     })
 
-    it('tries a whole-list pass that failed again two minutes later', async () => {
+    it('tries a whole-list pass the node could not answer again two minutes later', async () => {
+        storedHoldings.ids = [USDC]
+        const { clock, ops } = setup({ ethCall: daiUpstreamDown })
+        await ops.fetchAccountState(ADDRESS, SCOPE, FIRST_SYNC)
+        clock.now += PASS_RETRY_MS
+        const calls = recordBalanceCalls()
+
+        await ops.fetchAccountState(ADDRESS, SCOPE, SYNCED)
+
+        expect(targetsOf(calls)).toEqual(expect.arrayContaining([USDC, DAI]))
+    })
+
+    it('waits the full interval after a pass the node refused, since the list would be refused again', async () => {
         storedHoldings.ids = [USDC]
         const { clock, ops } = setup({ ethCall: daiBurnsGas })
         await ops.fetchAccountState(ADDRESS, SCOPE, FIRST_SYNC)
@@ -320,7 +340,7 @@ describe('fetchAccountState passes over the whole token list', () => {
 
         await ops.fetchAccountState(ADDRESS, SCOPE, SYNCED)
 
-        expect(targetsOf(calls)).toEqual(expect.arrayContaining([USDC, DAI]))
+        expect(targetsOf(calls)).toEqual([USDC])
     })
 
     it('still owes a pass whose read was rejected, and asks for it two minutes later', async () => {

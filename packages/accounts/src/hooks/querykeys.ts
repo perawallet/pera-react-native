@@ -279,6 +279,29 @@ export function invalidateAccountQueriesForAddresses(
 }
 
 /**
+ * Every chart that covers one of the given accounts: its asset charts and the
+ * multi-account charts (overview, portfolio) whose `addresses` include it. A
+ * chart still loading finishes: restarting it on each refresh could keep a
+ * slow chart for a busy account from ever finishing.
+ */
+export function invalidateAccountChartsForAddresses(
+    queryClient: QueryClient,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    void queryClient.invalidateQueries(
+        {
+            predicate: ({ queryKey }) =>
+                isAccountChartQuery(queryKey) &&
+                (queryKeyTargetsAccount(queryKey, targets) ||
+                    queryKeyTargetsAccountAggregate(queryKey, targets)),
+        },
+        { cancelRefetch: false },
+    )
+}
+
+/**
  * Evicts (not just invalidates) the cached account queries for the given
  * addresses. Used on account removal: invalidate would leave the gone account's
  * datasets (e.g. a 5k-row holdings page) sitting in cache until gcTime, where
