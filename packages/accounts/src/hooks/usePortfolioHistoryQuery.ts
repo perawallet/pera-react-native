@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
-import { useQueries, type UseQueryResult } from '@tanstack/react-query'
+import { useCallback, useMemo, useRef } from 'react'
+import { hashKey, useQueries, type UseQueryResult } from '@tanstack/react-query'
 import type {
     ChainId,
     ChainScope,
@@ -36,6 +36,7 @@ import { getAccountBalancesHistoryQueryKey } from './querykeys'
 export type UsePortfolioHistoryQueryResult = {
     data: PortfolioValueHistoryItem[]
     isPending: boolean
+    /** A chain failed with no points to fall back on, and stays failed while it is asked again; a failed refresh of one that still has points doesn't count. */
     isError: boolean
     isPaused: boolean
     error: Nullable<Error>
@@ -51,6 +52,13 @@ export type UsePortfolioHistoryQueryResult = {
 const EMPTY_CHAIN_IDS: ChainId[] = []
 
 type ScopeGroup = { scope: ChainScope; addresses: AccountAddress[] }
+
+// TanStack clears a no-data query's error when it refetches, so
+// `errorUpdateCount` is what keeps a chain being asked again marked as failed.
+const hasFailedWithoutData = (
+    result: UseQueryResult<Nullable<PortfolioHistoryPoint[]>>,
+): boolean =>
+    result.data === undefined && (result.isError || result.errorUpdateCount > 0)
 
 const groupByScope = (sources: AccountHoldingSource[]): ScopeGroup[] => {
     const groups = new Map<string, ScopeGroup>()
@@ -80,17 +88,43 @@ export const usePortfolioHistoryQuery = (
             }),
     )
 
+    const queryKeys = useMemo(
+        () =>
+            groups.map(({ scope, addresses }) =>
+                getAccountBalancesHistoryQueryKey(addresses, period, scope),
+            ),
+        [groups, period],
+    )
+    const queryHashes = useMemo(() => queryKeys.map(hashKey), [queryKeys])
+    const lastErrors = useRef(new Map<string, Error>())
+
     const combine = useCallback(
         (results: UseQueryResult<Nullable<PortfolioHistoryPoint[]>>[]) => {
+            // The error of a chain with no points, kept through the retry that
+            // makes TanStack clear it, so a block or a failure doesn't blink off
+            // each time the chain is asked again.
+            const failures = results.map((result, index) => {
+                const hash = queryHashes[index] ?? ''
+                if (result.isError && result.data === undefined) {
+                    lastErrors.current.set(hash, result.error)
+                }
+                const hasFailed = hasFailedWithoutData(result)
+                if (!hasFailed) return { hasFailed, error: null }
+                const error = result.isError
+                    ? result.error
+                    : (lastErrors.current.get(hash) ?? null)
+                return { hasFailed, error }
+            })
             // One chain's failure leaves the others plottable; the chart then
             // names what it left out. An integrity block is the user's to
             // resolve, so it still fails the chart rather than hiding a chain,
             // and so does a failure beside chains with no points to plot.
-            const failed = results.map(
-                result =>
-                    result.isError &&
-                    result.data === undefined &&
-                    !isIntegrityRequiredError(result.error),
+            const failed = failures.map(
+                ({ hasFailed, error }) =>
+                    hasFailed && !isIntegrityRequiredError(error),
+            )
+            const holdsError = failures.map(
+                ({ hasFailed, error }) => hasFailed && error !== null,
             )
             const isPartial =
                 failed.some(Boolean) &&
@@ -99,9 +133,10 @@ export const usePortfolioHistoryQuery = (
                         !failed[index] &&
                         (result.isPending || (result.data?.length ?? 0) > 0),
                 )
-            const counted = isPartial
-                ? results.filter((_, index) => !failed[index])
-                : results
+            const countedIndexes = results.flatMap((_, index) =>
+                isPartial && failed[index] ? [] : [index],
+            )
+            const counted = countedIndexes.map(index => results[index]!)
             const excludedChainIds = isPartial
                 ? [
                       ...new Set(
@@ -126,25 +161,28 @@ export const usePortfolioHistoryQuery = (
                     preferredValue: usdToPreferred(usdValue),
                 })),
                 excludedChainIds,
-                isPending: counted.some(result => result.isPending),
-                isError: counted.some(result => result.isError),
+                // A chain that holds its error is being asked again, not
+                // loading for the first time.
+                isPending: countedIndexes.some(
+                    index => results[index]?.isPending && !holdsError[index],
+                ),
+                isError: countedIndexes.some(index => holdsError[index]),
                 isPaused: counted.some(result => result.isPaused),
-                error: counted.find(result => result.error)?.error ?? null,
+                error:
+                    failures[
+                        countedIndexes.find(index => holdsError[index]) ?? -1
+                    ]?.error ?? null,
                 refetchAll: () => {
                     for (const result of results) void result.refetch()
                 },
             }
         },
-        [usdToPreferred, groups],
+        [usdToPreferred, groups, queryHashes],
     )
 
     const combined = useQueries({
-        queries: groups.map(({ scope, addresses }) => ({
-            queryKey: getAccountBalancesHistoryQueryKey(
-                addresses,
-                period,
-                scope,
-            ),
+        queries: groups.map(({ scope, addresses }, index) => ({
+            queryKey: queryKeys[index],
             // Callers gate this on what they render: it hits a slow network
             // endpoint.
             enabled: enabled && !isCapabilityOff,

@@ -12,7 +12,7 @@
 
 // @vitest-environment jsdom
 import React from 'react'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
@@ -56,6 +56,11 @@ const ETHEREUM: ChainScope = {
 }
 
 const history = vi.mocked(fetchPortfolioHistory)
+
+const both = [
+    { address: 'ALGO', scope: ALGORAND },
+    { address: '0xeth', scope: ETHEREUM },
+]
 
 const point = (timestamp: number, usd: string) => ({
     timestamp,
@@ -330,6 +335,180 @@ describe('usePortfolioHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.data).toHaveLength(1)
+    })
+
+    describe('when a chain that failed is asked again', () => {
+        const pendingHistory = () => {
+            let resolve: (points: ReturnType<typeof point>[]) => void = () => {}
+            const promise = new Promise<ReturnType<typeof point>[]>(done => {
+                resolve = done
+            })
+            return { promise, resolve }
+        }
+        const stableWrapper = () => {
+            const client = new QueryClient({
+                defaultOptions: { queries: { retry: false } },
+            })
+            return ({ children }: { children: React.ReactNode }) =>
+                React.createElement(QueryClientProvider, { client }, children)
+        }
+        it('keeps charting the other chains until it answers', async () => {
+            const retried = pendingHistory()
+            let ethereumCalls = 0
+            history.mockImplementation(async (_addresses, _period, scope) => {
+                if (scope.chainId === ALGORAND.chainId) return [point(1, '10')]
+                ethereumCalls += 1
+                if (ethereumCalls === 1) throw new Error('history down')
+                return retried.promise
+            })
+            const { result } = renderHook(
+                () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+                { wrapper: stableWrapper() },
+            )
+            await waitFor(() =>
+                expect(result.current.excludedChainIds).toEqual([
+                    ETHEREUM.chainId,
+                ]),
+            )
+
+            act(() => result.current.refetch())
+            await waitFor(() => expect(ethereumCalls).toBe(2))
+
+            expect(result.current.data).toEqual([
+                { datetime: new Date(1), preferredValue: new Decimal(20) },
+            ])
+            expect(result.current.isPending).toBe(false)
+            expect(result.current.isError).toBe(false)
+            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId])
+
+            retried.resolve([point(1, '5')])
+
+            await waitFor(() =>
+                expect(result.current.excludedChainIds).toEqual([]),
+            )
+            expect(result.current.isPartial).toBe(false)
+            expect(result.current.data).toEqual([
+                { datetime: new Date(1), preferredValue: new Decimal(30) },
+            ])
+        })
+
+        it('stays an error, not loading, while it is the only chain with nothing to plot', async () => {
+            const retried = pendingHistory()
+            let ethereumCalls = 0
+            history.mockImplementation(async (_addresses, _period, scope) => {
+                if (scope.chainId === ALGORAND.chainId) return []
+                ethereumCalls += 1
+                if (ethereumCalls === 1) throw new Error('history down')
+                return retried.promise
+            })
+            const { result } = renderHook(
+                () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+                { wrapper: stableWrapper() },
+            )
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            act(() => result.current.refetch())
+            await waitFor(() => expect(ethereumCalls).toBe(2))
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toEqual(new Error('history down'))
+            expect(result.current.isPending).toBe(false)
+
+            retried.resolve([point(1, '5')])
+
+            await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.error).toBeNull()
+            expect(result.current.data).toEqual([
+                { datetime: new Date(1), preferredValue: new Decimal(10) },
+            ])
+        })
+
+        it('stays an integrity block, not a partial chart, while the blocked chain is asked again', async () => {
+            const blocked = new IntegrityRequiredError({
+                code: null,
+                status: 401,
+                hadToken: false,
+            })
+            const retried = pendingHistory()
+            let ethereumCalls = 0
+            history.mockImplementation(async (_addresses, _period, scope) => {
+                if (scope.chainId === ALGORAND.chainId) return [point(1, '10')]
+                ethereumCalls += 1
+                if (ethereumCalls === 1) throw blocked
+                return retried.promise
+            })
+            const { result } = renderHook(
+                () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+                { wrapper: stableWrapper() },
+            )
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            act(() => result.current.refetch())
+            await waitFor(() => expect(ethereumCalls).toBe(2))
+
+            expect(result.current.isPartial).toBe(false)
+            expect(result.current.excludedChainIds).toEqual([])
+            expect(result.current.isError).toBe(true)
+            expect(result.current.error).toBe(blocked)
+            expect(result.current.isPending).toBe(false)
+
+            retried.resolve([point(1, '5')])
+
+            await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.data).toEqual([
+                { datetime: new Date(1), preferredValue: new Decimal(30) },
+            ])
+        })
+    })
+
+    it('stays loading, not failed, while a chain loads beside one whose refresh failed', async () => {
+        const loading: {
+            resolve: (points: ReturnType<typeof point>[]) => void
+        } = { resolve: () => {} }
+        let algorandCalls = 0
+        history.mockImplementation((_addresses, _period, scope) => {
+            if (scope.chainId === ETHEREUM.chainId) {
+                return new Promise(resolve => {
+                    loading.resolve = resolve
+                })
+            }
+            algorandCalls += 1
+            return algorandCalls === 1
+                ? Promise.resolve([point(1, '10')])
+                : Promise.reject(new Error('history down'))
+        })
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const sharedWrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(QueryClientProvider, { client }, children)
+        const { result, rerender } = renderHook(
+            ({ sources }) =>
+                usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            {
+                wrapper: sharedWrapper,
+                initialProps: {
+                    sources: [{ address: 'ALGO', scope: ALGORAND }],
+                },
+            },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        act(() => result.current.refetch())
+        await waitFor(() => expect(algorandCalls).toBe(2))
+        await waitFor(() => expect(client.isFetching()).toBe(0))
+
+        rerender({ sources: both })
+
+        await waitFor(() => expect(result.current.isPending).toBe(true))
+        expect(result.current.isError).toBe(false)
+        expect(result.current.data).toEqual([])
+
+        loading.resolve([point(1, '5')])
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(30) },
+        ])
     })
 
     it('reports an error when every chain fails', async () => {
