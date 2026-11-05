@@ -47,29 +47,57 @@ const SUBMIT_METHODS: ReadonlySet<string> = new Set(['eth_sendRawTransaction'])
 // Providers cap the size of a JSON-RPC batch; a larger tick splits.
 const READ_BATCH_SIZE = 100
 
+// Providers also cap the request body (publicnode answers 503 past 1 MB), and
+// viem splits a batch by count only. A request bigger than this goes out on
+// its own, so a full batch of the rest stays under 1 MB.
+const MAX_BATCHED_REQUEST_CHARS = 8000
+
+// Counts the string payload, which is all that grows: calldata for a balance
+// pass is hundreds of KB, everything else a few hundred bytes.
+const payloadChars = (value: unknown): number => {
+    if (typeof value === 'string') return value.length
+    if (Array.isArray(value)) {
+        return value.reduce<number>((sum, item) => sum + payloadChars(item), 0)
+    }
+    if (value !== null && typeof value === 'object') {
+        return Object.values(value).reduce<number>(
+            (sum, item) => sum + payloadChars(item),
+            0,
+        )
+    }
+    return 0
+}
+
 // Mirrors the Algorand client: broadcasts get the submit ceiling, everything
 // else the read ceiling, and viem's own retries are off.
 const timeoutBoundedTransport = (
     url: string,
     { readMs, submitMs }: ChainRequestTimeouts,
 ): Transport => {
-    // Reads issued in the same tick go out as one JSON-RPC batch, so a sync
-    // pass costs a few requests however many accounts it reads.
+    // Small reads issued in the same tick go out as one JSON-RPC batch, so
+    // the nonce reads of a sync pass cost one request however many accounts
+    // it reads.
     const read = evmHttpTransport(url, {
         timeout: readMs,
         retryCount: 0,
         batch: { batchSize: READ_BATCH_SIZE },
     })
+    const readAlone = evmHttpTransport(url, { timeout: readMs, retryCount: 0 })
     const submit = evmHttpTransport(url, { timeout: submitMs, retryCount: 0 })
     return params => {
         const readTransport = read(params)
+        const readAloneTransport = readAlone(params)
         const submitTransport = submit(params)
         return {
             ...readTransport,
-            request: (args, options) =>
-                SUBMIT_METHODS.has(args.method)
-                    ? submitTransport.request(args, options)
-                    : readTransport.request(args, options),
+            request: (args, options) => {
+                if (SUBMIT_METHODS.has(args.method)) {
+                    return submitTransport.request(args, options)
+                }
+                return payloadChars(args.params) > MAX_BATCHED_REQUEST_CHARS
+                    ? readAloneTransport.request(args, options)
+                    : readTransport.request(args, options)
+            },
         }
     }
 }

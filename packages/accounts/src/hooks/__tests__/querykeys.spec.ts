@@ -17,6 +17,7 @@ import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain
 import {
     MODULE_PREFIX,
     invalidateAccountQueriesForAddresses,
+    invalidateAccountQueriesForScope,
     removeAccountQueriesForAddresses,
     getAccountBalancesQueryKey,
     getAccountAssetBalanceHistoryQueryKey,
@@ -112,6 +113,27 @@ describe('invalidateAccountQueriesForAddresses', () => {
         { address: '0xADDR', scope: ETHEREUM },
     ]
 
+    test("leaves an account's asset chart alone when charts are excluded", () => {
+        const queryClient = new QueryClient()
+        const chart = getAccountAssetBalanceHistoryQueryKey(
+            MAINNET,
+            'ADDR1',
+            '123',
+            'one-day',
+            'USD',
+        )
+        const summary = getAccountSummaryQueryKey('ADDR1', MAINNET)
+        queryClient.setQueryData(chart, { value: 1 })
+        queryClient.setQueryData(summary, { value: 1 })
+
+        invalidateAccountQueriesForAddresses(queryClient, ['ADDR1'], {
+            includeCharts: false,
+        })
+
+        expect(queryClient.getQueryState(chart)?.isInvalidated).toBe(false)
+        expect(queryClient.getQueryState(summary)?.isInvalidated).toBe(true)
+    })
+
     test.each([
         [
             'holdings-page',
@@ -196,6 +218,67 @@ describe('invalidateAccountQueriesForAddresses', () => {
 
         expect(queryClient.getQueryState(targetKey)?.isInvalidated).toBe(true)
         expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(false)
+    })
+})
+
+describe('invalidateAccountQueriesForScope', () => {
+    const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+    const isInvalidated = (queryClient: QueryClient, key: unknown[]) =>
+        queryClient.getQueryState(key)?.isInvalidated
+
+    test("reloads the network's account queries and no other network's or module's", () => {
+        const queryClient = new QueryClient()
+        const summary = getAccountSummaryQueryKey('ADDR1', MAINNET)
+        const otherNetwork = getAccountSummaryQueryKey('ADDR1', TESTNET)
+        const spanning = getAccountHoldingsPageQueryKey([
+            { address: 'ADDR1', scope: MAINNET },
+            { address: '0xADDR', scope: ETHEREUM },
+        ])
+        const otherModule = ['assets', 'price', { scope: MAINNET }]
+        for (const key of [summary, otherNetwork, spanning, otherModule]) {
+            queryClient.setQueryData(key, [])
+        }
+
+        invalidateAccountQueriesForScope(queryClient, MAINNET, {
+            includeCharts: false,
+        })
+
+        expect(isInvalidated(queryClient, summary)).toBe(true)
+        expect(isInvalidated(queryClient, spanning)).toBe(true)
+        expect(isInvalidated(queryClient, otherNetwork)).toBe(false)
+        expect(isInvalidated(queryClient, otherModule)).toBe(false)
+    })
+
+    test("reloads the network's charts only when asked", () => {
+        const queryClient = new QueryClient()
+        const wealth = getAccountBalancesHistoryQueryKey(
+            ['ADDR1'],
+            'one-day',
+            MAINNET,
+        )
+        const holding = getAccountAssetBalanceHistoryQueryKey(
+            MAINNET,
+            'ADDR1',
+            '31566704',
+            'one-day',
+            'USD',
+        )
+        queryClient.setQueryData(wealth, [])
+        queryClient.setQueryData(holding, [])
+
+        invalidateAccountQueriesForScope(queryClient, MAINNET, {
+            includeCharts: false,
+        })
+
+        expect(isInvalidated(queryClient, wealth)).toBe(false)
+        expect(isInvalidated(queryClient, holding)).toBe(false)
+
+        invalidateAccountQueriesForScope(queryClient, MAINNET, {
+            includeCharts: true,
+        })
+
+        expect(isInvalidated(queryClient, wealth)).toBe(true)
+        expect(isInvalidated(queryClient, holding)).toBe(true)
     })
 })
 

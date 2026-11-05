@@ -41,11 +41,13 @@ const {
         signers: [] as Account[],
         swapChainAccounts: new Set<string>(),
         isIntroductionSeen: false,
+        isFocused: true,
     },
 }))
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
+    useIsFocused: () => state.isFocused,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -114,6 +116,7 @@ describe('useSwapScreen', () => {
         state.signers = [{ id: 'acc-1' }]
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
         state.isIntroductionSeen = false
+        state.isFocused = true
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
@@ -148,6 +151,28 @@ describe('useSwapScreen', () => {
         state.signers = [{ id: 'acc-2' }, { id: 'acc-1' }]
 
         renderHook(() => useSwapScreen())
+
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('acc-2')
+    })
+
+    it('leaves a watch account picked elsewhere selected while Swap is out of focus', () => {
+        state.isFocused = false
+        state.selected = { id: 'watch' }
+        state.signers = [{ id: 'acc-2' }]
+
+        renderHook(() => useSwapScreen())
+
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+    })
+
+    it('opens on the first swap signer once Swap comes back into focus', () => {
+        state.isFocused = false
+        state.selected = { id: 'watch' }
+        state.signers = [{ id: 'acc-2' }]
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.isFocused = true
+        rerender()
 
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('acc-2')
     })

@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { http, type HttpTransport, type HttpTransportConfig } from 'viem'
+import {
+    http,
+    HttpRequestError,
+    RpcError,
+    RpcRequestError,
+    TimeoutError,
+    type HttpTransport,
+    type HttpTransportConfig,
+} from 'viem'
 
 // expo/fetch rejects an aborted request with FetchError, but viem only maps
 // AbortError to TimeoutError, so a timeout would surface as HttpRequestError.
@@ -50,7 +58,66 @@ export const fetchWithAbortError = (
     })
 }
 
+// viem prints the whole request body into these errors, and every request of
+// a failed batch shares one; each caller's error wrapper then copies it. A
+// batch of balance reads made that megabytes per copy, enough to stall the JS
+// thread and run the app out of memory. The class, status, code and URL are
+// what the error mapping reads, so they stay.
+const withoutRequestBody = (error: unknown, method: string): unknown => {
+    if (error instanceof TimeoutError) {
+        return new TimeoutError({ body: { method }, url: error.url })
+    }
+    if (error instanceof HttpRequestError) {
+        return new HttpRequestError({
+            body: { method },
+            cause: error.cause instanceof Error ? error.cause : undefined,
+            details: error.details,
+            headers: error.headers,
+            status: error.status,
+            url: error.url,
+        })
+    }
+    if (error instanceof RpcRequestError) {
+        return withoutRpcRequestBody(error, method)
+    }
+    // An error the node answered with arrives already mapped by its code
+    // (InvalidParamsRpcError, …), carrying the body on its cause; every mapped
+    // class is built from the cause, MethodNotFoundRpcError also from the method.
+    if (error instanceof RpcError && error.cause instanceof RpcRequestError) {
+        const Mapped = error.constructor as new (
+            cause: RpcRequestError,
+            options: { method: string },
+        ) => RpcError
+        return new Mapped(withoutRpcRequestBody(error.cause, method), {
+            method,
+        })
+    }
+    return error
+}
+
+const withoutRpcRequestBody = (
+    error: RpcRequestError,
+    method: string,
+): RpcRequestError =>
+    new RpcRequestError({
+        body: { method },
+        error: { code: error.code, data: error.data, message: error.details },
+        url: error.url,
+    })
+
 export const evmHttpTransport = (
     url: string,
     config?: Omit<HttpTransportConfig, 'fetchFn'>,
-): HttpTransport => http(url, { ...config, fetchFn: fetchWithAbortError })
+): HttpTransport => {
+    const transport = http(url, { ...config, fetchFn: fetchWithAbortError })
+    return params => {
+        const built = transport(params)
+        return {
+            ...built,
+            request: ((args, options) =>
+                built.request(args, options).catch((error: unknown) => {
+                    throw withoutRequestBody(error, args.method)
+                })) as typeof built.request,
+        }
+    }
+}

@@ -65,6 +65,7 @@ export * from './useHDImportSession'
 export {
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
+    invalidateAccountQueriesForScope,
     removeAccountQueriesForAddresses,
     isAccountQuery,
     isAccountBalancesHistoryQuery,

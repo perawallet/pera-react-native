@@ -15,6 +15,7 @@ import {
     accountsChainAdapters,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
+    invalidateAccountQueriesForScope,
 } from '@perawallet/wallet-core-accounts'
 import {
     assetsChainAdapters,
@@ -90,6 +91,7 @@ const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
 // A change signal can miss activity, and every "unchanged" answer would keep
 // the balance as it is indefinitely. A scope not read for this long is read anyway.
 export const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
+const CHART_REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
 type ScopeSyncOutcome = {
     hadTotalFailure: boolean
@@ -162,6 +164,23 @@ export class SyncService {
     constructor(private readonly deps: SyncServiceDeps) {
         this.baseInterval = deps.pollIntervalMs ?? POLL_INTERVAL
         this.currentInterval = this.baseInterval
+    }
+
+    // A network's charts reload with its prices at most every
+    // CHART_REFRESH_INTERVAL_MS: on an EVM chain one chart is dozens of backend
+    // reads, and a price pass runs every minute per network. A chart still
+    // reloads on mount once stale, and on a pull to refresh.
+    private chartsRefreshedAt = new Map<ChainScopeKey, number>()
+
+    // True when this pass should reload the charts, recording that it did.
+    // The first pass after start only starts the clock: charts just loaded.
+    private claimChartRefresh(scopeKey: ChainScopeKey, nowMs: number): boolean {
+        const last = this.chartsRefreshedAt.get(scopeKey)
+        if (last !== undefined && nowMs - last < CHART_REFRESH_INTERVAL_MS) {
+            return false
+        }
+        this.chartsRefreshedAt.set(scopeKey, nowMs)
+        return last !== undefined
     }
 
     private debouncedInvalidate(
@@ -631,6 +650,7 @@ export class SyncService {
                 invalidateAccountQueriesForAddresses(
                     this.deps.queryClient,
                     changedAddresses,
+                    { includeCharts: false },
                 ),
             )
         }
@@ -654,15 +674,20 @@ export class SyncService {
                 this.deps.stores.setLastSyncAt(scope, kind, nowMs)
             }
             // Skipped when every batch was rejected. Account queries go too:
-            // the balance/holdings read joins in metadata + price, and any
-            // account may hold the new assets, so this one is necessarily
-            // broad.
+            // the balance/holdings read joins in metadata + price, but only
+            // this network's assets changed.
             if (assetPass.hasSuccess) {
                 this.debouncedInvalidate('assets', () =>
                     invalidateAssetQueries(this.deps.queryClient),
                 )
-                this.debouncedInvalidate('accounts-assets', () =>
-                    invalidateAccountQueries(this.deps.queryClient),
+                const scopeKey = toScopeKey(scope)
+                const includeCharts = this.claimChartRefresh(scopeKey, nowMs)
+                this.debouncedInvalidate(`accounts-assets:${scopeKey}`, () =>
+                    invalidateAccountQueriesForScope(
+                        this.deps.queryClient,
+                        scope,
+                        { includeCharts },
+                    ),
                 )
             }
         }

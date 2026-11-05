@@ -46,7 +46,7 @@ export const createEthereumAccountsAdapter = (
         listedTokens,
         tokenSightings,
     }),
-    ...createEthereumBalanceHistoryOps(ctx, chain),
+    ...createEthereumBalanceHistoryOps(ctx, chain, Date.now, listedTokens),
     toChainState: toEthereumChainState,
     summarizeChainState: summarizeEthereumChainState,
     hdKeyPairId: (seedKeyId, { account, keyIndex }) =>

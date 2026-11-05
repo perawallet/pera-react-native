@@ -373,6 +373,52 @@ describe('createEvmClient', () => {
         })
     })
 
+    describe('request size', () => {
+        const recordBodySizes = (sizes: number[]) =>
+            http.post(MAINNET_RPC, async ({ request }) => {
+                sizes.push((await request.clone().text()).length)
+            })
+
+        it('sends a large read on its own, so no request body grows past a node limit', async () => {
+            const sizes: number[] = []
+            server.use(
+                recordBodySizes(sizes),
+                ...evmRpcHandlers({
+                    rpcUrl: MAINNET_RPC,
+                    responses: { eth_call: '0x2a' },
+                }),
+            )
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
+            const data: Hex = `0x${'ab'.repeat(100_000)}`
+
+            await Promise.all(
+                Array.from({ length: 8 }, () =>
+                    client.call({ to: ADDRESS, data }),
+                ),
+            )
+
+            expect(sizes).toHaveLength(8)
+            expect(Math.max(...sizes)).toBeLessThan(300_000)
+        })
+
+        it('still sends small reads issued together as one request', async () => {
+            const sizes: number[] = []
+            server.use(
+                recordBodySizes(sizes),
+                ...evmRpcHandlers({ rpcUrl: MAINNET_RPC }),
+            )
+            const client = createEvmClient(MAINNET, contextWith(), ETHEREUM)
+
+            await Promise.all(
+                Array.from({ length: 5 }, () =>
+                    client.getTransactionCount({ address: ADDRESS }),
+                ),
+            )
+
+            expect(sizes).toHaveLength(1)
+        })
+    })
+
     describe('timeout and retry policy', () => {
         it('bounds a read by the read ceiling but gives a broadcast the submit ceiling', async () => {
             server.use(

@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type {
-    ChainId,
-    ChainScope,
+import {
+    queryKeyReferencesScope,
+    type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { AccountAddress } from '../models'
@@ -202,6 +203,30 @@ export function invalidateAccountQueries(queryClient: QueryClient): void {
     })
 }
 
+const isAccountChartQuery = (queryKey: QueryKey): boolean =>
+    isAccountBalancesHistoryQuery(queryKey) ||
+    (queryKey[0] === MODULE_PREFIX &&
+        queryKey[1] === 'assets' &&
+        queryKey[2] === 'balance-history')
+
+/**
+ * The account queries of one network, for a change that only touched it, such
+ * as its prices. Charts are left out unless `includeCharts`: on an EVM chain
+ * one chart refetch is several backend reads.
+ */
+export function invalidateAccountQueriesForScope(
+    queryClient: QueryClient,
+    scope: ChainScope,
+    { includeCharts }: { includeCharts: boolean },
+): void {
+    void queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+            isAccountQuery(queryKey) &&
+            queryKeyReferencesScope(queryKey, scope) &&
+            (includeCharts || !isAccountChartQuery(queryKey)),
+    })
+}
+
 // Multi-account aggregate keys (balance-history) hold the address list in a
 // plural `addresses` payload field; a match means the aggregate covers at
 // least one target account.
@@ -227,29 +252,30 @@ const queryKeyTargetsAccountAggregate = (
  * The per-address query keys carry a single-account address in their object
  * payload (`{ address }` for balance/summary/holdings-page/…, `account_address`
  * for asset balance-history), so the sync service can refresh just the accounts
- * that actually changed this tick instead of fanning a wide DB re-read across
- * every mounted account query. Keys without a single-account payload (e.g.
- * multi-account balance-history) are left alone
- * by default; `includeMultiAccountKeys` additionally invalidates multi-account
- * aggregates (the wealth-chart balance-history) whose `addresses` payload
- * intersects the targets — wanted by the post-submission refresh, where the
- * chart must reflect the send, but not by the sync tick, whose broad
- * asset-phase invalidation already covers periodic drift.
+ * that changed this tick instead of re-reading every mounted account query.
+ *
+ * `includeMultiAccountKeys` adds the multi-account aggregates (the wealth-chart
+ * balance-history) whose `addresses` intersect the targets, for a refresh that
+ * must show a send at once. `includeCharts: false` leaves every chart out, for
+ * the sync tick: an account that changes every block would otherwise reload
+ * its charts each tick, and the price pass refreshes them on its own schedule.
  */
 export function invalidateAccountQueriesForAddresses(
     queryClient: QueryClient,
     addresses: string[],
-    options?: { includeMultiAccountKeys?: boolean },
+    options?: { includeMultiAccountKeys?: boolean; includeCharts?: boolean },
 ): void {
     if (addresses.length === 0) return
     const targets = new Set(addresses)
     const includeMultiAccountKeys = options?.includeMultiAccountKeys ?? false
+    const includeCharts = options?.includeCharts ?? true
     void queryClient.invalidateQueries({
-        predicate: query =>
-            query.queryKey[0] === MODULE_PREFIX &&
-            (queryKeyTargetsAccount(query.queryKey, targets) ||
+        predicate: ({ queryKey }) =>
+            queryKey[0] === MODULE_PREFIX &&
+            (includeCharts || !isAccountChartQuery(queryKey)) &&
+            (queryKeyTargetsAccount(queryKey, targets) ||
                 (includeMultiAccountKeys &&
-                    queryKeyTargetsAccountAggregate(query.queryKey, targets))),
+                    queryKeyTargetsAccountAggregate(queryKey, targets))),
     })
 }
 
