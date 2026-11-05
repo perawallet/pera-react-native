@@ -53,6 +53,8 @@ import {
     useNotificationPreferences,
     useNotificationsStore,
 } from '@perawallet/wallet-core-messages'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
 import { AccountSelection } from '@modules/accounts'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -555,6 +557,90 @@ describe('Flow: Account management', () => {
                 .accounts.find(a => a.id === ACCOUNT_A.id)
             expect(updated?.name).toBe('Long-term hold')
         })
+    })
+
+    it('Given another account with the same name, when the user renames an account to it in other case, then the name-taken message shows and the name is not saved', async () => {
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
+
+        renderWithNavigation(
+            () => <AccountOptionsHost account={ACCOUNT_A} />,
+            'AccountOptionsHost',
+        )
+
+        tapOption('rename-account')
+
+        await waitFor(() => screen.getByTestId('rename_account_input'))
+        fireEvent.change(screen.getByTestId('rename_account_input'), {
+            target: { value: '  cold BACKUP ' },
+        })
+        fireEvent.click(screen.getByTestId('rename_account_save_button'))
+
+        await waitFor(() => {
+            expect(screen.getByText('account_info.name_taken')).toBeTruthy()
+        })
+        expect(
+            useAccountsStore
+                .getState()
+                .accounts.find(a => a.id === ACCOUNT_A.id)?.name,
+        ).toBe('Trading')
+    })
+
+    it('Given two accounts that share a name, when the account menu opens, then each row shows its short address', () => {
+        const twin: WalletAccount = {
+            ...ACCOUNT_A,
+            id: 'a-2',
+            chains: {
+                algorand: { address: HD_TEST_ADDRESS, keyPairId: 'a2-key' },
+            },
+        }
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, twin])
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
+
+        const noop = () => {}
+        renderWithNavigation(
+            () => (
+                <AccountMenu
+                    onSelected={noop}
+                    onAddAccount={noop}
+                    onOpenSort={noop}
+                />
+            ),
+            'AccountMenuHost',
+        )
+
+        const { truncate } = addressCodecs.get(ALGORAND_CHAIN_ID)
+        expect(screen.getByText(truncate(ALGO25_TEST_ADDRESS))).toBeTruthy()
+        expect(screen.getByText(truncate(HD_TEST_ADDRESS))).toBeTruthy()
+    })
+
+    it('Given two accounts with different names, when the account menu opens, then rows show no address under the name', () => {
+        const other: WalletAccount = {
+            ...ACCOUNT_A,
+            id: 'a-2',
+            name: 'Savings',
+            chains: {
+                algorand: { address: HD_TEST_ADDRESS, keyPairId: 'a2-key' },
+            },
+        }
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, other])
+        useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
+
+        const noop = () => {}
+        renderWithNavigation(
+            () => (
+                <AccountMenu
+                    onSelected={noop}
+                    onAddAccount={noop}
+                    onOpenSort={noop}
+                />
+            ),
+            'AccountMenuHost',
+        )
+
+        const { truncate } = addressCodecs.get(ALGORAND_CHAIN_ID)
+        expect(screen.queryByText(truncate(ALGO25_TEST_ADDRESS))).toBeNull()
+        expect(screen.queryByText(truncate(HD_TEST_ADDRESS))).toBeNull()
     })
 
     it('Given showPeraCardActivation, when the Pera Card Activate button is tapped, then the row renders and the activate intent fires', async () => {

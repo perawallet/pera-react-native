@@ -49,6 +49,7 @@ export const AccountWithBalance = ({
         jointParticipantCount,
         jointSignersLabel,
         shouldShowSecondaryLabel,
+        hasDuplicateName,
     } = useAccountWithBalance(account, chainId)
     // A chain-agnostic row stands for every chain the account is on, so no one
     // chain's badge applies. No row carries a TestNet badge: developer mode puts
@@ -59,6 +60,8 @@ export const AccountWithBalance = ({
         ) : undefined
 
     const renderSecondaryContent = () => {
+        // The address under the name is what tells a shared name apart.
+        if (hasDuplicateName) return undefined
         if (singleNetworkChainId) {
             return <ChainLabel chainId={singleNetworkChainId} />
         }
@@ -158,7 +161,7 @@ export const AccountWithBalance = ({
                 chainId={chainId}
                 showChevron={false}
                 showAccountType
-                alwaysShowAccountType={!!crossChainTotal}
+                alwaysShowAccountType={!!crossChainTotal && !hasDuplicateName}
                 shouldShowSecondaryLabel={shouldShowSecondaryLabel}
                 badges={badges}
                 secondaryContent={renderSecondaryContent()}
