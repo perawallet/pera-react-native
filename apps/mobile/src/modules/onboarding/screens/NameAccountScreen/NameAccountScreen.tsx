@@ -29,6 +29,8 @@ export const NameAccountScreen = () => {
         accountTitle,
         account,
         enabledChainIds,
+        nameError,
+        isFinishDisabled,
     } = useNameAccountScreen()
 
     return (
@@ -41,6 +43,8 @@ export const NameAccountScreen = () => {
             onChangeText={handleNameChange}
             onFinish={() => void handleFinish()}
             isLoading={isCreating}
+            isDisabled={isFinishDisabled}
+            errorMessage={nameError}
         >
             <PWView style={styles.walletNameContainer}>
                 <AccountIcon account={account} />

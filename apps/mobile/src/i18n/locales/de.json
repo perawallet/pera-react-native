@@ -507,6 +507,7 @@
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
         "account_number": "Konto Nr. {{number}}",
+        "name_taken": "Du hast bereits ein Konto mit diesem Namen. Wähle einen anderen Namen, damit du sie unterscheiden kannst.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
         "type_watch": "Beobachtungskonto",
@@ -2114,7 +2115,6 @@
             "finish_button": "Kontoerstellung abschließen",
             "creating": "Gemeinschaftskonto wird erstellt...",
             "error_title": "Konto konnte nicht erstellt werden",
-            "error_name_taken": "Ein Konto mit diesem Namen existiert bereits.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Ein Gemeinschaftskonto mit diesen Teilnehmern und diesem Schwellenwert befindet sich bereits in deinem Wallet."
         },
