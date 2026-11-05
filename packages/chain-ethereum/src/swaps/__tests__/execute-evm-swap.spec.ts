@@ -484,7 +484,7 @@ describe('executeEvmSwap', () => {
         expect(result).toEqual({ kind: 'verifying-previous' })
     })
 
-    it('stops before the order when the balance cannot pay for an approval first', async () => {
+    it('stops before the order when the balance cannot pay', async () => {
         fakeNode({ balance: '0x0', callResult: allowance(0n) })
         const context = contextOf(orderOf([SWAP_TX]))
 
@@ -501,25 +501,6 @@ describe('executeEvmSwap', () => {
             },
         })
         expect(context.createOrder).not.toHaveBeenCalled()
-    })
-
-    it('leaves a swap needing no approval to the real cost check', async () => {
-        fakeNode({ balance: '0x0', callResult: allowance(AMOUNT) })
-        const context = contextOf(orderOf([SWAP_TX]))
-
-        const result = await run(
-            context,
-            inputOf({ account: {} as ExecuteSwapParams['account'] }),
-        )
-
-        expect(context.createOrder).toHaveBeenCalled()
-        expect(result).toMatchObject({
-            failure: {
-                phase: 'prepare',
-                reason: 'insufficient-native-balance',
-            },
-        })
-        expect(context.addSignRequest).not.toHaveBeenCalled()
     })
 
     it('cancels an order when the user leaves before signing', async () => {

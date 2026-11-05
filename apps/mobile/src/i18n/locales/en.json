@@ -3979,7 +3979,6 @@
             "network_fee": "Network fee",
             "spend_approval_note": "You'll sign an approval for this swap's amount first, then the swap.",
             "insufficient_network_fee": "Not enough {{symbol}} to pay the network fee.",
-            "possible_insufficient_network_fee": "You may not have enough {{symbol}} to pay the network fee.",
             "provider": "Provider",
             "minimum_received": "Minimum Received",
             "confirm_swap": "Confirm Swap",

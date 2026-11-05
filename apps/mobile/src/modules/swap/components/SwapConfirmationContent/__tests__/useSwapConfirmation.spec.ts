@@ -125,7 +125,6 @@ describe('useSwapConfirmation', () => {
                 networkFeeDisplay: null,
                 needsSpendApproval: false,
                 insufficientFeeMessage: null,
-                isConfirmDisabled: false,
             })
         })
 
@@ -148,30 +147,14 @@ describe('useSwapConfirmation', () => {
             expect(result.current.needsSpendApproval).toBe(true)
         })
 
-        it('keeps confirmation off for a shortfall on a swap needing an approval', () => {
-            mockSourceCost({
-                ...SOURCE_COST,
-                shortfall: new Decimal(1),
-                needsSpendApproval: true,
-            })
+        it('names the shortfall so confirmation can stay off', () => {
+            mockSourceCost({ ...SOURCE_COST, shortfall: new Decimal(1) })
 
             const { result } = renderConfirmation(makeQuote())
 
             expect(result.current.insufficientFeeMessage).toBe(
                 'swap.quote.insufficient_network_fee',
             )
-            expect(result.current.isConfirmDisabled).toBe(true)
-        })
-
-        it('only warns of a shortfall on a swap needing no approval', () => {
-            mockSourceCost({ ...SOURCE_COST, shortfall: new Decimal(1) })
-
-            const { result } = renderConfirmation(makeQuote())
-
-            expect(result.current.insufficientFeeMessage).toBe(
-                'swap.quote.possible_insufficient_network_fee',
-            )
-            expect(result.current.isConfirmDisabled).toBe(false)
         })
     })
 

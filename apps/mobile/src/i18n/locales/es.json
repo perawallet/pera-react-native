@@ -3979,7 +3979,6 @@
             "network_fee": "Comisión de red",
             "spend_approval_note": "Primero firmarás una aprobación por el importe de este swap y después el swap.",
             "insufficient_network_fee": "No tienes suficiente {{symbol}} para pagar la comisión de red.",
-            "possible_insufficient_network_fee": "Puede que no tengas suficiente {{symbol}} para pagar la comisión de red.",
             "provider": "Proveedor",
             "minimum_received": "Mínimo recibido",
             "confirm_swap": "Confirmar swap",

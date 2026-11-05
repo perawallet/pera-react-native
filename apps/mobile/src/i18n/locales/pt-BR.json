@@ -4001,7 +4001,6 @@
             "network_fee": "Taxa de rede",
             "spend_approval_note": "Primeiro você vai assinar uma aprovação para o valor desta conversão e, depois, a conversão.",
             "insufficient_network_fee": "{{symbol}} insuficiente para pagar a taxa de rede.",
-            "possible_insufficient_network_fee": "Talvez você não tenha {{symbol}} suficiente para pagar a taxa de rede.",
             "provider": "Provedor",
             "minimum_received": "Mínimo recebido",
             "confirm_swap": "Confirmar conversão",
