@@ -86,6 +86,18 @@ export const swapContractTests = (
             expect(makeAdapter().holdingReserve(scope).isNegative()).toBe(false)
         })
 
+        it('estimates a non-negative source cost, or none', async () => {
+            const { scope } = fixtures.makeContext()
+
+            const cost = await makeAdapter().estimateSourceCost({
+                quote: fixtures.params.quote,
+                scope,
+            })
+
+            expect(cost === null || !cost.networkFee.isNegative()).toBe(true)
+            expect(cost?.shortfall?.isNegative() ?? false).toBe(false)
+        })
+
         it('returns a stale quote without ordering or signing', async () => {
             const { result, context } = await run({ fetchedAt: undefined })
 

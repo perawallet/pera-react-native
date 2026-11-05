@@ -72,7 +72,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 vi.mock('../useSwapScope', () => ({
-    useSwapScope: (selected: WalletAccount | null) =>
+    useSwapSourceScope: (selected: WalletAccount | null) =>
         selected === mockSelectedAccount.current ? mockSwapScope.current : null,
 }))
 

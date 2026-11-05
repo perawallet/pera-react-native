@@ -24,7 +24,9 @@ export {
     swapExplorerUrlFor,
     SwapAccountUnsupportedError,
     SwapCosignUnsupportedError,
+    type EnsureSwapReceivable,
     type SwapChainAdapter,
+    type SwapSourceCost,
 } from './chain-adapter'
 export { SwapQuoteMismatchError } from './errors'
 export {

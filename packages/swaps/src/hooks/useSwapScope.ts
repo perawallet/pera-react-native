@@ -25,14 +25,29 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useSwapsStore } from '../store'
 
-/** The scope a swap for `account` runs on; null when none of its chains has swap. */
+/**
+ * The scope a swap for `account` runs on by default; null when none of its
+ * chains has swap. `chainId` pins it to that chain, with no fallback.
+ */
 export const useSwapScope = (
     account: Nullable<WalletAccount>,
-): Nullable<ChainScope> => useAccountCapabilityScope(account, 'swap')
+    chainId?: ChainId,
+): Nullable<ChainScope> => useAccountCapabilityScope(account, 'swap', chainId)
+
+/** The chain the user chose to pay from when `account` can swap there, else the default. */
+export const useSwapSourceScope = (
+    account: Nullable<WalletAccount>,
+): Nullable<ChainScope> => {
+    const sourceChainId = useSwapsStore(state => state.sourceChainId)
+    const chosen = useSwapScope(account, sourceChainId ?? undefined)
+    const fallback = useSwapScope(account)
+    return chosen ?? fallback
+}
 
 export const useSelectedSwapScope = (): Nullable<ChainScope> =>
-    useSwapScope(useSelectedAccount())
+    useSwapSourceScope(useSelectedAccount())
 
 export const useSwapChainResolver = (): ((
     account: WalletAccount,
