@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { SwapSourceChainContent } from './SwapSourceChainContent'
-export type { SwapSourceChainContentProps } from './SwapSourceChainContent'
+export { SwapFromAssetSelectionList } from './SwapFromAssetSelectionList'
+export type { SwapFromAssetSelectionListProps } from './SwapFromAssetSelectionList'

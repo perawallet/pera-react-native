@@ -18,12 +18,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useSwapDestinationScopes } from '../useSwapDestinationScopes'
-
-vi.mock('@hooks/useIsCrossChainSwapEnabled', () => ({
-    useIsCrossChainSwapEnabled: vi.fn(() => true),
-}))
 
 const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
@@ -49,23 +44,11 @@ const ETH_WATCH = account(
 
 describe('useSwapDestinationScopes', () => {
     beforeEach(() => {
-        vi.mocked(useIsCrossChainSwapEnabled).mockReturnValue(true)
         // Signs on a chain where it holds a key there.
         vi.mocked(canSignWith).mockImplementation(
             (candidate: WalletAccount, _accounts, chainId: ChainId) =>
                 !!candidate.chains[chainId]?.keyPairId,
         )
-    })
-
-    it('keeps the swap scope alone when the flag is off', () => {
-        vi.mocked(useIsCrossChainSwapEnabled).mockReturnValue(false)
-        vi.mocked(useAllAccounts).mockReturnValue([TWO_CHAIN])
-
-        const { result } = renderHook(() =>
-            useSwapDestinationScopes(TWO_CHAIN, ALGO_SCOPE),
-        )
-
-        expect(result.current).toEqual([ALGO_SCOPE])
     })
 
     it('skips a chain the accounts have no address on, even where their custody could sign', () => {

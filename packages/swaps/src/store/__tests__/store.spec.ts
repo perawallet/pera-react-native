@@ -67,6 +67,25 @@ describe('swaps/store', () => {
         })
     })
 
+    test('setSourceAsset pays on the new chain and clears where it was going', () => {
+        const store = useSwapsStore.getState()
+        store.setSlippage('0.5')
+        store.setToAsset('5678')
+        store.setReceivingAccountId('account-1')
+
+        store.setSourceAsset('ethereum', 'native')
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: null,
+            toAssetScope: null,
+            receivingAccountId: null,
+            slippage: '0.5',
+        })
+        useSwapsStore.getState().setSlippage(null)
+    })
+
     test('resetState forgets the chosen source chain', () => {
         useSwapsStore.getState().setSourceChainId('ethereum')
 

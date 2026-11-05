@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -37,6 +38,8 @@ import {
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import type { FilterOption } from '@components/FilterSelection'
+import { useSwapChainFilter } from '../../hooks/useSwapChainFilter'
 import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
 
 export type AvailableAssetWithBalance = {
@@ -57,6 +60,11 @@ type UseSwapToAssetSelectionListResult = {
     searchFilter: string
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
+    chainOptions: FilterOption<Nullable<ChainId>>[]
+    selectedChainId: Nullable<ChainId>
+    handleSelectChain: (chainId: Nullable<ChainId>) => void
+    /** The list spans chains, so each row names its network. */
+    isChainShown: boolean
     isLoading: boolean
     handleEndReached: () => void
     handleAssetSelected: (item: AvailableAssetWithBalance) => void
@@ -92,6 +100,27 @@ export const useSwapToAssetSelectionList = ({
     )
     const selectedAccount = useSelectedAccount()
     const destinationScopes = useSwapDestinationScopes(selectedAccount, scope)
+    const destinationChainIds = useMemo(
+        () => destinationScopes.map(({ chainId }) => chainId),
+        [destinationScopes],
+    )
+    const {
+        chainOptions,
+        selectedChainId,
+        visibleChainIds,
+        handleSelectChain,
+    } = useSwapChainFilter({
+        chainIds: destinationChainIds,
+        scope,
+        variant: 'to',
+    })
+    const visibleScopes = useMemo(
+        () =>
+            destinationScopes.filter(({ chainId }) =>
+                visibleChainIds.includes(chainId),
+            ),
+        [destinationScopes, visibleChainIds],
+    )
     const {
         assets: availableAssets,
         isLoading,
@@ -100,7 +129,7 @@ export const useSwapToAssetSelectionList = ({
     } = useSwapPairsInfiniteQuery({
         anchor,
         scope,
-        destinationScopes,
+        destinationScopes: visibleScopes,
         q: debouncedSearchFilter || undefined,
     })
 
@@ -194,6 +223,10 @@ export const useSwapToAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        chainOptions,
+        selectedChainId,
+        handleSelectChain,
+        isChainShown: selectedChainId === null && chainOptions.length > 0,
         isLoading,
         handleEndReached,
         handleAssetSelected,

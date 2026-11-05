@@ -753,12 +753,43 @@ describe('useAccountHoldingsAcrossChainsQuery', () => {
         ])
     })
 
+    it("keeps the other chains' holdings when one chain's read fails", async () => {
+        mockGetAccountHoldingsPage.mockImplementation(
+            async ({ scope }: { scope: ChainScope }) => {
+                if (scope.chainId === 'ethereum') throw new Error('boom')
+                return [algoRow(3_000_000, 1)]
+            },
+        )
+        const twoChainAccount = buildTestAccount(
+            { kind: 'watch' },
+            {
+                algorand: { address: 'ALGO1' },
+                ethereum: { address: 'ETH1' },
+            },
+            { id: 'two-chain' },
+        )
+
+        const { result } = renderHook(
+            () => useAccountHoldingsAcrossChainsQuery(twoChainAccount),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.assetBalances.map(b => b.scope.chainId)).toEqual([
+            'algorand',
+        ])
+    })
+
     it('lists nothing without an account', () => {
         const { result } = renderHook(
             () => useAccountHoldingsAcrossChainsQuery(null),
             { wrapper: createWrapper() },
         )
 
-        expect(result.current).toEqual({ assetBalances: [], isPending: false })
+        expect(result.current).toEqual({
+            assetBalances: [],
+            isPending: false,
+            isError: false,
+        })
     })
 })

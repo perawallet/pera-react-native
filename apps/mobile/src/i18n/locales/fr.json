@@ -3948,15 +3948,15 @@
             "to": "Vers",
             "balance_label": "Solde : <0/>",
             "max": "MAX",
-            "select_asset": "Choisir",
-            "pay_from": "Payer depuis"
+            "select_asset": "Choisir"
         },
         "asset_selection": {
             "swap_from_title": "Échanger depuis",
             "swap_to_title": "Échanger vers",
             "search_placeholder": "Rechercher par nom ou ID",
             "no_results_title": "Aucun actif correspondant",
-            "no_results_body": "Aucun actif ne correspond à votre recherche"
+            "no_results_body": "Aucun actif ne correspond à votre recherche",
+            "no_chain_results_body": "Aucun actif disponible sur ce réseau"
         },
         "configuration": {
             "title": "Paramètres du swap",
@@ -3980,6 +3980,9 @@
             "slippage_tolerance": "Tolérance de slippage",
             "pera_fee": "Frais Pera",
             "network_fee": "Frais de réseau",
+            "provider_fee": "Frais du fournisseur",
+            "route": "Itinéraire",
+            "cross_chain_note": "Vos {{asset}} arriveront sur {{network}} une fois le swap terminé par le fournisseur. Vous pouvez le suivre sur l’écran Swap.",
             "spend_approval_note": "Vous signerez d’abord une autorisation pour le montant de ce swap, puis le swap.",
             "insufficient_network_fee": "Pas assez de {{symbol}} pour payer les frais de réseau.",
             "provider": "Fournisseur",

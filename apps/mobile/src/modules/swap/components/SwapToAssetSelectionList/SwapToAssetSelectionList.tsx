@@ -14,10 +14,13 @@ import { useCallback } from 'react'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
 import { EmptyView } from '@components/EmptyView'
+import { FilterSelection } from '@components/FilterSelection'
 import { AssetSelectionList } from '@modules/assets'
 import {
     useSwapToAssetSelectionList,
@@ -35,6 +38,7 @@ export type SwapToAssetSelectionListProps = {
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
+    emptyChainResultBody: string
     inBottomSheet?: boolean
 }
 
@@ -47,6 +51,7 @@ export const SwapToAssetSelectionList = ({
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
+    emptyChainResultBody,
     inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
@@ -55,6 +60,10 @@ export const SwapToAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        chainOptions,
+        selectedChainId,
+        handleSelectChain,
+        isChainShown,
         isLoading,
         handleEndReached,
         handleAssetSelected,
@@ -75,7 +84,7 @@ export const SwapToAssetSelectionList = ({
                     swapAsset={item.swapAsset}
                     balance={item.balance}
                     scope={scopeOfSwapAsset(ref)}
-                    isChainShown={!isOnScope}
+                    isChainShown={isChainShown}
                     onPress={() => handleAssetSelected(item)}
                     style={styles.item}
                     testID={
@@ -86,7 +95,7 @@ export const SwapToAssetSelectionList = ({
                 />
             )
         },
-        [handleAssetSelected, scope, styles],
+        [handleAssetSelected, isChainShown, scope, styles],
     )
 
     return (
@@ -100,16 +109,31 @@ export const SwapToAssetSelectionList = ({
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}
+            searchAccessory={
+                chainOptions.length > 0 ? (
+                    <FilterSelection<Nullable<ChainId>>
+                        options={chainOptions}
+                        selectedValue={selectedChainId}
+                        onSelect={handleSelectChain}
+                        testID='swap_to_chain_filter'
+                    />
+                ) : undefined
+            }
             isLoading={isLoading && items.length === 0}
             onEndReached={handleEndReached}
             skeletonCount={3}
             cardLayout
             inBottomSheet={inBottomSheet}
             ListEmptyComponent={
-                !isLoading && debouncedSearchFilter ? (
+                !isLoading &&
+                (debouncedSearchFilter || selectedChainId !== null) ? (
                     <EmptyView
                         title={emptyResultTitle}
-                        body={emptyResultBody}
+                        body={
+                            debouncedSearchFilter
+                                ? emptyResultBody
+                                : emptyChainResultBody
+                        }
                     />
                 ) : undefined
             }

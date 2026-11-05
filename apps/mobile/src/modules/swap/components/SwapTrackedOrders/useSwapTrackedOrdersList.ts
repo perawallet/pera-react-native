@@ -18,7 +18,6 @@ import {
     useSwapTrackingStore,
     type SwapTrackedAsset,
 } from '@perawallet/wallet-core-swaps'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSwapAccountAddresses } from '../../hooks/useSwapAccountAddresses'
 import { swapTrackingStatusKey } from '../../utils/swapTrackingStatusKey'
@@ -41,7 +40,6 @@ const unitOf = (asset: SwapTrackedAsset): string =>
 
 export const useSwapTrackedOrdersList = (): UseSwapTrackedOrdersListResult => {
     const { t } = useLanguage()
-    const isEnabled = useIsCrossChainSwapEnabled()
     const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
     const sourceAddresses = useMemo(
         () => accountAddresses.map(entry => entry.address),
@@ -69,7 +67,7 @@ export const useSwapTrackedOrdersList = (): UseSwapTrackedOrdersListResult => {
 
     return {
         rows,
-        isVisible: isEnabled && rows.length > 0,
+        isVisible: rows.length > 0,
         handleDismiss,
     }
 }

@@ -13,7 +13,7 @@
 import { describe, expect, test } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { SwapFee, SwapQuote } from '../../models'
-import { peraFeeInSourceAsset } from '../swapFees'
+import { peraFeeInSourceAsset, swapFeeOf } from '../swapFees'
 
 const SOURCE = { chainId: 'fake-a', networkId: 'main', assetId: 'native' }
 
@@ -22,6 +22,33 @@ const quoteWith = (fees: Partial<SwapFee>[]): SwapQuote =>
         request: { sourceAsset: SOURCE },
         fees,
     }) as unknown as SwapQuote
+
+describe('swapFeeOf', () => {
+    const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+    const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+    const quote = quoteWith([
+        {
+            kind: 'network',
+            asset: { ...ETH_SCOPE, assetId: 'native' },
+            amount: new Decimal(1),
+        },
+        {
+            kind: 'network',
+            asset: { ...ALGO_SCOPE, assetId: '0' },
+            amount: new Decimal(2),
+        },
+    ])
+
+    test('returns the first fee of a kind', () => {
+        expect(swapFeeOf(quote, 'network')?.amount).toEqual(new Decimal(1))
+    })
+
+    test('with a scope, returns the first fee charged there', () => {
+        expect(swapFeeOf(quote, 'network', ALGO_SCOPE)?.amount).toEqual(
+            new Decimal(2),
+        )
+    })
+})
 
 describe('peraFeeInSourceAsset', () => {
     test('returns the Pera fee charged in the source asset', () => {

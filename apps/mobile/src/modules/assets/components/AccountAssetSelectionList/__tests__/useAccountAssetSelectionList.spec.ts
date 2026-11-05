@@ -17,10 +17,13 @@ import { useAccountAssetSelectionList } from '../useAccountAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
+const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery:
+        mockUseAccountHoldingsAcrossChainsQuery,
     useAccountChainId: () => 'algorand',
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
@@ -81,6 +84,11 @@ const mockAssetBalances = [
 describe('useAccountAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+            assetBalances: [],
+            isPending: false,
+            isError: false,
+        })
         mockUseSelectedAccount.mockReturnValue({
             chains: { algorand: { address: 'TEST_ADDRESS' } },
         })
@@ -142,9 +150,11 @@ describe('useAccountAssetSelectionList', () => {
         expect(result.current.filteredBalanceData).toHaveLength(0)
     })
 
-    it('excludes asset when excludeAssetId is provided', () => {
+    it('excludes the asset on its own chain', () => {
         const { result } = renderHook(() =>
-            useAccountAssetSelectionList({ excludeAssetId: '0' }),
+            useAccountAssetSelectionList({
+                excludeAsset: { chainId: 'algorand', assetId: '0' },
+            }),
         )
 
         expect(result.current.filteredBalanceData).toHaveLength(2)
@@ -153,6 +163,93 @@ describe('useAccountAssetSelectionList', () => {
                 item => item.assetId !== '0',
             ),
         ).toBe(true)
+    })
+
+    it('keeps an asset that only shares its id with the excluded one', () => {
+        const { result } = renderHook(() =>
+            useAccountAssetSelectionList({
+                excludeAsset: { chainId: 'ethereum', assetId: '0' },
+            }),
+        )
+
+        expect(result.current.filteredBalanceData).toHaveLength(3)
+    })
+
+    describe('across chains', () => {
+        const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' }
+        const BASE_SCOPE = { chainId: 'base', networkId: 'mainnet' }
+        const held = (
+            scope: { chainId: string; networkId: string },
+            assetId: string,
+        ) => ({ assetId, amount: '1', scope, asset: { name: assetId } })
+
+        beforeEach(() => {
+            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+                assetBalances: [
+                    held(ALGO_SCOPE, '31566704'),
+                    held(ETH_SCOPE, 'native'),
+                    held(BASE_SCOPE, 'native'),
+                ],
+                isPending: false,
+                isError: false,
+            })
+        })
+
+        it('lists the holdings of the given chains only', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({
+                    chainIds: ['algorand', 'ethereum'],
+                }),
+            )
+
+            expect(
+                result.current.filteredBalanceData.map(
+                    item => item.scope.chainId,
+                ),
+            ).toEqual(['ethereum', 'algorand'])
+        })
+
+        it('excludes a repeated id on one chain and keeps it on the other', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({
+                    chainIds: ['ethereum', 'base'],
+                    excludeAsset: { chainId: 'ethereum', assetId: 'native' },
+                }),
+            )
+
+            expect(
+                result.current.filteredBalanceData.map(
+                    item => item.scope.chainId,
+                ),
+            ).toEqual(['base'])
+        })
+
+        it('searches across the chains', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({
+                    chainIds: ['ethereum', 'base'],
+                }),
+            )
+
+            act(() => result.current.setSearchFilter('native'))
+
+            expect(result.current.filteredBalanceData).toHaveLength(2)
+        })
+
+        it('reports a failed read across chains', () => {
+            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+                assetBalances: [],
+                isPending: false,
+                isError: true,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainIds: ['algorand'] }),
+            )
+
+            expect(result.current.isError).toBe(true)
+        })
     })
 
     it('applies filterAsset predicate', () => {

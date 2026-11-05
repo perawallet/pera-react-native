@@ -377,6 +377,8 @@ export type ChainAssetBalance = AssetWithAccountBalance & {
 export type UseAccountHoldingsAcrossChainsQueryResult = {
     assetBalances: ChainAssetBalance[]
     isPending: boolean
+    /** A chain's read failed; the other chains' balances are still listed. */
+    isError: boolean
 }
 
 /**
@@ -435,7 +437,9 @@ export const useAccountHoldingsAcrossChainsQuery = (
     const resultsSig = results
         .map(
             (r, i) =>
-                `${heldOn[i] ?? ''}|${r.dataUpdatedAt}|${r.isPending ? 1 : 0}`,
+                `${heldOn[i] ?? ''}|${r.dataUpdatedAt}|${r.isPending ? 1 : 0}${
+                    r.isError ? 1 : 0
+                }`,
         )
         .join('||')
 
@@ -451,6 +455,7 @@ export const useAccountHoldingsAcrossChainsQuery = (
                     : []
             }),
             isPending: results.some(r => r.isPending),
+            isError: results.some(r => r.isError),
         }),
         // `resultsSig` is the stable stand-in for `results`; see
         // useAccountBalancesQuery.

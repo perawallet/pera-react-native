@@ -68,6 +68,7 @@ export const SwapConfirmationContent = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        providerFeeDisplay,
         networkFeeDisplay,
         needsSpendApproval,
         insufficientFeeMessage,
@@ -75,6 +76,7 @@ export const SwapConfirmationContent = ({
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
+        crossChainNote,
     } = useSwapConfirmation({ scope, quote, swapStatus })
 
     const onClosePress = useCallback(
@@ -143,10 +145,12 @@ export const SwapConfirmationContent = ({
 
             <SwapDetailsSection
                 quote={quote}
+                sourceChainId={scope.chainId}
                 receiveTarget={receiveTarget}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}
                 peraFeeDisplay={peraFeeDisplay}
+                providerFeeDisplay={providerFeeDisplay}
                 networkFeeDisplay={networkFeeDisplay}
                 slippageDisplay={slippageDisplay}
                 priceImpactDisplay={priceImpactDisplay}
@@ -161,6 +165,15 @@ export const SwapConfirmationContent = ({
                     <PWText style={styles.warningText}>
                         {t('swap.quote.high_price_impact_warning')}
                     </PWText>
+                </PWView>
+            )}
+
+            {crossChainNote && (
+                <PWView
+                    style={styles.noteBanner}
+                    testID='swap-confirm-cross-chain-note'
+                >
+                    <PWText variant='caption'>{crossChainNote}</PWText>
                 </PWView>
             )}
 

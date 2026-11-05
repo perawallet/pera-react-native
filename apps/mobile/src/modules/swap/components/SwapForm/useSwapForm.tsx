@@ -21,7 +21,11 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
@@ -43,7 +47,6 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
@@ -52,6 +55,7 @@ import {
 } from '@utils/tabResumeIntent'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
 import { useSwapReceiveTarget } from '../../hooks/useSwapReceiveTarget'
+import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
 import {
     SwapAssetSelectionContent,
     type SwapAssetSelection,
@@ -76,6 +80,7 @@ type UseSwapFormResult = {
     receivingAccount: Nullable<WalletAccount>
     isDirectionDisabled: boolean
     isChainShown: boolean
+    isReceivingAccountShown: boolean
     payAmount: Nullable<Decimal>
     receiveAmount: Nullable<Decimal>
     payBalance: Nullable<Decimal>
@@ -106,6 +111,7 @@ type UseSwapFormResult = {
  * asset settles, after which the form reopens the confirmation.
  */
 export type SwapFormInitialPayAmount = {
+    chainId: ChainId
     assetId: string
     amount: Decimal
 }
@@ -121,6 +127,7 @@ export const useSwapForm = (
         isLocalCurrencyInput,
         setFromAsset,
         setToAsset,
+        setSourceAsset,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
@@ -156,7 +163,7 @@ export const useSwapForm = (
         fromAsset,
         scope,
     )
-    const isCrossChainEnabled = useIsCrossChainSwapEnabled()
+    const sourceChainIds = useSwapSourceChains(selectedAccount)
     const {
         receiveScope,
         isCrossChain,
@@ -294,11 +301,18 @@ export const useSwapForm = (
     const shouldReopenConfirmRef = useRef(false)
     useEffect(() => {
         const pending = pendingPayAmountRef.current
-        if (!pending || fromAsset !== pending.assetId) return
+        // Asset ids repeat across chains: `native` on Base is not `native` here.
+        if (
+            !pending ||
+            pending.chainId !== scope.chainId ||
+            fromAsset !== pending.assetId
+        ) {
+            return
+        }
         pendingPayAmountRef.current = undefined
         shouldReopenConfirmRef.current = true
         setPayAmount(pending.amount)
-    }, [fromAsset])
+    }, [fromAsset, scope.chainId])
 
     // Leaving the tab must clear the form: the screen stays mounted, so without
     // this the next visit opens on the previous session's amounts. A source
@@ -488,7 +502,10 @@ export const useSwapForm = (
                 <SwapAssetSelectionContent
                     scope={scope}
                     variant='from'
-                    excludeAssetId={isCrossChain ? undefined : toAsset}
+                    excludeAsset={{
+                        chainId: receiveScope.chainId,
+                        assetId: toAsset,
+                    }}
                 />
             ),
             options: {
@@ -497,10 +514,15 @@ export const useSwapForm = (
                 autoCreateContainer: false,
             },
         })
+        if (!selection) return
+        if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
+            setSourceAsset(selection.scope.chainId, selection.assetId)
+            return
+        }
         // Re-picking the current asset must be a full no-op: clearing the
         // quotes without changing any quote input would strand the fetch
         // state as loading with nothing in flight.
-        if (!selection || selection.assetId === fromAsset) return
+        if (selection.assetId === fromAsset) return
         setFromAsset(selection.assetId)
         // The effect above also resets, but only after a paint; reset here
         // too so no frame shows the old amount against the new asset.
@@ -509,8 +531,9 @@ export const useSwapForm = (
         requestBottomSheet,
         scope,
         toAsset,
-        isCrossChain,
+        receiveScope.chainId,
         setFromAsset,
+        setSourceAsset,
         fromAsset,
         resetAmounts,
     ])
@@ -526,7 +549,10 @@ export const useSwapForm = (
                     scope={scope}
                     variant='to'
                     fromAssetId={fromAsset}
-                    excludeAssetId={fromAsset}
+                    excludeAsset={{
+                        chainId: scope.chainId,
+                        assetId: fromAsset,
+                    }}
                 />
             ),
             options: {
@@ -608,7 +634,9 @@ export const useSwapForm = (
         })
         // Signing runs while this sheet is open; a Bluetooth Ledger in the
         // extension popup can't sign, and this lets its tab reopen the swap.
-        if (selectedAddress && payAmount) {
+        // The intent holds both assets on one chain, so a cross-chain pair can't
+        // come back from it.
+        if (selectedAddress && payAmount && !isCrossChain) {
             registerTabResumeIntent({
                 flow: 'swap',
                 chainId: scope.chainId,
@@ -689,6 +717,7 @@ export const useSwapForm = (
         completeTabResume({ title: successTitle, body: successBody })
         resetAmounts()
     }, [
+        isCrossChain,
         scope,
         selectedQuote,
         requestBottomSheet,
@@ -749,7 +778,8 @@ export const useSwapForm = (
         receiveScope,
         receivingAccount,
         isDirectionDisabled: isCrossChain,
-        isChainShown: isCrossChainEnabled && isCrossChain,
+        isChainShown: isCrossChain || sourceChainIds.length > 1,
+        isReceivingAccountShown: isCrossChain,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,

@@ -3948,15 +3948,15 @@
             "to": "A",
             "balance_label": "Saldo: <0/>",
             "max": "MÁX",
-            "select_asset": "Elegir",
-            "pay_from": "Pagar desde"
+            "select_asset": "Elegir"
         },
         "asset_selection": {
             "swap_from_title": "Intercambiar desde",
             "swap_to_title": "Intercambiar a",
             "search_placeholder": "Buscar por nombre o ID",
             "no_results_title": "No hay activos coincidentes",
-            "no_results_body": "Ningún activo coincide con tu búsqueda"
+            "no_results_body": "Ningún activo coincide con tu búsqueda",
+            "no_chain_results_body": "No hay activos disponibles en esta red"
         },
         "configuration": {
             "title": "Ajustes del swap",
@@ -3980,6 +3980,9 @@
             "slippage_tolerance": "Tolerancia de deslizamiento",
             "pera_fee": "Comisión de Pera",
             "network_fee": "Comisión de red",
+            "provider_fee": "Comisión del proveedor",
+            "route": "Ruta",
+            "cross_chain_note": "Tu {{asset}} llegará a {{network}} cuando el proveedor complete el swap. Puedes seguirlo en la pantalla Swap.",
             "spend_approval_note": "Primero firmarás una aprobación por el importe de este swap y después el swap.",
             "insufficient_network_fee": "No tienes suficiente {{symbol}} para pagar la comisión de red.",
             "provider": "Proveedor",

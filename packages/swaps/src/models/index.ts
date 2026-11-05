@@ -39,6 +39,8 @@ export type SwapsState = BaseStoreState & {
     setReceivingAccountId: (id: Nullable<string>) => void
     /** Clears the pair and the receiving account: they belong to the old chain. */
     setSourceChainId: (chainId: Nullable<ChainId>) => void
+    /** Pays with `fromAsset` on `chainId`; clears the receive side and receiving account: they belong to the old chain. */
+    setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
 }

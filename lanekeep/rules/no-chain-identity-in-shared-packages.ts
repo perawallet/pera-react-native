@@ -134,6 +134,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Refuses a handed-off send signed for another chain than its own request's; compares two passed values, never a named chain.",
     },
     {
+        file: 'apps/mobile/src/modules/swap/components/SwapForm/useSwapForm.tsx',
+        text: 'pending.chainId !== scope.chainId',
+        reason: 'Holds a resumed amount until the form is on the chain it was entered on; compares two passed values, never a named chain.',
+    },
+    {
         file: 'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
         text: 'assetScope.chainId === currencyScope.chainId',
         reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",

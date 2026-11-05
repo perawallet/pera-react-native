@@ -36,6 +36,26 @@ describe('swaps/useSwaps', () => {
         expect(result.current.toAsset).toBe(FAKE_RECEIVE_ASSET_ID)
     })
 
+    test("receives the chain's native asset when paying with its default receive asset", () => {
+        useSwapsStore
+            .getState()
+            .setSourceAsset('algorand', FAKE_RECEIVE_ASSET_ID)
+
+        const { result } = renderHook(() => useSwaps(SCOPE))
+
+        expect(result.current.fromAsset).toBe(FAKE_RECEIVE_ASSET_ID)
+        expect(result.current.toAsset).toBe(FAKE_NATIVE_ASSET_ID)
+    })
+
+    test('keeps a picked receive asset equal to the default', () => {
+        useSwapsStore.getState().setFromAsset(FAKE_RECEIVE_ASSET_ID)
+        useSwapsStore.getState().setToAsset(FAKE_RECEIVE_ASSET_ID)
+
+        const { result } = renderHook(() => useSwaps(SCOPE))
+
+        expect(result.current.toAsset).toBe(FAKE_RECEIVE_ASSET_ID)
+    })
+
     test('setFromAsset updates fromAsset', () => {
         const { result } = renderHook(() => useSwaps(SCOPE))
 

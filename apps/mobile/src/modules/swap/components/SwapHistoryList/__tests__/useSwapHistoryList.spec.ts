@@ -37,12 +37,6 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapHistoryInfiniteQuery: mockHistory,
 }))
 
-const { mockIsCrossChainEnabled } = vi.hoisted(() => ({
-    mockIsCrossChainEnabled: vi.fn(() => true),
-}))
-vi.mock('@hooks/useIsCrossChainSwapEnabled', () => ({
-    useIsCrossChainSwapEnabled: mockIsCrossChainEnabled,
-}))
 vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
     useSwapAccountAddresses: () => [
         { scope: SCOPE, address: 'ADDR' },
@@ -78,7 +72,6 @@ describe('useSwapHistoryList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHistory.mockReturnValue(historyOf([]))
-        mockIsCrossChainEnabled.mockReturnValue(true)
     })
 
     it('reads every swap-chain address of the account, the swap scope first', () => {
@@ -95,23 +88,6 @@ describe('useSwapHistoryList', () => {
                 { scope: SCOPE, address: 'ADDR' },
                 { scope: ETH_SCOPE, address: '0xETH' },
             ],
-            VISIBLE_SWAP_STATUSES,
-        )
-    })
-
-    it('reads only the swap scope while the flag is off', () => {
-        mockIsCrossChainEnabled.mockReturnValue(false)
-
-        renderHook(() =>
-            useSwapHistoryList({
-                scope: SCOPE,
-                address: 'ADDR',
-                onClose: vi.fn(),
-            }),
-        )
-
-        expect(mockHistory).toHaveBeenCalledWith(
-            [{ scope: SCOPE, address: 'ADDR' }],
             VISIBLE_SWAP_STATUSES,
         )
     })

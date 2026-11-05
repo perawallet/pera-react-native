@@ -32,6 +32,8 @@ export enum SwapEvent {
     EnterNumbers = 'swapscr_enter_amount_tap', // Started entering an amount
     SelectFromToken = 'swapscr_select_top_asset_tap', // Opened the from-token selector (asset id)
     SelectToToken = 'swapscr_select_lower_asset_tap', // Opened the to-token selector (asset id)
+    SelectFromChainFilter = 'swapscr_asset_top_chain_filter_select', // Picked a chain chip in the from-token selector
+    SelectToChainFilter = 'swapscr_asset_bot_chain_filter_select', // Picked a chain chip in the to-token selector
 }
 
 /**
@@ -95,4 +97,6 @@ export interface SwapRequiredPayloads {
     [SwapEvent.Confirm]: ChainPayload
     [SwapEvent.ConfirmSwapButton]: ChainPayload
     [SwapEvent.EnterNumbers]: ChainPayload
+    [SwapEvent.SelectFromChainFilter]: ChainPayload
+    [SwapEvent.SelectToChainFilter]: ChainPayload
 }

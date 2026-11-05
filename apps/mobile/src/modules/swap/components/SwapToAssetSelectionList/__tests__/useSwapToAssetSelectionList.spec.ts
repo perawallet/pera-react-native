@@ -17,6 +17,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
+const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 const mockUseSwapPairsInfiniteQuery = vi.hoisted(() => vi.fn())
 const mockGetQueryData = vi.hoisted(() => vi.fn())
@@ -41,6 +42,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     getAssetsQueryKey: mockGetAssetsQueryKey,
     PeraAssetVerificationTier: {},
+}))
+
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mockTrackEvent,
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -151,6 +157,66 @@ describe('useSwapToAssetSelectionList', () => {
             isLoading: false,
             hasNextPage: false,
             fetchNextPage: mockFetchNextPage,
+        })
+    })
+
+    describe('chain filter', () => {
+        beforeEach(() => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+        })
+
+        const lastScopes = () =>
+            mockUseSwapPairsInfiniteQuery.mock.lastCall?.[0].destinationScopes
+
+        it('has no chips and names no chain for one destination', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE]
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.isChainShown).toBe(false)
+        })
+
+        it('searches every destination on All, naming each row', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.chainOptions.map(o => o.value)).toEqual([
+                null,
+                'algorand',
+                'ethereum',
+            ])
+            expect(lastScopes()).toEqual([ALGO_SCOPE, ETH_SCOPE])
+            expect(result.current.isChainShown).toBe(true)
+        })
+
+        it('narrows the search to the picked chain', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.selectedChainId).toBe('ethereum')
+            expect(lastScopes()).toEqual([ETH_SCOPE])
+            expect(result.current.isChainShown).toBe(false)
+            expect(mockTrackEvent).toHaveBeenCalledTimes(1)
+        })
+
+        it('returns to All when the picked chain stops being a destination', () => {
+            const { result, rerender } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            mockDestinationScopes.current = [ALGO_SCOPE]
+            rerender()
+
+            expect(result.current.selectedChainId).toBeNull()
+            expect(lastScopes()).toEqual([ALGO_SCOPE])
         })
     })
 

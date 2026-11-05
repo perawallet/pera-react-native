@@ -14,6 +14,8 @@ import { PWIcon, PWText, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainLabel } from '@modules/chain-ui/icon'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderDisplay } from '../SwapProviderDisplay'
@@ -23,22 +25,26 @@ import type { SwapReceiveTarget } from './useSwapConfirmation'
 
 type SwapDetailsSectionProps = {
     quote: SwapQuote
+    sourceChainId: ChainId
     receiveTarget: Nullable<SwapReceiveTarget>
-    rateDisplay: string
-    minimumReceivedDisplay: string
-    peraFeeDisplay: string
+    rateDisplay: Nullable<string>
+    minimumReceivedDisplay: Nullable<string>
+    peraFeeDisplay: Nullable<string>
+    providerFeeDisplay: Nullable<string>
     networkFeeDisplay: Nullable<string>
     slippageDisplay: string
-    priceImpactDisplay: string
+    priceImpactDisplay: Nullable<string>
     priceImpactStyle: object
 }
 
 export const SwapDetailsSection = ({
     quote,
+    sourceChainId,
     receiveTarget,
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
+    providerFeeDisplay,
     networkFeeDisplay,
     slippageDisplay,
     priceImpactDisplay,
@@ -70,22 +76,39 @@ export const SwapDetailsSection = ({
                     )}
                 </DetailRow>
             )}
-            <DetailRow label={t('swap.quote.rate')}>
-                <PWView style={styles.rateValueRow}>
-                    <PWText
-                        style={styles.detailValue}
-                        testID='swap-confirm-rate'
+            {receiveTarget && (
+                <DetailRow label={t('swap.quote.route')}>
+                    <PWView
+                        style={styles.rateValueRow}
+                        testID='swap-confirm-route'
                     >
-                        {rateDisplay}
-                    </PWText>
-                    <PWView style={styles.rateIcon}>
+                        <ChainLabel chainId={sourceChainId} />
                         <PWIcon
-                            name='swap'
+                            name='chevron-right'
                             size='xs'
                         />
+                        <ChainLabel chainId={receiveTarget.scope.chainId} />
                     </PWView>
-                </PWView>
-            </DetailRow>
+                </DetailRow>
+            )}
+            {rateDisplay && (
+                <DetailRow label={t('swap.quote.rate')}>
+                    <PWView style={styles.rateValueRow}>
+                        <PWText
+                            style={styles.detailValue}
+                            testID='swap-confirm-rate'
+                        >
+                            {rateDisplay}
+                        </PWText>
+                        <PWView style={styles.rateIcon}>
+                            <PWIcon
+                                name='swap'
+                                size='xs'
+                            />
+                        </PWView>
+                    </PWView>
+                </DetailRow>
+            )}
             <DetailRow label={t('swap.quote.provider')}>
                 <SwapProviderDisplay
                     provider={quote.provider}
@@ -99,25 +122,39 @@ export const SwapDetailsSection = ({
                 valueStyle={styles.detailValue}
                 info={t('swap.info.slippage_tolerance')}
             />
-            <DetailRow
-                label={t('swap.quote.price_impact')}
-                testID='swap-confirm-price-impact'
-                value={priceImpactDisplay}
-                valueStyle={priceImpactStyle}
-                info={t('swap.info.price_impact')}
-            />
-            <DetailRow
-                label={t('swap.quote.minimum_received')}
-                testID='swap-confirm-min-received'
-                value={minimumReceivedDisplay}
-                valueStyle={styles.detailValue}
-            />
-            <DetailRow
-                label={t('swap.quote.pera_fee')}
-                testID='swap-confirm-pera-fee'
-                value={peraFeeDisplay}
-                valueStyle={styles.detailValue}
-            />
+            {priceImpactDisplay && (
+                <DetailRow
+                    label={t('swap.quote.price_impact')}
+                    testID='swap-confirm-price-impact'
+                    value={priceImpactDisplay}
+                    valueStyle={priceImpactStyle}
+                    info={t('swap.info.price_impact')}
+                />
+            )}
+            {minimumReceivedDisplay && (
+                <DetailRow
+                    label={t('swap.quote.minimum_received')}
+                    testID='swap-confirm-min-received'
+                    value={minimumReceivedDisplay}
+                    valueStyle={styles.detailValue}
+                />
+            )}
+            {peraFeeDisplay && (
+                <DetailRow
+                    label={t('swap.quote.pera_fee')}
+                    testID='swap-confirm-pera-fee'
+                    value={peraFeeDisplay}
+                    valueStyle={styles.detailValue}
+                />
+            )}
+            {providerFeeDisplay && (
+                <DetailRow
+                    label={t('swap.quote.provider_fee')}
+                    testID='swap-confirm-provider-fee'
+                    value={providerFeeDisplay}
+                    valueStyle={styles.detailValue}
+                />
+            )}
             {networkFeeDisplay && (
                 <DetailRow
                     label={t('swap.quote.network_fee')}

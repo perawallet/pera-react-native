@@ -12,8 +12,10 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
+    type NavigationProp,
     type RouteProp,
     useIsFocused,
+    useNavigation,
     useRoute,
 } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
@@ -56,6 +58,8 @@ export type UseSwapScreenResult = {
 export const useSwapScreen = (): UseSwapScreenResult => {
     const route =
         useRoute<RouteProp<{ Swap: Optional<SwapScreenParams> }, 'Swap'>>()
+    const navigation =
+        useNavigation<NavigationProp<{ Swap: Optional<SwapScreenParams> }>>()
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
     const sourceChainId = useSwapsStore(state => state.sourceChainId)
@@ -88,6 +92,25 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     useEffect(() => {
         if (routeSourceChainId) setSourceChainId(routeSourceChainId)
     }, [routeSourceChainId, setSourceChainId])
+
+    // A pick that moves the swap off the route's chain spends the route: left in
+    // place, it would seed its pair over the user's next pick on that chain.
+    const previousSourceChainRef = useRef(sourceChainId)
+    useEffect(() => {
+        const previous = previousSourceChainRef.current
+        previousSourceChainRef.current = sourceChainId
+        if (
+            routeSourceChainId &&
+            previous === routeSourceChainId &&
+            sourceChainId !== routeSourceChainId
+        ) {
+            navigation.setParams({
+                assetIn: undefined,
+                assetOut: undefined,
+                payAmount: undefined,
+            })
+        }
+    }, [navigation, routeSourceChainId, sourceChainId])
 
     // Until the store holds the route's chain, scope is still the previous one,
     // and a pair seeded from it would outlive the chain change.
@@ -131,12 +154,17 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     const payAmount = route.params?.payAmount
     // The form reads this once on mount, which can be before the chain is pinned.
     const payAssetId = assetInId ?? route.params?.assetIn?.assetId
+    const payChainId = routeSourceChainId ?? scope?.chainId
     const initialPayAmount = useMemo(
         () =>
-            payAmount && payAssetId
-                ? { assetId: payAssetId, amount: new Decimal(payAmount) }
+            payAmount && payAssetId && payChainId
+                ? {
+                      chainId: payChainId,
+                      assetId: payAssetId,
+                      amount: new Decimal(payAmount),
+                  }
                 : undefined,
-        [payAmount, payAssetId],
+        [payAmount, payAssetId, payChainId],
     )
 
     const { pushWebView } = useWebView()
