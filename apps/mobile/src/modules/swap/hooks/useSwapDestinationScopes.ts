@@ -26,7 +26,6 @@ import {
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isSwapChain } from '@perawallet/wallet-core-swaps'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 
 /**
  * Where a swap from `account` on `scope` may pay out: `scope`, plus the
@@ -38,10 +37,8 @@ export const useSwapDestinationScopes = (
     account: Nullable<WalletAccount>,
     scope: ChainScope,
 ): ChainScope[] => {
-    const isEnabled = useIsCrossChainSwapEnabled()
     const accounts = useAllAccounts()
-    const isEligible =
-        isEnabled && account !== null && !isMultisigAccount(account)
+    const isEligible = account !== null && !isMultisigAccount(account)
 
     const receivingChainIds = useMemo(
         () =>

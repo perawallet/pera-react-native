@@ -18,12 +18,8 @@ import {
     type SwapStatus,
     type SwapTrackedOrder,
 } from '@perawallet/wallet-core-swaps'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useSwapTrackedOrdersList } from '../useSwapTrackedOrdersList'
 
-vi.mock('@hooks/useIsCrossChainSwapEnabled', () => ({
-    useIsCrossChainSwapEnabled: vi.fn(() => true),
-}))
 vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
     useSwapAccountAddresses: () => [
         {
@@ -56,7 +52,6 @@ const mockRemoveOrder = vi.fn()
 
 describe('useSwapTrackedOrdersList', () => {
     beforeEach(() => {
-        vi.mocked(useIsCrossChainSwapEnabled).mockReturnValue(true)
         vi.mocked(useSwapTrackingStore).mockImplementation(
             (selector: unknown) =>
                 (selector as (state: unknown) => unknown)({
@@ -94,17 +89,6 @@ describe('useSwapTrackedOrdersList', () => {
 
         expect(result.current.isVisible).toBe(true)
         expect(result.current.rows[0].isSettled).toBe(false)
-    })
-
-    it('is hidden while the flag is off', () => {
-        vi.mocked(useIsCrossChainSwapEnabled).mockReturnValue(false)
-        vi.mocked(useSwapTrackedOrders).mockReturnValue([
-            order('1', 'completed'),
-        ])
-
-        const { result } = renderHook(() => useSwapTrackedOrdersList())
-
-        expect(result.current.isVisible).toBe(false)
     })
 
     it('forgets an order the user dismisses', () => {

@@ -24,7 +24,6 @@ import {
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
-import { useIsCrossChainSwapEnabled } from '@hooks/useIsCrossChainSwapEnabled'
 import { useWebView } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
@@ -63,20 +62,17 @@ export const useSwapHistoryList = ({
     onClose,
 }: UseSwapHistoryListParams): UseSwapHistoryListResult => {
     const { pushWebView } = useWebView()
-    const isCrossChainEnabled = useIsCrossChainSwapEnabled()
     const accountAddresses = useSwapAccountAddresses(useSelectedAccount())
 
     // The request runs on the first entry's scope, so the swap scope leads.
     const accounts = useMemo(
         () => [
             { scope, address },
-            ...(isCrossChainEnabled
-                ? accountAddresses.filter(
-                      entry => toScopeKey(entry.scope) !== toScopeKey(scope),
-                  )
-                : []),
+            ...accountAddresses.filter(
+                entry => toScopeKey(entry.scope) !== toScopeKey(scope),
+            ),
         ],
-        [scope, address, isCrossChainEnabled, accountAddresses],
+        [scope, address, accountAddresses],
     )
 
     const {
