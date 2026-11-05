@@ -267,7 +267,9 @@ describe('fetchAccountState received-token detection', () => {
     })
 
     it('keeps a stored token and the marker when the history read fails', async () => {
-        serve(502)
+        // A status ky doesn't retry: a 5xx comes back 300ms later, into the
+        // history count of whichever test is running by then.
+        serve(400)
         storedHoldings.ids = [TSLAX]
 
         const state = await opsWith(SERVICES).fetchAccountState(
