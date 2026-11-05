@@ -53,6 +53,7 @@ const ENABLED = [
     'messageSigning',
     'ledger',
     'nft',
+    'nameService',
     'cloudBackup',
 ]
 

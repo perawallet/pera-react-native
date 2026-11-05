@@ -69,6 +69,10 @@ import {
     ledgerAppDriverRegistry,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import {
+    nameServiceChainAdapters,
+    type NameServiceChainAdapter,
+} from '@perawallet/wallet-core-nfd'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     createEthereumAccountsAdapter,
@@ -85,6 +89,7 @@ import { createEvmDeeplinkAdapter } from './deeplinks/adapter'
 import { createEvmDeviceAdapter } from './device'
 import { createEvmHistoryAdapter } from './history'
 import { createEvmLedgerAppDriver } from './ledger/driver'
+import { createEvmNameServiceAdapter } from './names/adapter'
 import { createEvmPlannerAdapter } from './signing/adapter'
 import { createEvmLocalKeySignerAdapter } from './signing/localKeySigner'
 import { withMessageSigningGate } from './signing/messageSigningGate'
@@ -116,6 +121,7 @@ type EvmChainAdapters = {
     device: DeviceChainAdapter
     ledgerDriver: LedgerAppDriver
     swap: SwapChainAdapter
+    nameService: NameServiceChainAdapter
 }
 
 const buildAdapters = (
@@ -127,8 +133,9 @@ const buildAdapters = (
     const listedTokens = cachedWhitelist(chain)
     // The broadcaster sees a swap's tokens arrive; the account read picks them up.
     const tokenSightings = createTokenSightings()
+    const addressCodec = createEvmAddressCodec(chain)
     return {
-        addressCodec: createEvmAddressCodec(chain),
+        addressCodec,
         keyDerivation: createEvmKeyDerivation(chain),
         planner: createEvmPlannerAdapter(chain),
         reviewer,
@@ -156,6 +163,7 @@ const buildAdapters = (
         device: createEvmDeviceAdapter(chain),
         ledgerDriver: createEvmLedgerAppDriver(chain),
         swap: createEvmSwapAdapter(ctx, chain),
+        nameService: createEvmNameServiceAdapter(chain, addressCodec),
     }
 }
 
@@ -195,6 +203,7 @@ export const createEvmChainRegistration = (
         ledgerAppDriverRegistry.register(adapters.ledgerDriver)
         deviceChainAdapters.register(adapters.device)
         swapChainAdapters.register(adapters.swap)
+        nameServiceChainAdapters.register(adapters.nameService)
         // The first EVM chain registered serves every EVM chain's links.
         if (!isSchemeClaimed(chain)) {
             deeplinkAdapters.register(adapters.deeplink)
