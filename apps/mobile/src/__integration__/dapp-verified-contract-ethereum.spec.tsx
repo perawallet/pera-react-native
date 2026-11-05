@@ -299,7 +299,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         useRemoteConfigStore.getState().resetState()
     })
 
-    it("Given a swap on a verified router, when it is reviewed, then it shows the function and its arguments from the contract's verified source, names the user's account, keeps the raw call one step away and still says the transaction wasn't checked", async () => {
+    it("Given a swap on a verified router, when it is reviewed, then it shows the function and its arguments from the contract's verified source, names the user's account, leaves the raw call to View details and still says the transaction wasn't checked", async () => {
         await review(
             ROUTER,
             SWAP_DATA,
@@ -339,12 +339,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         expect(
             screen.getByTestId('ethereum_contract_call_warning'),
         ).toBeTruthy()
-        expect(
-            screen.getByTestId('ethereum_contract_call_signature').textContent,
-        ).toContain('swapExactETHForTokens(uint256,address[],address,uint256)')
-        expect(
-            screen.getByTestId('ethereum_contract_call_data').textContent,
-        ).toContain(SWAP_DATA.slice(0, 20))
+        expect(screen.queryByTestId('ethereum_contract_call_data')).toBeNull()
     })
 
     it("Given a call through a verified proxy, when it is reviewed, then it shows the implementation's function, says the contract is a proxy and names a contact", async () => {
