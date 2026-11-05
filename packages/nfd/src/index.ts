@@ -18,6 +18,7 @@ export * from './sync'
 export { verifyNameAddress, type VerifyNameAddressParams } from './services'
 export {
     nameServiceChainAdapters,
+    nameServiceOf,
     type NameServiceChainAdapter,
     type VerifyForwardResolutionParams,
 } from './chain-adapter'

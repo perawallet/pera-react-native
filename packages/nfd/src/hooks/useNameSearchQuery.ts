@@ -13,24 +13,24 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { fetchNfdSearch } from '../api'
+import { fetchNameSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'
-import type { NfdSearchResult } from '../models'
+import type { NameSearchResult } from '../models'
 
-export type UseNfdSearchQueryResult = {
-    data: NfdSearchResult[]
+export type UseNameSearchQueryResult = {
+    data: NameSearchResult[]
     isLoading: boolean
 }
 
 // One stable empty array, so memos that depend on `data` don't re-run every render.
-const NO_RESULTS: NfdSearchResult[] = []
+const NO_RESULTS: NameSearchResult[] = []
 
-export const useNfdSearchQuery = (
+export const useNameSearchQuery = (
     scope: ChainScope,
     name: string,
     options?: { enabled?: boolean },
-): UseNfdSearchQueryResult => {
-    // NFD names are case-insensitive; normalize so "BruNo.aLgo" matches "bruno.algo".
+): UseNameSearchQueryResult => {
+    // Names are case-insensitive; normalize so "BruNo.aLgo" matches "bruno.algo".
     const normalizedName = name.toLowerCase()
     const isNameServiceEnabled = useChainCapability(
         scope.chainId,
@@ -43,8 +43,8 @@ export const useNfdSearchQuery = (
 
     const query = useQuery({
         queryKey: nfdQueryKeys.search(normalizedName, scope),
-        queryFn: ({ signal }): Promise<NfdSearchResult[]> =>
-            fetchNfdSearch({ name: normalizedName, scope, signal }),
+        queryFn: ({ signal }): Promise<NameSearchResult[]> =>
+            fetchNameSearch({ name: normalizedName, scope, signal }),
         enabled,
     })
 

@@ -15,19 +15,13 @@ import { z } from 'zod'
 const nfdNameApiSchema = z.object({
     name: z.string().min(1),
     source: z.string().min(1),
-    image: z.string(),
+    // ENS names carry no avatar.
+    image: z.string().nullable(),
 })
 
 export type NfdNameApiResponse = z.infer<typeof nfdNameApiSchema>
 
-/** GET /v1/accounts/{address}/names/ — paginated response */
-export const nfdNamesListResponseSchema = z.object({
-    results: z.array(nfdNameApiSchema),
-})
-
-export type NfdNamesListApiResponse = z.infer<typeof nfdNamesListResponseSchema>
-
-/** POST /v1/accounts/names/bulk-read/ */
+/** POST /api/v4/accounts/names/ */
 export const nfdBulkReadResponseSchema = z.object({
     results: z.array(
         z.object({
@@ -39,21 +33,23 @@ export const nfdBulkReadResponseSchema = z.object({
 
 export type NfdBulkReadApiResponse = z.infer<typeof nfdBulkReadResponseSchema>
 
-const nfdServiceSchema = z.object({
+const nameServiceSchema = z.object({
     name: z.string(),
     logo: z.string(),
 })
 
-/** GET /v1/name-services/search/ */
-export const nfdSearchResponseSchema = z.object({
+/** GET /api/v4/name-services/search/ */
+export const nameSearchResponseSchema = z.object({
     count: z.number(),
     results: z.array(
         z.object({
             name: z.string(),
             address: z.string(),
-            service: nfdServiceSchema,
+            /** CAIP-2 id of the chain the name resolves on. */
+            chain: z.string(),
+            service: nameServiceSchema,
         }),
     ),
 })
 
-export type NfdSearchApiResponse = z.infer<typeof nfdSearchResponseSchema>
+export type NameSearchApiResponse = z.infer<typeof nameSearchResponseSchema>

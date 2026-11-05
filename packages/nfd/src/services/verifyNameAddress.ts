@@ -12,7 +12,7 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { nameServiceAdapterFor } from '../chain-adapter'
-import type { NfdAddressVerification } from '../models'
+import type { NameAddressVerification } from '../models'
 
 export type VerifyNameAddressParams = {
     name: string
@@ -32,7 +32,7 @@ export const verifyNameAddress = async ({
     address,
     scope,
     signal,
-}: VerifyNameAddressParams): Promise<NfdAddressVerification> => {
+}: VerifyNameAddressParams): Promise<NameAddressVerification> => {
     const adapter = nameServiceAdapterFor(scope)
     // Without an on-chain check there is nothing to trust the address on, so
     // the name stays unusable as a destination rather than passing unchecked.

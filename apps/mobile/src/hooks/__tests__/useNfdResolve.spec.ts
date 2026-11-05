@@ -13,13 +13,14 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import { nameServiceOf, useNameSearchQuery } from '@perawallet/wallet-core-nfd'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useNfdResolve } from '../useNfdResolve'
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdSearchQuery: vi.fn(),
+    useNameSearchQuery: vi.fn(),
+    nameServiceOf: vi.fn(() => 'nfd'),
 }))
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -30,10 +31,10 @@ const NFD_ADDRESS = 'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 const FIXTURE_ADDRESS = `fx${'a'.repeat(40)}`
 
 const mockSearch = (data: { name: string; address: string }[] = []) => {
-    vi.mocked(useNfdSearchQuery).mockReturnValue({
+    vi.mocked(useNameSearchQuery).mockReturnValue({
         data,
         isLoading: false,
-    } as unknown as ReturnType<typeof useNfdSearchQuery>)
+    } as unknown as ReturnType<typeof useNameSearchQuery>)
 }
 
 describe('useNfdResolve', () => {
@@ -41,6 +42,7 @@ describe('useNfdResolve', () => {
         registerAlgorandAddressCodec()
         addressCodecs.register(fixtureCodec)
         mockSearch()
+        vi.mocked(nameServiceOf).mockReturnValue('nfd')
     })
 
     afterEach(() => {
@@ -55,7 +57,7 @@ describe('useNfdResolve', () => {
 
         expect(result.current.isDirectAddress).toBe(true)
         expect(result.current.resolvedAddress).toBe(ALGORAND_ADDRESS)
-        expect(useNfdSearchQuery).toHaveBeenLastCalledWith(
+        expect(useNameSearchQuery).toHaveBeenLastCalledWith(
             expect.objectContaining({ chainId: 'algorand' }),
             ALGORAND_ADDRESS,
             { enabled: false },
@@ -77,7 +79,7 @@ describe('useNfdResolve', () => {
 
         const { result } = renderHook(() => useNfdResolve('alice.algo', SCOPE))
 
-        expect(useNfdSearchQuery).toHaveBeenLastCalledWith(
+        expect(useNameSearchQuery).toHaveBeenLastCalledWith(
             expect.objectContaining({ chainId: 'algorand' }),
             'alice.algo',
             { enabled: true },
@@ -86,6 +88,18 @@ describe('useNfdResolve', () => {
         expect(result.current.isNfdResolved).toBe(true)
         expect(result.current.resolvedAddress).toBe(NFD_ADDRESS)
         expect(result.current.nfdName).toBe('alice.algo')
+    })
+
+    it('does not search a chain whose names are ENS, which only a send checks on-chain', () => {
+        vi.mocked(nameServiceOf).mockReturnValue('ens')
+
+        renderHook(() => useNfdResolve('alice.eth', SCOPE))
+
+        expect(useNameSearchQuery).toHaveBeenLastCalledWith(
+            expect.anything(),
+            'alice.eth',
+            { enabled: false },
+        )
     })
 
     it('resolves to nothing for input that is neither an address nor a name', () => {

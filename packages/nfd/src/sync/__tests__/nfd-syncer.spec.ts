@@ -107,6 +107,14 @@ describe('fetchAndPersistNfds', () => {
         ])
     })
 
+    it('persists nothing when the backend cannot answer, so an outage is not cached as no name', async () => {
+        mockFetchNfdBulkRead.mockRejectedValue(new Error('503'))
+
+        await fetchAndPersistNfds([ADDR_A], ALGORAND_MAINNET)
+
+        expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
+    })
+
     it('persists negative results for addresses absent from response', async () => {
         mockFetchNfdBulkRead.mockResolvedValue([
             {

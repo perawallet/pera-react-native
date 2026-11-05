@@ -370,7 +370,7 @@ const recordRequest = ({ request }: { request: Request }) => {
 // Pera for an Algorand address's NFD name to display it, as for any request.
 // What must never happen is a request address going anywhere else.
 const isDisplayOrChainRequest = (url: URL) =>
-    url.host === RPC_HOST || url.pathname.endsWith('/accounts/names/bulk-read/')
+    url.host === RPC_HOST || url.pathname.endsWith('/api/v4/accounts/names/')
 
 const expectNotSentForLookup = async (addresses: string[]) => {
     for (const { url, body } of sent) {

@@ -25,7 +25,7 @@ import type { AddressSearchItem } from './useAddressSearchView'
 
 export type UseAddressSearchListProps = {
     scope: ChainScope
-    onSelected: (address: string, nfdName?: string) => void
+    onSelected: (address: string, name?: string) => void
     setValue: (value: string) => void
     chainBadgeName: Optional<string>
     showAccountBalance: boolean

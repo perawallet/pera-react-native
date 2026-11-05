@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { nameServiceAdapterFor } from '../chain-adapter'
+import { nameServiceAdapterFor, nameServiceOf } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
@@ -52,9 +52,12 @@ export const useNfdForAddressQuery = (
         scope.chainId,
         'nameService',
     )
+    // The reverse cache and queue only hold NFD names; nothing reads ENS primary
+    // names, so an ENS chain's addresses must not be posted to them.
     const enabled =
         (options?.enabled ?? true) &&
         isNameServiceEnabled &&
+        nameServiceOf(scope) === 'nfd' &&
         nameServiceAdapterFor(scope).isValidAddress(address)
 
     const query = useQuery({

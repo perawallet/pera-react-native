@@ -21,6 +21,7 @@ export const fakeNameServiceAdapter = (
     overrides: Partial<NameServiceChainAdapter> = {},
 ): NameServiceChainAdapter => ({
     chainId: 'algorand',
+    service: 'nfd',
     isValidAddress: address => /^[0-9a-zA-Z]{58}$/.test(address),
     ...overrides,
 })

@@ -33,8 +33,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useNfdSearchQuery,
-    type NfdSearchResult,
+    nameServiceOf,
+    useNameSearchQuery,
+    type NameSearchResult,
 } from '@perawallet/wallet-core-nfd'
 import {
     useDebouncedValue,
@@ -45,6 +46,7 @@ import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import { useClipboard } from '@hooks/useClipboard'
 import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'
+import { NAME_SERVICE_COPY } from '@utils/nameServiceCopy'
 import { chainFamilyDisplay, chainUiFor } from '@modules/chain-ui'
 import { useFocusEffect } from '@react-navigation/native'
 
@@ -53,7 +55,7 @@ export type AddressSearchItem =
     | { type: 'account'; account: WalletAccount; key: string }
     /** `address` is the contact's entry in the searched family. */
     | { type: 'contact'; contact: Contact; address: string; key: string }
-    | { type: 'nfd'; nfd: NfdSearchResult; key: string }
+    | { type: 'name'; result: NameSearchResult; key: string }
     | { type: 'address'; address: string; key: string }
     | { type: 'paste'; address: string; key: string }
 
@@ -100,7 +102,7 @@ type UseAddressSearchViewResult = {
     setValue: (text: string) => void
     matchingItems: AddressSearchItem[]
     hasResults: boolean
-    isNfdLoading: boolean
+    isNameSearchLoading: boolean
     /** Set when `value` is a valid address of a family other than the scope's. */
     mismatchedFamily: Optional<ChainFamily>
     /** Unset when either family registers no wrong-network copy. */
@@ -211,13 +213,12 @@ export const useAddressSearchView = ({
     )
 
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
-    const shouldSearchNfd = debouncedValue.includes('.') && !addressIsValid
-    const { data: nfdData, isLoading: isNfdLoading } = useNfdSearchQuery(
-        scope,
-        debouncedValue,
-        { enabled: shouldSearchNfd },
-    )
-    const nfdResults = useMemo(() => nfdData ?? [], [nfdData])
+    const shouldSearchNames = debouncedValue.includes('.') && !addressIsValid
+    const { data: nameData, isLoading: isNameSearchLoading } =
+        useNameSearchQuery(scope, debouncedValue, {
+            enabled: shouldSearchNames,
+        })
+    const nameResults = useMemo(() => nameData ?? [], [nameData])
 
     const matchingAccounts = useMemo(
         () =>
@@ -308,17 +309,17 @@ export const useAddressSearchView = ({
             }
         }
 
-        if (nfdResults.length > 0) {
+        if (nameResults.length > 0) {
             items.push({
                 type: 'section_header',
-                title: i18nKey('address_entry.nfd_results'),
-                key: 'header-nfd',
+                title: NAME_SERVICE_COPY[nameServiceOf(scope)].resultsTitleKey,
+                key: 'header-names',
             })
-            for (const nfd of nfdResults) {
+            for (const result of nameResults) {
                 items.push({
-                    type: 'nfd',
-                    nfd,
-                    key: `nfd-${nfd.name}-${items.length}`,
+                    type: 'name',
+                    result,
+                    key: `name-${result.name}-${items.length}`,
                 })
             }
         }
@@ -361,7 +362,7 @@ export const useAddressSearchView = ({
         accounts,
         matchingAccounts,
         matchingContacts,
-        nfdResults,
+        nameResults,
         clipboardAddress,
         scope,
         mismatchedFamily,
@@ -374,7 +375,7 @@ export const useAddressSearchView = ({
         setValue,
         matchingItems,
         hasResults,
-        isNfdLoading,
+        isNameSearchLoading,
         mismatchedFamily,
         wrongNetworkMessage,
         searchPlaceholder,

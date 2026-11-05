@@ -231,9 +231,10 @@
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address, NFD name, or short name",
-        "search_placeholder_evm": "0x address or account name",
+        "search_placeholder_evm": "0x address, ENS name, or account name",
         "search_placeholder_neutral": "Address or account name",
         "nfd_results": "NFDomains",
+        "ens_results": "ENS",
         "nfd_resolving": "Resolving NFD...",
         "nfd_resolved": "Resolved from {{name}}",
         "wrong_network": {
@@ -3046,6 +3047,10 @@
             "nfd_mismatch_body": "The NFD contract for {{name}} doesn't list this address. Paste the address directly if you trust it.",
             "nfd_unavailable_title": "Couldn't verify {{name}}",
             "nfd_unavailable_body": "The NFD registry couldn't be reached to check this name. Try again, or paste the address directly.",
+            "ens_mismatch_title": "Name doesn't match on-chain",
+            "ens_mismatch_body": "ENS doesn't point {{name}} to this address on this network. Paste the address directly if you trust it.",
+            "ens_unavailable_title": "Couldn't verify {{name}}",
+            "ens_unavailable_body": "ENS couldn't be reached to check this name. Try again, or paste the address directly.",
             "invalid_address_title": "Invalid address",
             "invalid_address_body": "This isn't a valid {{chain}} address."
         },

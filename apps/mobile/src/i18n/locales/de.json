@@ -231,9 +231,10 @@
         "no_accounts_found": "Keine Konten gefunden",
         "no_accounts_body": "Es gibt keine passenden Konten",
         "search_placeholder": "Kontoadresse, NFD-Name oder Kurzname",
-        "search_placeholder_evm": "0x-Adresse oder Kontoname",
+        "search_placeholder_evm": "0x-Adresse, ENS-Name oder Kontoname",
         "search_placeholder_neutral": "Adresse oder Kontoname",
         "nfd_results": "NFDomains",
+        "ens_results": "ENS",
         "nfd_resolving": "NFD wird aufgelöst...",
         "nfd_resolved": "Aufgelöst von {{name}}",
         "wrong_network": {
@@ -3038,6 +3039,10 @@
             "nfd_mismatch_body": "Der NFD-Vertrag für {{name}} führt diese Adresse nicht. Füge die Adresse direkt ein, wenn du ihr vertraust.",
             "nfd_unavailable_title": "{{name}} konnte nicht überprüft werden",
             "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein.",
+            "ens_mismatch_title": "Name stimmt nicht mit der Chain überein",
+            "ens_mismatch_body": "ENS führt {{name}} in diesem Netzwerk nicht auf diese Adresse. Füge die Adresse direkt ein, wenn du ihr vertraust.",
+            "ens_unavailable_title": "{{name}} konnte nicht überprüft werden",
+            "ens_unavailable_body": "ENS war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein.",
             "invalid_address_title": "Ungültige Adresse",
             "invalid_address_body": "Das ist keine gültige {{chain}}-Adresse."
         },

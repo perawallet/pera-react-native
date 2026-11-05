@@ -31,7 +31,7 @@ export default defineRule({
             "Take the `ChainScope` from the caller and pass `{ scope }` down. A chain-agnostic Pera endpoint (banners, inbox, currencies, integrity) takes no scope: route it by `useWalletDeployment()` and pass `deployment`. Code that is Algorand's own belongs in chain-algorand, which is exempt. In app code the deployment is read with `useWalletDeployment()`, never with `useNetworkStore(state => state.mode)`.",
         examples: {
             bad: 'const network = legacyNetworkOf(scope)',
-            good: 'export const useNfdSearchQuery = (scope: ChainScope, name: string) =>\n    useQuery({ queryFn: () => fetchNfdSearch({ name, scope }) })',
+            good: 'export const useNameSearchQuery = (scope: ChainScope, name: string) =>\n    useQuery({ queryFn: () => fetchNameSearch({ name, scope }) })',
         },
     },
     gates: withoutTests({

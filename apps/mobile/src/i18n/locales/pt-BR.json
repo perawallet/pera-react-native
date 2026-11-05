@@ -231,9 +231,10 @@
         "no_accounts_found": "Nenhuma conta encontrada",
         "no_accounts_body": "Não há contas correspondentes",
         "search_placeholder": "Endereço da conta, nome NFD ou nome curto",
-        "search_placeholder_evm": "Endereço 0x ou nome da conta",
+        "search_placeholder_evm": "Endereço 0x, nome ENS ou nome da conta",
         "search_placeholder_neutral": "Endereço ou nome da conta",
         "nfd_results": "NFDomains",
+        "ens_results": "ENS",
         "nfd_resolving": "Resolvendo NFD...",
         "nfd_resolved": "Resolvido de {{name}}",
         "wrong_network": {
@@ -3062,6 +3063,10 @@
             "nfd_mismatch_body": "O contrato NFD de {{name}} não lista este endereço. Cole o endereço diretamente se confiar nele.",
             "nfd_unavailable_title": "Não foi possível verificar {{name}}",
             "nfd_unavailable_body": "O registro NFD não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente.",
+            "ens_mismatch_title": "O nome não corresponde na cadeia",
+            "ens_mismatch_body": "O ENS não aponta {{name}} para este endereço nesta rede. Cole o endereço diretamente se confiar nele.",
+            "ens_unavailable_title": "Não foi possível verificar {{name}}",
+            "ens_unavailable_body": "O ENS não pôde ser acessado para checar este nome. Tente novamente ou cole o endereço diretamente.",
             "invalid_address_title": "Endereço inválido",
             "invalid_address_body": "Este não é um endereço válido de {{chain}}."
         },

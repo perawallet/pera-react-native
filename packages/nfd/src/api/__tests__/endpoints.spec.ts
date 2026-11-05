@@ -26,76 +26,74 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: loggerMock,
 }))
 
+// Only the networks a Pera backend serves carry a CAIP-2 id, as in the chains' descriptors.
+const CAIP2: Record<string, Record<string, string>> = {
+    algorand: {
+        mainnet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+        testnet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
+    },
+    base: { mainnet: 'eip155:8453', sepolia: 'eip155:84532' },
+}
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: (chainId: string) => ({
+        networks: Object.entries(CAIP2[chainId] ?? {}).map(([id, caip2]) => ({
+            id,
+            caip2,
+        })),
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    hasPeraBackend: (scope: { networkId: string }) =>
+        scope.networkId !== 'betanet' && scope.networkId !== 'custom',
+}))
+
+import { fetchNfdBulkRead, fetchNameSearch } from '../endpoints'
+import { nameServiceChainAdapters } from '../../chain-adapter'
 import {
-    fetchNfdNamesForAddress,
-    fetchNfdBulkRead,
-    fetchNfdSearch,
-} from '../endpoints'
-import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
+    fakeNameServiceAdapter,
+    registerFakeNameServiceAdapter,
+} from '../../__tests__/fakeNameServiceAdapter'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
+const BASE_MAINNET = { chainId: 'base', networkId: 'mainnet' } as const
+const BASE_SEPOLIA = { chainId: 'base', networkId: 'sepolia' } as const
+
+const ALGORAND_ADDRESS =
+    'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
+const EVM_ADDRESS = '0x1111111111111111111111111111111111111111'
 
 beforeEach(() => {
-    registerFakeNameServiceAdapter()
+    queryClientMock.mockReset()
+    loggerMock.warn.mockReset()
+    registerFakeNameServiceAdapter({
+        isValidAddress: address =>
+            address === ALGORAND_ADDRESS || address === EVM_ADDRESS,
+    })
+    nameServiceChainAdapters.register(
+        fakeNameServiceAdapter({
+            chainId: 'base',
+            service: 'ens',
+            isValidAddress: address => address === EVM_ADDRESS,
+            // Stands in for ENSIP-15: folds width and case, refuses an underscore.
+            normalizeName: name =>
+                name.includes('_')
+                    ? undefined
+                    : name.normalize('NFKC').toLowerCase(),
+        }),
+    )
 })
 
 const validNameResult = {
     name: 'alice.algo',
-    source: 'nfd',
+    source: 'nfdomain',
     image: '',
 }
 
-describe('fetchNfdNamesForAddress', () => {
-    beforeEach(() => {
-        queryClientMock.mockReset()
-        loggerMock.warn.mockReset()
-    })
-
-    test('GETs /v1/accounts/:address/names/ and maps the result', async () => {
-        queryClientMock.mockResolvedValue({
-            data: { results: [validNameResult] },
-        })
-
-        const result = await fetchNfdNamesForAddress({
-            address: 'ADDR',
-            scope: ALGORAND_MAINNET,
-        })
-
-        expect(queryClientMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                backend: 'pera',
-                scope: ALGORAND_MAINNET,
-                method: 'GET',
-                url: '/v1/accounts/ADDR/names/',
-            }),
-        )
-        expect(result).toEqual([validNameResult])
-    })
-
-    test('returns [] and logs a warning when the response fails schema validation', async () => {
-        queryClientMock.mockResolvedValue({ data: { wrong: 'shape' } })
-
-        const result = await fetchNfdNamesForAddress({
-            address: 'ADDR',
-            scope: ALGORAND_MAINNET,
-        })
-
-        expect(result).toEqual([])
-        expect(loggerMock.warn).toHaveBeenCalledWith(
-            'NFD names response failed schema validation',
-            expect.objectContaining({ error: expect.any(Object) }),
-        )
-    })
-})
-
 describe('fetchNfdBulkRead', () => {
-    beforeEach(() => {
-        queryClientMock.mockReset()
-        loggerMock.warn.mockReset()
-    })
-
-    test('POSTs the addresses to /bulk-read and maps per-address results', async () => {
+    test('POSTs the chain and addresses to the v4 names route and maps per-address results', async () => {
         queryClientMock.mockResolvedValue({
             data: {
                 results: [
@@ -112,9 +110,14 @@ describe('fetchNfdBulkRead', () => {
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
+                backend: 'pera',
+                scope: ALGORAND_TESTNET,
                 method: 'POST',
-                url: '/v1/accounts/names/bulk-read/',
-                data: { account_addresses: ['ADDR1', 'ADDR2'] },
+                url: '/api/v4/accounts/names/',
+                data: {
+                    chain: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
+                    addresses: ['ADDR1', 'ADDR2'],
+                },
             }),
         )
         expect(result).toEqual([
@@ -134,54 +137,174 @@ describe('fetchNfdBulkRead', () => {
         expect(result).toEqual([])
         expect(loggerMock.warn).toHaveBeenCalled()
     })
+
+    test('rejects when the backend cannot answer, rather than reading it as no names', async () => {
+        queryClientMock.mockRejectedValue(new Error('503 upstream_unavailable'))
+
+        await expect(
+            fetchNfdBulkRead({
+                addresses: ['ADDR1'],
+                scope: ALGORAND_MAINNET,
+            }),
+        ).rejects.toThrow('503')
+    })
 })
 
-describe('fetchNfdSearch', () => {
-    beforeEach(() => {
-        queryClientMock.mockReset()
-        loggerMock.warn.mockReset()
+describe('fetchNameSearch', () => {
+    const response = (chain: string, address: string) => ({
+        data: {
+            count: 1,
+            results: [
+                {
+                    name: 'alice.algo',
+                    address,
+                    chain,
+                    service: { name: 'NFD', logo: 'logo-url' },
+                },
+            ],
+        },
     })
 
-    test('GETs /search with the name as a query param and maps results', async () => {
-        queryClientMock.mockResolvedValue({
-            data: {
-                count: 1,
-                results: [
-                    {
-                        name: 'alice.algo',
-                        address:
-                            'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4',
-                        service: { name: 'NFD', logo: 'logo-url' },
-                    },
-                ],
-            },
-        })
+    test("GETs the v4 search with the name and the scope's CAIP-2 chain and maps results", async () => {
+        queryClientMock.mockResolvedValue(
+            response(
+                'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+                ALGORAND_ADDRESS,
+            ),
+        )
 
-        const result = await fetchNfdSearch({
+        const result = await fetchNameSearch({
             name: 'alice',
             scope: ALGORAND_MAINNET,
         })
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                url: '/v1/name-services/search/',
-                params: { name: 'alice' },
+                url: '/api/v4/name-services/search/',
+                params: {
+                    name: 'alice',
+                    chain: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+                },
             }),
         )
         expect(result).toEqual([
             {
                 name: 'alice.algo',
-                address:
-                    'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4',
+                address: ALGORAND_ADDRESS,
                 service: { name: 'NFD', logo: 'logo-url' },
             },
         ])
     })
 
+    test.each([
+        [BASE_MAINNET, 'eip155:8453'],
+        [BASE_SEPOLIA, 'eip155:84532'],
+    ])('asks for %o on its own CAIP-2 chain', async (scope, chain) => {
+        queryClientMock.mockResolvedValue({ data: { count: 0, results: [] } })
+
+        await fetchNameSearch({ name: 'alice.eth', scope })
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                params: { name: 'alice.eth', chain },
+            }),
+        )
+    })
+
+    test('drops a result for a chain other than the one asked', async () => {
+        queryClientMock.mockResolvedValue(response('eip155:1', EVM_ADDRESS))
+
+        const result = await fetchNameSearch({
+            name: 'alice.eth',
+            scope: BASE_MAINNET,
+        })
+
+        expect(result).toEqual([])
+    })
+
+    test('drops an ENS result for a name other than the one asked about', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                count: 1,
+                results: [
+                    {
+                        name: 'mallory.eth',
+                        address: EVM_ADDRESS,
+                        chain: 'eip155:8453',
+                        service: { name: 'ENS', logo: '' },
+                    },
+                ],
+            },
+        })
+
+        const result = await fetchNameSearch({
+            name: 'alice.eth',
+            scope: BASE_MAINNET,
+        })
+
+        expect(result).toEqual([])
+    })
+
+    test('keeps an ENS result for the name asked about whatever its case', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                count: 1,
+                results: [
+                    {
+                        name: 'alice.eth',
+                        address: EVM_ADDRESS,
+                        chain: 'eip155:8453',
+                        service: { name: 'ENS', logo: '' },
+                    },
+                ],
+            },
+        })
+
+        const result = await fetchNameSearch({
+            name: 'Alice.ETH',
+            scope: BASE_MAINNET,
+        })
+
+        expect(result.map(item => item.name)).toEqual(['alice.eth'])
+    })
+
+    test("keeps a result whose name is the normalised form of one that isn't just lowercase", async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                count: 1,
+                results: [
+                    {
+                        name: 'alice.eth',
+                        address: EVM_ADDRESS,
+                        chain: 'eip155:8453',
+                        service: { name: 'ENS', logo: '' },
+                    },
+                ],
+            },
+        })
+
+        const result = await fetchNameSearch({
+            name: 'Ａlice.eth',
+            scope: BASE_MAINNET,
+        })
+
+        expect(result.map(item => item.name)).toEqual(['alice.eth'])
+    })
+
+    test('asks nothing for a name the service refuses', async () => {
+        const result = await fetchNameSearch({
+            name: 'al_ice.eth',
+            scope: BASE_MAINNET,
+        })
+
+        expect(result).toEqual([])
+        expect(queryClientMock).not.toHaveBeenCalled()
+    })
+
     test('returns [] when the search response fails schema validation', async () => {
         queryClientMock.mockResolvedValue({ data: { results: 'not-array' } })
 
-        const result = await fetchNfdSearch({
+        const result = await fetchNameSearch({
             name: 'alice',
             scope: ALGORAND_MAINNET,
         })
@@ -190,22 +313,16 @@ describe('fetchNfdSearch', () => {
         expect(loggerMock.warn).toHaveBeenCalled()
     })
 
-    test('still calls queryClient on testnet', async () => {
-        queryClientMock.mockResolvedValue({
-            data: { count: 0, results: [] },
-        })
+    test('rejects when the backend cannot answer', async () => {
+        queryClientMock.mockRejectedValue(new Error('503 upstream_unavailable'))
 
-        await fetchNfdSearch({ name: 'alice', scope: ALGORAND_TESTNET })
-
-        expect(queryClientMock).toHaveBeenCalled()
+        await expect(
+            fetchNameSearch({ name: 'alice.eth', scope: BASE_MAINNET }),
+        ).rejects.toThrow('503')
     })
 })
 
-describe('non-Pera-backed networks', () => {
-    beforeEach(() => {
-        queryClientMock.mockReset()
-    })
-
+describe('networks the v4 routes cannot serve', () => {
     test.each(['betanet', 'custom'] as const)(
         'fetchNfdBulkRead returns [] without calling queryClient on %s',
         async networkId => {
@@ -220,9 +337,9 @@ describe('non-Pera-backed networks', () => {
     )
 
     test.each(['betanet', 'custom'] as const)(
-        'fetchNfdSearch returns [] without calling queryClient on %s',
+        'fetchNameSearch returns [] without calling queryClient on %s',
         async networkId => {
-            const result = await fetchNfdSearch({
+            const result = await fetchNameSearch({
                 name: 'alice',
                 scope: { chainId: 'algorand', networkId },
             })
@@ -232,16 +349,13 @@ describe('non-Pera-backed networks', () => {
         },
     )
 
-    test.each(['betanet', 'custom'] as const)(
-        'fetchNfdNamesForAddress returns [] without calling queryClient on %s',
-        async networkId => {
-            const result = await fetchNfdNamesForAddress({
-                address: 'ADDR1',
-                scope: { chainId: 'algorand', networkId },
-            })
+    test('a backed network without a CAIP-2 id is not asked about', async () => {
+        const result = await fetchNameSearch({
+            name: 'alice.eth',
+            scope: { chainId: 'base', networkId: 'amoy' } as never,
+        })
 
-            expect(result).toEqual([])
-            expect(queryClientMock).not.toHaveBeenCalled()
-        },
-    )
+        expect(result).toEqual([])
+        expect(queryClientMock).not.toHaveBeenCalled()
+    })
 })

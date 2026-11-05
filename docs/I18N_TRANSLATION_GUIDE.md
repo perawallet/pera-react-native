@@ -33,7 +33,7 @@ a missing key fails, and so does an extra one.
    component empty children, which blanks any component that renders them.
 5. Never translate brand or protocol names: Pera, Pera Wallet, Algorand,
    Algo, ALGO, ASA, MainNet, TestNet, WalletConnect, Ledger, Bidali, Meld,
-   Discover, Pera Card, Vault, Face ID, Touch ID.
+   Discover, Pera Card, Vault, Face ID, Touch ID, ENS.
 6. Non-ASCII goes in literally (`á`, `ü`, `ç`, `ğ`, `ı`), never as `\uXXXX`.
 7. Never start or end a value with whitespace (`pera/no-split-sentences` checks
    `en.json`). A sentence around a brand or an amount is one key with the

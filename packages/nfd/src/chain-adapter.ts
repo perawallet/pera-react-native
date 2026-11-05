@@ -15,7 +15,8 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { NfdAddressVerification } from './models'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import type { NameAddressVerification, NameServiceId } from './models'
 
 export type VerifyForwardResolutionParams = {
     name: string
@@ -27,7 +28,15 @@ export type VerifyForwardResolutionParams = {
 /** What the name service needs from a chain; registered by the chain package. */
 export interface NameServiceChainAdapter {
     chainId: ChainId
+    /** The service whose names resolve to this chain's addresses. */
+    service: NameServiceId
     isValidAddress(address: string): boolean
+    /**
+     * The form the service resolves `name` in, or `undefined` for a name it
+     * refuses. Where set, search sends only names it accepts and keeps only
+     * results whose name has the same form as the one asked about.
+     */
+    normalizeName?(name: string): Optional<string>
     /**
      * Checks a backend-asserted `name` → `address` against the chain's own
      * record of the name. Must throw on abort and return `unavailable`, not a
@@ -35,7 +44,7 @@ export interface NameServiceChainAdapter {
      */
     verifyForwardResolution?(
         params: VerifyForwardResolutionParams,
-    ): Promise<NfdAddressVerification>
+    ): Promise<NameAddressVerification>
 }
 
 export const nameServiceChainAdapters =
@@ -44,3 +53,6 @@ export const nameServiceChainAdapters =
 export const nameServiceAdapterFor = (
     scope: ChainScope,
 ): NameServiceChainAdapter => nameServiceChainAdapters.get(scope.chainId)
+
+export const nameServiceOf = (scope: ChainScope): NameServiceId =>
+    nameServiceAdapterFor(scope).service

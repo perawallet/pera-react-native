@@ -13,23 +13,18 @@
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { nameServiceAdapterFor } from '../chain-adapter'
-import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
+import type { NfdBulkResult, NfdName, NameSearchResult } from '../models'
 import type {
     NfdBulkReadApiResponse,
     NfdNameApiResponse,
-    NfdNamesListApiResponse,
-    NfdSearchApiResponse,
+    NameSearchApiResponse,
 } from './schema'
 
 const transformNfdName = (response: NfdNameApiResponse): NfdName => ({
     name: response.name,
     source: response.source,
-    image: response.image,
+    image: response.image ?? '',
 })
-
-export const transformNfdNamesList = (
-    response: NfdNamesListApiResponse,
-): NfdName[] => response.results.map(transformNfdName)
 
 export const transformBulkResults = (
     response: NfdBulkReadApiResponse,
@@ -40,9 +35,10 @@ export const transformBulkResults = (
     }))
 
 export const transformSearchResults = (
-    response: NfdSearchApiResponse,
+    response: NameSearchApiResponse,
     scope: ChainScope,
-): NfdSearchResult[] => {
+    caip2: string,
+): NameSearchResult[] => {
     const adapter = nameServiceAdapterFor(scope)
     // A name search returns a backend-asserted address that can become a send
     // destination. The backend is semi-trusted, so a malformed/garbage address
@@ -50,8 +46,10 @@ export const transformSearchResults = (
     // case; a VALID attacker-supplied address is caught by `verifyNameAddress`
     // against the chain before it can be sent to.
     const wellFormed = response.results.filter(item => {
+        // A name resolving on another chain must never offer its address here.
+        if (item.chain !== caip2) return false
         if (adapter.isValidAddress(item.address)) return true
-        logger.warn('NFD search result dropped: invalid address', {
+        logger.warn('Name search result dropped: invalid address', {
             name: item.name,
         })
         return false
