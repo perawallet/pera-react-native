@@ -97,6 +97,16 @@ export interface AssetsChainAdapter {
      */
     getAssetMetadata(ref: AssetRef, scope: ChainScope): Promise<PeraAsset>
     /**
+     * A collectible's metadata as `getAssetMetadata` reads it, or null for an
+     * expected miss: a ref that isn't a collectible, a scope whose sources
+     * don't serve collectibles, or one they don't know. Absent on a chain
+     * whose collectibles are only ever read from the store.
+     */
+    findCollectibleMetadata?(
+        ref: AssetRef,
+        scope: ChainScope,
+    ): Promise<Nullable<PeraAsset>>
+    /**
      * The chain's own record of the asset, with no third-party opinion merged
      * in. Rejects a ref or a scope on another chain.
      */
@@ -264,6 +274,17 @@ export const fetchAssetMetadata = async (
     scope: ChainScope,
 ): Promise<PeraAsset> =>
     assetsAdapterFor(scope).getAssetMetadata(assetRefOn(scope, assetId), scope)
+
+/** Null for a miss, and on a chain with no `findCollectibleMetadata`. */
+export const findCollectibleMetadata = async (
+    assetId: string,
+    scope: ChainScope,
+): Promise<Nullable<PeraAsset>> => {
+    const adapter = assetsAdapterFor(scope)
+    return adapter.findCollectibleMetadata
+        ? adapter.findCollectibleMetadata(assetRefOn(scope, assetId), scope)
+        : null
+}
 
 export const fetchOnChainAsset = async (
     assetId: string,

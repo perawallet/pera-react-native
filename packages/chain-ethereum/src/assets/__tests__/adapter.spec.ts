@@ -1622,6 +1622,62 @@ describe('NFTs', () => {
         await expect(ops.getAssetMetadata(ref(APE), SCOPE)).rejects.toThrow()
     })
 
+    describe('findCollectibleMetadata', () => {
+        it('resolves the NFT the backend knows, and stores it', async () => {
+            server.use(
+                ...peraEvmAssetHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    nfts: { [ERC721_ID]: evmNftItem() },
+                }),
+            )
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: nftServices }),
+                ETHEREUM,
+            )
+
+            const asset = await ops.findCollectibleMetadata!(ref(APE), SCOPE)
+
+            expect(asset?.assetId).toBe(APE)
+            expect(repository.full.map(a => a.assetId)).toEqual([APE])
+        })
+
+        it('settles on null for an NFT neither the backend nor the cache knows', async () => {
+            server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: nftServices }),
+                ETHEREUM,
+            )
+
+            await expect(
+                ops.findCollectibleMetadata!(ref(APE), SCOPE),
+            ).resolves.toBeNull()
+        })
+
+        it('settles on null without a request on a scope with no NFT service', async () => {
+            const urls = recordRequests()
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: ['assets', 'prices'] }),
+                ETHEREUM,
+            )
+
+            await expect(
+                ops.findCollectibleMetadata!(ref(APE), SCOPE),
+            ).resolves.toBeNull()
+            expect(urls).toEqual([])
+        })
+
+        it('settles on null for an id that is not an NFT', async () => {
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: nftServices }),
+                ETHEREUM,
+            )
+
+            await expect(
+                ops.findCollectibleMetadata!(ref(BAYC), SCOPE),
+            ).resolves.toBeNull()
+        })
+    })
+
     it('never reads an NFT as an ERC-20 or prices it', async () => {
         const urls = recordRequests()
         const ops = createEthereumAssetsAdapter(
