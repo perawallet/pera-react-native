@@ -58,6 +58,14 @@ export const useSwapsStore: UseBoundStore<
                     toAssetScope: null,
                     receivingAccountId: null,
                 }),
+            setSourceAsset: (sourceChainId: ChainId, fromAsset: string) =>
+                set({
+                    sourceChainId,
+                    fromAsset,
+                    toAsset: null,
+                    toAssetScope: null,
+                    receivingAccountId: null,
+                }),
             setSlippage: (slippage: Nullable<string>) => set({ slippage }),
             setIsLocalCurrencyInput: (value: boolean) =>
                 set({ isLocalCurrencyInput: value }),

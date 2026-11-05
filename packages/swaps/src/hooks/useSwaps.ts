@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { swapAdapterFor } from '../chain-adapter'
 import { useSwapsStore } from '../store'
@@ -22,6 +25,7 @@ type UseSwapsResult = {
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
+    setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
     /** Restores the default pay/receive pair, keeping the user's settings. */
@@ -29,18 +33,21 @@ type UseSwapsResult = {
 }
 
 export const useSwaps = (scope: ChainScope): UseSwapsResult => {
-    const fromAsset =
-        useSwapsStore(state => state.fromAsset) ??
-        swapAdapterFor(scope).nativeAssetId
+    const { nativeAssetId, defaultReceiveAssetId } = swapAdapterFor(scope)
+    const fromAsset = useSwapsStore(state => state.fromAsset) ?? nativeAssetId
+    // A pay asset picked on a new chain can be that chain's default receive asset.
     const toAsset =
         useSwapsStore(state => state.toAsset) ??
-        swapAdapterFor(scope).defaultReceiveAssetId
+        (defaultReceiveAssetId === fromAsset
+            ? nativeAssetId
+            : defaultReceiveAssetId)
     const slippage = useSwapsStore(state => state.slippage)
     const isLocalCurrencyInput = useSwapsStore(
         state => state.isLocalCurrencyInput,
     )
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
+    const setSourceAsset = useSwapsStore(state => state.setSourceAsset)
     const setSlippage = useSwapsStore(state => state.setSlippage)
     const setIsLocalCurrencyInput = useSwapsStore(
         state => state.setIsLocalCurrencyInput,
@@ -54,6 +61,7 @@ export const useSwaps = (scope: ChainScope): UseSwapsResult => {
         isLocalCurrencyInput,
         setFromAsset,
         setToAsset,
+        setSourceAsset,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
