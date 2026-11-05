@@ -19,11 +19,12 @@ import {
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import {
     findAccountByAddressOn,
+    useAccountChainOptionsResolver,
     useAllAccounts,
+    useCanSignWithCheck,
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { isChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSendFundsDeeplink } from '@modules/deeplink'
 import { useCapability } from '@hooks/useCapability'
@@ -43,6 +44,21 @@ type StoredIntent = TabResumeIntent & { createdAt: number }
 const isString = (value: unknown): value is string =>
     typeof value === 'string' && value.length > 0
 
+const isScope = (value: unknown): boolean => {
+    const scope = value as Nullable<Partial<Record<string, unknown>>>
+    return !!scope && isChainId(scope.chainId) && isString(scope.networkId)
+}
+
+// A cross-chain record that lost this must not pass as a same-chain one: its
+// output id would be read on the source chain.
+const isReceiveTargetValid = (value: unknown): boolean => {
+    if (value === undefined) return true
+    const receive = value as Nullable<Partial<Record<string, unknown>>>
+    return (
+        !!receive && isScope(receive.scope) && isString(receive.accountAddress)
+    )
+}
+
 // The record comes back from storage, so it is checked rather than trusted.
 const toFreshIntent = (value: unknown, now: number): Nullable<StoredIntent> => {
     const record = value as Nullable<Partial<Record<string, unknown>>>
@@ -55,7 +71,8 @@ const toFreshIntent = (value: unknown, now: number): Nullable<StoredIntent> => {
         record.flow === 'swap' &&
         isString(record.assetInId) &&
         isString(record.assetOutId) &&
-        isString(record.payAmount)
+        isString(record.payAmount) &&
+        isReceiveTargetValid(record.receive)
     ) {
         return record as StoredIntent
     }
@@ -81,7 +98,10 @@ export const useTabResume = (
     const { setSelectedAccountId } = useSelectedAccountId()
     const openSendFunds = useSendFundsDeeplink()
     const canSwap = useCapability({ platform: 'swapTab', anyChain: 'swap' })
-    const swapChainOf = useSwapChainResolver()
+    const swapChainOptionsOf = useAccountChainOptionsResolver('swap', {
+        isSignerRequired: true,
+    })
+    const canSignOn = useCanSignWithCheck()
 
     return useCallback(() => {
         void (async () => {
@@ -101,12 +121,33 @@ export const useTabResume = (
                 intent.accountAddress,
             )
             if (!account) return
+            const receive = intent.flow === 'swap' ? intent.receive : undefined
+            const receivingAccount =
+                receive &&
+                findAccountByAddressOn(
+                    accounts,
+                    receive.scope.chainId,
+                    receive.accountAddress,
+                )
+            // Reopening with another receiver would pay an account other than
+            // the one the user confirmed.
+            if (
+                receive &&
+                (!receivingAccount ||
+                    !canSignOn(receivingAccount, receive.scope.chainId))
+            ) {
+                return
+            }
             // The Swap tab isn't registered while the capability is off, and
-            // the swap would run on the account's own chain.
-            const swapChainId = swapChainOf(account)
+            // the intent's asset ids mean nothing on any chain but its own.
+            const { chainId } = intent
             if (
                 intent.flow === 'swap' &&
-                (!canSwap || swapChainId === undefined)
+                (!canSwap ||
+                    !swapChainOptionsOf(account)
+                        .filter(option => option.isEnabled)
+                        .map(option => option.chainId)
+                        .includes(chainId))
             ) {
                 return
             }
@@ -115,19 +156,24 @@ export const useTabResume = (
             setSelectedAccountId(account.id)
 
             if (intent.flow === 'swap') {
-                // Already guaranteed above; repeated so the type narrows.
-                if (swapChainId === undefined) return
                 navigate('TabBar', {
                     screen: 'Swap',
                     params: {
-                        assetIn: {
-                            chainId: swapChainId,
-                            assetId: intent.assetInId,
-                        },
-                        assetOut: {
-                            chainId: swapChainId,
-                            assetId: intent.assetOutId,
-                        },
+                        assetIn: { chainId, assetId: intent.assetInId },
+                        ...(receive && receivingAccount
+                            ? {
+                                  receive: {
+                                      scope: receive.scope,
+                                      assetId: intent.assetOutId,
+                                      accountId: receivingAccount.id,
+                                  },
+                              }
+                            : {
+                                  assetOut: {
+                                      chainId,
+                                      assetId: intent.assetOutId,
+                                  },
+                              }),
                         payAmount: intent.payAmount,
                     },
                 })
@@ -135,7 +181,7 @@ export const useTabResume = (
             }
             // The intent's account is looked up on the chain the flow ran on.
             openSendFunds({
-                asset: { chainId: intent.chainId, assetId: intent.assetId },
+                asset: { chainId, assetId: intent.assetId },
                 destination: intent.destination,
                 amount: new Decimal(intent.amount),
                 note: intent.note,
@@ -148,7 +194,8 @@ export const useTabResume = (
         navigate,
         openSendFunds,
         canSwap,
-        swapChainOf,
+        swapChainOptionsOf,
+        canSignOn,
     ])
 }
 

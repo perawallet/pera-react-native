@@ -296,7 +296,9 @@ export const useSwapForm = (
 
     // Must follow the reset above: the route's pay asset lands in the store
     // after mount, and that change clears the amounts, so a resumed amount is
-    // applied only once the store holds its asset.
+    // applied only once the store holds its asset. An asset id alone doesn't
+    // settle that: every EVM chain's native asset shares one, and this form can
+    // mount on the previous chain before the route's chain is pinned.
     const pendingPayAmountRef = useRef(initialPayAmount)
     const shouldReopenConfirmRef = useRef(false)
     useEffect(() => {
@@ -634,15 +636,25 @@ export const useSwapForm = (
         })
         // Signing runs while this sheet is open; a Bluetooth Ledger in the
         // extension popup can't sign, and this lets its tab reopen the swap.
-        // The intent holds both assets on one chain, so a cross-chain pair can't
-        // come back from it.
-        if (selectedAddress && payAmount && !isCrossChain) {
+        if (
+            selectedAddress &&
+            payAmount &&
+            (!isCrossChain || receivingAddress)
+        ) {
             registerTabResumeIntent({
                 flow: 'swap',
                 chainId: scope.chainId,
                 accountAddress: selectedAddress,
                 assetInId: fromAsset ?? nativeAssetId,
                 assetOutId: toAsset,
+                ...(isCrossChain && receivingAddress
+                    ? {
+                          receive: {
+                              scope: receiveScope,
+                              accountAddress: receivingAddress,
+                          },
+                      }
+                    : {}),
                 payAmount: payAmount.toFixed(),
             })
         }
@@ -718,6 +730,8 @@ export const useSwapForm = (
         resetAmounts()
     }, [
         isCrossChain,
+        receiveScope,
+        receivingAddress,
         scope,
         selectedQuote,
         requestBottomSheet,
