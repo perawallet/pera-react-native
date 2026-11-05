@@ -537,7 +537,11 @@ describe('useSwapForm', () => {
         // In a fresh tab the route's pay asset lands after mount, and that
         // change resets the amounts, so applying earlier would be wiped.
         const { result, rerender } = renderHook(() =>
-            useSwapForm(SCOPE, { assetId: '123', amount: new Decimal('2.5') }),
+            useSwapForm(SCOPE, {
+                chainId: SCOPE.chainId,
+                assetId: '123',
+                amount: new Decimal('2.5'),
+            }),
         )
         expect(result.current.payAmount).toBeNull()
 
@@ -550,7 +554,11 @@ describe('useSwapForm', () => {
     it('applies a resumed amount once, not again on a later return to its asset', () => {
         mockFromAsset = '123'
         const { result, rerender } = renderHook(() =>
-            useSwapForm(SCOPE, { assetId: '123', amount: new Decimal('2.5') }),
+            useSwapForm(SCOPE, {
+                chainId: SCOPE.chainId,
+                assetId: '123',
+                amount: new Decimal('2.5'),
+            }),
         )
         expect(result.current.payAmount).toEqual(new Decimal('2.5'))
 
@@ -558,6 +566,19 @@ describe('useSwapForm', () => {
         rerender()
         mockFromAsset = '123'
         rerender()
+
+        expect(result.current.payAmount).toBeNull()
+    })
+
+    it('leaves a resumed amount for another chain unapplied, even on a matching asset id', () => {
+        mockFromAsset = '123'
+        const { result } = renderHook(() =>
+            useSwapForm(SCOPE, {
+                chainId: 'ethereum',
+                assetId: '123',
+                amount: new Decimal('2.5'),
+            }),
+        )
 
         expect(result.current.payAmount).toBeNull()
     })
@@ -577,7 +598,11 @@ describe('useSwapForm', () => {
 
         it('reopens the confirmation once, on a fresh quote', async () => {
             const { result } = renderHook(() =>
-                useSwapForm(SCOPE, { assetId: '0', amount: new Decimal(5) }),
+                useSwapForm(SCOPE, {
+                    chainId: SCOPE.chainId,
+                    assetId: '0',
+                    amount: new Decimal(5),
+                }),
             )
             await act(async () => {})
 
@@ -588,7 +613,11 @@ describe('useSwapForm', () => {
         it('waits for the pay balance before reopening the confirmation', async () => {
             mockIsPayBalanceFetched = false
             renderHook(() =>
-                useSwapForm(SCOPE, { assetId: '0', amount: new Decimal(5) }),
+                useSwapForm(SCOPE, {
+                    chainId: SCOPE.chainId,
+                    assetId: '0',
+                    amount: new Decimal(5),
+                }),
             )
             await act(async () => {})
 
@@ -597,7 +626,11 @@ describe('useSwapForm', () => {
 
         it('leaves the confirmation closed once the user edits the amount', async () => {
             const { result } = renderHook(() =>
-                useSwapForm(SCOPE, { assetId: '0', amount: new Decimal(5) }),
+                useSwapForm(SCOPE, {
+                    chainId: SCOPE.chainId,
+                    assetId: '0',
+                    amount: new Decimal(5),
+                }),
             )
             act(() => {
                 result.current.handlePayAmountChange(new Decimal(3))

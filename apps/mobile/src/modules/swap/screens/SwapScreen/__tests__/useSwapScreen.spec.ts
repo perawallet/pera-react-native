@@ -293,6 +293,7 @@ describe('useSwapScreen', () => {
         const { result, rerender } = renderHook(() => useSwapScreen())
 
         expect(result.current.initialPayAmount).toEqual({
+            chainId: 'algorand',
             assetId: '123',
             amount: new Decimal('2.5'),
         })

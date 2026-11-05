@@ -149,12 +149,17 @@ export const useSwapScreen = (): UseSwapScreenResult => {
     const payAmount = route.params?.payAmount
     // The form reads this once on mount, which can be before the chain is pinned.
     const payAssetId = assetInId ?? route.params?.assetIn?.assetId
+    const payChainId = routeSourceChainId ?? scope?.chainId
     const initialPayAmount = useMemo(
         () =>
-            payAmount && payAssetId
-                ? { assetId: payAssetId, amount: new Decimal(payAmount) }
+            payAmount && payAssetId && payChainId
+                ? {
+                      chainId: payChainId,
+                      assetId: payAssetId,
+                      amount: new Decimal(payAmount),
+                  }
                 : undefined,
-        [payAmount, payAssetId],
+        [payAmount, payAssetId, payChainId],
     )
 
     const { pushWebView } = useWebView()

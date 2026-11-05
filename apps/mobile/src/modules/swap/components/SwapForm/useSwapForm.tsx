@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -110,6 +111,7 @@ type UseSwapFormResult = {
  * asset settles, after which the form reopens the confirmation.
  */
 export type SwapFormInitialPayAmount = {
+    chainId: ChainId
     assetId: string
     amount: Decimal
 }
@@ -299,11 +301,18 @@ export const useSwapForm = (
     const shouldReopenConfirmRef = useRef(false)
     useEffect(() => {
         const pending = pendingPayAmountRef.current
-        if (!pending || fromAsset !== pending.assetId) return
+        // Asset ids repeat across chains: `native` on Base is not `native` here.
+        if (
+            !pending ||
+            pending.chainId !== scope.chainId ||
+            fromAsset !== pending.assetId
+        ) {
+            return
+        }
         pendingPayAmountRef.current = undefined
         shouldReopenConfirmRef.current = true
         setPayAmount(pending.amount)
-    }, [fromAsset])
+    }, [fromAsset, scope.chainId])
 
     // Leaving the tab must clear the form: the screen stays mounted, so without
     // this the next visit opens on the previous session's amounts. A source
