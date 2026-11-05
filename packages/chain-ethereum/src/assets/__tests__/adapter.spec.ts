@@ -829,8 +829,8 @@ describe('syncAssets', () => {
         expect(full).toHaveLength(501)
         expect(full[0]?.decimals).toBe(6)
         expect(full[500]?.decimals).toBe(2)
-        // 501 reads are two aggregates in one request.
-        expect(ethCalls.filter(calls => calls.length > 0)).toHaveLength(1)
+        // 501 reads are two aggregates, each too big to share a request.
+        expect(ethCalls.filter(calls => calls.length > 0)).toHaveLength(2)
         expect(ethCalls.flat()).toHaveLength(2)
         expect(
             ethCalls

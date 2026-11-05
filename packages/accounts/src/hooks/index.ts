@@ -63,8 +63,10 @@ export * from './useAccountChainOptions'
 export * from './useEnableChain'
 export * from './useHDImportSession'
 export {
+    invalidateAccountChartsForAddresses,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
+    invalidateAccountQueriesForScope,
     removeAccountQueriesForAddresses,
     isAccountQuery,
     isAccountBalancesHistoryQuery,

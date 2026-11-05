@@ -51,6 +51,7 @@ import {
 import { isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { readBalances, type HolderBalances } from '../blockchain/utils/erc20'
+import { isNodeReply } from '../blockchain/utils/nodeVerdict'
 import {
     BLOCK_FOLLOWING_SERVICE,
     fetchShouldRefresh,
@@ -269,6 +270,10 @@ type Detection = {
     unreadFindings: Set<string>
     sightings: TokenSightings
     budget: HistoryScanBudget
+    /** When each account's last pass over the whole token list started, by `backfillKey`. */
+    listedPassAt: Map<string, number>
+    /** Accounts read with only their held tokens since their last whole-list pass. */
+    owedListedPasses: Set<string>
 }
 
 const isScanDue = (detection: Detection, key: string): boolean => {
@@ -277,6 +282,28 @@ const isScanDue = (detection: Detection, key: string): boolean => {
         last === undefined || detection.now() - last >= TOKEN_SCAN_INTERVAL_MS
     )
 }
+
+// The whole token list is thousands of balance calls per account, and an
+// account that changes every block is read every tick; between passes a read
+// covers the tokens the account holds, was added or was seen receiving, and
+// the received-token scan finds new ones every TOKEN_SCAN_INTERVAL_MS.
+const LISTED_PASS_INTERVAL_MS = 10 * 60_000
+
+// A pass that failed or whose read was rejected: soon enough that a new
+// account doesn't wait the whole interval for its tokens, not every tick.
+const LISTED_PASS_RETRY_MS = 2 * 60_000
+
+const isListedPassDue = (detection: Detection, key: string): boolean => {
+    const last = detection.listedPassAt.get(key)
+    return (
+        last === undefined || detection.now() - last >= LISTED_PASS_INTERVAL_MS
+    )
+}
+
+// A read that went without the whole list may have missed a token received
+// since; once its pass is due, the next change signal asks for one.
+const isListedPassOwed = (detection: Detection, key: string): boolean =>
+    detection.owedListedPasses.has(key) && isListedPassDue(detection, key)
 
 const latestOf = (
     a: Optional<number>,
@@ -326,6 +353,12 @@ const startScan = (
             })
         },
     )
+}
+
+type WholeListRead = {
+    balances: Map<string, HolderBalances>
+    /** Every listed token was read, not only the held ones. */
+    isWholeList: boolean
 }
 
 type OffListRead = {
@@ -393,11 +426,14 @@ const readBatch = async (
     const services = ctx.getPeraBackend(scope).services
     const hasWhitelist = services.has(ASSETS_SERVICE)
     // Reads without the token list skip what only it lists while the change
-    // cursor moves on, so each account is backfilled once the list is back.
+    // cursor moves on, so each account is backfilled, and its pass is due, once
+    // the list is back.
     if (!hasWhitelist) {
-        reads.forEach(read =>
-            backfillAccounts.add(backfillKey(scope, read.address)),
-        )
+        reads.forEach(read => {
+            const key = backfillKey(scope, read.address)
+            backfillAccounts.add(key)
+            detection.listedPassAt.delete(key)
+        })
     }
     // Settled per address, so one account's NFT outage never fails another's
     // read, nor its own balances.
@@ -446,13 +482,38 @@ const readBatch = async (
     const listedSet = new Set(listed)
     // Added, stored and detected tokens: the syncer shows an added one at
     // zero, and stored ids keep a detected token read until its balance is gone.
-    const offList = checksummed([
+    const held = checksummed([
         ...stored.ids,
         ...reads.flatMap(read => [
             ...read.addedTokenIds,
             ...detection.sightings.of(scope, read.address),
         ]),
-    ]).filter(id => !listedSet.has(id))
+    ])
+    const offList = held.filter(id => !listedSet.has(id))
+    const heldListed = held.filter(id => listedSet.has(id))
+    const readKeys = reads.map(read => backfillKey(scope, read.address))
+    // Without the stored ids, held tokens on the list are only known by
+    // reading all of it. Per account: one account's pass would otherwise sweep
+    // every account read with it.
+    const isPassDue = reads.map(
+        (read, index) =>
+            hasWhitelist &&
+            (stored.error !== undefined ||
+                read.isFirstSync ||
+                isListedPassDue(detection, readKeys[index]!)),
+    )
+    // Stamped as a retry at the attempt and as a pass once its read resolves,
+    // so a failure anywhere in between is retried after LISTED_PASS_RETRY_MS.
+    readKeys.forEach((key, index) => {
+        if (isPassDue[index]) {
+            detection.listedPassAt.set(
+                key,
+                detection.now() -
+                    LISTED_PASS_INTERVAL_MS +
+                    LISTED_PASS_RETRY_MS,
+            )
+        }
+    })
     // Taken with the sightings, so a scan finishing mid-read can't persist an
     // end past tokens this read didn't include.
     const scanEnds = reads.map(read =>
@@ -462,6 +523,8 @@ const readBatch = async (
         ),
     )
     const holders = reads.map(read => read.address)
+    const passHolders = holders.filter((_, index) => isPassDue[index])
+    const heldHolders = holders.filter((_, index) => !isPassDue[index])
     // Only a token the account has a row for, or the user added, is worth
     // keeping through a failed read; a sighted one that keeps failing (a
     // broken contract, a spam airdrop) must not hold the account's refresh in
@@ -472,45 +535,106 @@ const readBatch = async (
             ...reads.flatMap(read => read.addedTokenIds),
         ]),
     )
-    // Issued together, so the batching transport sends the aggregates and
-    // every nonce read as one request. Pinning to one block keeps balances,
-    // nonces and observedRound from straddling a block boundary.
-    const [balances, offListRead, nonces, nfts] = await Promise.all([
-        readBalances(client, holders, listed, blockNumber),
-        readOffListBalances(client, holders, offList, blockNumber),
-        Promise.allSettled(
-            reads.map(({ address }) =>
-                Promise.all([
-                    client.getTransactionCount({
-                        address: address as Address,
-                        blockNumber,
-                    }),
-                    client.getTransactionCount({
-                        address: address as Address,
-                        blockTag: 'pending',
-                    }),
-                ]),
+    // A whole-list pass that fails still leaves the held tokens to read: what
+    // it would have added is discovery, and losing that must not fail the
+    // account's balances. The node being down fails the second read too.
+    const readWholeList = async (): Promise<WholeListRead> => {
+        if (passHolders.length === 0) {
+            return { balances: new Map(), isWholeList: false }
+        }
+        try {
+            return {
+                balances: await readBalances(
+                    client,
+                    passHolders,
+                    listed,
+                    blockNumber,
+                ),
+                isWholeList: true,
+            }
+        } catch (error) {
+            if (heldListed.length === listed.length) throw error
+            const balances = await readBalances(
+                client,
+                passHolders,
+                heldListed,
+                blockNumber,
+            )
+            logger.warn(
+                'Token list balances unreadable; read the held tokens alone',
+                { scope, error },
+            )
+            // A node that answered and refused (out of gas, a revert) would
+            // refuse the same list again, so only a node that couldn't answer
+            // keeps the sooner retry.
+            if (isNodeReply(error)) {
+                passHolders.forEach(holder =>
+                    detection.listedPassAt.set(
+                        backfillKey(scope, holder),
+                        detection.now(),
+                    ),
+                )
+            }
+            return { balances, isWholeList: false }
+        }
+    }
+    // Issued together, so the batching transport sends the nonce reads and
+    // the small aggregates as one request. Pinning to one block keeps
+    // balances, nonces and observedRound from straddling a block boundary.
+    const [wholeListRead, heldListedBalances, offListRead, nonces, nfts] =
+        await Promise.all([
+            readWholeList(),
+            heldHolders.length === 0
+                ? new Map<string, HolderBalances>()
+                : readBalances(client, heldHolders, heldListed, blockNumber),
+            readOffListBalances(client, holders, offList, blockNumber),
+            Promise.allSettled(
+                reads.map(({ address }) =>
+                    Promise.all([
+                        client.getTransactionCount({
+                            address: address as Address,
+                            blockNumber,
+                        }),
+                        client.getTransactionCount({
+                            address: address as Address,
+                            blockTag: 'pending',
+                        }),
+                    ]),
+                ),
             ),
-        ),
-        nftReads,
-    ])
+            nftReads,
+        ])
     const unreadKept = new Map<string, unknown>()
     offListRead.unread.forEach((error, id) => {
         if (keptIds.has(id)) unreadKept.set(id, error)
         else logger.debug('Sighted token unreadable; leaving it out', { id })
     })
+    const isWholeList = (index: number): boolean =>
+        isPassDue[index]! && wholeListRead.isWholeList
     reads.forEach((read, index) => {
         const nonce = nonces[index]!
+        const key = readKeys[index]!
         if (nonce.status === 'rejected') {
+            if (isPassDue[index]) detection.owedListedPasses.add(key)
             read.reject(nonce.reason)
             return
         }
-        // Cleared by this account's own read with the list, whatever the
-        // other accounts or batches of the scope do.
-        if (hasWhitelist)
-            backfillAccounts.delete(backfillKey(scope, read.address))
+        // Cleared by this account's own read with the list, whatever the other
+        // accounts or batches of the scope do. One that fell back to its held
+        // tokens owes the pass instead, asked for once it is due.
+        if (hasWhitelist) {
+            backfillAccounts.delete(key)
+            if (isWholeList(index)) {
+                detection.owedListedPasses.delete(key)
+                detection.listedPassAt.set(key, detection.now())
+            } else {
+                detection.owedListedPasses.add(key)
+            }
+        }
         const [latest, pending] = nonce.value
-        const holder = balances.get(getAddress(read.address))!
+        const holder = (
+            isPassDue[index] ? wholeListRead.balances : heldListedBalances
+        ).get(getAddress(read.address))!
         offListRead.balances
             .get(getAddress(read.address))
             ?.forEach((balance, id) => holder.tokens.set(id, balance))
@@ -665,9 +789,13 @@ const fetchChangeSignal = (
         if (
             services.has(ASSETS_SERVICE) &&
             cursor !== null &&
-            addresses.some(address =>
-                backfillAccounts.has(backfillKey(scope, address)),
-            )
+            addresses.some(address => {
+                const accountKey = backfillKey(scope, address)
+                return (
+                    backfillAccounts.has(accountKey) ||
+                    isListedPassOwed(detection, accountKey)
+                )
+            })
         ) {
             return { changed: true, cursor }
         }
@@ -735,6 +863,8 @@ export const createEthereumAccountStateOps = (
         unreadFindings: new Set(),
         sightings: tokenSightings,
         budget: scanBudget,
+        listedPassAt: new Map(),
+        owedListedPasses: new Set(),
     }
     return {
         chainId: chain.row.id,

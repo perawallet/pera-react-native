@@ -13,6 +13,8 @@
 import { Decimal } from 'decimal.js'
 import {
     BaseError,
+    CallExecutionError,
+    ContractFunctionExecutionError,
     ContractFunctionRevertedError,
     ContractFunctionZeroDataError,
     decodeFunctionResult,
@@ -35,7 +37,12 @@ import {
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { partition, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    mapWithConcurrency,
+    partition,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { toRpcTransportError } from '../errors/toRpcTransportError'
 import { createEvmClient } from './createEvmClient'
@@ -185,26 +192,54 @@ const CALLS_PER_AGGREGATE = 300
 type Aggregate3Call = { target: Address; allowFailure: boolean; callData: Hex }
 type Aggregate3Result = { success: boolean; returnData: Hex }
 
+// A full chunk is too big to batch, so each one is its own request; a few
+// accounts against the whole token list would otherwise open dozens at once.
+const AGGREGATES_IN_FLIGHT = 4
+
+// viem's contract-call wrappers print the chunk's calldata and arguments,
+// hundreds of KB that every log of the error would copy; the error under them
+// names only the method, and cause-walking checks still find it.
+const withoutCallData = (error: unknown): unknown =>
+    error instanceof BaseError
+        ? (error.walk(
+              cause =>
+                  !(cause instanceof ContractFunctionExecutionError) &&
+                  !(cause instanceof CallExecutionError),
+          ) ?? error)
+        : error
+
 // Not client.multicall: with allowFailure it turns a failed call as a whole
 // into per-call failures, which a caller can't tell from per-call reverts.
-// The chunks go out together, so a batching transport sends one request.
+// After one chunk fails the rest are skipped: the read is lost either way.
 const aggregate3 = async (
     client: PublicClient,
     calls: Aggregate3Call[],
     blockNumber?: bigint,
 ): Promise<Aggregate3Result[]> => {
-    const chunks = await Promise.all(
-        partition(calls, CALLS_PER_AGGREGATE).map(chunk =>
-            client.readContract({
-                address: MULTICALL3_ADDRESS,
-                abi: multicall3Abi,
-                functionName: 'aggregate3',
-                args: [chunk],
-                blockNumber,
-            }),
-        ),
+    let failure: Optional<{ reason: unknown }>
+    const chunks = await mapWithConcurrency(
+        partition(calls, CALLS_PER_AGGREGATE),
+        AGGREGATES_IN_FLIGHT,
+        async chunk => {
+            if (failure) return []
+            try {
+                return await client.readContract({
+                    address: MULTICALL3_ADDRESS,
+                    abi: multicall3Abi,
+                    functionName: 'aggregate3',
+                    args: [chunk],
+                    blockNumber,
+                })
+            } catch (reason) {
+                failure ??= { reason: withoutCallData(reason) }
+                throw reason
+            }
+        },
     )
-    const results = chunks.flatMap(chunk => [...chunk])
+    if (failure) throw failure.reason
+    const results = chunks.flatMap(chunk =>
+        chunk.status === 'fulfilled' ? [...chunk.value] : [],
+    )
     // Callers pair results to calls by index, so a short answer must reject
     // rather than shift every later pairing.
     if (results.length !== calls.length) {

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
     type NavigationProp,
     type RouteProp,
+    useIsFocused,
     useNavigation,
     useRoute,
 } from '@react-navigation/native'
@@ -129,15 +130,19 @@ export const useSwapScreen = (): UseSwapScreenResult => {
 
     useSeedSwapRouteAssets({ assetInId, assetOutId, scope: routeScope })
 
+    // The tab stays mounted once opened, and the selection is app-wide: switching
+    // while another screen is in front would undo an account picked there.
+    const isFocused = useIsFocused()
     useEffect(() => {
         if (
+            isFocused &&
             selectedAccount &&
             !signingAccounts.some(a => a.id === selectedAccount.id) &&
             signingAccounts.length > 0
         ) {
             setSelectedAccountId(signingAccounts[0].id)
         }
-    }, [selectedAccount, signingAccounts, setSelectedAccountId])
+    }, [isFocused, selectedAccount, signingAccounts, setSelectedAccountId])
 
     useEffect(() => {
         if (!assetInId) return
