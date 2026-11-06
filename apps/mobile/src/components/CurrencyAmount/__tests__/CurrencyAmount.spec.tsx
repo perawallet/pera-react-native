@@ -365,6 +365,30 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
         expect(container.textContent).not.toContain('¦')
     })
 
+    describe('isUnitShrinkable', () => {
+        const unitOf = (isUnitShrinkable?: boolean) => {
+            render(
+                <CurrencyAmount
+                    value={new Decimal(1000)}
+                    currency='LONGUNIT'
+                    assetId='987654321'
+                    chainId={ALGORAND_CHAIN_ID}
+                    precision='compact'
+                    isUnitShrinkable={isUnitShrinkable}
+                />,
+            )
+            return screen.getByText('LONGUNIT')
+        }
+
+        it('keeps the leading unit to one line so the amount keeps its digits', () => {
+            expect(unitOf(true).getAttribute('numberoflines')).toBe('1')
+        })
+
+        it('leaves the unit uncapped by default', () => {
+            expect(unitOf().getAttribute('numberoflines')).toBeNull()
+        })
+    })
+
     it('never asks the formatter to map an asset unit name to a fiat symbol', () => {
         vi.mocked(formatCurrency).mockClear()
         render(
