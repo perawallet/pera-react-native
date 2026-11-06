@@ -131,10 +131,10 @@ beforeEach(async () => {
     useSettingsStore.getState().setPreference('acceptedTermsVersion', '1')
 })
 
-// The provider singleton + the KMS keystore now have working in-memory test
-// implementations (apps/mobile/src/test-utils/{platform-driver-test,
-// algorand-keystore-test}.ts), aliased in vitest.config.ts. Real provider /
-// kms / accounts code can now run end-to-end against in-memory storage.
+// Real provider / kms / accounts code runs end-to-end against in-memory storage:
+// the keystore is aliased to src/test-utils/algorand-keystore-test.ts, and platform
+// services come from the driver mock in src/test-utils/mocks/platform.ts unless a
+// spec unmocks it to reach src/test-utils/platform-driver-test.ts.
 vi.unmock('@perawallet/wallet-extension-provider')
 vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')
