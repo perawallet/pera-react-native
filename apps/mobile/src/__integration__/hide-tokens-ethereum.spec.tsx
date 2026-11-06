@@ -171,15 +171,16 @@ const ListHost = () => {
 
 const renderList = () => renderWithNavigation(ListHost, 'AccountAssetListHost')
 
-const setHidden = (assetId: string, isHidden: boolean) =>
-    act(() =>
+const setHidden = (assetId: string, isHidden: boolean): void => {
+    act(() => {
         useHiddenTokensStore.getState().setTokenHidden({
             address: ETH_ADDRESS,
             scope: ETH_SCOPE,
             assetId,
             isHidden,
-        }),
-    )
+        })
+    })
+}
 
 const nonNativeUsd = async () =>
     (
