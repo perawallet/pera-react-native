@@ -3582,6 +3582,12 @@
                 "spender": "Berechtigte Adresse",
                 "operator": "Operator"
             }
+        },
+        "predicted_failure": {
+            "title": "Diese Transaktion wird wahrscheinlich fehlschlagen",
+            "body": "Pera hat sie anhand des neuesten Blocks ausgeführt und sie ist fehlgeschlagen. Wenn du trotzdem signierst, zahlst du möglicherweise trotzdem die Netzwerkgebühr.",
+            "reason": "Grund des Contracts: „{{reason}}“",
+            "acknowledge": "Ich verstehe, dass sie wahrscheinlich fehlschlägt, und möchte trotzdem signieren"
         }
     },
     "site_safety": {
@@ -4899,6 +4905,15 @@
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",
             "matches_site": "Entspricht {{domain}}"
+        },
+        "simulation": {
+            "title": "Geschätzte Änderungen",
+            "estimate_note": "Geschätzt anhand des neuesten Blocks. Das Ergebnis kann sich ändern, bevor deine Transaktion aufgenommen wird.",
+            "approvals_title": "Genehmigungen",
+            "revoke_title": "Berechtigung zur Nutzung deiner {{asset}} entfernen",
+            "revoke_title_assets": "Berechtigung zur Nutzung deiner Assets entfernen",
+            "no_changes": "Es werden keine Änderungen an deinem Guthaben oder deinen Genehmigungen erwartet.",
+            "unavailable": "Diese Transaktion konnte nicht simuliert werden. Prüfe sie sorgfältig, bevor du signierst."
         }
     }
 }

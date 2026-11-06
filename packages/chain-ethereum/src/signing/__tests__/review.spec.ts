@@ -229,6 +229,59 @@ const reviewOne = async (
 }
 
 describe('ethereumReviewerAdapter', () => {
+    describe('a call whose gas estimate reverted', () => {
+        const withRevert = (
+            transaction: TransactionSerializableEIP1559,
+            revertedEstimate: unknown,
+        ): UnsignedTransaction => ({
+            ...unsigned(transaction),
+            payload: { from: SENDER, transaction, revertedEstimate },
+        })
+
+        it("carries the revert and the contract's reason onto the view of a contract call", async () => {
+            const { view } = await reviewOne(
+                withRevert(NON_STANDARD_CALL, { reason: 'EXPIRED' }),
+            )
+
+            expect(view).toMatchObject({
+                kind: 'contract-call',
+                revertedEstimate: { reason: 'EXPIRED' },
+            })
+        })
+
+        it('carries it onto a plain send too, which is never simulated', async () => {
+            const { view } = await reviewOne(withRevert(TRANSFER, {}))
+
+            expect(view.kind).toBe('transfer')
+            expect('revertedEstimate' in view && view.revertedEstimate).toEqual(
+                {},
+            )
+        })
+
+        it('never signs a plain send without review', async () => {
+            const { reviewed } = await reviewOne(withRevert(TRANSFER, {}))
+
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it('refuses a malformed revert rather than dropping it', async () => {
+            await expect(
+                ethereumReviewerAdapter.decoder.decode(
+                    [withRevert(NON_STANDARD_CALL, { reason: 42 })],
+                    CONTEXT,
+                ),
+            ).rejects.toThrow('malformed')
+        })
+
+        it('leaves a call with no revert unflagged', async () => {
+            const { view } = await reviewOne(unsigned(NON_STANDARD_CALL))
+
+            expect('revertedEstimate' in view).toBe(false)
+        })
+    })
+
     describe('a native transfer', () => {
         it('is a send of its wei to its checksummed recipient', async () => {
             const { summary, view } = await reviewOne(unsigned(TRANSFER))

@@ -44,6 +44,12 @@ export type EthereumPricedView = {
      * no estimate.
      */
     feeEstimate?: { preset: FeePreset; amount: Decimal }
+    /**
+     * The node's gas estimate reverted and the call was queued with a fallback
+     * gas limit, so the review warns it will likely fail. `reason` is the
+     * contract's own text.
+     */
+    revertedEstimate?: { reason?: string }
     /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
     fee: {
         maxFeePerGas: Decimal
@@ -283,6 +289,10 @@ const isFee = (value: unknown): boolean =>
     Decimal.isDecimal(value.maxPriorityFeePerGas) &&
     Decimal.isDecimal(value.maxFee)
 
+const isRevertedEstimate = (value: unknown): boolean =>
+    isRecord(value) &&
+    (value.reason === undefined || typeof value.reason === 'string')
+
 const isFeeEstimate = (value: unknown): boolean =>
     isRecord(value) &&
     FEE_PRESETS.some(preset => preset === value.preset) &&
@@ -307,6 +317,8 @@ const isView = (value: unknown): value is EthereumTransactionView =>
             (value.hasHighFee === undefined || value.hasHighFee === true) &&
             (value.feeEstimate === undefined ||
                 isFeeEstimate(value.feeEstimate)) &&
+            (value.revertedEstimate === undefined ||
+                isRevertedEstimate(value.revertedEstimate)) &&
             isFee(value.fee))) &&
     (value.token === undefined || isToken(value.token)) &&
     (value.nft === undefined || isNft(value.nft)) &&

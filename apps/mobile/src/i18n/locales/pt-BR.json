@@ -3607,6 +3607,12 @@
                 "spender": "Endereço autorizado",
                 "operator": "Operador"
             }
+        },
+        "predicted_failure": {
+            "title": "Esta transação provavelmente vai falhar",
+            "body": "O Pera a executou no bloco mais recente e ela falhou. Se você assinar mesmo assim, ainda poderá pagar a taxa de rede.",
+            "reason": "Motivo do contrato: “{{reason}}”",
+            "acknowledge": "Entendo que provavelmente vai falhar e quero assinar mesmo assim"
         }
     },
     "site_safety": {
@@ -4927,6 +4933,15 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Corresponde a {{domain}}"
+        },
+        "simulation": {
+            "title": "Mudanças estimadas",
+            "estimate_note": "Estimado com base no bloco mais recente. O resultado pode mudar antes de a sua transação ser incluída.",
+            "approvals_title": "Aprovações",
+            "revoke_title": "Remover a permissão para usar seu {{asset}}",
+            "revoke_title_assets": "Remover a permissão para usar seus ativos",
+            "no_changes": "Nenhuma mudança é esperada nos seus saldos ou nas suas aprovações.",
+            "unavailable": "Não foi possível simular esta transação. Revise com atenção antes de assinar."
         }
     }
 }

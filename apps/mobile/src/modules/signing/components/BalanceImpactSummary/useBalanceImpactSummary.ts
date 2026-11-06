@@ -19,19 +19,14 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     useNativeAsset,
-    PeraAssetType,
-    isUniqueCollectible,
     useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
-    type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    baseUnitsToDisplayUnits,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSignRequestScope } from '../../hooks/useSignRequestScope'
+import { balanceImpactItemOf } from './balanceImpactItemOf'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 
@@ -81,8 +76,6 @@ export type UseBalanceImpactSummaryResult = {
      */
     simulationFailed: boolean
 }
-
-type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
     const { currentRequest } = useSigningRequest()
@@ -138,91 +131,56 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 .filter(id => !deltaAssetIds.has(id))
                 .map(assetId => ({ assetId, amount: 0n })),
         ]
-        const items = movements.map<SortableItem>(({ assetId, amount }) => {
-            const isNative = assetId === nativeAsset.assetId
-            const asset: Optional<PeraAsset> = isNative
-                ? nativeAsset
-                : assets.get(assetId)
-            const decimals = asset?.decimals ?? 0
-            const isCollectible =
-                asset?.peraMetadata?.type === PeraAssetType.collectible
-
-            const displayAbs = baseUnitsToDisplayUnits(
-                amount < 0n ? -amount : amount,
-                decimals,
-            )
-            const usdPrice = prices.get(assetId)?.usdPrice
-            const sortValue = usdPrice ? displayAbs.times(usdPrice) : displayAbs
-
-            // Without metadata, still render with the id as the unit so the row
-            // isn't blank while the asset syncs.
-            const displayAsset: DisplayableAsset = asset ?? {
-                assetId,
-                unitName: assetId,
-            }
-
-            const collectible = asset?.peraMetadata?.collectible
-            const collectibleSubtitle = isCollectible
-                ? [collectible?.collection?.name, assetId]
-                      .filter(Boolean)
-                      .join(' · ')
-                : undefined
-
-            return {
+        const items = movements.map(({ assetId, amount }) =>
+            balanceImpactItemOf({
                 assetId,
                 chainId: scope.chainId,
-                asset: displayAsset,
-                isCollectible,
-                isPureCollectible:
-                    isCollectible && !!asset && isUniqueCollectible(asset),
-                direction: amount > 0n ? 'receive' : 'spend',
-                amount: displayAbs,
+                asset:
+                    assetId === nativeAsset.assetId
+                        ? nativeAsset
+                        : assets.get(assetId),
+                baseUnits: amount,
+                usdPrice: prices.get(assetId)?.usdPrice,
                 isFullBalance: closedAssetIds.has(assetId),
-                isNewAsset: false,
-                usdPrice,
-                collectibleTitle: isCollectible
-                    ? (collectible?.title ?? asset?.name ?? `#${assetId}`)
-                    : undefined,
-                collectibleSubtitle,
-                sortValue,
-            }
-        })
+            }),
+        )
 
         // A mint has no asset id yet, so it never reaches `movements` — build its
         // row straight from the acfg params.
-        const mintedItems = impact.createdAssets.map<SortableItem>(created => {
-            const amount = baseUnitsToDisplayUnits(
-                created.total,
-                created.decimals,
-            )
-            return {
-                assetId: created.key,
-                chainId: scope.chainId,
-                asset: {
+        const mintedItems = impact.createdAssets.map<BalanceImpactItem>(
+            created => {
+                const amount = baseUnitsToDisplayUnits(
+                    created.total,
+                    created.decimals,
+                )
+                return {
                     assetId: created.key,
-                    name: created.name,
-                    unitName: created.unitName,
-                    decimals: created.decimals,
-                },
-                isCollectible: false,
-                isPureCollectible: false,
-                direction: 'receive',
-                amount,
-                isFullBalance: false,
-                isNewAsset: true,
-                sortValue: amount,
-            }
-        })
+                    chainId: scope.chainId,
+                    asset: {
+                        assetId: created.key,
+                        name: created.name,
+                        unitName: created.unitName,
+                        decimals: created.decimals,
+                    },
+                    isCollectible: false,
+                    isPureCollectible: false,
+                    direction: 'receive',
+                    amount,
+                    isFullBalance: false,
+                    isNewAsset: true,
+                }
+            },
+        )
 
         // Native asset first, then highest-value first within each section.
-        const order = (list: SortableItem[]): BalanceImpactItem[] =>
-            [...list]
-                .sort((a, b) => {
-                    if (a.assetId === nativeAsset.assetId) return -1
-                    if (b.assetId === nativeAsset.assetId) return 1
-                    return b.sortValue.comparedTo(a.sortValue)
-                })
-                .map(({ sortValue: _sortValue, ...item }) => item)
+        const valueOf = (item: BalanceImpactItem) =>
+            item.usdPrice ? item.amount.times(item.usdPrice) : item.amount
+        const order = (list: BalanceImpactItem[]): BalanceImpactItem[] =>
+            [...list].sort((a, b) => {
+                if (a.assetId === nativeAsset.assetId) return -1
+                if (b.assetId === nativeAsset.assetId) return 1
+                return valueOf(b).comparedTo(valueOf(a))
+            })
 
         const receive = order([
             ...items.filter(item => item.direction === 'receive'),

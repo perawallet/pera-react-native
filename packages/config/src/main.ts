@@ -46,6 +46,7 @@ export const EVM_PERA_SERVICES = [
     'blockFollowing',
     'nfts',
     'contracts',
+    'simulations',
 ] as const satisfies readonly PeraService[]
 
 // The build bakes the list as one flat string; a missing or empty list means

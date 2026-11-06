@@ -61,8 +61,9 @@ export const hashAssetIds = (assetIDs: string[]): string => {
 export const getAssetPricesQueryKey = (
     assetIDs: string[],
     scope: ChainScope,
+    { fetchMissing = false }: { fetchMissing?: boolean } = {},
 ) => {
-    return [
+    const key = [
         MODULE_PREFIX,
         'prices',
         'usd',
@@ -71,6 +72,9 @@ export const getAssetPricesQueryKey = (
             scope,
         },
     ]
+    // Like getAssetsQueryKey: a read that goes to the network must not be
+    // satisfied by a DB-only entry under staleTime Infinity.
+    return fetchMissing ? [...key, { fetchMissing: true }] : key
 }
 
 export const getAssetPriceHistoryQueryKey = (

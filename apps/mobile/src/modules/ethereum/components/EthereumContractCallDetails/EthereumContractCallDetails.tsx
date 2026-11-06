@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethereum'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import {
     bottomSheetNotifier,
@@ -29,7 +28,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
-import { contractCallNoticeOf } from './contractCallNotice'
+import { contractCallNoticeOf, isCallUnexplained } from './contractCallNotice'
 import { EthereumVerifiedCallRows } from './EthereumVerifiedCallRows'
 import { useStyles } from './styles'
 
@@ -59,17 +58,14 @@ export const EthereumContractCallDetails = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
-    const { view, value, standardCall, contractAction, knownContract, scope } =
-        presentation
+    const { view, value, contractAction, knownContract, scope } = presentation
     const isReview = variant === 'review'
     const notice = isReview
         ? contractCallNoticeOf(source, verifiedOrigin)
         : undefined
     // Only a review looks the name up; a transaction already made shows its call as recorded.
     const verifiedCall = useEthereumVerifiedCall(view, scope, isReview)
-    const isExplained =
-        !!standardCall ||
-        (!!contractAction && hidesUnknownContractNotice(view.action))
+    const isExplained = !isCallUnexplained(presentation)
 
     const selectorRow = !!view.selector && (
         <KeyValueRow

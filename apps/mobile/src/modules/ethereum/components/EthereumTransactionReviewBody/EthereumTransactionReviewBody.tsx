@@ -22,6 +22,7 @@ import type { SigningStackParamList } from '@modules/signing/routes'
 import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
+import { EthereumSimulationSection } from '../EthereumSimulationSection'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumReviewHeader } from './EthereumReviewHeader'
@@ -95,6 +96,7 @@ export const EthereumTransactionReviewBody = ({
                     verifiedOrigin={verifiedOrigin}
                 />
             }
+            summary={<EthereumSimulationSection presentation={presentation} />}
             participants={
                 signingAccount ? (
                     <PWView style={styles.participants}>

@@ -3590,6 +3590,12 @@
                 "spender": "Dirección autorizada",
                 "operator": "Operador"
             }
+        },
+        "predicted_failure": {
+            "title": "Es probable que esta transacción falle",
+            "body": "Pera la ejecutó con el último bloque y falló. Si firmas de todos modos, es posible que aun así pagues la comisión de red.",
+            "reason": "Motivo del contrato: «{{reason}}»",
+            "acknowledge": "Entiendo que probablemente falle y quiero firmar de todos modos"
         }
     },
     "site_safety": {
@@ -4899,6 +4905,15 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Coincide con {{domain}}"
+        },
+        "simulation": {
+            "title": "Cambios estimados",
+            "estimate_note": "Estimado con el último bloque. El resultado puede cambiar antes de que se incluya tu transacción.",
+            "approvals_title": "Aprobaciones",
+            "revoke_title": "Quitar el permiso para usar tu {{asset}}",
+            "revoke_title_assets": "Quitar el permiso para usar tus activos",
+            "no_changes": "No se esperan cambios en tus saldos ni en tus aprobaciones.",
+            "unavailable": "No se pudo simular esta transacción. Revísala con atención antes de firmar."
         }
     }
 }

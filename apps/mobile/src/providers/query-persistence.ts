@@ -49,6 +49,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'cloud-backup': 'never',
     // Keyed by the contracts dApps asked the user to call.
     'contract-abis': 'never',
+    // Calldata and the signer's address, valid for one block.
+    'evm-simulations': 'never',
     onramp: 'never',
     passkeys: 'never',
     // Read fresh every launch: an old list would refuse a chain the backend

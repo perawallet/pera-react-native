@@ -51,6 +51,18 @@ export type {
     EvmVerifiedCall,
 } from './contracts/types'
 export { decodeEvmVerifiedCall } from './contracts/verified-calls'
+export {
+    useEvmTransactionSimulationQuery,
+    type UseEvmTransactionSimulationQueryParams,
+    type UseEvmTransactionSimulationQueryResult,
+} from './simulation/hooks/useEvmTransactionSimulationQuery'
+export { simulationRequestOf } from './simulation/request'
+export type {
+    EvmApprovalChange,
+    EvmAssetChange,
+    EvmSimulationRequest,
+    EvmTransactionSimulation,
+} from './simulation/types'
 export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'
 export { createEvmChainModule, ethereumModule, evmChainModules } from './module'
 export { spendApprovalOfCall } from './signing/allowance'

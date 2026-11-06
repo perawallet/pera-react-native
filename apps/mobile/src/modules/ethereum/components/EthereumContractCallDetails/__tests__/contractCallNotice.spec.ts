@@ -11,7 +11,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { contractCallNoticeOf } from '../contractCallNotice'
+import type { EthereumTransactionPresentation } from '../../../hooks/useEthereumTransactionPresentation'
+import { contractCallNoticeOf, isCallUnexplained } from '../contractCallNotice'
 
 const NAMED = 'transactions.contract_call.unchecked_warning'
 const UNNAMED = 'transactions.contract_call.unchecked_warning_no_source'
@@ -80,4 +81,56 @@ describe('contractCallNoticeOf', () => {
             })
         },
     )
+})
+
+describe('isCallUnexplained', () => {
+    const presentationOf = (
+        overrides: Partial<EthereumTransactionPresentation> & {
+            action?: { kind: string; fees?: unknown[] }
+        } = {},
+    ) => {
+        const { action, ...rest } = overrides
+        return {
+            view: { action },
+            standardCall: null,
+            contractAction: null,
+            ...rest,
+        } as unknown as EthereumTransactionPresentation
+    }
+
+    it('is true for a call Pera read nothing of', () => {
+        expect(isCallUnexplained(presentationOf())).toBe(true)
+    })
+
+    it('is false for a standard token call', () => {
+        expect(
+            isCallUnexplained(
+                presentationOf({
+                    standardCall: { kind: 'token-approval' } as never,
+                }),
+            ),
+        ).toBe(false)
+    })
+
+    it('is false for a known contract action, and true for a swap that pays a third party', () => {
+        const action = { kind: 'wrap' }
+        expect(
+            isCallUnexplained(
+                presentationOf({
+                    action,
+                    contractAction: { kind: 'wrap' } as never,
+                }),
+            ),
+        ).toBe(false)
+
+        const feeSwap = { kind: 'swap', fees: [{}] }
+        expect(
+            isCallUnexplained(
+                presentationOf({
+                    action: feeSwap,
+                    contractAction: { kind: 'swap' } as never,
+                }),
+            ),
+        ).toBe(true)
+    })
 })
