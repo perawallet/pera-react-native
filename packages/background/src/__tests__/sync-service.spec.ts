@@ -261,6 +261,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         },
         calculateBackoff: (current: number, multiplier: number, max: number) =>
             Math.min(current * multiplier, max),
+        isBackoffDue: actualShared.isBackoffDue,
+        nextBackoff: actualShared.nextBackoff,
         // Unbounded stand-in: these tests assert what gets fetched and how failures
         // are handled, not the concurrency cap. The real limiting behaviour is
         // covered in shared's async tests — do not read a passing suite here as

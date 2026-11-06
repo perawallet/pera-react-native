@@ -33,7 +33,10 @@ import {
 import {
     logger,
     calculateBackoff,
+    isBackoffDue,
     isPeraNetworkError,
+    nextBackoff,
+    type Backoff,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -107,9 +110,6 @@ const CLEAN_OUTCOME: ScopeSyncOutcome = {
     isRateLimited: false,
 }
 
-/** `intervalMs` is a duration; `nextEligibleAt` is epoch ms from `Date.now()`. */
-type ScopeBackoff = { intervalMs: number; nextEligibleAt: number }
-
 const isFailedOutcome = (outcome: ScopeSyncOutcome): boolean =>
     outcome.hadTotalFailure ||
     outcome.hadAccountFailure ||
@@ -136,7 +136,7 @@ export class SyncService {
     // Pacing for a scope that failed its last pass, so one unhealthy endpoint
     // costs only its own scope. Cleared on restart() and on reconnect, and an
     // entry goes once its scope stops syncing (network switched).
-    private scopeBackoffs = new Map<ChainScopeKey, ScopeBackoff>()
+    private scopeBackoffs = new Map<ChainScopeKey, Backoff>()
     private currentInterval: number
     // Coalesce query invalidations. invalidateAccountQueries fans out to every
     // mounted balance/summary/list query (a wide read each), so firing it
@@ -433,7 +433,7 @@ export class SyncService {
             // within this tick.
             const nowMs = Date.now()
             const due = groups.filter(({ scope }) =>
-                this.isScopeDue(toScopeKey(scope), nowMs),
+                isBackoffDue(this.scopeBackoffs.get(toScopeKey(scope)), nowMs),
             )
             const results = await Promise.allSettled(
                 due.map(group => this.syncScope(group)),
@@ -474,20 +474,7 @@ export class SyncService {
         }
     }
 
-    private isScopeDue(key: ChainScopeKey, nowMs: number): boolean {
-        const backoff = this.scopeBackoffs.get(key)
-        if (backoff === undefined) return true
-        // A wait longer than the interval itself means the device clock moved
-        // back; without this the scope would stall for the whole skew.
-        if (backoff.nextEligibleAt - nowMs > backoff.intervalMs) return true
-        return backoff.nextEligibleAt <= nowMs
-    }
-
-    /**
-     * Returns true when the scope failed. `tickStartedAtMs` anchors the wait:
-     * the loop timer is armed only after the tick settles, so the tick's own
-     * duration absorbs a timer firing a few ms early when the intervals match.
-     */
+    /** Returns true when the scope failed. */
     private recordScopeResult(
         scope: ChainScope,
         result: PromiseSettledResult<ScopeSyncOutcome>,
@@ -516,15 +503,18 @@ export class SyncService {
             this.scopeBackoffs.delete(key)
             return false
         }
-        const intervalMs = calculateBackoff(
-            this.scopeBackoffs.get(key)?.intervalMs ?? this.baseInterval,
-            BACKOFF_MULTIPLIER,
-            MAX_BACKOFF_INTERVAL,
+        this.scopeBackoffs.set(
+            key,
+            nextBackoff(this.scopeBackoffs.get(key), tickStartedAtMs, {
+                firstIntervalMs: calculateBackoff(
+                    this.baseInterval,
+                    BACKOFF_MULTIPLIER,
+                    MAX_BACKOFF_INTERVAL,
+                ),
+                multiplier: BACKOFF_MULTIPLIER,
+                maxIntervalMs: MAX_BACKOFF_INTERVAL,
+            }),
         )
-        this.scopeBackoffs.set(key, {
-            intervalMs,
-            nextEligibleAt: tickStartedAtMs + intervalMs,
-        })
         return true
     }
 
