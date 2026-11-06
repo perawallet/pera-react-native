@@ -187,7 +187,7 @@ Watch Account Is Added From An Address
 Node Switches To Testnet And Back To Mainnet
     [Tags]    id:onboarding.settings.node-testnet    p1
     Start With New Wallet
-    Open Node Settings
+    Open Node Settings From Menu
     Tap    ${NODE_DEV_MODE_SWITCH}
     Wait Until Page Contains Element    ${NODE_TESTNET_RADIO}    timeout=20s
     Tap    ${NODE_TESTNET_RADIO}

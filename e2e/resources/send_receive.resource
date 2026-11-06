@@ -140,15 +140,19 @@ Open Node Settings
     Wait Until Page Contains Element    ${DEVELOPER_MODE_SWITCH}    timeout=15s
 
 Set Testnet
-    [Arguments]    ${on}
+    [Documentation]    Turns Developer Mode on and selects ${radio}, or off, which brings mainnet back.
+    [Arguments]    ${on}    ${radio}=${TESTNET_RADIO}
     Open Node Settings
-    ${listed}=    Run Keyword And Return Status    Page Should Contain Element    ${TESTNET_RADIO}
+    # Algorand's testnet radio sits at the top of the list, so its presence says whether Developer
+    # Mode is on; a radio further down can be off-screen, which Appium reports as absent.
+    ${developer}=    Run Keyword And Return Status    Page Should Contain Element    ${TESTNET_RADIO}
     IF    ${on}
-        IF    not ${listed}    Tap    ${DEVELOPER_MODE_SWITCH}
+        IF    not ${developer}    Tap    ${DEVELOPER_MODE_SWITCH}
         Wait Until Page Contains Element    ${TESTNET_RADIO}    timeout=15s
-        Tap    ${TESTNET_RADIO}
-        Switch Should Be    ${TESTNET_RADIO}    ${True}
-    ELSE IF    ${listed}
+        Scroll Until Tappable    ${radio}
+        Tap    ${radio}
+        Switch Should Be    ${radio}    ${True}
+    ELSE IF    ${developer}
         Tap    ${DEVELOPER_MODE_SWITCH}
         Wait Until Page Does Not Contain Element    ${TESTNET_RADIO}    timeout=15s
     END
@@ -168,6 +172,9 @@ Open Send
 Open Amount Entry
     Open Send
     Tap    ${SEND_ALGO_ROW}
+    Acknowledge Send Info
+
+Acknowledge Send Info
     Wait Until Page Contains Element    ${SEND_NEXT_BUTTON}    timeout=20s
     # Shown until acknowledged once; it covers the numpad.
     ${info}=    Run Keyword And Return Status
@@ -196,8 +203,9 @@ Open Destination
     Wait Until Page Contains Element    ${ADDRESS_SEARCH_INPUT}    timeout=20s
 
 Choose Own Address As Recipient
-    Input Text    ${ADDRESS_SEARCH_INPUT}    ${FUNDED_ADDRESS}
-    ${row}=    Set Variable    tid=account_result_row_${FUNDED_ADDRESS}
+    [Arguments]    ${address}=${FUNDED_ADDRESS}
+    Input Text    ${ADDRESS_SEARCH_INPUT}    ${address}
+    ${row}=    Set Variable    tid=account_result_row_${address}
     Wait Until Page Contains Element    ${row}    timeout=15s
     Dismiss Keyboard
     Tap    ${row}
