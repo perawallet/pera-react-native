@@ -24,6 +24,7 @@ export * from './utils'
 export * from './signer-resolution'
 export * from './signingAccountAddresses'
 export * from './chain-adapter'
+export { receivesUnaskedAssets, canHideHolding } from './chainProtocol'
 export * from './presentation-adapter'
 export * from './account-discovery'
 export * from './hd-walk'
@@ -37,6 +38,8 @@ export {
     useAccountsStore,
     useAccountChainStateStore,
     useHoldingsRefreshStore,
+    useHiddenTokensStore,
+    hiddenAssetIdsOf,
     hydrateAccountChainStates,
     recordAuthority,
     getAllAccounts,
@@ -48,6 +51,8 @@ export {
     upgradeWatchAccountToHardware,
     updateHardwareDetails,
     type AccountChainStateSlice,
+    type HiddenTokens,
+    type SetTokenHiddenParams,
 } from './store'
 export {
     fetchAndPersistAccount,

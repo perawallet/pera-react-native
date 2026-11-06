@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
+import {
+    eq,
+    and,
+    inArray,
+    notInArray,
+    ne,
+    not,
+    or,
+    isNull,
+    sql,
+} from 'drizzle-orm'
 import { unionAll } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import {
@@ -30,6 +40,7 @@ import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
 import { isOptInChain } from '../chainProtocol'
 import { isNotSuspiciousSql } from './holdingSuspicion'
+import { hiddenHoldingSql } from './holdingVisibility'
 import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
@@ -319,6 +330,8 @@ export type AccountHoldingsFilters = {
     excludeAssetTypes?: string[]
     /** When true, rows whose asset Pera flags suspicious are excluded, except on an opt-in chain; rows with no metadata yet stay. */
     hideSuspicious?: boolean
+    /** Leaves out holdings the user hid, whatever the other filters keep. */
+    excludeHidden?: boolean
 }
 
 type GetAccountHoldingsParams = {
@@ -336,6 +349,7 @@ export async function getAccountHoldings({
     hideZeroBalanceNfts,
     excludeAssetTypes,
     hideSuspicious,
+    excludeHidden,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
     const scopeKey = toScopeKey(scope)
     const needsAssetJoin =
@@ -354,6 +368,12 @@ export async function getAccountHoldings({
         // so a zero amount is always the literal "0".
         baseConditions.push(
             ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
+        )
+    }
+
+    if (excludeHidden) {
+        baseConditions.push(
+            not(hiddenHoldingSql([{ address: accountAddress, scope }])),
         )
     }
 

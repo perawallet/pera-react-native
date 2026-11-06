@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -21,3 +22,15 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 export const isOptInChain = (chainId: ChainId): boolean =>
     getProvider().chains.has(chainId) &&
     getChainDescriptor(chainId).protocol.requiresAssetOptIn
+
+/**
+ * Whether anyone can send the account an asset it never asked for: the chain is
+ * registered and holds assets without an opt-in.
+ */
+export const receivesUnaskedAssets = (chainId: ChainId): boolean =>
+    getProvider().chains.has(chainId) &&
+    !getChainDescriptor(chainId).protocol.requiresAssetOptIn
+
+/** Whether the holding is a token the account may hide: not the native coin, on a chain that receives unasked assets. */
+export const canHideHolding = (chainId: ChainId, assetId: string): boolean =>
+    receivesUnaskedAssets(chainId) && !isNativeAssetId(chainId, assetId)
