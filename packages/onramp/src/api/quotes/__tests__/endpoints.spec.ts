@@ -168,6 +168,22 @@ describe('createRampQuote', () => {
         expect((error as RampAmountOutOfRangeError).limits.max).toBeNull()
     })
 
+    it('keeps the below-minimum error when the router sends a null maximum', async () => {
+        capture(422, {
+            error: 'Amount is too low.',
+            code: 'amount_too_low',
+            source_amount_minimum: '60000',
+            source_amount_maximum: null,
+        })
+
+        const error = await createRampQuote(fiatParams, SCOPE).catch(
+            (caught: unknown) => caught,
+        )
+
+        expect(error).toBeInstanceOf(RampAmountOutOfRangeError)
+        expect((error as RampAmountOutOfRangeError).limits.max).toBeNull()
+    })
+
     it('throws an above-maximum error carrying the maximum', async () => {
         capture(422, {
             error: 'Amount is too high.',

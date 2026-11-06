@@ -89,7 +89,10 @@ export const useOnrampOrderDetails = (
     const { mutateAsync: cancelOrder, isPending: isCancelling } =
         useCancelRampOrderMutation()
 
-    const isXo = item.kind === 'xo'
+    // A legacy order has no funding method, so its provider says what it was.
+    const isXo =
+        item.kind === 'xo' ||
+        (item.kind === null && item.provider.toLowerCase() === 'xo')
     // The router's order items carry no deposit address; this device kept the
     // instructions of the deposit orders it placed.
     const rememberedDeposit = useRampDepositInstructions(item.id)

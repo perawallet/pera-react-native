@@ -15,10 +15,12 @@ import type { Decimal } from 'decimal.js'
 import {
     AppError,
     ErrorCategory,
-    isPeraNetworkError,
     type Nullable,
     type Maybe,
 } from '@perawallet/wallet-core-shared'
+
+import { resolveRouterErrorBody } from '../api/router-error'
+import { unwrapNetworkError } from './unwrap'
 
 const GENERIC_FALLBACK = 'Something went wrong. Please try again.'
 
@@ -94,12 +96,6 @@ function resolvePeraApiException(error: unknown): Nullable<PeraApiException> {
     return isPeraApiException(data) ? data : null
 }
 
-// The typed network error wraps the original ky error; the parsed Pera body
-// (if any) lives on the original.
-function unwrapNetworkError(error: unknown): unknown {
-    return isPeraNetworkError(error) ? (error.originalError ?? error) : error
-}
-
 // `fallback_message` is not always prose: a serialised dict can land in it
 // verbatim, and showing "{'message': ...}" to a user is worse than a generic
 // apology.
@@ -130,32 +126,6 @@ export function resolveRampQuoteLimits(
     if (!(raw instanceof RampAmountOutOfRangeError)) return null
     const { min, max } = raw.limits
     return min === null && max === null ? null : raw.limits
-}
-
-/** The `{ error, code }` body the swap router and the sponsor route answer with. */
-export type RouterErrorBody = {
-    error: string
-    code?: string
-    source_amount_minimum?: string
-    source_amount_maximum?: string
-}
-
-function isRouterErrorBody(value: unknown): value is RouterErrorBody {
-    return (
-        typeof value === 'object' &&
-        value !== null &&
-        typeof (value as Record<string, unknown>).error === 'string'
-    )
-}
-
-/** The router's error body, from the error itself or the parsed body the ky client attaches. */
-export function resolveRouterErrorBody(
-    error: unknown,
-): Nullable<RouterErrorBody> {
-    const raw = unwrapNetworkError(error)
-    if (isRouterErrorBody(raw)) return raw
-    const data = (raw as Maybe<{ data?: unknown }>)?.data
-    return isRouterErrorBody(data) ? data : null
 }
 
 const ATTESTATION_REQUIRED_MESSAGE =

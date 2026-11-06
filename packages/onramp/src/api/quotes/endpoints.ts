@@ -14,18 +14,14 @@ import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
+    type Maybe,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { routerAccountId, routerRequest } from '@perawallet/wallet-core-swaps'
 
-import {
-    RampAmountOutOfRangeError,
-    resolveRouterErrorBody,
-    type RampQuoteLimits,
-    type RouterErrorBody,
-} from '../../errors'
+import { RampAmountOutOfRangeError, type RampQuoteLimits } from '../../errors'
 import type { RampQuote, RampToken } from '../../models'
+import { resolveRouterErrorBody, type RouterErrorBody } from '../router-error'
 import { caip2OfRouterAsset, toBaseUnitString } from '../router-asset'
 import { createRampQuoteResponseSchema } from './schema'
 import { transformRampOffer } from './transformers'
@@ -42,10 +38,10 @@ export type CreateRampQuoteParams = {
 }
 
 const toLimit = (
-    baseUnits: Optional<string>,
+    baseUnits: Maybe<string>,
     decimals: number,
 ): Nullable<Decimal> =>
-    baseUnits === undefined
+    baseUnits === null || baseUnits === undefined
         ? null
         : baseUnitsToDisplayUnits(baseUnits, decimals)
 

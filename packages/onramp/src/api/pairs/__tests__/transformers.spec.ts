@@ -65,16 +65,16 @@ describe('transformRampPairRow', () => {
 
     it('reads the kind off the asset when the row names none', () => {
         expect(
-            transformRampPairRow(pairRow(fiatAsset(), { kind: null })).kind,
+            transformRampPairRow(pairRow(fiatAsset(), { kind: null }))?.kind,
         ).toBe('fiat')
         expect(
             transformRampPairRow(pairRow(coinAsset(), { kind: undefined }))
-                .kind,
+                ?.kind,
         ).toBe('deposit')
         expect(
             transformRampPairRow(
-                pairRow({ asset_id: NATIVE_ID }, { kind: null }),
-            ).kind,
+                pairRow({ asset_id: NATIVE_ID, decimals: 6 }, { kind: null }),
+            )?.kind,
         ).toBe('token')
     })
 
@@ -94,5 +94,11 @@ describe('transformRampPairRow', () => {
             fractionDecimals: 3,
             logo: 'https://logo/x.png',
         })
+    })
+
+    it('drops a non-fiat row that gives no decimals', () => {
+        expect(
+            transformRampPairRow(pairRow({ asset_id: NATIVE_ID })),
+        ).toBeNull()
     })
 })

@@ -19,7 +19,6 @@ import {
     RampAmountOutOfRangeError,
     RampAttestationRequiredError,
     resolveRampQuoteLimits,
-    resolveRouterErrorBody,
     toOnrampUserMessage,
 } from '..'
 
@@ -114,25 +113,6 @@ describe('toOnrampUserMessage', () => {
 
         expect(result).not.toContain('{')
         expect(result).toMatch(/something went wrong/i)
-    })
-})
-
-describe('resolveRouterErrorBody', () => {
-    it('reads the body from a PeraNetworkError wrapper', () => {
-        const wrapped = new PeraNetworkError('client', {
-            status: 409,
-            originalError: Object.assign(new Error('http'), {
-                data: { error: 'Nope', code: 'invalid_status_transition' },
-            }),
-        })
-
-        expect(resolveRouterErrorBody(wrapped)?.code).toBe(
-            'invalid_status_transition',
-        )
-    })
-
-    it('is null for an error with no router body', () => {
-        expect(resolveRouterErrorBody(new Error('boom'))).toBeNull()
     })
 })
 

@@ -119,6 +119,10 @@ export const useOnrampConfirm = ({
                     ? addressOn(currentAccount, scope)
                     : undefined) ?? selectedAccountAddress
 
+            // The router fills the order from the quote's destination account,
+            // so an account switched since the quote was made must not order.
+            if (currentAddress !== selectedAccountAddress) return
+
             // The destination has no asset on this network, so there is
             // nothing to prepare or fund: bail out quietly.
             const destinationAsset = rampTokenAsset(
@@ -175,7 +179,7 @@ export const useOnrampConfirm = ({
                 const reviewItem = buildPendingXoHistoryItem(
                     order,
                     selectedPair,
-                    sourceAmount,
+                    selectedQuote.sourceAmount,
                     destinationAmount,
                     currentAddress,
                     new Date().toISOString(),

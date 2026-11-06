@@ -385,6 +385,43 @@ describe('useOnrampForm', () => {
         expect(result.current.selectedQuote?.quoteId).toBe('fresh')
     })
 
+    it('cannot confirm while a re-quote is in flight, so an order never uses a quote for another amount', async () => {
+        let resolveRequote: (v: RampQuote[]) => void = () => {}
+        mockCreateQuote
+            .mockResolvedValueOnce([makeMeldQuote({ quoteId: 'q100' })])
+            .mockImplementationOnce(
+                () =>
+                    new Promise<RampQuote[]>(resolve => {
+                        resolveRequote = resolve
+                    }),
+            )
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+
+        act(() => {
+            result.current.setSourceAmountText('100')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        expect(result.current.canConfirm).toBe(true)
+
+        act(() => {
+            result.current.setSourceAmountText('200')
+        })
+        expect(result.current.isQuoting).toBe(true)
+        expect(result.current.canConfirm).toBe(false)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        await act(async () => {
+            resolveRequote([makeMeldQuote({ quoteId: 'q200' })])
+            await Promise.resolve()
+        })
+
+        expect(result.current.canConfirm).toBe(true)
+    })
+
     it('filters out quotes with an excluded payment method on Android', async () => {
         Platform.OS = 'android'
         const applePay = makeMeldQuote({

@@ -16,7 +16,7 @@ import { rampContractTests } from './adapter-contract'
 rampContractTests(() => fakeRampAdapter(), {
     scope: { chainId: 'algorand', networkId: 'mainnet' },
     native: { routerAssetId: 'fake:a/asset:0', assetId: '0' },
-    nonNative: { routerAssetId: 'fake:a/asset:31566704', assetId: '31566704' },
-    foreignRouterAssetId: 'fake:b/token:31566704',
+    nonNative: { routerAssetId: 'fake:a/asset:42', assetId: '42' },
+    foreignRouterAssetId: 'fake:b/token:42',
     malformedRouterAssetIds: ['', 'fake:a', 'fake:a/asset:'],
 })

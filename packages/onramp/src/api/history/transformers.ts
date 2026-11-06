@@ -15,14 +15,14 @@ import {
     baseUnitsToDisplayUnits,
     type Maybe,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 
-import type { RampHistoryItem, RampQuoteKind, RampToken } from '../../models'
+import type { RampHistoryItem, RampToken } from '../../models'
 import { buildRampPair } from '../../utils'
 import {
     addressOfRouterAccount,
-    fractionDecimalsOf,
+    knownFractionDecimalsOf,
+    QUOTE_KIND_BY_FUNDING_METHOD,
     toRampToken,
     type RampAssetItem,
 } from '../router-asset'
@@ -43,30 +43,27 @@ const PLACEHOLDER_TOKEN: RampToken = {
 // with no funding method is a legacy Fund order.
 const WALLET_FUNDING_METHOD = 'wallet_transaction'
 
-const QUOTE_KIND_BY_FUNDING_METHOD: Readonly<
-    Record<string, Optional<RampQuoteKind>>
-> = {
-    provider_checkout: 'meld',
-    external_deposit: 'xo',
-}
-
 export const isFundHistoryItem = (item: RampHistoryItemApiResponse): boolean =>
     item.funding_method !== WALLET_FUNDING_METHOD
 
 const toAmount = (
     baseUnits: Maybe<string>,
     asset: Maybe<RampAssetItem>,
-): Nullable<Decimal> =>
-    baseUnits == null || asset == null
+): Nullable<Decimal> => {
+    if (baseUnits === null || baseUnits === undefined) return null
+    if (asset === null || asset === undefined) return null
+    const decimals = knownFractionDecimalsOf(asset)
+    return decimals === null
         ? null
-        : baseUnitsToDisplayUnits(baseUnits, fractionDecimalsOf(asset))
+        : baseUnitsToDisplayUnits(baseUnits, decimals)
+}
 
 export const transformRampHistoryItem = (
     item: RampHistoryItemApiResponse,
 ): RampHistoryItem => ({
     id: item.order_id,
     kind:
-        item.funding_method == null
+        item.funding_method === null || item.funding_method === undefined
             ? null
             : (QUOTE_KIND_BY_FUNDING_METHOD[item.funding_method] ?? null),
     status: item.status,

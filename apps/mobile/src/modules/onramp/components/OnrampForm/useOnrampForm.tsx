@@ -52,6 +52,11 @@ type UseOnrampFormResult = {
     /** Sender (source) address entered for XO orders; null when unset. */
     senderAddress: Nullable<string>
     isConfirming: boolean
+    /**
+     * False while a quote is in flight: the router fills an order from the
+     * stored quote, so it must match the amount entered.
+     */
+    canConfirm: boolean
     handleOpenSourceSelection: () => Promise<void>
     handleOpenDestinationSelection: () => Promise<void>
     handleOpenProvider: () => Promise<void>
@@ -62,7 +67,8 @@ type UseOnrampFormResult = {
 
 /**
  * Drives the onramp buy form. The amount field and its derived display
- * (receive amount, limits) live here; the quote lifecycle, sheet handlers, and confirm flow are delegated to focused sub-hooks:
+ * (receive amount, limits) live here; the quote lifecycle, sheet handlers and
+ * confirm flow are delegated to focused sub-hooks:
  *
  * - {@link useOnrampQuotes} — debounced fetching + quote/payment selection
  * - {@link useOnrampSheets} — the selection bottom-sheet handlers
@@ -149,6 +155,14 @@ export const useOnrampForm = (
         onNavigateToHistory,
     })
 
+    const canConfirm =
+        selectedQuote !== null &&
+        sourceAmountText !== '' &&
+        destinationAmount !== null &&
+        quotesError === null &&
+        !isQuoting &&
+        !isConfirming
+
     return {
         sourceAmountText,
         setSourceAmountText,
@@ -167,6 +181,7 @@ export const useOnrampForm = (
         isMeld,
         senderAddress: senderAddress === '' ? null : senderAddress,
         isConfirming,
+        canConfirm,
         ...sheets,
         handleConfirm,
     }

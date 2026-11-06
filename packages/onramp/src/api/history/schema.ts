@@ -13,9 +13,10 @@
 import { z } from 'zod'
 
 import { onrampStatusSchema } from '../orders/schema'
-import { rampAssetItemSchema } from '../router-asset'
-
-const baseUnits = z.string().regex(/^\d+$/)
+import {
+    baseUnitsSchema as baseUnits,
+    rampAssetItemSchema,
+} from '../router-asset'
 
 export const rampHistoryQuerySchema = z.object({
     device_id: z.string(),

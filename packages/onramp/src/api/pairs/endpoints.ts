@@ -58,11 +58,18 @@ const fetchRows = async (
     return rows
 }
 
+const toTokens = (token: Nullable<RampToken>): RampToken[] =>
+    token === null ? [] : [token]
+
 /** Everything Fund can deliver, with no anchor. */
 export const getRampDestinations = async (
     scope: ChainScope,
 ): Promise<RampToken[]> =>
-    dedupeRampTokens((await fetchRows(scope, null)).map(transformRampPairRow))
+    dedupeRampTokens(
+        (await fetchRows(scope, null)).flatMap(row =>
+            toTokens(transformRampPairRow(row)),
+        ),
+    )
 
 /** What can fund `destinationId`: its fiat currencies and deposit coins. */
 export const getRampSources = async (
@@ -71,6 +78,6 @@ export const getRampSources = async (
 ): Promise<RampToken[]> =>
     dedupeRampTokens(
         (await fetchRows(scope, destinationId))
-            .map(transformRampPairRow)
+            .flatMap(row => toTokens(transformRampPairRow(row)))
             .filter(token => token.kind !== 'token'),
     )

@@ -96,6 +96,14 @@ describe('transformRampHistoryItem', () => {
         expect(item.sourceAmount?.toString()).toBe('600')
     })
 
+    it('has no amount for an asset that gives no decimals', () => {
+        const item = transform({
+            destination_asset: { asset_id: STABLE_ID },
+        })
+
+        expect(item.destinationAmount).toBeNull()
+    })
+
     it.each(['expired', 'refunded'] as const)('keeps a %s order', status => {
         expect(transform({ status }).status).toBe(status)
     })

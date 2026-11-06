@@ -15,11 +15,24 @@ import { z } from 'zod'
 import {
     displayUnitsToBaseUnits,
     toBigInt,
+    type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
 import { FIAT_MAX_FRACTION_DIGITS } from '../currency-decimals'
-import type { RampToken, RampTokenKind } from '../models'
+import type { RampQuoteKind, RampToken, RampTokenKind } from '../models'
+
+/** An integer in base units, as the router sends every amount. */
+export const baseUnitsSchema = z.string().regex(/^\d+$/)
+
+// Wallet-signed routes (`wallet_transaction`) belong to Swap, and any other
+// route is one this client can't run.
+export const QUOTE_KIND_BY_FUNDING_METHOD: Readonly<
+    Record<string, Optional<RampQuoteKind>>
+> = {
+    provider_checkout: 'meld',
+    external_deposit: 'xo',
+}
 
 /**
  * The router's asset item. A pair row, an offer and an order item each carry
@@ -60,13 +73,14 @@ const inferKind = (item: RampAssetItem): RampTokenKind => {
     return item.chain ? 'deposit' : 'token'
 }
 
-export const fractionDecimalsOf = (
+/** Null when the item doesn't say: a base-unit amount can't be scaled without it. */
+export const knownFractionDecimalsOf = (
     item: RampAssetItem,
     kind: RampTokenKind = inferKind(item),
-): number =>
+): Nullable<number> =>
     item.fraction_decimals ??
     item.decimals ??
-    (kind === 'fiat' ? FIAT_MAX_FRACTION_DIGITS : 0)
+    (kind === 'fiat' ? FIAT_MAX_FRACTION_DIGITS : null)
 
 // ISO 4217 codes lead with the issuing country's ISO 3166 code (EUR -> EU),
 // which is what the flag lookup keys on.
@@ -85,7 +99,7 @@ export const toRampToken = (
         kind,
         symbol,
         name: item.name ?? symbol,
-        fractionDecimals: fractionDecimalsOf(item, kind),
+        fractionDecimals: knownFractionDecimalsOf(item, kind) ?? 0,
         logo: item.logo ?? item.logo_url ?? null,
         network: {
             name: kind === 'deposit' ? (item.chain ?? '') : '',

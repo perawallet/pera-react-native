@@ -15,23 +15,14 @@ import {
     baseUnitsToDisplayUnits,
     type Maybe,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 
 import { formatMeldPaymentMethodName } from '../../constants'
 import type { RampPaymentMethod, RampQuote, RampQuoteKind } from '../../models'
+import { QUOTE_KIND_BY_FUNDING_METHOD } from '../router-asset'
 import type { RampOfferApiResponse } from './schema'
 
 export type QuoteDecimals = { source: number; destination: number }
-
-// Wallet-signed routes (`wallet_transaction`) belong to Swap, and any other
-// route is one this client can't run.
-const QUOTE_KIND_BY_FUNDING_METHOD: Readonly<
-    Record<string, Optional<RampQuoteKind>>
-> = {
-    provider_checkout: 'meld',
-    external_deposit: 'xo',
-}
 
 // Rendered as the single "payment method" of a crypto deposit.
 const DEPOSIT_PAYMENT_METHOD: RampPaymentMethod = {
@@ -41,7 +32,7 @@ const DEPOSIT_PAYMENT_METHOD: RampPaymentMethod = {
 }
 
 const toUsd = (value: Maybe<string>): Nullable<Decimal> =>
-    value == null ? null : new Decimal(value)
+    value === null || value === undefined ? null : new Decimal(value)
 
 const paymentMethodOf = (
     kind: RampQuoteKind,

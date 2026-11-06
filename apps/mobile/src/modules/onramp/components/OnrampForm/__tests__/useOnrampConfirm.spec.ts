@@ -270,19 +270,8 @@ describe('useOnrampConfirm', () => {
         })
     })
 
-    it.each([
-        [
-            'uses the account selected at confirm time',
-            'STORED_ADDRESS',
-            'STORED_ADDRESS',
-        ],
-        [
-            "falls back to the form's address when the selected account was removed",
-            null,
-            'ACCOUNT_ADDRESS',
-        ],
-    ])('%s', async (_label, storedAddress, expectedAddress) => {
-        mockStoredAccountAddress = storedAddress
+    it("falls back to the form's address when the selected account was removed", async () => {
+        mockStoredAccountAddress = null
         const { result } = renderHook(() =>
             useOnrampConfirm({ ...defaultProps, selectedPair: usdcPair }),
         )
@@ -292,8 +281,22 @@ describe('useOnrampConfirm', () => {
         })
 
         expect(mockEnsureOptIn).toHaveBeenCalledWith(
-            expect.objectContaining({ address: expectedAddress }),
+            expect.objectContaining({ address: 'ACCOUNT_ADDRESS' }),
         )
+    })
+
+    it('creates no order when the selected account changed since the quote was made', async () => {
+        mockStoredAccountAddress = 'STORED_ADDRESS'
+        const { result } = renderHook(() =>
+            useOnrampConfirm({ ...defaultProps, selectedPair: usdcPair }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockEnsureOptIn).not.toHaveBeenCalled()
+        expect(mockCreateRampOrder).not.toHaveBeenCalled()
     })
 
     it("bails out before opt-in when the destination isn't an asset of the network", async () => {
@@ -383,5 +386,29 @@ describe('useOnrampConfirm', () => {
         )
         expect(Linking.openURL).not.toHaveBeenCalled()
         expect(onNavigateToHistory).toHaveBeenCalled()
+    })
+
+    it("shows the quote's amount in the review, not an edit made after it", async () => {
+        mockCreateRampOrder.mockResolvedValueOnce({
+            kind: 'xo',
+            orderId: 'order-xo-2',
+            deposit: { address: 'PAYIN', memo: null },
+        })
+        const { result } = renderHook(() =>
+            useOnrampConfirm({
+                ...defaultProps,
+                selectedPair: depositPair,
+                selectedQuote: { ...xoQuote, sourceAmount: new Decimal(1) },
+                sourceAmount: new Decimal(2),
+                isMeld: false,
+            }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        const { contents } = mockRequestBottomSheet.mock.calls[0][0]
+        expect(contents.props.item.sourceAmount).toEqual(new Decimal(1))
     })
 })

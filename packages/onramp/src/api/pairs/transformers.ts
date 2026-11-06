@@ -11,15 +11,26 @@
  */
 
 import type { RampToken, RampTokenKind } from '../../models'
-import { toRampToken } from '../router-asset'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+import { knownFractionDecimalsOf, toRampToken } from '../router-asset'
 import type { RampPairRowApiResponse } from './schema'
 
 const isTokenKind = (kind: unknown): kind is RampTokenKind =>
     kind === 'token' || kind === 'deposit' || kind === 'fiat'
 
-/** The row's own kind when it names one the app knows, else read off the asset. */
-export const transformRampPairRow = (row: RampPairRowApiResponse): RampToken =>
-    toRampToken(row.asset, isTokenKind(row.kind) ? row.kind : undefined)
+/**
+ * The row's own kind when it names one the app knows, else read off the asset.
+ * Null for an asset that gives no decimals: its amounts couldn't be scaled.
+ */
+export const transformRampPairRow = (
+    row: RampPairRowApiResponse,
+): Nullable<RampToken> => {
+    const kind = isTokenKind(row.kind) ? row.kind : undefined
+    return knownFractionDecimalsOf(row.asset, kind) === null
+        ? null
+        : toRampToken(row.asset, kind)
+}
 
 /** First occurrence wins: a coin listed by two aggregators is one row. */
 export const dedupeRampTokens = (tokens: RampToken[]): RampToken[] => {

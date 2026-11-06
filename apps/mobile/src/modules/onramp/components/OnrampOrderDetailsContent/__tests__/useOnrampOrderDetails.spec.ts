@@ -106,6 +106,14 @@ describe('useOnrampOrderDetails', () => {
         expect(result.current.payInAddressTag).toBe('42')
     })
 
+    it('reads a legacy order with no funding method as XO by its provider', () => {
+        const { result } = renderHook(() =>
+            useOnrampOrderDetails(item({ kind: null, provider: 'xo' })),
+        )
+
+        expect(result.current.isXo).toBe(true)
+    })
+
     it("prefers the item's own pay-in details over the remembered ones", () => {
         mocks.remembered = { address: 'OLD', memo: null }
 

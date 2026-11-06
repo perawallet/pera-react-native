@@ -12,9 +12,10 @@
 
 import { z } from 'zod'
 
-import { rampAssetItemSchema } from '../router-asset'
-
-const baseUnits = z.string().regex(/^\d+$/)
+import {
+    baseUnitsSchema as baseUnits,
+    rampAssetItemSchema,
+} from '../router-asset'
 
 export const createRampQuoteRequestSchema = z.object({
     source_asset_id: z.string(),
