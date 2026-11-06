@@ -3087,6 +3087,26 @@ describe('useDeepLink', () => {
             )
         })
 
+        it('refuses a name link whose chain has the name service off, resolving nothing', async () => {
+            capabilityState.turnOff('nameService')
+            const { receiverAddress: _address, ...rest } = ethereumTransfer
+            ;(parseDeeplink as Mock).mockReturnValue({
+                ...rest,
+                receiverName: 'alice.eth',
+            })
+
+            const { onError } = await dispatch(ethereumTransfer.sourceUrl)
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            await vi.advanceTimersByTimeAsync(400)
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'deeplink.error.title_unsupported',
+                'deeplink.error.body_unsupported_on_chain',
+            )
+        })
+
         it('refuses an opt-in on a chain whose assets need none as not supported', async () => {
             ;(parseDeeplink as Mock).mockReturnValue({
                 type: DeeplinkType.ASSET_OPT_IN,

@@ -182,6 +182,22 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (unsupportedChainId) {
             return { kind: 'unsupported-on-chain', chainId: unsupportedChainId }
         }
+        // The kill switch for a chain's name lookups covers links as well as forms.
+        if (
+            link.type === DeeplinkType.TRANSFER &&
+            link.receiverName !== undefined &&
+            !isAllowed({
+                chain: {
+                    chainId: link.target.chainId,
+                    capability: 'nameService',
+                },
+            })
+        ) {
+            return {
+                kind: 'unsupported-on-chain',
+                chainId: link.target.chainId,
+            }
+        }
         const requirement = capabilityRequirementForDeeplink(link)
         if (!requirement || isAllowed(requirement)) return undefined
         if (requirement.chain && !isAllowed({ chain: requirement.chain })) {
