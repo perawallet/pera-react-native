@@ -106,8 +106,8 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
 const LEGACY_NAME_PREFIX = 'nfd'
 const NAME_PREFIX = 'names'
 
-// Queries persisted as 'nfd' would hydrate under a key nothing reads,
-// so every name row would start pending until the batch queue re-reads SQLite.
+// Queries persisted as 'nfd' hydrate under a key nothing reads, so every
+// name row would start pending until the batch queue re-reads SQLite.
 export const withLegacyNameQueryKeys = (persister: Persister): Persister => ({
     ...persister,
     restoreClient: async () => {
