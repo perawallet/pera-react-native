@@ -16,6 +16,7 @@ import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
 import { routeCapabilities } from '@routes/capabilities'
+import { useIsPasswordManagerEnabled } from '@hooks/useIsPasswordManagerEnabled'
 import { VaultSecuritySettingsScreen } from './vault-security'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
@@ -245,6 +246,8 @@ export type SettingsStackParamsList = {
 const SettingsStack = createAppStackNavigator()
 
 export const SettingsStackNavigator = () => {
+    const isPasswordManagerEnabled = useIsPasswordManagerEnabled()
+
     return (
         <SettingsStack.Navigator
             initialRouteName='SettingsHome'
@@ -310,28 +313,28 @@ export const SettingsStackNavigator = () => {
                     component={SettingsPasskeyScreen}
                 />
             )}
-            {routeCapabilities.passwordManager && (
+            {isPasswordManagerEnabled && (
                 <SettingsStack.Screen
                     name='PasswordList'
                     options={{ title: 'settings.passwords.title' }}
                     component={PasswordListScreen}
                 />
             )}
-            {routeCapabilities.passwordManager && (
+            {isPasswordManagerEnabled && (
                 <SettingsStack.Screen
                     name='AddPassword'
                     options={{ title: 'settings.passwords.add_action' }}
                     component={AddPasswordScreen}
                 />
             )}
-            {routeCapabilities.passwordManager && (
+            {isPasswordManagerEnabled && (
                 <SettingsStack.Screen
                     name='EditPassword'
                     options={{ title: 'settings.passwords.edit_action' }}
                     component={EditPasswordScreen}
                 />
             )}
-            {routeCapabilities.passwordManager && (
+            {isPasswordManagerEnabled && (
                 <SettingsStack.Screen
                     name='ViewPassword'
                     options={{ title: 'settings.passwords.title' }}
