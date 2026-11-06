@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
 // vi.mock factories run before the rest of this module is evaluated, so
@@ -32,12 +32,16 @@ const login = {
     updatedAt: 1,
 }
 
+const { loginsState } = vi.hoisted(() => ({
+    loginsState: { logins: [] as unknown[], isLoading: false },
+}))
+
 const { readLogin, deleteLogin } = vi.hoisted(() => ({
     readLogin: vi.fn(async () => ({ ...login, password: 'secret' })),
     deleteLogin: vi.fn(async () => undefined),
 }))
 vi.mock('@perawallet/wallet-core-passwords', () => ({
-    useLoginsQuery: () => ({ logins: [login], isLoading: false }),
+    useLoginsQuery: () => loginsState,
     readLogin,
     useDeleteLoginMutation: () => ({
         deleteLogin,
@@ -52,9 +56,21 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard, readText: vi.fn() }),
 }))
 
+const { errorToast } = vi.hoisted(() => ({ errorToast: vi.fn() }))
+vi.mock('@hooks/useToast', () => ({ useToast: () => ({ errorToast }) }))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
 import { useViewPasswordScreen } from '../useViewPasswordScreen'
 
 describe('useViewPasswordScreen', () => {
+    beforeEach(() => {
+        loginsState.logins = [login]
+        loginsState.isLoading = false
+        errorToast.mockClear()
+    })
+
     it('keeps the password null until the user reveals it', async () => {
         const { result } = renderHook(() =>
             useViewPasswordScreen('pera.login.abc'),
@@ -112,5 +128,52 @@ describe('useViewPasswordScreen', () => {
         expect(navigate).toHaveBeenCalledWith('EditPassword', {
             id: 'pera.login.abc',
         })
+    })
+
+    it('toasts instead of rejecting when revealing fails', async () => {
+        readLogin.mockRejectedValueOnce(new Error('keystore locked'))
+        const { result } = renderHook(() =>
+            useViewPasswordScreen('pera.login.abc'),
+        )
+
+        await act(() => result.current.handleToggleReveal())
+
+        expect(errorToast).toHaveBeenCalledWith(
+            'common.error.title',
+            'common.error.body',
+        )
+        expect(result.current.password).toBeNull()
+    })
+
+    it('toasts instead of rejecting when copying fails', async () => {
+        copyToClipboard.mockClear()
+        readLogin.mockRejectedValueOnce(new Error('keystore locked'))
+        const { result } = renderHook(() =>
+            useViewPasswordScreen('pera.login.abc'),
+        )
+
+        await act(() => result.current.handleCopy())
+
+        expect(errorToast).toHaveBeenCalledTimes(1)
+        expect(copyToClipboard).not.toHaveBeenCalled()
+    })
+
+    it('reports not found once loading ends without the login', () => {
+        loginsState.logins = []
+        const { result } = renderHook(() =>
+            useViewPasswordScreen('pera.login.abc'),
+        )
+
+        expect(result.current.isNotFound).toBe(true)
+    })
+
+    it('is not "not found" while the list is still loading', () => {
+        loginsState.logins = []
+        loginsState.isLoading = true
+        const { result } = renderHook(() =>
+            useViewPasswordScreen('pera.login.abc'),
+        )
+
+        expect(result.current.isNotFound).toBe(false)
     })
 })

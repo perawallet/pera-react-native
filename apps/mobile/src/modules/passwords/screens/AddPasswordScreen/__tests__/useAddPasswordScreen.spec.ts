@@ -87,4 +87,18 @@ describe('useAddPasswordScreen', () => {
 
         expect(saveLogin).not.toHaveBeenCalled()
     })
+
+    it('swallows a rejected save so it is not an unhandled rejection, and stays on the screen', async () => {
+        goBack.mockClear()
+        saveLogin.mockRejectedValueOnce(new Error('keystore unavailable'))
+        const { result } = renderHook(() => useAddPasswordScreen())
+        act(() => {
+            result.current.setDomain('example.com')
+            result.current.setPassword('secret')
+        })
+
+        await act(() => result.current.handleSave())
+
+        expect(goBack).not.toHaveBeenCalled()
+    })
 })

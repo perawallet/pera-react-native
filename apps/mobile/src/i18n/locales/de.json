@@ -2516,6 +2516,8 @@
             "delete_action": "Delete password",
             "delete_confirm_title": "Delete this password?",
             "delete_confirm_body": "It is stored only on this device and cannot be recovered.",
+            "not_found_title": "Password not found",
+            "not_found_body": "This password no longer exists.",
             "not_backed_up_notice": "Passwords are stored only on this device. They are not included in your Pera backup and cannot be recovered if you lose the device.",
             "domain_required_error": "Enter a website.",
             "password_required_error": "Enter a password.",

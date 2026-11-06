@@ -20,12 +20,15 @@ import {
     type Login,
 } from '@perawallet/wallet-core-passwords'
 import { useClipboard } from '@hooks/useClipboard'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 export type UseViewPasswordScreenResult = {
     login: Login | null
     password: string | null
     isRevealed: boolean
     isLoading: boolean
+    isNotFound: boolean
     handleToggleReveal: () => Promise<void>
     handleCopy: () => Promise<void>
     handleEdit: () => void
@@ -39,6 +42,8 @@ export const useViewPasswordScreen = (
     const { logins, isLoading } = useLoginsQuery()
     const { deleteLogin } = useDeleteLoginMutation()
     const { copyToClipboard } = useClipboard()
+    const { errorToast } = useToast()
+    const { t } = useLanguage()
 
     const [password, setPassword] = useState<string | null>(null)
 
@@ -46,6 +51,10 @@ export const useViewPasswordScreen = (
         () => logins.find(candidate => candidate.id === id) ?? null,
         [logins, id],
     )
+
+    const showReadError = useCallback(() => {
+        errorToast(t('common.error.title'), t('common.error.body'))
+    }, [errorToast, t])
 
     // The list query carries no password — it is projected out at the store
     // boundary — so plaintext only ever enters this hook when the user asks
@@ -55,15 +64,23 @@ export const useViewPasswordScreen = (
             setPassword(null)
             return
         }
-        const secret = await readLogin(id)
-        setPassword(secret?.password ?? null)
-    }, [password, id])
+        try {
+            const secret = await readLogin(id)
+            setPassword(secret?.password ?? null)
+        } catch {
+            showReadError()
+        }
+    }, [password, id, showReadError])
 
     const handleCopy = useCallback(async () => {
-        const secret = await readLogin(id)
-        if (!secret) return
-        await copyToClipboard(secret.password)
-    }, [id, copyToClipboard])
+        try {
+            const secret = await readLogin(id)
+            if (!secret) return
+            await copyToClipboard(secret.password)
+        } catch {
+            showReadError()
+        }
+    }, [id, copyToClipboard, showReadError])
 
     const handleEdit = useCallback(() => {
         navigation.navigate('EditPassword', { id })
@@ -79,6 +96,7 @@ export const useViewPasswordScreen = (
         password,
         isRevealed: password !== null,
         isLoading,
+        isNotFound: !isLoading && login === null,
         handleToggleReveal,
         handleCopy,
         handleEdit,

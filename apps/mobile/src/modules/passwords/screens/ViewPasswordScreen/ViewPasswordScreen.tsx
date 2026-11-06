@@ -23,6 +23,7 @@ import {
     PWScreen,
 } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -39,6 +40,7 @@ export const ViewPasswordScreen = () => {
         password,
         isRevealed,
         isLoading,
+        isNotFound,
         handleToggleReveal,
         handleCopy,
         handleEdit,
@@ -77,6 +79,17 @@ export const ViewPasswordScreen = () => {
         })
         if (confirmed) await handleDelete()
     }, [requestBottomSheet, t, handleDelete])
+
+    if (isNotFound) {
+        return (
+            <EmptyView
+                icon='key'
+                title={t('settings.passwords.not_found_title')}
+                body={t('settings.passwords.not_found_body')}
+                testID='view_password_not_found_state'
+            />
+        )
+    }
 
     if (isLoading || !login) {
         return (

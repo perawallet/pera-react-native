@@ -34,6 +34,10 @@ vi.mock('@perawallet/wallet-core-passwords', () => ({
     readLogin,
 }))
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
 import { useEditPasswordScreen } from '../useEditPasswordScreen'
 
 describe('useEditPasswordScreen', () => {
@@ -96,5 +100,46 @@ describe('useEditPasswordScreen', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.error).toBe('keystore is locked')
         expect(result.current.domain).toBe('')
+    })
+
+    it('reports a deleted record and refuses to save over it', async () => {
+        saveLogin.mockClear()
+        readLogin.mockResolvedValue(null)
+
+        const { result } = renderHook(() =>
+            useEditPasswordScreen('pera.login.gone'),
+        )
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        act(() => {
+            result.current.setDomain('example.com')
+            result.current.setPassword('secret')
+        })
+        await act(() => result.current.handleSave())
+
+        expect(result.current.error).toBe('settings.passwords.not_found_body')
+        expect(result.current.canSave).toBe(false)
+        expect(saveLogin).not.toHaveBeenCalled()
+    })
+
+    it('swallows a rejected save and stays on the screen', async () => {
+        goBack.mockClear()
+        readLogin.mockResolvedValue({
+            id: 'pera.login.abc',
+            domain: 'example.com',
+            username: 'ada@example.com',
+            password: 'secret',
+            note: null,
+            createdAt: 1,
+            updatedAt: 1,
+        })
+        saveLogin.mockRejectedValueOnce(new Error('keystore unavailable'))
+
+        const { result } = renderHook(() =>
+            useEditPasswordScreen('pera.login.abc'),
+        )
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        await act(() => result.current.handleSave())
+
+        expect(goBack).not.toHaveBeenCalled()
     })
 })

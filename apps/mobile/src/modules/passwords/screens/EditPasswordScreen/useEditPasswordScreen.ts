@@ -16,6 +16,7 @@ import {
     readLogin,
     useSaveLoginMutation,
 } from '@perawallet/wallet-core-passwords'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type UseEditPasswordScreenResult = {
     domain: string
@@ -37,6 +38,7 @@ export const useEditPasswordScreen = (
     id: string,
 ): UseEditPasswordScreenResult => {
     const navigation = useNavigation()
+    const { t } = useLanguage()
     const { saveLogin, isPending, error } = useSaveLoginMutation()
 
     const [domain, setDomain] = useState('')
@@ -45,19 +47,23 @@ export const useEditPasswordScreen = (
     const [note, setNote] = useState('')
     const [isLoading, setIsLoading] = useState(true)
     const [readError, setReadError] = useState<string | null>(null)
+    const [isMissing, setIsMissing] = useState(false)
 
     // Read the sealed record through a plain effect rather than useQuery: the
     // query cache is disk-persisted (apps/mobile/src/providers/query-persistence.ts),
-    // and the decrypted password must never reach it. The form is uncontrolled
-    // until this resolves, which is what lets the fields populate on the
-    // render after the unseal completes.
+    // and the decrypted password must never reach it.
     useEffect(() => {
         let cancelled = false
         setIsLoading(true)
         setReadError(null)
+        setIsMissing(false)
         void readLogin(id)
             .then(login => {
-                if (cancelled || !login) return
+                if (cancelled) return
+                if (!login) {
+                    setIsMissing(true)
+                    return
+                }
                 setDomain(login.domain)
                 setUsername(login.username)
                 setPassword(login.password)
@@ -75,20 +81,33 @@ export const useEditPasswordScreen = (
         }
     }, [id])
 
+    // A failed or empty read leaves the form blank; saving then would write a
+    // record under an id that no longer exists.
     const canSave = useMemo(
-        () => domain.trim() !== '' && password !== '',
-        [domain, password],
+        () =>
+            !isLoading &&
+            readError === null &&
+            !isMissing &&
+            domain.trim() !== '' &&
+            password !== '',
+        [isLoading, readError, isMissing, domain, password],
     )
 
     const handleSave = useCallback(async () => {
         if (!canSave) return
-        await saveLogin({
-            id,
-            domain: domain.trim(),
-            username: username.trim(),
-            password,
-            note: note.trim() === '' ? null : note.trim(),
-        })
+        try {
+            await saveLogin({
+                id,
+                domain: domain.trim(),
+                username: username.trim(),
+                password,
+                note: note.trim() === '' ? null : note.trim(),
+            })
+        } catch {
+            // The mutation's `error` is what the screen renders; rethrowing out
+            // of a `void handleSave()` would only add an unhandled rejection.
+            return
+        }
         navigation.goBack()
     }, [canSave, id, domain, username, password, note, saveLogin, navigation])
 
@@ -104,7 +123,10 @@ export const useEditPasswordScreen = (
         canSave,
         isLoading,
         isSaving: isPending,
-        error: error?.message ?? readError,
+        error:
+            error?.message ??
+            readError ??
+            (isMissing ? t('settings.passwords.not_found_body') : null),
         handleSave,
     }
 }

@@ -49,12 +49,18 @@ export const useAddPasswordScreen = (): UseAddPasswordScreenResult => {
 
     const handleSave = useCallback(async () => {
         if (!canSave) return
-        await saveLogin({
-            domain: domain.trim(),
-            username: username.trim(),
-            password,
-            note: note.trim() === '' ? null : note.trim(),
-        })
+        try {
+            await saveLogin({
+                domain: domain.trim(),
+                username: username.trim(),
+                password,
+                note: note.trim() === '' ? null : note.trim(),
+            })
+        } catch {
+            // The mutation's `error` is what the screen renders; rethrowing out
+            // of a `void handleSave()` would only add an unhandled rejection.
+            return
+        }
         navigation.goBack()
     }, [canSave, domain, username, password, note, saveLogin, navigation])
 
