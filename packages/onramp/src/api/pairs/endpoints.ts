@@ -12,9 +12,11 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { cursorOf, routerRequest } from '@perawallet/wallet-core-swaps'
 
 import type { RampToken } from '../../models'
+import { caip2OfRouterAsset } from '../router-asset'
 import {
     rampPairRowSchema,
     rampPairsPageSchema,
@@ -58,6 +60,14 @@ const fetchRows = async (
     return rows
 }
 
+// A source on a chain the wallet runs is left out even when the router lists
+// it as a deposit route: the user swaps from that chain in Swap.
+const isOfferedSource = (token: RampToken): boolean => {
+    const { chains } = getProvider()
+    const resolved = chains.byCaip2(caip2OfRouterAsset(token.id))
+    return resolved === undefined || chains.isSwitchedOff(resolved.chainId)
+}
+
 const toTokens = (token: Nullable<RampToken>): RampToken[] =>
     token === null ? [] : [token]
 
@@ -79,5 +89,6 @@ export const getRampSources = async (
     dedupeRampTokens(
         (await fetchRows(scope, destinationId))
             .flatMap(row => toTokens(transformRampPairRow(row)))
-            .filter(token => token.kind !== 'token'),
+            .filter(token => token.kind !== 'token')
+            .filter(isOfferedSource),
     )
