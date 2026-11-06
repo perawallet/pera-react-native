@@ -122,7 +122,7 @@ describe('useAutofillPickerScreen', () => {
         expect(result.current.callerText).not.toContain('‮')
     })
 
-    // listLogins unseals every stored password to build its summaries, so the
+    // listLogins unseals every stored summary, so the
     // query has to stay off before unlock, not merely be hidden from the list.
     it('leaves the login query disabled before unlock', () => {
         const { result } = renderHook(() => useAutofillPickerScreen(caller), {
@@ -148,6 +148,42 @@ describe('useAutofillPickerScreen', () => {
         await waitFor(() => expect(result.current.isUnlocked).toBe(true))
         expect(useLoginsQuery).toHaveBeenCalledWith({ enabled: true })
         expect(result.current.logins).toHaveLength(1)
+    })
+
+    it('lists logins for the caller\'s own domain first', async () => {
+        useLoginsQuery.mockReturnValue({
+            logins: [
+                { ...login, id: 'a', domain: 'aardvark.example' },
+                { ...login, id: 'b', domain: 'https://Login.Example.com:8443/x' },
+                { ...login, id: 'c', domain: 'evil-example.com' },
+                { ...login, id: 'd', domain: 'example.com' },
+            ],
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        })
+        requestAutofillUnlock.mockResolvedValueOnce(true)
+        const { result } = renderHook(
+            () =>
+                useAutofillPickerScreen({
+                    ...caller,
+                    host: 'login.example.com',
+                }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            result.current.handleUnlock()
+        })
+        await waitFor(() => expect(result.current.isUnlocked).toBe(true))
+
+        expect(result.current.logins.map(item => item.id)).toEqual([
+            'b',
+            'd',
+            'a',
+            'c',
+        ])
     })
 
     it('stays locked when unlock is refused', async () => {

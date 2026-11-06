@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { usePasskeyAutofillService } from '@perawallet/wallet-core-passkeys'
 import { useLoginsQuery, type Login } from '@perawallet/wallet-core-passwords'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -57,6 +57,30 @@ const sanitizeCallerText = (
         : flattened
 }
 
+// Mirrors the providers' matching: scheme, userinfo, port, path and a trailing
+// dot are dropped and case folded, and a subdomain matches only across a dot of
+// a stored host that has one itself (a stored `com` must not match every .com).
+const toHost = (value: string): string => {
+    const withoutScheme = value.trim().toLowerCase().replace(/^[^/?#]*:\/\//, '')
+    const authority = withoutScheme.split(/[/?#]/)[0] ?? ''
+    const hostAndPort = authority.slice(authority.lastIndexOf('@') + 1)
+    const host = hostAndPort.startsWith('[')
+        ? hostAndPort
+        : hostAndPort.replace(/:[^:]*$/, '')
+    return host.replace(/\.+$/, '')
+}
+
+const matchesCallerHost = (storedDomain: string, callerHost: string | null) => {
+    if (callerHost === null) return false
+    const stored = toHost(storedDomain)
+    const requested = toHost(callerHost)
+    if (stored === '' || requested === '') return false
+    return (
+        stored === requested ||
+        (stored.includes('.') && requested.endsWith(`.${stored}`))
+    )
+}
+
 export const useAutofillPickerScreen = (
     caller: AutofillPickerCaller,
 ): UseAutofillPickerScreenResult => {
@@ -69,8 +93,8 @@ export const useAutofillPickerScreen = (
     }, [service])
 
     // Gating the query, not just the render: listLogins unseals every stored
-    // password to build its summaries, so leaving it enabled would decrypt the
-    // whole vault into the JS heap the moment any app triggers a fill.
+    // summary, so leaving it enabled would decrypt every domain and username
+    // into the JS heap the moment any app triggers a fill.
     const { logins } = useLoginsQuery({ enabled: isUnlocked })
 
     const handleUnlock = useCallback(() => {
@@ -98,6 +122,19 @@ export const useAutofillPickerScreen = (
         void service.cancelAutofillPick()
     }, [service])
 
+    // The list is every login whatever the caller, and the native side
+    // remembers the pick for that package, so the logins for the caller's own
+    // domain go first. Array.sort is stable, so the rest keep their order.
+    const sortedLogins = useMemo(
+        () =>
+            [...(isUnlocked ? logins : [])].sort(
+                (a, b) =>
+                    Number(matchesCallerHost(b.domain, caller.host)) -
+                    Number(matchesCallerHost(a.domain, caller.host)),
+            ),
+        [isUnlocked, logins, caller.host],
+    )
+
     const label = sanitizeCallerText(caller.label, MAX_LABEL_LENGTH)
 
     return {
@@ -109,7 +146,7 @@ export const useAutofillPickerScreen = (
         isUnlocking,
         // Backstop for a warm cache: enabled:false stops a fetch but still
         // hands back anything already cached under this key.
-        logins: isUnlocked ? logins : [],
+        logins: sortedLogins,
         handleUnlock,
         handleSelect,
         handleCancel,
