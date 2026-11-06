@@ -120,8 +120,9 @@ export const useContactForm = (
 
     // A contact's EVM address covers every EVM chain, so the name's record on
     // the default one is the one saved.
+    const nameChainIds = useCapableChainIds('nameService')
     const { resolvedAddress, isNameResolved, isNameResolving, resolvedName } =
-        useNameResolve(rawAddressInput, useCapableChainIds('nameService'))
+        useNameResolve(rawAddressInput, nameChainIds)
 
     const setAddresses = useCallback(
         (next: ContactAddresses) =>
