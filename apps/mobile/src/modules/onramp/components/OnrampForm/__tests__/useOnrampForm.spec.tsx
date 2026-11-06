@@ -794,7 +794,9 @@ describe('useOnrampForm', () => {
 
         // The XO pair's minimum is unknown, so it is probed rather than reused.
         expect(mockCreateQuote).toHaveBeenCalledWith(
-            expect.objectContaining({ sourceAmount: new Decimal('0.00000001') }),
+            expect.objectContaining({
+                sourceAmount: new Decimal('0.00000001'),
+            }),
         )
     })
 

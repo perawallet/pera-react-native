@@ -106,7 +106,9 @@ export const OnrampFormDetailRows = ({
                 value={
                     senderAddress ??
                     t('onramp.form.enter_sender_address', {
-                        name: sourceToken ? sourceNetworkLabelOf(sourceToken) : '',
+                        name: sourceToken
+                            ? sourceNetworkLabelOf(sourceToken)
+                            : '',
                     })
                 }
                 isPlaceholder={!senderAddress}

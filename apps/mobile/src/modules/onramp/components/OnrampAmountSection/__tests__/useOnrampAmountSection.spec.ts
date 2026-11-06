@@ -153,10 +153,7 @@ describe('useOnrampAmountSection', () => {
     })
 
     describe('sourceNetworkName', () => {
-        const render = (
-            variant: 'pay' | 'receive',
-            token: RampToken,
-        ) =>
+        const render = (variant: 'pay' | 'receive', token: RampToken) =>
             renderHook(() =>
                 useOnrampAmountSection({
                     variant,

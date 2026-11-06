@@ -109,9 +109,7 @@ export const useOnrampSheets = ({
     const handleOpenDestinationSelection = useCallback(async () => {
         if (scope === null) return
         const pick = await requestBottomSheet<OnrampDestinationPick>({
-            contents: (
-<OnrampPairSelectionContent scope={scope} />
-            ),
+            contents: <OnrampPairSelectionContent scope={scope} />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
