@@ -10,9 +10,17 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+
 export const ANDROID_EXCLUDED_PAYMENT_METHODS = ['APPLE_PAY'] as const
 
 export const IOS_EXCLUDED_PAYMENT_METHODS = ['GOOGLE_PAY'] as const
+
+/**
+ * Display units of the source. Quoting this much asks the router for its
+ * maximum: a refusal carries the limit, and acceptance means there is none.
+ */
+export const RAMP_MAX_LIMIT_PROBE_AMOUNT = new Decimal('1000000000')
 
 /** Meld provider metadata — name and support link for each provider. */
 export const MELD_PROVIDERS = {

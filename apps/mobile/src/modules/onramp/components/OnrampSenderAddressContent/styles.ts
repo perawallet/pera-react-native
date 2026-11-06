@@ -24,4 +24,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.sm,
         paddingVertical: theme.spacing.sm,
     },
+    errorText: {
+        color: theme.colors.negative,
+    },
 }))

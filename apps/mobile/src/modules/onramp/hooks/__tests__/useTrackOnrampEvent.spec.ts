@@ -47,6 +47,20 @@ describe('useTrackOnrampEvent', () => {
         })
     })
 
+    it("adds an event's details next to the chain", () => {
+        vi.mocked(useSelectedAccount).mockReturnValue(
+            algorandAccountAt('ALGORAND_ADDRESS'),
+        )
+        const { result } = renderHook(() => useTrackOnrampEvent())
+
+        result.current(OnrampEvent.SourceSelect, { source_chain: 'Solana' })
+
+        expect(trackEvent).toHaveBeenCalledWith(OnrampEvent.SourceSelect, {
+            chain_id: 'algorand',
+            source_chain: 'Solana',
+        })
+    })
+
     it('sends nothing while there is no chain to name', () => {
         const { result } = renderHook(() => useTrackOnrampEvent())
 

@@ -21,13 +21,16 @@ import {
     isQuotableRampAmount,
     isSourceAmountTooLowError,
     pickBestQuote,
+    RAMP_MAX_LIMIT_PROBE_AMOUNT,
     resolveRampQuoteLimits,
     type RampPair,
     type RampQuote,
     type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import {
+    baseUnitsToDisplayUnits,
     isConnectivityError,
+    ZERO_DECIMAL,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -62,6 +65,12 @@ type UseOnrampQuotesResult = {
     selectPaymentMethod: (paymentMethodId: string) => void
     /** True when the effective selected quote is the highest-receive offer. */
     isBestOffer: boolean
+    /**
+     * The pair's source min or max in display units: the known one, else what
+     * one probe quote reveals. Null when the router names no such limit or the
+     * probe fails.
+     */
+    resolveQuoteLimit: (bound: 'min' | 'max') => Promise<Nullable<Decimal>>
 }
 
 /**
@@ -107,20 +116,51 @@ export const useOnrampQuotes = ({
     // Keyed on the amount's value, not the Decimal's identity, for the same reason.
     const amountKey = sourceAmount?.toFixed() ?? null
 
-    // --- debounced fetch -------------------------------------------------
-    // Every provider quotes per amount: the router prices a request, so a
-    // missing amount, or one under a single base unit, has nothing to ask.
-    useEffect(() => {
-        if (
+    // Null until there is a pair, an account and a scope to quote for.
+    const quoteRequestFor = useCallback(
+        (amount: Decimal): Nullable<Parameters<typeof createQuote>[0]> =>
             sourceId === null ||
             sourceKind === null ||
             destinationId === null ||
             !selectedAccountAddress ||
             scope === null
-        ) {
-            return
-        }
+                ? null
+                : {
+                      scope,
+                      sourceToken: {
+                          id: sourceId,
+                          kind: sourceKind,
+                          fractionDecimals: sourceDecimals,
+                      },
+                      destinationToken: {
+                          id: destinationId,
+                          fractionDecimals: destinationDecimals,
+                      },
+                      sourceAmount: amount,
+                      destinationAddress: selectedAccountAddress,
+                      countryCode,
+                      refundAddress,
+                  },
+        [
+            sourceId,
+            sourceKind,
+            sourceDecimals,
+            destinationId,
+            destinationDecimals,
+            selectedAccountAddress,
+            scope,
+            countryCode,
+            refundAddress,
+        ],
+    )
+
+    // --- debounced fetch -------------------------------------------------
+    // Every provider quotes per amount: the router prices a request, so a
+    // missing amount, or one under a single base unit, has nothing to ask.
+    useEffect(() => {
         const amount = amountKey === null ? null : new Decimal(amountKey)
+        const request = quoteRequestFor(amount ?? ZERO_DECIMAL)
+        if (request === null) return
         const requestId = ++requestIdRef.current
         if (amount === null || !isQuotableRampAmount(amount, sourceDecimals)) {
             setQuotes([])
@@ -135,22 +175,7 @@ export const useOnrampQuotes = ({
         const timeoutId = setTimeout(() => {
             void (async () => {
                 try {
-                    const result = await createQuote({
-                        scope,
-                        sourceToken: {
-                            id: sourceId,
-                            kind: sourceKind,
-                            fractionDecimals: sourceDecimals,
-                        },
-                        destinationToken: {
-                            id: destinationId,
-                            fractionDecimals: destinationDecimals,
-                        },
-                        sourceAmount: amount,
-                        destinationAddress: selectedAccountAddress,
-                        countryCode,
-                        refundAddress,
-                    })
+                    const result = await createQuote(request)
                     if (requestId !== requestIdRef.current) return
 
                     const filtered = result.filter(
@@ -196,28 +221,52 @@ export const useOnrampQuotes = ({
         }, ONRAMP_QUOTE_DEBOUNCE_TIME)
 
         return () => clearTimeout(timeoutId)
-    }, [
-        sourceId,
-        sourceKind,
-        sourceDecimals,
-        destinationId,
-        destinationDecimals,
-        selectedAccountAddress,
-        scope,
-        amountKey,
-        countryCode,
-        refundAddress,
-        createQuote,
-        t,
-    ])
+    }, [quoteRequestFor, sourceDecimals, amountKey, createQuote, t])
+
+    // A probe answer for a pair the user has since left must not set limits.
+    const pairIdRef = useRef(pairId)
 
     // Reset quotes + selection when the pair changes.
     useEffect(() => {
+        pairIdRef.current = pairId
         setQuotes([])
         setSelectedQuoteId(null)
         setQuotesError(null)
         setQuoteLimits(null)
     }, [pairId])
+
+    // The router only names limits when it refuses an amount, so an unknown
+    // limit is asked for with an amount at the edge: one base unit for the
+    // minimum, a huge amount for the maximum. The probe stays off the quote
+    // state, since it isn't the amount the user entered.
+    const resolveQuoteLimit = useCallback(
+        async (bound: 'min' | 'max'): Promise<Nullable<Decimal>> => {
+            const known = quoteLimits?.[bound] ?? null
+            if (known !== null) return known
+            const probeAmount =
+                bound === 'min'
+                    ? baseUnitsToDisplayUnits(1, sourceDecimals)
+                    : RAMP_MAX_LIMIT_PROBE_AMOUNT
+            const request = quoteRequestFor(probeAmount)
+            if (request === null) return null
+            const probePairId = pairId
+            try {
+                await createQuote(request)
+                if (pairIdRef.current !== probePairId) return null
+                return bound === 'min' ? probeAmount : null
+            } catch (error) {
+                if (pairIdRef.current !== probePairId) return null
+                const limits = resolveRampQuoteLimits(error)
+                if (limits === null) return null
+                setQuoteLimits(previous => ({
+                    min: limits.min ?? previous?.min ?? null,
+                    max: limits.max ?? previous?.max ?? null,
+                }))
+                return limits[bound]
+            }
+        },
+        [quoteLimits, pairId, sourceDecimals, quoteRequestFor, createQuote],
+    )
 
     // --- selection -------------------------------------------------------
     const bestQuote = useMemo(() => pickBestQuote(quotes), [quotes])
@@ -266,5 +315,6 @@ export const useOnrampQuotes = ({
         selectedPaymentMethodId: selectedQuote?.paymentMethod.id ?? null,
         selectPaymentMethod,
         isBestOffer,
+        resolveQuoteLimit,
     }
 }

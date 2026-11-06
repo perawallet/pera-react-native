@@ -11,17 +11,28 @@
  */
 
 import { useCallback } from 'react'
-import { AnalyticsMetadataKey, trackEvent, type OnrampEvent } from '@analytics'
+import {
+    AnalyticsMetadataKey,
+    trackEvent,
+    type OnrampEvent,
+    type OnrampEventDetails,
+} from '@analytics'
 import { useOnrampAccount } from './useOnrampAccount'
 
 /** Tracks an onramp event with the chain Fund is buying onto; nothing while there is none. */
-export const useTrackOnrampEvent = (): ((event: OnrampEvent) => void) => {
+export const useTrackOnrampEvent = (): ((
+    event: OnrampEvent,
+    details?: OnrampEventDetails,
+) => void) => {
     const chainId = useOnrampAccount().scope?.chainId ?? null
 
     return useCallback(
-        (event: OnrampEvent) => {
+        (event: OnrampEvent, details?: OnrampEventDetails) => {
             if (chainId === null) return
-            trackEvent(event, { [AnalyticsMetadataKey.ChainId]: chainId })
+            trackEvent(event, {
+                [AnalyticsMetadataKey.ChainId]: chainId,
+                ...details,
+            })
         },
         [chainId],
     )

@@ -60,6 +60,7 @@ export enum AnalyticsMetadataKey {
     RouterName = 'router_name',
     SenderAccountAddress = 'sender',
     SignedTransaction = 'signed_transaction',
+    SourceChain = 'source_chain',
     SwapAddress = 'swap_wallet_address',
     SwapDate = 'swap_date_format',
     SwapDateTimestamp = 'swap_date_timestamp',

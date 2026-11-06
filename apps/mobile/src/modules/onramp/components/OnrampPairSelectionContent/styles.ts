@@ -31,3 +31,9 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
 }))
+
+export const useOnrampAssetItemViewStyles = makeStyles(theme => ({
+    network: {
+        color: theme.colors.textGray,
+    },
+}))

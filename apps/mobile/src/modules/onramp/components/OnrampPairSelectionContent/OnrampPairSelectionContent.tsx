@@ -29,13 +29,11 @@ import {
 import { useStyles } from './styles'
 
 export type OnrampPairSelectionContentProps = {
-    variant?: 'source' | 'destination'
-    /** The chain and network the sheet opens on; the destination variant can switch chain. */
+    /** The chain and network the sheet opens on; the chain chips can switch it. */
     scope: ChainScope
 }
 
 export const OnrampPairSelectionContent = ({
-    variant = 'destination',
     scope,
 }: OnrampPairSelectionContentProps) => {
     const { t } = useLanguage()
@@ -50,7 +48,7 @@ export const OnrampPairSelectionContent = ({
         selectedChainId,
         handleSelectChain,
         handleTokenSelected,
-    } = useOnrampPairSelectionContent({ variant, scope })
+    } = useOnrampPairSelectionContent({ scope })
 
     const renderItem = useCallback(
         ({ item }: { item: OnrampSelectableToken }) => (
@@ -67,14 +65,9 @@ export const OnrampPairSelectionContent = ({
         [handleTokenSelected, styles, listScope],
     )
 
-    const title =
-        variant === 'destination'
-            ? t('onramp.pair_selection.title_to')
-            : t('onramp.pair_selection.title_from')
-
     return (
         <>
-            <SheetHeader title={title} />
+            <SheetHeader title={t('onramp.pair_selection.title_to')} />
             <PWView style={styles.body}>
                 <AssetSelectionList
                     data={items}

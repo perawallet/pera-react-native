@@ -22,7 +22,11 @@ import {
     rampPairsPageSchema,
     type RampPairRowApiResponse,
 } from './schema'
-import { dedupeRampTokens, transformRampPairRow } from './transformers'
+import {
+    attachNetworkLogos,
+    dedupeRampTokens,
+    transformRampPairRow,
+} from './transformers'
 
 const PAGE_LIMIT = 50
 const MAX_PAGES = 20
@@ -86,9 +90,11 @@ export const getRampSources = async (
     destinationId: string,
     scope: ChainScope,
 ): Promise<RampToken[]> =>
-    dedupeRampTokens(
-        (await fetchRows(scope, destinationId))
-            .flatMap(row => toTokens(transformRampPairRow(row)))
-            .filter(token => token.kind !== 'token')
-            .filter(isOfferedSource),
+    attachNetworkLogos(
+        dedupeRampTokens(
+            (await fetchRows(scope, destinationId))
+                .flatMap(row => toTokens(transformRampPairRow(row)))
+                .filter(token => token.kind !== 'token')
+                .filter(isOfferedSource),
+        ),
     )

@@ -46,7 +46,7 @@ export const OnrampForm = ({
         selectedQuote,
         isQuoting,
         errorMessage,
-        limits,
+        hasPair,
         isBestOffer,
         isMeld,
         senderAddress,
@@ -58,6 +58,8 @@ export const OnrampForm = ({
         handleOpenPaymentMethod,
         handleOpenSenderAddress,
         handleConfirm,
+        handleMinPress,
+        handleMaxPress,
     } = useOnrampForm(selectedPair, onNavigateToHistory)
 
     const trackOnrampEvent = useTrackOnrampEvent()
@@ -81,10 +83,11 @@ export const OnrampForm = ({
                 destinationAmount={destinationAmount}
                 sourceUsdPrice={sourceUsdPrice}
                 destinationUsdPrice={destinationUsdPrice}
-                limits={limits}
+                hasPair={hasPair}
                 isReceiveLoading={isQuoting}
                 onSourceAmountTextChange={setSourceAmountText}
-                onSetSourceAmountText={setSourceAmountText}
+                onMinPress={() => void handleMinPress()}
+                onMaxPress={() => void handleMaxPress()}
                 onOpenSource={handleOpenSource}
                 onOpenDestination={handleOpenDestination}
             />

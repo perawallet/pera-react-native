@@ -21,16 +21,12 @@ import { useTheme } from '@rneui/themed'
 type OnrampSourceRowProps = {
     token: RampToken
     isFiat: boolean
-    /** Overlay the network logo on the icon (for same-ticker tokens on
-     *  different networks, e.g. USDC on Solana vs Base). */
-    showNetworkBadge?: boolean
     onPress: () => void
 }
 
 export const OnrampSourceRow = ({
     token,
     isFiat,
-    showNetworkBadge = false,
     onPress,
 }: OnrampSourceRowProps) => {
     const { t } = useLanguage()
@@ -73,10 +69,11 @@ export const OnrampSourceRow = ({
                             size='xl'
                             shape='circle'
                         />
-                        {showNetworkBadge && !!token.network.logo && (
+                        {!!token.network.logo && (
                             <PWImage
                                 source={{ uri: token.network.logo }}
                                 style={styles.networkBadge}
+                                testID={`onramp-source-network-badge-${token.id}`}
                                 width={theme.spacing.xl}
                                 height={theme.spacing.xl}
                             />
