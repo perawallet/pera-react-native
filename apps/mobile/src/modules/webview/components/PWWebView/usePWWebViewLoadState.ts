@@ -54,8 +54,8 @@ export const usePWWebViewLoadState = ({
     const { hasInternet } = useNetworkStatus()
     const [hasDocument, setHasDocument] = useState(false)
     const [isTimedOut, setIsTimedOut] = useState(false)
-    const [httpError, setHttpErrorState] = useState<Nullable<HttpError>>(null)
-    const httpErrorRef = useRef<Nullable<HttpError>>(null)
+    const [httpError, setHttpError] = useState<Nullable<HttpError>>(null)
+    const pendingHttpErrorRef = useRef<Nullable<HttpError>>(null)
     const timerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const wasOfflineRef = useRef(false)
     const reloadedThisEpisodeRef = useRef(false)
@@ -80,40 +80,34 @@ export const usePWWebViewLoadState = ({
         clearTimer()
     }, [clearTimer])
 
-    const setHttpError = useCallback((error: Nullable<HttpError>) => {
-        httpErrorRef.current = error
-        setHttpErrorState(error)
+    const clearHttpError = useCallback(() => {
+        pendingHttpErrorRef.current = null
+        setHttpError(null)
     }, [])
 
-    const handleHttpError = useCallback(
-        (error: HttpError) => {
-            if (isServerErrorStatus(error.statusCode)) setHttpError(error)
-        },
-        [setHttpError],
-    )
+    const handleHttpError = useCallback((error: HttpError) => {
+        if (!isServerErrorStatus(error.statusCode)) return
+        pendingHttpErrorRef.current = error
+        setHttpError(error)
+    }, [])
 
-    // The 5xx report precedes that page's onLoad on both platforms, but its
-    // order against onLoadStart isn't guaranteed, so a load start can't
-    // clear it: only a retry or a page loading at another URL does.
-    const handleDocumentLoaded = useCallback(
-        (url: string) => {
-            const failedUrl = httpErrorRef.current?.url
-            if (
-                failedUrl !== undefined &&
-                withoutFragment(failedUrl) === withoutFragment(url)
-            )
-                return
-            setHttpError(null)
-            setHasDocument(true)
-        },
-        [setHttpError],
-    )
+    // Per load, not per URL: the 5xx report precedes its page's onLoad (its
+    // order against onLoadStart isn't guaranteed), so a later same-URL load
+    // without one (meta refresh, bot check) has recovered.
+    const handleDocumentLoaded = useCallback((url: string) => {
+        const pending = pendingHttpErrorRef.current
+        pendingHttpErrorRef.current = null
+        if (pending && withoutFragment(pending.url) === withoutFragment(url))
+            return
+        setHttpError(null)
+        setHasDocument(true)
+    }, [])
 
     const handleRetry = useCallback(() => {
         setIsTimedOut(false)
-        setHttpError(null)
+        clearHttpError()
         onReload()
-    }, [onReload, setHttpError])
+    }, [onReload, clearHttpError])
 
     useEffect(() => () => clearTimer(), [clearTimer])
 
@@ -130,9 +124,9 @@ export const usePWWebViewLoadState = ({
         if (hasDocument || reloadedThisEpisodeRef.current) return
         reloadedThisEpisodeRef.current = true
         setIsTimedOut(false)
-        setHttpError(null)
+        clearHttpError()
         onReload()
-    }, [hasInternet, hasDocument, onReload, setHttpError])
+    }, [hasInternet, hasDocument, onReload, clearHttpError])
 
     const showOfflineView = !hasInternet && !hasDocument
 

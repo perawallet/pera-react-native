@@ -202,4 +202,19 @@ describe('usePWWebViewLoadState', () => {
 
         expect(result.current.showUnavailableView).toBe(true)
     })
+
+    it('clears the unavailable surface when the same URL later loads without a new error', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+        act(() => result.current.handleLoadStart())
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+
+        expect(result.current.showUnavailableView).toBe(false)
+    })
 })
