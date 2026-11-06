@@ -15,6 +15,7 @@ import { ContactAvatar } from '@components/ContactAvatar'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ContactAddressName } from '@modules/contacts/components/ContactAddressName'
 import { ContactAddressRow } from '@modules/contacts/components/ContactAddressRow'
 import { useViewContactScreen } from './useViewContactScreen'
 import { useStyles } from './styles'
@@ -25,7 +26,6 @@ export const ViewContactScreen = () => {
     const {
         selectedContact,
         addressRows,
-        nfdName,
         openQR,
         copyAddress,
         openExplorer,
@@ -133,21 +133,15 @@ export const ViewContactScreen = () => {
                         />
                     ))}
                 </PWView>
-                {nfdName && (
-                    <PWView style={[styles.addressSection, styles.nfdSection]}>
-                        <PWText
-                            variant='h4'
-                            style={styles.addressLabel}
-                        >
-                            {t('contacts.view_contact.nfd_label')}
-                        </PWText>
-                        <PWText
-                            variant='body'
-                            style={styles.fullAddress}
-                        >
-                            {nfdName}
-                        </PWText>
-                    </PWView>
+                {addressRows.map(({ family, address, nameChainId }) =>
+                    nameChainId ? (
+                        <ContactAddressName
+                            key={family}
+                            address={address}
+                            chainId={nameChainId}
+                            testID={`view_contact_name_${family}`}
+                        />
+                    ) : null,
                 )}
             </PWView>
         </PWScreen>

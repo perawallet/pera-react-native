@@ -25,7 +25,7 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import { useAccountName } from '@hooks/useAccountName'
@@ -81,21 +81,25 @@ export const useAccountDisplay = ({
             : fullAddress
     }, [account, fullAddress, scope])
 
-    const { data: nfdNames } = useNfdForAddressQuery(scope, fullAddress ?? '', {
-        enabled: !!fullAddress,
-    })
+    const { data: addressNames } = useNameForAddressQuery(
+        scope,
+        fullAddress ?? '',
+        {
+            enabled: !!fullAddress,
+        },
+    )
 
-    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
+    const addressName = useMemo(() => addressNames?.at(0)?.name, [addressNames])
 
     const { label: accountTypeLabel } = useAccountTypeLabel(account)
 
-    const hasName = Boolean(nfdName) || displayName !== address
+    const hasName = Boolean(addressName) || displayName !== address
     const showTypeAsSecondary =
         (alwaysShowAccountType || (showAccountType && !hasName)) &&
         Boolean(accountTypeLabel)
     const rawSecondary = showTypeAsSecondary
         ? accountTypeLabel
-        : (nfdName ?? address)
+        : (addressName ?? address)
     // Suppress the secondary line when it would just repeat the primary name
     // (e.g. a custom name identical to its NFD). Not in `compact`, where the
     // primary is hidden and the secondary stands alone as the only label.

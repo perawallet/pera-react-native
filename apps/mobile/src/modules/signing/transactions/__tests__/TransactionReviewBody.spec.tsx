@@ -49,7 +49,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddressQuery: () => ({ data: undefined }),
+    useNameForAddressQuery: () => ({ data: undefined }),
 }))
 
 vi.mock('@perawallet/wallet-core-projects', async () => ({

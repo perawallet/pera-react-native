@@ -62,7 +62,7 @@ export type AddressDisplayProps = {
     /** Pins the address's chain icon to the avatar's bottom-left corner. Not drawn by the unified layout. */
     showChainBadge?: boolean
     /**
-     * How the address reads when no account, contact or NFD names it;
+     * How the address reads when no account, contact or name service names it;
      * `addressFormat` when unset. `full` wraps instead of truncating, so an
      * unknown address can be compared in full.
      */
@@ -92,7 +92,7 @@ export const AddressDisplay = ({
         chainId,
         account,
         contact,
-        nfdName,
+        addressName,
         truncatedAddress,
         unnamedAddress,
         fallbackIconName,
@@ -208,7 +208,7 @@ export const AddressDisplay = ({
             </PWView>
         )
     } else {
-        const showAvatar = !!nfdName || forceShowIcon
+        const showAvatar = !!addressName || forceShowIcon
         content = (
             <PWView style={styles.contactContainer}>
                 {showAvatar && (
@@ -220,7 +220,7 @@ export const AddressDisplay = ({
                         {chainBadge}
                     </PWView>
                 )}
-                {nfdName ? (
+                {addressName ? (
                     <PWView style={styles.addressTextStack}>
                         <PWText
                             variant={textProps?.variant ?? 'bodyLarge'}
@@ -228,7 +228,7 @@ export const AddressDisplay = ({
                             {...textProps}
                             truncate
                         >
-                            {nfdName}
+                            {addressName}
                         </PWText>
                         <PWText
                             variant='footnoteMedium'

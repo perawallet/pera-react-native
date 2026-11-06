@@ -1129,6 +1129,7 @@
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "Explorer’da görüntüle",
             "copy": "Adresi kopyala",
             "show_qr": "QR kodunu göster",

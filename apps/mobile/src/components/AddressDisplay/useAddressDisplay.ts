@@ -32,7 +32,7 @@ import {
     useContacts,
     type Contact,
 } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useAddressReuseGuard } from '@components/AddressReuseGuard'
 import { useClipboard } from '@hooks/useClipboard'
@@ -44,7 +44,7 @@ import { useHomeChainScope } from '@hooks/useHomeChainScope'
 export type AddressFormat = 'short' | 'long' | 'full'
 /**
  * `simple` skips the wallet's own accounts; `inline` also skips contacts and
- * reads as one line, an NFD standing in for the address.
+ * reads as one line, a name standing in for the address.
  */
 export type AddressDisplayType = 'full' | 'simple' | 'inline' | 'address-only'
 
@@ -68,7 +68,7 @@ type UseAddressDisplayResult = {
     chainId: ChainId
     account: Nullable<WalletAccount>
     contact: Nullable<Contact>
-    nfdName: Optional<string>
+    addressName: Optional<string>
     truncatedAddress: string
     /** The address as the only label, in `unnamedAddressFormat`. */
     unnamedAddress: string
@@ -80,13 +80,13 @@ type UseAddressDisplayResult = {
 const resolveUnifiedLabels = ({
     account,
     contact,
-    nfdName,
+    addressName,
     truncatedAddress,
     showSecondaryAddress,
 }: {
     account: Nullable<WalletAccount>
     contact: Nullable<Contact>
-    nfdName: Optional<string>
+    addressName: Optional<string>
     truncatedAddress: string
     showSecondaryAddress: boolean
 }): ResolvedLabels => {
@@ -100,9 +100,9 @@ const resolveUnifiedLabels = ({
             : { primary: contact.name, secondary: undefined }
     }
 
-    if (nfdName) {
+    if (addressName) {
         return {
-            primary: nfdName,
+            primary: addressName,
             secondary: showSecondaryAddress ? truncatedAddress : undefined,
         }
     }
@@ -173,11 +173,11 @@ export const useAddressDisplay = ({
         return findContactByAddress(contacts, address, contactFamily) ?? null
     }, [isAddressOnly, displayType, address, contacts, contactFamily])
 
-    const { data: nfdNames } = useNfdForAddressQuery(scope, address, {
+    const { data: addressNames } = useNameForAddressQuery(scope, address, {
         enabled: !isAddressOnly && !account && !contact,
     })
 
-    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
+    const addressName = useMemo(() => addressNames?.at(0)?.name, [addressNames])
 
     const truncatedAddress = useMemo(
         () => formatAddress(address, addressFormat, scope.chainId),
@@ -209,23 +209,23 @@ export const useAddressDisplay = ({
             resolveUnifiedLabels({
                 account,
                 contact,
-                nfdName,
+                addressName,
                 truncatedAddress,
                 showSecondaryAddress,
             }),
-        [account, contact, nfdName, truncatedAddress, showSecondaryAddress],
+        [account, contact, addressName, truncatedAddress, showSecondaryAddress],
     )
 
-    // Inline, an NFD reads as the address itself: one line, no avatar.
-    const isNfdInline = displayType === 'inline' && !!nfdName
+    // Inline, a name reads as the address itself: one line, no avatar.
+    const isNameInline = displayType === 'inline' && !!addressName
 
     return {
         chainId: scope.chainId,
         account,
         contact,
-        nfdName: isNfdInline ? undefined : nfdName,
+        addressName: isNameInline ? undefined : addressName,
         truncatedAddress,
-        unnamedAddress: isNfdInline ? nfdName : unnamedAddress,
+        unnamedAddress: isNameInline ? addressName : unnamedAddress,
         fallbackIconName,
         copyIcon: { size: isEndAligned ? 'sm' : 'md', onPress: copyAddress },
         unifiedLabels,

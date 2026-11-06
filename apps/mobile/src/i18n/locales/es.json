@@ -1129,6 +1129,7 @@
             "no_contact_title": "No se encontró el contacto",
             "no_contact_body": "Parece que algo salió mal. No se pudo encontrar el contacto indicado",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "Ver en el explorador",
             "copy": "Copiar dirección",
             "show_qr": "Mostrar código QR",
