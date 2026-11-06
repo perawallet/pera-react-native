@@ -34,19 +34,17 @@ import {
     type ContactFormValues,
     type NewContact,
 } from '@perawallet/wallet-core-contacts'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-
 import { useImagePicker } from '@hooks/useImagePicker'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
-import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
+import { useNameResolve } from '@hooks/useNameResolve'
 
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
-export type NfdState = {
+export type NameResolutionState = {
     resolvedAddress: string
-    isNfdResolved: boolean
-    isNfdResolving: boolean
-    nfdName: Optional<string>
+    isNameResolved: boolean
+    isNameResolving: boolean
+    resolvedName: Optional<string>
 }
 
 export type ContactAddressRow = {
@@ -74,7 +72,7 @@ export type UseContactFormResult = {
      *  for the user to confirm the replacement. */
     pendingReplacement: Optional<AddressFamilyMatch>
     imageUri: Optional<string>
-    nfd: NfdState
+    nameResolution: NameResolutionState
     showAddressInput: () => void
     onAddressInputChange: (text: string) => void
     confirmReplacement: () => void
@@ -120,10 +118,10 @@ export const useContactForm = (
     const [pendingReplacement, setPendingReplacement] =
         useState<Optional<AddressFamilyMatch>>()
 
-    const nameChainId = useCapableChainId('nameService')
-    const nameChainScope = useSelectedScope(nameChainId)
-    const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(rawAddressInput, nameChainScope)
+    // A contact's EVM address covers every EVM chain, so the name's record on
+    // the default one is the one saved.
+    const { resolvedAddress, isNameResolved, isNameResolving, resolvedName } =
+        useNameResolve(rawAddressInput, useCapableChainIds('nameService'))
 
     const setAddresses = useCallback(
         (next: ContactAddresses) =>
@@ -166,10 +164,10 @@ export const useContactForm = (
     )
 
     useEffect(() => {
-        if (!isNfdResolved) return
+        if (!isNameResolved) return
         const match = addressFamilyOf(resolvedAddress)
         if (match) commitAddress(match)
-    }, [isNfdResolved, resolvedAddress, commitAddress])
+    }, [isNameResolved, resolvedAddress, commitAddress])
 
     const confirmReplacement = useCallback(() => {
         if (!pendingReplacement) return
@@ -223,13 +221,18 @@ export const useContactForm = (
 
     const isAddressInputInvalid =
         rawAddressInput.length > 0 &&
-        !isNfdResolving &&
-        !isNfdResolved &&
+        !isNameResolving &&
+        !isNameResolved &&
         addressFamilyOf(rawAddressInput) === undefined
 
-    const nfd = useMemo<NfdState>(
-        () => ({ resolvedAddress, isNfdResolved, isNfdResolving, nfdName }),
-        [resolvedAddress, isNfdResolved, isNfdResolving, nfdName],
+    const nameResolution = useMemo<NameResolutionState>(
+        () => ({
+            resolvedAddress,
+            isNameResolved,
+            isNameResolving,
+            resolvedName,
+        }),
+        [resolvedAddress, isNameResolved, isNameResolving, resolvedName],
     )
 
     return useMemo(
@@ -246,7 +249,7 @@ export const useContactForm = (
             isAddressInputInvalid,
             pendingReplacement,
             imageUri,
-            nfd,
+            nameResolution,
             showAddressInput,
             onAddressInputChange,
             confirmReplacement,
@@ -267,7 +270,7 @@ export const useContactForm = (
             isAddressInputInvalid,
             pendingReplacement,
             imageUri,
-            nfd,
+            nameResolution,
             showAddressInput,
             onAddressInputChange,
             confirmReplacement,

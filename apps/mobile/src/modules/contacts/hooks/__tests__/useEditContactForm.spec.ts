@@ -103,11 +103,11 @@ const useContactFormMock = vi.fn((_initialContact: Contact | null) => ({
     },
     rawAddressInput: '',
     imageUri: undefined,
-    nfd: {
+    nameResolution: {
         resolvedAddress: '',
-        isNfdResolved: false,
-        isNfdResolving: false,
-        nfdName: undefined,
+        isNameResolved: false,
+        isNameResolving: false,
+        resolvedName: undefined,
     },
     onAddressInputChange: vi.fn(),
     onPickImage: vi.fn(),

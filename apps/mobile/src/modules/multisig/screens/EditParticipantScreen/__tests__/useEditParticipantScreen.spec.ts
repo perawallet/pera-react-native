@@ -56,12 +56,12 @@ vi.mock('@hooks/useImagePicker', () => ({
     }),
 }))
 
-vi.mock('@hooks/useNfdResolve', () => ({
-    useNfdResolve: () => ({
+vi.mock('@hooks/useNameResolve', () => ({
+    useNameResolve: () => ({
         resolvedAddress: '',
-        isNfdResolved: false,
-        isNfdResolving: false,
-        nfdName: undefined,
+        isNameResolved: false,
+        isNameResolving: false,
+        resolvedName: undefined,
     }),
 }))
 

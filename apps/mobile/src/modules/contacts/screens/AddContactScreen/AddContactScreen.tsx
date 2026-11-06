@@ -43,7 +43,7 @@ export const AddContactScreen = ({
         isAddressInputInvalid,
         pendingReplacement,
         imageUri,
-        nfd,
+        nameResolution,
         showAddressInput,
         onAddressInputChange,
         confirmReplacement,
@@ -94,7 +94,7 @@ export const AddContactScreen = ({
                         isInputVisible={isAddressInputVisible}
                         rawInput={rawAddressInput}
                         isInputInvalid={isAddressInputInvalid}
-                        isResolvingNfd={nfd.isNfdResolving}
+                        isResolvingName={nameResolution.isNameResolving}
                         pendingReplacement={pendingReplacement}
                         onShowInput={showAddressInput}
                         onInputChange={onAddressInputChange}

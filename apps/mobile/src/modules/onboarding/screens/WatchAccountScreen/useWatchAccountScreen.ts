@@ -24,14 +24,12 @@ import {
     type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNfdResolve } from '@hooks/useNfdResolve'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
+import { useNameResolve } from '@hooks/useNameResolve'
 import { useWatchableChainIds } from '@modules/onboarding/hooks'
 import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -41,13 +39,15 @@ type UseWatchAccountScreenResult = {
     /** The chains an address can be watched on, for the field's scanner. */
     watchableChainIds: readonly ChainId[]
     resolvedAddress: string
+    /** The resolved address in the watch chain's short form, or empty with no watch chain. */
+    truncatedResolvedAddress: string
     descriptionKey: I18nKey
     invalidAddressKey: I18nKey
     isValidAddress: boolean
     isDuplicateAddress: boolean
-    isNfdResolved: boolean
-    isNfdResolving: boolean
-    nfdName: Optional<string>
+    isNameResolved: boolean
+    isNameResolving: boolean
+    resolvedName: Optional<string>
     handleAddressChange: (text: string) => void
     handleWatchAccount: () => void
 }
@@ -68,18 +68,21 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const isWatchingRef = useRef(false)
     const [address, setAddress] = useState(route.params?.prefillAddress ?? '')
 
-    const nameChainId = useCapableChainId('nameService')
-    const nameChainScope = useSelectedScope(nameChainId)
-    const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(address, nameChainScope)
-
     const watchableChainIds = useWatchableChainIds()
+    const { resolvedAddress, isNameResolved, isNameResolving, resolvedName } =
+        useNameResolve(address, watchableChainIds)
+
     // The default chain decides when several chains accept the same address.
     const watchChainId = preferDefaultChain(
         watchableChainIds.filter(chainId =>
             addressCodecs.get(chainId).isValid(resolvedAddress),
         ),
     )
+
+    const truncatedResolvedAddress =
+        watchChainId === undefined
+            ? ''
+            : addressCodecs.get(watchChainId).truncate(resolvedAddress)
 
     const { descriptionKey, invalidAddressKey } =
         watchAccountCopyFor(watchableChainIds)
@@ -136,13 +139,14 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         address,
         watchableChainIds,
         resolvedAddress,
+        truncatedResolvedAddress,
         descriptionKey,
         invalidAddressKey,
         isValidAddress,
         isDuplicateAddress,
-        isNfdResolved,
-        isNfdResolving,
-        nfdName,
+        isNameResolved,
+        isNameResolving,
+        resolvedName,
         handleAddressChange,
         handleWatchAccount,
     }

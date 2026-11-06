@@ -196,6 +196,8 @@
             "body_network_mismatch": "Troque para {{network}} para abrir este link.",
             "title_no_account": "Nenhuma conta para este link",
             "body_no_account": "Você não tem uma conta {{chain}}.",
+            "title_name_not_found": "Nome não encontrado",
+            "body_name_not_found": "{{name}} não tem um endereço em {{chain}}.",
             "title_unsupported": "Link não suportado",
             "body_unsupported_on_chain": "A Pera não consegue abrir este link em {{chain}}.",
             "title_recover": "Não foi possível importar a conta",
@@ -235,8 +237,8 @@
         "search_placeholder_neutral": "Endereço ou nome da conta",
         "nfd_results": "NFDomains",
         "ens_results": "ENS",
-        "nfd_resolving": "Resolvendo NFD...",
-        "nfd_resolved": "Resolvido de {{name}}",
+        "name_resolving": "Resolvendo nome...",
+        "name_resolved": "Resolvido de {{name}}",
         "wrong_network": {
             "title": {
                 "algorand": "Este é um endereço Algorand",
