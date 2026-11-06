@@ -1098,6 +1098,7 @@
         "show_more": "Mostrar más",
         "show_less": "Mostrar menos",
         "amount_abbreviation": {
+            "thousand": "{{amount}} mil",
             "million": "{{amount}} M",
             "billion": "{{amount}} mil M",
             "trillion": "{{amount}} B"

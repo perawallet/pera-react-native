@@ -98,7 +98,7 @@ export const StakingProjectCard = ({
                                 asset={nativeAsset}
                                 value={project.tvlInNative}
                                 density='compact'
-                                truncateToUnits
+                                abbreviateFrom='thousand'
                                 showSymbol
                                 style={styles.tvlAlgoValue}
                             />
@@ -109,7 +109,7 @@ export const StakingProjectCard = ({
                                 <PreferredAmount
                                     value={tvlInPreferredCurrency}
                                     density='compact'
-                                    truncateToUnits
+                                    abbreviateFrom='thousand'
                                     showSymbol
                                     style={styles.tvlFiatValue}
                                 />

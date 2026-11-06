@@ -1090,6 +1090,7 @@
         "show_more": "Mehr anzeigen",
         "show_less": "Weniger anzeigen",
         "amount_abbreviation": {
+            "thousand": "{{amount}} Tsd.",
             "million": "{{amount}} Mio.",
             "billion": "{{amount}} Mrd.",
             "trillion": "{{amount}} Bio."

@@ -72,7 +72,7 @@ export const AccountSummaryLine = ({
                     asset={value.asset}
                     value={value.value}
                     density='compact'
-                    shouldAbbreviate
+                    abbreviateFrom='million'
                     variant='body'
                     weight={400}
                     style={styles.text}
@@ -82,7 +82,7 @@ export const AccountSummaryLine = ({
                 <PreferredAmount
                     value={value.value}
                     density='compact'
-                    shouldAbbreviate
+                    abbreviateFrom='million'
                     variant='body'
                     weight={400}
                     style={styles.text}

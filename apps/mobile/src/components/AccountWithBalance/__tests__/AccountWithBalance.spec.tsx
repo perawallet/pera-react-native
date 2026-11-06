@@ -209,10 +209,10 @@ describe('AccountWithBalance', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
         expect(mockAssetAmount).toHaveBeenCalledWith(
-            expect.objectContaining({ shouldAbbreviate: true }),
+            expect.objectContaining({ abbreviateFrom: 'million' }),
         )
         expect(mockPreferredAmount).toHaveBeenCalledWith(
-            expect.objectContaining({ shouldAbbreviate: true }),
+            expect.objectContaining({ abbreviateFrom: 'million' }),
         )
     })
 
@@ -238,7 +238,7 @@ describe('AccountWithBalance', () => {
             expect(mockPreferredAmount).toHaveBeenCalledWith(
                 expect.objectContaining({
                     value: total,
-                    shouldAbbreviate: true,
+                    abbreviateFrom: 'million',
                 }),
             )
         })

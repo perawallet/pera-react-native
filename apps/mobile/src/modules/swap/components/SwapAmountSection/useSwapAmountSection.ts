@@ -130,7 +130,6 @@ export const useSwapAmountSection = ({
                 asset?.unitName ?? '',
                 currentLanguage,
                 false,
-                false,
                 0,
             )
         }
@@ -140,7 +139,6 @@ export const useSwapAmountSection = ({
             asset?.decimals ?? 0,
             asset?.unitName ?? '',
             currentLanguage,
-            false,
             false,
             0,
         )

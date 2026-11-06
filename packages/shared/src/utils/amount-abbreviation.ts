@@ -12,30 +12,46 @@
 
 import type { Decimal } from 'decimal.js'
 
-export type AbbreviationUnit = '' | 'M' | 'B' | 'T'
+export type AbbreviationUnit = '' | 'K' | 'M' | 'B' | 'T'
 
-const UNITS: readonly Exclude<AbbreviationUnit, ''>[] = ['M', 'B', 'T']
+const UNITS: readonly Exclude<AbbreviationUnit, ''>[] = ['K', 'M', 'B', 'T']
+const STEP = 1000
+
+export type AbbreviationOptions = {
+    /** The smallest unit used; an amount below it comes back as it is. */
+    from?: 'K' | 'M'
+    /**
+     * How the scaled amount rounds to `precision`; defaults to the global
+     * half-up. Pass ROUND_DOWN for a balance, so it never reads above what is held.
+     */
+    rounding?: Decimal.Rounding
+}
 
 /**
- * Scales an amount of a million or more down to millions (M), billions (B) or
- * trillions (T), so a figure in a row of limited width stays short. The unit is
- * a code, not display text: callers name it in the user's language. A unit is
- * left once its figure rounds, at `precision`, to 1,000, so 999,999,999.999
- * becomes 1.00 billion rather than 1,000.00 million. Smaller amounts come back
- * as they are.
+ * Scales an amount down to thousands (K), millions (M), billions (B) or
+ * trillions (T), so a figure in a row of limited width stays short. The unit
+ * is a code, not display text: callers name it in the user's language. The
+ * unit is picked after rounding to `precision`, so 999,999,999.999 becomes
+ * 1.00 billion rather than 1,000.00 million. A scaled amount comes back
+ * rounded; one below `from` comes back as it is.
  */
 export const abbreviateLargeAmount = (
     amount: Decimal,
     precision: number,
+    { from = 'M', rounding }: AbbreviationOptions = {},
 ): { amount: Decimal; unit: AbbreviationUnit } => {
-    let result: { amount: Decimal; unit: AbbreviationUnit } = {
-        amount,
-        unit: '',
+    const round = (value: Decimal) =>
+        rounding === undefined
+            ? value.toDecimalPlaces(precision)
+            : value.toDecimalPlaces(precision, rounding)
+    const firstStep = from === 'K' ? STEP : STEP * STEP
+    let scaled = amount
+    let unit: AbbreviationUnit = ''
+    for (const next of UNITS.slice(UNITS.indexOf(from))) {
+        const step = unit === '' ? firstStep : STEP
+        if (round(scaled.abs()).lt(step)) break
+        scaled = scaled.div(step)
+        unit = next
     }
-    for (const unit of UNITS) {
-        const step = result.unit === '' ? 1_000_000 : 1000
-        if (result.amount.abs().toDecimalPlaces(precision).lt(step)) break
-        result = { amount: result.amount.div(step), unit }
-    }
-    return result
+    return unit === '' ? { amount, unit } : { amount: round(scaled), unit }
 }

@@ -45,6 +45,7 @@ import {
 import { nativeAssetGlyphOf } from '@modules/chain-ui/icon'
 
 const ABBREVIATION_KEYS: Record<Exclude<AbbreviationUnit, ''>, I18nKey> = {
+    K: i18nKey('common.amount_abbreviation.thousand'),
     M: i18nKey('common.amount_abbreviation.million'),
     B: i18nKey('common.amount_abbreviation.billion'),
     T: i18nKey('common.amount_abbreviation.trillion'),
@@ -122,7 +123,6 @@ export type CurrencyAmountProps = {
     showSymbol?: boolean
     symbolPosition?: 'start' | 'end'
     isLoading?: boolean
-    truncateToUnits?: boolean
     rawValue?: Nullable<string>
     ignorePrivacyMode?: boolean
     variant?: TypographyVariant
@@ -140,12 +140,12 @@ export type CurrencyAmountProps = {
      */
     shouldFitWidth?: boolean
     /**
-     * Shows an amount of a million or more scaled to millions, billions or
-     * trillions with 2 decimals and the locale's unit (AOA 11.06T, AOA 11,06 Bn
+     * Shows an amount from a thousand or a million up scaled to that unit or a
+     * larger one, with 2 decimals and the locale's unit (AOA 11.06T, AOA 11,06 Bn
      * in French), for a row whose width the amount must not take over. The
      * full figure belongs on the detail surface.
      */
-    shouldAbbreviate?: boolean
+    abbreviateFrom?: 'thousand' | 'million'
 } & PrecisionProps &
     Omit<PWTextProps, 'children' | 'variant'>
 
@@ -162,7 +162,6 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         alignRight: _alignRight,
         prefix,
         sign,
-        truncateToUnits,
         showSymbol = true,
         symbolPosition = 'start',
         isLoading = false,
@@ -171,7 +170,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         variant = 'body',
         isInline = false,
         shouldFitWidth = false,
-        shouldAbbreviate = false,
+        abbreviateFrom,
         ...rest
     } = props
 
@@ -191,8 +190,11 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
             ? flooredValue.toDecimalPlaces(precision, rounding)
             : flooredValue
     const abbreviated =
-        shouldAbbreviate && roundedValue != null
-            ? abbreviateLargeAmount(roundedValue, DEFAULT_PRECISION)
+        abbreviateFrom !== undefined && roundedValue != null
+            ? abbreviateLargeAmount(roundedValue, DEFAULT_PRECISION, {
+                  from: abbreviateFrom === 'thousand' ? 'K' : 'M',
+                  rounding,
+              })
             : undefined
     const abbreviationUnit = abbreviated?.unit ?? ''
     const shownValue = abbreviationUnit ? abbreviated?.amount : roundedValue
@@ -251,7 +253,6 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
             currency,
             currentLanguage,
             shouldShowSymbolInFormat,
-            truncateToUnits,
             shownMinPrecision,
         )
         if (abbreviationUnit) {
@@ -267,7 +268,6 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         shownPrecision,
         currency,
         shouldShowSymbolInFormat,
-        truncateToUnits,
         shownMinPrecision,
         abbreviationUnit,
         t,

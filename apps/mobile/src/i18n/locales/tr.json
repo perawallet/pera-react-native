@@ -1098,6 +1098,7 @@
         "show_more": "Daha fazla göster",
         "show_less": "Daha az göster",
         "amount_abbreviation": {
+            "thousand": "{{amount}} B",
             "million": "{{amount}} Mn",
             "billion": "{{amount}} Mr",
             "trillion": "{{amount}} Tn"

@@ -190,7 +190,7 @@ describe('CurrencyAmount fiat floor', () => {
                 precision='compact'
             />,
         )
-        const [value, precision, currency, , showSymbol, , minPrecision] =
+        const [value, precision, currency, , showSymbol, minPrecision] =
             vi.mocked(formatCurrency).mock.calls[0]
         expect(container.textContent).toMatch(/^< /)
         expect(value?.toString()).toBe('0.01')
@@ -618,7 +618,7 @@ describe('CurrencyAmount shouldFitWidth', () => {
     })
 })
 
-describe('CurrencyAmount shouldAbbreviate', () => {
+describe('CurrencyAmount abbreviateFrom', () => {
     const fiatProps = {
         currency: 'AOA',
         assetId: null,
@@ -636,12 +636,12 @@ describe('CurrencyAmount shouldAbbreviate', () => {
             <CurrencyAmount
                 {...fiatProps}
                 value={new Decimal('11061586259289.03')}
-                shouldAbbreviate
+                abbreviateFrom='million'
             />,
         )
 
         const [value, precision] = vi.mocked(formatCurrency).mock.calls[0]
-        expect(String(value)).toBe('11.06158625928903')
+        expect(String(value)).toBe('11.06')
         expect(precision).toBe(2)
         expect(container.textContent).toBe(
             'common.amount_abbreviation.trillion',
@@ -657,16 +657,59 @@ describe('CurrencyAmount shouldAbbreviate', () => {
                 value={new Decimal('1234567.891234')}
                 precision='compact'
                 assetDecimals={18}
-                shouldAbbreviate
+                abbreviateFrom='million'
             />,
         )
 
         const [value, precision] = vi.mocked(formatCurrency).mock.calls[0]
-        expect(String(value)).toBe('1.2345678912')
+        expect(String(value)).toBe('1.23')
         expect(precision).toBe(2)
         expect(container.textContent).toBe(
             'ETHcommon.amount_abbreviation.million',
         )
+    })
+
+    it('rounds an abbreviated high-decimal balance down, like its full figure', () => {
+        render(
+            <CurrencyAmount
+                currency='ETH'
+                assetId='eth'
+                chainId={null}
+                value={new Decimal('1999999.995')}
+                precision='compact'
+                assetDecimals={18}
+                abbreviateFrom='million'
+            />,
+        )
+
+        expect(String(vi.mocked(formatCurrency).mock.calls[0][0])).toBe('1.99')
+    })
+
+    it('names a thousand when abbreviating from thousands', () => {
+        const { container } = render(
+            <CurrencyAmount
+                {...fiatProps}
+                value={new Decimal('1500')}
+                abbreviateFrom='thousand'
+            />,
+        )
+
+        expect(String(vi.mocked(formatCurrency).mock.calls[0][0])).toBe('1.5')
+        expect(container.textContent).toBe(
+            'common.amount_abbreviation.thousand',
+        )
+    })
+
+    it('leaves a thousand in full when abbreviating from millions', () => {
+        const { container } = render(
+            <CurrencyAmount
+                {...fiatProps}
+                value={new Decimal('1500')}
+                abbreviateFrom='million'
+            />,
+        )
+
+        expect(container.textContent).not.toContain('amount_abbreviation')
     })
 
     it('names a billion with its own unit', () => {
@@ -674,7 +717,7 @@ describe('CurrencyAmount shouldAbbreviate', () => {
             <CurrencyAmount
                 {...fiatProps}
                 value={new Decimal('2500000000')}
-                shouldAbbreviate
+                abbreviateFrom='million'
             />,
         )
 
@@ -686,7 +729,7 @@ describe('CurrencyAmount shouldAbbreviate', () => {
             <CurrencyAmount
                 {...fiatProps}
                 value={new Decimal('999999.99')}
-                shouldAbbreviate
+                abbreviateFrom='million'
             />,
         )
 
@@ -718,7 +761,7 @@ describe('CurrencyAmount shouldAbbreviate', () => {
             <CurrencyAmount
                 {...fiatProps}
                 value={new Decimal('1437766.91')}
-                shouldAbbreviate
+                abbreviateFrom='million'
             />,
         )
 
@@ -729,7 +772,7 @@ describe('CurrencyAmount shouldAbbreviate', () => {
 
 // Last in the file: initialising i18next is global, so every spec above sees
 // raw keys from the uninitialised instance.
-describe('CurrencyAmount shouldAbbreviate in a translated bundle', () => {
+describe('CurrencyAmount abbreviateFrom in a translated bundle', () => {
     beforeAll(async () => {
         await i18next.use(initReactI18next).init({
             lng: 'fr',
@@ -747,10 +790,10 @@ describe('CurrencyAmount shouldAbbreviate in a translated bundle', () => {
                 isFiat
                 precision='compact'
                 value={new Decimal('11061586259289.03')}
-                shouldAbbreviate
+                abbreviateFrom='million'
             />,
         )
 
-        expect(container.textContent).toBe('AOA11.06158625928903\u00a0Bn')
+        expect(container.textContent).toBe('AOA11.06\u00a0Bn')
     })
 })

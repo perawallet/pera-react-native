@@ -84,7 +84,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         await vi.importActual<
             typeof import('@packages/shared/src/utils/asset-precision')
         >('@packages/shared/src/utils/asset-precision')
-    // Imports only decimal.js; a stub would hide the unit CurrencyAmount appends.
+    // Imports only decimal.js; a stub would hide which unit an amount is scaled to.
     const { abbreviateLargeAmount } = await vi.importActual<
         typeof import('@packages/shared/src/utils/amount-abbreviation')
     >('@packages/shared/src/utils/amount-abbreviation')

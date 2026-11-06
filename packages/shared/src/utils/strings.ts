@@ -215,15 +215,10 @@ export const formatCurrency = (
     currency: string,
     locale: string = getActiveLocale(),
     showSymbol: boolean = true,
-    truncateToUnits: boolean = false,
     minPrecision?: number,
 ) => {
-    const { amount, unit } = truncateToUnits
-        ? formatWithUnits(new Decimal(value))
-        : { amount: new Decimal(value), unit: '' }
-
     const { sign, integer, fraction } = formatNumber(
-        amount,
+        new Decimal(value),
         precision,
         locale,
         minPrecision,
@@ -234,7 +229,7 @@ export const formatCurrency = (
             : (currencySymbols[currency] ?? currency)
 
     //TODO this is pretty limited formatting - it's not very locale specific
-    return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction.length > 1 ? fraction : ''}${unit}`
+    return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction.length > 1 ? fraction : ''}`
 }
 
 // `value` is an already-computed percentage, not a fraction: `12.34` → `"12.34%"`.
