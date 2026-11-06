@@ -99,14 +99,7 @@ const renderHDImportFromOnboarding = () =>
         ],
     })
 
-const importMnemonic = async ({
-    onlyAddress,
-    onAddressesListed,
-}: {
-    /** Import this account alone instead of every preselected one. */
-    onlyAddress?: string
-    onAddressesListed?: () => void
-} = {}) => {
+const reachSelection = async () => {
     renderHDImportFromOnboarding()
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
     await waitFor(() =>
@@ -141,6 +134,17 @@ const importMnemonic = async ({
             ).toBeTruthy(),
         { timeout: SLOW_WAIT_TIMEOUT_MS },
     )
+}
+
+const importMnemonic = async ({
+    onlyAddress,
+    onAddressesListed,
+}: {
+    /** Import this account alone instead of every preselected one. */
+    onlyAddress?: string
+    onAddressesListed?: () => void
+} = {}) => {
+    await reachSelection()
     onAddressesListed?.()
     if (onlyAddress) {
         // Every new account starts selected: clear them, then pick one. The
@@ -258,6 +262,94 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
                 ).toBeTruthy()
             },
         })
+    })
+
+    it('Given Ethereum was unreachable during the search, when the user checks it again once it answers, then the account used on Ethereum alone is listed and nothing is left unchecked', async () => {
+        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+        await reachSelection()
+        expect(
+            screen.getByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId(
+                `import_select_addresses_address_${ethereumOnlyAddress}`,
+            ),
+        ).toBeNull()
+
+        // Handlers added later win, so Ethereum answers from here on.
+        serveSeedActivity(ethereumOnlyAddress)
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_retry_networks_button'),
+        )
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${ethereumOnlyAddress}`,
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.queryByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeNull()
+    })
+
+    it('Given Ethereum was unreachable during the search, when checking again reaches no network at all, then the account found before is still listed and the networks can be checked again', async () => {
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+        await reachSelection()
+
+        // Every lookup fails from here on.
+        server.use(
+            mockAccountFastLookup({
+                address: ':any',
+                response: {},
+                status: 500,
+            }),
+        )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_retry_networks_button'),
+        )
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${HD_TEST_ADDRESS}`,
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.getByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('import_select_addresses_retry_networks_button'),
+        ).toBeTruthy()
     })
 
     it('Given a seed used on Ethereum alone at a later account, when the user keeps every preselected account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {

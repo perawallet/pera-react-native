@@ -2378,7 +2378,8 @@
             "all_imported_title": "Bereits in deinem Wallet",
             "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
             "unchecked_networks_title": "Nicht geprüft: {{networks}}",
-            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen."
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen.",
+            "retry_networks": "Erneut prüfen: {{networks}}"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekeyed Konto gefunden",

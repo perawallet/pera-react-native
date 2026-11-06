@@ -2386,7 +2386,8 @@
             "all_imported_title": "Ya están en tu wallet",
             "all_imported_body": "Todas las cuentas de esta wallet ya están en Pera. Si alguna está añadida como cuenta de observación, elimínala primero y vuelve a importarla para añadirla con acceso completo.",
             "unchecked_networks_title": "No se pudo comprobar: {{networks}}",
-            "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde."
+            "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde.",
+            "retry_networks": "Volver a comprobar: {{networks}}"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} cuenta con rekey encontrada",

@@ -22,7 +22,7 @@ import {
     useAccountValueTotalsQuery,
     useAllAccounts,
     useCanSignOnAnyChain,
-    useFailedHoldingChainIds,
+    useFailedFirstReadChainIds,
     type WalletAccount,
     useAccountScope,
 } from '@perawallet/wallet-core-accounts'
@@ -94,7 +94,7 @@ export const useAccountOverviewHeader = (
             ),
         [sources],
     )
-    const failedReadChainIds = useFailedHoldingChainIds(countedSources)
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(countedSources)
     const hasFiatTotal = countedSources.length > 0
     // An all-test-network account has no fiat total, but still charts its holdings.
     const chartSources = hasFiatTotal ? countedSources : sources
@@ -125,14 +125,14 @@ export const useAccountOverviewHeader = (
                     )?.fiatValue ?? null
                 const fiatValue =
                     read?.isZero() &&
-                    failedReadChainIds.has(source.scope.chainId)
+                    failedFirstReadChainIds.has(source.scope.chainId)
                         ? null
                         : read
                 return total === null || fiatValue === null
                     ? null
                     : total.plus(fiatValue)
             }, new Decimal(0)),
-        [countedSources, accountValueTotals, failedReadChainIds],
+        [countedSources, accountValueTotals, failedFirstReadChainIds],
     )
     const allAccounts = useAllAccounts()
     // The account's first chain is the first source (registry order), and keeps

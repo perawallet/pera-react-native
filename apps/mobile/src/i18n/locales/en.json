@@ -2386,7 +2386,8 @@
             "all_imported_title": "Already in your wallet",
             "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
             "unchecked_networks_title": "Couldn't check {{networks}}",
-            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later."
+            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later.",
+            "retry_networks": "Check {{networks}} again"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekeyed account found",

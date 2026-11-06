@@ -25,6 +25,7 @@ import type {
 } from './models'
 import {
     buildAccount,
+    hdIndexOf,
     isEnabledByDefault,
     preferDefaultChain,
     withEnablement,
@@ -212,6 +213,48 @@ export async function discoverWalletCandidates({
         ]
     })
     return { accounts, failedChainIds }
+}
+
+/**
+ * A retry adds to the walk before it, so one that hears from fewer chains drops
+ * nothing: an index keeps every chain either walk read, and a chain counts as
+ * checked once either walk heard from it.
+ */
+export const mergeWalletCandidates = (
+    previous: WalletCandidates,
+    next: WalletCandidates,
+): WalletCandidates => {
+    const byIndex = new Map<string, LocalAccount>()
+    const unindexed: LocalAccount[] = []
+    for (const account of [...previous.accounts, ...next.accounts]) {
+        const index = hdIndexOf(account)
+        if (!index) {
+            unindexed.push(account)
+            continue
+        }
+        const key = hdPathKey(index)
+        const earlier = byIndex.get(key)
+        byIndex.set(
+            key,
+            earlier
+                ? {
+                      ...account,
+                      chains: { ...earlier.chains, ...account.chains },
+                  }
+                : account,
+        )
+    }
+    const accounts = [...byIndex.values()].sort((a, b) => {
+        const left = hdIndexOf(a)!
+        const right = hdIndexOf(b)!
+        return left.account - right.account || left.keyIndex - right.keyIndex
+    })
+    return {
+        accounts: [...accounts, ...unindexed],
+        failedChainIds: previous.failedChainIds.filter(chainId =>
+            next.failedChainIds.includes(chainId),
+        ),
+    }
 }
 
 type DiscoverDelegatedAccountsParams = {

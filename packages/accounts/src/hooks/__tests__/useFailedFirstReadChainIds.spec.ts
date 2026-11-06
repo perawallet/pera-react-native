@@ -14,8 +14,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useAccountChainStateStore } from '../../store/accountChainState'
 import { useHoldingsRefreshStore } from '../../store/holdingsRefresh'
-import { useFailedHoldingChainIds } from '../useFailedHoldingChainIds'
+import { useFailedFirstReadChainIds } from '../useFailedFirstReadChainIds'
 
 const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const BASE: ChainScope = { chainId: 'base', networkId: 'mainnet' }
@@ -24,33 +25,53 @@ const SOURCES = [
     { scope: BASE, address: '0xA' },
 ]
 
-describe('useFailedHoldingChainIds', () => {
-    beforeEach(() => {
-        useHoldingsRefreshStore.getState().resetState()
+const markFailed = (scope: ChainScope, hasFailed: boolean) =>
+    useHoldingsRefreshStore
+        .getState()
+        .setHoldingsRefreshFailed(scope, '0xA', hasFailed)
+
+const markRead = (scope: ChainScope) =>
+    useAccountChainStateStore.getState().setAccountChainState(scope, '0xA', {
+        family: 'evm',
+        nonce: { latest: 0, pending: 0 },
     })
 
-    it('lists only the chains whose last read failed, not ones never read', () => {
-        const { result } = renderHook(() => useFailedHoldingChainIds(SOURCES))
+describe('useFailedFirstReadChainIds', () => {
+    beforeEach(() => {
+        useHoldingsRefreshStore.getState().resetState()
+        useAccountChainStateStore.getState().resetState()
+    })
+
+    it('lists a chain whose read failed before any read landed, and drops it once one does', () => {
+        const { result } = renderHook(() => useFailedFirstReadChainIds(SOURCES))
         expect(result.current.size).toBe(0)
 
-        act(() =>
-            useHoldingsRefreshStore
-                .getState()
-                .setHoldingsRefreshFailed(BASE, '0xA', true),
-        )
+        act(() => markFailed(BASE, true))
         expect([...result.current]).toEqual(['base'])
 
-        act(() =>
-            useHoldingsRefreshStore
-                .getState()
-                .setHoldingsRefreshFailed(BASE, '0xA', false),
-        )
+        act(() => markRead(BASE))
+        expect(result.current.size).toBe(0)
+    })
+
+    it('leaves out a chain whose balance was read but whose holdings refresh failed, as its zero is real', () => {
+        markRead(ETHEREUM)
+        markFailed(ETHEREUM, true)
+
+        const { result } = renderHook(() => useFailedFirstReadChainIds(SOURCES))
+
+        expect(result.current.size).toBe(0)
+    })
+
+    it('leaves out a chain never read, so a chain the build never reads cannot blank a total', () => {
+        const { result } = renderHook(() => useFailedFirstReadChainIds(SOURCES))
+
         expect(result.current.size).toBe(0)
     })
 
     it('keeps the same set while no read changes', () => {
+        markFailed(BASE, true)
         const { result, rerender } = renderHook(() =>
-            useFailedHoldingChainIds(SOURCES),
+            useFailedFirstReadChainIds(SOURCES),
         )
         const first = result.current
 

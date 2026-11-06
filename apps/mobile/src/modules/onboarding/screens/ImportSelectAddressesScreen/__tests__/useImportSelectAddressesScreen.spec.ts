@@ -454,6 +454,57 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         })
     })
 
+    test('offers to check the unchecked networks again only for an import that left some', () => {
+        mockRouteParams.current = {
+            ...mockRouteParams.current,
+            failedChainIds: ['ethereum'],
+        }
+        const { result: withUnchecked } = renderHook(() =>
+            useImportSelectAddressesScreen(),
+        )
+        expect(withUnchecked.current.canRetryNetworks).toBe(true)
+
+        mockRouteParams.current = {
+            ...mockRouteParams.current,
+            failedChainIds: [],
+        }
+        const { result: allChecked } = renderHook(() =>
+            useImportSelectAddressesScreen(),
+        )
+        expect(allChecked.current.canRetryNetworks).toBe(false)
+    })
+
+    test('checking again hands the import session to a new search, without cancelling it on the way out', async () => {
+        let beforeRemoveCallback: Optional<() => void>
+        const reactNavigationMock = await import('@react-navigation/native')
+        ;(
+            reactNavigationMock as unknown as { useNavigation: () => unknown }
+        ).useNavigation = () => ({
+            addListener: (eventName: string, cb: () => void) => {
+                if (eventName === 'beforeRemove') beforeRemoveCallback = cb
+                return () => {}
+            },
+        })
+        mockRouteParams.current = {
+            ...mockRouteParams.current,
+            failedChainIds: ['ethereum'],
+        }
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        act(() => result.current.handleRetryNetworks())
+        act(() => beforeRemoveCallback?.())
+
+        expect(mockReplace).toHaveBeenCalledWith('SearchAccounts', {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            previous: {
+                accounts: sampleDiscovered,
+                failedChainIds: ['ethereum'],
+            },
+        })
+        expect(mockCancelImport).not.toHaveBeenCalled()
+    })
+
     test('cancelImport runs when navigation beforeRemove fires (back/swipe)', async () => {
         let beforeRemoveCallback: Optional<() => void>
         const addListenerSpy = vi.fn((eventName: string, cb: () => void) => {

@@ -22,7 +22,7 @@ import {
     useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
-    useFailedHoldingChainIds,
+    useFailedFirstReadChainIds,
     type AccountHoldingSource,
     type AccountValueTotalsMap,
     type WalletAccount,
@@ -93,14 +93,14 @@ const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
 /**
  * Matches the account overview's headline: test-network holdings stay out,
  * and one unknown chain makes the total unknown rather than understated.
- * `failedReadChainIds`: chains whose last read failed, so a zero there is a
- * placeholder.
+ * `failedFirstReadChainIds`: chains whose first read failed, so a zero there
+ * is a placeholder.
  */
 export const crossChainTotalOf = (
     sources: readonly AccountHoldingSource[],
     accountValueTotals: AccountValueTotalsMap,
     usdToPreferred: (usd: Maybe<Decimal>) => Nullable<Decimal>,
-    failedReadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
+    failedFirstReadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
 ): CrossChainTotal => {
     if (sources.length === 0) return { kind: 'unavailable' }
     const counted = sources.filter(source =>
@@ -117,7 +117,7 @@ export const crossChainTotalOf = (
     }
     const isPlaceholderZero = counted.some(
         (source, index) =>
-            failedReadChainIds.has(source.scope.chainId) &&
+            failedFirstReadChainIds.has(source.scope.chainId) &&
             values[index]?.fiatValue?.isZero() === true,
     )
     if (isPlaceholderZero) return { kind: 'fiat', value: null }
@@ -144,7 +144,7 @@ export const useAccountWithBalance = (
     const availability = useChainAvailability(chainId)
     const isChainAgnostic = chainOverride === undefined
     const sources = useAccountHoldingSources(account)
-    const failedReadChainIds = useFailedHoldingChainIds(sources)
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(sources)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
         homeScope,
@@ -162,7 +162,7 @@ export const useAccountWithBalance = (
                       sources,
                       accountValueTotals,
                       usdToPreferred,
-                      failedReadChainIds,
+                      failedFirstReadChainIds,
                   )
                 : undefined,
         [
@@ -170,7 +170,7 @@ export const useAccountWithBalance = (
             sources,
             accountValueTotals,
             usdToPreferred,
-            failedReadChainIds,
+            failedFirstReadChainIds,
         ],
     )
 

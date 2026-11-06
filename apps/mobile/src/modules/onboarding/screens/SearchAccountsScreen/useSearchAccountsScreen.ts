@@ -173,6 +173,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         walletKeyId: params.walletKeyId,
                         signal: searchAbort.signal,
                         onProgress: setProgress,
+                        previous: params.previous,
                     })
                 isSearchingImportRef.current = false
                 if (hasLeftRef.current) return

@@ -29,6 +29,7 @@ import { useHDImportSessionStore } from '../import-session'
 import {
     discoverAccounts,
     discoverWalletCandidates,
+    mergeWalletCandidates,
 } from '../account-discovery'
 import { hdPathKey } from '../hd-walk'
 import {
@@ -61,6 +62,8 @@ export type UseHDImportSessionResult = {
         signal?: AbortSignal
         /** Reported only when more than one chain is discovered; a single chain has no networks to tell apart. */
         onProgress?: (progress: WalletDiscoveryProgress) => void
+        /** An earlier search of this session, which a retry adds to. */
+        previous?: WalletCandidates
     }) => Promise<WalletCandidates>
     commitImport: (params: {
         walletKeyId: string
@@ -100,10 +103,12 @@ export const useHDImportSession = (
             walletKeyId,
             signal,
             onProgress,
+            previous,
         }: {
             walletKeyId: string
             signal?: AbortSignal
             onProgress?: (progress: WalletDiscoveryProgress) => void
+            previous?: WalletCandidates
         }): Promise<WalletCandidates> => {
             const pending = useHDImportSessionStore.getState().pending
             if (!pending || pending.walletKeyId !== walletKeyId) {
@@ -184,6 +189,14 @@ export const useHDImportSession = (
                     walletKeyId: pending.walletKeyId,
                     signal,
                 })
+            }
+            if (previous) {
+                const merged = mergeWalletCandidates(previous, {
+                    accounts: discovered,
+                    failedChainIds,
+                })
+                discovered = merged.accounts
+                failedChainIds = merged.failedChainIds
             }
             // Only the indexes the user can pick: one the wallet already holds
             // is shown disabled, and must not read as declined later.

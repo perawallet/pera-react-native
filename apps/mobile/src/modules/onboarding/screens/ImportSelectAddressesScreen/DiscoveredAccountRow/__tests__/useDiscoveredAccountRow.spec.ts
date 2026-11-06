@@ -17,7 +17,7 @@ import {
     useAccountHoldingSources,
     useAccountValueTotalsQuery,
     useRegisteredChainIds,
-    useFailedHoldingChainIds,
+    useFailedFirstReadChainIds,
     type LocalAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useDiscoveredAccountRow } from '../useDiscoveredAccountRow'
@@ -131,12 +131,12 @@ describe('useDiscoveredAccountRow', () => {
         })
     })
 
-    it('leaves the total unknown when a chain whose read failed shows a zero', () => {
+    it('leaves the total unknown when a chain whose first read failed shows a zero', () => {
         vi.mocked(useAccountHoldingSources).mockReturnValue([
             { address: ALGO_ADDRESS, scope: scopeOf('algorand') },
             { address: EVM_ADDRESS, scope: scopeOf('ethereum') },
         ] as never)
-        vi.mocked(useFailedHoldingChainIds).mockReturnValue(
+        vi.mocked(useFailedFirstReadChainIds).mockReturnValue(
             new Set(['ethereum']),
         )
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue({

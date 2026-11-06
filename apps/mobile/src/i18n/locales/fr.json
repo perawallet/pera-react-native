@@ -2386,7 +2386,8 @@
             "all_imported_title": "Déjà dans votre wallet",
             "all_imported_body": "Tous les comptes de ce wallet figurent déjà dans Pera. Si l’un d’eux est ajouté comme compte de suivi, supprimez-le d’abord, puis importez-le à nouveau pour l’ajouter avec un accès complet.",
             "unchecked_networks_title": "Impossible de vérifier : {{networks}}",
-            "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes."
+            "unchecked_networks_body": "Les comptes des autres réseaux sont listés. Vous pourrez relancer le scan plus tard pour trouver de nouveaux comptes.",
+            "retry_networks": "Vérifier à nouveau : {{networks}}"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} compte rekeyé trouvé",

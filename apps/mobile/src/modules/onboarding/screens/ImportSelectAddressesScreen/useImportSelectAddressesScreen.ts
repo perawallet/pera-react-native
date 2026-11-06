@@ -67,11 +67,14 @@ export type UseImportSelectAddressesScreenResult = {
     importedAccountIds: Set<string>
     /** The networks the search couldn't check, as a list to read aloud; undefined when it checked them all. */
     uncheckedNetworks: Optional<string>
+    /** An import whose search left networks unchecked can search the wallet again. */
+    canRetryNetworks: boolean
     /** Some account holds more than one distinct address, so rows and copy speak of accounts rather than addresses. */
     hasLinkedAddresses: boolean
     toggleSelection: (accountId: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
+    handleRetryNetworks: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -174,6 +177,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     })
     const [isProcessing, setIsProcessing] = useState(false)
     const hasCommittedRef = useRef(false)
+    // The search screen takes the session over, so leaving must not cancel it.
+    const isRetryingRef = useRef(false)
 
     const handleContinue = useCallback(async () => {
         setIsProcessing(true)
@@ -331,7 +336,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             // beforeRemove fires after navigation.replace too, so guard on a
             // commit flag rather than isProcessing (which the success path
             // resets in finally before this listener runs).
-            if (!hasCommittedRef.current) {
+            if (!hasCommittedRef.current && !isRetryingRef.current) {
                 cancelImport()
             }
         })
@@ -341,6 +346,23 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const uncheckedNetworks = failedChainIds?.length
         ? networkListOf(failedChainIds, t)
         : undefined
+    const canRetryNetworks =
+        importWalletKeyId !== null &&
+        uncheckedNetworks !== undefined &&
+        !isProcessing
+
+    // Searches every network again, not only the unchecked ones: a walk over
+    // some chains alone lists accounts without the others' addresses. The new
+    // search adds to this one, so a retry that hears from less loses nothing.
+    const handleRetryNetworks = useCallback(() => {
+        if (!importWalletKeyId) return
+        isRetryingRef.current = true
+        navigation.replace('SearchAccounts', {
+            mode: 'import',
+            walletKeyId: importWalletKeyId,
+            previous: { accounts, failedChainIds: failedChainIds ?? [] },
+        })
+    }, [importWalletKeyId, navigation, accounts, failedChainIds])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAccountIds.size > 0
@@ -354,10 +376,12 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         isProcessing,
         importedAccountIds,
         uncheckedNetworks,
+        canRetryNetworks,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue: () => void handleContinue(),
+        handleRetryNetworks,
         t,
     }
 }

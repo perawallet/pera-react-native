@@ -495,7 +495,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         accountChainIdOf: vi.fn(accountChainIdOf),
         useAccountHoldingSources: vi.fn(holdingSourcesOf),
         useUnreadHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
-        useFailedHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
+        useFailedFirstReadChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
         useRegisteredChainIds: vi.fn(() => ['algorand']),
         canImportRawKey: vi.fn(() => false),
         preferDefaultChain: vi.fn((chainIds: string[]) => chainIds[0]),

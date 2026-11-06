@@ -313,6 +313,27 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
+    it('in import mode, hands a retry the earlier search so the new one adds to it', async () => {
+        const previous = { accounts: [], failedChainIds: ['ethereum'] }
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            previous,
+        } as unknown as SearchAccountsParams
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: [{ id: '1', chains: {}, custody: { kind: 'local' } }],
+            failedChainIds: [],
+        })
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() =>
+            expect(mockDiscoverImportAccounts).toHaveBeenCalledWith(
+                expect.objectContaining({ walletKeyId: 'w-1', previous }),
+            ),
+        )
+    })
+
     it('in import mode, shows each network as the walk reports, with no Cancel button', async () => {
         mockRouteParams.current = {
             mode: 'import',

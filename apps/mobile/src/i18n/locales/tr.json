@@ -2386,7 +2386,8 @@
             "all_imported_title": "Zaten cüzdanında",
             "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
             "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
-            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin."
+            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin.",
+            "retry_networks": "Yeniden kontrol et: {{networks}}"
         },
         "import_rekeyed_addresses": {
             "title_one": "{{count}} rekey yapılmış hesap bulundu",
