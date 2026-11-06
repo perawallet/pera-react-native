@@ -14,5 +14,6 @@ export {
     mockNfdBulkRead,
     mockNameSearch,
     type MockNfdBulkReadParams,
+    type NfdBulkReadRequestBody,
     type MockNameSearchParams,
 } from './api/msw-handlers'

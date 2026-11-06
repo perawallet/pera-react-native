@@ -126,6 +126,69 @@ describe('fetchNfdBulkRead', () => {
         ])
     })
 
+    test("posts the scope's own CAIP-2 chain for an ENS chain", async () => {
+        queryClientMock.mockResolvedValue({ data: { results: [] } })
+
+        await fetchNfdBulkRead({
+            addresses: [EVM_ADDRESS],
+            scope: BASE_MAINNET,
+        })
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { chain: 'eip155:8453', addresses: [EVM_ADDRESS] },
+            }),
+        )
+    })
+
+    test('keeps only names already in the service normal form', async () => {
+        const ens = (name: string) => ({
+            ...validNameResult,
+            name,
+            source: 'ens',
+        })
+        queryClientMock.mockResolvedValue({
+            data: {
+                results: [
+                    { address: 'ADDR1', name: ens('alice.eth') },
+                    { address: 'ADDR2', name: ens('Alice.eth') },
+                    { address: 'ADDR3', name: ens('bad_name.eth') },
+                ],
+            },
+        })
+
+        const result = await fetchNfdBulkRead({
+            addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+            scope: BASE_MAINNET,
+        })
+
+        expect(result.map(item => item.name?.name ?? null)).toEqual([
+            'alice.eth',
+            null,
+            null,
+        ])
+    })
+
+    test('returns an Algorand name untouched, since its adapter has no normalizeName', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                results: [
+                    {
+                        address: 'ADDR1',
+                        name: { ...validNameResult, name: 'Alice.algo' },
+                    },
+                ],
+            },
+        })
+
+        const result = await fetchNfdBulkRead({
+            addresses: ['ADDR1'],
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result[0].name?.name).toBe('Alice.algo')
+    })
+
     test('returns [] when schema validation fails', async () => {
         queryClientMock.mockResolvedValue({ data: null })
 

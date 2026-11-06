@@ -11,9 +11,9 @@
  */
 
 export {
-    useNfdForAddressQuery,
-    type UseNfdForAddressQueryResult,
-} from './useNfdForAddressQuery'
+    useNameForAddressQuery,
+    type UseNameForAddressQueryResult,
+} from './useNameForAddressQuery'
 export {
     useNameSearchQuery,
     type UseNameSearchQueryResult,

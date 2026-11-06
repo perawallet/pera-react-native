@@ -41,8 +41,9 @@ export type FetchNfdBulkReadParams = {
 }
 
 /**
- * Bulk reverse lookup: multiple addresses → NFD names. Rejects when Pera's
- * backend can't answer, so the caller never records an outage as "no name".
+ * Bulk reverse lookup: addresses → their names on the scope's chain. Rejects
+ * when Pera's backend can't answer, so the caller never records an outage as
+ * "no name".
  */
 export const fetchNfdBulkRead = async (
     params: FetchNfdBulkReadParams,
@@ -70,7 +71,16 @@ export const fetchNfdBulkRead = async (
         })
         return []
     }
-    return transformBulkResults(result.data)
+    const adapter = nameServiceAdapterFor(scope)
+    const { normalizeName } = adapter
+    // Only a name already in the service's normal form is shown, because any other could pass for a different name.
+    return transformBulkResults(result.data).map(item =>
+        item.name &&
+        normalizeName &&
+        normalizeName(item.name.name) !== item.name.name
+            ? { ...item, name: null }
+            : item,
+    )
 }
 
 export type FetchNameSearchParams = {
