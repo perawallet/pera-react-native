@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import { FAKE_CHAIN_ID, FAKE_SCOPE } from './fakeChains'
 import { fakeRampAdapter } from './fakeRampAdapter'
 import { rampContractTests } from './adapter-contract'
 
 rampContractTests(() => fakeRampAdapter(), {
-    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    scope: FAKE_SCOPE,
     native: { routerAssetId: 'fake:a/asset:0', assetId: '0' },
     nonNative: { routerAssetId: 'fake:a/asset:42', assetId: '42' },
     foreignRouterAssetId: 'fake:b/token:42',

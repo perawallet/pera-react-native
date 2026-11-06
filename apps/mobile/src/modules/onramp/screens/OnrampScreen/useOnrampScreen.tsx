@@ -239,8 +239,17 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         const isPaused = pairsQuery.fetchStatus === 'paused'
         if (isPaused || (pairsQuery.isError && !hasInternet)) return 'offline'
         if (pairsQuery.isError) return 'error'
+        // The list is filtered by region and route, so a settled empty answer is
+        // normal; it reuses the retry state rather than spinning forever.
+        if (
+            !pairsLoading &&
+            pairsQuery.fetchStatus === 'idle' &&
+            destinations.length === 0
+        ) {
+            return 'error'
+        }
         return 'loading'
-    }, [isReady, pairsQuery, hasInternet])
+    }, [isReady, pairsQuery, pairsLoading, destinations, hasInternet])
 
     const handleRetryPairs = useCallback(() => {
         void pairsQuery.refetch()

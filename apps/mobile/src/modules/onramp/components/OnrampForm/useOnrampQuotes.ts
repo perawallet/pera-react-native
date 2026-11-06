@@ -18,6 +18,7 @@ import {
     toOnrampUserMessage,
     filterQuotesByPaymentMethod,
     isSourceAmountTooHighError,
+    isQuotableRampAmount,
     isSourceAmountTooLowError,
     pickBestQuote,
     resolveRampQuoteLimits,
@@ -26,9 +27,7 @@ import {
     type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import {
-    displayUnitsToBaseUnits,
     isConnectivityError,
-    toBigInt,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -123,10 +122,7 @@ export const useOnrampQuotes = ({
         }
         const amount = amountKey === null ? null : new Decimal(amountKey)
         const requestId = ++requestIdRef.current
-        if (
-            amount === null ||
-            toBigInt(displayUnitsToBaseUnits(amount, sourceDecimals)) === 0n
-        ) {
+        if (amount === null || !isQuotableRampAmount(amount, sourceDecimals)) {
             setQuotes([])
             setQuotesError(null)
             setIsQuoting(false)

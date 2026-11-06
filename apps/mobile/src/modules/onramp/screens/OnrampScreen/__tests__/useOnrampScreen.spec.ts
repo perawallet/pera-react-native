@@ -384,6 +384,19 @@ describe('useOnrampScreen', () => {
             expect(result.current.isPairsIntegrityBlocked).toBe(true)
         })
 
+        it('is error, so the user can retry, when the query settled with no destinations', () => {
+            mockDestinationsQuery({
+                data: [],
+                isLoading: false,
+                isError: false,
+                fetchStatus: 'idle',
+                status: 'success',
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.isReady).toBe(false)
+            expect(result.current.pairsState).toBe('error')
+        })
+
         it('is loading while genuinely fetching', () => {
             mockDestinationsQuery({
                 isLoading: true,

@@ -15,8 +15,17 @@ import {
     type ChainCapabilities,
     type ChainDescriptor,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+
+/** A placeholder id: the closed `ChainId` union has no neutral member, and ramp code must work for any chain. */
+export const FAKE_CHAIN_ID = 'fake' as ChainId
+
+export const FAKE_SCOPE: ChainScope = {
+    chainId: FAKE_CHAIN_ID,
+    networkId: 'mainnet',
+}
 
 export type FakeChainParams = {
     chainId: ChainId

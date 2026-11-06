@@ -90,8 +90,9 @@ export type RampHistoryItem = {
     creationDatetime: string
     provider: string
     pair: RampPair
+    /** Display units; null when the amount or its asset is unknown. */
     sourceAmount: Nullable<Decimal>
-    /** Received, else expected. */
+    /** Display units; received, else expected. */
     destinationAmount: Nullable<Decimal>
     toAddress?: string
     payInAddress?: string

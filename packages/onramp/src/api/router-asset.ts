@@ -112,3 +112,10 @@ export const toRampToken = (
 /** Floors: a request must never carry more than was entered. */
 export const toBaseUnitString = (amount: Decimal, decimals: number): string =>
     toBigInt(displayUnitsToBaseUnits(amount, decimals)).toString()
+
+/** False when the amount floors to zero base units, which the router has nothing to price. */
+export const isQuotableRampAmount = (
+    amount: Decimal,
+    fractionDecimals: number,
+): boolean =>
+    amount.isPositive() && toBaseUnitString(amount, fractionDecimals) !== '0'

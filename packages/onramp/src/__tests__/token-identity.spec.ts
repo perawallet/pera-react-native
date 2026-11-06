@@ -16,25 +16,25 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { rampChainAdapters } from '../chain-adapter'
 import { rampTokenAsset } from '../token-identity'
-import { registerFakeChain } from './fakeChains'
+import { FAKE_CHAIN_ID, FAKE_SCOPE, registerFakeChain } from './fakeChains'
 import { registerFakeRampAdapter } from './fakeRampAdapter'
 
-const MAINNET: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const MAINNET: ChainScope = FAKE_SCOPE
 
 describe('rampTokenAsset', () => {
     beforeEach(() => {
         getProvider().chains.reset()
         registerFakeChain({
-            chainId: 'algorand',
+            chainId: FAKE_CHAIN_ID,
             caip2: 'fake:a',
             nativeAssetId: '0',
         })
-        registerFakeRampAdapter()
+        registerFakeRampAdapter({ chainId: FAKE_CHAIN_ID })
     })
 
     it("marks the chain's native asset", () => {
         expect(rampTokenAsset({ id: 'fake:a/asset:0' }, MAINNET)).toEqual({
-            chainId: 'algorand',
+            chainId: FAKE_CHAIN_ID,
             assetId: '0',
             isNative: true,
         })
@@ -42,7 +42,7 @@ describe('rampTokenAsset', () => {
 
     it('maps a non-native asset to its own id', () => {
         expect(rampTokenAsset({ id: 'fake:a/asset:42' }, MAINNET)).toEqual({
-            chainId: 'algorand',
+            chainId: FAKE_CHAIN_ID,
             assetId: '42',
             isNative: false,
         })
@@ -51,7 +51,7 @@ describe('rampTokenAsset', () => {
     it('takes nativeness from the chain descriptor, not the id', () => {
         getProvider().chains.reset()
         registerFakeChain({
-            chainId: 'algorand',
+            chainId: FAKE_CHAIN_ID,
             caip2: 'fake:a',
             nativeAssetId: '42',
         })
