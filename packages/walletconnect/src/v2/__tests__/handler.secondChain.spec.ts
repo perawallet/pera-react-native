@@ -307,6 +307,33 @@ describe('a proposal spanning algorand and eip155', () => {
     })
 })
 
+describe('a settled session', () => {
+    it('tells the dApp the selected Ethereum network, not the first one it named', async () => {
+        selectedNetworks.ethereum = 'sepolia'
+        const { walletKit, proposals, propose } = await open()
+
+        await propose({
+            optionalNamespaces: {
+                eip155: {
+                    chains: [ETH_MAINNET, ETH_SEPOLIA],
+                    methods: ['eth_sendTransaction'],
+                    events: ['chainChanged'],
+                },
+            },
+        })
+        const [proposal] = proposals
+        await proposal.approve([ADDRESS, ETH])
+        await flush()
+
+        const { topic } = await walletKit.approveSession.mock.results[0].value
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledWith({
+            topic,
+            event: { name: 'chainChanged', data: '0xaa36a7' },
+            chainId: ETH_SEPOLIA,
+        })
+    })
+})
+
 describe('with the second chain not connectable', () => {
     beforeEach(() => {
         connectable.delete('ethereum')
@@ -509,6 +536,34 @@ describe('requests', () => {
                 }),
             },
         })
+        expect(context.onError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: 'WalletConnectInvalidNetworkError',
+            }),
+            { connectionId: TOPIC },
+        )
+    })
+
+    it('refuses public data on a network that is not the selected one without telling the user', async () => {
+        const { walletKit, context } = await open(seeded())
+
+        walletKit.emit(
+            'session_request',
+            makeRequest({ method: 'eth_chainId', chainId: ETH_SEPOLIA }),
+        )
+        await flush()
+
+        expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
+            topic: TOPIC,
+            response: {
+                id: REQUEST_ID,
+                jsonrpc: '2.0',
+                error: expect.objectContaining({
+                    code: EIP_1193['unselected-chain'],
+                }),
+            },
+        })
+        expect(context.onError).not.toHaveBeenCalled()
     })
 
     it('answers public data the chain settles later once it settles', async () => {
@@ -944,7 +999,7 @@ describe('wallet_switchEthereumChain', () => {
         })
     })
 
-    it('refuses a network that is not the selected one with the unselected-chain code, without asking', async () => {
+    it('refuses a network that is not the selected one with the unselected-chain code, without asking or telling the user', async () => {
         const opened = await live(liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS))
 
         await switchRequest(opened, SWITCH_TO_SEPOLIA)
@@ -961,6 +1016,7 @@ describe('wallet_switchEthereumChain', () => {
                 }),
             },
         })
+        expect(opened.context.onError).not.toHaveBeenCalled()
     })
 
     const SWITCH_TO_MAINNET_FROM_SEPOLIA = {
