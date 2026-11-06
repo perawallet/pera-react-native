@@ -30,13 +30,10 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
         justifyContent: 'center',
         gap: theme.spacing.sm,
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.md,
         minWidth: 0,
     },
     icon: {
-        width: theme.spacing.xl,
-        height: theme.spacing.xl,
-        borderRadius: theme.borderRadius.full,
         flexShrink: 0,
     },
     assetName: {
