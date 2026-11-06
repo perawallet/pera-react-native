@@ -101,4 +101,15 @@ describe('transformRampPairRow', () => {
             transformRampPairRow(pairRow({ asset_id: NATIVE_ID })),
         ).toBeNull()
     })
+
+    it('drops a fiat row that gives no decimals rather than assuming two', () => {
+        expect(
+            transformRampPairRow(
+                pairRow(
+                    { asset_id: 'swift:0/iso4217:JPY', unit_name: 'JPY' },
+                    { kind: 'fiat' },
+                ),
+            ),
+        ).toBeNull()
+    })
 })

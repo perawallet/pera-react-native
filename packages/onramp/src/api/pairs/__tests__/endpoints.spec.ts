@@ -10,9 +10,18 @@
  limitations under the License
  */
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
 import { http, HttpResponse, type JsonBodyType } from 'msw'
 import { setupServer } from 'msw/node'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import {
     COIN_ID,
@@ -24,6 +33,7 @@ import {
     fiatAsset,
     nativeAsset,
     pairRow,
+    registerRouterChain,
     stableAsset,
 } from '../../../__tests__/routerFixtures'
 import { getRampDestinations, getRampSources } from '../endpoints'
@@ -31,6 +41,7 @@ import { getRampDestinations, getRampSources } from '../endpoints'
 const server = setupServer()
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeEach(() => registerRouterChain())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
@@ -130,6 +141,47 @@ describe('getRampSources', () => {
             [FIAT_ID, 'fiat'],
             [COIN_ID, 'deposit'],
         ])
+    })
+
+    it('drops a deposit coin on a chain the wallet runs, which Swap serves', async () => {
+        serve([
+            {
+                next: null,
+                results: [
+                    pairRow(coinAsset({ asset_id: NATIVE_ID }), {
+                        kind: 'deposit',
+                        funding_method: 'external_deposit',
+                    }),
+                    pairRow(coinAsset(), { kind: 'deposit' }),
+                ],
+            },
+        ])
+
+        const tokens = await getRampSources(STABLE_ID, SCOPE)
+
+        expect(tokens.map(token => token.id)).toEqual([COIN_ID])
+    })
+
+    it('keeps a deposit coin on a chain the wallet has switched off', async () => {
+        getProvider().chains.setCapabilityOverrides(() => ({
+            chainEnabled: { [SCOPE.chainId]: false },
+            chainMode: {},
+            capabilities: {},
+        }))
+        serve([
+            {
+                next: null,
+                results: [
+                    pairRow(coinAsset({ asset_id: NATIVE_ID }), {
+                        kind: 'deposit',
+                    }),
+                ],
+            },
+        ])
+
+        const tokens = await getRampSources(STABLE_ID, SCOPE)
+
+        expect(tokens.map(token => token.id)).toEqual([NATIVE_ID])
     })
 
     it('lists a coin offered by two aggregators once', async () => {
