@@ -25,7 +25,10 @@ import {
     PeraServiceUnavailableError,
     logger,
 } from '@perawallet/wallet-core-shared'
-import type { Persister } from '@tanstack/react-query-persist-client'
+import type {
+    PersistedClient,
+    Persister,
+} from '@tanstack/react-query-persist-client'
 import { PERSISTED_CACHE_BUSTER } from '../query-persistence'
 import { QueryProvider, queryClient } from '../QueryProvider'
 import { setOnPeraBackendUnavailable } from '../queryClient'
@@ -421,7 +424,7 @@ describe('legacy name cache restore', () => {
         const persister: Persister = {
             persistClient: vi.fn(),
             removeClient: vi.fn(),
-            restoreClient: vi.fn(async () => ({
+            restoreClient: vi.fn(async (): Promise<PersistedClient> => ({
                 timestamp: Date.now(),
                 buster: PERSISTED_CACHE_BUSTER,
                 clientState: {
