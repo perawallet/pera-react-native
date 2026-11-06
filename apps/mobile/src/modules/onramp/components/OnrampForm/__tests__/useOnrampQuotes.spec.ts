@@ -13,13 +13,15 @@
 import { renderHook, act } from '@test-utils/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    NoConnectionError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     RAMP_MAX_LIMIT_PROBE_AMOUNT,
     RampAmountOutOfRangeError,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
-import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     makeAlgoToken,
     makeDepositToken,
