@@ -46,6 +46,8 @@ type UseAccountDisplayResult = {
     /** The chain whose name and address the labels show. */
     chainId: ChainId
     displayName: string
+    /** The account has no name, so `displayName` is its shortened address. */
+    isNameAddress: boolean
     secondaryText: Optional<string>
     renderSecondary: boolean
     showTypeAsSecondary: boolean
@@ -93,7 +95,8 @@ export const useAccountDisplay = ({
 
     const { label: accountTypeLabel } = useAccountTypeLabel(account)
 
-    const hasName = Boolean(addressName) || displayName !== address
+    const isNameAddress = displayName === address
+    const hasName = Boolean(addressName) || !isNameAddress
     const showTypeAsSecondary =
         (alwaysShowAccountType || (showAccountType && !hasName)) &&
         Boolean(accountTypeLabel)
@@ -117,6 +120,7 @@ export const useAccountDisplay = ({
     return {
         chainId: scope.chainId,
         displayName,
+        isNameAddress,
         secondaryText,
         renderSecondary,
         showTypeAsSecondary,

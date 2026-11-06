@@ -97,6 +97,7 @@ export const AccountDisplay = ({
     const {
         chainId: resolvedChainId,
         displayName,
+        isNameAddress,
         secondaryText,
         renderSecondary: hasSecondaryLabel,
         showTypeAsSecondary,
@@ -199,7 +200,8 @@ export const AccountDisplay = ({
                         variant={textProps?.variant ?? 'bodyLarge'}
                         weight={textProps?.variant ? undefined : 500}
                         numberOfLines={1}
-                        ellipsizeMode='middle'
+                        // An address keeps both ends; a name keeps its start.
+                        ellipsizeMode={isNameAddress ? 'middle' : 'tail'}
                     >
                         {displayName}
                     </PWText>
