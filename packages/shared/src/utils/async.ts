@@ -29,6 +29,45 @@ export function calculateBackoff(
     return Math.min(currentInterval * multiplier, maxInterval)
 }
 
+/** `intervalMs` is a duration; `nextEligibleAt` is epoch ms from `Date.now()`. */
+export interface Backoff {
+    intervalMs: number
+    nextEligibleAt: number
+}
+
+export type NextBackoffOptions = {
+    firstIntervalMs: number
+    multiplier?: number
+    maxIntervalMs: number
+}
+
+/**
+ * The wait after one more failure: `firstIntervalMs` after the first, then
+ * `multiplier` times the last, capped at `maxIntervalMs`. `startedAtMs` is when
+ * the failed attempt began, so a loop that arms its timer only once an attempt
+ * settles finds a wait of one loop interval due on its next run.
+ */
+export const nextBackoff = (
+    previous: Optional<Backoff>,
+    startedAtMs: number,
+    { firstIntervalMs, multiplier = 2, maxIntervalMs }: NextBackoffOptions,
+): Backoff => {
+    const intervalMs = previous
+        ? calculateBackoff(previous.intervalMs, multiplier, maxIntervalMs)
+        : firstIntervalMs
+    return { intervalMs, nextEligibleAt: startedAtMs + intervalMs }
+}
+
+// A wait longer than the interval itself means the device clock moved back;
+// without this the caller would stall for the whole skew.
+export const isBackoffDue = (
+    backoff: Optional<Backoff>,
+    nowMs: number,
+): boolean =>
+    backoff === undefined ||
+    backoff.nextEligibleAt <= nowMs ||
+    backoff.nextEligibleAt - nowMs > backoff.intervalMs
+
 /**
  * Lets the UI paint (e.g. a spinner) before a heavy synchronous task starts.
  */

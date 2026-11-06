@@ -34,6 +34,7 @@ import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { TokenSightings } from '../accounts/token-detection'
 import type { EvmChain } from '../chains/types'
 import {
+    makeProbeFailuresDue,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
@@ -208,6 +209,7 @@ export const createEvmBroadcasterAdapter = (
             })
             return summary
         },
+        resetSubmissionBackoff: () => makeProbeFailuresDue(probeFailures),
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
             chainData: { family: 'evm' },

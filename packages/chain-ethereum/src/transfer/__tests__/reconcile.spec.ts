@@ -66,6 +66,9 @@ import {
 } from '../../accounts/token-detection'
 import {
     DROPPED_GRACE_MS,
+    makeProbeFailuresDue,
+    PROBE_BACKOFF_BASE_MS,
+    PROBE_BACKOFF_MAX_MS,
     PROBE_FAILURE_ESCALATION_STREAK,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
@@ -161,6 +164,8 @@ describe('reconcileEthereumSubmissions', () => {
         )
     const pastGraceWindow = () =>
         vi.setSystemTime(Date.now() + DROPPED_GRACE_MS + 1)
+    const failedProbeCounts = () =>
+        [...probeFailures.values()].map(({ failedProbes }) => failedProbes)
 
     it('confirms a row whose transaction has a success receipt', async () => {
         await record()
@@ -680,7 +685,7 @@ describe('reconcileEthereumSubmissions', () => {
             await reconcile()
 
             expect(await statuses()).toEqual(['confirming'])
-            expect([...probeFailures.values()]).toEqual([1])
+            expect(failedProbeCounts()).toEqual([1])
         })
 
         it('holds a speed-up whose nonce was mined while its original is still confirming, and replaces it once the original is final', async () => {
@@ -897,7 +902,7 @@ describe('reconcileEthereumSubmissions', () => {
                 confirmed: 0,
             })
             expect(await statuses()).toEqual(['submitted'])
-            expect([...probeFailures.values()]).toEqual([1])
+            expect(failedProbeCounts()).toEqual([1])
         })
     })
 
@@ -918,8 +923,12 @@ describe('reconcileEthereumSubmissions', () => {
                         call[0] as { severity: string; groupingKey?: string },
                 )
                 .filter(report => report.severity === 'error')
+        // A full backoff apart, so every pass probes the row.
         const passes = async (count: number, ledgerDb = db) => {
-            for (let pass = 0; pass < count; pass++) await reconcile(ledgerDb)
+            for (let pass = 0; pass < count; pass++) {
+                vi.setSystemTime(Date.now() + PROBE_BACKOFF_MAX_MS)
+                await reconcile(ledgerDb)
+            }
         }
 
         beforeEach(() => {
@@ -948,6 +957,20 @@ describe('reconcileEthereumSubmissions', () => {
             expect(errorReports()[0]?.groupingKey).toBeUndefined()
 
             await passes(1)
+            expect(errorReports()).toHaveLength(1)
+        })
+
+        it('escalates on the failure whose wait first reaches PROBE_BACKOFF_MAX_MS', async () => {
+            await record()
+            internalError()
+            const backoffs = () =>
+                [...probeFailures.values()].map(({ intervalMs }) => intervalMs)
+
+            await passes(N - 1)
+            expect(backoffs()[0]).toBeLessThan(PROBE_BACKOFF_MAX_MS)
+
+            await passes(1)
+            expect(backoffs()).toEqual([PROBE_BACKOFF_MAX_MS])
             expect(errorReports()).toHaveLength(1)
         })
 
@@ -981,7 +1004,7 @@ describe('reconcileEthereumSubmissions', () => {
             await record()
             internalError()
             await passes(N - 1)
-            node()
+            node({ eth_getTransactionByHash: HELD_BY_NODE })
             await passes(1)
             internalError()
 
@@ -1001,7 +1024,7 @@ describe('reconcileEthereumSubmissions', () => {
                 }),
             })
 
-            await reconcile()
+            await passes(1)
 
             expect(probeFailures.size).toBe(0)
         })
@@ -1036,10 +1059,152 @@ describe('reconcileEthereumSubmissions', () => {
                 await passes(N)
 
                 expect(probeFailures.size).toBe(1)
-                expect([...probeFailures.values()]).toEqual([N])
+                expect(failedProbeCounts()).toEqual([N])
                 expect(errorReports()).toEqual([])
             },
         )
+    })
+
+    describe('a refusal the node gives on every retry', () => {
+        // A public node refuses a receipt from past its history window, and
+        // answers the same on every retry.
+        const ARCHIVE_REFUSAL = new EvmRpcErrorFixture(
+            -32602,
+            'Archive requests require a personal token',
+        )
+        const TICK_MS = 3_000
+        const OTHER = `0x${'0c'.repeat(32)}` as Hex
+        let receiptReads: number
+        const refuseReceipts = () =>
+            node({
+                eth_getTransactionReceipt: () => {
+                    receiptReads++
+                    return ARCHIVE_REFUSAL
+                },
+            })
+        const statusOf = async (id: string) =>
+            (await db.select().from(SubmissionAttemptsSchema).all()).find(
+                row => row.id === id,
+            )?.status
+        const reconcileOneRow = () =>
+            reconcileEthereumSubmissions({
+                chain: ETHEREUM,
+                settleHandlers,
+                probeFailures,
+                getClient,
+                db,
+                limit: 1,
+            })
+
+        beforeEach(() => {
+            receiptReads = 0
+            vi.spyOn(console, 'warn').mockImplementation(() => {})
+        })
+
+        afterEach(() => vi.restoreAllMocks())
+
+        it('probes the row on the next tick after one failure, then waits twice as long after each further one', async () => {
+            await record()
+            refuseReceipts()
+            const probedOnTicks: number[] = []
+
+            for (let tick = 0; tick < 16; tick++) {
+                const before = receiptReads
+                await reconcile()
+                if (receiptReads > before) probedOnTicks.push(tick)
+                vi.setSystemTime(Date.now() + TICK_MS)
+            }
+
+            expect(probedOnTicks).toEqual([0, 1, 3, 7, 15])
+            expect(await statuses()).toEqual(['submitted'])
+        })
+
+        it('waits at most PROBE_BACKOFF_MAX_MS, then settles the row once the node answers', async () => {
+            await record()
+            refuseReceipts()
+            for (let failure = 0; failure < 12; failure++) {
+                vi.setSystemTime(Date.now() + PROBE_BACKOFF_MAX_MS)
+                await reconcile()
+            }
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                }),
+            })
+
+            vi.setSystemTime(Date.now() + PROBE_BACKOFF_MAX_MS - 1)
+            await expect(reconcile()).resolves.toMatchObject({ probed: 0 })
+            expect(await statuses()).toEqual(['submitted'])
+
+            vi.setSystemTime(Date.now() + 1)
+            await expect(reconcile()).resolves.toMatchObject({ confirmed: 1 })
+            expect(await statuses()).toEqual(['confirmed'])
+        })
+
+        it('probes a newer row in the place of one waiting out its backoff', async () => {
+            const refused = await record()
+            vi.setSystemTime(Date.now() + 1_000)
+            const answered = await record({ txIds: [OTHER], nonce: 1 })
+            node({
+                eth_getTransactionReceipt: params =>
+                    params[0] === HASH
+                        ? ARCHIVE_REFUSAL
+                        : evmTransactionReceipt({ transactionHash: OTHER }),
+            })
+
+            await reconcileOneRow()
+            await reconcileOneRow()
+
+            expect(await statusOf(refused)).toBe('submitted')
+            expect(await statusOf(answered)).toBe('confirmed')
+        })
+
+        it('keeps the streak of a due row that a full pass left out', async () => {
+            refuseReceipts()
+            await record()
+            vi.setSystemTime(Date.now() + 1_000)
+            const leftOut = await record({ txIds: [OTHER], nonce: 1 })
+            await reconcileOneRow()
+            vi.setSystemTime(Date.now() + 1_000)
+            // The older row is waiting, so this pass probes the newer one.
+            await reconcileOneRow()
+            expect(probeFailures.get(leftOut)?.failedProbes).toBe(1)
+
+            // Both are due, and only the older one fits the pass.
+            vi.setSystemTime(Date.now() + PROBE_BACKOFF_BASE_MS)
+            await reconcileOneRow()
+
+            expect(probeFailures.get(leftOut)?.failedProbes).toBe(1)
+        })
+
+        it('probes a waiting row at once when the device clock moved back', async () => {
+            await record()
+            refuseReceipts()
+            await reconcile()
+            const before = receiptReads
+
+            vi.setSystemTime(Date.now() - 10 * 60_000)
+            await reconcile()
+
+            expect(receiptReads).toBeGreaterThan(before)
+        })
+
+        it('probes a waiting row at once after a reset, and keeps counting its failures', async () => {
+            await record()
+            refuseReceipts()
+            await reconcile()
+            await reconcile()
+            const before = receiptReads
+
+            await reconcile()
+            expect(receiptReads).toBe(before)
+
+            makeProbeFailuresDue(probeFailures)
+            await reconcile()
+
+            expect(receiptReads).toBeGreaterThan(before)
+            expect(failedProbeCounts()).toEqual([2])
+        })
     })
 
     describe('tokens a mined send delivered', () => {

@@ -26,7 +26,10 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
+    isBackoffDue,
     logger,
+    nextBackoff,
+    type Backoff,
     type Optional,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -62,14 +65,41 @@ export type SubmissionSettledHandlers = Map<
     SubmissionSettledHandler
 >
 
-/** One per broadcaster: consecutive failed probes per open row id, carried across passes. */
-export type ProbeFailureStreaks = Map<string, number>
+/** A row's consecutive failed probes, and how long it waits before the next. */
+export interface ProbeFailureStreak extends Backoff {
+    failedProbes: number
+}
+
+/** One per broadcaster: per open row id, carried across passes. */
+export type ProbeFailureStreaks = Map<string, ProbeFailureStreak>
+
+// Keeps each streak's count and interval, so escalation still lands on the
+// same failure; only the wait goes.
+export const makeProbeFailuresDue = (
+    probeFailures: ProbeFailureStreaks,
+): void => {
+    for (const streak of probeFailures.values()) streak.nextEligibleAt = 0
+}
+
+// A node can refuse a read the same way on every retry (a public node will
+// not serve a receipt from past its history window), so a failing row waits
+// longer after each failure rather than costing a request every tick.
+/** One sync tick, so a single failure is retried on the next one. */
+export const PROBE_BACKOFF_BASE_MS = 3000
+export const PROBE_BACKOFF_MULTIPLIER = 2
+/** Also the longest a row stays open after its node can answer again. */
+export const PROBE_BACKOFF_MAX_MS = 2 * 60_000
 
 /**
- * A row whose probe fails this many passes in a row is logged once as an
- * error; shorter streaks stay warnings, so a passing RPC blip never reports.
+ * Failures in a row before one error report: the first whose wait reaches
+ * `PROBE_BACKOFF_MAX_MS`, about 3 min in. Shorter streaks stay warnings; a
+ * later one would rarely be reached, as the streak lives in memory.
  */
-export const PROBE_FAILURE_ESCALATION_STREAK = 20
+export const PROBE_FAILURE_ESCALATION_STREAK =
+    Math.ceil(
+        Math.log(PROBE_BACKOFF_MAX_MS / PROBE_BACKOFF_BASE_MS) /
+            Math.log(PROBE_BACKOFF_MULTIPLIER),
+    ) + 1
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
@@ -296,22 +326,34 @@ export const reconcileEthereumSubmissions = async ({
         failed: 0,
     }
     const depth = finalityDepthOf(chain.row)
+    const startedAt = Date.now()
+    const waiting = new Set<string>()
+    for (const [id, streak] of probeFailures) {
+        if (!isBackoffDue(streak, startedAt)) waiting.add(id)
+    }
+    // Reads past the waiting rows, so they never hold a due row out of the pass.
+    const readLimit = limit + waiting.size
     let open: SubmissionAttempt[]
     try {
         open = await getOpenSubmissionAttempts({
             db,
             chainId: chain.row.id,
-            limit,
+            limit: readLimit,
         })
     } catch (error) {
         logger.warn('ethereum reconcile: open-row read failed', { error })
         return summary
     }
 
-    const openIds = new Set(open.map(attempt => attempt.id))
-    for (const id of probeFailures.keys()) {
-        if (!openIds.has(id)) probeFailures.delete(id)
+    // A read cut off at its limit leaves newer open rows out, and dropping their
+    // streaks would restart their backoff.
+    if (open.length < readLimit) {
+        const openIds = new Set(open.map(attempt => attempt.id))
+        for (const id of probeFailures.keys()) {
+            if (!openIds.has(id)) probeFailures.delete(id)
+        }
     }
+    const due = open.filter(attempt => !waiting.has(attempt.id)).slice(0, limit)
 
     const clients = new Map<ChainScopeKey, PublicClient>()
     // Siblings at one nonce read each other's receipts, so a pass reads each once.
@@ -319,7 +361,7 @@ export const reconcileEthereumSubmissions = async ({
     const heads = new Map<ChainScopeKey, Promise<bigint>>()
     // Parallel, so a black-holed RPC costs one timeout per tick, not one per row.
     await Promise.all(
-        open.map(async attempt => {
+        due.map(async attempt => {
             try {
                 const scope = parseScopeKey(attempt.network)
                 const scopeKey = toScopeKey(scope)
@@ -396,8 +438,14 @@ export const reconcileEthereumSubmissions = async ({
                 summary[verdict === 'confirmed' ? 'confirmed' : 'failed']++
                 probeFailures.delete(attempt.id)
             } catch (error) {
-                const failedProbes = (probeFailures.get(attempt.id) ?? 0) + 1
-                probeFailures.set(attempt.id, failedProbes)
+                const previous = probeFailures.get(attempt.id)
+                const failedProbes = (previous?.failedProbes ?? 0) + 1
+                const backoff = nextBackoff(previous, startedAt, {
+                    firstIntervalMs: PROBE_BACKOFF_BASE_MS,
+                    multiplier: PROBE_BACKOFF_MULTIPLIER,
+                    maxIntervalMs: PROBE_BACKOFF_MAX_MS,
+                })
+                probeFailures.set(attempt.id, { failedProbes, ...backoff })
                 if (failedProbes === PROBE_FAILURE_ESCALATION_STREAK) {
                     // Only a viem error goes through toEvmError, so the
                     // classifier keeps a rate-limited or answerless RPC a
@@ -425,6 +473,7 @@ export const reconcileEthereumSubmissions = async ({
                     error,
                     id: attempt.id,
                     failedProbes,
+                    retryInMs: backoff.intervalMs,
                 })
             }
         }),
