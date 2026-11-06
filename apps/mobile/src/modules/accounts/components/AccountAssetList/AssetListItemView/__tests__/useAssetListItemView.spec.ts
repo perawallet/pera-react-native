@@ -51,4 +51,39 @@ describe('useAssetListItemView', () => {
         )
         expect(result.current.fiat.displayCurrency).toBe('USD')
     })
+
+    it('shows the amount as unknown when the converter flags a placeholder zero', () => {
+        const convertFiat = vi.fn(() => ({
+            displayCurrency: 'USD',
+            value: null,
+            isUnread: true,
+        }))
+
+        const { result } = renderHook(() =>
+            useAssetListItemView({
+                holding: { ...holding, amount: new Decimal(0) },
+                chainId: 'ethereum',
+                convertFiat,
+            }),
+        )
+
+        expect(result.current.displayAmount).toBeNull()
+    })
+
+    it('shows the amount the chain reported otherwise', () => {
+        const convertFiat = vi.fn(() => ({
+            displayCurrency: 'USD',
+            value: new Decimal(0),
+        }))
+
+        const { result } = renderHook(() =>
+            useAssetListItemView({
+                holding: { ...holding, amount: new Decimal(0) },
+                chainId: 'ethereum',
+                convertFiat,
+            }),
+        )
+
+        expect(result.current.displayAmount).toEqual(new Decimal(0))
+    })
 })

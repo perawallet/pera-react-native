@@ -22,6 +22,7 @@ import {
     useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
+    useFailedHoldingChainIds,
     type AccountHoldingSource,
     type AccountValueTotalsMap,
     type WalletAccount,
@@ -87,14 +88,19 @@ export type UseAccountWithBalanceResult = {
     hasDuplicateName: boolean
 }
 
+const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
+
 /**
  * Matches the account overview's headline: test-network holdings stay out,
  * and one unknown chain makes the total unknown rather than understated.
+ * `failedReadChainIds`: chains whose last read failed, so a zero there is a
+ * placeholder.
  */
 export const crossChainTotalOf = (
     sources: readonly AccountHoldingSource[],
     accountValueTotals: AccountValueTotalsMap,
     usdToPreferred: (usd: Maybe<Decimal>) => Nullable<Decimal>,
+    failedReadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
 ): CrossChainTotal => {
     if (sources.length === 0) return { kind: 'unavailable' }
     const counted = sources.filter(source =>
@@ -109,6 +115,12 @@ export const crossChainTotalOf = (
     if (values.some(value => !value || value.isPending)) {
         return { kind: 'fiat', value: undefined }
     }
+    const isPlaceholderZero = counted.some(
+        (source, index) =>
+            failedReadChainIds.has(source.scope.chainId) &&
+            values[index]?.fiatValue?.isZero() === true,
+    )
+    if (isPlaceholderZero) return { kind: 'fiat', value: null }
     const usdTotal = values.reduce<Nullable<Decimal>>(
         (total, value) =>
             total === null || !value || value.fiatValue === null
@@ -132,6 +144,7 @@ export const useAccountWithBalance = (
     const availability = useChainAvailability(chainId)
     const isChainAgnostic = chainOverride === undefined
     const sources = useAccountHoldingSources(account)
+    const failedReadChainIds = useFailedHoldingChainIds(sources)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
         homeScope,
@@ -145,9 +158,20 @@ export const useAccountWithBalance = (
     const crossChainTotal = useMemo(
         (): Optional<CrossChainTotal> =>
             isChainAgnostic
-                ? crossChainTotalOf(sources, accountValueTotals, usdToPreferred)
+                ? crossChainTotalOf(
+                      sources,
+                      accountValueTotals,
+                      usdToPreferred,
+                      failedReadChainIds,
+                  )
                 : undefined,
-        [isChainAgnostic, sources, accountValueTotals, usdToPreferred],
+        [
+            isChainAgnostic,
+            sources,
+            accountValueTotals,
+            usdToPreferred,
+            failedReadChainIds,
+        ],
     )
 
     const singleNetworkChainId =

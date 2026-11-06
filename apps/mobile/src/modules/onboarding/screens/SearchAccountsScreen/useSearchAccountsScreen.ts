@@ -44,7 +44,16 @@ import {
 } from '../../hooks'
 import { useHdWalletRescan } from './useHdWalletRescan'
 
-export type ScanNetworkStatus = 'checking' | 'failed'
+export type ScanNetworkStatus = 'checking' | 'failed' | 'unavailable'
+
+const scanNetworkStatusOf = (
+    progress: Optional<WalletDiscoveryProgress>,
+    chainId: ChainId,
+): ScanNetworkStatus => {
+    if (progress?.refusedChainIds.includes(chainId)) return 'unavailable'
+    if (progress?.failedChainIds.includes(chainId)) return 'failed'
+    return 'checking'
+}
 
 export type ScanNetwork = {
     chainId: ChainId
@@ -270,9 +279,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             (progress?.chainIds ?? []).map(chainId => ({
                 chainId,
                 name: chainDisplayNameOf(chainId) ?? chainId,
-                status: progress?.failedChainIds.includes(chainId)
-                    ? 'failed'
-                    : 'checking',
+                status: scanNetworkStatusOf(progress, chainId),
             })),
         [progress],
     )

@@ -90,6 +90,7 @@ vi.mock('@modules/transactions/routes', () => ({
 const mockSourcesByAccount = new Map<object, unknown[]>()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useFailedHoldingChainIds: () => new Set(),
     useAccountScope: (account: { chains: Record<string, unknown> }) => ({
         chainId: Object.keys(account.chains)[0],
         networkId: 'mainnet',

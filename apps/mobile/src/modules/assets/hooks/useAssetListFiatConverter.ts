@@ -27,6 +27,8 @@ import { useHomeChainScope } from '@hooks/useHomeChainScope'
 export type AssetFiatValue = {
     displayCurrency: string
     value: Nullable<Decimal>
+    /** A zero on a chain no read vouches for: the amount is unknown too, not 0. */
+    isUnread?: boolean
 }
 
 export type AssetFiatConverter = (
@@ -72,7 +74,11 @@ export const useAssetListFiatConverter = (
                 amountDisplayUnits.isZero() &&
                 unreadChainIds.has(ref.chainId)
             ) {
-                return { displayCurrency: preferredCurrency, value: null }
+                return {
+                    displayCurrency: preferredCurrency,
+                    value: null,
+                    isUnread: true,
+                }
             }
             // Holding none is worth nothing, whether or not the asset is priced.
             const usdPrice =

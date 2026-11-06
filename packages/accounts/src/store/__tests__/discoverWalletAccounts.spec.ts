@@ -581,7 +581,7 @@ describe('discoverWalletAccounts', () => {
             })
         })
 
-        test('leaves a chain the backend has switched off out of the failed networks and the progress rows', async () => {
+        test('keeps a chain the backend has switched off out of the failed networks, listed as refused', async () => {
             activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
             families.checkActivity.get(ETHEREUM)!.mockRejectedValue(
                 new PeraNetworkError('client', {
@@ -601,8 +601,9 @@ describe('discoverWalletAccounts', () => {
                 failedChainIds: [],
             })
             expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
-                chainIds: [ALGORAND],
+                chainIds: [ALGORAND, ETHEREUM],
                 failedChainIds: [],
+                refusedChainIds: [ETHEREUM],
             })
         })
 
@@ -709,6 +710,7 @@ describe('discoverWalletAccounts', () => {
             expect(onProgress.mock.calls[0]![0]).toEqual({
                 chainIds: [ALGORAND, ETHEREUM],
                 failedChainIds: [],
+                refusedChainIds: [],
                 checkedAccountCount: 0,
                 foundCount: 0,
             })

@@ -26,7 +26,7 @@ import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handl
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
+import { closestPressable, isElementDisabled } from '@test-utils/rnw'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen/ImportInfoScreen'
@@ -100,10 +100,11 @@ const renderHDImportFromOnboarding = () =>
     })
 
 const importMnemonic = async ({
-    isSelectingAll = false,
+    onlyAddress,
     onAddressesListed,
 }: {
-    isSelectingAll?: boolean
+    /** Import this account alone instead of every preselected one. */
+    onlyAddress?: string
     onAddressesListed?: () => void
 } = {}) => {
     renderHDImportFromOnboarding()
@@ -141,16 +142,26 @@ const importMnemonic = async ({
         { timeout: SLOW_WAIT_TIMEOUT_MS },
     )
     onAddressesListed?.()
-    if (isSelectingAll) {
+    if (onlyAddress) {
+        // Every new account starts selected: clear them, then pick one. The
+        // row, not its checkbox, since a jsdom click on the checkbox also
+        // bubbles to the row and toggles twice.
         fireEvent.click(
             screen.getByTestId('import_select_addresses_select_all_checkbox'),
+        )
+        fireEvent.click(
+            closestPressable(
+                screen.getByTestId(
+                    `import_select_addresses_item_checkbox_${onlyAddress}`,
+                ),
+            )!,
         )
     }
     fireEvent.click(
         screen.getByTestId('import_select_addresses_continue_button'),
     )
     // More than one imported account skips the naming step.
-    if (!isSelectingAll) {
+    if (onlyAddress) {
         await waitFor(() => screen.getByTestId('name_account_finish_button'))
         fireEvent.click(screen.getByTestId('name_account_finish_button'))
     }
@@ -190,7 +201,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
             }),
         )
 
-    it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports it keeping the selection, then that later account is listed but not added, and nothing past the gap', async () => {
+    it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports only the first account, then that later account is listed but not added, and nothing past the gap', async () => {
         const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
         serveSeedActivity(ethereumOnlyAddress)
         const walk = vi.spyOn(
@@ -199,6 +210,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         )
 
         await importMnemonic({
+            onlyAddress: HD_TEST_ADDRESS,
             onAddressesListed: () =>
                 expect(
                     screen.getByTestId(
@@ -232,6 +244,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         )
 
         await importMnemonic({
+            onlyAddress: HD_TEST_ADDRESS,
             onAddressesListed: () => {
                 expect(
                     screen.getByTestId(
@@ -247,11 +260,11 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         })
     })
 
-    it('Given a seed used on Ethereum alone at a later account, when the user selects every listed account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {
+    it('Given a seed used on Ethereum alone at a later account, when the user keeps every preselected account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {
         const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
         serveSeedActivity(ethereumOnlyAddress)
 
-        await importMnemonic({ isSelectingAll: true })
+        await importMnemonic()
 
         await waitFor(
             () => expect(useAccountsStore.getState().accounts).toHaveLength(2),

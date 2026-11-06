@@ -87,7 +87,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
     const { t } = useLanguage()
     const { errorToast } = useToast()
-    const allAccounts = useAllAccounts()
+    const liveAccounts = useAllAccounts()
+    // Frozen when the user taps Import: the commit writes the selection into
+    // the store, and reading it live would flip every row to "already
+    // imported" (and the screen to its all-imported state) mid-import.
+    const [frozenAccounts, setFrozenAccounts] =
+        useState<Optional<WalletAccount[]>>()
+    const allAccounts = frozenAccounts ?? liveAccounts
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const addressOf = useCallback(
         (account: WalletAccount) => addressOn(account, scope.chainId),
@@ -163,7 +169,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         toggle: toggleSelection,
         toggleSelectAll,
     } = useAddressSelection(selectableAccountIds, {
-        initial: newAccounts.length > 0 ? [newAccounts[0].id] : [],
+        initial: selectableAccountIds,
         disabledAddresses: importedAccountIds,
     })
     const [isProcessing, setIsProcessing] = useState(false)
@@ -171,6 +177,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
     const handleContinue = useCallback(async () => {
         setIsProcessing(true)
+        setFrozenAccounts(allAccounts)
 
         void deferToNextCycle(async () => {
             const accountsToAdd = newAccounts.filter(acc =>
@@ -194,22 +201,18 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         cancelImport()
                         hasCommittedRef.current = true
                     }
-                    // Re-entering the mnemonic proves possession, so mark the
-                    // wallet's bip39 seed as backed up regardless of whether
-                    // any new addresses were actually added — re-imports
-                    // (every discovered address already in the store) and
-                    // accounts created before this feature shipped both rely
-                    // on this path to clear the backup banner. Match on the
-                    // child→seed parent since `account.keyPairId` is now
-                    // the child's id.
-                    const accountToMark =
-                        accountsToAdd[0] ??
-                        allAccounts.find(
-                            a =>
-                                seedIdOf(signingKeyOn(a, scope.chainId)) ===
-                                importWalletKeyId,
-                        )
-                    if (accountToMark) markBackupComplete(accountToMark)
+                    // Re-entering the mnemonic proves possession of every
+                    // account on this seed, whether or not anything new was
+                    // added. The backup flag is keyed per derived child id,
+                    // so each account, new or already held, is marked.
+                    const seedSiblings = allAccounts.filter(
+                        a =>
+                            seedIdOf(signingKeyOn(a, scope.chainId)) ===
+                            importWalletKeyId,
+                    )
+                    for (const account of [...accountsToAdd, ...seedSiblings]) {
+                        markBackupComplete(account)
+                    }
                 } else if (accountsToAdd.length > 0) {
                     // Read the store fresh: this is a replace-array write,
                     // and a concurrent store write since render must not be

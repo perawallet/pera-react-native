@@ -191,7 +191,13 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(result.current.uncheckedNetworks).toBeUndefined()
     })
 
-    test('Continue commits the import with selected accounts and marks backup', async () => {
+    test('preselects every new account', () => {
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        expect(result.current.selectedAccountIds).toEqual(new Set(['1', '2']))
+    })
+
+    test('Continue commits the import with selected accounts and marks each backed up', async () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
         await act(async () => {
@@ -200,15 +206,57 @@ describe('useImportSelectAddressesScreen — import mode', () => {
 
         expect(mockCommitImport).toHaveBeenCalledWith({
             walletKeyId: 'w-1',
-            selectedAccounts: [sampleDiscovered[0]],
+            selectedAccounts: sampleDiscovered,
         })
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[0])
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[1])
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
     })
 
-    test('single imported account navigates to NameAccount for naming', async () => {
-        // Default selection is the first discovered account only.
+    test('marks an account already held from the same seed backed up too', async () => {
+        const heldSibling = {
+            id: 'held',
+            chains: { algorand: { address: 'ADDR-HELD', keyPairId: 'w-1' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        } as WalletAccount
+        mockAllAccounts.current = [heldSibling]
         const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(heldSibling)
+    })
+
+    test('keeps the just-imported accounts listed as new while the import runs', async () => {
+        mockCommitImport.mockImplementation(async () => {
+            mockAllAccounts.current = sampleDiscovered as WalletAccount[]
+            return sampleDiscovered
+        })
+        mockDiscoverDelegatedAccounts.mockReturnValue(new Promise(() => {}))
+        const { result, rerender } = renderHook(() =>
+            useImportSelectAddressesScreen(),
+        )
+
+        await act(async () => {
+            void result.current.handleContinue()
+        })
+        rerender()
+
+        expect(result.current.areAllImported).toBe(false)
+        expect(result.current.importedAccountIds).toEqual(new Set())
+    })
+
+    test('single imported account navigates to NameAccount for naming', async () => {
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+        act(() => {
+            result.current.toggleSelection('2')
+        })
 
         await act(async () => {
             await result.current.handleContinue()
@@ -222,11 +270,6 @@ describe('useImportSelectAddressesScreen — import mode', () => {
 
     test('multiple imported accounts keep auto-names and exit without NameAccount', async () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
-
-        // Select the second address too so two accounts are committed.
-        act(() => {
-            result.current.toggleSelection('2')
-        })
 
         await act(async () => {
             await result.current.handleContinue()
@@ -247,12 +290,13 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         }
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
-        // Default: first account is preselected, so canContinue should be true.
         expect(result.current.canContinue).toBe(true)
 
-        // Toggle off the preselected one to simulate empty selection.
         act(() => {
             result.current.toggleSelection('1')
+        })
+        act(() => {
+            result.current.toggleSelection('2')
         })
 
         expect(result.current.canContinue).toBe(false)
@@ -286,6 +330,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
 
         expect(mockCommitImport).not.toHaveBeenCalled()
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(existingSibling)
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[1])
         expect(mockCancelImport).toHaveBeenCalledOnce()
     })
 
@@ -463,7 +508,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
 
         expect(mockSetAccounts).toHaveBeenCalledWith([
             concurrent,
-            sampleDiscovered[0],
+            ...sampleDiscovered,
         ])
     })
 })
@@ -486,6 +531,9 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
             new Error('indexer 500'),
         )
         const { result } = renderHook(() => useImportSelectAddressesScreen())
+        act(() => {
+            result.current.toggleSelection('2')
+        })
 
         await act(async () => {
             await result.current.handleContinue()

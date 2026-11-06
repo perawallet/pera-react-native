@@ -490,9 +490,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         if (!sourceSets.has(key)) sourceSets.set(key, sources)
         return sourceSets.get(key)!
     }
+    const NO_UNREAD_CHAIN_IDS: ReadonlySet<string> = new Set()
     return {
         accountChainIdOf: vi.fn(accountChainIdOf),
         useAccountHoldingSources: vi.fn(holdingSourcesOf),
+        useUnreadHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
+        useFailedHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
         useRegisteredChainIds: vi.fn(() => ['algorand']),
         canImportRawKey: vi.fn(() => false),
         preferDefaultChain: vi.fn((chainIds: string[]) => chainIds[0]),

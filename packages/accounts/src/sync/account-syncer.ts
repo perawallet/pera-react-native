@@ -80,6 +80,16 @@ export function fetchAndPersistAccount(
 }
 
 /**
+ * Resolves once every account read in flight has settled. For teardown: a
+ * list doesn't wait on a chain whose last read failed, so that chain's retried
+ * read can outlive the screen, and one left running writes into whatever
+ * database comes next.
+ */
+export async function settleAccountFetches(): Promise<void> {
+    await Promise.allSettled([...inFlight.values()])
+}
+
+/**
  * The home-screen reads rely on the background sync, but a freshly imported
  * account may not be picked up by the next gated tick — so fetch once when there
  * is no chain-state row yet. Deduped via `fetchAndPersistAccount`'s in-flight map,

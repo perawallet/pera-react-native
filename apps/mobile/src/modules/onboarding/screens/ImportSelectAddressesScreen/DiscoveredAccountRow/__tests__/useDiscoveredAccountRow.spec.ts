@@ -17,6 +17,7 @@ import {
     useAccountHoldingSources,
     useAccountValueTotalsQuery,
     useRegisteredChainIds,
+    useFailedHoldingChainIds,
     type LocalAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useDiscoveredAccountRow } from '../useDiscoveredAccountRow'
@@ -128,5 +129,31 @@ describe('useDiscoveredAccountRow', () => {
             kind: 'fiat',
             value: new Decimal(17),
         })
+    })
+
+    it('leaves the total unknown when a chain whose read failed shows a zero', () => {
+        vi.mocked(useAccountHoldingSources).mockReturnValue([
+            { address: ALGO_ADDRESS, scope: scopeOf('algorand') },
+            { address: EVM_ADDRESS, scope: scopeOf('ethereum') },
+        ] as never)
+        vi.mocked(useFailedHoldingChainIds).mockReturnValue(
+            new Set(['ethereum']),
+        )
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+            accountValueTotals: new Map([
+                [
+                    `algorand|${ALGO_ADDRESS}`,
+                    { nativeValue: new Decimal(1), fiatValue: new Decimal(10) },
+                ],
+                [
+                    `ethereum|${EVM_ADDRESS}`,
+                    { nativeValue: new Decimal(0), fiatValue: new Decimal(0) },
+                ],
+            ]),
+        } as never)
+
+        const { result } = renderHook(() => useDiscoveredAccountRow(linked))
+
+        expect(result.current.total).toEqual({ kind: 'fiat', value: null })
     })
 })

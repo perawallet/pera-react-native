@@ -62,7 +62,7 @@ const AssetListItemViewBase = ({
 }: AssetListItemViewProps) => {
     const styles = useStyles()
 
-    const { asset, amount, fiat, fiatAssetId, collectibleItem } =
+    const { asset, displayAmount, fiat, fiatAssetId, collectibleItem } =
         useAssetListItemView({ holding, chainId, convertFiat })
 
     if (!asset) {
@@ -86,7 +86,7 @@ const AssetListItemViewBase = ({
             <AssetAmount
                 chainId={chainId}
                 asset={asset}
-                value={amount}
+                value={displayAmount}
                 density='compact'
                 showSymbol={isNativeAsset}
                 style={styles.primaryAmount}

@@ -235,8 +235,9 @@ describe('useSearchAccountsScreen', () => {
 
         act(() =>
             rescanOptions().onProgress({
-                chainIds: ['algorand', 'base'],
+                chainIds: ['algorand', 'base', 'bsc'],
                 failedChainIds: ['base'],
+                refusedChainIds: ['bsc'],
                 checkedAccountCount: 3,
                 foundCount: 1,
             }),
@@ -249,6 +250,7 @@ describe('useSearchAccountsScreen', () => {
                 status: 'checking',
             }),
             expect.objectContaining({ chainId: 'base', status: 'failed' }),
+            expect.objectContaining({ chainId: 'bsc', status: 'unavailable' }),
         ])
         expect(result.current.progressLabel).toBe(
             'onboarding.searching_accounts.checked_accounts · onboarding.searching_accounts.new_found',
@@ -330,6 +332,7 @@ describe('useSearchAccountsScreen', () => {
             onProgress({
                 chainIds: ['algorand', 'base'],
                 failedChainIds: ['base'],
+                refusedChainIds: [],
                 checkedAccountCount: 5,
                 foundCount: 2,
             }),

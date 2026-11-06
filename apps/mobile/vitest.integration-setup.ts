@@ -50,6 +50,15 @@ beforeAll(async () => {
     registerChainAdapters()
 }, 60_000)
 
+// An account read a list didn't wait for (a chain that failed before) can
+// outlive its test. Registered after the MSW reset, so it runs first: the read
+// settles against this test's handlers and database, not the next one's.
+afterEach(async () => {
+    const { settleAccountFetches } =
+        await import('@perawallet/wallet-core-accounts')
+    await settleAccountFetches()
+})
+
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.
 afterEach(() => {

@@ -400,6 +400,33 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
     })
 
+    it("leaves the total unknown when a chain's failed read left a placeholder zero", async () => {
+        registerEthereumChain()
+        await twoChainTotals(
+            { nativeValue: new Decimal('1000'), fiatValue: new Decimal('300') },
+            { nativeValue: new Decimal('0'), fiatValue: new Decimal('0') },
+        )
+        const { useHoldingsRefreshStore } =
+            await import('@perawallet/wallet-core-accounts')
+        act(() =>
+            useHoldingsRefreshStore
+                .getState()
+                .setHoldingsRefreshFailed(
+                    { chainId: 'ethereum', networkId: 'mainnet' },
+                    ETH_ADDRESS,
+                    true,
+                ),
+        )
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount, false),
+            { wrapper },
+        )
+
+        expect(result.current.portfolioPreferredValue).toBeNull()
+        act(() => useHoldingsRefreshStore.getState().resetState())
+    })
+
     describe('with the account on Ethereum and Base at one address', () => {
         const threeChainAccount = {
             id: 'three-chains',

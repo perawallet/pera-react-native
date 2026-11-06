@@ -2318,6 +2318,7 @@
             "cancel": "Cancel",
             "network_checking": "Checking",
             "network_failed": "Couldn't check",
+            "network_unavailable": "Not available",
             "checked_accounts_one": "Checked {{count}} account",
             "checked_accounts_other": "Checked {{count}} accounts",
             "new_found_one": "{{count}} new account found",
@@ -2388,9 +2389,12 @@
             "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later."
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekeyed accounts found",
-            "description_line_1": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
-            "description_line_2": "Select the rekeyed accounts you want to add to your wallet:",
+            "title_one": "{{count}} rekeyed account found",
+            "title_other": "{{count}} rekeyed accounts found",
+            "description_line_1_one": "You have {{count}} rekeyed account. This means that you can sign the transactions of the rekeyed account with the account you just added",
+            "description_line_1_other": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
+            "description_line_2_one": "Select the rekeyed account you want to add to your wallet:",
+            "description_line_2_other": "Select the rekeyed accounts you want to add to your wallet:",
             "already_imported": "already imported",
             "continue": "Choose accounts to add",
             "skip": "Skip for now",

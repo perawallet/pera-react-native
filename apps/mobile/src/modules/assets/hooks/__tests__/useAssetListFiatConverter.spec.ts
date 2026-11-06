@@ -72,6 +72,7 @@ describe('useAssetListFiatConverter', () => {
             result.current(onBase, new Decimal(3), new Decimal(0)).value,
         ).toBeNull()
         expect(result.current(onBase, null, new Decimal(0)).value).toBeNull()
+        expect(result.current(onBase, null, new Decimal(0)).isUnread).toBe(true)
         expect(
             result.current(
                 { chainId: 'ethereum', assetId: ETHER.assetId },

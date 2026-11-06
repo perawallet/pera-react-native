@@ -43,6 +43,7 @@ describe('createWalletDiscoveryTracker', () => {
         expect(onProgress).toHaveBeenCalledExactlyOnceWith({
             chainIds: CHAIN_IDS,
             failedChainIds: [],
+            refusedChainIds: [],
             checkedAccountCount: 0,
             foundCount: 0,
         })
@@ -62,14 +63,15 @@ describe('createWalletDiscoveryTracker', () => {
         },
     )
 
-    it('drops a refused chain from the rows without calling it failed', () => {
+    it('keeps a refused chain in the rows as refused, without calling it failed', () => {
         const { tracker, onProgress } = setUp()
 
         tracker.onProbeSettled(BASE, 'refused')
 
         expect(lastProgress(onProgress)).toMatchObject({
-            chainIds: [ALGORAND, ETHEREUM],
+            chainIds: CHAIN_IDS,
             failedChainIds: [],
+            refusedChainIds: [BASE],
         })
         expect(tracker.failedChainIds(false)).not.toContain(BASE)
     })

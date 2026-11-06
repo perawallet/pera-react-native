@@ -17,6 +17,7 @@ import {
     ownAddressOf,
     useAccountHoldingSources,
     useAccountValueTotalsQuery,
+    useFailedHoldingChainIds,
     useRegisteredChainIds,
     type LocalAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -55,6 +56,7 @@ export const useDiscoveredAccountRow = (
     const { getAccountName } = useAccountName()
     const { usdToPreferred } = useCurrency(scope)
     const sources = useAccountHoldingSources(account)
+    const failedReadChainIds = useFailedHoldingChainIds(sources)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
         scope,
@@ -83,8 +85,14 @@ export const useDiscoveredAccountRow = (
     }, [account, registeredChainIds])
 
     const total = useMemo(
-        () => crossChainTotalOf(sources, accountValueTotals, usdToPreferred),
-        [sources, accountValueTotals, usdToPreferred],
+        () =>
+            crossChainTotalOf(
+                sources,
+                accountValueTotals,
+                usdToPreferred,
+                failedReadChainIds,
+            ),
+        [sources, accountValueTotals, usdToPreferred, failedReadChainIds],
     )
 
     return {
