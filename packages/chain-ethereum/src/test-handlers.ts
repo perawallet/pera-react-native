@@ -56,6 +56,13 @@ export {
     type PeraEvmContractAbiFixtures,
 } from './contracts/api/msw-handlers'
 export type { EvmContractAbiResponse } from './contracts/api/schema'
+export {
+    simulationRevertedResponse,
+    simulationSuccessResponse,
+    simulationUnavailableResponse,
+    type PeraEvmSimulationFixtures,
+} from './simulation/api/msw-handlers'
+export type { EvmSimulationResponse } from './simulation/api/schema'
 export type {
     AssetItemResponse,
     ChartPointResponse,
