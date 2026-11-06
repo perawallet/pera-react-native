@@ -13,8 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { fetchNameSearch } from '../api'
-import { nfdQueryKeys } from './querykeys'
+import { nameSearchQueryOptions } from './nameSearchQuery'
 import type { NameSearchResult } from '../models'
 
 export type UseNameSearchQueryResult = {
@@ -42,9 +41,7 @@ export const useNameSearchQuery = (
         normalizedName.length > 0
 
     const query = useQuery({
-        queryKey: nfdQueryKeys.search(normalizedName, scope),
-        queryFn: ({ signal }): Promise<NameSearchResult[]> =>
-            fetchNameSearch({ name: normalizedName, scope, signal }),
+        ...nameSearchQueryOptions(scope, normalizedName),
         enabled,
     })
 
