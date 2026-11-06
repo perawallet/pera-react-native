@@ -36,6 +36,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    mnemonicWordsToIndices,
     useKMS,
     type Algo25KeyResult,
     type HDWalletKeyResult,
@@ -58,7 +59,9 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24_INDICES,
+    HD_TEST_MNEMONIC_12_DISTINCT,
+    HD_TEST_MNEMONIC_12_DISTINCT_WORDS,
+    HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
@@ -105,19 +108,23 @@ type SeededHDAccounts = {
 // keyPairId, so the mnemonic-backup store keys their state on a single id
 // (see getMnemonicBackupKeyId). That shared keying is the property the
 // sibling-dedup test exercises.
-const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
+const seedHDWalletAccounts = async (params?: {
+    mnemonic: string
+}): Promise<SeededHDAccounts> => {
+    const mnemonic = params?.mnemonic ?? HD_TEST_MNEMONIC_24
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
     await act(async () => {
         rootKey = await kms.current.createHDWalletKey({
-            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+            mnemonicIndices: mnemonicWordsToIndices(mnemonic.split(' '))!,
         })
         expect(rootKey).not.toBeNull()
     })
     const rootKeyId = rootKey!.seedKey.id ?? ''
-    const [s1Address, s2Address] = await Promise.all([
-        deriveTestHDAddress(0, 1),
-        deriveTestHDAddress(0, 2),
+    const [rootAddress, s1Address, s2Address] = await Promise.all([
+        params ? deriveTestHDAddress(0, 0, mnemonic) : HD_TEST_ADDRESS,
+        deriveTestHDAddress(0, 1, mnemonic),
+        deriveTestHDAddress(0, 2, mnemonic),
     ])
 
     const rootAccount: WalletAccount = {
@@ -128,7 +135,7 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             hd: { account: 0, keyIndex: 0 },
         },
         chains: {
-            algorand: { address: HD_TEST_ADDRESS, keyPairId: rootKeyId },
+            algorand: { address: rootAddress, keyPairId: rootKeyId },
         },
         name: 'HD Root',
     }
@@ -333,6 +340,38 @@ describe('Flow: Account backup', () => {
         fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
         await completeVerificationQuiz(HD_TEST_MNEMONIC_24_WORDS)
+
+        await waitFor(() => {
+            expect(screen.getByTestId('backup_success_done')).toBeTruthy()
+        })
+        expect(useMnemonicBackupStore.getState().isBackedUp(rootKeyId)).toBe(
+            true,
+        )
+    })
+
+    it('Given a 12-word HD wallet root account, when the user walks the full backup flow, then the 12-word mnemonic renders and verification succeeds', async () => {
+        const { rootAccount, rootKeyId } = await seedHDWalletAccounts({
+            mnemonic: HD_TEST_MNEMONIC_12_DISTINCT,
+        })
+
+        renderBackupStack(addressOf(rootAccount))
+
+        fireEvent.click(await screen.findByTestId('backup_info_continue'))
+        fireEvent.click(await screen.findByTestId('backup_write_down_begin'))
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId('backup_mnemonic_continue'),
+                ).toBeTruthy(),
+            { timeout: 10_000 },
+        )
+        for (const word of HD_TEST_MNEMONIC_12_DISTINCT_WORDS) {
+            expect(screen.getAllByText(word)).toHaveLength(1)
+        }
+        fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
+
+        await completeVerificationQuiz(HD_TEST_MNEMONIC_12_DISTINCT_WORDS)
 
         await waitFor(() => {
             expect(screen.getByTestId('backup_success_done')).toBeTruthy()

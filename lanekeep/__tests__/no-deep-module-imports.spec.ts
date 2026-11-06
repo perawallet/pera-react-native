@@ -60,4 +60,10 @@ describe('pera/no-deep-module-imports', () => {
             'module-imports.tour.ts:7',
         ])
     })
+
+    it('exempts the integration harness, which mounts module screens directly', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(inFile(found, 'module-imports.harness.ts')).toEqual([])
+    })
 })
