@@ -3,7 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
-import { withoutTests } from '../shared/scope.js'
+import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 import { resolveRelative } from '../shared/paths.js'
 
 const MODULES_DIR = 'apps/mobile/src/modules/'
@@ -87,7 +87,7 @@ export default defineRule({
     // The integration harness mounts module screens directly, like the specs it serves.
     gates: withoutTests({
         pathMatches: ['**/apps/mobile/src/**'],
-        pathNotMatches: ['**/__integration__/**'],
+        pathNotMatches: [...TEST_SUPPORT],
     }),
     // Every form that creates the dependency: static, `export … from`, and a
     // deferred `import()`.

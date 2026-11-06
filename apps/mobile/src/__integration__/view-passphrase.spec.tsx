@@ -53,8 +53,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_12,
-    HD_TEST_MNEMONIC_12_WORDS,
+    HD_TEST_MNEMONIC_12_DISTINCT,
+    HD_TEST_MNEMONIC_12_DISTINCT_WORDS,
     HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
@@ -322,13 +322,15 @@ describe('Flow: View account passphrase', () => {
 
     it('Given a 12-word Universal Wallet account at keyIndex=1, when the user reveals the passphrase, then the 12 imported words are displayed in order', async () => {
         const { derivedAccount } = await seedHDWalletAccounts({
-            mnemonic: HD_TEST_MNEMONIC_12,
+            mnemonic: HD_TEST_MNEMONIC_12_DISTINCT,
         })
 
         render(<ViewPassphraseHost address={addressOf(derivedAccount)} />)
         await advanceToDisplayedWords()
 
-        expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_12_WORDS)
+        expect(readMnemonicWordsFromGrid()).toEqual(
+            HD_TEST_MNEMONIC_12_DISTINCT_WORDS,
+        )
     })
 
     it('Given a PIN is configured, when the user opens the flow, then the PIN gate mounts in front of the acknowledge step', async () => {

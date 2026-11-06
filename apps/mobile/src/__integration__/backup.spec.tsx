@@ -59,8 +59,8 @@ import {
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_12,
-    HD_TEST_MNEMONIC_12_WORDS,
+    HD_TEST_MNEMONIC_12_DISTINCT,
+    HD_TEST_MNEMONIC_12_DISTINCT_WORDS,
     HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
@@ -351,7 +351,7 @@ describe('Flow: Account backup', () => {
 
     it('Given a 12-word HD wallet root account, when the user walks the full backup flow, then the 12-word mnemonic renders and verification succeeds', async () => {
         const { rootAccount, rootKeyId } = await seedHDWalletAccounts({
-            mnemonic: HD_TEST_MNEMONIC_12,
+            mnemonic: HD_TEST_MNEMONIC_12_DISTINCT,
         })
 
         renderBackupStack(addressOf(rootAccount))
@@ -366,12 +366,12 @@ describe('Flow: Account backup', () => {
                 ).toBeTruthy(),
             { timeout: 10_000 },
         )
-        // The phrase repeats "abandon", so pin each word's cell count: 12 cells.
-        expect(screen.getAllByText('abandon')).toHaveLength(11)
-        expect(screen.getAllByText('about')).toHaveLength(1)
+        for (const word of HD_TEST_MNEMONIC_12_DISTINCT_WORDS) {
+            expect(screen.getAllByText(word)).toHaveLength(1)
+        }
         fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
-        await completeVerificationQuiz(HD_TEST_MNEMONIC_12_WORDS)
+        await completeVerificationQuiz(HD_TEST_MNEMONIC_12_DISTINCT_WORDS)
 
         await waitFor(() => {
             expect(screen.getByTestId('backup_success_done')).toBeTruthy()
