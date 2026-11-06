@@ -23,6 +23,7 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { getAddress, type Hex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
 import {
     createHistoryScanBudget,
@@ -271,15 +272,25 @@ describe('fetchAccountState received-token detection', () => {
         // history count of whichever test is running by then.
         serve(400)
         storedHoldings.ids = [TSLAX]
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const ops = opsWith(SERVICES)
+        const read = { priorChainState: evmState(90), isPersisted: true }
 
-        const state = await opsWith(SERVICES).fetchAccountState(
-            ADDRESS,
-            SCOPE,
-            { priorChainState: evmState(90), isPersisted: true },
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, read)
+        await vi.waitFor(() =>
+            expect(warn).toHaveBeenCalledWith(
+                'Received-token scan failed; keeping stored tokens',
+                expect.anything(),
+            ),
         )
+        const next = await ops.fetchAccountState(ADDRESS, SCOPE, read)
 
+        expect(historyRequests).toBe(1)
         expect(state.holdings.map(h => h.assetId)).toEqual(['native', TSLAX])
         expect(state.chainState).toMatchObject({ tokenScanBlock: 90 })
+        expect(next.holdings.map(h => h.assetId)).toEqual(['native', TSLAX])
+        expect(next.chainState).toMatchObject({ tokenScanBlock: 90 })
+        warn.mockRestore()
     })
 
     it('makes no history request on a scope without the history service', async () => {
