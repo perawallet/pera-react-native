@@ -73,11 +73,20 @@ export interface ProbeFailureStreak extends Backoff {
 /** One per broadcaster: per open row id, carried across passes. */
 export type ProbeFailureStreaks = Map<string, ProbeFailureStreak>
 
+// Keeps each streak's count and interval, so escalation still lands on the
+// same failure; only the wait goes.
+export const makeProbeFailuresDue = (
+    probeFailures: ProbeFailureStreaks,
+): void => {
+    for (const streak of probeFailures.values()) streak.nextEligibleAt = 0
+}
+
 // A node can refuse a read the same way on every retry (a public node will
 // not serve a receipt from past its history window), so a failing row waits
-// twice as long after each failure rather than costing a request every tick.
+// longer after each failure rather than costing a request every tick.
 /** One sync tick, so a single failure is retried on the next one. */
 export const PROBE_BACKOFF_BASE_MS = 3000
+export const PROBE_BACKOFF_MULTIPLIER = 2
 /** Also the longest a row stays open after its node can answer again. */
 export const PROBE_BACKOFF_MAX_MS = 2 * 60_000
 
@@ -87,7 +96,10 @@ export const PROBE_BACKOFF_MAX_MS = 2 * 60_000
  * later one would rarely be reached, as the streak lives in memory.
  */
 export const PROBE_FAILURE_ESCALATION_STREAK =
-    Math.ceil(Math.log2(PROBE_BACKOFF_MAX_MS / PROBE_BACKOFF_BASE_MS)) + 1
+    Math.ceil(
+        Math.log(PROBE_BACKOFF_MAX_MS / PROBE_BACKOFF_BASE_MS) /
+            Math.log(PROBE_BACKOFF_MULTIPLIER),
+    ) + 1
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
@@ -430,6 +442,7 @@ export const reconcileEthereumSubmissions = async ({
                 const failedProbes = (previous?.failedProbes ?? 0) + 1
                 const backoff = nextBackoff(previous, startedAt, {
                     firstIntervalMs: PROBE_BACKOFF_BASE_MS,
+                    multiplier: PROBE_BACKOFF_MULTIPLIER,
                     maxIntervalMs: PROBE_BACKOFF_MAX_MS,
                 })
                 probeFailures.set(attempt.id, { failedProbes, ...backoff })

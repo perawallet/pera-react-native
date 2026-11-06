@@ -114,6 +114,8 @@ export interface BroadcasterChainAdapter {
         request: SignRequest,
     ): Promise<Nullable<StaleGroupReason>>
     reconcileOpenSubmissions(): Promise<ReconcileSummary>
+    /** Makes every row waiting out a failed check due on the next reconcile, as on a reconnect. */
+    resetSubmissionBackoff?(): void
     deriveSubmissionAttemptFromBytes(
         bytesList: readonly Uint8Array[],
     ): DerivedSubmissionAttempt
@@ -143,6 +145,9 @@ export const submitSignedGroup = (
 
 export const reconcileOpenSubmissions = (chainId: ChainId) =>
     broadcasterChainAdapters.get(chainId).reconcileOpenSubmissions()
+
+export const resetSubmissionBackoff = (chainId: ChainId) =>
+    broadcasterChainAdapters.get(chainId).resetSubmissionBackoff?.()
 
 export const deriveSubmissionAttemptFromBytes = (
     chainId: ChainId,

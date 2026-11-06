@@ -144,6 +144,7 @@ function cursorState(rounds: Record<string, number | null>) {
     }
 }
 const mockReconcileOpenSubmissions = vi.fn()
+const mockResetSubmissionBackoff = vi.fn()
 const mockLedgerListeners = new Set<() => void>()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -152,6 +153,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
     reconcileOpenSubmissions: (...args: unknown[]) =>
         mockReconcileOpenSubmissions(...args),
+    resetSubmissionBackoff: (...args: unknown[]) =>
+        mockResetSubmissionBackoff(...args),
     subscribeToSubmissionLedger: (listener: () => void) => {
         mockLedgerListeners.add(listener)
         return () => {
@@ -294,6 +297,7 @@ describe('SyncService', () => {
         mockChainList = [{ id: 'algorand' }]
         mockBroadcasters.clear()
         mockBroadcasters.add('algorand')
+        mockResetSubmissionBackoff.mockClear()
         mockAssetsChains.clear()
         mockAssetsChains.add('algorand')
         mockConcurrencyLimits = []
@@ -2990,7 +2994,7 @@ describe('SyncService', () => {
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(4)
             })
 
-            it('forgets per-scope backoff on reconnect, so the reconnect tick syncs every scope', async () => {
+            it('forgets per-scope and pending-send backoff on reconnect, so the reconnect tick syncs every scope', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
 
@@ -3004,13 +3008,16 @@ describe('SyncService', () => {
                     await vi.advanceTimersByTimeAsync(50)
 
                     expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                    expect(mockResetSubmissionBackoff).toHaveBeenCalledWith(
+                        'algorand',
+                    )
                 } finally {
                     onlineManager.setOnline(true)
                     service.stop()
                 }
             })
 
-            it('forgets per-scope backoff on restart', async () => {
+            it('forgets per-scope and pending-send backoff on restart', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
 
@@ -3023,6 +3030,9 @@ describe('SyncService', () => {
                 service.stop()
 
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                expect(mockResetSubmissionBackoff).toHaveBeenCalledWith(
+                    'algorand',
+                )
             })
         })
 

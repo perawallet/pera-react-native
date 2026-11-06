@@ -48,6 +48,7 @@ import {
 import {
     broadcasterChainAdapters,
     reconcileOpenSubmissions,
+    resetSubmissionBackoff,
     subscribeToSubmissionLedger,
 } from '@perawallet/wallet-core-signing'
 import type { AssetSyncKind } from '../polling'
@@ -302,8 +303,17 @@ export class SyncService {
             clearTimeout(this.timer)
             this.timer = null
         }
-        this.scopeBackoffs.clear()
+        this.clearBackoffs()
         void this.tick()
+    }
+
+    // Pending sends too, or their rows would wait out a backoff from before
+    // the reconnect while balances refresh at once.
+    private clearBackoffs(): void {
+        this.scopeBackoffs.clear()
+        for (const { id } of this.deps.chains.list()) {
+            if (broadcasterChainAdapters.has(id)) resetSubmissionBackoff(id)
+        }
     }
 
     /**
@@ -317,7 +327,7 @@ export class SyncService {
     restart(): void {
         this.stop()
         this.scopeReadAt.clear()
-        this.scopeBackoffs.clear()
+        this.clearBackoffs()
         this.currentInterval = this.baseInterval
         this.start()
     }

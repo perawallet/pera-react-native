@@ -66,6 +66,7 @@ import {
 } from '../../accounts/token-detection'
 import {
     DROPPED_GRACE_MS,
+    makeProbeFailuresDue,
     PROBE_BACKOFF_BASE_MS,
     PROBE_BACKOFF_MAX_MS,
     PROBE_FAILURE_ESCALATION_STREAK,
@@ -1186,6 +1187,23 @@ describe('reconcileEthereumSubmissions', () => {
             await reconcile()
 
             expect(receiptReads).toBeGreaterThan(before)
+        })
+
+        it('probes a waiting row at once after a reset, and keeps counting its failures', async () => {
+            await record()
+            refuseReceipts()
+            await reconcile()
+            await reconcile()
+            const before = receiptReads
+
+            await reconcile()
+            expect(receiptReads).toBe(before)
+
+            makeProbeFailuresDue(probeFailures)
+            await reconcile()
+
+            expect(receiptReads).toBeGreaterThan(before)
+            expect(failedProbeCounts()).toEqual([2])
         })
     })
 

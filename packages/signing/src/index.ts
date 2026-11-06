@@ -280,6 +280,7 @@ export {
     broadcasterChainAdapters,
     deriveSubmissionAttemptFromBytes,
     reconcileOpenSubmissions,
+    resetSubmissionBackoff,
     setOnConfirmedHandler,
     setSubmissionSettledHandler,
     submitAndAutoRefresh,
