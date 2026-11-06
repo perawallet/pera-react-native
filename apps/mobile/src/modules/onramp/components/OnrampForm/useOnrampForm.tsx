@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
     useOnramp,
@@ -19,10 +19,11 @@ import {
     quoteUsdPrices,
     type RampPair,
     type RampQuote,
-    type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { AnalyticsMetadataKey, OnrampEvent } from '@analytics'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
 import { isMeldPair } from './onrampFormHelpers'
 import { useOnrampQuotes } from './useOnrampQuotes'
 import { useOnrampConfirm } from './useOnrampConfirm'
@@ -44,7 +45,8 @@ type UseOnrampFormResult = {
     selectPaymentMethod: (paymentMethodId: string) => void
     isQuoting: boolean
     errorMessage: Nullable<string>
-    limits: Nullable<RampQuoteLimits>
+    /** Whether a pay and a receive asset are both chosen, so there are limits to fill. */
+    hasPair: boolean
     /** True when the effective selected quote is the highest-receive offer. */
     isBestOffer: boolean
     /** True when the selected pair is a Meld pair (provider/payment-method rows). */
@@ -63,11 +65,15 @@ type UseOnrampFormResult = {
     handleOpenPaymentMethod: () => Promise<void>
     handleOpenSenderAddress: () => Promise<void>
     handleConfirm: () => Promise<void>
+    /** Fills the pay amount with the provider minimum, when the router names one. */
+    handleMinPress: () => Promise<void>
+    /** Fills the pay amount with the provider maximum, when the router names one. */
+    handleMaxPress: () => Promise<void>
 }
 
 /**
  * Drives the onramp buy form. The amount field and its derived display
- * (receive amount, limits) live here; the quote lifecycle, sheet handlers and
+ * (receive amount, MIN/MAX fills) live here; the quote lifecycle, sheet handlers and
  * confirm flow are delegated to focused sub-hooks:
  *
  * - {@link useOnrampQuotes} — debounced fetching + quote/payment selection
@@ -92,8 +98,12 @@ export const useOnrampForm = (
         setSelectedChainId,
     } = useOnramp()
 
+    const trackOnrampEvent = useTrackOnrampEvent()
+
     const isMeld = isMeldPair(selectedPair)
     const pairId = selectedPair?.id ?? null
+    const sourceToken = selectedPair?.sourceToken ?? null
+    const sourceChain = sourceToken?.network.name ?? ''
 
     const [sourceAmountText, setSourceAmountText] = useState('')
 
@@ -113,12 +123,12 @@ export const useOnrampForm = (
         quotes,
         isQuoting,
         quotesError,
-        quoteLimits,
         selectedQuote,
         selectQuote,
         selectedPaymentMethodId,
         selectPaymentMethod,
         isBestOffer,
+        resolveQuoteLimit,
     } = useOnrampQuotes({
         pair: selectedPair,
         sourceAmount,
@@ -142,6 +152,7 @@ export const useOnrampForm = (
         selectPaymentMethod,
         destinationSymbol: selectedPair?.destinationToken.symbol ?? '',
         senderAddress,
+        sourceToken,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
         setSelectedChainId,
@@ -156,6 +167,24 @@ export const useOnrampForm = (
         isMeld,
         onNavigateToHistory,
     })
+
+    // toFixed, not toString: a small limit would otherwise land as "1e-8".
+    const fillLimit = useCallback(
+        async (bound: 'min' | 'max') => {
+            trackOnrampEvent(
+                bound === 'min' ? OnrampEvent.MinTap : OnrampEvent.MaxTap,
+                sourceChain === ''
+                    ? undefined
+                    : { [AnalyticsMetadataKey.SourceChain]: sourceChain },
+            )
+            const limit = await resolveQuoteLimit(bound)
+            if (limit !== null) setSourceAmountText(limit.toFixed())
+        },
+        [resolveQuoteLimit, sourceChain, trackOnrampEvent],
+    )
+
+    const handleMinPress = useCallback(() => fillLimit('min'), [fillLimit])
+    const handleMaxPress = useCallback(() => fillLimit('max'), [fillLimit])
 
     const canConfirm =
         selectedQuote !== null &&
@@ -178,7 +207,7 @@ export const useOnrampForm = (
         selectPaymentMethod,
         isQuoting,
         errorMessage: quotesError,
-        limits: quoteLimits,
+        hasPair: selectedPair !== null,
         isBestOffer,
         isMeld,
         senderAddress: senderAddress === '' ? null : senderAddress,
@@ -186,5 +215,7 @@ export const useOnrampForm = (
         canConfirm,
         ...sheets,
         handleConfirm,
+        handleMinPress,
+        handleMaxPress,
     }
 }

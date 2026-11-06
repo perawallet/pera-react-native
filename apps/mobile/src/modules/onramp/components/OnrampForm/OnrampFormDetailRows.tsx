@@ -23,6 +23,7 @@ import {
     getOnrampPaymentMethodName,
     getOnrampProviderName,
 } from '../onrampQuoteDisplay'
+import { sourceNetworkLabelOf } from './onrampFormHelpers'
 import { useStyles } from './styles'
 
 const PLACEHOLDER_VALUE = '-'
@@ -105,7 +106,7 @@ export const OnrampFormDetailRows = ({
                 value={
                     senderAddress ??
                     t('onramp.form.enter_sender_address', {
-                        name: sourceToken?.name ?? sourceToken?.symbol ?? '',
+                        name: sourceToken ? sourceNetworkLabelOf(sourceToken) : '',
                     })
                 }
                 isPlaceholder={!senderAddress}

@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import { OnrampEvent } from '@analytics'
+import { makeDepositToken, makeFiatToken } from '@test-utils/rampFixtures'
 
 import { OnrampPairSelectionContent } from '../../OnrampPairSelectionContent'
 import { OnrampPaymentMethodContent } from '../../OnrampPaymentMethodContent'
@@ -60,6 +61,13 @@ vi.mock('../../OnrampSenderAddressContent', () => ({
 
 const QUOTES = [{ id: 'quote-1' }] as unknown as RampQuote[]
 
+const BITCOIN = makeDepositToken('BTC')
+const SOLANA_USDC = makeDepositToken('USDC', {
+    id: 'solana:main/token:usdc',
+    network: { name: 'Solana', logo: null },
+})
+const USD = makeFiatToken('USD')
+
 const params = {
     quotes: QUOTES,
     selectedQuoteId: 'quote-1',
@@ -68,13 +76,15 @@ const params = {
     selectPaymentMethod: vi.fn(),
     destinationSymbol: 'ALGO',
     senderAddress: 'SENDER',
+    sourceToken: BITCOIN as typeof BITCOIN | null,
     setSelectedSourceTokenId: vi.fn(),
     setSelectedDestinationTokenId: vi.fn(),
     setSelectedChainId: vi.fn(),
     setSenderAddress: vi.fn(),
 }
 
-const renderSheets = () => renderHook(() => useOnrampSheets(params))
+const renderSheets = (overrides: Partial<typeof params> = {}) =>
+    renderHook(() => useOnrampSheets({ ...params, ...overrides }))
 
 const lastSheet = () => mocks.requestBottomSheet.mock.calls.at(-1)?.[0]
 
@@ -86,7 +96,7 @@ describe('useOnrampSheets', () => {
 
     describe('source selection', () => {
         it('commits the picked source token', async () => {
-            mocks.requestBottomSheet.mockResolvedValue('usdc')
+            mocks.requestBottomSheet.mockResolvedValue(SOLANA_USDC)
             const { result } = renderSheets()
 
             await act(() => result.current.handleOpenSourceSelection())
@@ -101,7 +111,51 @@ describe('useOnrampSheets', () => {
                     autoCreateContainer: false,
                 },
             })
-            expect(params.setSelectedSourceTokenId).toHaveBeenCalledWith('usdc')
+            expect(params.setSelectedSourceTokenId).toHaveBeenCalledWith(
+                SOLANA_USDC.id,
+            )
+        })
+
+        it("tracks the pick with the source's chain", async () => {
+            mocks.requestBottomSheet.mockResolvedValue(SOLANA_USDC)
+            const { result } = renderSheets()
+
+            await act(() => result.current.handleOpenSourceSelection())
+
+            expect(mocks.trackOnrampEvent).toHaveBeenCalledWith(
+                OnrampEvent.SourceSelect,
+                { source_chain: 'Solana' },
+            )
+        })
+
+        it('tracks a fiat pick without a source chain', async () => {
+            mocks.requestBottomSheet.mockResolvedValue(USD)
+            const { result } = renderSheets()
+
+            await act(() => result.current.handleOpenSourceSelection())
+
+            expect(mocks.trackOnrampEvent).toHaveBeenCalledWith(
+                OnrampEvent.SourceSelect,
+                undefined,
+            )
+        })
+
+        it("clears a sender address entered for the previous source's chain", async () => {
+            mocks.requestBottomSheet.mockResolvedValue(SOLANA_USDC)
+            const { result } = renderSheets()
+
+            await act(() => result.current.handleOpenSourceSelection())
+
+            expect(params.setSenderAddress).toHaveBeenCalledWith('')
+        })
+
+        it('keeps the sender address when the same source is picked again', async () => {
+            mocks.requestBottomSheet.mockResolvedValue(BITCOIN)
+            const { result } = renderSheets()
+
+            await act(() => result.current.handleOpenSourceSelection())
+
+            expect(params.setSenderAddress).not.toHaveBeenCalled()
         })
 
         it('keeps the source when the sheet is dismissed', async () => {
@@ -124,14 +178,14 @@ describe('useOnrampSheets', () => {
             await act(() => result.current.handleOpenDestinationSelection())
 
             expect(lastSheet().contents.type).toBe(OnrampPairSelectionContent)
-            expect(lastSheet().contents.props).toEqual({
-                variant: 'destination',
-                scope: SCOPE,
-            })
+            expect(lastSheet().contents.props).toEqual({ scope: SCOPE })
             expect(params.setSelectedDestinationTokenId).toHaveBeenCalledWith(
                 'eth',
             )
             expect(params.setSelectedChainId).toHaveBeenCalledWith('ethereum')
+            expect(mocks.trackOnrampEvent).toHaveBeenCalledWith(
+                OnrampEvent.DestinationSelect,
+            )
         })
 
         it('keeps the destination and the chain when the sheet is dismissed', async () => {
@@ -141,6 +195,7 @@ describe('useOnrampSheets', () => {
 
             expect(params.setSelectedDestinationTokenId).not.toHaveBeenCalled()
             expect(params.setSelectedChainId).not.toHaveBeenCalled()
+            expect(mocks.trackOnrampEvent).not.toHaveBeenCalled()
         })
 
         it('opens nothing without an onramp account scope', async () => {
@@ -220,7 +275,7 @@ describe('useOnrampSheets', () => {
             expect(lastSheet()).toEqual({
                 contents: expect.objectContaining({
                     type: OnrampSenderAddressContent,
-                    props: { initialAddress: 'SENDER' },
+                    props: { initialAddress: 'SENDER', sourceToken: BITCOIN },
                 }),
                 options: { size: 'auto', enablePanDownToClose: true },
             })
@@ -240,6 +295,14 @@ describe('useOnrampSheets', () => {
                 [OnrampEvent.SenderAddressOpen],
             ])
             expect(params.setSenderAddress).not.toHaveBeenCalled()
+        })
+
+        it('opens nothing before a source is chosen', async () => {
+            const { result } = renderSheets({ sourceToken: null })
+
+            await act(() => result.current.handleOpenSenderAddress())
+
+            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
         })
     })
 })

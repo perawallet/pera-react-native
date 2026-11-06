@@ -12,9 +12,9 @@
 
 import { useCallback } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { RampQuote } from '@perawallet/wallet-core-onramp'
+import type { RampQuote, RampToken } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { OnrampEvent } from '@analytics'
+import { AnalyticsMetadataKey, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
@@ -36,6 +36,8 @@ type UseOnrampSheetsParams = {
     /** The receive asset's symbol, which the provider rows show their amounts in. */
     destinationSymbol: string
     senderAddress: string
+    /** The current pay asset; the sender address belongs to its chain. */
+    sourceToken: Nullable<RampToken>
     setSelectedSourceTokenId: (id: string) => void
     setSelectedDestinationTokenId: (id: string) => void
     setSelectedChainId: (chainId: ChainId) => void
@@ -55,9 +57,9 @@ type UseOnrampSheetsResult = {
  * content and applies the resolved value back through the form's setters. Split
  * out of `useOnrampForm` to keep that hook under the max-lines threshold.
  *
- * The source sheet resolves a token id and the destination sheet a
- * destination pick (chain and token id); the handler commits either directly
- * to the store, with no pair resolved here.
+ * The source sheet resolves a token and the destination sheet a destination
+ * pick (chain and token id); the handler commits either directly to the store,
+ * with no pair resolved here.
  */
 export const useOnrampSheets = ({
     quotes,
@@ -67,6 +69,7 @@ export const useOnrampSheets = ({
     selectPaymentMethod,
     destinationSymbol,
     senderAddress,
+    sourceToken,
     setSelectedSourceTokenId,
     setSelectedDestinationTokenId,
     setSelectedChainId,
@@ -77,7 +80,7 @@ export const useOnrampSheets = ({
     const trackOnrampEvent = useTrackOnrampEvent()
 
     const handleOpenSourceSelection = useCallback(async () => {
-        const sourceTokenId = await requestBottomSheet<string>({
+        const picked = await requestBottomSheet<RampToken>({
             contents: <OnrampSourceSelectionContent />,
             options: {
                 size: 'modal',
@@ -85,18 +88,29 @@ export const useOnrampSheets = ({
                 autoCreateContainer: false,
             },
         })
-        if (!sourceTokenId) return
-        setSelectedSourceTokenId(sourceTokenId)
-    }, [requestBottomSheet, setSelectedSourceTokenId])
+        if (!picked) return
+        // An address on the old source's chain is wrong for the new one.
+        if (picked.id !== sourceToken?.id) setSenderAddress('')
+        setSelectedSourceTokenId(picked.id)
+        trackOnrampEvent(
+            OnrampEvent.SourceSelect,
+            picked.network.name === ''
+                ? undefined
+                : { [AnalyticsMetadataKey.SourceChain]: picked.network.name },
+        )
+    }, [
+        requestBottomSheet,
+        setSelectedSourceTokenId,
+        setSenderAddress,
+        sourceToken?.id,
+        trackOnrampEvent,
+    ])
 
     const handleOpenDestinationSelection = useCallback(async () => {
         if (scope === null) return
         const pick = await requestBottomSheet<OnrampDestinationPick>({
             contents: (
-                <OnrampPairSelectionContent
-                    variant='destination'
-                    scope={scope}
-                />
+<OnrampPairSelectionContent scope={scope} />
             ),
             options: {
                 size: 'modal',
@@ -107,11 +121,13 @@ export const useOnrampSheets = ({
         if (!pick) return
         setSelectedChainId(pick.chainId)
         setSelectedDestinationTokenId(pick.tokenId)
+        trackOnrampEvent(OnrampEvent.DestinationSelect)
     }, [
         requestBottomSheet,
         setSelectedChainId,
         setSelectedDestinationTokenId,
         scope,
+        trackOnrampEvent,
     ])
 
     const handleOpenProvider = useCallback(async () => {
@@ -171,10 +187,14 @@ export const useOnrampSheets = ({
 
     const handleOpenSenderAddress = useCallback(async () => {
         // XO-only: choose the source (sender) address for the swap order.
+        if (sourceToken === null) return
         trackOnrampEvent(OnrampEvent.SenderAddressOpen)
         const resolvedAddress = await requestBottomSheet<string>({
             contents: (
-                <OnrampSenderAddressContent initialAddress={senderAddress} />
+                <OnrampSenderAddressContent
+                    initialAddress={senderAddress}
+                    sourceToken={sourceToken}
+                />
             ),
             options: {
                 // Auto sheet: the content renders inline (SheetHeader + body +
@@ -188,7 +208,13 @@ export const useOnrampSheets = ({
             trackOnrampEvent(OnrampEvent.SenderAddressApply)
             setSenderAddress(resolvedAddress)
         }
-    }, [requestBottomSheet, senderAddress, setSenderAddress, trackOnrampEvent])
+    }, [
+        requestBottomSheet,
+        senderAddress,
+        setSenderAddress,
+        sourceToken,
+        trackOnrampEvent,
+    ])
 
     return {
         handleOpenSourceSelection,

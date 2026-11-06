@@ -18,6 +18,7 @@ import {
     type RampHistoryItem,
     type RampOrder,
     type RampPair,
+    type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -33,6 +34,10 @@ export const getExcludedPaymentMethodIds = (
 /** Fiat sources go through the provider checkout (Meld); crypto ones through a deposit. */
 export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
     pair?.sourceToken.kind === 'fiat'
+
+/** The chain a source pays from, as the router names it; the token's own name when it gives none. */
+export const sourceNetworkLabelOf = (token: RampToken): string =>
+    token.network.name || token.name
 
 /**
  * Shape a freshly-created deposit order as a (pending) history item so the

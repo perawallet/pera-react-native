@@ -13,10 +13,13 @@
 import { renderHook, act } from '@test-utils/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
+    RAMP_MAX_LIMIT_PROBE_AMOUNT,
     RampAmountOutOfRangeError,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
+import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     makeAlgoToken,
     makeDepositToken,
@@ -185,5 +188,133 @@ describe('useOnrampQuotes', () => {
 
         expect(result.current.selectedQuote?.quoteId).toBe('high')
         expect(result.current.isBestOffer).toBe(true)
+    })
+
+    describe('resolveQuoteLimit', () => {
+        const refusal = (min: Nullable<Decimal>, max: Nullable<Decimal>) =>
+            new RampAmountOutOfRangeError(
+                min === null ? 'max' : 'min',
+                { min, max },
+                'Out of range.',
+            )
+
+        const resolve = async (
+            result: { current: ReturnType<typeof useOnrampQuotes> },
+            bound: 'min' | 'max',
+        ) => {
+            let value: Nullable<Decimal> = null
+            await act(async () => {
+                value = await result.current.resolveQuoteLimit(bound)
+            })
+            return value as Nullable<Decimal>
+        }
+
+        it('returns a limit it already knows without asking again', async () => {
+            mockCreateQuote.mockRejectedValue(refusal(new Decimal(20), null))
+            const { result } = render()
+            await settle()
+            mockCreateQuote.mockClear()
+
+            const min = await resolve(result, 'min')
+
+            expect(min?.toFixed()).toBe('20')
+            expect(mockCreateQuote).not.toHaveBeenCalled()
+        })
+
+        it('probes with one base unit for an unknown minimum and stores what the refusal names', async () => {
+            const { result } = render({ sourceAmount: null })
+            mockCreateQuote.mockRejectedValue(
+                refusal(new Decimal('0.0005'), new Decimal(2)),
+            )
+
+            const min = await resolve(result, 'min')
+
+            expect(mockCreateQuote).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sourceAmount: new Decimal('0.00000001'),
+                }),
+            )
+            expect(min?.toFixed()).toBe('0.0005')
+            expect(result.current.quoteLimits?.max?.toFixed()).toBe('2')
+        })
+
+        it('probes with a huge amount for an unknown maximum', async () => {
+            const { result } = render({ sourceAmount: null })
+            mockCreateQuote.mockRejectedValue(refusal(null, new Decimal(3)))
+
+            const max = await resolve(result, 'max')
+
+            expect(mockCreateQuote).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    sourceAmount: RAMP_MAX_LIMIT_PROBE_AMOUNT,
+                }),
+            )
+            expect(max?.toFixed()).toBe('3')
+        })
+
+        it('reads an accepted maximum probe as no maximum', async () => {
+            const { result } = render({ sourceAmount: null })
+            mockCreateQuote.mockResolvedValue([quote('x', 'xo')])
+
+            expect(await resolve(result, 'max')).toBeNull()
+        })
+
+        it('reads an accepted minimum probe as a minimum of one base unit', async () => {
+            const { result } = render({ sourceAmount: null })
+            mockCreateQuote.mockResolvedValue([quote('x', 'xo')])
+
+            const min = await resolve(result, 'min')
+
+            expect(min?.toFixed()).toBe('0.00000001')
+        })
+
+        it('gives up when the probe fails for another reason', async () => {
+            const { result } = render({ sourceAmount: null })
+            mockCreateQuote.mockRejectedValue(new NoConnectionError())
+
+            expect(await resolve(result, 'min')).toBeNull()
+            expect(result.current.quoteLimits).toBeNull()
+        })
+
+        it('drops an answer for a pair the user has since left', async () => {
+            let reject: (error: unknown) => void = () => undefined
+            mockCreateQuote.mockReturnValue(
+                new Promise((_resolve, rejectProbe) => {
+                    reject = rejectProbe
+                }),
+            )
+            const { result, rerender } = render({ sourceAmount: null })
+            let probe: Promise<Nullable<Decimal>> = Promise.resolve(null)
+            act(() => {
+                probe = result.current.resolveQuoteLimit('min')
+            })
+
+            rerender({
+                pair: FIAT_PAIR,
+                sourceAmount: null,
+                refundAddress: null,
+                countryCode: null,
+            })
+            await act(async () => {
+                reject(refusal(new Decimal(7), null))
+                expect(await probe).toBeNull()
+            })
+
+            expect(result.current.quoteLimits).toBeNull()
+        })
+
+        it('leaves the shown quotes and the quoting flag alone', async () => {
+            mockCreateQuote.mockResolvedValue([quote('shown', 'xo')])
+            const { result } = render()
+            await settle()
+            mockCreateQuote.mockRejectedValue(refusal(new Decimal(1), null))
+
+            await resolve(result, 'min')
+
+            expect(result.current.quotes.map(item => item.quoteId)).toEqual([
+                'shown',
+            ])
+            expect(result.current.isQuoting).toBe(false)
+        })
     })
 })

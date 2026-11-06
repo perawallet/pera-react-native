@@ -20,6 +20,7 @@ import {
     type RampQuote,
     type RampOrder,
 } from '@perawallet/wallet-core-onramp'
+import { OnrampEvent } from '@analytics'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import {
     ALGO_ROUTER_ID,
@@ -50,8 +51,9 @@ const mockMarkTermsAccepted = vi.fn()
 
 let mockIsTermsAccepted = true
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+const { mockRequestBottomSheet, mockTrackOnrampEvent } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+    mockTrackOnrampEvent: vi.fn(),
 }))
 
 let mockSelectedAccountAddress: string | null = 'ACCOUNT_ADDRESS'
@@ -159,7 +161,7 @@ vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
 }))
 
 vi.mock('@modules/onramp/hooks/useTrackOnrampEvent', () => ({
-    useTrackOnrampEvent: () => vi.fn(),
+    useTrackOnrampEvent: () => mockTrackOnrampEvent,
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -615,7 +617,7 @@ describe('useOnrampForm', () => {
         expect(result.current.destinationAmount?.toString()).toBe('1000')
     })
 
-    it('shows the router message and the above-max copy when the amount is too high', async () => {
+    it('shows the above-max copy when the amount is too high', async () => {
         mockCreateQuote.mockRejectedValue(
             new RampAmountOutOfRangeError(
                 'max',
@@ -630,11 +632,9 @@ describe('useOnrampForm', () => {
         })
 
         expect(result.current.errorMessage).toBe('onramp.form.amount_above_max')
-        expect(result.current.limits?.max?.toString()).toBe('5000')
-        expect(result.current.limits?.min).toBeNull()
     })
 
-    it('exposes Meld limits and the below-min copy when the seeded quote fails', async () => {
+    it('shows the below-min copy when the seeded quote fails', async () => {
         mockCreateQuote.mockRejectedValue(belowMinQuoteError)
 
         const { result } = renderHook(() => useOnrampForm(meldPair))
@@ -646,8 +646,6 @@ describe('useOnrampForm', () => {
         })
 
         expect(result.current.errorMessage).toBe('onramp.form.amount_below_min')
-        expect(result.current.limits?.min?.toString()).toBe('600')
-        expect(result.current.limits?.max?.toString()).toBe('5000')
     })
 
     it('re-quotes at the minimum and clears the error after a MIN tap', async () => {
@@ -658,7 +656,7 @@ describe('useOnrampForm', () => {
             await vi.advanceTimersByTimeAsync(500)
         })
         expect(result.current.errorMessage).toBe('onramp.form.amount_below_min')
-
+        mockCreateQuote.mockClear()
         mockCreateQuote.mockResolvedValue([
             makeMeldQuote({
                 quoteId: 'm-min',
@@ -666,39 +664,77 @@ describe('useOnrampForm', () => {
             }),
         ])
 
-        // The pill calls onSetSourceAmountText with limits.min.toString().
-        const min = result.current.limits?.min?.toString() ?? ''
-        act(() => {
-            result.current.setSourceAmountText(min)
+        await act(async () => {
+            await result.current.handleMinPress()
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
+        expect(result.current.sourceAmountText).toBe('600')
+        expect(mockCreateQuote).toHaveBeenCalledTimes(1)
         expect(mockCreateQuote).toHaveBeenLastCalledWith(
             expect.objectContaining({ sourceAmount: new Decimal(600) }),
         )
         expect(result.current.errorMessage).toBeNull()
-        // Limits stay sticky after success so the pill remains available.
-        expect(result.current.limits?.min?.toString()).toBe('600')
     })
 
-    it('exposes a min-only limit with a null max', async () => {
-        mockCreateQuote.mockRejectedValue(
-            new RampAmountOutOfRangeError(
-                'min',
-                { min: new Decimal(600), max: null },
-                'Too low.',
-            ),
-        )
-
+    it('fills the maximum the last refusal named', async () => {
+        mockCreateQuote.mockRejectedValue(belowMinQuoteError)
         const { result } = renderHook(() => useOnrampForm(meldPair))
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
-        expect(result.current.limits?.min?.toString()).toBe('600')
-        expect(result.current.limits?.max).toBeNull()
+        await act(async () => {
+            await result.current.handleMaxPress()
+        })
+
+        expect(result.current.sourceAmountText).toBe('5000')
+        expect(mockTrackOnrampEvent).toHaveBeenCalledWith(
+            OnrampEvent.MaxTap,
+            undefined,
+        )
+    })
+
+    it('writes a small limit as plain digits, not exponent notation', async () => {
+        const { result } = renderHook(() => useOnrampForm(xoPair))
+        mockCreateQuote.mockRejectedValue(
+            new RampAmountOutOfRangeError(
+                'min',
+                { min: new Decimal('1e-8'), max: null },
+                'Too low.',
+            ),
+        )
+
+        await act(async () => {
+            await result.current.handleMinPress()
+        })
+
+        expect(result.current.sourceAmountText).toBe('0.00000001')
+    })
+
+    it("names a crypto source's chain when MIN is tapped", async () => {
+        const { result } = renderHook(() => useOnrampForm(xoPair))
+
+        await act(async () => {
+            await result.current.handleMinPress()
+        })
+
+        expect(mockTrackOnrampEvent).toHaveBeenCalledWith(OnrampEvent.MinTap, {
+            source_chain: 'Bitcoin',
+        })
+    })
+
+    it('leaves the amount alone when the router names no such limit', async () => {
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        mockCreateQuote.mockResolvedValue([makeMeldQuote({ quoteId: 'ok' })])
+
+        await act(async () => {
+            await result.current.handleMaxPress()
+        })
+
+        expect(result.current.sourceAmountText).toBe('100')
     })
 
     it('shows localized below-minimum copy when the router names no limit', async () => {
@@ -715,7 +751,6 @@ describe('useOnrampForm', () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
-        expect(result.current.limits).toBeNull()
         expect(result.current.errorMessage).toBe(
             'onramp.form.amount_below_min_unknown',
         )
@@ -741,9 +776,8 @@ describe('useOnrampForm', () => {
         )
     })
 
-    it('clears Meld limits when the pair changes', async () => {
+    it('forgets the limits of a pair the user has left', async () => {
         mockCreateQuote.mockRejectedValue(belowMinQuoteError)
-
         const { result, rerender } = renderHook(
             ({ pair }: { pair: RampPair }) => useOnrampForm(pair),
             { initialProps: { pair: meldPair } },
@@ -751,11 +785,29 @@ describe('useOnrampForm', () => {
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
-        expect(result.current.limits?.min?.toString()).toBe('600')
 
         rerender({ pair: xoPair })
+        mockCreateQuote.mockClear()
+        await act(async () => {
+            await result.current.handleMinPress()
+        })
 
-        expect(result.current.limits).toBeNull()
+        // The XO pair's minimum is unknown, so it is probed rather than reused.
+        expect(mockCreateQuote).toHaveBeenCalledWith(
+            expect.objectContaining({ sourceAmount: new Decimal('0.00000001') }),
+        )
+    })
+
+    it('reports whether a pair is chosen', () => {
+        const { result, rerender } = renderHook(
+            ({ pair }: { pair: RampPair | null }) => useOnrampForm(pair),
+            { initialProps: { pair: meldPair as RampPair | null } },
+        )
+        expect(result.current.hasPair).toBe(true)
+
+        rerender({ pair: null })
+
+        expect(result.current.hasPair).toBe(false)
     })
 
     it('calls ensureOptIn BEFORE createRampOrder on confirm', async () => {
