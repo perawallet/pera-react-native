@@ -36,6 +36,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    mnemonicWordsToIndices,
     useKMS,
     type Algo25KeyResult,
     type HDWalletKeyResult,
@@ -59,10 +60,8 @@ import {
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
     HD_TEST_MNEMONIC_12,
-    HD_TEST_MNEMONIC_12_INDICES,
     HD_TEST_MNEMONIC_12_WORDS,
     HD_TEST_MNEMONIC_24,
-    HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
@@ -110,7 +109,6 @@ type SeededHDAccounts = {
 // (see getMnemonicBackupKeyId). That shared keying is the property the
 // sibling-dedup test exercises.
 const seedHDWalletAccounts = async (params?: {
-    mnemonicIndices: Uint16Array
     mnemonic: string
 }): Promise<SeededHDAccounts> => {
     const mnemonic = params?.mnemonic ?? HD_TEST_MNEMONIC_24
@@ -118,8 +116,7 @@ const seedHDWalletAccounts = async (params?: {
     let rootKey: HDWalletKeyResult | null = null
     await act(async () => {
         rootKey = await kms.current.createHDWalletKey({
-            mnemonicIndices:
-                params?.mnemonicIndices ?? HD_TEST_MNEMONIC_24_INDICES,
+            mnemonicIndices: mnemonicWordsToIndices(mnemonic.split(' '))!,
         })
         expect(rootKey).not.toBeNull()
     })
@@ -354,7 +351,6 @@ describe('Flow: Account backup', () => {
 
     it('Given a 12-word HD wallet root account, when the user walks the full backup flow, then the 12-word mnemonic renders and verification succeeds', async () => {
         const { rootAccount, rootKeyId } = await seedHDWalletAccounts({
-            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
             mnemonic: HD_TEST_MNEMONIC_12,
         })
 
@@ -370,9 +366,9 @@ describe('Flow: Account backup', () => {
                 ).toBeTruthy(),
             { timeout: 10_000 },
         )
-        for (const word of new Set(HD_TEST_MNEMONIC_12_WORDS)) {
-            expect(screen.getAllByText(word).length).toBeGreaterThan(0)
-        }
+        // The phrase repeats "abandon", so pin each word's cell count: 12 cells.
+        expect(screen.getAllByText('abandon')).toHaveLength(11)
+        expect(screen.getAllByText('about')).toHaveLength(1)
         fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
         await completeVerificationQuiz(HD_TEST_MNEMONIC_12_WORDS)

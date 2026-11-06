@@ -131,8 +131,6 @@ describe('Flow: Cloud backup → Passkeys', () => {
         )
     })
 
-    // The credential carries its own key and no wallet is ever on either
-    // device, so only the backed-up key can bring it back.
     it('Given a passkey from a 12-word wallet, when it syncs and the device is wiped and restored, then the credential is backed up and rewritten with the same public key', async () => {
         const keys = await deriveBackupKeys({
             mnemonic: BACKUP_MNEMONIC,
@@ -189,6 +187,8 @@ describe('Flow: Cloud backup → Passkeys', () => {
         expect(after.publicKeySpkiDer).toBe(before.publicKeySpkiDer)
     })
 
+    // The credential carries its own key and no wallet is ever on either
+    // device, so only the backed-up key can bring it back.
     it('Given a passkey whose wallet is not on the device, when the device is wiped and restored, then the credential is rewritten with the same public key', async () => {
         const keys = await deriveBackupKeys({
             mnemonic: BACKUP_MNEMONIC,

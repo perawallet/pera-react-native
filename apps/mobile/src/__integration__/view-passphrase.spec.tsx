@@ -41,6 +41,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    mnemonicWordsToIndices,
     useKMS,
     type Algo25KeyResult,
     type HDWalletKeyResult,
@@ -53,10 +54,8 @@ import {
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
     HD_TEST_MNEMONIC_12,
-    HD_TEST_MNEMONIC_12_INDICES,
     HD_TEST_MNEMONIC_12_WORDS,
     HD_TEST_MNEMONIC_24,
-    HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
@@ -109,12 +108,10 @@ type SeededHDAccounts = {
 // therefore the same 24-word phrase — for both. This is the property
 // the test asserts: derived addresses do not get their own mnemonic.
 const seedHDWalletAccounts = async (params?: {
-    mnemonicIndices: Uint16Array
     mnemonic: string
 }): Promise<SeededHDAccounts> => {
-    const mnemonicIndices =
-        params?.mnemonicIndices ?? HD_TEST_MNEMONIC_24_INDICES
     const mnemonic = params?.mnemonic ?? HD_TEST_MNEMONIC_24
+    const mnemonicIndices = mnemonicWordsToIndices(mnemonic.split(' '))!
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
     await act(async () => {
@@ -325,7 +322,6 @@ describe('Flow: View account passphrase', () => {
 
     it('Given a 12-word Universal Wallet account at keyIndex=1, when the user reveals the passphrase, then the 12 imported words are displayed in order', async () => {
         const { derivedAccount } = await seedHDWalletAccounts({
-            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
             mnemonic: HD_TEST_MNEMONIC_12,
         })
 

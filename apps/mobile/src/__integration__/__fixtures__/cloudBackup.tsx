@@ -56,12 +56,10 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import {
-    CloudBackupOverviewScreen,
-    CloudBackupRestoreEncryptionKeyRoute,
-    CloudBackupRestorePassphraseScreen,
-    CloudBackupScreen,
-} from '@modules/cloud-backup/routes'
+import { CloudBackupRestoreEncryptionKeyRoute } from '@modules/cloud-backup/routes'
+import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
+import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
+import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 
 import {
     ALGO25_TEST_ADDRESS,

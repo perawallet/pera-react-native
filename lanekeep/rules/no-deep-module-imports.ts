@@ -84,7 +84,11 @@ export default defineRule({
             good: "// in src/modules/card/...\nimport { AccountPicker } from '@modules/accounts'",
         },
     },
-    gates: withoutTests({ pathMatches: ['**/apps/mobile/src/**'] }),
+    // The integration harness mounts module screens directly, like the specs it serves.
+    gates: withoutTests({
+        pathMatches: ['**/apps/mobile/src/**'],
+        pathNotMatches: ['**/__integration__/**'],
+    }),
     // Every form that creates the dependency: static, `export … from`, and a
     // deferred `import()`.
     query: `
