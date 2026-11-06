@@ -443,7 +443,7 @@ describe('usePeraCardOverview', () => {
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('linked-account')
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
-            params: { destinationTokenId: 'USDC_ALGORAND' },
+            params: { destinationAssetId: '31566704' },
         })
         expect(mockInfoToast).not.toHaveBeenCalled()
     })
@@ -479,7 +479,7 @@ describe('usePeraCardOverview', () => {
         expect(result.current.canFundLinkedAccount).toBe(true)
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
-            params: { destinationTokenId: 'USDC_ALGORAND' },
+            params: { destinationAssetId: '31566704' },
         })
     })
 

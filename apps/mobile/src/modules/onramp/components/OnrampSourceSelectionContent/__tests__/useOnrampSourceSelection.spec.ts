@@ -13,12 +13,12 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    useRampPairsQuery,
     useRampRegionQuery,
-    type RampPair,
+    useRampSourcesQuery,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { makeDepositToken, makeFiatToken } from '@test-utils/rampFixtures'
 
 import { useOnrampSourceSelection } from '../useOnrampSourceSelection'
 
@@ -31,7 +31,8 @@ vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-onramp', () => ({
-    useRampPairsQuery: vi.fn(),
+    useOnramp: () => ({ selectedDestinationTokenId: 'dest-1' }),
+    useRampSourcesQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
 }))
 
@@ -53,72 +54,27 @@ const mockRegion = (countryCode?: string) => {
     } as any)
 }
 
-const ALGO_TOKEN: RampToken = {
-    id: 'ALGO',
-    symbol: 'ALGO',
-    name: 'Algorand',
-    fractionDecimals: 6,
-    logo: null,
-    network: { id: 'ALGORAND', name: 'Algorand', logo: null },
-    priceInUsd: null,
-}
+const fiat = (symbol: string, name: string, countryCode: string): RampToken =>
+    makeFiatToken(symbol, { name, countryCode })
 
-const token = (overrides: Partial<RampToken> & { id: string }): RampToken => ({
-    ...ALGO_TOKEN,
-    ...overrides,
-})
-
-const pair = (source: RampToken): RampPair => ({
-    id: `pair-${source.id}`,
-    sourceToken: source,
-    destinationToken: ALGO_TOKEN,
-    provider: { id: 'xo', paymentTypes: [], limits: null },
-})
-
-// Three fiat (countryCode) + two crypto source tokens, plus a duplicate USD
-// pair to exercise dedupe.
-const PAIRS: RampPair[] = [
-    pair(
-        token({
-            id: 'USD',
-            symbol: 'USD',
-            name: 'US Dollar',
-            countryCode: 'US',
-        }),
-    ),
-    pair(token({ id: 'EUR', symbol: 'EUR', name: 'Euro', countryCode: 'EU' })),
-    pair(token({ id: 'GBP', symbol: 'GBP', name: 'Pound', countryCode: 'GB' })),
-    pair(token({ id: 'TRY', symbol: 'TRY', name: 'Lira', countryCode: 'TR' })),
-    pair(
-        token({
-            id: 'BTC',
-            symbol: 'BTC',
-            name: 'Bitcoin',
-            network: { id: 'BITCOIN', name: 'Bitcoin', logo: null },
-        }),
-    ),
-    pair(
-        token({
-            id: 'USDC',
-            symbol: 'USDC',
-            name: 'USD Coin',
-            network: { id: 'SOLANA', name: 'Solana', logo: null },
-        }),
-    ),
-    pair(
-        token({
-            id: 'USD',
-            symbol: 'USD',
-            name: 'US Dollar',
-            countryCode: 'US',
-        }),
-    ),
+// Four fiat + two deposit-coin sources.
+const SOURCES: RampToken[] = [
+    fiat('USD', 'US Dollar', 'US'),
+    fiat('EUR', 'Euro', 'EU'),
+    fiat('GBP', 'Pound', 'GB'),
+    fiat('TRY', 'Lira', 'TR'),
+    makeDepositToken('BTC', { id: 'btc', name: 'Bitcoin' }),
+    makeDepositToken('USDC', {
+        id: 'usdc-sol',
+        name: 'USD Coin',
+        network: { name: 'Solana', logo: null },
+    }),
 ]
 
 describe('useOnrampSourceSelection', () => {
     beforeEach(() => {
-        vi.mocked(useRampPairsQuery).mockReturnValue({
-            data: PAIRS,
+        vi.mocked(useRampSourcesQuery).mockReturnValue({
+            data: SOURCES,
             isLoading: false,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
@@ -126,12 +82,20 @@ describe('useOnrampSourceSelection', () => {
         mockRegion(undefined)
     })
 
-    it('splits distinct source tokens into fiat and crypto by countryCode', () => {
+    it("reads the selected destination's sources", () => {
+        renderHook(() => useOnrampSourceSelection())
+
+        expect(useRampSourcesQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ destinationId: 'dest-1' }),
+        )
+    })
+
+    it('splits the source tokens into fiat and crypto by kind', () => {
         const { result } = renderHook(() => useOnrampSourceSelection())
 
-        // Crypto: BTC + USDC (no countryCode). Fiat collapses to the
+        // Crypto: BTC + USDC (deposit kind). Fiat collapses to the
         // meaningful currencies only (preferred USD + EUR here).
-        expect(result.current.cryptoTokens.map(t => t.id)).toEqual([
+        expect(result.current.cryptoTokens.map(t => t.symbol)).toEqual([
             'BTC',
             'USDC',
         ])
@@ -144,7 +108,7 @@ describe('useOnrampSourceSelection', () => {
         const { result } = renderHook(() => useOnrampSourceSelection())
 
         // User currency (GBP) first, then USD, then EUR.
-        expect(result.current.fiatTokens.map(t => t.id)).toEqual([
+        expect(result.current.fiatTokens.map(t => t.symbol)).toEqual([
             'GBP',
             'USD',
             'EUR',
@@ -157,7 +121,7 @@ describe('useOnrampSourceSelection', () => {
         mockRegion('GB')
         const { result } = renderHook(() => useOnrampSourceSelection())
 
-        expect(result.current.fiatTokens.map(t => t.id)).toEqual([
+        expect(result.current.fiatTokens.map(t => t.symbol)).toEqual([
             'GBP',
             'USD',
             'EUR',
@@ -168,7 +132,10 @@ describe('useOnrampSourceSelection', () => {
         // User currency USD → exactly USD + EUR, never a padded third row.
         const { result } = renderHook(() => useOnrampSourceSelection())
 
-        expect(result.current.fiatTokens.map(t => t.id)).toEqual(['USD', 'EUR'])
+        expect(result.current.fiatTokens.map(t => t.symbol)).toEqual([
+            'USD',
+            'EUR',
+        ])
         // The collapse still hides rows, so the "See all" toggle stays.
         expect(result.current.canExpandFiat).toBe(true)
     })
@@ -178,7 +145,7 @@ describe('useOnrampSourceSelection', () => {
 
         act(() => result.current.expandFiat())
 
-        expect(result.current.fiatTokens.map(t => t.id)).toEqual([
+        expect(result.current.fiatTokens.map(t => t.symbol)).toEqual([
             'USD',
             'EUR',
             'GBP',
@@ -193,9 +160,16 @@ describe('useOnrampSourceSelection', () => {
         act(() => result.current.setSearch('usd'))
 
         // "usd" matches the fiat "US Dollar" and the crypto "USD Coin".
-        expect(result.current.fiatTokens.map(t => t.id)).toEqual(['USD'])
-        expect(result.current.cryptoTokens.map(t => t.id)).toEqual(['USDC'])
+        expect(result.current.fiatTokens.map(t => t.symbol)).toEqual(['USD'])
+        expect(result.current.cryptoTokens.map(t => t.symbol)).toEqual(['USDC'])
         // Searching disables the fiat collapse.
         expect(result.current.canExpandFiat).toBe(false)
+    })
+
+    it('marks only fiat-kind tokens as fiat', () => {
+        const { result } = renderHook(() => useOnrampSourceSelection())
+
+        expect(result.current.isFiat(SOURCES[0])).toBe(true)
+        expect(result.current.isFiat(SOURCES[4])).toBe(false)
     })
 })

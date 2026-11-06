@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import type {
-    ChainId,
-    ChainScope,
+import {
+    isNativeAsset,
+    type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { rampChainAdapters } from './chain-adapter'
-import type { RampPair, RampTokenIdentity } from './models'
+import type { RampTokenIdentity } from './models'
 
 export type RampTokenAsset = {
     chainId: ChainId
@@ -27,58 +28,26 @@ export type RampTokenAsset = {
     isNative: boolean
 }
 
-// A CAIP-19 id is `<caip2>/<asset namespace>:<reference>`, and a CAIP-2 id
-// never contains '/'.
-const caip2Of = (caip19: string): string => caip19.split('/')[0]
-
 /**
- * The wallet chain a ramp token lives on: null for fiat, for a chain the
- * wallet doesn't run, and for one it runs without registering.
- */
-export const rampTokenChainId = (
-    token: RampTokenIdentity,
-): Nullable<ChainId> => {
-    if (token.caip19 !== undefined) {
-        return (
-            getProvider().chains.byCaip2(caip2Of(token.caip19))?.chainId ?? null
-        )
-    }
-    return (
-        rampChainAdapters
-            .list()
-            .find(adapter => adapter.rampNetworkIds.includes(token.network.id))
-            ?.chainId ?? null
-    )
-}
-
-/**
- * The asset a ramp token arrives as on `scope`. Null when the token lives on
- * another chain, its chain has no ramp adapter, or it has no asset on that
- * network.
+ * The asset a ramp token arrives as on `scope`. Null when its chain has no
+ * ramp adapter, or the adapter can't read the token's id on that network
+ * (another chain's or network's asset).
  */
 export const rampTokenAsset = (
     token: RampTokenIdentity,
     scope: ChainScope,
 ): Nullable<RampTokenAsset> => {
-    if (rampTokenChainId(token) !== scope.chainId) return null
     if (!rampChainAdapters.has(scope.chainId)) return null
-    const adapter = rampChainAdapters.get(scope.chainId)
-    const assetId = adapter.toAssetId(token, scope)
+    const assetId = rampChainAdapters
+        .get(scope.chainId)
+        .fromRouterAssetId(token.id, scope)
     if (assetId === null) return null
     return {
         chainId: scope.chainId,
         assetId,
-        isNative: adapter.isNativeToken(token),
+        isNative: isNativeAsset(
+            { chainId: scope.chainId, assetId },
+            getProvider().chains.get(scope.chainId).descriptor,
+        ),
     }
-}
-
-/**
- * Whether Fund offers the pair. A source on a chain the wallet runs is left
- * out: the user swaps from that chain in Swap instead.
- */
-export const isOfferedRampPair = (pair: RampPair): boolean => {
-    const chainId = rampTokenChainId(pair.sourceToken)
-    if (chainId === null) return true
-    const { chains } = getProvider()
-    return !chains.has(chainId) || chains.isSwitchedOff(chainId)
 }

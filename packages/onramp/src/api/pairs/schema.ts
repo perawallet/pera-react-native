@@ -12,48 +12,38 @@
 
 import { z } from 'zod'
 
-const rampNetworkSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    logo: z.string().nullable(),
+import { rampAssetItemSchema } from '../router-asset'
+
+export const rampPairsQuerySchema = z.object({
+    destination: z.string().optional(),
+    signable: z.enum(['true', 'false']).optional(),
+    cursor: z.string().optional(),
+    limit: z.coerce.number().int().min(1).max(50).optional(),
 })
 
-const rampTokenSchema = z.object({
-    id: z.string(),
-    symbol: z.string(),
-    name: z.string(),
-    fraction_decimals: z.number(),
-    logo: z.string().nullable(),
-    network: rampNetworkSchema,
-    price_in_usd: z.string().nullable(),
-    caip19: z.string().nullish(),
-    extra: z.object({
-        country_code: z.string().optional(),
-    }),
+export const rampPairRowSchema = z.object({
+    kind: z.string().nullish(),
+    asset: rampAssetItemSchema,
+    aggregator: z.string().nullish(),
+    funding_method: z.string().nullish(),
+    funding_methods: z.array(z.string()).nullish(),
 })
 
-const rampProviderLimitsSchema = z.object({
-    min_source_amount: z.string(),
-    max_source_amount: z.string(),
+// Rows are checked one by one, so a single malformed row is skipped rather
+// than failing the page.
+export const rampPairsPageSchema = z.object({
+    next: z.string().nullish(),
+    previous: z.string().nullish(),
+    results: z.array(z.unknown()),
 })
 
-const rampProviderSchema = z.object({
-    id: z.string(),
-    payment_types: z.array(z.string()),
-    limits: rampProviderLimitsSchema.nullable(),
+/** The shape a mock serves: every row already valid. */
+export const rampPairsMockResponseSchema = z.object({
+    next: z.string().nullish(),
+    previous: z.string().nullish(),
+    results: z.array(rampPairRowSchema),
 })
 
-const rampPairSchema = z.object({
-    id: z.string(),
-    source_token: rampTokenSchema,
-    destination_token: rampTokenSchema,
-    provider: rampProviderSchema,
-})
-
-export const rampPairsResponseSchema = z.array(rampPairSchema)
-
-export type RampNetworkApiResponse = z.infer<typeof rampNetworkSchema>
-export type RampTokenApiResponse = z.infer<typeof rampTokenSchema>
-export type RampProviderApiResponse = z.infer<typeof rampProviderSchema>
-export type RampPairApiResponse = z.infer<typeof rampPairSchema>
-export type RampPairsApiResponse = z.infer<typeof rampPairsResponseSchema>
+export type RampPairRowApiResponse = z.infer<typeof rampPairRowSchema>
+export type RampPairsPageApiResponse = z.infer<typeof rampPairsPageSchema>
+export type RampPairsMockResponse = z.input<typeof rampPairsMockResponseSchema>

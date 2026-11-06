@@ -16,7 +16,6 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { RampTokenIdentity } from './models'
 
 export type ConfirmReceiveContext = {
     /** The destination asset, in the chain's own asset-id encoding. */
@@ -28,7 +27,8 @@ export type ConfirmReceiveContext = {
 export type EnsureCanReceiveParams = {
     address: string
     scope: ChainScope
-    destinationToken: RampTokenIdentity
+    /** The destination asset, in the chain's own asset-id encoding. */
+    assetId: string
     /**
      * Shown before anything is signed. Resolve false to cancel: `EnsureCanReceive`
      * then resolves false. When omitted, the preparation proceeds unconfirmed.
@@ -41,22 +41,17 @@ export type EnsureCanReceive = (
     params: EnsureCanReceiveParams,
 ) => Promise<boolean>
 
-/** How the ramp catalogue maps onto a chain; registered by the chain package. */
+/** How the router's asset ids map onto a chain; registered by the chain package. */
 export interface RampChainAdapter {
     chainId: ChainId
     /**
-     * The backend's ramp network ids whose tokens live on this chain. Read only
-     * for a token the backend sends without a `caip19`.
+     * The chain's own asset id for a router asset id (CAIP-19) on `scope`'s
+     * network; null for another chain's or network's id, or one it can't read.
      */
-    rampNetworkIds: readonly string[]
-    /** Catalogue ids of the tokens the ramp delivers on this chain. */
-    destinationTokenIds: readonly string[]
-    isNativeToken(token: RampTokenIdentity): boolean
-    /**
-     * The asset the token arrives as on `scope`'s network, in the chain's own
-     * asset-id encoding; null when it has no asset there.
-     */
-    toAssetId(token: RampTokenIdentity, scope: ChainScope): Nullable<string>
+    fromRouterAssetId(
+        routerAssetId: string,
+        scope: ChainScope,
+    ): Nullable<string>
     /**
      * Prepares an account to receive the destination asset before an order is
      * created. Throws `RampAttestationRequiredError` when a sponsored path needs

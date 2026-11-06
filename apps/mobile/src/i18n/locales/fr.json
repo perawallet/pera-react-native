@@ -4196,7 +4196,6 @@
             "source_amount": "Montant source",
             "destination_amount": "Montant de destination",
             "network": "Réseau",
-            "payment_method": "Moyen de paiement",
             "created_at": "Créée le",
             "exchange_rate": "Taux de change effectif",
             "to_address": "Adresse de destination"
@@ -4213,7 +4212,9 @@
             "in_progress": "En cours",
             "completed": "Terminé",
             "failed": "Échoué",
-            "cancelled": "Annulé"
+            "cancelled": "Annulé",
+            "expired": "Expiré",
+            "refunded": "Remboursé"
         },
         "history": {
             "filter_all": "Tous",

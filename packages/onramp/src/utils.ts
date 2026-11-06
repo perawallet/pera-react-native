@@ -10,8 +10,17 @@
  limitations under the License
  */
 
-import type { RampHistoryItem } from './models'
+import type { RampHistoryItem, RampPair, RampToken } from './models'
 
 /** Whether any order in a ramp history slice still awaits user attention. */
 export const hasPendingRampOrder = (items: RampHistoryItem[]): boolean =>
     items.some(item => item.status === 'pending')
+
+export const buildRampPair = (
+    sourceToken: RampToken,
+    destinationToken: RampToken,
+): RampPair => ({
+    id: `${sourceToken.id}|${destinationToken.id}`,
+    sourceToken,
+    destinationToken,
+})

@@ -26,11 +26,10 @@ export type OnrampHistoryListItemProps = {
 
 const formatAmount = (
     amount: RampHistoryItem['sourceAmount'],
-    currencyCode: Nullable<string>,
-    fallbackSymbol: string,
+    symbol: string,
 ): Nullable<string> => {
     if (amount === null) return null
-    return `${amount.toString()} ${currencyCode ?? fallbackSymbol}`
+    return `${amount.toString()} ${symbol}`
 }
 
 export const OnrampHistoryListItem = ({
@@ -43,14 +42,9 @@ export const OnrampHistoryListItem = ({
     const sourceSymbol = item.pair.sourceToken.symbol
     const destinationSymbol = item.pair.destinationToken.symbol
 
-    const sourceAmountLabel = formatAmount(
-        item.sourceAmount,
-        item.sourceCurrencyCode,
-        sourceSymbol,
-    )
+    const sourceAmountLabel = formatAmount(item.sourceAmount, sourceSymbol)
     const destinationAmountLabel = formatAmount(
         item.destinationAmount,
-        item.destinationCurrencyCode,
         destinationSymbol,
     )
 

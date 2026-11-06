@@ -12,81 +12,53 @@
 
 import { z } from 'zod'
 
+import {
+    baseUnitsSchema as baseUnits,
+    rampAssetItemSchema,
+} from '../router-asset'
+
 export const createRampQuoteRequestSchema = z.object({
-    pair: z.string(),
-    destination_address: z.string(),
-    source_amount: z.number().nullable(),
+    source_asset_id: z.string(),
+    destination_asset_id: z.string(),
+    source_amount: baseUnits,
+    /** CAIP-10; sent for a deposit source only. */
+    source_account: z.string().optional(),
+    /** CAIP-10. */
+    destination_account: z.string(),
+    country: z.string().optional(),
+    payment_method: z.string().optional(),
 })
 
-const quoteAmountSchema = z.object({
-    assetId: z.string(),
-    value: z.number(),
-})
-
-// XO (crypto -> crypto) provider quote. Discriminated from Meld by the
-// presence of `minerFee` and `pairId`, which Meld responses never carry.
-const xoProviderQuoteResponseSchema = z.object({
-    amount: quoteAmountSchema,
-    expiry: z.number(),
-    id: z.string(),
-    max: quoteAmountSchema,
-    min: quoteAmountSchema,
-    minerFee: quoteAmountSchema,
-    pairId: z.string(),
-})
-
-// Meld (fiat -> crypto) provider quote. Discriminated from XO by the presence
-// of `serviceProvider` and `sourceCurrencyCode`, which XO responses never
-// carry. Loose-tailed (`passthrough`) because the API returns extra fields
-// (sourceAmountWithoutFees, customerScore, partnerFee, ...) the app ignores.
-const meldProviderQuoteResponseSchema = z
-    .object({
-        // The Meld quote returns sourceAmount as a plain number (unlike XO,
-        // whose amounts are QuoteAmount objects).
-        sourceAmount: z.number(),
-        destinationAmount: z.number(),
-        sourceCurrencyCode: z.string(),
-        destinationCurrencyCode: z.string(),
-        totalFee: z.number(),
-        networkFee: z.number().nullable(),
-        transactionFee: z.number(),
-        exchangeRate: z.number(),
-        paymentMethodType: z.string(),
-        serviceProvider: z.string(),
-        institutionName: z.string().nullable(),
-        // Meld providers (Mercuryo, Banxa) send null here; a hard boolean
-        // would reject the entire quote array.
-        lowKyc: z.boolean().nullish(),
-    })
-    .passthrough()
-
-const providerQuoteResponseSchema = z.union([
-    xoProviderQuoteResponseSchema,
-    meldProviderQuoteResponseSchema,
-])
-
-const rampQuotePaymentMethodSchema = z.object({
-    id: z.string(),
-    logo: z.string().nullable(),
-    name: z.string(),
-})
-
-const rampQuoteSchema = z.object({
+const rampOfferSchema = z.object({
     quote_id: z.string(),
-    provider_response: providerQuoteResponseSchema,
-    payment_method: rampQuotePaymentMethodSchema,
+    aggregator: z.string().nullish(),
+    provider: z.string(),
+    source_asset: rampAssetItemSchema.nullish(),
+    destination_asset: rampAssetItemSchema.nullish(),
+    source_amount: baseUnits,
+    destination_amount_expected: baseUnits,
+    destination_amount_minimum: baseUnits.nullish(),
+    source_amount_usd_value: z.string().nullish(),
+    destination_amount_usd_value: z.string().nullish(),
+    funding_method: z.string(),
+    expires_at: z.string().nullish(),
+    deposit_address: z.string().nullish(),
+    // Meld names the payment method here; other keys are the aggregator's own.
+    extras: z
+        .object({ payment_method: z.string().nullish() })
+        .passthrough()
+        .nullish(),
 })
 
-export const createRampQuoteResponseSchema = z.array(rampQuoteSchema)
+export const createRampQuoteResponseSchema = z.object({
+    aggregator: z.string().nullish(),
+    results: z.array(rampOfferSchema),
+})
 
-export type QuoteAmountApiResponse = z.infer<typeof quoteAmountSchema>
-export type XoProviderQuoteApiResponse = z.infer<
-    typeof xoProviderQuoteResponseSchema
->
-export type RampQuotePaymentMethodApiResponse = z.infer<
-    typeof rampQuotePaymentMethodSchema
->
-export type RampQuoteApiResponse = z.infer<typeof rampQuoteSchema>
+export type RampOfferApiResponse = z.infer<typeof rampOfferSchema>
 export type CreateRampQuoteApiResponse = z.infer<
+    typeof createRampQuoteResponseSchema
+>
+export type CreateRampQuoteApiInput = z.input<
     typeof createRampQuoteResponseSchema
 >

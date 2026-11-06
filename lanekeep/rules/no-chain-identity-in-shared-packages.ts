@@ -124,11 +124,6 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Picks the caller's chain's planner while every planner's hook still runs; never a named chain.",
     },
     {
-        file: 'packages/onramp/src/token-identity.ts',
-        text: 'rampTokenChainId(token) !== scope.chainId',
-        reason: 'Checks a ramp token lives on whichever scope the caller passes, never a named chain.',
-    },
-    {
         file: 'apps/browser/src/offscreen/connections/connectionsHost.ts',
         text: 'scope.chainId !== request.chainId',
         reason: "Refuses a handed-off send signed for another chain than its own request's; compares two passed values, never a named chain.",

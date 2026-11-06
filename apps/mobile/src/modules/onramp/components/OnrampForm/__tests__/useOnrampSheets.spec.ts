@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import { OnrampEvent } from '@analytics'
 
@@ -60,16 +59,14 @@ vi.mock('../../OnrampSenderAddressContent', () => ({
 }))
 
 const QUOTES = [{ id: 'quote-1' }] as unknown as RampQuote[]
-const PRICE = new Decimal('0.25')
 
 const params = {
     quotes: QUOTES,
-    sourceAmount: new Decimal('100'),
     selectedQuoteId: 'quote-1',
     selectQuote: vi.fn(),
     selectedPaymentMethodId: 'card',
     selectPaymentMethod: vi.fn(),
-    destinationPriceInUsd: PRICE,
+    destinationSymbol: 'ALGO',
     senderAddress: 'SENDER',
     setSelectedSourceTokenId: vi.fn(),
     setSelectedDestinationTokenId: vi.fn(),
@@ -160,10 +157,9 @@ describe('useOnrampSheets', () => {
             expect(lastSheet().contents.type).toBe(OnrampProviderContent)
             expect(lastSheet().contents.props).toEqual({
                 quotes: QUOTES,
-                sourceAmount: new Decimal('100'),
                 selectedQuoteId: 'quote-1',
                 selectedPaymentMethodId: 'card',
-                destinationPriceInUsd: PRICE,
+                destinationSymbol: 'ALGO',
             })
             expect(mocks.trackOnrampEvent.mock.calls).toEqual([
                 [OnrampEvent.ProviderTap],

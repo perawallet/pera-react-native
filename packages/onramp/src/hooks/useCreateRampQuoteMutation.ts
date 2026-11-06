@@ -31,7 +31,7 @@ export const useCreateRampQuoteMutation =
                 ...params
             }: WithRampScope<CreateRampQuoteParams>) =>
                 createRampQuote(params, scope),
-            // Quote errors (e.g. SourceAmountIsTooLow) are expected and handled
+            // Quote errors (e.g. an amount outside the limits) are expected and handled
             // inline by the form. Mirrors `mutationDefaults`
             // (@perawallet/wallet-core-shared), which already sets throwOnError:
             // false.

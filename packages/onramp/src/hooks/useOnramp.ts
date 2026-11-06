@@ -12,6 +12,7 @@
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+import type { RampDepositInstructions } from '../models'
 import { useOnrampStore } from '../store'
 
 type UseOnrampResult = {
@@ -21,6 +22,10 @@ type UseOnrampResult = {
     setSelectedSourceTokenId: (id: Nullable<string>) => void
     setSelectedDestinationTokenId: (id: Nullable<string>) => void
     setSenderAddress: (address: string) => void
+    rememberDepositInstructions: (
+        orderId: string,
+        instructions: RampDepositInstructions,
+    ) => void
 }
 
 export const useOnramp = (): UseOnrampResult => {
@@ -38,6 +43,9 @@ export const useOnramp = (): UseOnrampResult => {
         state => state.setSelectedDestinationTokenId,
     )
     const setSenderAddress = useOnrampStore(state => state.setSenderAddress)
+    const rememberDepositInstructions = useOnrampStore(
+        state => state.rememberDepositInstructions,
+    )
 
     return {
         selectedSourceTokenId,
@@ -46,5 +54,12 @@ export const useOnramp = (): UseOnrampResult => {
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
         setSenderAddress,
+        rememberDepositInstructions,
     }
 }
+
+/** The pay-in details remembered for a deposit order placed on this device. */
+export const useRampDepositInstructions = (
+    orderId: string,
+): Nullable<RampDepositInstructions> =>
+    useOnrampStore(state => state.depositInstructions[orderId] ?? null)

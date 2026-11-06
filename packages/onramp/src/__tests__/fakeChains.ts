@@ -15,23 +15,36 @@ import {
     type ChainCapabilities,
     type ChainDescriptor,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+
+/** A placeholder id: the closed `ChainId` union has no neutral member, and ramp code must work for any chain. */
+export const FAKE_CHAIN_ID = 'fake' as ChainId
+
+export const FAKE_SCOPE: ChainScope = {
+    chainId: FAKE_CHAIN_ID,
+    networkId: 'mainnet',
+}
 
 export type FakeChainParams = {
     chainId: ChainId
     caip2: string
     onramp?: boolean
+    /** The chain's native asset id; `'0'` unless set. */
+    nativeAssetId?: string
 }
 
-/** Registers a chain carrying only what ramp code reads: its id, one network and `onramp`. */
+/** Registers a chain carrying only what ramp code reads: its id, one network, its native asset and `onramp`. */
 export const registerFakeChain = ({
     chainId,
     caip2,
     onramp = true,
+    nativeAssetId = '0',
 }: FakeChainParams): void => {
     const descriptor = {
         id: chainId,
+        nativeAsset: { ref: { chainId, assetId: nativeAssetId } },
         networks: [
             {
                 id: 'mainnet',

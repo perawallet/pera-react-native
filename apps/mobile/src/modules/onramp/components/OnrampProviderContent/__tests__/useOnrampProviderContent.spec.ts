@@ -38,7 +38,6 @@ describe('useOnrampProviderContent', () => {
         const { result } = renderHook(() =>
             useOnrampProviderContent({
                 quotes: [quote('a', 'card'), quote('b', 'bank')],
-                sourceAmount: new Decimal(1),
                 selectedPaymentMethodId: 'card',
             }),
         )
@@ -50,7 +49,6 @@ describe('useOnrampProviderContent', () => {
         const { result } = renderHook(() =>
             useOnrampProviderContent({
                 quotes: [quote('a', 'card')],
-                sourceAmount: new Decimal(1),
                 selectedPaymentMethodId: null,
             }),
         )

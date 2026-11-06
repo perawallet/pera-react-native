@@ -11,12 +11,12 @@
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 
-import { createRampOrder } from '../endpoints'
-import type { RampOrderApiResponse } from '../schema'
+import { SCOPE } from '../../../__tests__/routerFixtures'
+import { toOnrampUserMessage } from '../../../errors'
+import { cancelRampOrder, createRampOrder } from '../endpoints'
 
 const server = setupServer()
 
@@ -24,43 +24,84 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const xoOrder: RampOrderApiResponse = {
-    swap_order_id: 'order-1',
-    xo: {
-        pay_in_address: 'PAYIN_ADDRESS',
-        source_amount: '0.5',
-        provider_response: {
-            payInAddress: 'PAYIN_ADDRESS',
-            toAddress: 'DEST_ADDRESS',
-            status: 'waiting',
-        },
-    },
-    meld: null,
-}
-
 describe('createRampOrder', () => {
-    it('sends the source amount as a plain decimal string', async () => {
+    it('posts the quote id alone and returns the order', async () => {
         let requestBody: unknown = null
         server.use(
-            http.post('*/v1/ramp/orders/', async ({ request }) => {
+            http.post('*/api/v4/swap/orders/', async ({ request }) => {
                 requestBody = await request.json()
-                return HttpResponse.json(xoOrder)
+                return HttpResponse.json(
+                    {
+                        order_id: 'order-1',
+                        status: 'pending',
+                        expires_at: null,
+                        steps: [
+                            {
+                                kind: 'open_checkout',
+                                url: 'https://checkout.example/pay',
+                            },
+                        ],
+                    },
+                    { status: 201 },
+                )
             }),
         )
 
-        await createRampOrder(
-            {
-                quote: 'quote-1',
-                sourceAmount: new Decimal('0.00000005'),
-                sourceAddress: null,
-            },
-            { chainId: 'algorand', networkId: 'mainnet' },
+        const order = await createRampOrder({ quoteId: 'quote-1' }, SCOPE)
+
+        expect(requestBody).toEqual({ quote_id: 'quote-1' })
+        expect(order).toEqual({
+            kind: 'meld',
+            orderId: 'order-1',
+            checkoutUrl: 'https://checkout.example/pay',
+        })
+    })
+})
+
+describe('cancelRampOrder', () => {
+    it('patches the order to cancelled', async () => {
+        let captured: { path: string; body: unknown } | null = null
+        server.use(
+            http.patch(
+                '*/api/v4/swap/orders/:orderId/',
+                async ({ request }) => {
+                    captured = {
+                        path: new URL(request.url).pathname,
+                        body: await request.json(),
+                    }
+                    return HttpResponse.json({})
+                },
+            ),
         )
 
-        expect(requestBody).toEqual({
-            quote: 'quote-1',
-            source_amount: '0.00000005',
-            source_address: null,
+        await cancelRampOrder({ orderId: 'order-1' }, SCOPE)
+
+        expect(captured).toEqual({
+            path: '/api/v4/swap/orders/order-1/',
+            body: { status: 'cancelled' },
         })
+    })
+
+    it('rejects with the router message when the order is not pending', async () => {
+        server.use(
+            http.patch('*/api/v4/swap/orders/:orderId/', () =>
+                HttpResponse.json(
+                    {
+                        error: 'The order cannot be cancelled.',
+                        code: 'invalid_status_transition',
+                    },
+                    { status: 409 },
+                ),
+            ),
+        )
+
+        const error = await cancelRampOrder(
+            { orderId: 'order-1' },
+            SCOPE,
+        ).catch((caught: unknown) => caught)
+
+        expect(toOnrampUserMessage(error)).toBe(
+            'The order cannot be cancelled.',
+        )
     })
 })

@@ -4218,7 +4218,6 @@
             "source_amount": "Valor de origem",
             "destination_amount": "Valor de destino",
             "network": "Rede",
-            "payment_method": "Método de pagamento",
             "created_at": "Criado em",
             "exchange_rate": "Taxa de câmbio efetiva",
             "to_address": "Endereço de destino"
@@ -4235,7 +4234,9 @@
             "in_progress": "Em andamento",
             "completed": "Concluído",
             "failed": "Falhou",
-            "cancelled": "Cancelado"
+            "cancelled": "Cancelado",
+            "expired": "Expirado",
+            "refunded": "Reembolsado"
         },
         "history": {
             "filter_all": "Todos",

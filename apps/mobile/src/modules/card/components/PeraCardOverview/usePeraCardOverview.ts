@@ -31,7 +31,6 @@ import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { useCanFundAccount } from '@modules/onramp'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
-import { USDC_RAMP_TOKEN_ID } from '../../utils/usdc'
 import {
     useCardEscrowBalance,
     useCardFundingAccount,
@@ -198,7 +197,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         }
         navigation.navigate('TabBar', {
             screen: 'Fund',
-            params: { destinationTokenId: USDC_RAMP_TOKEN_ID },
+            params: { destinationAssetId: usdcAssetId ?? undefined },
         })
     }, [
         fundingAccount,

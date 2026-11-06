@@ -12,14 +12,16 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import { SWAP_ROUTER_PATH } from '@perawallet/wallet-core-swaps'
 
 import {
     rampHistoryPageSchema,
-    type RampHistoryPageApiResponse,
+    rampHistoryQuerySchema,
+    type RampHistoryPageInput,
 } from './schema'
 
 export type MockRampHistoryParams = {
-    response: RampHistoryPageApiResponse
+    response: RampHistoryPageInput
     status?: number
 }
 
@@ -28,7 +30,16 @@ export const mockRampHistory = ({
     status = 200,
 }: MockRampHistoryParams): HttpHandler => {
     validateMockResponse(rampHistoryPageSchema, response, 'mockRampHistory')
-    return http.get('*/v1/ramp/history/*', () =>
-        HttpResponse.json(response, { status }),
-    )
+    return http.get(`*${SWAP_ROUTER_PATH}history/`, ({ request }) => {
+        const query = rampHistoryQuerySchema.safeParse(
+            Object.fromEntries(new URL(request.url).searchParams),
+        )
+        if (!query.success) {
+            return HttpResponse.json(
+                { error: 'Invalid request', details: query.error.issues },
+                { status: 422 },
+            )
+        }
+        return HttpResponse.json(response, { status })
+    })
 }

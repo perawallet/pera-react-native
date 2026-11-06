@@ -11,3 +11,4 @@
  */
 
 export { createRampQuote, type CreateRampQuoteParams } from './endpoints'
+export { isQuotableRampAmount } from '../router-asset'
