@@ -26,7 +26,10 @@ import {
     useFindAlternateImportKinds,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import {
+    secureBackupRecoveryWordCount,
+    useMarkMnemonicBackupComplete,
+} from '@perawallet/wallet-core-backup'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
@@ -86,9 +89,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const titleKey = isQuantum
         ? i18nKey('onboarding.import_account.quantum_title')
         : i18nKey('onboarding.import_account.title')
+    // An ASB recovery key is a valid BIP-39 phrase of the same length, so only copy can steer it away.
+    const secureBackupNoteKey =
+        mnemonicLength === secureBackupRecoveryWordCount(scope.chainId)
+            ? i18nKey('onboarding.import_account.twelve_word_info_note')
+            : null
     const infoNoteKey = isQuantum
         ? i18nKey('onboarding.import_account.quantum_info_note')
-        : null
+        : secureBackupNoteKey
 
     const onTooManyWords = useCallback(() => {
         errorToast(

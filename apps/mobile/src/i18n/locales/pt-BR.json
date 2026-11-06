@@ -2282,8 +2282,8 @@
                 "description": "Assinaturas Falcon-1024, protegidas nativamente na Algorand"
             },
             "twelve_word": {
-                "title": "Seed de 12 palavras",
-                "description": "Importe de outra wallet que usa seed phrases de 12 palavras"
+                "title": "Passphrase de 12 palavras",
+                "description": "Importe de outra wallet que usa uma passphrase de recuperação de 12 palavras"
             }
         },
         "import_info": {
@@ -2295,6 +2295,7 @@
             "title": "Digite sua passphrase de recuperação",
             "quantum_title": "Digite sua passphrase Quantum",
             "quantum_info_note": "Uma passphrase de 25 palavras de uma conta Algorand comum não é uma conta Quantum e não pode ser importada aqui.",
+            "twelve_word_info_note": "Uma chave de recuperação do Algorand Secure Backup não é uma passphrase de recuperação e não recupera contas aqui. Para restaurar um backup, use “Recuperar do Algorand Secure Backup”.",
             "importing": "Importando wallet...",
             "button": "Recuperar",
             "failed_title": "Falha na importação",

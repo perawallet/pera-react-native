@@ -93,6 +93,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: vi.fn(),
+    secureBackupRecoveryWordCount: () => 12,
 }))
 
 // The rest of the package must survive: the design-system imports reach
@@ -250,6 +251,14 @@ describe('useImportAccountScreen', () => {
 
             expect(result.current.mnemonicLength).toBe(12)
             expect(result.current.words).toHaveLength(12)
+        })
+
+        it('warns that an Algorand Secure Backup key is not a wallet phrase', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            expect(result.current.infoNoteKey).toBe(
+                'onboarding.import_account.twelve_word_info_note',
+            )
         })
 
         it('fills every slot when 12 words are pasted, and can then import', () => {

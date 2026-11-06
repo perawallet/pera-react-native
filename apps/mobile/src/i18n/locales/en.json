@@ -2266,7 +2266,7 @@
             "title": "Recover from Passphrase",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet that lets you create multiple accounts across chains from a single 24-word recovery phrase"
+                "description": "Wallet that lets you create multiple accounts across chains from a single 24-word recovery passphrase"
             },
             "algo25": {
                 "title": "Algo25",
@@ -2278,8 +2278,8 @@
                 "description": "Falcon-1024 signatures, natively secured on Algorand"
             },
             "twelve_word": {
-                "title": "12-word seed",
-                "description": "Import from another wallet that uses 12-word seed phrases"
+                "title": "12-word passphrase",
+                "description": "Import from another wallet that uses a 12-word recovery passphrase"
             }
         },
         "import_info": {
@@ -2291,6 +2291,7 @@
             "title": "Enter your Recovery Passphrase",
             "quantum_title": "Enter your Quantum Passphrase",
             "quantum_info_note": "A 25-word passphrase from a regular Algorand account is not a Quantum account and cannot be imported here.",
+            "twelve_word_info_note": "An Algorand Secure Backup recovery key is not a recovery passphrase and won’t recover accounts here. To restore a backup, use “Recover from Algorand Secure Backup”.",
             "importing": "Importing wallet...",
             "button": "Recover",
             "failed_title": "Import failed",
