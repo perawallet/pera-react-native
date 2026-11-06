@@ -23,7 +23,7 @@ import {
 // expo/fetch rejects an aborted request with FetchError, but viem only maps
 // AbortError to TimeoutError, so a timeout would surface as HttpRequestError.
 // A plain Error: DOMException isn't guaranteed on Hermes.
-const abortError = (): Error => {
+export const abortError = (): Error => {
     const error = new Error('The operation was aborted')
     error.name = 'AbortError'
     return error

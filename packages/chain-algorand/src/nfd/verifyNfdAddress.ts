@@ -19,7 +19,7 @@ import {
 import { encodeAlgorandAddress } from '../blockchain'
 import { fetchNodeJson } from '../blockchain/utils/nodeHttp'
 import type {
-    NfdAddressVerification,
+    NameAddressVerification,
     VerifyForwardResolutionParams,
 } from '@perawallet/wallet-core-nfd'
 import { fetchNfdAppId } from './registry'
@@ -79,7 +79,7 @@ export const verifyNfdAddress = async ({
     address,
     scope,
     signal,
-}: VerifyForwardResolutionParams): Promise<NfdAddressVerification> => {
+}: VerifyForwardResolutionParams): Promise<NameAddressVerification> => {
     const normalizedName = name.toLowerCase()
     try {
         const appId = await fetchNfdAppId({

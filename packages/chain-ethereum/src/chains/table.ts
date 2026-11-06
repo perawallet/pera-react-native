@@ -21,6 +21,9 @@ import type { EvmChain, EvmChainRow } from './types'
 
 export const ETHEREUM_CHAIN_ID = 'ethereum' satisfies EvmChainId
 
+/** The chain ENS lives on: its names resolve against this chain's endpoints whatever chain they are sent on. */
+export const ENS_HOST_CHAIN_ID: EvmChainId = ETHEREUM_CHAIN_ID
+
 const ETHER = { symbol: 'ETH', name: 'Ether', decimals: 18, slip44: '60' }
 
 // The OP-stack predeploy every OP-stack chain puts its GasPriceOracle at.

@@ -231,9 +231,10 @@
         "no_accounts_found": "Hesap bulunamadı",
         "no_accounts_body": "Eşleşen hesap yok",
         "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
-        "search_placeholder_evm": "0x adresi veya hesap adı",
+        "search_placeholder_evm": "0x adresi, ENS adı veya hesap adı",
         "search_placeholder_neutral": "Adres veya hesap adı",
         "nfd_results": "NFDomains",
+        "ens_results": "ENS",
         "nfd_resolving": "NFD çözümleniyor...",
         "nfd_resolved": "{{name}} üzerinden çözümlendi",
         "wrong_network": {
@@ -3046,6 +3047,10 @@
             "nfd_mismatch_body": "{{name}} için NFD sözleşmesi bu adresi listelemiyor. Güveniyorsan adresi doğrudan yapıştır.",
             "nfd_unavailable_title": "{{name}} doğrulanamadı",
             "nfd_unavailable_body": "Bu adı kontrol etmek için NFD kaydına ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır.",
+            "ens_mismatch_title": "Ad zincirdekiyle eşleşmiyor",
+            "ens_mismatch_body": "ENS, {{name}} adını bu ağda bu adrese yönlendirmiyor. Güveniyorsan adresi doğrudan yapıştır.",
+            "ens_unavailable_title": "{{name}} doğrulanamadı",
+            "ens_unavailable_body": "Bu adı kontrol etmek için ENS'e ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır.",
             "invalid_address_title": "Geçersiz adres",
             "invalid_address_body": "Bu, geçerli bir {{chain}} adresi değil."
         },

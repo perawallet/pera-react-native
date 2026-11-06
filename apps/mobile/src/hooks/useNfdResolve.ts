@@ -14,7 +14,7 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import { nameServiceOf, useNameSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
     type Optional,
     useDebouncedValue,
@@ -44,10 +44,15 @@ export const useNfdResolve = (
     const isDirectAddress = addressCodecs
         .list()
         .some(codec => codec.isValid(input))
+    // Forms that resolve a name here take what the backend says as is; only a
+    // send checks an ENS name on-chain, so ENS stays out of them.
     const shouldSearchNfd =
-        enabled && debouncedInput.includes('.') && !isDirectAddress
+        enabled &&
+        nameServiceOf(scope) === 'nfd' &&
+        debouncedInput.includes('.') &&
+        !isDirectAddress
 
-    const { data: nfdResults, isLoading: isNfdResolving } = useNfdSearchQuery(
+    const { data: nfdResults, isLoading: isNfdResolving } = useNameSearchQuery(
         scope,
         debouncedInput,
         { enabled: shouldSearchNfd },

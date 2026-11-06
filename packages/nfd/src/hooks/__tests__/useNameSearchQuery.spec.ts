@@ -15,23 +15,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import { useNfdSearchQuery } from '../useNfdSearchQuery'
+import { useNameSearchQuery } from '../useNameSearchQuery'
 
 const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 
-const mockFetchNfdSearch = vi.hoisted(() => vi.fn())
+const mockFetchNameSearch = vi.hoisted(() => vi.fn())
 const nameService = vi.hoisted(() => ({ isEnabled: true }))
 
 vi.mock('../../api', () => ({
-    fetchNfdSearch: mockFetchNfdSearch,
+    fetchNameSearch: mockFetchNameSearch,
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: () => nameService.isEnabled,
 }))
 
-describe('useNfdSearchQuery', () => {
+describe('useNameSearchQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -56,34 +56,49 @@ describe('useNfdSearchQuery', () => {
     it.each([ALGORAND_TESTNET, ETHEREUM_SEPOLIA])(
         'lowercases a mixed-case search term and passes the scope for $chainId',
         async scope => {
-            mockFetchNfdSearch.mockResolvedValue([])
+            mockFetchNameSearch.mockResolvedValue([])
 
-            renderHook(() => useNfdSearchQuery(scope, 'BruNo.aLgo'), {
+            renderHook(() => useNameSearchQuery(scope, 'BruNo.aLgo'), {
                 wrapper,
             })
 
-            await waitFor(() => expect(mockFetchNfdSearch).toHaveBeenCalled())
+            await waitFor(() => expect(mockFetchNameSearch).toHaveBeenCalled())
 
-            expect(mockFetchNfdSearch).toHaveBeenCalledWith(
+            expect(mockFetchNameSearch).toHaveBeenCalledWith(
                 expect.objectContaining({ name: 'bruno.algo', scope }),
             )
         },
     )
 
+    it('shares one request between names that differ only in case', async () => {
+        mockFetchNameSearch.mockResolvedValue([])
+
+        renderHook(
+            () => [
+                useNameSearchQuery(ETHEREUM_SEPOLIA, 'Alice.ETH'),
+                useNameSearchQuery(ETHEREUM_SEPOLIA, 'alice.eth'),
+            ],
+            { wrapper },
+        )
+
+        await waitFor(() => expect(mockFetchNameSearch).toHaveBeenCalled())
+        expect(mockFetchNameSearch).toHaveBeenCalledTimes(1)
+    })
+
     it('does not fetch while the nameService capability is off', () => {
         nameService.isEnabled = false
 
-        renderHook(() => useNfdSearchQuery(ALGORAND_TESTNET, 'bruno.algo'), {
+        renderHook(() => useNameSearchQuery(ALGORAND_TESTNET, 'bruno.algo'), {
             wrapper,
         })
 
-        expect(mockFetchNfdSearch).not.toHaveBeenCalled()
+        expect(mockFetchNameSearch).not.toHaveBeenCalled()
     })
 
     it('does not fetch when disabled', () => {
         renderHook(
             () =>
-                useNfdSearchQuery(ALGORAND_TESTNET, 'BruNo.aLgo', {
+                useNameSearchQuery(ALGORAND_TESTNET, 'BruNo.aLgo', {
                     enabled: false,
                 }),
             {
@@ -91,12 +106,12 @@ describe('useNfdSearchQuery', () => {
             },
         )
 
-        expect(mockFetchNfdSearch).not.toHaveBeenCalled()
+        expect(mockFetchNameSearch).not.toHaveBeenCalled()
     })
     it('returns one stable empty array while disabled', () => {
         const { result, rerender } = renderHook(
             () =>
-                useNfdSearchQuery(ALGORAND_TESTNET, 'bruno.algo', {
+                useNameSearchQuery(ALGORAND_TESTNET, 'bruno.algo', {
                     enabled: false,
                 }),
             { wrapper },

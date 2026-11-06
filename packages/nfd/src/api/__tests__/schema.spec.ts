@@ -11,60 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import {
-    nfdNamesListResponseSchema,
-    nfdBulkReadResponseSchema,
-    nfdSearchResponseSchema,
-} from '../schema'
-
-describe('nfdNamesListResponseSchema', () => {
-    it('parses a valid response with results', () => {
-        const data = {
-            results: [
-                {
-                    name: 'alice.algo',
-                    source: 'nfd',
-                    image: 'https://example.com/alice.png',
-                },
-            ],
-        }
-
-        const result = nfdNamesListResponseSchema.parse(data)
-
-        expect(result.results).toHaveLength(1)
-        expect(result.results[0].name).toBe('alice.algo')
-    })
-
-    it('parses a response with empty results', () => {
-        const data = { results: [] }
-
-        const result = nfdNamesListResponseSchema.parse(data)
-
-        expect(result.results).toHaveLength(0)
-    })
-
-    it('rejects a response missing the name field', () => {
-        const data = {
-            results: [{ source: 'nfd', image: 'https://example.com/img.png' }],
-        }
-
-        expect(() => nfdNamesListResponseSchema.parse(data)).toThrow()
-    })
-
-    it('rejects a response with empty name', () => {
-        const data = {
-            results: [
-                {
-                    name: '',
-                    source: 'nfd',
-                    image: 'https://example.com/img.png',
-                },
-            ],
-        }
-
-        expect(() => nfdNamesListResponseSchema.parse(data)).toThrow()
-    })
-})
+import { nfdBulkReadResponseSchema, nameSearchResponseSchema } from '../schema'
 
 describe('nfdBulkReadResponseSchema', () => {
     it('parses a valid bulk response', () => {
@@ -74,12 +21,16 @@ describe('nfdBulkReadResponseSchema', () => {
                     address: 'ABC123',
                     name: {
                         name: 'alice.algo',
-                        source: 'nfd',
+                        source: 'nfdomain',
                         image: 'https://example.com/img.png',
                     },
                 },
                 {
                     address: 'DEF456',
+                    name: { name: 'alice.eth', source: 'ens', image: null },
+                },
+                {
+                    address: 'GHI789',
                     name: null,
                 },
             ],
@@ -87,31 +38,52 @@ describe('nfdBulkReadResponseSchema', () => {
 
         const result = nfdBulkReadResponseSchema.parse(data)
 
-        expect(result.results).toHaveLength(2)
+        expect(result.results).toHaveLength(3)
         expect(result.results[0].name?.name).toBe('alice.algo')
-        expect(result.results[1].name).toBeNull()
+        expect(result.results[1].name?.image).toBeNull()
+        expect(result.results[2].name).toBeNull()
+    })
+
+    it('rejects a response that is not a results list', () => {
+        expect(() => nfdBulkReadResponseSchema.parse({ wrong: 1 })).toThrow()
     })
 })
 
-describe('nfdSearchResponseSchema', () => {
-    it('parses a valid search response', () => {
+describe('nameSearchResponseSchema', () => {
+    it('parses a valid search response carrying the chain', () => {
         const data = {
             count: 1,
             results: [
                 {
-                    name: 'alice.algo',
+                    name: 'alice.eth',
                     address: 'ABC123',
+                    chain: 'eip155:8453',
                     service: {
-                        name: 'NFD',
+                        name: 'ENS',
                         logo: 'https://example.com/logo.png',
                     },
                 },
             ],
         }
 
-        const result = nfdSearchResponseSchema.parse(data)
+        const result = nameSearchResponseSchema.parse(data)
 
         expect(result.count).toBe(1)
-        expect(result.results[0].address).toBe('ABC123')
+        expect(result.results[0].chain).toBe('eip155:8453')
+    })
+
+    it('rejects a result without a chain', () => {
+        const data = {
+            count: 1,
+            results: [
+                {
+                    name: 'alice.eth',
+                    address: 'ABC123',
+                    service: { name: 'ENS', logo: '' },
+                },
+            ],
+        }
+
+        expect(() => nameSearchResponseSchema.parse(data)).toThrow()
     })
 })

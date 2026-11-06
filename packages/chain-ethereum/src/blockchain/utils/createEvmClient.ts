@@ -209,7 +209,7 @@ const viemChainFor = (
  */
 export const createEvmClient = (
     scope: ChainScope,
-    ctx: ChainContext,
+    ctx: Pick<ChainContext, 'getEndpoints' | 'timeouts'>,
     chain: EvmChain,
 ): PublicClient => {
     const rpcUrls = ctx.getEndpoints()[scope.networkId]

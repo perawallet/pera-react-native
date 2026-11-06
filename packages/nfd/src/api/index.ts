@@ -10,13 +10,5 @@
  limitations under the License
  */
 
-export {
-    fetchNfdNamesForAddress,
-    fetchNfdBulkRead,
-    fetchNfdSearch,
-} from './endpoints'
-export type {
-    FetchNfdNamesForAddressParams,
-    FetchNfdBulkReadParams,
-    FetchNfdSearchParams,
-} from './endpoints'
+export { fetchNfdBulkRead, fetchNameSearch } from './endpoints'
+export type { FetchNfdBulkReadParams, FetchNameSearchParams } from './endpoints'

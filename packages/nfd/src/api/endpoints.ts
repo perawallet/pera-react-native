@@ -11,55 +11,28 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient, logger } from '@perawallet/wallet-core-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    queryClient,
+    logger,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
-import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
+import { nameServiceAdapterFor } from '../chain-adapter'
+import type { NfdBulkResult, NameSearchResult } from '../models'
 import {
-    nfdNamesListResponseSchema,
     nfdBulkReadResponseSchema,
-    nfdSearchResponseSchema,
-    type NfdNamesListApiResponse,
+    nameSearchResponseSchema,
     type NfdBulkReadApiResponse,
-    type NfdSearchApiResponse,
+    type NameSearchApiResponse,
 } from './schema'
-import {
-    transformNfdNamesList,
-    transformBulkResults,
-    transformSearchResults,
-} from './mappers'
+import { transformBulkResults, transformSearchResults } from './mappers'
 
-export type FetchNfdNamesForAddressParams = {
-    address: string
-    scope: ChainScope
-    signal?: AbortSignal
-}
-
-/** Reverse lookup: address → NFD names */
-export const fetchNfdNamesForAddress = async (
-    params: FetchNfdNamesForAddressParams,
-): Promise<NfdName[]> => {
-    const { address, scope, signal } = params
-
-    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
-    if (!hasPeraBackend(scope)) return []
-
-    const response = await queryClient<NfdNamesListApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'GET',
-        url: `/v1/accounts/${address}/names/`,
-        signal,
-    })
-
-    const result = nfdNamesListResponseSchema.safeParse(response.data)
-    if (!result.success) {
-        logger.warn('NFD names response failed schema validation', {
-            error: result.error,
-        })
-        return []
-    }
-    return transformNfdNamesList(result.data)
-}
+/** The v4 name routes name a chain by its CAIP-2 id; a custom network has none. */
+const caip2Of = (scope: ChainScope): Optional<string> =>
+    getChainDescriptor(scope.chainId).networks.find(
+        network => network.id === scope.networkId,
+    )?.caip2
 
 export type FetchNfdBulkReadParams = {
     addresses: string[]
@@ -67,7 +40,10 @@ export type FetchNfdBulkReadParams = {
     signal?: AbortSignal
 }
 
-/** Bulk reverse lookup: multiple addresses → NFD names */
+/**
+ * Bulk reverse lookup: multiple addresses → NFD names. Rejects when Pera's
+ * backend can't answer, so the caller never records an outage as "no name".
+ */
 export const fetchNfdBulkRead = async (
     params: FetchNfdBulkReadParams,
 ): Promise<NfdBulkResult[]> => {
@@ -75,13 +51,15 @@ export const fetchNfdBulkRead = async (
 
     // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
     if (!hasPeraBackend(scope)) return []
+    const chain = caip2Of(scope)
+    if (!chain) return []
 
     const response = await queryClient<NfdBulkReadApiResponse>({
         backend: 'pera',
         scope,
         method: 'POST',
-        url: `/v1/accounts/names/bulk-read/`,
-        data: { account_addresses: addresses },
+        url: `/api/v4/accounts/names/`,
+        data: { chain, addresses },
         signal,
     })
 
@@ -95,36 +73,47 @@ export const fetchNfdBulkRead = async (
     return transformBulkResults(result.data)
 }
 
-export type FetchNfdSearchParams = {
+export type FetchNameSearchParams = {
     name: string
     scope: ChainScope
     signal?: AbortSignal
 }
 
-/** Forward lookup: NFD name → address */
-export const fetchNfdSearch = async (
-    params: FetchNfdSearchParams,
-): Promise<NfdSearchResult[]> => {
+/** Forward lookup: name → address on the scope's chain. */
+export const fetchNameSearch = async (
+    params: FetchNameSearchParams,
+): Promise<NameSearchResult[]> => {
     const { name, scope, signal } = params
 
-    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
+    // Without a Pera backend there is nothing to ask: callers already treat [] as "no name match".
     if (!hasPeraBackend(scope)) return []
+    const chain = caip2Of(scope)
+    if (!chain) return []
+    const adapter = nameServiceAdapterFor(scope)
+    const asked = adapter.normalizeName?.(name)
+    // A name the service refuses can never resolve, so there is nothing to ask.
+    if (adapter.normalizeName && asked === undefined) return []
 
-    const response = await queryClient<NfdSearchApiResponse>({
+    const response = await queryClient<NameSearchApiResponse>({
         backend: 'pera',
         scope,
         method: 'GET',
-        url: `/v1/name-services/search/`,
-        params: { name },
+        url: `/api/v4/name-services/search/`,
+        params: { name, chain },
         signal,
     })
 
-    const result = nfdSearchResponseSchema.safeParse(response.data)
+    const result = nameSearchResponseSchema.safeParse(response.data)
     if (!result.success) {
-        logger.warn('NFD search response failed schema validation', {
+        logger.warn('Name search response failed schema validation', {
             error: result.error,
         })
         return []
     }
-    return transformSearchResults(result.data, scope)
+    const results = transformSearchResults(result.data, scope, chain)
+    // The send check vouches for the name a result carries, so it must be the
+    // name asked about, not one the backend swapped in.
+    return adapter.normalizeName
+        ? results.filter(item => adapter.normalizeName?.(item.name) === asked)
+        : results
 }

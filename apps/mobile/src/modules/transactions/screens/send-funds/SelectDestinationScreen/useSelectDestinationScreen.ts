@@ -12,11 +12,12 @@
 
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
+import { nameServiceOf, verifyNameAddress } from '@perawallet/wallet-core-nfd'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { NAME_SERVICE_COPY } from '@utils/nameServiceCopy'
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
@@ -86,7 +87,7 @@ export const useSelectDestinationScreen = () => {
     const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
     const { errorToast } = useToast()
     const { t } = useLanguage()
-    const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
+    const [isVerifyingName, setIsVerifyingName] = useState(false)
     const verificationRef = useRef<Nullable<AbortController>>(null)
     useEffect(() => () => verificationRef.current?.abort(), [])
 
@@ -95,7 +96,7 @@ export const useSelectDestinationScreen = () => {
             verificationRef.current?.abort()
             const controller = new AbortController()
             verificationRef.current = controller
-            setIsVerifyingNfd(true)
+            setIsVerifyingName(true)
             try {
                 const verification = await verifyNameAddress({
                     name,
@@ -107,17 +108,19 @@ export const useSelectDestinationScreen = () => {
                     void resolveDestination(address)
                     return
                 }
+                const copy = NAME_SERVICE_COPY[nameServiceOf(scope)]
+                const isMismatch = verification === 'mismatch'
                 errorToast(
                     t(
-                        verification === 'mismatch'
-                            ? 'send_funds.destination.nfd_mismatch_title'
-                            : 'send_funds.destination.nfd_unavailable_title',
+                        isMismatch
+                            ? copy.mismatchTitleKey
+                            : copy.unavailableTitleKey,
                         { name },
                     ),
                     t(
-                        verification === 'mismatch'
-                            ? 'send_funds.destination.nfd_mismatch_body'
-                            : 'send_funds.destination.nfd_unavailable_body',
+                        isMismatch
+                            ? copy.mismatchBodyKey
+                            : copy.unavailableBodyKey,
                         { name },
                     ),
                 )
@@ -125,16 +128,16 @@ export const useSelectDestinationScreen = () => {
                 if (controller.signal.aborted) return
                 throw error
             } finally {
-                if (!controller.signal.aborted) setIsVerifyingNfd(false)
+                if (!controller.signal.aborted) setIsVerifyingName(false)
             }
         },
         [scope, resolveDestination, errorToast, t],
     )
 
     const handleSelected = useCallback(
-        (address: string, nfdName?: string) => {
-            if (nfdName) {
-                void verifyThenResolve(address, nfdName)
+        (address: string, name?: string) => {
+            if (name) {
+                void verifyThenResolve(address, name)
                 return
             }
             void resolveDestination(address)
@@ -149,7 +152,7 @@ export const useSelectDestinationScreen = () => {
         senderAddress,
         chainBadgeName,
         handleSelected,
-        isCheckingExternalOptIn: isResolvingDestination || isVerifyingNfd,
+        isCheckingExternalOptIn: isResolvingDestination || isVerifyingName,
         isAutoAdvancing,
     }
 }

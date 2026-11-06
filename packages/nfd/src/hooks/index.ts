@@ -15,7 +15,7 @@ export {
     type UseNfdForAddressQueryResult,
 } from './useNfdForAddressQuery'
 export {
-    useNfdSearchQuery,
-    type UseNfdSearchQueryResult,
-} from './useNfdSearchQuery'
+    useNameSearchQuery,
+    type UseNameSearchQueryResult,
+} from './useNameSearchQuery'
 export { nfdQueryKeys, invalidateNfdQueries } from './querykeys'

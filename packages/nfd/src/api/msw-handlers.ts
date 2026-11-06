@@ -10,39 +10,16 @@
  limitations under the License
  */
 
-// Thin MSW handler factories for the NFD REST surface.
+// Thin MSW handler factories for the name-service REST surface.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     nfdBulkReadResponseSchema,
-    nfdNamesListResponseSchema,
-    nfdSearchResponseSchema,
-    type NfdNamesListApiResponse,
+    nameSearchResponseSchema,
     type NfdBulkReadApiResponse,
-    type NfdSearchApiResponse,
+    type NameSearchApiResponse,
 } from './schema'
-
-export type MockNfdNamesForAddressParams = {
-    address: string
-    response: NfdNamesListApiResponse
-    status?: number
-}
-
-export const mockNfdNamesForAddress = ({
-    address,
-    response,
-    status = 200,
-}: MockNfdNamesForAddressParams): HttpHandler => {
-    validateMockResponse(
-        nfdNamesListResponseSchema,
-        response,
-        'mockNfdNamesForAddress',
-    )
-    return http.get(`*/v1/accounts/${address}/names/`, () =>
-        HttpResponse.json(response, { status }),
-    )
-}
 
 export type MockNfdBulkReadParams = {
     response: NfdBulkReadApiResponse
@@ -54,22 +31,22 @@ export const mockNfdBulkRead = ({
     status = 200,
 }: MockNfdBulkReadParams): HttpHandler => {
     validateMockResponse(nfdBulkReadResponseSchema, response, 'mockNfdBulkRead')
-    return http.post('*/v1/accounts/names/bulk-read/', () =>
+    return http.post('*/api/v4/accounts/names/', () =>
         HttpResponse.json(response, { status }),
     )
 }
 
-export type MockNfdSearchParams = {
-    response: NfdSearchApiResponse
+export type MockNameSearchParams = {
+    response: NameSearchApiResponse
     status?: number
 }
 
-export const mockNfdSearch = ({
+export const mockNameSearch = ({
     response,
     status = 200,
-}: MockNfdSearchParams): HttpHandler => {
-    validateMockResponse(nfdSearchResponseSchema, response, 'mockNfdSearch')
-    return http.get('*/v1/name-services/search/', () =>
+}: MockNameSearchParams): HttpHandler => {
+    validateMockResponse(nameSearchResponseSchema, response, 'mockNameSearch')
+    return http.get('*/api/v4/name-services/search/', () =>
         HttpResponse.json(response, { status }),
     )
 }

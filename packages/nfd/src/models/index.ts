@@ -26,7 +26,10 @@ export type NfdBulkResult = {
     name: Nullable<NfdName>
 }
 
-export type NfdSearchResult = {
+/** Which name service names the addresses of a chain. */
+export type NameServiceId = 'nfd' | 'ens'
+
+export type NameSearchResult = {
     name: string
     address: string
     service: {
@@ -36,8 +39,8 @@ export type NfdSearchResult = {
 }
 
 /**
- * How a name's backend-asserted address stands against the NFD contract.
- * `unavailable` is a failed lookup, not a verdict: the caller decides whether
- * a send may go ahead without one.
+ * How a name's backend-asserted address stands against the chain's own record
+ * of the name. `unavailable` is a failed lookup, not a verdict: the caller
+ * decides whether a send may go ahead without one.
  */
-export type NfdAddressVerification = 'verified' | 'mismatch' | 'unavailable'
+export type NameAddressVerification = 'verified' | 'mismatch' | 'unavailable'

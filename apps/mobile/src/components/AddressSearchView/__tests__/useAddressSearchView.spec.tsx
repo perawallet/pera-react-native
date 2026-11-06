@@ -33,7 +33,7 @@ import {
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+import { nameServiceOf, useNameSearchQuery } from '@perawallet/wallet-core-nfd'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -111,7 +111,8 @@ const ETHEREUM_SCOPE: ChainScope = {
 }
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+    useNameSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+    nameServiceOf: vi.fn(() => 'nfd'),
 }))
 
 const mockReadText = vi.fn(async () => '')
@@ -166,6 +167,7 @@ describe('useAddressSearchView', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.mocked(nameServiceOf).mockReturnValue('nfd')
         mockChainName.value = undefined
 
         vi.mocked(useContacts).mockReturnValue({
@@ -183,10 +185,10 @@ describe('useAddressSearchView', () => {
             accountValueTotals: new Map(),
         } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
         mockIsValidAddress.mockReturnValue(false)
-        vi.mocked(useNfdSearchQuery).mockReturnValue({
+        vi.mocked(useNameSearchQuery).mockReturnValue({
             data: [],
             isLoading: false,
-        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNameSearchQuery>)
         mockFindContacts.mockReturnValue([])
         vi.mocked(addressFamilyOf).mockReturnValue(undefined)
     })
@@ -719,8 +721,8 @@ describe('useAddressSearchView', () => {
         ).toEqual(['Eth'])
     })
 
-    it('returns NFD results when value contains a dot', () => {
-        vi.mocked(useNfdSearchQuery).mockReturnValue({
+    it('returns name results when value contains a dot', () => {
+        vi.mocked(useNameSearchQuery).mockReturnValue({
             data: [
                 {
                     name: 'alice.algo',
@@ -729,7 +731,7 @@ describe('useAddressSearchView', () => {
                 },
             ],
             isLoading: false,
-        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNameSearchQuery>)
 
         const { result } = renderHook(() =>
             useAddressSearchView({ scope: ALGORAND_SCOPE }),
@@ -739,12 +741,12 @@ describe('useAddressSearchView', () => {
             result.current.setValue('alice.algo')
         })
 
-        const nfdItems = itemsOfType(result.current.matchingItems, 'nfd')
-        expect(nfdItems).toHaveLength(1)
-        expect(nfdItems[0]).toEqual(
+        const nameItems = itemsOfType(result.current.matchingItems, 'name')
+        expect(nameItems).toHaveLength(1)
+        expect(nameItems[0]).toEqual(
             expect.objectContaining({
-                type: 'nfd',
-                nfd: expect.objectContaining({ name: 'alice.algo' }),
+                type: 'name',
+                result: expect.objectContaining({ name: 'alice.algo' }),
             }),
         )
 
@@ -761,7 +763,37 @@ describe('useAddressSearchView', () => {
         )
     })
 
-    it('does not search NFD when value has no dot', () => {
+    it("heads an ENS chain's results with ENS, never NFD", () => {
+        vi.mocked(nameServiceOf).mockReturnValue('ens')
+        vi.mocked(useNameSearchQuery).mockReturnValue({
+            data: [
+                {
+                    name: 'alice.eth',
+                    address: '0x1111111111111111111111111111111111111111',
+                    service: { name: 'ENS', logo: '' },
+                },
+            ],
+            isLoading: false,
+        } as unknown as ReturnType<typeof useNameSearchQuery>)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+        )
+
+        act(() => {
+            result.current.setValue('alice.eth')
+        })
+
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+        expect(headers).toEqual([
+            expect.objectContaining({ title: 'address_entry.ens_results' }),
+        ])
+    })
+
+    it('does not search names when value has no dot', () => {
         const { result } = renderHook(() =>
             useAddressSearchView({ scope: ALGORAND_SCOPE }),
         )
@@ -770,21 +802,21 @@ describe('useAddressSearchView', () => {
             result.current.setValue('alice')
         })
 
-        expect(vi.mocked(useNfdSearchQuery)).toHaveBeenCalledWith(
+        expect(vi.mocked(useNameSearchQuery)).toHaveBeenCalledWith(
             expect.anything(),
             expect.anything(),
             expect.objectContaining({ enabled: false }),
         )
 
-        const nfdItems = itemsOfType(result.current.matchingItems, 'nfd')
-        expect(nfdItems).toHaveLength(0)
+        const nameItems = itemsOfType(result.current.matchingItems, 'name')
+        expect(nameItems).toHaveLength(0)
     })
 
-    it('exposes isNfdLoading state', () => {
-        vi.mocked(useNfdSearchQuery).mockReturnValue({
+    it('exposes isNameSearchLoading state', () => {
+        vi.mocked(useNameSearchQuery).mockReturnValue({
             data: [],
             isLoading: true,
-        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNameSearchQuery>)
 
         const { result } = renderHook(() =>
             useAddressSearchView({ scope: ALGORAND_SCOPE }),
@@ -794,7 +826,7 @@ describe('useAddressSearchView', () => {
             result.current.setValue('alice.algo')
         })
 
-        expect(result.current.isNfdLoading).toBe(true)
+        expect(result.current.isNameSearchLoading).toBe(true)
     })
 
     describe('paste from clipboard', () => {

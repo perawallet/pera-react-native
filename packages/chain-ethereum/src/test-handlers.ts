@@ -27,6 +27,10 @@ export {
     type EvmRpcResults,
 } from './blockchain/msw-handlers'
 export {
+    ensResolverCallResponder,
+    type EnsRecordFixture,
+} from './names/msw-handlers'
+export {
     peraEvmHandlers,
     type PeraEvmFixtures,
     type ShouldRefreshRequest,

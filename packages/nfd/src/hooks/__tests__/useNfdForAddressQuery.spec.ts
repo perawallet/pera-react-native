@@ -88,6 +88,22 @@ describe('useNfdForAddressQuery', () => {
         },
     )
 
+    it('does not enqueue an address of a chain whose names are ENS', () => {
+        registerFakeNameServiceAdapter({
+            chainId: 'ethereum',
+            service: 'ens',
+            isValidAddress: () => true,
+        })
+
+        const { result } = renderHook(
+            () => useNfdForAddressQuery(ETHEREUM_SEPOLIA, '0xabc'),
+            { wrapper },
+        )
+
+        expect(mockEnqueue).not.toHaveBeenCalled()
+        expect(result.current.isPending).toBe(false)
+    })
+
     it('returns empty array when the queue resolves with null (negative cache)', async () => {
         mockEnqueue.mockResolvedValue(null)
 
