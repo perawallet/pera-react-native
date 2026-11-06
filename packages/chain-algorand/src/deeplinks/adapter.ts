@@ -130,7 +130,7 @@ const parseAccount = (
         return ok({
             kind: 'payment',
             target,
-            recipient: address,
+            recipient: { address },
             assetRef: assetRef ?? algorandDescriptor.nativeAsset.ref,
             amount,
             label: query.get('label'),
@@ -193,7 +193,12 @@ const parseCoinbase = (input: string): DeeplinkParseResult => {
     // Real QR generators leave stray spaces around the address.
     const recipient = query.get('address')?.trim() ?? ''
     if (!assetRef || !isValidAlgorandAddress(recipient)) return MALFORMED
-    return ok({ kind: 'payment', target: targetOf(), recipient, assetRef })
+    return ok({
+        kind: 'payment',
+        target: targetOf(),
+        recipient: { address: recipient },
+        assetRef,
+    })
 }
 
 const canParse = (input: string): boolean =>

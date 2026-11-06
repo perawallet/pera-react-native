@@ -15,4 +15,7 @@ export type { UseAddContactFormResult } from './useAddContactForm'
 export { useEditContactForm } from './useEditContactForm'
 export type { UseEditContactFormResult } from './useEditContactForm'
 export { useContactForm } from './useContactForm'
-export type { UseContactFormResult, NfdState } from './useContactForm'
+export type {
+    UseContactFormResult,
+    NameResolutionState,
+} from './useContactForm'

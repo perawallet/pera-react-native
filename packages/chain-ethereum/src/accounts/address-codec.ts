@@ -74,8 +74,10 @@ export const createEvmAddressCodec = (chain: EvmChain): AddressCodec => ({
         if (!result.ok || result.intent.kind !== 'payment') return undefined
         const { target, recipient, assetRef, amount } = result.intent
         if (target.chainId !== chain.row.id) return undefined
+        // A name is no address until it is resolved, so a form has none to read.
+        if (!('address' in recipient)) return undefined
 
-        const parsed: ParsedPaymentUri = { address: recipient }
+        const parsed: ParsedPaymentUri = { address: recipient.address }
         if (target.networkId) parsed.networkId = target.networkId
         if (assetRef && !isNativeAsset(assetRef, chain.descriptor)) {
             parsed.assetRef = assetRef

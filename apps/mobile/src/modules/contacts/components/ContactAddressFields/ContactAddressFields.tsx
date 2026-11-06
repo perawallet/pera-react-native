@@ -32,7 +32,7 @@ export type ContactAddressFieldsProps = {
     isInputVisible: boolean
     rawInput: string
     isInputInvalid: boolean
-    isResolvingNfd: boolean
+    isResolvingName: boolean
     pendingReplacement: Optional<AddressFamilyMatch>
     onShowInput: () => void
     onInputChange: (text: string) => void
@@ -46,7 +46,7 @@ export const ContactAddressFields = ({
     isInputVisible,
     rawInput,
     isInputInvalid,
-    isResolvingNfd,
+    isResolvingName,
     pendingReplacement,
     onShowInput,
     onInputChange,
@@ -120,14 +120,14 @@ export const ContactAddressFields = ({
                         }
                         testID='contact_address_input'
                     />
-                    {isResolvingNfd ? (
-                        <PWView style={styles.nfdStatus}>
+                    {isResolvingName ? (
+                        <PWView style={styles.nameStatus}>
                             <PWLoadingIndicator size='sm' />
                             <PWText
                                 variant='caption'
-                                style={styles.nfdStatusText}
+                                style={styles.nameStatusText}
                             >
-                                {t('address_entry.nfd_resolving')}
+                                {t('address_entry.name_resolving')}
                             </PWText>
                         </PWView>
                     ) : null}

@@ -34,6 +34,12 @@ export type DeeplinkParseResult =
     | { ok: true; intent: ChainDeeplinkIntent }
     | { ok: false; reason: DeeplinkParseFailure }
 
+/**
+ * A payment's recipient. A `name` must be resolved, and checked on-chain,
+ * before it becomes a destination.
+ */
+export type PaymentRecipient = { address: string } | { name: string }
+
 export type ChainDeeplinkIntent =
     | {
           kind: 'address'
@@ -44,7 +50,7 @@ export type ChainDeeplinkIntent =
     | {
           kind: 'payment'
           target: ChainLinkTarget
-          recipient: string
+          recipient: PaymentRecipient
           assetRef?: AssetRef
           /** Base units of the asset. */
           amount?: Decimal

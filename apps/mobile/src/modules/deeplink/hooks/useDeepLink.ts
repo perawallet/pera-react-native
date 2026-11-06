@@ -75,6 +75,7 @@ import {
     useChainActionDeeplink,
     useDiscoverPathDeeplink,
     useE2eFixtureDeeplink,
+    useLinkRecipientResolver,
     useLocaleTourDeeplink,
     usePeraWebImportDeeplink,
     useRecoverAddressDeeplink,
@@ -181,6 +182,22 @@ export const useDeepLink = (): UseDeepLinkResult => {
         if (unsupportedChainId) {
             return { kind: 'unsupported-on-chain', chainId: unsupportedChainId }
         }
+        // The kill switch for a chain's name lookups covers links as well as forms.
+        if (
+            link.type === DeeplinkType.TRANSFER &&
+            link.receiverName !== undefined &&
+            !isAllowed({
+                chain: {
+                    chainId: link.target.chainId,
+                    capability: 'nameService',
+                },
+            })
+        ) {
+            return {
+                kind: 'unsupported-on-chain',
+                chainId: link.target.chainId,
+            }
+        }
         const requirement = capabilityRequirementForDeeplink(link)
         if (!requirement || isAllowed(requirement)) return undefined
         if (requirement.chain && !isAllowed({ chain: requirement.chain })) {
@@ -200,6 +217,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const handlePeraWebImport = usePeraWebImportDeeplink()
     const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
+    const resolveLinkRecipient = useLinkRecipientResolver()
     const runLocaleTourStep = useLocaleTourDeeplink()
     const applyE2eFixture = useE2eFixtureDeeplink()
     const connectWalletConnect = useWalletConnectDeeplink()
@@ -501,7 +519,32 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         amountBaseUnits: parsedData.amount,
                         note: parsedData.note ?? parsedData.chainData?.xnote,
                     }
-                    if (!sendOn(chainId, prefill, parsedData.type)) return
+                    const { receiverName, type } = parsedData
+                    if (receiverName !== undefined) {
+                        // Detached, like a sheet: the lookup and the on-chain
+                        // check outlast the scanner. Send opens only on a
+                        // verified address.
+                        dispatchDetached(
+                            resolveLinkRecipient({
+                                scope: getSelectedScope(chainId),
+                                name: receiverName,
+                                parsedType: type,
+                            }).then(destination => {
+                                if (destination === undefined) {
+                                    onError?.()
+                                    return
+                                }
+                                sendOn(
+                                    chainId,
+                                    { ...prefill, destination },
+                                    type,
+                                )
+                            }),
+                            type,
+                        )
+                        break
+                    }
+                    if (!sendOn(chainId, prefill, type)) return
                     break
                 }
 

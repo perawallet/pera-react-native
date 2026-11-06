@@ -15,3 +15,8 @@ export {
     verifyNameAddress,
     type VerifyNameAddressParams,
 } from './verifyNameAddress'
+export {
+    resolveVerifiedNameAddress,
+    type ResolveVerifiedNameAddressParams,
+    type VerifiedNameResolution,
+} from './resolveVerifiedNameAddress'

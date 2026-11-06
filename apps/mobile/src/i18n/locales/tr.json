@@ -196,6 +196,8 @@
             "body_network_mismatch": "Bu bağlantıyı açmak için {{network}} ağına geç.",
             "title_no_account": "Bu bağlantı için hesap yok",
             "body_no_account": "{{chain}} hesabın yok.",
+            "title_name_not_found": "İsim bulunamadı",
+            "body_name_not_found": "{{chain}} üzerinde {{name}} için adres yok.",
             "title_unsupported": "Bağlantı desteklenmiyor",
             "body_unsupported_on_chain": "Pera bu bağlantıyı {{chain}} ağında açamıyor.",
             "title_recover": "Hesap içe aktarılamadı",
@@ -235,8 +237,8 @@
         "search_placeholder_neutral": "Adres veya hesap adı",
         "nfd_results": "NFDomains",
         "ens_results": "ENS",
-        "nfd_resolving": "NFD çözümleniyor...",
-        "nfd_resolved": "{{name}} üzerinden çözümlendi",
+        "name_resolving": "İsim çözümleniyor...",
+        "name_resolved": "{{name}} üzerinden çözümlendi",
         "wrong_network": {
             "title": {
                 "algorand": "Bu bir Algorand adresi",

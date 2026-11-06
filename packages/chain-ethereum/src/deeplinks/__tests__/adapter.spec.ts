@@ -57,7 +57,7 @@ describe('EIP-681 examples', () => {
             intent: {
                 kind: 'payment',
                 target: { chainId: 'ethereum' },
-                recipient: NATIVE,
+                recipient: { address: NATIVE },
                 assetRef: { chainId: 'ethereum', assetId: 'native' },
                 amount: new Decimal('2014000000000000000'),
             },
@@ -82,7 +82,7 @@ describe('EIP-681 examples', () => {
             intent: {
                 kind: 'payment',
                 target: { chainId: 'ethereum' },
-                recipient: TO,
+                recipient: { address: TO },
                 assetRef: { chainId: 'ethereum', assetId: TOKEN },
                 amount: new Decimal(1),
             },
@@ -175,17 +175,61 @@ describe('addresses', () => {
         )
 
         expect(result.ok && result.intent).toMatchObject({
-            recipient: TO,
+            recipient: { address: TO },
             assetRef: { assetId: TOKEN },
         })
     })
 
+    it('reads an ENS name as the payment target, on the chain the link names', () => {
+        registerCodecs(ETHEREUM, BASE)
+        const result = adapter.parse('ethereum:alice.eth@8453?value=1')
+        registerCodecs(ETHEREUM)
+
+        expect(result.ok && result.intent).toMatchObject({
+            kind: 'payment',
+            target: { chainId: 'base', networkId: 'mainnet' },
+            recipient: { name: 'alice.eth' },
+        })
+    })
+
+    it('normalises the name, so a mixed-case one reads like its lowercase form', () => {
+        const result = adapter.parse('ethereum:pay-Alice.ETH')
+
+        expect(result.ok && result.intent).toMatchObject({
+            target: { chainId: 'ethereum' },
+            recipient: { name: 'alice.eth' },
+        })
+    })
+
+    it('reads an ENS name as the recipient of a token transfer', () => {
+        const result = adapter.parse(
+            `ethereum:${TOKEN_LOWER}/transfer?address=alice.eth&uint256=1`,
+        )
+
+        expect(result.ok && result.intent).toMatchObject({
+            recipient: { name: 'alice.eth' },
+            assetRef: { assetId: TOKEN },
+            amount: new Decimal(1),
+        })
+    })
+
     it.each([
-        'ethereum:vitalik.eth',
-        'ethereum:pay-vitalik.eth@1?value=1',
-        `ethereum:${TOKEN_LOWER}/transfer?address=vitalik.eth&uint256=1`,
-    ])('refuses an ENS name as unsupported: %s', input => {
-        expect(failure(input)).toBe('unsupported-action')
+        'ethereum:a\u200Db.eth',
+        `ethereum:${TOKEN_LOWER}/transfer?address=a%E2%80%8Db.eth`,
+    ])('refuses a name the normaliser rejects as malformed: %s', input => {
+        expect(failure(input)).toBe('malformed')
+    })
+
+    it('refuses an ENS-named token contract as unsupported', () => {
+        expect(
+            failure(`ethereum:usdc.eth/transfer?address=${TO_LOWER}&uint256=1`),
+        ).toBe('unsupported-action')
+    })
+
+    it('still reports a bad target before an unsupported network', () => {
+        expect(failure(`ethereum:${BAD_CHECKSUM}@999?value=1`)).toBe(
+            'malformed',
+        )
     })
 
     it('does not own a bare address', () => {
@@ -367,7 +411,7 @@ describe('links for other EVM chains', () => {
                 intent: {
                     kind: 'payment',
                     target: { chainId: 'ethereum' },
-                    recipient: NATIVE,
+                    recipient: { address: NATIVE },
                     assetRef: { chainId: 'ethereum', assetId: 'native' },
                     amount: ONE_ETHER,
                 },
@@ -405,7 +449,7 @@ describe('links for other EVM chains', () => {
                 intent: {
                     kind: 'payment',
                     target: { chainId: 'base', networkId: 'mainnet' },
-                    recipient: NATIVE,
+                    recipient: { address: NATIVE },
                     assetRef: { chainId: 'base', assetId: 'native' },
                     amount: ONE_ETHER,
                 },
