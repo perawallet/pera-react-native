@@ -17,14 +17,18 @@ import {
     useCreateRampQuoteMutation,
     toOnrampUserMessage,
     filterQuotesByPaymentMethod,
+    isSourceAmountTooHighError,
     isSourceAmountTooLowError,
     pickBestQuote,
     resolveRampQuoteLimits,
+    type RampPair,
     type RampQuote,
     type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import {
+    displayUnitsToBaseUnits,
     isConnectivityError,
+    toBigInt,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -33,10 +37,13 @@ import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { getExcludedPaymentMethodIds } from './onrampFormHelpers'
 
 type UseOnrampQuotesParams = {
-    pairId: Nullable<string>
-    isMeld: boolean
+    pair: Nullable<RampPair>
     /** Display units; null when no valid amount is entered. */
     sourceAmount: Nullable<Decimal>
+    /** Where a deposit is returned to; only a deposit source sends it. */
+    refundAddress: Nullable<string>
+    /** The user's region; narrows the router's offers. */
+    countryCode: Nullable<string>
 }
 
 type UseOnrampQuotesResult = {
@@ -45,9 +52,8 @@ type UseOnrampQuotesResult = {
     /** Fetch-side error (no payment methods / request failure); null otherwise. */
     quotesError: Nullable<string>
     /**
-     * Provider min/max parsed from a SourceAmountIsTooLow quote error. Sticky
-     * across later successes so the MIN/MAX pill stays usable; cleared on pair
-     * change.
+     * Source min/max from a refused amount. Sticky across later successes so
+     * the MIN/MAX pill stays usable; cleared on pair change.
      */
     quoteLimits: Nullable<RampQuoteLimits>
     /** Effective selected quote: the user's pick, else the auto-picked best. */
@@ -69,9 +75,10 @@ type UseOnrampQuotesResult = {
  * ref tags every fetch and only the latest tagged result is applied.
  */
 export const useOnrampQuotes = ({
-    pairId,
-    isMeld,
+    pair,
     sourceAmount,
+    refundAddress,
+    countryCode,
 }: UseOnrampQuotesParams): UseOnrampQuotesResult => {
     const { t } = useLanguage()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
@@ -89,26 +96,43 @@ export const useOnrampQuotes = ({
     const { mutateAsync: createQuote } = useCreateRampQuoteMutation()
     const requestIdRef = useRef(0)
 
-    // --- debounced fetch -------------------------------------------------
-    // Meld re-quotes on every amount change; XO quotes once per pair with a
-    // null source amount (the provider returns a fixed rate + limits), so the
-    // XO branch never reacts to amount edits.
-    // Keyed on the amount's value, not the Decimal's identity: a caller that
-    // re-parsed every render would otherwise refetch in a loop.
-    const meldAmountKey = isMeld ? (sourceAmount?.toFixed() ?? null) : null
-    useEffect(() => {
-        if (!pairId || !selectedAccountAddress || scope === null) {
-            return
-        }
-        // Empty or malformed (e.g. pasted) amount → no quote to fetch.
-        if (isMeld && meldAmountKey === null) {
-            setQuotes([])
-            return
-        }
-        const meldAmount =
-            meldAmountKey === null ? null : new Decimal(meldAmountKey)
+    // The effect keys on the pair's primitives, not the object: a caller that
+    // rebuilt the pair every render would otherwise refetch in a loop.
+    const pairId = pair?.id ?? null
+    const sourceId = pair?.sourceToken.id ?? null
+    const sourceKind = pair?.sourceToken.kind ?? null
+    const sourceDecimals = pair?.sourceToken.fractionDecimals ?? 0
+    const destinationId = pair?.destinationToken.id ?? null
+    const destinationDecimals = pair?.destinationToken.fractionDecimals ?? 0
 
+    // Keyed on the amount's value, not the Decimal's identity, for the same reason.
+    const amountKey = sourceAmount?.toFixed() ?? null
+
+    // --- debounced fetch -------------------------------------------------
+    // Every provider quotes per amount: the router prices a request, so a
+    // missing amount, or one under a single base unit, has nothing to ask.
+    useEffect(() => {
+        if (
+            sourceId === null ||
+            sourceKind === null ||
+            destinationId === null ||
+            !selectedAccountAddress ||
+            scope === null
+        ) {
+            return
+        }
+        const amount = amountKey === null ? null : new Decimal(amountKey)
         const requestId = ++requestIdRef.current
+        if (
+            amount === null ||
+            toBigInt(displayUnitsToBaseUnits(amount, sourceDecimals)) === 0n
+        ) {
+            setQuotes([])
+            setQuotesError(null)
+            setIsQuoting(false)
+            return
+        }
+
         setIsQuoting(true)
         const excludedIds = getExcludedPaymentMethodIds(Platform.OS)
 
@@ -117,9 +141,19 @@ export const useOnrampQuotes = ({
                 try {
                     const result = await createQuote({
                         scope,
-                        pair: pairId,
+                        sourceToken: {
+                            id: sourceId,
+                            kind: sourceKind,
+                            fractionDecimals: sourceDecimals,
+                        },
+                        destinationToken: {
+                            id: destinationId,
+                            fractionDecimals: destinationDecimals,
+                        },
+                        sourceAmount: amount,
                         destinationAddress: selectedAccountAddress,
-                        sourceAmount: meldAmount,
+                        countryCode,
+                        refundAddress,
                     })
                     if (requestId !== requestIdRef.current) return
 
@@ -142,6 +176,13 @@ export const useOnrampQuotes = ({
                         if (isConnectivityError(error)) {
                             return t('errors.network.no_connection.body')
                         }
+                        if (isSourceAmountTooHighError(error)) {
+                            return limits?.max
+                                ? t('onramp.form.amount_above_max', {
+                                      max: limits.max.toString(),
+                                  })
+                                : toOnrampUserMessage(error)
+                        }
                         if (limits?.min) {
                             return t('onramp.form.amount_below_min', {
                                 min: limits.min.toString(),
@@ -160,11 +201,16 @@ export const useOnrampQuotes = ({
 
         return () => clearTimeout(timeoutId)
     }, [
-        pairId,
+        sourceId,
+        sourceKind,
+        sourceDecimals,
+        destinationId,
+        destinationDecimals,
         selectedAccountAddress,
         scope,
-        isMeld,
-        meldAmountKey,
+        amountKey,
+        countryCode,
+        refundAddress,
         createQuote,
         t,
     ])
@@ -175,13 +221,10 @@ export const useOnrampQuotes = ({
         setSelectedQuoteId(null)
         setQuotesError(null)
         setQuoteLimits(null)
-    }, [pairId, isMeld])
+    }, [pairId])
 
     // --- selection -------------------------------------------------------
-    const bestQuote = useMemo(
-        () => pickBestQuote(quotes, sourceAmount),
-        [quotes, sourceAmount],
-    )
+    const bestQuote = useMemo(() => pickBestQuote(quotes), [quotes])
 
     const selectedQuote = useMemo<Nullable<RampQuote>>(() => {
         if (selectedQuoteId === null) return bestQuote
@@ -202,11 +245,8 @@ export const useOnrampQuotes = ({
             quotes,
             selectedQuote.paymentMethod.id,
         )
-        return (
-            pickBestQuote(sameMethod, sourceAmount)?.quoteId ===
-            selectedQuote.quoteId
-        )
-    }, [quotes, selectedQuote, sourceAmount])
+        return pickBestQuote(sameMethod)?.quoteId === selectedQuote.quoteId
+    }, [quotes, selectedQuote])
 
     // Choosing a payment method selects the best quote offering that method.
     const selectPaymentMethod = useCallback(
@@ -214,10 +254,10 @@ export const useOnrampQuotes = ({
             const candidates = quotes.filter(
                 quote => quote.paymentMethod.id === paymentMethodId,
             )
-            const best = pickBestQuote(candidates, sourceAmount)
+            const best = pickBestQuote(candidates)
             if (best) setSelectedQuoteId(best.quoteId)
         },
-        [quotes, sourceAmount],
+        [quotes],
     )
 
     return {

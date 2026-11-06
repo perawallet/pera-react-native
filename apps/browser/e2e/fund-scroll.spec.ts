@@ -24,6 +24,7 @@ import {
     chromium,
     type BrowserContext,
     type Page,
+    type Route,
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -61,60 +62,46 @@ const passAgeGateIfOffered = async (targetPage: Page): Promise<void> => {
     }
 }
 
-const ALGORAND_NETWORK = { id: 'ALGORAND', name: 'Algorand', logo: null }
-
-// Meld (fiat) pair: the form seeds a source amount and renders the full
-// quote-dependent row set, matching what a real user sees on mainnet.
-const MELD_PAIR = {
-    id: 'pair-usd-algo',
-    source_token: {
-        id: 'USD',
-        symbol: 'USD',
-        name: 'US Dollar',
-        fraction_decimals: 2,
-        logo: null,
-        network: { id: 'FIAT', name: 'Fiat', logo: null },
-        price_in_usd: '1',
-        extra: {},
-    },
-    destination_token: {
-        id: 'ALGO',
-        symbol: 'ALGO',
-        name: 'Algorand',
-        fraction_decimals: 6,
-        logo: null,
-        network: ALGORAND_NETWORK,
-        price_in_usd: '1',
-        extra: {},
-    },
-    provider: {
-        id: 'meld',
-        payment_types: ['CARD'],
-        limits: { min_source_amount: '600', max_source_amount: '5000' },
-    },
+const ALGO_ASSET = {
+    asset_id: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/asa:0',
+    name: 'Algorand',
+    unit_name: 'ALGO',
+    fraction_decimals: 6,
 }
 
-const MELD_QUOTE = {
-    quote_id: 'quote-meld-600',
-    provider_response: {
-        sourceAmount: 600,
-        destinationAmount: 950.5,
-        sourceCurrencyCode: 'USD',
-        destinationCurrencyCode: 'ALGO',
-        totalFee: 6,
-        networkFee: null,
-        transactionFee: 6,
-        exchangeRate: 0.63,
-        paymentMethodType: 'CREDIT_DEBIT_CARD',
-        serviceProvider: 'MERCURYO',
-        institutionName: null,
-        lowKyc: false,
-    },
-    payment_method: {
-        id: 'CREDIT_DEBIT_CARD',
-        logo: null,
-        name: 'Credit card',
-    },
+const USD_ASSET = {
+    asset_id: 'swift:0/iso4217:USD',
+    name: 'US Dollar',
+    unit_name: 'USD',
+    fraction_decimals: 2,
+}
+
+// Meld (fiat) route: the form seeds a source amount and renders the full
+// quote-dependent row set, matching what a real user sees on mainnet.
+const DESTINATIONS = {
+    next: null,
+    results: [{ kind: 'token', asset: ALGO_ASSET }],
+}
+
+const SOURCES = {
+    next: null,
+    results: [{ kind: 'fiat', asset: USD_ASSET }],
+}
+
+const MELD_QUOTES = {
+    results: [
+        {
+            quote_id: 'quote-meld-600',
+            aggregator: 'meld',
+            provider: 'MERCURYO',
+            source_asset: USD_ASSET,
+            destination_asset: ALGO_ASSET,
+            source_amount: '60000',
+            destination_amount_expected: '950500000',
+            funding_method: 'provider_checkout',
+            extras: { payment_method: 'CREDIT_DEBIT_CARD' },
+        },
+    ],
 }
 
 test.beforeAll(async () => {
@@ -126,20 +113,36 @@ test.beforeAll(async () => {
         ],
     })
 
+    const json = (route: Route, body: unknown) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(body),
+        })
+
+    // Only the region still lives on /v1/ramp; the rest runs on the swap router.
     await context.route('**/v1/ramp/**', route => {
-        const url = route.request().url()
-        const json = (body: unknown) =>
-            route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify(body),
+        if (route.request().url().includes('/v1/ramp/regions')) {
+            return json(route, {
+                country_code: 'US',
+                country_name: 'United States',
             })
-        if (url.includes('/v1/ramp/pairs/')) return json([MELD_PAIR])
-        if (url.includes('/v1/ramp/regions'))
-            return json({ country_code: 'US', country_name: 'United States' })
-        if (url.includes('/v1/ramp/quotes/')) return json([MELD_QUOTE])
-        if (url.includes('/v1/ramp/history/'))
-            return json({ count: 0, next: null, previous: null, results: [] })
+        }
+        return route.continue()
+    })
+
+    await context.route('**/api/v4/swap/**', route => {
+        const url = new URL(route.request().url())
+        if (url.pathname.endsWith('/pairs/')) {
+            return json(
+                route,
+                url.searchParams.has('destination') ? SOURCES : DESTINATIONS,
+            )
+        }
+        if (url.pathname.endsWith('/quotes/')) return json(route, MELD_QUOTES)
+        if (url.pathname.endsWith('/history/')) {
+            return json(route, { next: null, results: [] })
+        }
         return route.continue()
     })
 

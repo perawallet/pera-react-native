@@ -15,13 +15,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Linking } from 'react-native'
 import { Decimal } from 'decimal.js'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
-import type { RampPair, MeldQuote } from '@perawallet/wallet-core-onramp'
+import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
+import {
+    makeAlgoToken,
+    makeDepositToken,
+    makeFiatToken,
+    makeRampPair,
+    makeRampToken,
+} from '@test-utils/rampFixtures'
 import { useOnrampConfirm } from '../useOnrampConfirm'
 
 // --- mock fns -------------------------------------------------------------
 
 const mockCreateRampOrder = vi.fn()
+const mockRememberDepositInstructions = vi.fn()
 const mockEnsureOptIn = vi.fn()
 const mockErrorToast = vi.fn()
 
@@ -47,7 +55,9 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
         useCreateRampOrderMutation: () => ({
             mutateAsync: mockCreateRampOrder,
         }),
-        useOnramp: () => ({ senderAddress: 'SENDER_ADDRESS' }),
+        useOnramp: () => ({
+            rememberDepositInstructions: mockRememberDepositInstructions,
+        }),
     }
 })
 
@@ -182,62 +192,25 @@ vi.mock('../useOnrampTerms', () => ({
 
 // --- fixtures -------------------------------------------------------------
 
-const meldPair: RampPair = {
-    id: 'pair-meld',
-    sourceToken: {
-        id: 'USD',
-        symbol: 'USD',
-        name: 'US Dollar',
-        fractionDecimals: 2,
-        logo: null,
-        network: { id: 'fiat', name: 'Fiat', logo: null },
-        priceInUsd: null,
-    },
-    destinationToken: {
-        id: 'ALGO',
-        symbol: 'ALGO',
-        name: 'Algorand',
-        fractionDecimals: 6,
-        logo: null,
-        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
-        priceInUsd: null,
-    },
-    provider: { id: 'meld', paymentTypes: ['CARD'], limits: null },
-}
+const meldPair = makeRampPair(makeFiatToken('USD'), makeAlgoToken())
 
-// Same pair with a USDC destination: unlike ALGO, USDC needs an ASA id, so
-// this is the fixture that reaches getKnownAssetId at all.
-const usdcPair: RampPair = {
-    ...meldPair,
-    id: 'pair-meld-usdc',
-    destinationToken: {
-        id: 'USDC_ALGORAND',
-        symbol: 'USDC',
-        name: 'USD Coin',
-        fractionDecimals: 6,
-        logo: null,
-        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
-        priceInUsd: null,
-    },
-}
+// Same pair with a USDC destination: unlike ALGO, USDC needs an ASA id.
+const usdcPair = makeRampPair(makeFiatToken('USD'), makeRampToken())
 
-const meldQuote: MeldQuote = {
+const depositPair = makeRampPair(makeDepositToken(), makeAlgoToken())
+
+const meldQuote: RampQuote = {
     kind: 'meld',
     quoteId: 'm1',
+    provider: 'STRIPE',
     paymentMethod: { id: 'CARD', logo: null, name: 'Card' },
     sourceAmount: new Decimal(100),
     destinationAmount: new Decimal(500),
-    sourceCurrencyCode: 'USD',
-    destinationCurrencyCode: 'ALGO',
-    totalFee: new Decimal(1),
-    networkFee: null,
-    transactionFee: new Decimal(1),
-    exchangeRate: new Decimal(5),
-    paymentMethodType: 'CARD',
-    serviceProvider: 'STRIPE',
-    institutionName: null,
-    lowKyc: false,
+    sourceValueInUsd: null,
+    destinationValueInUsd: null,
 }
+
+const xoQuote: RampQuote = { ...meldQuote, kind: 'xo', quoteId: 'x1' }
 
 const defaultProps: Parameters<typeof useOnrampConfirm>[0] = {
     selectedPair: meldPair,
@@ -288,10 +261,13 @@ describe('useOnrampConfirm', () => {
         expect(mockEnsureOptIn).toHaveBeenCalledWith(
             expect.objectContaining({
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
-                destinationToken: usdcPair.destinationToken,
+                assetId: '31566704',
             }),
         )
-        expect(mockCreateRampOrder).toHaveBeenCalled()
+        expect(mockCreateRampOrder).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            quoteId: 'm1',
+        })
     })
 
     it.each([
@@ -320,7 +296,7 @@ describe('useOnrampConfirm', () => {
         )
     })
 
-    it('bails out before opt-in when the network has no known destination asset id', async () => {
+    it("bails out before opt-in when the destination isn't an asset of the network", async () => {
         mockNetwork = 'betanet'
         const { result } = renderHook(() =>
             useOnrampConfirm({ ...defaultProps, selectedPair: usdcPair }),
@@ -348,11 +324,11 @@ describe('useOnrampConfirm', () => {
         expect(mockCreateRampOrder).not.toHaveBeenCalled()
     })
 
-    it('opens the Meld widget URL in the system browser', async () => {
+    it('opens the Meld checkout URL in the system browser', async () => {
         mockCreateRampOrder.mockResolvedValueOnce({
             kind: 'meld',
-            swapOrderId: 'order-meld-1',
-            widgetUrl: 'https://widget.example.com/session',
+            orderId: 'order-meld-1',
+            checkoutUrl: 'https://widget.example.com/session',
         })
         const { result } = renderHook(() => useOnrampConfirm(defaultProps))
 
@@ -365,11 +341,11 @@ describe('useOnrampConfirm', () => {
         )
     })
 
-    it('refuses a Meld widget URL that is not absolute https', async () => {
+    it('refuses a Meld checkout URL that is not absolute https', async () => {
         mockCreateRampOrder.mockResolvedValueOnce({
             kind: 'meld',
-            swapOrderId: 'order-meld-1',
-            widgetUrl: 'algorand://ATTACKER?amount=1',
+            orderId: 'order-meld-1',
+            checkoutUrl: 'algorand://ATTACKER?amount=1',
         })
         const { result } = renderHook(() => useOnrampConfirm(defaultProps))
 
@@ -378,5 +354,34 @@ describe('useOnrampConfirm', () => {
         })
 
         expect(Linking.openURL).not.toHaveBeenCalled()
+    })
+
+    it("remembers a deposit order's pay-in details and shows its review", async () => {
+        mockCreateRampOrder.mockResolvedValueOnce({
+            kind: 'xo',
+            orderId: 'order-xo-1',
+            deposit: { address: 'PAYIN', memo: '42' },
+        })
+        const onNavigateToHistory = vi.fn()
+        const { result } = renderHook(() =>
+            useOnrampConfirm({
+                ...defaultProps,
+                selectedPair: depositPair,
+                selectedQuote: xoQuote,
+                isMeld: false,
+                onNavigateToHistory,
+            }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockRememberDepositInstructions).toHaveBeenCalledWith(
+            'order-xo-1',
+            { address: 'PAYIN', memo: '42' },
+        )
+        expect(Linking.openURL).not.toHaveBeenCalled()
+        expect(onNavigateToHistory).toHaveBeenCalled()
     })
 })

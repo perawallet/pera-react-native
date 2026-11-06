@@ -4164,7 +4164,6 @@
             "source_amount": "Cantidad de origen",
             "destination_amount": "Cantidad de destino",
             "network": "Red",
-            "payment_method": "Método de pago",
             "created_at": "Creada el",
             "exchange_rate": "Tipo de cambio efectivo",
             "to_address": "Dirección de destino"
@@ -4181,7 +4180,9 @@
             "in_progress": "En curso",
             "completed": "Completada",
             "failed": "Fallida",
-            "cancelled": "Cancelada"
+            "cancelled": "Cancelada",
+            "expired": "Caducada",
+            "refunded": "Reembolsada"
         },
         "history": {
             "filter_all": "Todas",

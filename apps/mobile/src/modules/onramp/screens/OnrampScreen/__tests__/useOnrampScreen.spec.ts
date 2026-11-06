@@ -13,23 +13,32 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    useRampPairsQuery,
+    useRampDestinationsQuery,
     useRampRegionQuery,
+    useRampSourcesQuery,
     useOnramp,
-    type RampPair,
+    type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useIsFocused, useRoute } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
+import {
+    ALGO_ROUTER_ID,
+    USDC_ROUTER_ID,
+    makeAlgoToken,
+    makeFiatToken,
+    makeRampToken,
+} from '@test-utils/rampFixtures'
 import { useOnrampIntroduction } from '../useOnrampIntroduction'
 import { useOnrampScreen } from '../useOnrampScreen'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 
 vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
     ...(await importOriginal()),
-    useRampPairsQuery: vi.fn(),
+    useRampDestinationsQuery: vi.fn(),
+    useRampSourcesQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
     useOnramp: vi.fn(),
 }))
@@ -94,27 +103,14 @@ vi.mock('@analytics', () => ({
     },
 }))
 
-const makePair = (
-    id: string,
-    sourceTokenId: string,
-    destinationTokenId: string,
-): RampPair =>
-    ({
-        id,
-        sourceToken: { id: sourceTokenId, network: { id: 'FIAT' } },
-        destinationToken: {
-            id: destinationTokenId,
-            network: { id: 'ALGORAND' },
-        },
-        provider: { id: 'provider' },
-    }) as unknown as RampPair
+const ALGO = makeAlgoToken()
+const USDC = makeRampToken()
+const USD = makeFiatToken('USD')
+const DESTINATIONS = [USDC, ALGO]
+const SOURCES = [USD, makeFiatToken('EUR')]
 
-const PAIR_A = makePair('pair-a', 'USD', 'ALGO')
-const PAIR_B = makePair('pair-b', 'EUR', '31566704')
-const PAIRS = [PAIR_A, PAIR_B]
-
-type MockRampPairsQueryOverrides = {
-    data?: RampPair[]
+type MockQueryOverrides = {
+    data?: RampToken[]
     isLoading?: boolean
     isError?: boolean
     fetchStatus?: 'fetching' | 'paused' | 'idle'
@@ -123,16 +119,16 @@ type MockRampPairsQueryOverrides = {
     error?: unknown
 }
 
-const mockRampPairsQuery = ({
-    data,
+const mockDestinationsQuery = ({
+    data = [],
     isLoading = false,
     isError = false,
     fetchStatus = 'idle',
     status = 'success',
     refetch = vi.fn(),
     error = null,
-}: MockRampPairsQueryOverrides): void => {
-    vi.mocked(useRampPairsQuery).mockReturnValue({
+}: MockQueryOverrides): void => {
+    vi.mocked(useRampDestinationsQuery).mockReturnValue({
         data,
         isLoading,
         isError,
@@ -154,6 +150,7 @@ const setupOnramp = (overrides: Partial<ReturnType<typeof useOnramp>> = {}) => {
         setSelectedSourceTokenId: mockSetSelectedSourceTokenId,
         setSelectedDestinationTokenId: mockSetSelectedDestinationTokenId,
         setSenderAddress: vi.fn(),
+        rememberDepositInstructions: vi.fn(),
         ...overrides,
     })
 }
@@ -169,49 +166,51 @@ describe('useOnrampScreen', () => {
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
         vi.mocked(useOnrampAccount).mockReturnValue(fundableAccount())
-        vi.mocked(useRampPairsQuery).mockReturnValue({
-            data: PAIRS,
-            isLoading: false,
+        mockDestinationsQuery({ data: DESTINATIONS })
+        vi.mocked(useRampSourcesQuery).mockReturnValue({
+            data: SOURCES,
         } as never)
         setupOnramp()
     })
 
-    it('defaults the destination to ALGO and leaves the source unset when nothing is selected', () => {
+    it('defaults the destination to the native coin and leaves the source unset when nothing is selected', () => {
         renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('ALGO')
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
+            ALGO_ROUTER_ID,
+        )
         expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
     })
 
-    it('defaults to ALGO listed under its on-chain id', () => {
-        const algoByAssetId = makePair('pair-c', 'USD', '0')
-        vi.mocked(useRampPairsQuery).mockReturnValue({
-            data: [PAIR_B, algoByAssetId],
-            isLoading: false,
-        } as never)
+    it('falls back to the first destination when none is the native coin', () => {
+        mockDestinationsQuery({ data: [USDC] })
 
         renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('0')
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
+            USDC_ROUTER_ID,
+        )
     })
 
-    it("reseeds a remembered destination the account's chain does not list", () => {
-        setupOnramp({ selectedDestinationTokenId: 'ANOTHER_CHAINS_TOKEN' })
+    it('reseeds a remembered destination the router no longer lists, such as a v1 catalogue id', () => {
+        setupOnramp({ selectedDestinationTokenId: 'USDC_ALGORAND' })
 
         renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('ALGO')
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
+            ALGO_ROUTER_ID,
+        )
     })
 
-    it('keeps a remembered destination the pairs list', () => {
-        setupOnramp({ selectedDestinationTokenId: '31566704' })
+    it('keeps a remembered destination the router lists', () => {
+        setupOnramp({ selectedDestinationTokenId: USDC_ROUTER_ID })
 
         renderHook(() => useOnrampScreen())
 
         expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
     })
 
-    it('neither seeds nor asks for pairs while the account cannot be funded', () => {
+    it('neither seeds nor asks for destinations while the account cannot be funded', () => {
         vi.mocked(useOnrampAccount).mockReturnValue({
             account: null,
             scope: null,
@@ -220,81 +219,110 @@ describe('useOnrampScreen', () => {
 
         const { result } = renderHook(() => useOnrampScreen())
 
-        expect(useRampPairsQuery).toHaveBeenCalledWith({ scope: null })
+        expect(useRampDestinationsQuery).toHaveBeenCalledWith({ scope: null })
         expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
         expect(result.current.canFundSelectedAccount).toBe(false)
     })
 
-    it('seeds the destination from the route destinationTokenId param', () => {
+    it("seeds the destination from the route's asset id, matched through the chain's adapter", () => {
         vi.mocked(useRoute).mockReturnValue({
-            params: { destinationTokenId: '31566704' },
+            params: { destinationAssetId: '31566704' },
         } as never)
 
         renderHook(() => useOnrampScreen())
 
         expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
-            '31566704',
+            USDC_ROUTER_ID,
         )
         expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
     })
 
-    it('seeds the source only from a matching route sourceTokenId param', () => {
+    it('ignores a route asset id no destination matches', () => {
         vi.mocked(useRoute).mockReturnValue({
-            params: { sourceTokenId: 'USD' },
+            params: { destinationAssetId: '999' },
         } as never)
 
         renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedSourceTokenId).toHaveBeenCalledWith('USD')
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
+            ALGO_ROUTER_ID,
+        )
     })
 
     it('resolves selectedPair only when both source and destination are set', () => {
         setupOnramp({
-            selectedSourceTokenId: 'USD',
-            selectedDestinationTokenId: 'ALGO',
+            selectedSourceTokenId: USD.id,
+            selectedDestinationTokenId: ALGO_ROUTER_ID,
         })
 
         const { result } = renderHook(() => useOnrampScreen())
 
-        expect(result.current.selectedPair).toBe(PAIR_A)
-        expect(result.current.sourceToken).toBe(PAIR_A.sourceToken)
-        expect(result.current.destinationToken).toBe(PAIR_A.destinationToken)
+        expect(result.current.selectedPair).toEqual({
+            id: `${USD.id}|${ALGO_ROUTER_ID}`,
+            sourceToken: USD,
+            destinationToken: ALGO,
+        })
+        expect(result.current.sourceToken).toBe(USD)
+        expect(result.current.destinationToken).toBe(ALGO)
+    })
+
+    it("reads the sources of the selected destination, and none for one the router doesn't list", () => {
+        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
+        renderHook(() => useOnrampScreen())
+
+        expect(useRampSourcesQuery).toHaveBeenCalledWith({
+            scope: SCOPE,
+            destinationId: ALGO_ROUTER_ID,
+        })
+
+        setupOnramp({ selectedDestinationTokenId: 'stale' })
+        renderHook(() => useOnrampScreen())
+
+        expect(useRampSourcesQuery).toHaveBeenLastCalledWith({
+            scope: SCOPE,
+            destinationId: null,
+        })
     })
 
     it('leaves selectedPair null when only the destination is set', () => {
-        setupOnramp({ selectedDestinationTokenId: 'ALGO' })
+        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
 
         const { result } = renderHook(() => useOnrampScreen())
 
         expect(result.current.selectedPair).toBeNull()
         expect(result.current.sourceToken).toBeNull()
-        expect(result.current.destinationToken).toBe(PAIR_A.destinationToken)
+        expect(result.current.destinationToken).toBe(ALGO)
     })
 
-    it('is not ready while pairs are loading and ready once a destination resolves', () => {
-        vi.mocked(useRampPairsQuery).mockReturnValue({
-            data: undefined,
-            isLoading: true,
-        } as never)
+    it('leaves the source null when the selected one is not a source of the destination', () => {
+        setupOnramp({
+            selectedSourceTokenId: 'gone',
+            selectedDestinationTokenId: ALGO_ROUTER_ID,
+        })
+
+        const { result } = renderHook(() => useOnrampScreen())
+
+        expect(result.current.sourceToken).toBeNull()
+        expect(result.current.selectedPair).toBeNull()
+    })
+
+    it('is not ready while destinations are loading and ready once a destination resolves', () => {
+        mockDestinationsQuery({ data: [], isLoading: true })
 
         const { result, rerender } = renderHook(() => useOnrampScreen())
 
         expect(result.current.isReady).toBe(false)
 
-        vi.mocked(useRampPairsQuery).mockReturnValue({
-            data: PAIRS,
-            isLoading: false,
-        } as never)
-        setupOnramp({ selectedDestinationTokenId: 'ALGO' })
+        mockDestinationsQuery({ data: DESTINATIONS })
+        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
         rerender()
 
         expect(result.current.isReady).toBe(true)
     })
 
     describe('pairsState', () => {
-        it('is offline when the pairs query is paused with no cached data (true-offline, uncached)', () => {
-            mockRampPairsQuery({
-                data: undefined,
+        it('is offline when the query is paused with no cached data (true-offline, uncached)', () => {
+            mockDestinationsQuery({
                 isLoading: true,
                 isError: false,
                 fetchStatus: 'paused',
@@ -304,10 +332,10 @@ describe('useOnrampScreen', () => {
             expect(result.current.pairsState).toBe('offline')
         })
 
-        it('is ready with cached pairs even while paused (stale allowed)', () => {
-            setupOnramp({ selectedDestinationTokenId: 'ALGO' })
-            mockRampPairsQuery({
-                data: PAIRS,
+        it('is ready with cached destinations even while paused (stale allowed)', () => {
+            setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
+            mockDestinationsQuery({
+                data: DESTINATIONS,
                 isLoading: false,
                 isError: false,
                 fetchStatus: 'paused',
@@ -319,8 +347,7 @@ describe('useOnrampScreen', () => {
 
         it('is offline when the query errored and the device has no internet', () => {
             setHasInternet(false)
-            mockRampPairsQuery({
-                data: undefined,
+            mockDestinationsQuery({
                 isLoading: false,
                 isError: true,
                 fetchStatus: 'idle',
@@ -332,8 +359,7 @@ describe('useOnrampScreen', () => {
 
         it('is error when the query errored while online (fake-online regime)', () => {
             setHasInternet(true)
-            mockRampPairsQuery({
-                data: undefined,
+            mockDestinationsQuery({
                 isLoading: false,
                 isError: true,
                 fetchStatus: 'idle',
@@ -344,9 +370,8 @@ describe('useOnrampScreen', () => {
             expect(result.current.isPairsIntegrityBlocked).toBe(false)
         })
 
-        it('flags the integrity arm when the pairs were refused for the token', () => {
-            mockRampPairsQuery({
-                data: undefined,
+        it('flags the integrity arm when the destinations were refused for the token', () => {
+            mockDestinationsQuery({
                 isError: true,
                 status: 'error',
                 error: new IntegrityRequiredError({
@@ -360,8 +385,7 @@ describe('useOnrampScreen', () => {
         })
 
         it('is loading while genuinely fetching', () => {
-            mockRampPairsQuery({
-                data: undefined,
+            mockDestinationsQuery({
                 isLoading: true,
                 isError: false,
                 fetchStatus: 'fetching',
@@ -371,10 +395,9 @@ describe('useOnrampScreen', () => {
             expect(result.current.pairsState).toBe('loading')
         })
 
-        it('handleRetryPairs refetches the pairs query', () => {
+        it('handleRetryPairs refetches the destinations query', () => {
             const refetch = vi.fn()
-            mockRampPairsQuery({
-                data: undefined,
+            mockDestinationsQuery({
                 isLoading: false,
                 isError: true,
                 fetchStatus: 'idle',

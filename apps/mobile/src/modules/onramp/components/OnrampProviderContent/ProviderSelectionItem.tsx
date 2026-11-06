@@ -10,31 +10,22 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
 import { PWChip, PWRadioButton, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    quoteDestinationAmount,
-    quoteDestinationValueInUsd,
-    type RampQuote,
-} from '@perawallet/wallet-core-onramp'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { getOnrampDestinationCurrency } from '../onrampQuoteDisplay'
+import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import { useStyles } from './styles'
 import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
-/** `priceInUsd` on the ramp token is USD-denominated, so the value line is too. */
+/** The quote's USD values are USD-denominated, so the value line is too. */
 const USD_CURRENCY = 'USD'
 
 export type ProviderSelectionItemProps = {
     label: string
     quote: RampQuote
-    /** Display units; XO destination amounts are computed from it. */
-    sourceAmount: Nullable<Decimal>
-    /** Destination token price in USD; null hides the fiat value line. */
-    destinationPriceInUsd: Nullable<Decimal>
+    /** The receive asset's symbol, which the amount is shown in. */
+    destinationSymbol: string
     isBest: boolean
     isSelected: boolean
     onPress: () => void
@@ -44,8 +35,7 @@ export type ProviderSelectionItemProps = {
 export const ProviderSelectionItem = ({
     label,
     quote,
-    sourceAmount,
-    destinationPriceInUsd,
+    destinationSymbol,
     isBest,
     isSelected,
     onPress,
@@ -53,17 +43,12 @@ export const ProviderSelectionItem = ({
 }: ProviderSelectionItemProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    // Provider quote currencies are trusted codes (Meld fiat/crypto codes, XO
-    // asset ids), so the native ticker may translate to the glyph-earning id.
-    const destinationCurrency = getOnrampDestinationCurrency(quote)
+    // The symbol comes from the router's asset, so the native ticker may
+    // translate to the glyph-earning id.
     const chainId = useOnrampAccount().scope?.chainId ?? null
     const assetIdOf = (code: string) =>
         chainId === null ? null : displayCurrencyToAssetId(code, chainId)
-    const destinationValueInUsd = quoteDestinationValueInUsd(
-        quote,
-        sourceAmount,
-        destinationPriceInUsd,
-    )
+    const { destinationValueInUsd } = quote
 
     return (
         <PWRadioButton
@@ -93,9 +78,9 @@ export const ProviderSelectionItem = ({
                 <PWView style={styles.rightColumn}>
                     <CurrencyAmount
                         chainId={chainId}
-                        currency={destinationCurrency}
-                        assetId={assetIdOf(destinationCurrency)}
-                        value={quoteDestinationAmount(quote, sourceAmount)}
+                        currency={destinationSymbol}
+                        assetId={assetIdOf(destinationSymbol)}
+                        value={quote.destinationAmount}
                         precision='compact'
                         showSymbol
                         alignRight

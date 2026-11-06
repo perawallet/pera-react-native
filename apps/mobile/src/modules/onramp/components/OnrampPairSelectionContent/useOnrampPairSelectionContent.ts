@@ -20,7 +20,9 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     rampTokenAsset,
-    useRampPairsQuery,
+    useOnramp,
+    useRampDestinationsQuery,
+    useRampSourcesQuery,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -53,7 +55,19 @@ export const useOnrampPairSelectionContent = ({
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
     const { account } = useOnrampAccount()
     const { resolve } = useBottomSheetResult<string>()
-    const { data: pairs, isLoading } = useRampPairsQuery({ scope })
+    const { selectedDestinationTokenId } = useOnramp()
+    // Both queries are hooks, so each runs; the one the variant doesn't list stays idle.
+    const destinationsQuery = useRampDestinationsQuery({
+        scope,
+        enabled: variant === 'destination',
+    })
+    const sourcesQuery = useRampSourcesQuery({
+        scope,
+        destinationId: selectedDestinationTokenId,
+        enabled: variant === 'source',
+    })
+    const { data: listed, isLoading } =
+        variant === 'source' ? sourcesQuery : destinationsQuery
     const { accountBalances } = useAccountBalancesQuery(
         account ? [account] : [],
         scope,
@@ -69,28 +83,17 @@ export const useOnrampPairSelectionContent = ({
     }, [accountBalances, selectedAddress])
 
     const tokens = useMemo((): RampToken[] => {
-        const seen = new Set<string>()
-        const deduped: RampToken[] = []
-        for (const pair of pairs ?? []) {
-            const token =
-                variant === 'source' ? pair.sourceToken : pair.destinationToken
-            if (!seen.has(token.id)) {
-                seen.add(token.id)
-                deduped.push(token)
-            }
-        }
-
         const term = searchFilter.toLowerCase().trim()
         const filtered = term
-            ? deduped.filter(
+            ? listed.filter(
                   token =>
                       token.name.toLowerCase().includes(term) ||
                       token.symbol.toLowerCase().includes(term),
               )
-            : deduped
+            : listed
 
         return [...filtered].sort((a, b) => a.name.localeCompare(b.name))
-    }, [pairs, variant, searchFilter])
+    }, [listed, searchFilter])
 
     const assetIdOf = useCallback(
         (token: RampToken) => rampTokenAsset(token, scope)?.assetId ?? null,

@@ -23,6 +23,8 @@ export type OnrampAmountFieldsProps = {
     destinationToken: Nullable<RampToken>
     sourceAmountText: string
     destinationAmount: Nullable<Decimal>
+    sourceUsdPrice: Nullable<Decimal>
+    destinationUsdPrice: Nullable<Decimal>
     limits: Nullable<RampQuoteLimits>
     isReceiveLoading: boolean
     onSourceAmountTextChange: (text: string) => void
@@ -36,6 +38,8 @@ export const OnrampAmountFields = ({
     destinationToken,
     sourceAmountText,
     destinationAmount,
+    sourceUsdPrice,
+    destinationUsdPrice,
     limits,
     isReceiveLoading,
     onSourceAmountTextChange,
@@ -56,6 +60,7 @@ export const OnrampAmountFields = ({
                 token={sourceToken}
                 amountText={sourceAmountText}
                 onAmountTextChange={onSourceAmountTextChange}
+                usdPrice={sourceUsdPrice}
                 onAssetPress={onOpenSource}
             />
 
@@ -83,6 +88,7 @@ export const OnrampAmountFields = ({
                     variant='receive'
                     token={destinationToken}
                     amount={destinationAmount}
+                    usdPrice={destinationUsdPrice}
                     onAssetPress={onOpenDestination}
                     isLoading={isReceiveLoading}
                 />

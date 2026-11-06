@@ -41,6 +41,8 @@ export const OnrampForm = ({
         sourceAmountText,
         setSourceAmountText,
         destinationAmount,
+        sourceUsdPrice,
+        destinationUsdPrice,
         selectedQuote,
         isQuoting,
         errorMessage,
@@ -83,6 +85,8 @@ export const OnrampForm = ({
                 destinationToken={destinationToken}
                 sourceAmountText={sourceAmountText}
                 destinationAmount={destinationAmount}
+                sourceUsdPrice={sourceUsdPrice}
+                destinationUsdPrice={destinationUsdPrice}
                 limits={limits}
                 isReceiveLoading={isQuoting}
                 onSourceAmountTextChange={setSourceAmountText}

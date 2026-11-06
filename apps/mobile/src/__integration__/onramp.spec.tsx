@@ -14,10 +14,10 @@
 // OnrampForm and wallet-core-onramp hooks. Only the network (MSW) and base app
 // state (selected account, network, device, opt-in holdings) are seeded.
 //
-// XO quotes are fetched once per pair with a null source amount — the provider
-// returns a fixed rate and limits, and the receive amount is computed locally.
-// The fetch is debounced 500ms, so the test waits on the receive amount with
-// real timers rather than mocking the clock.
+// Every provider's quote is fetched per amount through the v4 swap router; the
+// receive amount is the offer's expected amount. The fetch is debounced 500ms,
+// so the test waits on the receive amount with real timers rather than mocking
+// the clock.
 
 import {
     afterAll,
@@ -76,7 +76,8 @@ import { useWebViewStore } from '@modules/webview'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { OnrampScreen } from '@modules/onramp/routes'
 import {
-    mockRampPairs,
+    mockRampDestinations,
+    mockRampSources,
     mockRampRegion,
     mockCreateRampQuote,
     mockCreateRampQuoteError,
@@ -84,6 +85,7 @@ import {
     mockRampHistory,
     type MockRampPairsParams,
     type MockCreateRampQuoteParams,
+    type MockCreateRampQuoteErrorParams,
     type MockCreateRampOrderParams,
     type MockRampHistoryParams,
 } from '@perawallet/wallet-core-onramp/test-handlers'
@@ -104,8 +106,9 @@ import { addressOf } from './__fixtures__/accounts'
 // The API-response shapes aren't exported from the package (schemas are
 // internal); the mock-factory param types carry them, so derive the fixture
 // types from there.
-type RampPairApiResponse = MockRampPairsParams['response'][number]
-type RampQuoteApiResponse = MockCreateRampQuoteParams['response'][number]
+type RampPairRow = MockRampPairsParams['response']['results'][number]
+type RampAsset = RampPairRow['asset']
+type RampOffer = MockCreateRampQuoteParams['response']['results'][number]
 type RampOrderApiResponse = MockCreateRampOrderParams['response']
 type RampHistoryPageApiResponse = MockRampHistoryParams['response']
 
@@ -131,165 +134,136 @@ const markXoTermsAccepted = () => {
 // mainnet (the integration default network). The opt-in check reads the
 // account's algod holdings for this id.
 const USDC_MAINNET_ASSET_ID = 31_566_704
+const USDC_ASSET_NUMBER = '31566704'
 
 const PAY_IN_ADDRESS =
     'XOPAYINADDRESS33333333333333333333333333333333333333333333Q'
 const TO_ADDRESS = ALGO25_TEST_ADDRESS
 
-const ALGORAND_NETWORK = {
-    id: 'ALGORAND',
-    name: 'Algorand',
-    logo: null,
+// The router's asset ids (CAIP-19).
+const MAINNET_CAIP2 = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+const ALGO_ID = `${MAINNET_CAIP2}/asa:0`
+const USDC_ID = `${MAINNET_CAIP2}/asa:${USDC_ASSET_NUMBER}`
+const BTC_ID = 'bip122:000000000019d6689c085ae165831e93/slip44:0'
+const USD_ID = 'swift:0/iso4217:USD'
+
+const ALGO_ASSET: RampAsset = {
+    asset_id: ALGO_ID,
+    name: 'ALGO',
+    unit_name: 'ALGO',
+    fraction_decimals: 6,
+}
+const USDC_ASSET: RampAsset = {
+    asset_id: USDC_ID,
+    name: 'USDC',
+    unit_name: 'USDC',
+    fraction_decimals: 6,
+}
+const BTC_ASSET: RampAsset = {
+    asset_id: BTC_ID,
+    name: 'Bitcoin',
+    unit_name: 'BTC',
+    fraction_decimals: 8,
+    chain: 'Bitcoin',
+}
+const USD_ASSET: RampAsset = {
+    asset_id: USD_ID,
+    name: 'US Dollar',
+    unit_name: 'USD',
+    fraction_decimals: 2,
 }
 
-// XO pair: crypto (BTC) → ALGO. `provider.id` is anything other than 'meld'
-// so the form treats it as an XO pair (XO quotes are fetched once with a null
-// source amount).
-const buildPair = (
-    overrides: {
-        id: string
-        destinationId: string
-        destinationSymbol: string
-    } = {
-        id: 'pair-btc-algo',
-        destinationId: 'ALGO',
-        destinationSymbol: 'ALGO',
-    },
-): RampPairApiResponse => ({
-    id: overrides.id,
-    source_token: {
-        id: 'BTC',
-        symbol: 'BTC',
-        name: 'Bitcoin',
-        fraction_decimals: 8,
-        logo: null,
-        network: { id: 'BITCOIN', name: 'Bitcoin', logo: null },
-        price_in_usd: '60000',
-        extra: {},
-    },
-    destination_token: {
-        id: overrides.destinationId,
-        symbol: overrides.destinationSymbol,
-        name: overrides.destinationSymbol,
-        fraction_decimals: 6,
-        logo: null,
-        network: ALGORAND_NETWORK,
-        price_in_usd: '1',
-        extra: {},
-    },
-    provider: {
-        id: 'xo',
-        payment_types: ['CRYPTO'],
-        limits: { min_source_amount: '0.001', max_source_amount: '10' },
-    },
+const row = (asset: RampAsset, kind: string): RampPairRow => ({
+    kind,
+    asset,
+    aggregator: 'meld',
+    funding_method: 'provider_checkout',
 })
 
-// XO quote: rate = 1000 destination per 1 source, minus a 0.5 miner fee.
-// For a 1.0 source amount the receive amount is 1000 * 1 - 0.5 = 999.5.
+// The destinations Fund lists, and the deposit sources of one of them. The
+// destination is the one the form opens on (native) unless told otherwise.
+const buildXoPairHandlers = (destination: RampAsset = ALGO_ASSET) => [
+    mockRampDestinations({
+        response: { next: null, results: [row(destination, 'token')] },
+    }),
+    mockRampSources({
+        response: { next: null, results: [row(BTC_ASSET, 'deposit')] },
+    }),
+]
+
+const buildMeldPairHandlers = () => [
+    mockRampDestinations({
+        response: { next: null, results: [row(ALGO_ASSET, 'token')] },
+    }),
+    mockRampSources({
+        response: { next: null, results: [row(USD_ASSET, 'fiat')] },
+    }),
+]
+
+// XO offer: 1 BTC (the amount the tests enter) buys 999.5 of the destination.
 const buildXoQuote = (
-    destinationAssetId: string,
+    destination: RampAsset = ALGO_ASSET,
     quoteId = 'quote-xo-1',
-): RampQuoteApiResponse => ({
+): RampOffer => ({
     quote_id: quoteId,
-    provider_response: {
-        amount: { assetId: destinationAssetId, value: 1000 },
-        min: { assetId: 'BTC', value: 0.001 },
-        max: { assetId: 'BTC', value: 10 },
-        minerFee: { assetId: destinationAssetId, value: 0.5 },
-        expiry: 4_102_444_800,
-        id: 'provider-quote-1',
-        pairId: 'provider-pair-1',
-    },
-    payment_method: { id: 'CREDIT_CARD', logo: null, name: 'Credit card' },
+    aggregator: 'xo',
+    provider: 'XO',
+    source_asset: BTC_ASSET,
+    destination_asset: destination,
+    source_amount: '100000000',
+    destination_amount_expected: '999500000',
+    funding_method: 'external_deposit',
 })
 
-// Meld pair: fiat (USD) → ALGO. `provider.id === 'meld'` switches the form to
-// the fiat flow (amount seeded to 100, auto re-quote on every edit).
-const buildMeldPair = (): RampPairApiResponse => ({
-    id: 'pair-usd-algo',
-    source_token: {
-        id: 'USD',
-        symbol: 'USD',
-        name: 'US Dollar',
-        fraction_decimals: 2,
-        logo: null,
-        network: { id: 'FIAT', name: 'Fiat', logo: null },
-        price_in_usd: '1',
-        extra: {},
-    },
-    destination_token: {
-        id: 'ALGO',
-        symbol: 'ALGO',
-        name: 'Algorand',
-        fraction_decimals: 6,
-        logo: null,
-        network: ALGORAND_NETWORK,
-        price_in_usd: '1',
-        extra: {},
-    },
-    provider: {
-        id: 'meld',
-        payment_types: ['CARD'],
-        limits: { min_source_amount: '600', max_source_amount: '5000' },
-    },
-})
-
-// Meld quote at the provider minimum: 600 USD → 950.5 ALGO.
+// Meld offer at the provider minimum: 600 USD -> 950.5 ALGO.
 const buildMeldQuoteResponse = (
     overrides: {
         quoteId?: string
         destinationAmount?: number
+        destinationUsdValue?: string
         serviceProvider?: string
         paymentMethodId?: string
     } = {},
-): RampQuoteApiResponse => ({
+): RampOffer => ({
     quote_id: overrides.quoteId ?? 'quote-meld-600',
-    provider_response: {
-        sourceAmount: 600,
-        destinationAmount: overrides.destinationAmount ?? 950.5,
-        sourceCurrencyCode: 'USD',
-        destinationCurrencyCode: 'ALGO',
-        totalFee: 6,
-        networkFee: null,
-        transactionFee: 6,
-        exchangeRate: 0.63,
-        paymentMethodType: overrides.paymentMethodId ?? 'CREDIT_DEBIT_CARD',
-        serviceProvider: overrides.serviceProvider ?? 'MERCURYO',
-        institutionName: null,
-        lowKyc: false,
-    },
-    payment_method: {
-        id: overrides.paymentMethodId ?? 'CREDIT_DEBIT_CARD',
-        logo: null,
-        name: overrides.paymentMethodId ?? 'Credit card',
+    aggregator: 'meld',
+    provider: overrides.serviceProvider ?? 'MERCURYO',
+    source_asset: USD_ASSET,
+    destination_asset: ALGO_ASSET,
+    source_amount: '60000',
+    destination_amount_expected: String(
+        Math.round((overrides.destinationAmount ?? 950.5) * 1_000_000),
+    ),
+    source_amount_usd_value: '600',
+    destination_amount_usd_value: overrides.destinationUsdValue ?? null,
+    funding_method: 'provider_checkout',
+    extras: {
+        payment_method: overrides.paymentMethodId ?? 'CREDIT_DEBIT_CARD',
     },
 })
 
-// Real /v1/ramp/quotes/ 400 body: the single-quoted JSON leaf in
-// non_field_errors[0] carries the provider limits.
-const buildBelowMinQuoteErrorBody = (leaf?: string) => ({
-    type: 'SourceAmountIsTooLow',
-    fallback_message: 'Amount is too low.',
-    detail: {
-        non_field_errors: [
-            leaf ??
-                "{'message': 'Source amount is below the minimum allowed, which is 600.00.', 'min_amount': '600.00', 'max_amount': '5000.00'}",
-        ],
-    },
+// The router's refusal of an amount below the minimum. A real one carries no
+// maximum; the default adds one to keep the MIN and MAX pill segments.
+const buildBelowMinQuoteErrorBody = (
+    withMaximum = true,
+): MockCreateRampQuoteErrorParams['response'] => ({
+    error: 'Source amount is below the minimum allowed.',
+    code: 'amount_too_low',
+    source_amount_minimum: '60000',
+    ...(withMaximum ? { source_amount_maximum: '500000' } : {}),
 })
 
 const buildXoOrder = (): RampOrderApiResponse => ({
-    swap_order_id: 'order-1',
-    xo: {
-        pay_in_address: PAY_IN_ADDRESS,
-        source_amount: '1',
-        provider_response: {
-            payInAddress: PAY_IN_ADDRESS,
-            toAddress: TO_ADDRESS,
-            status: 'pending',
+    order_id: 'order-1',
+    status: 'pending',
+    expires_at: null,
+    steps: [
+        {
+            kind: 'deposit_instructions',
+            address: PAY_IN_ADDRESS,
+            memo: null,
         },
-    },
-    meld: null,
+    ],
 })
 
 const REGION_RESPONSE = {
@@ -306,72 +280,30 @@ const seedDeviceId = () => {
 
 const HISTORY_ORDER_ID = 'history-order-1'
 
-// One completed Meld (fiat) history item: 100 USD → 50 ALGO. Meld carries the
-// fiat/destination currency codes, so the list row renders
-// "100 USD for 50 ALGO" and the details sheet shows the order id.
+// One completed provider-checkout (fiat) history item: 100 USD -> 50 ALGO. The
+// list row renders "100 USD for 50 ALGO" and the details sheet shows the order
+// id.
+const buildMeldHistoryItem = (
+    orderId: string,
+    status: 'completed' | 'pending' = 'completed',
+): RampHistoryPageApiResponse['results'][number] => ({
+    order_id: orderId,
+    aggregator: 'meld',
+    provider: 'MELD',
+    status,
+    funding_method: 'provider_checkout',
+    destination_account: `${MAINNET_CAIP2}:${TO_ADDRESS}`,
+    source_asset: USD_ASSET,
+    destination_asset: ALGO_ASSET,
+    source_amount: '10000',
+    destination_amount_expected: '50000000',
+    created_at: '2025-12-23T23:16:00Z',
+})
+
 const buildMeldHistoryPage = (): RampHistoryPageApiResponse => ({
-    count: 1,
     next: null,
     previous: null,
-    results: [
-        {
-            id: HISTORY_ORDER_ID,
-            creation_datetime: '2025-12-23T23:16:00Z',
-            status: 'completed',
-            ramp_quote: {
-                id: 'ramp-quote-1',
-                provider: 'meld',
-                payment_method: {
-                    id: 'CREDIT_CARD',
-                    logo: null,
-                    name: 'Credit card',
-                },
-                pair: {
-                    id: 'pair-usd-algo',
-                    source_token: {
-                        id: 'USD',
-                        symbol: 'USD',
-                        name: 'US Dollar',
-                        fraction_decimals: 2,
-                        logo: null,
-                        network: ALGORAND_NETWORK,
-                        price_in_usd: '1',
-                        extra: {},
-                    },
-                    destination_token: {
-                        id: 'ALGO',
-                        symbol: 'ALGO',
-                        name: 'Algorand',
-                        fraction_decimals: 6,
-                        logo: null,
-                        network: ALGORAND_NETWORK,
-                        price_in_usd: '1',
-                        extra: {},
-                    },
-                    provider: {
-                        id: 'meld',
-                        payment_types: ['CARD'],
-                        limits: {
-                            min_source_amount: '1',
-                            max_source_amount: '1000',
-                        },
-                    },
-                },
-                provider_responses: {
-                    quotes_response: {
-                        sourceAmount: 100,
-                        destinationAmount: 50,
-                        sourceCurrencyCode: 'USD',
-                        destinationCurrencyCode: 'ALGO',
-                        serviceProvider: 'meld',
-                    },
-                    order_response: {
-                        id: HISTORY_ORDER_ID,
-                    },
-                },
-            },
-        },
-    ],
+    results: [buildMeldHistoryItem(HISTORY_ORDER_ID)],
 })
 
 const seedSelectedAccount = (): WalletAccount => {
@@ -526,17 +458,11 @@ const installDelegatedOptInHandlers = ({
         http.post('*/v2/transactions', sendSpy),
         // Asset metadata lookups (opt-in sheet + post-submit refresh).
         mockAssetItems(),
-        mockRampPairs({
-            response: [
-                buildPair({
-                    id: 'pair-btc-usdc',
-                    destinationId: 'USDC_ALGORAND',
-                    destinationSymbol: 'USDC',
-                }),
-            ],
-        }),
+        ...buildXoPairHandlers(USDC_ASSET),
         mockRampRegion({ response: REGION_RESPONSE }),
-        mockCreateRampQuote({ response: [buildXoQuote('USDC_ALGORAND')] }),
+        mockCreateRampQuote({
+            response: { results: [buildXoQuote(USDC_ASSET)] },
+        }),
         mockCreateRampOrder({ response: buildXoOrder() }),
     )
 }
@@ -582,7 +508,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             markIntroSeen()
             useNetworkStore.getState().setMode('developer')
             server.use(
-                mockRampPairs({ response: [buildPair()] }),
+                ...buildXoPairHandlers(),
                 mockRampRegion({ response: REGION_RESPONSE }),
             )
 
@@ -605,17 +531,16 @@ describe('Flow: Onramp buy (native XO)', () => {
         // Mark the intro as seen so the screen renders the form directly.
         markIntroSeen()
         markXoTermsAccepted()
-        // The source is unset on entry now; seed the selection so a pair
-        // resolves (source_token.id is 'BTC' in buildPair, destination ALGO).
+        // The source is unset on entry; seed the selection so a pair resolves.
         useOnrampStore.setState({
-            selectedSourceTokenId: 'BTC',
-            selectedDestinationTokenId: 'ALGO',
+            selectedSourceTokenId: BTC_ID,
+            selectedDestinationTokenId: ALGO_ID,
         })
 
         server.use(
-            mockRampPairs({ response: [buildPair()] }),
+            ...buildXoPairHandlers(),
             mockRampRegion({ response: REGION_RESPONSE }),
-            mockCreateRampQuote({ response: [buildXoQuote('ALGO')] }),
+            mockCreateRampQuote({ response: { results: [buildXoQuote()] } }),
             mockCreateRampOrder({ response: buildXoOrder() }),
         )
 
@@ -660,8 +585,8 @@ describe('Flow: Onramp buy (native XO)', () => {
         markIntroSeen()
         markXoTermsAccepted()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'BTC',
-            selectedDestinationTokenId: 'USDC_ALGORAND',
+            selectedSourceTokenId: BTC_ID,
+            selectedDestinationTokenId: USDC_ID,
         })
 
         // Account already holds USDC on-chain → ensureOptIn takes the
@@ -681,18 +606,10 @@ describe('Flow: Onramp buy (native XO)', () => {
                     ],
                 },
             }),
-            mockRampPairs({
-                response: [
-                    buildPair({
-                        id: 'pair-btc-usdc',
-                        destinationId: 'USDC_ALGORAND',
-                        destinationSymbol: 'USDC',
-                    }),
-                ],
-            }),
+            ...buildXoPairHandlers(USDC_ASSET),
             mockRampRegion({ response: REGION_RESPONSE }),
             mockCreateRampQuote({
-                response: [buildXoQuote('USDC_ALGORAND')],
+                response: { results: [buildXoQuote(USDC_ASSET)] },
             }),
             mockCreateRampOrder({ response: buildXoOrder() }),
         )
@@ -731,12 +648,12 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedSelectedAccount()
         markIntroSeen()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'USD',
-            selectedDestinationTokenId: 'ALGO',
+            selectedSourceTokenId: USD_ID,
+            selectedDestinationTokenId: ALGO_ID,
         })
 
         server.use(
-            mockRampPairs({ response: [buildMeldPair()] }),
+            ...buildMeldPairHandlers(),
             mockRampRegion({ response: REGION_RESPONSE }),
             mockCreateRampQuoteError({
                 response: buildBelowMinQuoteErrorBody(),
@@ -763,7 +680,9 @@ describe('Flow: Onramp buy (native XO)', () => {
 
         // Swap in a successful quote for the re-fetch, then tap MIN.
         server.use(
-            mockCreateRampQuote({ response: [buildMeldQuoteResponse()] }),
+            mockCreateRampQuote({
+                response: { results: [buildMeldQuoteResponse()] },
+            }),
         )
         fireEvent.click(screen.getByTestId('onramp-min-button'))
 
@@ -786,35 +705,35 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedSelectedAccount()
         markIntroSeen()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'USD',
-            selectedDestinationTokenId: 'ALGO',
+            selectedSourceTokenId: USD_ID,
+            selectedDestinationTokenId: ALGO_ID,
         })
 
-        // ALGO at $0.50 so the fiat value line cannot be confused with the
-        // ALGO amount (or with the quote's $6 fee).
-        const pair = buildMeldPair()
-        pair.destination_token.price_in_usd = '0.5'
-
+        // The offer values 960 ALGO at $480, so the fiat value line cannot be
+        // confused with the ALGO amount (or with a fee).
         server.use(
-            mockRampPairs({ response: [pair] }),
+            ...buildMeldPairHandlers(),
             mockRampRegion({ response: REGION_RESPONSE }),
             mockCreateRampQuote({
-                response: [
-                    buildMeldQuoteResponse({
-                        quoteId: 'quote-mercuryo-card',
-                        destinationAmount: 950.5,
-                    }),
-                    buildMeldQuoteResponse({
-                        quoteId: 'quote-mercuryo-apple',
-                        destinationAmount: 940,
-                        paymentMethodId: 'APPLE_PAY',
-                    }),
-                    buildMeldQuoteResponse({
-                        quoteId: 'quote-banxa-card',
-                        destinationAmount: 960,
-                        serviceProvider: 'BANXA',
-                    }),
-                ],
+                response: {
+                    results: [
+                        buildMeldQuoteResponse({
+                            quoteId: 'quote-mercuryo-card',
+                            destinationAmount: 950.5,
+                        }),
+                        buildMeldQuoteResponse({
+                            quoteId: 'quote-mercuryo-apple',
+                            destinationAmount: 940,
+                            paymentMethodId: 'APPLE_PAY',
+                        }),
+                        buildMeldQuoteResponse({
+                            quoteId: 'quote-banxa-card',
+                            destinationAmount: 960,
+                            destinationUsdValue: '480',
+                            serviceProvider: 'BANXA',
+                        }),
+                    ],
+                },
             }),
         )
 
@@ -857,17 +776,15 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedSelectedAccount()
         markIntroSeen()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'USD',
-            selectedDestinationTokenId: 'ALGO',
+            selectedSourceTokenId: USD_ID,
+            selectedDestinationTokenId: ALGO_ID,
         })
 
         server.use(
-            mockRampPairs({ response: [buildMeldPair()] }),
+            ...buildMeldPairHandlers(),
             mockRampRegion({ response: REGION_RESPONSE }),
             mockCreateRampQuoteError({
-                response: buildBelowMinQuoteErrorBody(
-                    "{'message': 'Too low.', 'min_amount': '600.00'}",
-                ),
+                response: buildBelowMinQuoteErrorBody(false),
             }),
         )
 
@@ -882,10 +799,10 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedDeviceId()
         markIntroSeen()
 
-        // The Fund tab still loads pairs/region on mount; stub them so the
+        // The Fund tab still loads destinations/region on mount; stub them so the
         // screen settles, then serve the history page for the History tab.
         server.use(
-            mockRampPairs({ response: [buildPair()] }),
+            ...buildXoPairHandlers(),
             mockRampRegion({ response: REGION_RESPONSE }),
             mockRampHistory({ response: buildMeldHistoryPage() }),
         )
@@ -927,36 +844,16 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedDeviceId()
         markIntroSeen()
 
-        // Two items with distinct statuses; the handler honours the
-        // `status` query param so filtering happens server-side as in
-        // production.
-        const basePage = buildMeldHistoryPage()
-        const completedItem = {
-            ...basePage.results[0]!,
-            id: 'h-completed',
-            status: 'completed',
-        }
-        const pendingItem = {
-            ...basePage.results[0]!,
-            id: 'h-pending',
-            status: 'pending',
-        }
-        const allResults = [completedItem, pendingItem]
+        // Two items with distinct statuses. The router has no status filter,
+        // so the list narrows the loaded items itself.
+        const completedItem = buildMeldHistoryItem('h-completed', 'completed')
+        const pendingItem = buildMeldHistoryItem('h-pending', 'pending')
 
         server.use(
-            mockRampPairs({ response: [buildPair()] }),
+            ...buildXoPairHandlers(),
             mockRampRegion({ response: REGION_RESPONSE }),
-            http.get('*/v1/ramp/history/*', ({ request }) => {
-                const status = new URL(request.url).searchParams.get('status')
-                const results = status
-                    ? allResults.filter(item => item.status === status)
-                    : allResults
-                return HttpResponse.json({
-                    count: results.length,
-                    next: null,
-                    previous: null,
-                    results,
-                })
+            mockRampHistory({
+                response: { next: null, results: [completedItem, pendingItem] },
             }),
         )
 
@@ -1049,8 +946,8 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedDeviceId()
         seedAttestation()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'BTC',
-            selectedDestinationTokenId: 'USDC_ALGORAND',
+            selectedSourceTokenId: BTC_ID,
+            selectedDestinationTokenId: USDC_ID,
         })
 
         let feeDelegationBody: CapturedFeeDelegationBody | null = null
@@ -1114,8 +1011,8 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedDeviceId()
         seedAttestation()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'BTC',
-            selectedDestinationTokenId: 'USDC_ALGORAND',
+            selectedSourceTokenId: BTC_ID,
+            selectedDestinationTokenId: USDC_ID,
         })
 
         let feeDelegationBody: CapturedFeeDelegationBody | null = null
@@ -1171,8 +1068,8 @@ describe('Flow: Onramp buy (native XO)', () => {
         seedDeviceId()
         seedAttestation()
         useOnrampStore.setState({
-            selectedSourceTokenId: 'BTC',
-            selectedDestinationTokenId: 'USDC_ALGORAND',
+            selectedSourceTokenId: BTC_ID,
+            selectedDestinationTokenId: USDC_ID,
         })
 
         const feeDelegationSpy = vi.fn()

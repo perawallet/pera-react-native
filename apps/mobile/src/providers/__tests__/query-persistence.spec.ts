@@ -185,7 +185,10 @@ describe('shouldDehydrateQuery', () => {
     it('persists a module catalog sub-key without persisting its address-keyed siblings', () => {
         expect(
             shouldDehydrateQuery(
-                asQuery(['onramp', 'pairs', { scope: MAINNET }], 'success'),
+                asQuery(
+                    ['onramp', 'destinations', { scope: MAINNET }],
+                    'success',
+                ),
             ),
         ).toBe(true)
         expect(

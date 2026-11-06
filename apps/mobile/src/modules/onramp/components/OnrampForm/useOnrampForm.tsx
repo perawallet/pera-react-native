@@ -14,16 +14,16 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
     useOnramp,
+    useRampRegionQuery,
     parseRampAmount,
-    quoteDestinationAmount,
+    quoteUsdPrices,
     type RampPair,
     type RampQuote,
     type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '@hooks/useLanguage'
-import { ONRAMP_AMOUNT_ERROR_DEBOUNCE_TIME } from '@constants/ui'
-import { getXoLimitViolation, isMeldPair } from './onrampFormHelpers'
+import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { isMeldPair } from './onrampFormHelpers'
 import { useOnrampQuotes } from './useOnrampQuotes'
 import { useOnrampConfirm } from './useOnrampConfirm'
 import { useOnrampSheets } from './useOnrampSheets'
@@ -33,6 +33,10 @@ type UseOnrampFormResult = {
     sourceAmountText: string
     setSourceAmountText: (text: string) => void
     destinationAmount: Nullable<Decimal>
+    /** USD per unit of the pay asset, from the selected quote; null until one arrives. */
+    sourceUsdPrice: Nullable<Decimal>
+    /** USD per unit of the receive asset, from the selected quote; null until one arrives. */
+    destinationUsdPrice: Nullable<Decimal>
     quotes: RampQuote[]
     selectedQuote: Nullable<RampQuote>
     selectQuote: (quoteId: string) => void
@@ -58,8 +62,7 @@ type UseOnrampFormResult = {
 
 /**
  * Drives the onramp buy form. The amount field and its derived display
- * (receive amount, limits, validation) live here; the quote lifecycle,
- * sheet handlers, and confirm flow are delegated to focused sub-hooks:
+ * (receive amount, limits) live here; the quote lifecycle, sheet handlers, and confirm flow are delegated to focused sub-hooks:
  *
  * - {@link useOnrampQuotes} — debounced fetching + quote/payment selection
  * - {@link useOnrampSheets} — the selection bottom-sheet handlers
@@ -73,7 +76,8 @@ export const useOnrampForm = (
     selectedPair: Nullable<RampPair>,
     onNavigateToHistory?: () => void,
 ): UseOnrampFormResult => {
-    const { t } = useLanguage()
+    const { scope } = useOnrampAccount()
+    const { data: region } = useRampRegionQuery({ scope })
     const {
         senderAddress,
         setSenderAddress,
@@ -85,7 +89,6 @@ export const useOnrampForm = (
     const pairId = selectedPair?.id ?? null
 
     const [sourceAmountText, setSourceAmountText] = useState('')
-    const [limitError, setLimitError] = useState<Nullable<string>>(null)
 
     // Display units; null while the text is empty or not a plain decimal.
     const sourceAmount = useMemo(
@@ -109,72 +112,20 @@ export const useOnrampForm = (
         selectedPaymentMethodId,
         selectPaymentMethod,
         isBestOffer,
-    } = useOnrampQuotes({ pairId, isMeld, sourceAmount })
+    } = useOnrampQuotes({
+        pair: selectedPair,
+        sourceAmount,
+        // Optional: a blank entry means no refund address, not an empty one.
+        refundAddress: senderAddress.trim() || null,
+        countryCode: region?.countryCode ?? null,
+    })
 
-    // --- destination amount + XO limits + inline validation --------------
-    const destinationAmount = useMemo<Nullable<Decimal>>(() => {
-        if (!selectedQuote) return null
-        if (selectedQuote.kind === 'meld')
-            return selectedQuote.destinationAmount
-        if (sourceAmount === null) return null
-        return quoteDestinationAmount(selectedQuote, sourceAmount)
-    }, [selectedQuote, sourceAmount])
-
-    // XO quotes carry min/max in the quote itself; Meld limits only surface
-    // through a SourceAmountIsTooLow quote error (quoteLimits).
-    const xoLimits = useMemo<Nullable<{ min: Decimal; max: Decimal }>>(
-        () =>
-            selectedQuote?.kind === 'xo'
-                ? { min: selectedQuote.min.value, max: selectedQuote.max.value }
-                : null,
-        [selectedQuote],
-    )
-
-    const limits = useMemo<Nullable<RampQuoteLimits>>(
-        () => xoLimits ?? quoteLimits,
-        [xoLimits, quoteLimits],
-    )
-
-    // XO inline limit validation, debounced so it doesn't flash mid-typing.
-    // Meld validity comes from the fetch (no client-side limits), so the limit
-    // error only ever applies to XO.
-    useEffect(() => {
-        if (selectedQuote?.kind !== 'xo') {
-            setLimitError(null)
-            return
-        }
-        const violation = getXoLimitViolation(selectedQuote, sourceAmount)
-        const limitMessageOf = () => {
-            if (!violation) return null
-            switch (violation.type) {
-                case 'below': {
-                    return t('onramp.form.amount_below_min', {
-                        min: violation.min,
-                    })
-                }
-                case 'above': {
-                    return t('onramp.form.amount_above_max', {
-                        max: violation.max,
-                    })
-                }
-                default: {
-                    const exhaustive: never = violation
-                    return exhaustive
-                }
-            }
-        }
-        const message = limitMessageOf()
-
-        const timeoutId = setTimeout(
-            () => setLimitError(message),
-            ONRAMP_AMOUNT_ERROR_DEBOUNCE_TIME,
-        )
-        return () => clearTimeout(timeoutId)
-    }, [selectedQuote, sourceAmount, t])
+    const destinationAmount = selectedQuote?.destinationAmount ?? null
+    const { source: sourceUsdPrice, destination: destinationUsdPrice } =
+        useMemo(() => quoteUsdPrices(selectedQuote), [selectedQuote])
 
     const sheets = useOnrampSheets({
         quotes,
-        sourceAmount,
         // Pass the EFFECTIVE selected quote id (the auto-picked best when the
         // user hasn't chosen one) so the provider sheet pre-selects a radio on
         // first open rather than showing nothing selected.
@@ -182,8 +133,7 @@ export const useOnrampForm = (
         selectQuote,
         selectedPaymentMethodId,
         selectPaymentMethod,
-        destinationPriceInUsd:
-            selectedPair?.destinationToken.priceInUsd ?? null,
+        destinationSymbol: selectedPair?.destinationToken.symbol ?? '',
         senderAddress,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
@@ -203,17 +153,16 @@ export const useOnrampForm = (
         sourceAmountText,
         setSourceAmountText,
         destinationAmount,
+        sourceUsdPrice,
+        destinationUsdPrice,
         quotes,
         selectedQuote,
         selectQuote,
         selectedPaymentMethodId,
         selectPaymentMethod,
         isQuoting,
-        // Fetch errors and the XO limit error are disjoint (Meld never
-        // validates limits; XO never re-fetches on amount edits), so a simple
-        // precedence covers both.
-        errorMessage: quotesError ?? limitError,
-        limits,
+        errorMessage: quotesError,
+        limits: quoteLimits,
         isBestOffer,
         isMeld,
         senderAddress: senderAddress === '' ? null : senderAddress,

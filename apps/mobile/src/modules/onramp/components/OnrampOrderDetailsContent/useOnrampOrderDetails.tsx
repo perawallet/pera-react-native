@@ -12,10 +12,9 @@
 
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
-import { deploymentOf } from '@perawallet/wallet-core-config'
-import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useCancelRampOrderMutation,
+    useRampDepositInstructions,
     toOnrampUserMessage,
     type OnrampStatus,
     type RampHistoryItem,
@@ -46,17 +45,15 @@ type UseOnrampOrderDetailsResult = {
     destinationAmountLabel: Nullable<string>
     /** Network display name (e.g. "Solana"); null when unavailable. */
     networkName: Nullable<string>
-    /** Payment method name; null when unavailable. */
-    paymentMethodName: Nullable<string>
     /** Long datetime, e.g. "Dec 23, 2025 at 11:16 PM". */
     createdAtLabel: string
     /** "1 {SRC} ≈ {rate} {DST}" or null when amounts are missing/zero. */
     exchangeRateLabel: Nullable<string>
-    /** Receiving address (XO order's `toAddress`, else the selected account). */
+    /** Receiving address (the order's `toAddress`, else the selected account). */
     toAddress: Nullable<string>
     /** Source token logo for the QR center; null when unavailable. */
     sourceLogo: Nullable<string>
-    /** Pay-in (deposit) address for a pending XO order; null otherwise. */
+    /** Pay-in (deposit) address of a deposit order placed on this device; null otherwise. */
     payInAddress: Nullable<string>
     payInAddressTag: Nullable<string>
     /** Order id used to prefill the support email subject. */
@@ -89,13 +86,18 @@ export const useOnrampOrderDetails = (
     const { request: requestBottomSheet } = useBottomSheet()
     const { successToast, errorToast } = useToast()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
-    const deviceId = useDeploymentDeviceID(deploymentOf(scope))
     const { mutateAsync: cancelOrder, isPending: isCancelling } =
         useCancelRampOrderMutation()
 
-    const isXo = item.provider.toLowerCase() === 'xo'
+    const isXo = item.kind === 'xo'
+    // The router's order items carry no deposit address; this device kept the
+    // instructions of the deposit orders it placed.
+    const rememberedDeposit = useRampDepositInstructions(item.id)
+    const payInAddress = item.payInAddress ?? rememberedDeposit?.address ?? null
+    const payInAddressTag =
+        item.payInAddressTag ?? rememberedDeposit?.memo ?? null
     const isPendingXo =
-        isXo && item.status === 'pending' && Boolean(item.payInAddress)
+        isXo && item.status === 'pending' && payInAddress !== null
 
     const sourceSymbol = item.pair.sourceToken.symbol
     const destinationSymbol = item.pair.destinationToken.symbol
@@ -111,14 +113,7 @@ export const useOnrampOrderDetails = (
             : null
 
     const handleCancelOrder = useCallback(async () => {
-        if (
-            !item.swapOrderId ||
-            !deviceId ||
-            !selectedAccountAddress ||
-            scope === null
-        ) {
-            return
-        }
+        if (item.status !== 'pending' || scope === null) return
 
         // Confirm before cancelling — cancellation is irreversible.
         const confirmed = await requestBottomSheet<boolean>({
@@ -140,12 +135,7 @@ export const useOnrampOrderDetails = (
         if (!confirmed) return
 
         try {
-            await cancelOrder({
-                scope,
-                swapOrderId: item.swapOrderId,
-                deviceId,
-                accountAddress: selectedAccountAddress,
-            })
+            await cancelOrder({ scope, orderId: item.id })
             dismiss()
             successToast('', t('onramp.order_review.cancel_success'))
         } catch (error) {
@@ -159,9 +149,8 @@ export const useOnrampOrderDetails = (
             }
         }
     }, [
-        item.swapOrderId,
-        deviceId,
-        selectedAccountAddress,
+        item.id,
+        item.status,
         scope,
         cancelOrder,
         dismiss,
@@ -184,7 +173,6 @@ export const useOnrampOrderDetails = (
             destinationSymbol,
         ),
         networkName: item.pair.sourceToken.network.name || null,
-        paymentMethodName: item.paymentMethod.name || null,
         createdAtLabel: formatDatetime(
             item.creationDatetime,
             undefined,
@@ -193,9 +181,9 @@ export const useOnrampOrderDetails = (
         exchangeRateLabel,
         toAddress: item.toAddress ?? selectedAccountAddress ?? null,
         sourceLogo: item.pair.sourceToken.logo ?? null,
-        payInAddress: item.payInAddress ?? null,
-        payInAddressTag: item.payInAddressTag ?? null,
-        contactOrderId: item.swapOrderId ?? item.id,
+        payInAddress,
+        payInAddressTag,
+        contactOrderId: item.id,
         isCancelling,
         handleCancelOrder,
     }

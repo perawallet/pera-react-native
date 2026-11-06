@@ -11,6 +11,6 @@
  */
 
 export type OnrampScreenParams = {
-    sourceTokenId?: string
-    destinationTokenId?: string
+    /** The destination's asset id in its chain's own encoding. */
+    destinationAssetId?: string
 }

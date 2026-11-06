@@ -30,6 +30,8 @@ type OnrampAmountSectionPayProps = {
     /** Raw text of the pay field, owned by the form. */
     amountText: string
     onAmountTextChange: (text: string) => void
+    /** USD per unit of the token, from the selected quote; null renders the fiat line as zero. */
+    usdPrice: Nullable<Decimal>
     onAssetPress: () => void
 }
 
@@ -38,6 +40,8 @@ type OnrampAmountSectionReceiveProps = {
     token: Nullable<RampToken>
     /** Quoted destination amount (`destinationAmount`). */
     amount: Nullable<Decimal>
+    /** USD per unit of the token, from the selected quote; null renders the fiat line as zero. */
+    usdPrice: Nullable<Decimal>
     onAssetPress: () => void
     isLoading?: boolean
 }
@@ -143,7 +147,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                 <PreferredAmount
                     sourceAmount={fiatBaseAmount}
                     sourceAssetId={token?.id ?? ''}
-                    usdPrice={token?.priceInUsd ?? ZERO_DECIMAL}
+                    usdPrice={props.usdPrice ?? ZERO_DECIMAL}
                     forceFallback={shouldUseUsdFallback}
                     variant='body'
                     style={styles.fiatValue}

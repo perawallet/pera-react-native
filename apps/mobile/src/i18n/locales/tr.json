@@ -4164,7 +4164,6 @@
             "source_amount": "Kaynak miktarı",
             "destination_amount": "Hedef miktarı",
             "network": "Ağ",
-            "payment_method": "Ödeme yöntemi",
             "created_at": "Oluşturulma tarihi",
             "exchange_rate": "Gerçekleşen kur",
             "to_address": "Alıcı adresi"
@@ -4181,7 +4180,9 @@
             "in_progress": "Devam ediyor",
             "completed": "Tamamlandı",
             "failed": "Başarısız",
-            "cancelled": "İptal edildi"
+            "cancelled": "İptal edildi",
+            "expired": "Süresi doldu",
+            "refunded": "İade edildi"
         },
         "history": {
             "filter_all": "Tümü",

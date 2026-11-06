@@ -4156,7 +4156,6 @@
             "source_amount": "Quellbetrag",
             "destination_amount": "Zielbetrag",
             "network": "Netzwerk",
-            "payment_method": "Zahlungsmethode",
             "created_at": "Erstellt am",
             "exchange_rate": "Effektiver Wechselkurs",
             "to_address": "Zieladresse"
@@ -4173,7 +4172,9 @@
             "in_progress": "In Bearbeitung",
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
-            "cancelled": "Storniert"
+            "cancelled": "Storniert",
+            "expired": "Abgelaufen",
+            "refunded": "Erstattet"
         },
         "history": {
             "filter_all": "Alle",

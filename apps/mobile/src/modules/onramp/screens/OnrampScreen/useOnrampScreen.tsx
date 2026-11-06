@@ -17,8 +17,10 @@ import {
     useRoute,
 } from '@react-navigation/native'
 import {
-    useRampPairsQuery,
+    buildRampPair,
+    useRampDestinationsQuery,
     useRampRegionQuery,
+    useRampSourcesQuery,
     useOnramp,
     rampTokenAsset,
     type RampPair,
@@ -48,7 +50,6 @@ type UseOnrampScreenResult = {
     isReady: boolean
     pairsState: 'ready' | 'loading' | 'offline' | 'error'
     isPairsIntegrityBlocked: boolean
-    pairs: RampPair[]
     sourceToken: Nullable<RampToken>
     destinationToken: Nullable<RampToken>
     selectedPair: Nullable<RampPair>
@@ -63,23 +64,24 @@ type UseOnrampScreenResult = {
     handleRetryPairs: () => void
 }
 
-// Resolve the destination token id to seed when none is selected: a matching
-// route param wins, else the chain's native coin, else the first available
+// Resolve the destination token id to seed when none is selected: the route's
+// asset wins, else the chain's native coin, else the first available
 // destination token.
 const resolveSeedDestinationId = (
-    pairs: RampPair[],
-    destinationTokenId: Optional<string>,
+    destinations: RampToken[],
+    destinationAssetId: Optional<string>,
     scope: ChainScope,
 ): Nullable<string> => {
-    const destinationIds = pairs.map(pair => pair.destinationToken.id)
-    if (destinationTokenId && destinationIds.includes(destinationTokenId)) {
-        return destinationTokenId
-    }
-    const nativePair = pairs.find(
-        pair => rampTokenAsset(pair.destinationToken, scope)?.isNative,
-    )
-    if (nativePair) return nativePair.destinationToken.id
-    return destinationIds[0] ?? null
+    const assetOf = (token: RampToken) => rampTokenAsset(token, scope)
+    const requested = destinationAssetId
+        ? destinations.find(
+              token => assetOf(token)?.assetId === destinationAssetId,
+          )
+        : undefined
+    if (requested) return requested.id
+    const native = destinations.find(token => assetOf(token)?.isNative)
+    if (native) return native.id
+    return destinations[0]?.id ?? null
 }
 
 export const useOnrampScreen = (): UseOnrampScreenResult => {
@@ -93,62 +95,49 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
     const trackOnrampEvent = useTrackOnrampEvent()
-    const pairsQuery = useRampPairsQuery({ scope })
-    const { data: pairs = [], isLoading: pairsLoading } = pairsQuery
+    const pairsQuery = useRampDestinationsQuery({ scope })
+    const { data: destinations, isLoading: pairsLoading } = pairsQuery
     const { hasInternet } = useNetworkStatus()
     const { data: region } = useRampRegionQuery({ scope })
     const {
         selectedSourceTokenId,
         selectedDestinationTokenId,
-        setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
     } = useOnramp()
     const { isIntroductionSeen, markIntroductionSeen } = useOnrampIntroduction()
 
     const [activeTab, setActiveTab] = useState<OnrampTab>('fund')
 
-    const sourceTokenId = params?.sourceTokenId
-    const destinationTokenId = params?.destinationTokenId
+    const destinationAssetId = params?.destinationAssetId
 
-    // Seed destination (defaults to the native coin) and source (only from a
-    // route param — otherwise the source stays unset so the pay selector shows
-    // "Choose an asset" on every fresh entry). A persisted destination another
-    // chain's pairs don't list is reseeded, or the form would wait on it.
+    // Seed the destination (defaults to the native coin). The source stays
+    // unset so the pay selector shows "Choose an asset" on every fresh entry.
+    // A persisted destination the router no longer lists is reseeded, or the
+    // form would wait on it.
     useEffect(() => {
-        if (scope === null || pairsLoading || pairs.length === 0) return
+        if (scope === null || pairsLoading || destinations.length === 0) return
 
-        const isDestinationListed = pairs.some(
-            pair => pair.destinationToken.id === selectedDestinationTokenId,
+        const isDestinationListed = destinations.some(
+            token => token.id === selectedDestinationTokenId,
         )
         if (selectedDestinationTokenId === null || !isDestinationListed) {
             const seedDestinationId = resolveSeedDestinationId(
-                pairs,
-                destinationTokenId,
+                destinations,
+                destinationAssetId,
                 scope,
             )
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
             }
         }
-
-        if (selectedSourceTokenId === null && sourceTokenId) {
-            const hasSource = pairs.some(
-                pair => pair.sourceToken.id === sourceTokenId,
-            )
-            if (hasSource) {
-                setSelectedSourceTokenId(sourceTokenId)
-            }
-        }
-        // selectedSource/Destination are intentionally omitted: re-seeding on
-        // each selection change would fight user-driven switches.
+        // selectedDestination is intentionally omitted: re-seeding on each
+        // selection change would fight user-driven switches.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-        pairs,
+        destinations,
         pairsLoading,
-        sourceTokenId,
-        destinationTokenId,
+        destinationAssetId,
         scope,
-        setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
     ])
 
@@ -212,27 +201,28 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
 
     const destinationToken = useMemo<Nullable<RampToken>>(
         () =>
-            pairs.find(
-                pair => pair.destinationToken.id === selectedDestinationTokenId,
-            )?.destinationToken ?? null,
-        [pairs, selectedDestinationTokenId],
+            destinations.find(
+                token => token.id === selectedDestinationTokenId,
+            ) ?? null,
+        [destinations, selectedDestinationTokenId],
     )
 
+    const { data: sources } = useRampSourcesQuery({
+        scope,
+        destinationId: destinationToken?.id ?? null,
+    })
+
     const sourceToken = useMemo<Nullable<RampToken>>(
-        () =>
-            pairs.find(pair => pair.sourceToken.id === selectedSourceTokenId)
-                ?.sourceToken ?? null,
-        [pairs, selectedSourceTokenId],
+        () => sources.find(token => token.id === selectedSourceTokenId) ?? null,
+        [sources, selectedSourceTokenId],
     )
 
     const selectedPair = useMemo<Nullable<RampPair>>(
         () =>
-            pairs.find(
-                pair =>
-                    pair.sourceToken.id === selectedSourceTokenId &&
-                    pair.destinationToken.id === selectedDestinationTokenId,
-            ) ?? null,
-        [pairs, selectedSourceTokenId, selectedDestinationTokenId],
+            sourceToken !== null && destinationToken !== null
+                ? buildRampPair(sourceToken, destinationToken)
+                : null,
+        [sourceToken, destinationToken],
     )
 
     const isReady = !pairsLoading && destinationToken !== null
@@ -262,7 +252,6 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         isPairsIntegrityBlocked:
             pairsState === 'error' &&
             isIntegrityRequiredError(pairsQuery.error),
-        pairs,
         sourceToken,
         destinationToken,
         selectedPair,

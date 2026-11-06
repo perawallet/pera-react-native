@@ -73,7 +73,7 @@ export const useOnrampConfirm = ({
     const { t } = useLanguage()
     const { scope, address: selectedAccountAddress } = useOnrampAccount()
     const trackOnrampEvent = useTrackOnrampEvent()
-    const { senderAddress } = useOnramp()
+    const { rememberDepositInstructions } = useOnramp()
     const { request: requestBottomSheet } = useBottomSheet()
     const { errorToast } = useToast()
     const { isTermsAccepted, markTermsAccepted } = useOnrampTerms()
@@ -121,9 +121,11 @@ export const useOnrampConfirm = ({
 
             // The destination has no asset on this network, so there is
             // nothing to prepare or fund: bail out quietly.
-            if (rampTokenAsset(selectedPair.destinationToken, scope) === null) {
-                return
-            }
+            const destinationAsset = rampTokenAsset(
+                selectedPair.destinationToken,
+                scope,
+            )
+            if (destinationAsset === null) return
 
             // Preparation (an asset opt-in, say) MUST resolve before the
             // order is created. The user confirms it via the standard opt-in
@@ -132,7 +134,7 @@ export const useOnrampConfirm = ({
             const canReceive = await ensureCanReceive({
                 address: currentAddress,
                 scope,
-                destinationToken: selectedPair.destinationToken,
+                assetId: destinationAsset.assetId,
                 confirm: async ({ assetId, isSponsored }) => {
                     const result = await requestBottomSheet<'confirm'>({
                         contents: (
@@ -152,16 +154,9 @@ export const useOnrampConfirm = ({
                 return
             }
 
-            // XO sender address is optional — send null (not an empty string)
-            // when unset, or the backend rejects it as a missing required field.
-            const sourceAddress = isMeld
-                ? currentAddress
-                : senderAddress.trim() || null
             const order = await createOrder({
                 scope,
-                quote: selectedQuote.quoteId,
-                sourceAmount,
-                sourceAddress,
+                quoteId: selectedQuote.quoteId,
             })
 
             if (order.kind === 'meld') {
@@ -169,8 +164,12 @@ export const useOnrampConfirm = ({
                 // in-app webview — the webview blocks some of the provider
                 // payment flows (matching the web app, which opens the system
                 // browser here).
-                openValidatedBrowserUrl(order.widgetUrl)
+                openValidatedBrowserUrl(order.checkoutUrl)
             } else {
+                // The router's order items carry no deposit address, so the
+                // History tab can only show the pay-in details of an order
+                // whose instructions this device kept.
+                rememberDepositInstructions(order.orderId, order.deposit)
                 // A freshly-placed XO order is a pending history entry — render
                 // the shared order-details sheet (titled "Swap Review").
                 const reviewItem = buildPendingXoHistoryItem(
@@ -178,6 +177,7 @@ export const useOnrampConfirm = ({
                     selectedPair,
                     sourceAmount,
                     destinationAmount,
+                    currentAddress,
                     new Date().toISOString(),
                 )
                 await requestBottomSheet({
@@ -218,7 +218,7 @@ export const useOnrampConfirm = ({
         selectedAccountAddress,
         scope,
         isMeld,
-        senderAddress,
+        rememberDepositInstructions,
         isTermsAccepted,
         markTermsAccepted,
         ensureCanReceive,
