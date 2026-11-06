@@ -13,43 +13,43 @@
 import type { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetTierChip } from '@modules/assets'
+import { swapAssetIconSource } from '../../utils/swapAssetIconSource'
 import { useStyles } from './styles'
 
 type SwapAssetSectionProps = {
     asset: Optional<PeraAsset>
+    swapAsset: SwapAsset
     chainId: ChainId
     amountDisplay: string
     fiatValue: Nullable<Decimal>
-    unitName?: string
-    verificationTier: string
 }
 
 export const SwapAssetSection = ({
     asset,
+    swapAsset,
     chainId,
     amountDisplay,
     fiatValue,
-    unitName,
-    verificationTier,
 }: SwapAssetSectionProps) => {
     const styles = useStyles()
+    const icon = swapAssetIconSource(asset, swapAsset)
 
     return (
         <PWView style={styles.assetSection}>
             <PWView style={styles.assetRow}>
                 <PWView style={styles.assetAmountContainer}>
-                    {asset && (
-                        <AssetIcon
-                            chainId={chainId}
-                            asset={asset}
-                            size='lg'
-                        />
-                    )}
+                    <AssetIcon
+                        chainId={chainId}
+                        asset={icon.asset}
+                        logoUrl={icon.logoUrl}
+                        size='lg'
+                    />
                     <PWView style={styles.amountTextContainer}>
                         <PWText
                             variant='h3'
@@ -68,8 +68,8 @@ export const SwapAssetSection = ({
                     </PWView>
                 </PWView>
                 <AssetTierChip
-                    unitName={unitName}
-                    verificationTier={verificationTier}
+                    unitName={swapAsset.unitName}
+                    verificationTier={swapAsset.verificationTier}
                     size='md'
                 />
             </PWView>

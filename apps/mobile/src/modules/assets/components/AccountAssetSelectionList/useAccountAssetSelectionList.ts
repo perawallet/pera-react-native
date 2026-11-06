@@ -17,8 +17,11 @@ import {
     useAccountBalancesQuery,
     useAccountChainId,
     useAccountHoldingsAcrossChainsQuery,
+    useHiddenTokensStore,
     useSelectedAccount,
+    canHideHolding,
     chainAccountOf,
+    hiddenAssetIdsOf,
 } from '@perawallet/wallet-core-accounts'
 
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
@@ -79,17 +82,41 @@ export const useAccountAssetSelectionList = ({
     const { assetBalances: heldAcrossChains } = acrossChains
     const { isPending, isError } = chainIds ? acrossChains : singleChain
 
+    const hiddenTokens = useHiddenTokensStore(state => state.hiddenTokens)
+
+    // A token the user hid is out of every list of what the account holds,
+    // this picker's search included; unhiding it is what brings it back.
     const balanceData = useMemo<ChainAssetBalance[]>(() => {
+        const isHidden = ({ scope: held, assetId }: ChainAssetBalance) =>
+            canHideHolding(held.chainId, assetId) &&
+            !!selectedAccount &&
+            hiddenAssetIdsOf(
+                hiddenTokens,
+                chainAccountOf(selectedAccount, held.chainId)?.address ?? '',
+                held,
+            ).includes(assetId)
         if (chainIds) {
-            return heldAcrossChains.filter(balance =>
-                chainIds.includes(balance.scope.chainId),
+            return heldAcrossChains.filter(
+                balance =>
+                    chainIds.includes(balance.scope.chainId) &&
+                    !isHidden(balance),
             )
         }
         const own = selectedAddress
             ? accountBalances.get(selectedAddress)?.assetBalances
             : undefined
-        return (own ?? []).map(balance => ({ ...balance, scope }))
-    }, [accountBalances, chainIds, heldAcrossChains, selectedAddress, scope])
+        return (own ?? [])
+            .map(balance => ({ ...balance, scope }))
+            .filter(balance => !isHidden(balance))
+    }, [
+        accountBalances,
+        chainIds,
+        heldAcrossChains,
+        selectedAddress,
+        selectedAccount,
+        hiddenTokens,
+        scope,
+    ])
 
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)

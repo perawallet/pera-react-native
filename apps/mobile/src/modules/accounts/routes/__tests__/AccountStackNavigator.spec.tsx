@@ -48,6 +48,9 @@ vi.mock('@modules/assets/screens/AssetDetailsScreen', () => ({
 vi.mock('@modules/assets/screens/CollectibleDetailScreen', () => ({
     CollectibleDetailScreen: () => null,
 }))
+vi.mock('@modules/accounts/screens/HideTokensScreen', () => ({
+    HideTokensScreen: () => null,
+}))
 vi.mock('@modules/accounts/screens/RemoveAssetsScreen', () => ({
     RemoveAssetsScreen: () => null,
 }))
@@ -105,5 +108,11 @@ describe('AccountStackNavigator', () => {
         setCapabilityOverrides({ manageAssets: false })
 
         expect(registeredNames()).not.toContain('RemoveAssets')
+    })
+
+    it('keeps the hide-tokens screen registered when manageAssets is off, as hiding signs nothing', () => {
+        setCapabilityOverrides({ manageAssets: false })
+
+        expect(registeredNames()).toContain('HideTokens')
     })
 })

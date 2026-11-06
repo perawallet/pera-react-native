@@ -14,11 +14,13 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useCanBuyAsset } from '@perawallet/wallet-core-onramp'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
+import { unvettedTierOf } from '@modules/assets/utils/verification'
 
 export type UseAssetActionButtonsResult = {
     canSwap: boolean
@@ -30,20 +32,24 @@ export type UseAssetActionButtonsResult = {
 export const useAssetActionButtons = (
     account: Maybe<WalletAccount>,
     chainId: ChainId,
-    assetId?: string,
+    asset?: DisplayableAsset,
 ): UseAssetActionButtonsResult => {
     const canSwapOnChain = useSwapScope(account ?? null, chainId) !== null
     const canBuy = useCanBuyAsset({
         account: account ?? null,
         chainId,
-        assetId,
+        assetId: asset?.assetId,
     })
     // A send runs on the asset's chain, whichever of the account's chains that is.
     const canSendOnChain = useChainCapability(chainId, 'send')
     const canReceiveOnChain = useChainCapability(chainId, 'receive')
     const isOnChain = !account || chainAccountOf(account, chainId) !== undefined
+    // A swap sends the user to approve a contract; for a token nobody vetted,
+    // that is the lure to avoid.
+    const isUnvetted =
+        asset !== undefined && unvettedTierOf(asset, chainId) !== null
     return {
-        canSwap: canSwapOnChain,
+        canSwap: canSwapOnChain && !isUnvetted,
         canBuy,
         canSend: canSendOnChain && isOnChain,
         canReceive: canReceiveOnChain && isOnChain,

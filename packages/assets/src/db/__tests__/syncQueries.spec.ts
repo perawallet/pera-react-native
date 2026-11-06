@@ -458,6 +458,114 @@ describe('asset sync queries', () => {
         })
     })
 
+    describe('getStaleOrMissingAssetIds — missing logo recheck', () => {
+        const withLogo = (
+            logo: string | null,
+            overrides: {
+                tier?: 'verified' | 'unverified' | 'suspicious'
+                type?: PeraAssetType
+            } = {},
+        ) =>
+            makeAsset({
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: overrides.tier ?? 'verified',
+                    logo,
+                    type: overrides.type,
+                },
+            })
+
+        const seedPera = (asset: PeraAsset) =>
+            upsertAssets({ db, items: [asset], scope: MAINNET_SCOPE })
+
+        // Older than the day's retry, younger than the metadata TTL, so only
+        // the logo recheck can return it.
+        const ageRows = () =>
+            db.run(
+                sql`update assets_pera set updated_at = ${Date.now() - 2 * 24 * 60 * 60 * 1000}`,
+            )
+
+        const recheck = (recheckMissingLogo = true, assetIds = ['31566704']) =>
+            getStaleOrMissingAssetIds({
+                db,
+                assetIds,
+                scope: MAINNET_SCOPE,
+                ttlMs: 7 * 24 * 60 * 60 * 1000,
+                recheckMissingLogo,
+            })
+
+        it('rechecks a verified token whose Pera row carries no logo once a day old', async () => {
+            await seedPera(withLogo(null))
+            await ageRows()
+
+            expect(await recheck()).toEqual(['31566704'])
+        })
+
+        it('leaves a verified token that has a logo', async () => {
+            await seedPera(withLogo('https://pera.test/usdc.png'))
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves an unverified logo-less token on the normal TTL', async () => {
+            await seedPera(withLogo(null, { tier: 'unverified' }))
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves a suspicious token alone, as the backend never describes it', async () => {
+            await seedPera(withLogo(null, { tier: 'suspicious' }))
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves a token stored without a Pera row on the normal TTL', async () => {
+            await upsertNodeAssets({
+                db,
+                items: [makeAsset()],
+                scope: MAINNET_SCOPE,
+            })
+            await db.run(
+                sql`update assets_node set updated_at = ${Date.now() - 2 * 24 * 60 * 60 * 1000}`,
+            )
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves collectibles alone', async () => {
+            await seedPera(withLogo(null, { type: 'collectible' }))
+            await ageRows()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('filters a large id set in JS and still finds the logo-less token', async () => {
+            await seedPera(withLogo(null))
+            await ageRows()
+            const filler = Array.from({ length: 2000 }, (_, i) => `x${i}`)
+
+            expect(await recheck(true, ['31566704', ...filler])).toContain(
+                '31566704',
+            )
+        })
+
+        it('waits out the day after a read that found no logo', async () => {
+            await seedPera(withLogo(null))
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the flag', async () => {
+            await seedPera(withLogo(null))
+            await ageRows()
+
+            expect(await recheck(false)).toEqual([])
+        })
+    })
+
     describe('getStaleOrMissingAssetIds — ARC19 recheck', () => {
         // ARC19 media is mutable: the manager's acfg re-points the reserve
         // address at a new CID and the backend re-crawls, but only a re-fetch

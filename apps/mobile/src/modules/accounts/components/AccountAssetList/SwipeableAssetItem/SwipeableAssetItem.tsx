@@ -22,46 +22,51 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetListItemView } from '../AssetListItemView'
 import type { AssetFiatConverter } from '@modules/assets'
 import { useStyles } from './styles'
-import { useSwipeableAssetItem } from './useSwipeableAssetItem'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    useSwipeableAssetItem,
+    type AssetRowSwipeAction,
+} from './useSwipeableAssetItem'
 
 export type SwipeableAssetItemProps = {
     item: AccountHoldingsLiteRow
     chainId: ChainId
-    isNativeAsset: boolean
-    isSwipeEnabled: boolean
+    /** Null leaves the row unswipeable. */
+    swipeAction: Nullable<AssetRowSwipeAction>
     /** Listed under its group: names its network in the subtitle. */
     isGroupMember?: boolean
-    shouldShowNetwork?: boolean
+    shouldShowChainBadge?: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
-    onOptOut: (item: AccountHoldingsLiteRow) => void
+    onSwipeAction: (
+        item: AccountHoldingsLiteRow,
+        action: AssetRowSwipeAction,
+    ) => void
 }
 
 const SwipeableAssetItemInner = ({
     item,
     chainId,
-    isNativeAsset,
-    isSwipeEnabled,
+    swipeAction,
     isGroupMember,
-    shouldShowNetwork = false,
+    shouldShowChainBadge = false,
     convertFiat,
     onPress,
-    onOptOut,
+    onSwipeAction,
 }: SwipeableAssetItemProps) => {
     const styles = useStyles()
     const pagerGesture = usePWPagerGesture()
 
     const { swipeableRef, handleSwipeOpen, handlePress, renderRightActions } =
-        useSwipeableAssetItem({ item, onPress, onOptOut })
+        useSwipeableAssetItem({ item, swipeAction, onPress, onSwipeAction })
 
-    if (!isSwipeEnabled) {
+    if (!swipeAction) {
         return (
             <AssetListItemView
                 holding={item}
                 chainId={chainId}
-                isNativeAsset={isNativeAsset}
                 isGroupMember={isGroupMember}
-                shouldShowNetwork={shouldShowNetwork}
+                shouldShowChainBadge={shouldShowChainBadge}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
@@ -81,7 +86,7 @@ const SwipeableAssetItemInner = ({
             // its leftward pan is exposed, so a rightward swipe still reaches
             // the drawer.
             block={pagerGesture ?? undefined}
-            // Rightward reveals nothing here: opening runs the opt-out and
+            // Rightward reveals nothing here: opening runs the action and
             // closes immediately, so there is never a row to swipe shut. Left
             // unset it would still capture that drag at the default 10 and
             // silently swallow it, which is what stopped the drawer opening from
@@ -92,9 +97,8 @@ const SwipeableAssetItemInner = ({
                 <AssetListItemView
                     holding={item}
                     chainId={chainId}
-                    isNativeAsset={isNativeAsset}
                     isGroupMember={isGroupMember}
-                    shouldShowNetwork={shouldShowNetwork}
+                    shouldShowChainBadge={shouldShowChainBadge}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}

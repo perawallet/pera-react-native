@@ -15,6 +15,7 @@ import type { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useAccountValueTotalsQuery,
+    useFailedFirstReadChainIds,
     useRegisteredChainIds,
     type HdSeedGroup,
 } from '@perawallet/wallet-core-accounts'
@@ -46,14 +47,22 @@ export const useHDWalletRow = (group: HdSeedGroup): UseHDWalletRowResult => {
         homeScope,
     )
 
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(fiatTotalSources)
+
     const total = useMemo(
         () =>
             crossChainTotalOf(
                 fiatTotalSources,
                 accountValueTotals,
                 usdToPreferred,
+                failedFirstReadChainIds,
             ),
-        [fiatTotalSources, accountValueTotals, usdToPreferred],
+        [
+            fiatTotalSources,
+            accountValueTotals,
+            usdToPreferred,
+            failedFirstReadChainIds,
+        ],
     )
 
     const chainIds = useMemo(

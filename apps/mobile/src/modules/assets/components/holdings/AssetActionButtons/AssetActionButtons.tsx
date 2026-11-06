@@ -48,7 +48,7 @@ export const AssetActionButtons = ({
     const { canSwap, canBuy, canSend, canReceive } = useAssetActionButtons(
         account,
         chainId,
-        asset.assetId,
+        asset,
     )
     const {
         openReceiveFunds,

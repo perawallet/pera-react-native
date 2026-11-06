@@ -21,8 +21,13 @@ import {
     type NameSearchApiResponse,
 } from './schema'
 
+export type NfdBulkReadRequestBody = { chain: string; addresses: string[] }
+
 export type MockNfdBulkReadParams = {
-    response: NfdBulkReadApiResponse
+    /** A function answers each request from its body; a static response is validated up front. */
+    response:
+        | NfdBulkReadApiResponse
+        | ((body: NfdBulkReadRequestBody) => NfdBulkReadApiResponse)
     status?: number
 }
 
@@ -30,10 +35,21 @@ export const mockNfdBulkRead = ({
     response,
     status = 200,
 }: MockNfdBulkReadParams): HttpHandler => {
-    validateMockResponse(nfdBulkReadResponseSchema, response, 'mockNfdBulkRead')
-    return http.post('*/api/v4/accounts/names/', () =>
-        HttpResponse.json(response, { status }),
-    )
+    if (typeof response !== 'function') {
+        validateMockResponse(
+            nfdBulkReadResponseSchema,
+            response,
+            'mockNfdBulkRead',
+        )
+    }
+    return http.post('*/api/v4/accounts/names/', async ({ request }) => {
+        if (typeof response !== 'function') {
+            return HttpResponse.json(response, { status })
+        }
+        const body = response((await request.json()) as NfdBulkReadRequestBody)
+        validateMockResponse(nfdBulkReadResponseSchema, body, 'mockNfdBulkRead')
+        return HttpResponse.json(body, { status })
+    })
 }
 
 export type MockNameSearchParams = {

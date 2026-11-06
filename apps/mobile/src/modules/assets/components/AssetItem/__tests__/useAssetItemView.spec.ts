@@ -305,4 +305,84 @@ describe('useAssetItemView', () => {
             ).toBe(false)
         })
     })
+
+    describe('verification on an ERC-20', () => {
+        const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+        const tokenOn = (
+            tier: 'verified' | 'unverified' | 'suspicious' | undefined,
+            chainId: ChainId,
+            overrides: Partial<DisplayableAsset> = {},
+        ) =>
+            renderHook(() =>
+                useView(
+                    make({
+                        assetId: DAI,
+                        unitName: 'DAI',
+                        peraMetadata: tier
+                            ? { verificationTier: tier }
+                            : undefined,
+                        ...overrides,
+                    }),
+                    { chainId },
+                ),
+            ).result.current
+
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('names the network instead of the contract for a verified token', () => {
+            expect(tokenOn('verified', 'ethereum').secondaryText).toBe(
+                'DAI · Ethereum',
+            )
+        })
+
+        it.each(['unverified', 'suspicious', undefined] as const)(
+            'keeps the contract visible for a %s token',
+            tier => {
+                expect(tokenOn(tier, 'ethereum').secondaryText).toBe(
+                    'DAI · 0x6B17...1d0F',
+                )
+            },
+        )
+
+        it('keeps the id of a verified token whose id is not an address', () => {
+            const { secondaryText } = tokenOn('verified', 'algorand', {
+                assetId: '31566704',
+            })
+            expect(secondaryText).toBe('DAI · 31566704')
+        })
+
+        it('keeps a verified collectible on its collection', () => {
+            const { secondaryText } = tokenOn('verified', 'ethereum', {
+                peraMetadata: {
+                    verificationTier: 'verified',
+                    type: 'collectible',
+                },
+            })
+            expect(secondaryText).toBe('DAI · 0x6B17...1d0F')
+        })
+
+        it.each([
+            ['verified', 'assets/verified'],
+            ['suspicious', 'assets/suspicious'],
+            ['unverified', null],
+            [undefined, null],
+        ] as const)('badges a %s token as %s', (tier, icon) => {
+            expect(tokenOn(tier, 'ethereum').verificationIcon).toBe(icon)
+        })
+
+        it('gives the native coin its trusted badge, as on Algorand', () => {
+            expect(
+                tokenOn(undefined, 'ethereum', {
+                    assetId: 'native',
+                    unitName: 'ETH',
+                }).verificationIcon,
+            ).toBe('assets/trusted')
+        })
+    })
 })

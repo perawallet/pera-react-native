@@ -52,7 +52,8 @@
         "title": "Assets verwalten",
         "sort": "Sortieren",
         "filter": "Filter",
-        "remove_assets": "Assets entfernen"
+        "hide_tokens": "Tokens ausblenden",
+        "remove_assets": "Algorand-Assets entfernen"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Abmelden"
     },
     "remove_assets": {
-        "title": "Assets entfernen",
+        "title": "Algorand-Assets entfernen",
         "select_all": "Alle auswählen",
         "deselect_all": "Alle abwählen",
         "empty_title": "Keine entfernbaren Assets",
-        "empty_body": "Es können nur Assets mit einem Guthaben von null entfernt werden, die du nicht selbst erstellt hast."
+        "empty_body": "Es können nur Algorand-Assets mit einem Guthaben von null entfernt werden, die du nicht selbst erstellt hast. Beim Entfernen meldet sich dein Konto in einer Transaktion von dem Asset ab."
+    },
+    "hide_tokens": {
+        "title": "Tokens ausblenden",
+        "tokens_section": "Tokens",
+        "hidden_section": "Ausgeblendete Tokens",
+        "empty_title": "Keine Tokens zum Ausblenden",
+        "empty_body": "Dieses Konto hält keine Tokens, die ausgeblendet werden können."
+    },
+    "token_visibility": {
+        "hide": "Token ausblenden",
+        "unhide": "Token einblenden",
+        "hide_action": "Ausblenden",
+        "unhide_action": "Einblenden",
+        "hidden_toast_title": "{{assetName}} ausgeblendet",
+        "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
+        "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
+        "shown_toast_title": "{{assetName}} eingeblendet",
+        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Mit „Verdächtige Assets anzeigen“ in den Asset-Filtern kannst du es einblenden."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "Verdächtiges ASA",
             "suspicious_description": "Dieses ASA wurde vom Pera ASA-Verifizierungsprogramm als verdächtig markiert.",
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
+        },
+        "token_warning": {
+            "unverified_title": "Nicht verifiziertes Token",
+            "suspicious_title": "Verdächtiges Token",
+            "body": "Pera hat dieses Token nicht verifiziert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
         },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
     },
@@ -1078,6 +1102,8 @@
             "failed_title": "Seite konnte nicht geladen werden",
             "reload": "Neu laden",
             "failed_body": "Beim Laden dieser Seite ist ein Fehler aufgetreten. Bitte überprüfe deine Internetverbindung und versuche es erneut.",
+            "unavailable_title": "Diese Seite ist gerade nicht verfügbar",
+            "unavailable_body": "Bitte versuche es gleich noch einmal.",
             "offline_title": "Du bist offline",
             "offline_body": "Diese Seite kann ohne Internetverbindung nicht geladen werden. Sie wird automatisch neu geladen, sobald du wieder online bist.",
             "unknown_host": "Unbekannte Website"
@@ -1121,6 +1147,7 @@
             "no_contact_title": "Kein Kontakt gefunden",
             "no_contact_body": "Es scheint ein Fehler aufgetreten zu sein.  Der angegebene Kontakt konnte nicht gefunden werden",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "Im Explorer ansehen",
             "copy": "Adresse kopieren",
             "show_qr": "QR-Code anzeigen",
@@ -2309,6 +2336,7 @@
             "cancel": "Abbrechen",
             "network_checking": "Wird geprüft",
             "network_failed": "Nicht geprüft",
+            "network_unavailable": "Nicht verfügbar",
             "checked_accounts_one": "{{count}} Konto geprüft",
             "checked_accounts_other": "{{count}} Konten geprüft",
             "new_found_one": "{{count}} neues Konto gefunden",
@@ -2376,12 +2404,16 @@
             "all_imported_title": "Bereits in deinem Wallet",
             "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
             "unchecked_networks_title": "Nicht geprüft: {{networks}}",
-            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen."
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen.",
+            "retry_networks": "Erneut prüfen: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekeyed Konten gefunden",
-            "description_line_1": "Du hast {{count}} rekeyed Konten. Das bedeutet, dass du Transaktionen der rekeyed Konten mit dem soeben hinzugefügten Konto signieren kannst",
-            "description_line_2": "Wähle die rekeyed Konten aus, die du deinem Wallet hinzufügen möchtest:",
+            "title_one": "{{count}} rekeyed Konto gefunden",
+            "title_other": "{{count}} rekeyed Konten gefunden",
+            "description_line_1_one": "Du hast {{count}} rekeyed Konto. Das bedeutet, dass du Transaktionen des rekeyed Kontos mit dem soeben hinzugefügten Konto signieren kannst",
+            "description_line_1_other": "Du hast {{count}} rekeyed Konten. Das bedeutet, dass du Transaktionen der rekeyed Konten mit dem soeben hinzugefügten Konto signieren kannst",
+            "description_line_2_one": "Wähle das rekeyed Konto aus, das du deinem Wallet hinzufügen möchtest:",
+            "description_line_2_other": "Wähle die rekeyed Konten aus, die du deinem Wallet hinzufügen möchtest:",
             "already_imported": "bereits importiert",
             "continue": "Konten zum Hinzufügen auswählen",
             "skip": "Vorerst überspringen",

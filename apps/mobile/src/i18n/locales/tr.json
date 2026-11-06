@@ -52,7 +52,8 @@
         "title": "Varlıkları yönet",
         "sort": "Sırala",
         "filter": "Filtrele",
-        "remove_assets": "Varlıkları kaldır"
+        "hide_tokens": "Tokenları gizle",
+        "remove_assets": "Algorand varlıklarını kaldır"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Opt-out"
     },
     "remove_assets": {
-        "title": "Varlıkları kaldır",
+        "title": "Algorand varlıklarını kaldır",
         "select_all": "Tümünü seç",
         "deselect_all": "Seçimi kaldır",
         "empty_title": "Kaldırılabilir varlık yok",
-        "empty_body": "Yalnızca bakiyesi sıfır olan ve senin oluşturmadığın varlıklar kaldırılabilir."
+        "empty_body": "Yalnızca bakiyesi sıfır olan ve senin oluşturmadığın Algorand varlıkları kaldırılabilir. Birini kaldırmak, hesabını o varlıktan bir işlemle çıkarır."
+    },
+    "hide_tokens": {
+        "title": "Tokenları gizle",
+        "tokens_section": "Tokenlar",
+        "hidden_section": "Gizli tokenlar",
+        "empty_title": "Gizlenecek token yok",
+        "empty_body": "Bu hesapta gizlenebilecek token yok."
+    },
+    "token_visibility": {
+        "hide": "Tokenı gizle",
+        "unhide": "Tokenı göster",
+        "hide_action": "Gizle",
+        "unhide_action": "Göster",
+        "hidden_toast_title": "{{assetName}} gizlendi",
+        "hidden_toast_body": "Varlıklarında görünmez ve bakiyene dahil edilmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
+        "hidden_swipe_toast_body": "Geri almak için dokun. Varlıklarında görünmez ve bakiyene dahil edilmez.",
+        "shown_toast_title": "{{assetName}} gösterildi",
+        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlık filtrelerindeki “Şüpheli varlıkları göster” ile listeleyebilirsin."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "Şüpheli ASA",
             "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
+        },
+        "token_warning": {
+            "unverified_title": "Doğrulanmamış token",
+            "suspicious_title": "Şüpheli token",
+            "body": "Pera bu tokenı doğrulamadı. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
         },
         "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
     },
@@ -1086,6 +1110,8 @@
             "failed_title": "Sayfa yüklenemedi",
             "reload": "Yeniden yükle",
             "failed_body": "Bu sayfa yüklenirken bir hata oluştu. Lütfen internet bağlantını kontrol et ve tekrar dene.",
+            "unavailable_title": "Bu sayfa şu anda kullanılamıyor",
+            "unavailable_body": "Lütfen birazdan tekrar dene.",
             "offline_title": "Çevrimdışısın",
             "offline_body": "Bu sayfa internet bağlantısı olmadan yüklenemez. Yeniden çevrimiçi olduğunda kendiliğinden yüklenecek.",
             "unknown_host": "Bilinmeyen site"
@@ -1129,6 +1155,7 @@
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "Explorer’da görüntüle",
             "copy": "Adresi kopyala",
             "show_qr": "QR kodunu göster",
@@ -2317,6 +2344,7 @@
             "cancel": "İptal",
             "network_checking": "Kontrol ediliyor",
             "network_failed": "Kontrol edilemedi",
+            "network_unavailable": "Kullanılamıyor",
             "checked_accounts_one": "{{count}} hesap kontrol edildi",
             "checked_accounts_other": "{{count}} hesap kontrol edildi",
             "new_found_one": "{{count}} yeni hesap bulundu",
@@ -2384,12 +2412,16 @@
             "all_imported_title": "Zaten cüzdanında",
             "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
             "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
-            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin."
+            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin.",
+            "retry_networks": "Yeniden kontrol et: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekey yapılmış hesap bulundu",
-            "description_line_1": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
-            "description_line_2": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
+            "title_one": "{{count}} rekey yapılmış hesap bulundu",
+            "title_other": "{{count}} rekey yapılmış hesap bulundu",
+            "description_line_1_one": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_1_other": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_2_one": "Cüzdanına eklemek istediğin rekey yapılmış hesabı seç:",
+            "description_line_2_other": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
             "already_imported": "zaten içe aktarıldı",
             "continue": "Eklenecek hesapları seç",
             "skip": "Şimdilik atla",

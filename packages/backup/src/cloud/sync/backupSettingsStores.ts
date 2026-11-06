@@ -17,6 +17,7 @@ import {
     findAccountByAnyChainAddress,
     LaunchAccountModes,
     useAccountsStore,
+    useHiddenTokensStore,
     type AccountSortMode,
     type LaunchAccountMode,
     type WalletAccount,
@@ -107,6 +108,7 @@ export const readBackupSettings = (chainId: ChainId): BackupSettings => {
             mode: sortMode,
             addresses: readAccountOrder(accounts, manualAccountOrder, chainId),
         },
+        hiddenTokens: useHiddenTokensStore.getState().hiddenTokens,
     }
 }
 
@@ -115,6 +117,7 @@ export const subscribeBackupSettings = (listener: () => void): (() => void) => {
         useCurrenciesStore.subscribe(listener),
         useSettingsStore.subscribe(listener),
         useAccountsStore.subscribe(listener),
+        useHiddenTokensStore.subscribe(listener),
     ]
     return () => unsubscribers.forEach(unsubscribe => unsubscribe())
 }
@@ -132,6 +135,7 @@ export const applyBackupSettings = (
         confirmationMode,
         launchAccount,
         accountOrder,
+        hiddenTokens,
     } = settings
 
     if (currency) {
@@ -159,5 +163,8 @@ export const applyBackupSettings = (
             useAccountsStore.getState().setSortMode(accountOrder.mode)
         }
         applyAccountOrder(accountOrder.addresses)
+    }
+    if (hiddenTokens) {
+        useHiddenTokensStore.getState().replaceHiddenTokens(hiddenTokens)
     }
 }

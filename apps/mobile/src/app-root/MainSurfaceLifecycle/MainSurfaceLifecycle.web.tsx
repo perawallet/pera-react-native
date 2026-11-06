@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useHiddenTokensInvalidation } from '@perawallet/wallet-core-accounts'
 import { useAppLockFromVault } from '@modules/vault'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
 import { useDatabaseResetNotice } from '@hooks/useDatabaseResetNotice'
@@ -20,6 +21,7 @@ import { useDatabaseResetNotice } from '@hooks/useDatabaseResetNotice'
 export const MainSurfaceLifecycle = (): null => {
     useAppLockFromVault()
     useBackupSyncLifecycle()
+    useHiddenTokensInvalidation()
     useDatabaseResetNotice()
     return null
 }

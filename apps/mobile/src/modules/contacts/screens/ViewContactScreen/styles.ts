@@ -42,13 +42,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
     },
-    nfdSection: {
-        marginTop: theme.spacing.xl,
-    },
     addressLabel: {
-        color: theme.colors.textMain,
-    },
-    fullAddress: {
         color: theme.colors.textMain,
     },
 }))

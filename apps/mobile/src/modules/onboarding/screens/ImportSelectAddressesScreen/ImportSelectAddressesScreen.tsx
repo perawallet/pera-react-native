@@ -40,10 +40,12 @@ export const ImportSelectAddressesScreen = () => {
         isProcessing,
         importedAccountIds,
         uncheckedNetworks,
+        canRetryNetworks,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
+        handleRetryNetworks,
         t,
     } = useImportSelectAddressesScreen()
 
@@ -93,17 +95,32 @@ export const ImportSelectAddressesScreen = () => {
                     />
 
                     {uncheckedNetworks !== undefined && (
-                        <InfoCallout
-                            style={styles.uncheckedNetworks}
-                            testID='import_select_addresses_unchecked_networks'
-                            title={t(
-                                'onboarding.import_select_addresses.unchecked_networks_title',
-                                { networks: uncheckedNetworks },
+                        <PWView style={styles.uncheckedNetworks}>
+                            <InfoCallout
+                                testID='import_select_addresses_unchecked_networks'
+                                title={t(
+                                    'onboarding.import_select_addresses.unchecked_networks_title',
+                                    { networks: uncheckedNetworks },
+                                )}
+                                body={t(
+                                    'onboarding.import_select_addresses.unchecked_networks_body',
+                                )}
+                            />
+                            {canRetryNetworks && (
+                                <PWButton
+                                    testID='import_select_addresses_retry_networks_button'
+                                    variant='linkPositive'
+                                    paddingStyle='none'
+                                    title={t(
+                                        'onboarding.import_select_addresses.retry_networks',
+                                        { networks: uncheckedNetworks },
+                                    )}
+                                    titleLines={2}
+                                    onPress={handleRetryNetworks}
+                                    style={styles.retryNetworks}
+                                />
                             )}
-                            body={t(
-                                'onboarding.import_select_addresses.unchecked_networks_body',
-                            )}
-                        />
+                        </PWView>
                     )}
 
                     {areAllImported ? (

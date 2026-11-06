@@ -157,11 +157,12 @@ export const summarizeHoldings = (
             return assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
         }
         const nativeAssetValue = nativeAssetValueOf()
-        // Listed, but never counted: a flagged token's price isn't one to trust.
+        // Listed, but never counted: a flagged token's price isn't one to trust, and a hidden one is the user's to keep out.
         // An opt-in chain's asset was chosen by the user, so it counts.
         const isCounted =
-            isOptInChain(chainId) ||
-            asset.peraMetadata?.verificationTier !== 'suspicious'
+            !holding.isHidden &&
+            (isOptInChain(chainId) ||
+                asset.peraMetadata?.verificationTier !== 'suspicious')
         if (isCounted) {
             if (nativeAssetValue) {
                 nativeValue = nativeValue.plus(nativeAssetValue)

@@ -17,12 +17,12 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { nameServiceAdapterFor, nameServiceOf } from '../chain-adapter'
+import { nameServiceAdapterFor } from '../chain-adapter'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
 
-export type UseNfdForAddressQueryResult = {
+export type UseNameForAddressQueryResult = {
     data: NfdName[]
     isPending: boolean
 }
@@ -31,6 +31,9 @@ export type UseNfdForAddressQueryResult = {
 const NO_RESULTS: NfdName[] = []
 
 /**
+ * The address's name on the scope's chain, from whichever service names that
+ * chain. Never reaches a node: names come from Pera's backend.
+ *
  * The batch queue coalesces enqueues that land in the same microtask.
  * Putting an `await` (e.g. an SQLite cache check) BEFORE `enqueue` would
  * yield to the event loop, which causes the microtask flush to fire between
@@ -43,21 +46,18 @@ const NO_RESULTS: NfdName[] = []
  * results still flow back through the executor's `getNfdsByAddresses`
  * re-read, so the hook gets the right value either way.
  */
-export const useNfdForAddressQuery = (
+export const useNameForAddressQuery = (
     scope: ChainScope,
     address: string,
     options?: { enabled?: boolean },
-): UseNfdForAddressQueryResult => {
+): UseNameForAddressQueryResult => {
     const isNameServiceEnabled = useChainCapability(
         scope.chainId,
         'nameService',
     )
-    // The reverse cache and queue only hold NFD names; nothing reads ENS primary
-    // names, so an ENS chain's addresses must not be posted to them.
     const enabled =
         (options?.enabled ?? true) &&
         isNameServiceEnabled &&
-        nameServiceOf(scope) === 'nfd' &&
         nameServiceAdapterFor(scope).isValidAddress(address)
 
     const query = useQuery({

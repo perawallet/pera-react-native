@@ -16,7 +16,10 @@ import {
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
@@ -60,7 +63,7 @@ export type UseAssetGroupRowParams<T extends GroupableHolding> = {
 }
 
 export type UseAssetGroupRowResult = {
-    /** Null until the first member's metadata has synced. */
+    /** Null until the member it is drawn from has synced. */
     icon: Nullable<PeraAsset>
     /** Null until every member has synced, unless one is already suspicious. */
     verificationIcon: Nullable<IconName>
@@ -121,11 +124,19 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     }, [members])
 
     // A native coin's id is a placeholder, never `<unit> · native`, as on single rows.
+    // A contract address is no more use to the user here than on a single row,
+    // so only an id that isn't one (an ASA id) is shown.
     const subtitle = useMemo(() => {
         const ids = new Set(members.map(({ holding }) => holding.assetId))
         const [sharedId] = ids
         const isNative = members.some(({ holding }) => isNativeHolding(holding))
-        return ids.size === 1 && sharedId && !isNative
+        const chainId = members[0]?.holding.scope.chainId
+        const isAddress =
+            sharedId !== undefined &&
+            chainId !== undefined &&
+            addressCodecs.has(chainId) &&
+            addressCodecs.get(chainId).isValid(sharedId)
+        return ids.size === 1 && sharedId && !isNative && !isAddress
             ? `${group.symbol} · ${sharedId}`
             : group.symbol
     }, [members, group.symbol])
@@ -135,13 +146,21 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         [members],
     )
 
+    // The first network with a logo, so one logo-less row doesn't leave the
+    // whole group on initials. A native member draws its own mark, so it keeps
+    // the icon over a token's logo.
+    const iconMember =
+        members.find(({ holding }) => isNativeHolding(holding)) ??
+        members.find(({ asset }) => asset?.peraMetadata?.logo) ??
+        members[0]
+
     return {
-        icon: members[0]?.asset ?? null,
+        icon: iconMember?.asset ?? null,
         verificationIcon: tier ? getVerificationIcon(tier) : null,
         isSuspicious: tier === PeraAssetVerificationTier.suspicious,
         subtitle,
         chainIds,
-        iconChainId: members[0]?.holding.scope.chainId ?? null,
+        iconChainId: iconMember?.holding.scope.chainId ?? null,
         decimals,
         fiat,
     }

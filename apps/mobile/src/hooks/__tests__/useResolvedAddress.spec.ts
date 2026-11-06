@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useResolvedAddress } from '../useResolvedAddress'
 
-const mockUseNfdForAddress = vi.hoisted(() => vi.fn())
+const mockUseNameForAddress = vi.hoisted(() => vi.fn())
 const mockCodecs = vi.hoisted(() => ({
     has: vi.fn(),
     get: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('@perawallet/wallet-core-chain-contract', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddressQuery: mockUseNfdForAddress,
+    useNameForAddressQuery: mockUseNameForAddress,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -47,8 +47,8 @@ describe('useResolvedAddress', () => {
         vi.clearAllMocks()
     })
 
-    it('returns NFD name when resolved', () => {
-        mockUseNfdForAddress.mockReturnValue({
+    it('returns the name when resolved', () => {
+        mockUseNameForAddress.mockReturnValue({
             data: [{ name: 'alice.algo' }],
             isPending: false,
         })
@@ -58,12 +58,35 @@ describe('useResolvedAddress', () => {
         )
 
         expect(result.current.displayName).toBe('alice.algo')
-        expect(result.current.isNfd).toBe(true)
+        expect(result.current.isNamed).toBe(true)
         expect(result.current.isResolving).toBe(false)
     })
 
+    it("uses an Ethereum address's primary name as its display name", () => {
+        mockUseNameForAddress.mockReturnValue({
+            data: [{ name: 'alice.eth' }],
+            isPending: false,
+        })
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        const { result } = renderHook(() =>
+            useResolvedAddress(
+                '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+                scope,
+            ),
+        )
+
+        expect(result.current.displayName).toBe('alice.eth')
+        expect(result.current.isNamed).toBe(true)
+        expect(mockUseNameForAddress).toHaveBeenCalledWith(
+            scope,
+            '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+            expect.anything(),
+        )
+    })
+
     it('returns truncated address as fallback', () => {
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -73,11 +96,11 @@ describe('useResolvedAddress', () => {
         )
 
         expect(result.current.displayName).toContain('...')
-        expect(result.current.isNfd).toBe(false)
+        expect(result.current.isNamed).toBe(false)
     })
 
     it('uses long format when specified', () => {
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -91,7 +114,7 @@ describe('useResolvedAddress', () => {
     })
 
     it('truncates a short address with the given chain codec', () => {
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -109,7 +132,7 @@ describe('useResolvedAddress', () => {
     })
 
     it('returns full address when format is full', () => {
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -121,8 +144,8 @@ describe('useResolvedAddress', () => {
         expect(result.current.displayName).toBe(VALID_ADDRESS)
     })
 
-    it('passes enabled option through to useNfdForAddressQuery', () => {
-        mockUseNfdForAddress.mockReturnValue({
+    it('passes enabled option through to useNameForAddressQuery', () => {
+        mockUseNameForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -131,7 +154,7 @@ describe('useResolvedAddress', () => {
             useResolvedAddress(VALID_ADDRESS, SCOPE, { enabled: false }),
         )
 
-        expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+        expect(mockUseNameForAddress).toHaveBeenCalledWith(
             { chainId: 'algorand', networkId: 'mainnet' },
             VALID_ADDRESS,
             { enabled: false },

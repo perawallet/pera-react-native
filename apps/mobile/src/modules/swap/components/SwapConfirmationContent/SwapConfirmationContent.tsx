@@ -113,11 +113,10 @@ export const SwapConfirmationContent = ({
             <PWView style={styles.assetsGroup}>
                 <SwapAssetSection
                     asset={inAsset}
+                    swapAsset={quote.assetIn}
                     chainId={scope.chainId}
                     amountDisplay={payDisplay}
                     fiatValue={payFiatValue}
-                    unitName={quote.assetIn.unitName}
-                    verificationTier={quote.assetIn.verificationTier}
                 />
 
                 <PWView style={styles.toDivider}>
@@ -133,11 +132,10 @@ export const SwapConfirmationContent = ({
 
                 <SwapAssetSection
                     asset={outAsset}
+                    swapAsset={quote.assetOut}
                     chainId={quote.assetOut.ref.chainId}
                     amountDisplay={receiveDisplay}
                     fiatValue={receiveFiatValue}
-                    unitName={quote.assetOut.unitName}
-                    verificationTier={quote.assetOut.verificationTier}
                 />
             </PWView>
 

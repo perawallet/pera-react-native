@@ -79,6 +79,8 @@ export type WalletDiscoveryProgress = {
     chainIds: ChainId[]
     /** The chains that have failed so far; never probed again in this walk. */
     failedChainIds: ChainId[]
+    /** The chains the backend doesn't serve: listed with that status, not dropped. */
+    refusedChainIds: ChainId[]
     /** How many account indexes the walk has probed so far. */
     checkedAccountCount: number
     /** Active indexes no account in the wallet holds yet, i.e. new accounts. */
@@ -90,6 +92,8 @@ export type WalletCandidates = {
     accounts: LocalAccount[]
     /** The chains the walk couldn't fully check, as `WalletDiscoveryResult.failedChainIds` says. */
     failedChainIds: ChainId[]
+    /** No index was active on a chain the walk heard from, so `accounts` is the first account alone. */
+    isOriginFallback?: boolean
 }
 
 export type AccountsState = BaseStoreState & {

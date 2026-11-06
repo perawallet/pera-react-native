@@ -20,14 +20,18 @@ import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type ManageAssetsAction = 'sort' | 'filter' | 'remove'
+export type ManageAssetsAction = 'sort' | 'filter' | 'hide' | 'remove'
 
 export type ManageAssetsContentProps = {
-    isReadOnly: boolean
+    /** The account opts out of assets on its own chain, which needs a key to sign with. */
+    canRemoveAssets: boolean
+    /** Some chain the account holds receives tokens unasked; hiding one signs nothing. */
+    canHideTokens: boolean
 }
 
 export const ManageAssetsContent = ({
-    isReadOnly,
+    canRemoveAssets,
+    canHideTokens,
 }: ManageAssetsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -73,7 +77,27 @@ export const ManageAssetsContent = ({
                 </PWText>
             </PWTouchableOpacity>
 
-            {!isReadOnly && (
+            {canHideTokens && (
+                <PWTouchableOpacity
+                    style={styles.menuRow}
+                    onPress={() => resolve('hide')}
+                    testID='manage_assets_hide_tokens'
+                >
+                    <PWIcon
+                        name='eye'
+                        variant='primary'
+                        size='md'
+                    />
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.menuLabel}
+                    >
+                        {t('manage_assets.hide_tokens')}
+                    </PWText>
+                </PWTouchableOpacity>
+            )}
+
+            {canRemoveAssets && (
                 <PWTouchableOpacity
                     style={styles.menuRow}
                     onPress={() => resolve('remove')}

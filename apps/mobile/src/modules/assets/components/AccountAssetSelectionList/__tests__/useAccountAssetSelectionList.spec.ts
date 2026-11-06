@@ -18,6 +18,9 @@ import { useAccountAssetSelectionList } from '../useAccountAssetSelectionList'
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
+const mockHiddenTokens = vi.hoisted(() => ({
+    current: {} as Record<string, Record<string, string[]>>,
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
@@ -25,6 +28,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountHoldingsAcrossChainsQuery:
         mockUseAccountHoldingsAcrossChainsQuery,
     useAccountChainId: () => 'algorand',
+    useHiddenTokensStore: (
+        selector: (state: { hiddenTokens: unknown }) => unknown,
+    ) => selector({ hiddenTokens: mockHiddenTokens.current }),
+    hiddenAssetIdsOf: (
+        hiddenTokens: Record<string, Record<string, string[]>>,
+        address: string,
+        scope: { chainId: string; networkId: string },
+    ) => hiddenTokens[`${scope.chainId}/${scope.networkId}`]?.[address] ?? [],
+    canHideHolding: (chainId: string, assetId: string) =>
+        chainId === 'ethereum' && assetId !== 'native',
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         chainId: string,
@@ -84,6 +97,7 @@ const mockAssetBalances = [
 describe('useAccountAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockHiddenTokens.current = {}
         mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
             assetBalances: [],
             isPending: false,
@@ -345,5 +359,90 @@ describe('useAccountAssetSelectionList', () => {
 
         expect(result.current.filteredBalanceData).toEqual([])
         expect(result.current.isError).toBe(true)
+    })
+
+    describe('tokens the user hid', () => {
+        const ethAccount = {
+            chains: {
+                algorand: { address: 'TEST_ADDRESS' },
+                ethereum: { address: '0xabc' },
+            },
+        }
+        const token = (assetId: string, name: string) => ({
+            assetId,
+            amount: '1',
+            asset: { assetId, name, unitName: name.toUpperCase() },
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        })
+
+        beforeEach(() => {
+            mockUseSelectedAccount.mockReturnValue(ethAccount)
+            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
+                assetBalances: [
+                    token('native', 'Ether'),
+                    token('0xspam', 'Airdrop'),
+                    token('0xdai', 'Dai'),
+                ],
+                isPending: false,
+                isError: false,
+            })
+            mockHiddenTokens.current = {
+                'ethereum/mainnet': { '0xabc': ['0xspam'] },
+            }
+        })
+
+        it('leaves a hidden token out of the list across chains', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainIds: ['ethereum'] }),
+            )
+
+            expect(
+                result.current.filteredBalanceData.map(b => b.assetId),
+            ).toEqual(['native', '0xdai'])
+        })
+
+        it('does not find a hidden token by searching for it', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainIds: ['ethereum'] }),
+            )
+
+            act(() => result.current.setSearchFilter('airdrop'))
+
+            expect(result.current.filteredBalanceData).toEqual([])
+        })
+
+        it('leaves a hidden token out of a single chain list too', () => {
+            mockUseAccountBalancesQuery.mockReturnValue({
+                accountBalances: new Map([
+                    [
+                        '0xabc',
+                        {
+                            assetBalances: [
+                                token('0xspam', 'Airdrop'),
+                                token('0xdai', 'Dai'),
+                            ],
+                        },
+                    ],
+                ]),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainId: 'ethereum' }),
+            )
+
+            expect(
+                result.current.filteredBalanceData.map(b => b.assetId),
+            ).toEqual(['0xdai'])
+        })
+
+        it('lists it again once it is unhidden', () => {
+            mockHiddenTokens.current = {}
+
+            const { result } = renderHook(() =>
+                useAccountAssetSelectionList({ chainIds: ['ethereum'] }),
+            )
+
+            expect(result.current.filteredBalanceData).toHaveLength(3)
+        })
     })
 })

@@ -25,6 +25,7 @@ import type {
 } from './models'
 import {
     buildAccount,
+    hdIndexOf,
     isEnabledByDefault,
     preferDefaultChain,
     withEnablement,
@@ -178,9 +179,10 @@ export async function discoverWalletCandidates({
         Object.keys(active).length > 0
     const origin = (entry: ProbedHdIndex) =>
         entry.index.account === 0 && entry.index.keyIndex === 0
-    const selected = probed.some(isActive)
-        ? probed.filter(isActive)
-        : probed.filter(origin)
+    const isOriginFallback = !probed.some(isActive)
+    const selected = isOriginFallback
+        ? probed.filter(origin)
+        : probed.filter(isActive)
 
     const accounts = selected.flatMap(({ index, derived, active }) => {
         const chains: AccountChains = {}
@@ -211,7 +213,63 @@ export async function discoverWalletCandidates({
             }),
         ]
     })
-    return { accounts, failedChainIds }
+    return { accounts, failedChainIds, isOriginFallback }
+}
+
+/**
+ * A retry adds to the walk before it, so one that hears from fewer chains drops
+ * no account found active: an index keeps every chain either walk read, and a
+ * chain counts as checked once either walk heard from it.
+ */
+export const mergeWalletCandidates = (
+    previous: WalletCandidates,
+    next: WalletCandidates,
+): WalletCandidates => {
+    const hasActivity = ({ accounts, isOriginFallback }: WalletCandidates) =>
+        accounts.length > 0 && !isOriginFallback
+    // The first account offered for want of activity goes once either walk
+    // finds some, as a single walk that found it would not offer it.
+    const kept = [
+        ...(previous.isOriginFallback && hasActivity(next)
+            ? []
+            : previous.accounts),
+        ...(next.isOriginFallback && hasActivity(previous)
+            ? []
+            : next.accounts),
+    ]
+    const byIndex = new Map<string, LocalAccount>()
+    const unindexed: LocalAccount[] = []
+    for (const account of kept) {
+        const index = hdIndexOf(account)
+        if (!index) {
+            unindexed.push(account)
+            continue
+        }
+        const key = hdPathKey(index)
+        const earlier = byIndex.get(key)
+        byIndex.set(
+            key,
+            earlier
+                ? {
+                      ...account,
+                      chains: { ...earlier.chains, ...account.chains },
+                  }
+                : account,
+        )
+    }
+    const accounts = [...byIndex.values()].sort((a, b) => {
+        const left = hdIndexOf(a)!
+        const right = hdIndexOf(b)!
+        return left.account - right.account || left.keyIndex - right.keyIndex
+    })
+    return {
+        accounts: [...accounts, ...unindexed],
+        failedChainIds: previous.failedChainIds.filter(chainId =>
+            next.failedChainIds.includes(chainId),
+        ),
+        isOriginFallback:
+            kept.length > 0 && !hasActivity(previous) && !hasActivity(next),
+    }
 }
 
 type DiscoverDelegatedAccountsParams = {

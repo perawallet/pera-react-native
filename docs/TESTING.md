@@ -165,7 +165,7 @@ Flow tests live in `apps/mobile/src/__integration__/<flow>.spec.tsx` and run rea
 Zustand stores, real domain hooks and the real KMS keystore. Only the network is mocked (MSW) and the
 platform's native services are swapped for in-memory test implementations.
 
-Four test-only aliases, wired in `vitest.config.ts`. Each stand-in explains itself at the top of
+Test-only aliases, wired in `vitest.config.ts`. Each stand-in explains itself at the top of
 its own file, including what it deliberately does not reproduce; read those rather than trusting a
 summary here.
 
@@ -176,6 +176,12 @@ summary here.
 | `@perawallet/wallet-extension-ledger-react-native*` | `src/test-utils/ledger-extension-stub.ts`   |
 | `crypto` (for its `argon2`)                         | `src/test-utils/node-crypto-with-argon2.ts` |
 | `@react-navigation/native`, `native-stack`          | `src/test-utils/test-navigator.tsx`         |
+
+The platform driver has a second layer. `src/test-utils/mocks/platform.ts`, loaded by
+`vitest.setup.ts`, `vi.mock`s the driver, so a spec gets that factory rather than
+`platform-driver-test.ts`, and a fake added only to the alias target stays invisible. A service a
+flow must drive goes in the factory. A spec that needs the fuller in-memory driver opts in with
+`vi.unmock('@perawallet/wallet-extension-platform-driver')`, as `migration-inbox.spec.tsx` does.
 
 The keystore double is the one to watch: it mirrors the real library's shape rather than an
 approximation, because a drifting double leaves the whole flow suite green against an API the library

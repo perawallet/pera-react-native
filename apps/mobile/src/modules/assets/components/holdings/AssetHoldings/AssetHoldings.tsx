@@ -28,6 +28,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { WealthTrend } from '@components/WealthTrend'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { InfoCallout } from '@components/InfoCallout'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
@@ -60,6 +61,7 @@ export const AssetHoldings = ({
         canCopyAmount,
         copyAmountHint,
         handleCopyAmount,
+        tokenWarning,
     } = useAssetHoldings({ account, asset, scope })
 
     return (
@@ -167,6 +169,17 @@ export const AssetHoldings = ({
                             />
                         </PWView>
                     </ExpandablePanel>
+                )}
+
+                {tokenWarning && (
+                    <InfoCallout
+                        icon='shield-warning'
+                        iconVariant='error'
+                        title={tokenWarning.title}
+                        body={tokenWarning.body}
+                        style={styles.tokenWarning}
+                        testID='asset_holdings_token_warning'
+                    />
                 )}
 
                 <AssetActionButtons

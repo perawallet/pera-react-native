@@ -211,6 +211,20 @@ export const getScreenSections = (): GallerySection[] => [
                 },
             },
             {
+                id: 'scr-hide-tokens',
+                label: 'Hide tokens',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'TabBar',
+                        params: {
+                            screen: 'Home',
+                            params: { screen: 'HideTokens' },
+                        },
+                    },
+                },
+            },
+            {
                 id: 'scr-staking',
                 label: 'Staking',
                 launch: { kind: 'navigate', target: { name: 'Staking' } },

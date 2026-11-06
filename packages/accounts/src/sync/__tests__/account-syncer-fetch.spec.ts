@@ -13,7 +13,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
-import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
+import {
+    fetchAndPersistAccount,
+    ensureAccountFetched,
+    settleAccountFetches,
+} from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { getAccountChainState, useHoldingsRefreshStore } from '../../store'
@@ -395,5 +399,46 @@ describe('ensureAccountFetched', () => {
         await expect(
             ensureAccountFetched('ADDR1', MAINNET_SCOPE),
         ).resolves.toBeUndefined()
+    })
+})
+
+describe('settleAccountFetches', () => {
+    beforeEach(() => {
+        registerFakeNativeAsset()
+        vi.clearAllMocks()
+        mockUpsertAccountChainState.mockResolvedValue(undefined)
+        mockRefreshAccountHoldings.mockResolvedValue(true)
+        mockGetAccountChainStateRow.mockResolvedValue(undefined)
+        mockInsertAssetHolding.mockResolvedValue(undefined)
+    })
+
+    it('waits for every read in flight, failed ones included', async () => {
+        let finish: () => void = () => {}
+        fetchAccountState()
+            .mockReturnValueOnce(
+                new Promise(resolve => {
+                    finish = () => resolve(snapshot())
+                }),
+            )
+            .mockRejectedValueOnce(new Error('rpc down'))
+        const slow = fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+        void fetchAndPersistAccount('ADDR2', MAINNET_SCOPE).catch(() => {})
+        let isSettled = false
+        const settled = settleAccountFetches().then(() => {
+            isSettled = true
+        })
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(isSettled).toBe(false)
+
+        finish()
+        await slow
+        await settled
+
+        expect(isSettled).toBe(true)
+    })
+
+    it('resolves at once with nothing in flight', async () => {
+        await expect(settleAccountFetches()).resolves.toBeUndefined()
     })
 })

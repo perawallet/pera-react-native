@@ -51,10 +51,10 @@ export const AddressListItem = ({
     testID,
 }: AddressListItemProps) => {
     const styles = useStyles()
-    // Reuse the shared resolution (wallet account → contact → NFD → raw
+    // Reuse the shared resolution (wallet account → contact → name → raw
     // address) so we don't duplicate those lookups; only the layout differs
     // from AddressDisplay.
-    const { account, chainId, contact, nfdName, truncatedAddress } =
+    const { account, chainId, contact, addressName, truncatedAddress } =
         useAddressDisplay({
             address,
             addressFormat: 'short',
@@ -64,9 +64,9 @@ export const AddressListItem = ({
 
     const primary = account
         ? getAccountDisplayName(account, chainId)
-        : (contact?.name ?? nfdName ?? truncatedAddress)
+        : (contact?.name ?? addressName ?? truncatedAddress)
     // Show the address underneath only when the primary line is a distinct
-    // label (name/NFD); otherwise the primary line already *is* the address.
+    // label (name); otherwise the primary line already *is* the address.
     const secondary = dedupeSecondaryLabel(primary, truncatedAddress)
 
     const avatar = account ? (

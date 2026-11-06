@@ -26,14 +26,12 @@
      submit accepted but never
      confirmed within the bound)
 
- PASS needs two things together: the `algorand/algod:master` image, and a
- genesis whose consensus enables the scheme (AlgoKit's
- `algod_network_template.json` sets no `ConsensusProtocol`, so add
- `"ConsensusProtocol": "future"`). A stable or nightly algod, and every public
- network, reject `pqsig` with "no matching struct field found ... key pqsig"
- while accepting `sig`, so PENDING is the expected result there. Only the
- `sendRawTransaction` rejection reason gates PENDING vs FAIL, and only actual
- confirmation (not mere acceptance) gates PASS.
+ PASS needs a node that verifies `pqsig`, which the algod pinned in
+ tools/dev/localnet.compose.yml does. A node without it rejects `pqsig` with
+ "no matching struct field found ... key pqsig" while accepting `sig`, so
+ PENDING is the expected result there. Only the `sendRawTransaction` rejection
+ reason gates PENDING vs FAIL, and only actual confirmation (not mere
+ acceptance) gates PASS.
 
  Run with: pnpm localnet:quantum-check
  This is a dev tool, not a vitest test — it does not run in CI.

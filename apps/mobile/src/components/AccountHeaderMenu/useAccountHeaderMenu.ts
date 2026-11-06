@@ -27,6 +27,7 @@ import { lockWallet } from './lockWallet'
 
 export type UseAccountHeaderMenuOptions = {
     showChartToggle?: boolean
+    leadingItems?: PWDropdownItem[]
 }
 
 export type UseAccountHeaderMenuResult = {
@@ -35,6 +36,7 @@ export type UseAccountHeaderMenuResult = {
 
 export const useAccountHeaderMenu = ({
     showChartToggle = true,
+    leadingItems,
 }: UseAccountHeaderMenuOptions = {}): UseAccountHeaderMenuResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
@@ -127,9 +129,10 @@ export const useAccountHeaderMenu = ({
             })
         }
 
-        return baseItems
+        return leadingItems ? [...leadingItems, ...baseItems] : baseItems
     }, [
         showChartToggle,
+        leadingItems,
         canSearch,
         chartVisible,
         privacyMode,

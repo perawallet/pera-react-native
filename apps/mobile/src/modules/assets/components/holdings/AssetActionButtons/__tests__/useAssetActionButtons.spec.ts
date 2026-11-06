@@ -43,9 +43,9 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
 const renderButtons = (
     account: WalletAccount | null,
     chainId: ChainId,
-    assetId?: string,
+    asset?: Parameters<typeof useAssetActionButtons>[2],
 ) =>
-    renderHook(() => useAssetActionButtons(account, chainId, assetId), {
+    renderHook(() => useAssetActionButtons(account, chainId, asset), {
         wrapper: createQueryClientWrapper(),
     })
 
@@ -116,7 +116,9 @@ describe('useAssetActionButtons', () => {
     )
 
     it('offers Buy on every Algorand asset, listed or not', () => {
-        const { result } = renderButtons(account, 'algorand', '31566704')
+        const { result } = renderButtons(account, 'algorand', {
+            assetId: '31566704',
+        })
 
         expect(result.current.canBuy).toBe(true)
     })
@@ -186,6 +188,33 @@ describe('useAssetActionButtons', () => {
         const { result } = renderButtons(onEthereumOnly, 'ethereum')
 
         expect(result.current.canSwap).toBe(false)
+    })
+
+    it.each(['unverified', 'suspicious'] as const)(
+        'drops swap for a %s token on a chain where tokens arrive unasked',
+        verificationTier => {
+            const { result } = renderButtons(onEthereumOnly, 'ethereum', {
+                assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+                peraMetadata: { verificationTier },
+            })
+
+            expect(result.current.canSwap).toBe(false)
+            expect(result.current.canSend).toBe(true)
+        },
+    )
+
+    it('keeps swap for a verified token and for the native coin', () => {
+        const verified = renderButtons(onEthereumOnly, 'ethereum', {
+            assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+            peraMetadata: { verificationTier: 'verified' },
+        })
+        const native = renderButtons(onEthereumOnly, 'ethereum', {
+            assetId: 'native',
+            peraMetadata: { verificationTier: 'unverified' },
+        })
+
+        expect(verified.result.current.canSwap).toBe(true)
+        expect(native.result.current.canSwap).toBe(true)
     })
 
     it('drops swap for an account with no address on the asset chain', () => {

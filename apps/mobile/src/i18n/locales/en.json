@@ -52,7 +52,8 @@
         "title": "Manage Assets",
         "sort": "Sort",
         "filter": "Filter",
-        "remove_assets": "Remove Assets"
+        "hide_tokens": "Hide Tokens",
+        "remove_assets": "Remove Algorand Assets"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Opt-out"
     },
     "remove_assets": {
-        "title": "Remove Assets",
+        "title": "Remove Algorand Assets",
         "select_all": "Select All",
         "deselect_all": "Deselect All",
         "empty_title": "No Removable Assets",
-        "empty_body": "Only assets with a zero balance that you didn't create can be removed."
+        "empty_body": "Only Algorand assets with a zero balance that you didn't create can be removed. Removing one opts your account out of it in a transaction."
+    },
+    "hide_tokens": {
+        "title": "Hide Tokens",
+        "tokens_section": "Tokens",
+        "hidden_section": "Hidden Tokens",
+        "empty_title": "No Tokens to Hide",
+        "empty_body": "This account holds no tokens that can be hidden."
+    },
+    "token_visibility": {
+        "hide": "Hide token",
+        "unhide": "Unhide token",
+        "hide_action": "Hide",
+        "unhide_action": "Unhide",
+        "hidden_toast_title": "{{assetName}} hidden",
+        "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
+        "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
+        "shown_toast_title": "{{assetName}} shown",
+        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. List it with Show suspicious assets in the asset filters."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "Suspicious ASA",
             "suspicious_description": "This ASA has been flagged as suspicious by the Pera ASA Verification program.",
             "learn_more": "Learn more about ASA verification"
+        },
+        "token_warning": {
+            "unverified_title": "Unverified token",
+            "suspicious_title": "Suspicious token",
+            "body": "Pera hasn't verified this token. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
         },
         "copy_full_amount_hint": "Long press to copy the full amount"
     },
@@ -1086,6 +1110,8 @@
             "failed_title": "Failed to load page",
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
+            "unavailable_title": "This page isn't available right now",
+            "unavailable_body": "Please try again in a moment.",
             "offline_title": "You're offline",
             "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online.",
             "unknown_host": "Unknown site"
@@ -1129,6 +1155,7 @@
             "no_contact_title": "No contact found",
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "View in explorer",
             "copy": "Copy address",
             "show_qr": "Show QR code",
@@ -2317,6 +2344,7 @@
             "cancel": "Cancel",
             "network_checking": "Checking",
             "network_failed": "Couldn't check",
+            "network_unavailable": "Not available",
             "checked_accounts_one": "Checked {{count}} account",
             "checked_accounts_other": "Checked {{count}} accounts",
             "new_found_one": "{{count}} new account found",
@@ -2384,12 +2412,16 @@
             "all_imported_title": "Already in your wallet",
             "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
             "unchecked_networks_title": "Couldn't check {{networks}}",
-            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later."
+            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later.",
+            "retry_networks": "Check {{networks}} again"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekeyed accounts found",
-            "description_line_1": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
-            "description_line_2": "Select the rekeyed accounts you want to add to your wallet:",
+            "title_one": "{{count}} rekeyed account found",
+            "title_other": "{{count}} rekeyed accounts found",
+            "description_line_1_one": "You have {{count}} rekeyed account. This means that you can sign the transactions of the rekeyed account with the account you just added",
+            "description_line_1_other": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
+            "description_line_2_one": "Select the rekeyed account you want to add to your wallet:",
+            "description_line_2_other": "Select the rekeyed accounts you want to add to your wallet:",
             "already_imported": "already imported",
             "continue": "Choose accounts to add",
             "skip": "Skip for now",
