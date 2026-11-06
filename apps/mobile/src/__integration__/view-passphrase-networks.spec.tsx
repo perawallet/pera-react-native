@@ -49,7 +49,11 @@ import { seedHdAccount } from './__fixtures__/accountOptions'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
+    HD_12_ETHEREUM_ADDRESS_0,
     HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_12,
+    HD_TEST_MNEMONIC_12_INDICES,
+    deriveTestHDAddress,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
@@ -100,14 +104,16 @@ const ViewPassphraseHost = ({ address }: { address: string }) => {
     )
 }
 
-const seedHdAccountOnEthereum = async (): Promise<WalletAccount> => {
-    const account = await seedHdAccount()
+const seedHdAccountOnEthereum = async (
+    params?: Parameters<typeof seedHdAccount>[0] & { ethereumAddress: string },
+): Promise<WalletAccount> => {
+    const account = await seedHdAccount(params)
     const withEthereum: WalletAccount = {
         ...account,
         chains: {
             ...account.chains,
             ethereum: {
-                address: EVM_ADDRESS,
+                address: params?.ethereumAddress ?? EVM_ADDRESS,
                 keyPairId: chainAccountOf(account, 'algorand')?.keyPairId,
             },
         },
@@ -225,6 +231,34 @@ describe('Flow: the recovery passphrase names every network it controls', () => 
         expect(
             screen.getByTestId('view_passphrase_bottom_sheet_grid'),
         ).toBeTruthy()
+    })
+
+    it('Given a 12-word Universal Wallet on Algorand and Ethereum, when the user reveals and opens the wallet guide, then it shows the 12-word Algorand note and the Ethereum note, never the 24-word one', async () => {
+        const address = await deriveTestHDAddress(0, 0, HD_TEST_MNEMONIC_12)
+        await seedHdAccountOnEthereum({
+            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
+            address,
+            ethereumAddress: HD_12_ETHEREUM_ADDRESS_0,
+        })
+
+        render(<ViewPassphraseHost address={address} />)
+        await openAcknowledgement()
+        await revealWords()
+        fireEvent.click(
+            screen.getByTestId('view_passphrase_bottom_sheet_compatibility'),
+        )
+
+        expect(
+            await screen.findByText(
+                'view_passphrase.compatibility.algorand_twelve_word',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('view_passphrase.compatibility.evm'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText('view_passphrase.compatibility.algorand'),
+        ).toBeNull()
     })
 
     it('Given an Algo25 account in a multi-network build, when the user reveals its passphrase, then the copy stays Algorand-only with no network list or wallet guide', async () => {

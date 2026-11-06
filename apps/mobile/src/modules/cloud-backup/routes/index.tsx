@@ -173,4 +173,8 @@ export { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRes
 export { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
 export { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
 
+// The integration harness mounts these two as the restore flow's start and end.
+export { CloudBackupScreen } from '../screens/CloudBackupScreen'
+export { CloudBackupOverviewScreen } from '../screens/CloudBackupOverviewScreen'
+
 export { CloudBackupRestoreEncryptionKeyRoute, CloudBackupRestoreScanRoute }

@@ -27,12 +27,16 @@ import { HD_TEST_ADDRESS, HD_TEST_MNEMONIC_24_INDICES } from './onboarding'
 export const HD_ACCOUNT_ID = 'hd-root'
 
 /** Stores a Universal Wallet's first account, named "HD Root", backed by a real HD key. */
-export const seedHdAccount = async (): Promise<WalletAccount> => {
+export const seedHdAccount = async (params?: {
+    mnemonicIndices: Uint16Array
+    address: string
+}): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
     await waitFor(async () => {
         rootKey = await kms.current.createHDWalletKey({
-            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+            mnemonicIndices:
+                params?.mnemonicIndices ?? HD_TEST_MNEMONIC_24_INDICES,
         })
         expect(rootKey).not.toBeNull()
     })
@@ -45,7 +49,7 @@ export const seedHdAccount = async (): Promise<WalletAccount> => {
         },
         chains: {
             algorand: {
-                address: HD_TEST_ADDRESS,
+                address: params?.address ?? HD_TEST_ADDRESS,
                 keyPairId: rootKey!.seedKey.id ?? '',
             },
         },

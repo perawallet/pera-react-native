@@ -45,6 +45,10 @@ export const HD_TEST_MNEMONIC_12 =
 
 export const HD_TEST_MNEMONIC_12_WORDS = HD_TEST_MNEMONIC_12.split(' ')
 
+export const HD_TEST_MNEMONIC_12_INDICES = mnemonicWordsToIndices(
+    HD_TEST_MNEMONIC_12_WORDS,
+)!
+
 export const HD_12_ETHEREUM_ADDRESS_0 =
     '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
 

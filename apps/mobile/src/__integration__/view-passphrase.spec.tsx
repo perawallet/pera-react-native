@@ -26,10 +26,10 @@ import {
     renderHook,
     screen,
     waitFor,
-    within,
 } from '@testing-library/react'
 
 import { render } from '@test-utils/render'
+import { isElementDisabled } from '@test-utils/rnw'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -46,51 +46,26 @@ import {
     type HDWalletKeyResult,
 } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { useViewPassphraseFlow } from '@modules/view-passphrase'
-import { BottomSheetManager } from '@modules/bottom-sheet'
 
-import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_12,
+    HD_TEST_MNEMONIC_12_INDICES,
+    HD_TEST_MNEMONIC_12_WORDS,
+    HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
 import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
-
-// Tiny host that drives the imperative `useViewPassphraseFlow` hook
-// when the trigger is tapped. Models how `AccountOptionsContent` opens
-// the flow in production: it calls `openViewPassphraseFlow(address)`
-// after dismissing the parent options sheet.
-const ViewPassphraseHost = ({
-    address,
-    onClose = () => undefined,
-}: {
-    address: string
-    onClose?: () => void
-}) => {
-    const { openViewPassphraseFlow } = useViewPassphraseFlow()
-    return (
-        <>
-            {/* The flow opens its PIN / acknowledge / display steps via
-                `useBottomSheet().request(...)` — the test harness uses
-                `render()` directly (not `renderWithNavigation`), so we
-                need to mount the manager here ourselves. */}
-            <BottomSheetManager />
-            <button
-                data-testid='open_view_passphrase'
-                onClick={() => {
-                    void openViewPassphraseFlow(address).finally(onClose)
-                }}
-            >
-                Open
-            </button>
-        </>
-    )
-}
+import {
+    ViewPassphraseHost,
+    advanceToDisplayedWords,
+    readMnemonicWordsFromGrid,
+} from './__fixtures__/viewPassphrase'
 
 // Mint a real algo25 key from the pinned `ALGO25_TEST_MNEMONIC` so the
 // keystore can later resolve the entropy back to the original 25-word
@@ -133,18 +108,25 @@ type SeededHDAccounts = {
 // `useMnemonicForAddress` resolves the same entropy entry — and
 // therefore the same 24-word phrase — for both. This is the property
 // the test asserts: derived addresses do not get their own mnemonic.
-const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
+const seedHDWalletAccounts = async (params?: {
+    mnemonicIndices: Uint16Array
+    mnemonic: string
+}): Promise<SeededHDAccounts> => {
+    const mnemonicIndices =
+        params?.mnemonicIndices ?? HD_TEST_MNEMONIC_24_INDICES
+    const mnemonic = params?.mnemonic ?? HD_TEST_MNEMONIC_24
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
     await act(async () => {
-        rootKey = await kms.current.createHDWalletKey({
-            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
-        })
+        rootKey = await kms.current.createHDWalletKey({ mnemonicIndices })
         expect(rootKey).not.toBeNull()
     })
 
     const rootKeyId = rootKey!.seedKey.id ?? ''
-    const derivedAddress = await deriveTestHDAddress(0, 1)
+    const rootAddress = params
+        ? await deriveTestHDAddress(0, 0, mnemonic)
+        : HD_TEST_ADDRESS
+    const derivedAddress = await deriveTestHDAddress(0, 1, mnemonic)
 
     const rootAccount: WalletAccount = {
         id: 'hd-root',
@@ -154,7 +136,7 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
             hd: { account: 0, keyIndex: 0 },
         },
         chains: {
-            algorand: { address: HD_TEST_ADDRESS, keyPairId: rootKeyId },
+            algorand: { address: rootAddress, keyPairId: rootKeyId },
         },
         name: 'HD Root',
     }
@@ -172,49 +154,6 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     useAccountsStore.getState().setAccounts([rootAccount, derivedAccount])
     useAccountsStore.getState().setSelectedAccountId(rootAccount.id)
     return { rootAccount, derivedAccount, rootKeyId }
-}
-
-// Walk the open ViewPassphrase grid and pull every word leaf in render
-// order. The grid lays words out in two columns top-to-bottom; this
-// regex matches every plain alpha-only word cell while skipping the
-// numeric index cells (which render digits, not letters).
-const readMnemonicWordsFromGrid = (): string[] => {
-    const grid = screen.getByTestId('view_passphrase_bottom_sheet_grid')
-    return within(grid)
-        .getAllByText(/^[a-z]+$/)
-        .map(node => node.textContent ?? '')
-}
-
-// Drive the flow from a closed state through to the words display:
-// open the trigger, tick all four acknowledge boxes, and tap reveal.
-// Returns once the words grid has rendered. Use this from any test
-// whose subject is the resolved mnemonic, not the gate behavior.
-const advanceToDisplayedWords = async (): Promise<void> => {
-    fireEvent.click(screen.getByTestId('open_view_passphrase'))
-    await waitFor(() => {
-        expect(
-            screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
-        ).toBeTruthy()
-    })
-    for (let i = 0; i < 4; i++) {
-        fireEvent.click(
-            screen.getByTestId(`passphrase_acknowledge_bottom_sheet_row_${i}`),
-        )
-    }
-    const revealButton = () =>
-        screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal')
-    await waitFor(() => {
-        expect(isElementDisabled(revealButton())).toBe(false)
-    })
-    fireEvent.click(revealButton())
-    await waitFor(
-        () => {
-            expect(
-                screen.getByTestId('view_passphrase_bottom_sheet_grid'),
-            ).toBeTruthy()
-        },
-        { timeout: 5000 },
-    )
 }
 
 describe('Flow: View account passphrase', () => {
@@ -382,6 +321,18 @@ describe('Flow: View account passphrase', () => {
         // exactly one mnemonic regardless of which derived address
         // the user opens the flow against.
         expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_24_WORDS)
+    })
+
+    it('Given a 12-word Universal Wallet account at keyIndex=1, when the user reveals the passphrase, then the 12 imported words are displayed in order', async () => {
+        const { derivedAccount } = await seedHDWalletAccounts({
+            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
+            mnemonic: HD_TEST_MNEMONIC_12,
+        })
+
+        render(<ViewPassphraseHost address={addressOf(derivedAccount)} />)
+        await advanceToDisplayedWords()
+
+        expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_12_WORDS)
     })
 
     it('Given a PIN is configured, when the user opens the flow, then the PIN gate mounts in front of the acknowledge step', async () => {

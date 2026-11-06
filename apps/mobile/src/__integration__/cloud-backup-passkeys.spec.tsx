@@ -11,10 +11,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { waitFor } from '@testing-library/react'
 import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
-import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
     readMasterKey,
     resetTestKeystore,
@@ -23,25 +22,14 @@ import {
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     deriveBackupKeys,
-    persistBackupKeys,
     deleteBackupKeys,
-    createBackupSyncStoreSources,
     getBackupSyncManager,
-    initializeBackupSyncManager,
     useBackupSyncStateStore,
-    useCloudBackupContactImport,
-    useCloudBackupImport,
-    useCloudBackupPasskeyImport,
     useCloudBackupRestoreDraftStore,
     useCloudBackupStore,
-    useListPasskeysForBackup,
-    useResolveHdSeedForBackup,
-    useResolveMnemonicForBackup,
-    useResolveSeedEntropyForBackup,
 } from '@perawallet/wallet-core-backup'
 import {
     buildSyncHandlers,
-    createItemKeyHasher,
     passkeyItemKey,
     passkeySecretsItemKey,
 } from '@perawallet/wallet-core-backup/test-handlers'
@@ -53,20 +41,11 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import {
-    useNetworkStore,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-
-import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
-import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
-import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
-import { CloudBackupRestoreEncryptionKeyRoute } from '@modules/cloud-backup/routes'
 
 // Not on the package barrel: nothing outside the engine encrypts an item, and
 // only this file has to forge one the way another device would have written it.
@@ -78,133 +57,16 @@ import {
 import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
-    renderQueryHook,
+    DEVICE_ID,
+    configureBackup,
+    renderCloudBackupFlow,
+    runRestoreFlow,
     seedHDWalletAccounts,
     seedPasskey,
+    startRealSyncManager,
+    wipeDevice,
 } from './__fixtures__/cloudBackup'
-import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
-const DEVICE_ID = 'test-device-id'
-
-const renderCloudBackupFlow = () =>
-    renderWithNavigation(CloudBackupScreen, 'CloudBackupHome', {
-        additionalScreens: [
-            {
-                name: 'CloudBackupRestorePassphrase',
-                component: CloudBackupRestorePassphraseScreen,
-            },
-            {
-                name: 'CloudBackupRestoreEncryptionKey',
-                component: CloudBackupRestoreEncryptionKeyRoute,
-            },
-            {
-                name: 'CloudBackupOverview',
-                component: CloudBackupOverviewScreen,
-            },
-        ],
-    })
-
-const runRestoreFlow = async () => {
-    fireEvent.click(screen.getByTestId('cloud_backup_restore_option'))
-    fireEvent.click(
-        await screen.findByTestId('cloud_backup_restore_sheet_manual'),
-    )
-
-    await waitFor(() => screen.getByTestId('cloud_backup_restore_word_input_0'))
-    BACKUP_MNEMONIC.forEach((word, index) => {
-        fireEvent.change(
-            screen.getByTestId(`cloud_backup_restore_word_input_${index}`),
-            { target: { value: word } },
-        )
-    })
-    fireEvent.click(
-        screen.getByTestId('cloud_backup_restore_passphrase_continue'),
-    )
-
-    const keyInput = await screen.findByTestId('cloud_backup_restore_key_input')
-    fireEvent.change(keyInput, { target: { value: BACKUP_SALT } })
-    fireEvent.click(screen.getByTestId('cloud_backup_restore_key_button'))
-
-    expect(
-        await screen.findByTestId(
-            'cloud_backup_overview_screen',
-            {},
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        ),
-    ).toBeTruthy()
-}
-
-/** The sync singleton with every real dependency the app injects, so a wiring
- *  gap between the engine and the mobile hooks fails here rather than on a
- *  device. */
-const startRealSyncManager = () => {
-    const importHook = renderQueryHook(() =>
-        useCloudBackupImport(useSelectedScope(ALGORAND_CHAIN_ID)),
-    )
-    const contactImportHook = renderQueryHook(() =>
-        useCloudBackupContactImport(),
-    )
-    const hdHook = renderQueryHook(() =>
-        useResolveHdSeedForBackup(ALGORAND_CHAIN_ID),
-    )
-    const mnemonicHook = renderQueryHook(() =>
-        useResolveMnemonicForBackup(ALGORAND_CHAIN_ID),
-    )
-    const listHook = renderQueryHook(() =>
-        useListPasskeysForBackup(ALGORAND_CHAIN_ID),
-    )
-    const passkeyImportHook = renderQueryHook(() =>
-        useCloudBackupPasskeyImport(
-            ALGORAND_CHAIN_ID,
-            useResolveSeedEntropyForBackup(ALGORAND_CHAIN_ID),
-        ),
-    )
-
-    return initializeBackupSyncManager({
-        chainId: ALGORAND_CHAIN_ID,
-        sources: createBackupSyncStoreSources(ALGORAND_CHAIN_ID),
-        importAccounts: importHook.current.importAccounts,
-        importContacts: contactImportHook.current.importContacts,
-        resolveHd: hdHook.current,
-        resolveMnemonic: mnemonicHook.current,
-        listPasskeys: listHook.current,
-        importPasskeys: passkeyImportHook.current.importPasskeys,
-        isLocked: () => false,
-        subscribePasskeyChanges: () => () => {},
-    })
-}
-
-/** Returns the item-key hasher, because every key a test asserts on is an
- *  HMAC of the credential id under K_item and cannot be rebuilt without it. */
-const configureBackup = async (keys: {
-    backupId: string
-    encryptionKey: Uint8Array
-    authSecretKey: Uint8Array
-    itemKey: Uint8Array
-}) => {
-    await persistBackupKeys({
-        encryptionKey: keys.encryptionKey,
-        authSecretKey: keys.authSecretKey,
-        itemKey: keys.itemKey,
-        mnemonic: BACKUP_MNEMONIC,
-    })
-    useCloudBackupStore.getState().setConfigured({
-        backupId: keys.backupId,
-        salt: BACKUP_SALT,
-        deviceId: DEVICE_ID,
-    })
-    return createItemKeyHasher(keys.itemKey)
-}
-
-/** Everything the restore has to put back; the fake backend keeps what the
- *  push left behind. */
-const wipeDevice = async () => {
-    resetTestKeystore()
-    useAccountsStore.getState().setAccounts([])
-    useCloudBackupStore.getState().resetState()
-    useBackupSyncStateStore.getState().resetState()
-    await deleteBackupKeys().catch(() => undefined)
-}
-
+import { HD_TEST_MNEMONIC_12_INDICES } from './__fixtures__/onboarding'
 const restoredPublicKey = async (credentialId: string): Promise<number[]> => {
     const record = (await openNativeProviderRecord(
         globalThis.crypto.subtle,
@@ -271,6 +133,62 @@ describe('Flow: Cloud backup → Passkeys', () => {
 
     // The credential carries its own key and no wallet is ever on either
     // device, so only the backed-up key can bring it back.
+    it('Given a passkey from a 12-word wallet, when it syncs and the device is wiped and restored, then the credential is backed up and rewritten with the same public key', async () => {
+        const keys = await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+        const { seedKeyId } = await seedHDWalletAccounts({
+            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
+        })
+        const passkey = await seedPasskey({ seedKeyId })
+        const hashAddress = await configureBackup(keys)
+
+        const { handlers, getItem } = buildSyncHandlers({
+            backupId: keys.backupId,
+        })
+        server.use(...handlers)
+        await startRealSyncManager().syncNow()
+
+        expect(
+            getItem(passkeyItemKey(hashAddress(passkey.credentialId))),
+        ).toBeDefined()
+        expect(nativePasskeyEntryExists(passkey.credentialId)).toBe(false)
+
+        await wipeDevice()
+        renderCloudBackupFlow()
+        await runRestoreFlow()
+
+        await waitFor(
+            () => {
+                expect(nativePasskeyEntryExists(passkey.credentialId)).toBe(
+                    true,
+                )
+            },
+            { timeout: 10_000 },
+        )
+        expect(await restoredPublicKey(passkey.credentialId)).toEqual(
+            Array.from(decodeFromBase64(passkey.publicKeySpkiDer)),
+        )
+    })
+
+    it('Given a passkey from a 12-word wallet, when the keystore is wiped and the same 12 words are imported again, then the same credential is derived', async () => {
+        const first = await seedHDWalletAccounts({
+            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
+        })
+        const before = await seedPasskey({ seedKeyId: first.seedKeyId })
+
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        const second = await seedHDWalletAccounts({
+            mnemonicIndices: HD_TEST_MNEMONIC_12_INDICES,
+        })
+        const after = await seedPasskey({ seedKeyId: second.seedKeyId })
+
+        expect(after.credentialId).toBe(before.credentialId)
+        expect(after.publicKeySpkiDer).toBe(before.publicKeySpkiDer)
+    })
+
     it('Given a passkey whose wallet is not on the device, when the device is wiped and restored, then the credential is rewritten with the same public key', async () => {
         const keys = await deriveBackupKeys({
             mnemonic: BACKUP_MNEMONIC,
