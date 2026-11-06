@@ -197,7 +197,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         }
         navigation.navigate('TabBar', {
             screen: 'Fund',
-            params: { destinationAssetId: usdcAssetId ?? undefined },
+            params: {
+                chainId: scope.chainId,
+                destinationAssetId: usdcAssetId ?? undefined,
+            },
         })
     }, [
         fundingAccount,

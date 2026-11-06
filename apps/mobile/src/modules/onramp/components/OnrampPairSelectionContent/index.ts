@@ -12,3 +12,4 @@
 
 export { OnrampPairSelectionContent } from './OnrampPairSelectionContent'
 export type { OnrampPairSelectionContentProps } from './OnrampPairSelectionContent'
+export type { OnrampDestinationPick } from './useOnrampPairSelectionContent'

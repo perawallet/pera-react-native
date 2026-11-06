@@ -11,9 +11,13 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@test-utils/render'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { createQueryClientWrapper, renderHook } from '@test-utils/render'
+import {
+    useAccountCapabilityScope,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
@@ -35,6 +39,16 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     }
 })
 
+// useCanBuyAsset reads the router's list through a query.
+const renderButtons = (
+    account: WalletAccount | null,
+    chainId: ChainId,
+    assetId?: string,
+) =>
+    renderHook(() => useAssetActionButtons(account, chainId, assetId), {
+        wrapper: createQueryClientWrapper(),
+    })
+
 const account = algorandAccountAt('ALGORAND_ADDRESS')
 
 const onEthereumOnly: WalletAccount = {
@@ -43,17 +57,27 @@ const onEthereumOnly: WalletAccount = {
     chains: { ethereum: { address: '0xabc' } },
 }
 
+const onBoth: WalletAccount = {
+    ...account,
+    chains: { ...account.chains, ethereum: { address: '0xabc' } },
+}
+
 describe('useAssetActionButtons', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        // The global mock has every capability on; these specs switch some off.
+        const actual = await vi.importActual<
+            typeof import('@perawallet/wallet-core-accounts')
+        >('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actual.useAccountCapabilityScope,
+        )
         registerEthereumChain()
         useRemoteConfigStore.getState().resetState()
         registerAlgorandRampAdapter()
     })
 
     it('offers every action at the Algorand defaults', () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(account, 'algorand'),
-        )
+        const { result } = renderButtons(account, 'algorand')
 
         expect(result.current).toEqual({
             canSwap: true,
@@ -85,27 +109,20 @@ describe('useAssetActionButtons', () => {
         (capability, expected) => {
             setCapabilityOverrides({ [capability]: false })
 
-            const { result } = renderHook(() =>
-                useAssetActionButtons(account, 'algorand'),
-            )
+            const { result } = renderButtons(account, 'algorand')
 
             expect(result.current).toEqual(expected)
         },
     )
 
-    it("swaps and sends on the asset's own chain, and buys only on an onramp chain", () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(
-                {
-                    ...account,
-                    chains: {
-                        ...account.chains,
-                        ethereum: { address: '0xabc' },
-                    },
-                },
-                'ethereum',
-            ),
-        )
+    it('offers Buy on every Algorand asset, listed or not', () => {
+        const { result } = renderButtons(account, 'algorand', '31566704')
+
+        expect(result.current.canBuy).toBe(true)
+    })
+
+    it("swaps and sends on the asset's own chain, and buys only where the chain has a ramp adapter", () => {
+        const { result } = renderButtons(onBoth, 'ethereum')
 
         expect(result.current).toEqual({
             canSwap: true,
@@ -115,28 +132,49 @@ describe('useAssetActionButtons', () => {
         })
     })
 
+    it('offers Buy on either chain of an account that is on both', () => {
+        rampChainAdapters.register({
+            chainId: 'ethereum',
+            fromRouterAssetId: () => null,
+        })
+
+        const onAlgorand = renderButtons(onBoth, 'algorand')
+        const onEthereum = renderButtons(onBoth, 'ethereum')
+
+        expect(onAlgorand.result.current.canBuy).toBe(true)
+        expect(onEthereum.result.current.canBuy).toBe(true)
+    })
+
+    it('drops Buy on the chain whose onramp is off, keeping it on the other', () => {
+        rampChainAdapters.register({
+            chainId: 'ethereum',
+            fromRouterAssetId: () => null,
+        })
+        setCapabilityOverrides({ onramp: false }, 'ethereum')
+
+        const onAlgorand = renderButtons(onBoth, 'algorand')
+        const onEthereum = renderButtons(onBoth, 'ethereum')
+
+        expect(onAlgorand.result.current.canBuy).toBe(true)
+        expect(onEthereum.result.current.canBuy).toBe(false)
+    })
+
     it('drops receive on an asset whose chain has receive off', () => {
         setCapabilityOverrides({ receive: false }, 'ethereum')
 
-        const { result } = renderHook(() =>
-            useAssetActionButtons(onEthereumOnly, 'ethereum'),
-        )
+        const { result } = renderButtons(onEthereumOnly, 'ethereum')
 
         expect(result.current.canReceive).toBe(false)
     })
 
     it("offers send on an Ethereum asset from the account's own Ethereum chain", () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(onEthereumOnly, 'ethereum'),
-        )
+        const { result } = renderButtons(onEthereumOnly, 'ethereum')
 
         expect(result.current.canSend).toBe(true)
     })
 
     it("drops send and receive when the account has no address on the asset's chain", () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(onEthereumOnly, 'algorand'),
-        )
+        const { result } = renderButtons(onEthereumOnly, 'algorand')
 
         expect(result.current.canSend).toBe(false)
         expect(result.current.canReceive).toBe(false)
@@ -145,39 +183,31 @@ describe('useAssetActionButtons', () => {
     it('drops swap on a chain whose swap capability is off', () => {
         setCapabilityOverrides({ swap: false }, 'ethereum')
 
-        const { result } = renderHook(() =>
-            useAssetActionButtons(onEthereumOnly, 'ethereum'),
-        )
+        const { result } = renderButtons(onEthereumOnly, 'ethereum')
 
         expect(result.current.canSwap).toBe(false)
     })
 
     it('drops swap for an account with no address on the asset chain', () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(account, 'ethereum'),
-        )
+        const { result } = renderButtons(account, 'ethereum')
 
         expect(result.current.canSwap).toBe(false)
     })
 
     it('drops swap without an account', () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(null, 'algorand'),
-        )
+        const { result } = renderButtons(null, 'algorand')
 
         expect(result.current.canSwap).toBe(false)
     })
 
     it('hides buying for an account with no address on an onramp chain', () => {
-        const { result } = renderHook(() =>
-            useAssetActionButtons(
-                {
-                    id: 'elsewhere',
-                    custody: { kind: 'watch' },
-                    chains: { ethereum: { address: '0xADDRESS' } },
-                },
-                'ethereum',
-            ),
+        const { result } = renderButtons(
+            {
+                id: 'elsewhere',
+                custody: { kind: 'watch' },
+                chains: { ethereum: { address: '0xADDRESS' } },
+            },
+            'ethereum',
         )
 
         expect(result.current.canBuy).toBe(false)

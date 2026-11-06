@@ -11,8 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
+import { FilterSelection } from '@components/FilterSelection'
 import { AssetSelectionList } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
@@ -40,6 +45,10 @@ export const OnrampPairSelectionContent = ({
         searchFilter,
         setSearchFilter,
         isLoading,
+        listScope,
+        chainOptions,
+        selectedChainId,
+        handleSelectChain,
         handleTokenSelected,
     } = useOnrampPairSelectionContent({ variant, scope })
 
@@ -48,14 +57,14 @@ export const OnrampPairSelectionContent = ({
             <OnrampAssetItemView
                 token={item.token}
                 asset={item.asset}
-                scope={scope}
+                scope={listScope}
                 balance={item.balance}
                 onPress={() => handleTokenSelected(item.token)}
                 style={styles.item}
                 testID={`onramp-asset-row-${item.token.id}`}
             />
         ),
-        [handleTokenSelected, styles, scope],
+        [handleTokenSelected, styles, listScope],
     )
 
     const title =
@@ -74,6 +83,16 @@ export const OnrampPairSelectionContent = ({
                     searchValue={searchFilter}
                     onSearchChange={setSearchFilter}
                     searchPlaceholder={t('onramp.pair_selection.search')}
+                    searchAccessory={
+                        chainOptions.length > 0 ? (
+                            <FilterSelection<Nullable<ChainId>>
+                                options={chainOptions}
+                                selectedValue={selectedChainId}
+                                onSelect={handleSelectChain}
+                                testID='onramp_destination_chain_filter'
+                            />
+                        ) : undefined
+                    }
                     isLoading={isLoading && items.length === 0}
                     cardLayout
                     ListEmptyComponent={

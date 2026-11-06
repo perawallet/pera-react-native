@@ -12,8 +12,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    type NavigationProp,
     type RouteProp,
     useIsFocused,
+    useNavigation,
     useRoute,
 } from '@react-navigation/native'
 import {
@@ -64,22 +66,15 @@ type UseOnrampScreenResult = {
     handleRetryPairs: () => void
 }
 
-// Resolve the destination token id to seed when none is selected: the route's
-// asset wins, else the chain's native coin, else the first available
-// destination token.
+// The destination to seed when none is selected: the chain's native coin, else
+// the first available destination token.
 const resolveSeedDestinationId = (
     destinations: RampToken[],
-    destinationAssetId: Optional<string>,
     scope: ChainScope,
 ): Nullable<string> => {
-    const assetOf = (token: RampToken) => rampTokenAsset(token, scope)
-    const requested = destinationAssetId
-        ? destinations.find(
-              token => assetOf(token)?.assetId === destinationAssetId,
-          )
-        : undefined
-    if (requested) return requested.id
-    const native = destinations.find(token => assetOf(token)?.isNative)
+    const native = destinations.find(
+        token => rampTokenAsset(token, scope)?.isNative,
+    )
     if (native) return native.id
     return destinations[0]?.id ?? null
 }
@@ -89,6 +84,8 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     // its params arrive under the `Fund` route name (not `Onramp`).
     const route =
         useRoute<RouteProp<{ Fund: Optional<OnrampScreenParams> }, 'Fund'>>()
+    const navigation =
+        useNavigation<NavigationProp<{ Fund: Optional<OnrampScreenParams> }>>()
     const params = route.params
 
     const isFocused = useIsFocused()
@@ -103,12 +100,19 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         selectedSourceTokenId,
         selectedDestinationTokenId,
         setSelectedDestinationTokenId,
+        setSelectedChainId,
     } = useOnramp()
     const { isIntroductionSeen, markIntroductionSeen } = useOnrampIntroduction()
 
     const [activeTab, setActiveTab] = useState<OnrampTab>('fund')
 
-    const destinationAssetId = params?.destinationAssetId
+    const routeChainId = params?.chainId
+    const routeDestinationAssetId = params?.destinationAssetId
+
+    // Before the seeding effects: a chain change reseeds the destination.
+    useEffect(() => {
+        if (routeChainId) setSelectedChainId(routeChainId)
+    }, [routeChainId, setSelectedChainId])
 
     // Seed the destination (defaults to the native coin). The source stays
     // unset so the pay selector shows "Choose an asset" on every fresh entry.
@@ -123,7 +127,6 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         if (selectedDestinationTokenId === null || !isDestinationListed) {
             const seedDestinationId = resolveSeedDestinationId(
                 destinations,
-                destinationAssetId,
                 scope,
             )
             if (seedDestinationId !== null) {
@@ -133,11 +136,35 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         // selectedDestination is intentionally omitted: re-seeding on each
         // selection change would fight user-driven switches.
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [destinations, pairsLoading, scope, setSelectedDestinationTokenId])
+
+    // After the seed effect, so the route's token wins over a seeded or
+    // remembered one. The route is spent once applied: left in place, a repeat
+    // visit with the same params would not re-apply and a later pick could be
+    // overwritten. Waits until the scope is the route's chain, since the
+    // destinations in hand belong to the previous one until then.
+    useEffect(() => {
+        if (!routeChainId || scope?.chainId !== routeChainId) return
+        if (routeDestinationAssetId) {
+            if (pairsLoading || destinations.length === 0) return
+            const requested = destinations.find(
+                token =>
+                    rampTokenAsset(token, scope)?.assetId ===
+                    routeDestinationAssetId,
+            )
+            if (requested) setSelectedDestinationTokenId(requested.id)
+        }
+        navigation.setParams({
+            chainId: undefined,
+            destinationAssetId: undefined,
+        })
     }, [
-        destinations,
-        pairsLoading,
-        destinationAssetId,
+        navigation,
+        routeChainId,
+        routeDestinationAssetId,
         scope,
+        pairsLoading,
+        destinations,
         setSelectedDestinationTokenId,
     ])
 

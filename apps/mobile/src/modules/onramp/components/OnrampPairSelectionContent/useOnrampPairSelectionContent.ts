@@ -16,16 +16,23 @@ import {
     addressOn,
     useAccountBalancesQuery,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     rampTokenAsset,
     useOnramp,
+    useOnrampDestinationChains,
     useRampDestinationsQuery,
     useRampSourcesQuery,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { FilterOption } from '@components/FilterSelection'
+import { toChainFilterOptions } from '@modules/assets'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
@@ -36,8 +43,15 @@ export type OnrampSelectableToken = {
     asset: Nullable<PeraAsset>
 }
 
+/** A picked token with the chain it is bought onto. */
+export type OnrampDestinationPick = {
+    chainId: ChainId
+    tokenId: string
+}
+
 type UseOnrampPairSelectionContentParams = {
     variant: 'source' | 'destination'
+    /** Fund's own scope; the list opens on its chain. */
     scope: ChainScope
 }
 
@@ -46,6 +60,12 @@ type UseOnrampPairSelectionContentResult = {
     searchFilter: string
     setSearchFilter: (value: string) => void
     isLoading: boolean
+    /** The scope the listed tokens are bought onto. */
+    listScope: ChainScope
+    /** One chip per chain the account can be funded on; empty for fewer than two. */
+    chainOptions: FilterOption<Nullable<ChainId>>[]
+    selectedChainId: ChainId
+    handleSelectChain: (chainId: Nullable<ChainId>) => void
     handleTokenSelected: (token: RampToken) => void
 }
 
@@ -54,15 +74,40 @@ export const useOnrampPairSelectionContent = ({
     scope,
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
     const { account } = useOnrampAccount()
-    const { resolve } = useBottomSheetResult<string>()
+    const { resolve } = useBottomSheetResult<OnrampDestinationPick>()
     const { selectedDestinationTokenId } = useOnramp()
+    const destinationChains = useOnrampDestinationChains(account)
+    const [pickedChainId, setPickedChainId] = useState<Nullable<ChainId>>(null)
+
+    // Fund's own chain leads when the account cannot sign on it, so the sheet
+    // still opens on the chain Fund is on.
+    const chainIds = useMemo((): ChainId[] => {
+        if (variant === 'source' || destinationChains.length === 0) return []
+        return destinationChains.includes(scope.chainId)
+            ? destinationChains
+            : [scope.chainId, ...destinationChains]
+    }, [variant, destinationChains, scope.chainId])
+    const selectedChainId =
+        pickedChainId !== null && chainIds.includes(pickedChainId)
+            ? pickedChainId
+            : scope.chainId
+    const listScope = useSelectedScope(selectedChainId)
+
+    const chainOptions = useMemo(
+        () =>
+            toChainFilterOptions(chainIds, {
+                testIDPrefix: 'onramp_destination_chain',
+            }),
+        [chainIds],
+    )
+
     // Both queries are hooks, so each runs; the one the variant doesn't list stays idle.
     const destinationsQuery = useRampDestinationsQuery({
-        scope,
+        scope: listScope,
         enabled: variant === 'destination',
     })
     const sourcesQuery = useRampSourcesQuery({
-        scope,
+        scope: listScope,
         destinationId: selectedDestinationTokenId,
         enabled: variant === 'source',
     })
@@ -70,9 +115,9 @@ export const useOnrampPairSelectionContent = ({
         variant === 'source' ? sourcesQuery : destinationsQuery
     const { accountBalances } = useAccountBalancesQuery(
         account ? [account] : [],
-        scope,
+        listScope,
     )
-    const selectedAddress = account ? addressOn(account, scope) : undefined
+    const selectedAddress = account ? addressOn(account, listScope) : undefined
     const [searchFilter, setSearchFilter] = useState('')
 
     const balanceMap = useMemo((): Map<string, Decimal> => {
@@ -96,18 +141,20 @@ export const useOnrampPairSelectionContent = ({
     }, [listed, searchFilter])
 
     const assetIdOf = useCallback(
-        (token: RampToken) => rampTokenAsset(token, scope)?.assetId ?? null,
-        [scope],
+        (token: RampToken) => rampTokenAsset(token, listScope)?.assetId ?? null,
+        [listScope],
     )
 
+    // From the whole list, not the search result: the query is keyed on its ids,
+    // so a keystroke would otherwise start a new fetch for every filtered set.
     const assetIds = useMemo(
         () =>
-            tokens
+            listed
                 .map(assetIdOf)
                 .filter((assetId): assetId is string => assetId !== null),
-        [tokens, assetIdOf],
+        [listed, assetIdOf],
     )
-    const { data: assets } = useAssetsQuery(scope, assetIds, {
+    const { data: assets } = useAssetsQuery(listScope, assetIds, {
         fetchMissing: true,
     })
 
@@ -129,11 +176,15 @@ export const useOnrampPairSelectionContent = ({
         [tokens, assetIdOf, balanceMap, assets],
     )
 
+    const handleSelectChain = useCallback((chainId: Nullable<ChainId>) => {
+        if (chainId !== null) setPickedChainId(chainId)
+    }, [])
+
     const handleTokenSelected = useCallback(
         (token: RampToken) => {
-            resolve(token.id)
+            resolve({ chainId: listScope.chainId, tokenId: token.id })
         },
-        [resolve],
+        [resolve, listScope.chainId],
     )
 
     return {
@@ -141,6 +192,10 @@ export const useOnrampPairSelectionContent = ({
         searchFilter,
         setSearchFilter,
         isLoading,
+        listScope,
+        chainOptions,
+        selectedChainId,
+        handleSelectChain,
         handleTokenSelected,
     }
 }

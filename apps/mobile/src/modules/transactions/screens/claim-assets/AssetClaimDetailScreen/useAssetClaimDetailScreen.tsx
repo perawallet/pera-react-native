@@ -90,8 +90,11 @@ export const useAssetClaimDetailScreen =
             !request.shouldUseFundsBeforeRejecting
 
         const handleAddFunds = useCallback(() => {
-            navigate('TabBar', { screen: 'Fund' })
-        }, [navigate])
+            navigate('TabBar', {
+                screen: 'Fund',
+                params: { chainId: scope.chainId },
+            })
+        }, [navigate, scope.chainId])
 
         const handleClaim = useCallback(() => {
             if (isClaimBlocked) {

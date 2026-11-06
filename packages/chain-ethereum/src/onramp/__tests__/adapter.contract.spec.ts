@@ -12,7 +12,11 @@
 
 import { describe, expect, it } from 'vitest'
 import { rampContractTests } from '@perawallet/wallet-core-onramp/testing'
-import { eip155IdOf, EVM_TEST_CHAINS, evmScopeOf } from '../../__tests__/evm-chains'
+import {
+    eip155IdOf,
+    EVM_TEST_CHAINS,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
 import { createEvmRampAdapter } from '../adapter'
 
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'

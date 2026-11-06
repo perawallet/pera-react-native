@@ -12,7 +12,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@test-utils/render'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountCapabilityScope,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import {
@@ -40,7 +43,14 @@ vi.mock('../../AccountOverview/AccountOverviewModalContext', () => ({
 }))
 
 describe('useNoFundsButtonPanel', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        // The global mock has every capability on; this spec switches onramp off.
+        const actual = await vi.importActual<
+            typeof import('@perawallet/wallet-core-accounts')
+        >('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actual.useAccountCapabilityScope,
+        )
         useRemoteConfigStore.getState().resetState()
         registerAlgorandRampAdapter()
         vi.mocked(useSelectedAccount).mockReturnValue(

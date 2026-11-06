@@ -11,13 +11,17 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
-import { OnrampPairSelectionContent } from '../OnrampPairSelectionContent'
+import {
+    OnrampPairSelectionContent,
+    type OnrampDestinationPick,
+} from '../OnrampPairSelectionContent'
 import { OnrampSourceSelectionContent } from '../OnrampSourceSelectionContent'
 import { OnrampProviderContent } from '../OnrampProviderContent'
 import { OnrampPaymentMethodContent } from '../OnrampPaymentMethodContent'
@@ -34,6 +38,7 @@ type UseOnrampSheetsParams = {
     senderAddress: string
     setSelectedSourceTokenId: (id: string) => void
     setSelectedDestinationTokenId: (id: string) => void
+    setSelectedChainId: (chainId: ChainId) => void
     setSenderAddress: (address: string) => void
 }
 
@@ -64,6 +69,7 @@ export const useOnrampSheets = ({
     senderAddress,
     setSelectedSourceTokenId,
     setSelectedDestinationTokenId,
+    setSelectedChainId,
     setSenderAddress,
 }: UseOnrampSheetsParams): UseOnrampSheetsResult => {
     const { request: requestBottomSheet } = useBottomSheet()
@@ -85,7 +91,7 @@ export const useOnrampSheets = ({
 
     const handleOpenDestinationSelection = useCallback(async () => {
         if (scope === null) return
-        const destinationTokenId = await requestBottomSheet<string>({
+        const pick = await requestBottomSheet<OnrampDestinationPick>({
             contents: (
                 <OnrampPairSelectionContent
                     variant='destination'
@@ -98,9 +104,15 @@ export const useOnrampSheets = ({
                 autoCreateContainer: false,
             },
         })
-        if (!destinationTokenId) return
-        setSelectedDestinationTokenId(destinationTokenId)
-    }, [requestBottomSheet, setSelectedDestinationTokenId, scope])
+        if (!pick) return
+        setSelectedChainId(pick.chainId)
+        setSelectedDestinationTokenId(pick.tokenId)
+    }, [
+        requestBottomSheet,
+        setSelectedChainId,
+        setSelectedDestinationTokenId,
+        scope,
+    ])
 
     const handleOpenProvider = useCallback(async () => {
         trackOnrampEvent(OnrampEvent.ProviderTap)

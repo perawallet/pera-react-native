@@ -16,7 +16,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { useOnrampScope } from '@perawallet/wallet-core-onramp'
+import { useCanBuyAsset } from '@perawallet/wallet-core-onramp'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
 
@@ -30,16 +30,21 @@ export type UseAssetActionButtonsResult = {
 export const useAssetActionButtons = (
     account: Maybe<WalletAccount>,
     chainId: ChainId,
+    assetId?: string,
 ): UseAssetActionButtonsResult => {
     const canSwapOnChain = useSwapScope(account ?? null, chainId) !== null
-    const onrampChainId = useOnrampScope(account?.chains ?? null)?.chainId
+    const canBuy = useCanBuyAsset({
+        account: account ?? null,
+        chainId,
+        assetId,
+    })
     // A send runs on the asset's chain, whichever of the account's chains that is.
     const canSendOnChain = useChainCapability(chainId, 'send')
     const canReceiveOnChain = useChainCapability(chainId, 'receive')
     const isOnChain = !account || chainAccountOf(account, chainId) !== undefined
     return {
         canSwap: canSwapOnChain,
-        canBuy: onrampChainId === chainId,
+        canBuy,
         canSend: canSendOnChain && isOnChain,
         canReceive: canReceiveOnChain && isOnChain,
     }

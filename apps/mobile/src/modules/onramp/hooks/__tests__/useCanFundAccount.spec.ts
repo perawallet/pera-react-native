@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@test-utils/render'
+import { useAccountCapabilityScope } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import {
@@ -21,7 +22,14 @@ import {
 import { useCanFundAccount } from '../useCanFundAccount'
 
 describe('useCanFundAccount', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        // The global mock has every capability on; this spec switches one off.
+        const actual = await vi.importActual<
+            typeof import('@perawallet/wallet-core-accounts')
+        >('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actual.useAccountCapabilityScope,
+        )
         useRemoteConfigStore.getState().resetState()
         registerAlgorandRampAdapter()
     })
