@@ -27,7 +27,7 @@ export const transformRampPairRow = (
     row: RampPairRowApiResponse,
 ): Nullable<RampToken> => {
     const kind = isTokenKind(row.kind) ? row.kind : undefined
-    return knownFractionDecimalsOf(row.asset, kind) === null
+    return knownFractionDecimalsOf(row.asset) === null
         ? null
         : toRampToken(row.asset, kind)
 }

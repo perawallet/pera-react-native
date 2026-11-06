@@ -237,6 +237,33 @@ describe('useOnrampScreen', () => {
         expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
     })
 
+    it("applies the route's asset over a saved destination the router lists", () => {
+        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
+        vi.mocked(useRoute).mockReturnValue({
+            params: { destinationAssetId: '31566704' },
+        } as never)
+
+        renderHook(() => useOnrampScreen())
+
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
+            USDC_ROUTER_ID,
+        )
+    })
+
+    it("applies the route's asset once, so a refetch doesn't undo a later switch", () => {
+        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
+        vi.mocked(useRoute).mockReturnValue({
+            params: { destinationAssetId: '31566704' },
+        } as never)
+        const { rerender } = renderHook(() => useOnrampScreen())
+        mockSetSelectedDestinationTokenId.mockClear()
+
+        mockDestinationsQuery({ data: [...DESTINATIONS] })
+        rerender()
+
+        expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
+    })
+
     it('ignores a route asset id no destination matches', () => {
         vi.mocked(useRoute).mockReturnValue({
             params: { destinationAssetId: '999' },

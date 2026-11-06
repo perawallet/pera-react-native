@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     type RouteProp,
     useIsFocused,
@@ -64,25 +64,26 @@ type UseOnrampScreenResult = {
     handleRetryPairs: () => void
 }
 
-// Resolve the destination token id to seed when none is selected: the route's
-// asset wins, else the chain's native coin, else the first available
-// destination token.
-const resolveSeedDestinationId = (
+const findRequestedDestination = (
     destinations: RampToken[],
     destinationAssetId: Optional<string>,
     scope: ChainScope,
-): Nullable<string> => {
-    const assetOf = (token: RampToken) => rampTokenAsset(token, scope)
-    const requested = destinationAssetId
+): Optional<RampToken> =>
+    destinationAssetId
         ? destinations.find(
-              token => assetOf(token)?.assetId === destinationAssetId,
+              token =>
+                  rampTokenAsset(token, scope)?.assetId === destinationAssetId,
           )
         : undefined
-    if (requested) return requested.id
-    const native = destinations.find(token => assetOf(token)?.isNative)
-    if (native) return native.id
-    return destinations[0]?.id ?? null
-}
+
+// The chain's native coin, else the first available destination.
+const resolveFallbackDestinationId = (
+    destinations: RampToken[],
+    scope: ChainScope,
+): Nullable<string> =>
+    destinations.find(token => rampTokenAsset(token, scope)?.isNative)?.id ??
+    destinations[0]?.id ??
+    null
 
 export const useOnrampScreen = (): UseOnrampScreenResult => {
     // The native onramp screen renders on the existing `Fund` tab route, so
@@ -110,22 +111,36 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
 
     const destinationAssetId = params?.destinationAssetId
 
-    // Seed the destination (defaults to the native coin). The source stays
-    // unset so the pay selector shows "Choose an asset" on every fresh entry.
-    // A persisted destination the router no longer lists is reseeded, or the
-    // form would wait on it.
+    // A route asset the router lists wins over the remembered destination, once
+    // per asset so a later refetch can't undo the user's own switch. Otherwise
+    // an unset or no longer listed destination is seeded with the native coin,
+    // or the form would wait on it. The source stays unset so the pay selector
+    // shows "Choose an asset" on every fresh entry.
+    const appliedRouteAssetRef = useRef<Optional<string>>(undefined)
     useEffect(() => {
+        if (!destinationAssetId) appliedRouteAssetRef.current = undefined
         if (scope === null || pairsLoading || destinations.length === 0) return
+
+        const requested = findRequestedDestination(
+            destinations,
+            destinationAssetId,
+            scope,
+        )
+        if (requested && appliedRouteAssetRef.current !== destinationAssetId) {
+            appliedRouteAssetRef.current = destinationAssetId
+            if (requested.id !== selectedDestinationTokenId) {
+                setSelectedDestinationTokenId(requested.id)
+            }
+            return
+        }
 
         const isDestinationListed = destinations.some(
             token => token.id === selectedDestinationTokenId,
         )
         if (selectedDestinationTokenId === null || !isDestinationListed) {
-            const seedDestinationId = resolveSeedDestinationId(
-                destinations,
-                destinationAssetId,
-                scope,
-            )
+            const seedDestinationId =
+                requested?.id ??
+                resolveFallbackDestinationId(destinations, scope)
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
             }
