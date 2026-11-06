@@ -120,7 +120,7 @@ const BASE_ACCOUNT: WalletAccount = {
 }
 
 const COUNTERPARTIES = [
-    '0x1111111111111111111111111111111111111111',
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     '0x2222222222222222222222222222222222222222',
     '0x3333333333333333333333333333333333333333',
     '0x4444444444444444444444444444444444444444',
@@ -163,8 +163,9 @@ const serveNames = (namesByChain: NamesByChain, status = 200) =>
                     results: body.addresses.map(address => {
                         const name =
                             namesByChain[body.chain]?.[address.toLowerCase()]
+                        // The backend answers EVM addresses lowercased.
                         return {
-                            address,
+                            address: address.toLowerCase(),
                             name: name
                                 ? { name, source: 'ens', image: null }
                                 : null,
@@ -185,8 +186,11 @@ const trackRpc = ({ request }: { request: Request }) => {
     }
 }
 
-const truncated = (chainId: 'ethereum' | 'base', address: string) =>
-    addressCodecs.get(chainId).truncate(address)
+// Rows show the checksummed spelling, whatever case the address was handed in.
+const truncated = (chainId: 'ethereum' | 'base', address: string) => {
+    const codec = addressCodecs.get(chainId)
+    return codec.truncate(codec.normalize(address))
+}
 
 describe('Flow: ENS primary names for EVM addresses', () => {
     beforeAll(async () => {

@@ -101,7 +101,7 @@ export const useAccountDisplay = ({
         ? accountTypeLabel
         : (addressName ?? address)
     // Suppress the secondary line when it would just repeat the primary name
-    // (e.g. a custom name identical to its NFD). Not in `compact`, where the
+    // (e.g. a custom name identical to its name). Not in `compact`, where the
     // primary is hidden and the secondary stands alone as the only label.
     const dedupedSecondary = dedupeSecondaryLabel(displayName, rawSecondary)
     const secondaryText = compact ? rawSecondary : dedupedSecondary

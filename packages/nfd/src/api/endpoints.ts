@@ -50,7 +50,7 @@ export const fetchNfdBulkRead = async (
 ): Promise<NfdBulkResult[]> => {
     const { addresses, scope, signal } = params
 
-    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
+    // Without a Pera backend there is nothing to ask: callers already treat [] as "no name".
     if (!hasPeraBackend(scope)) return []
     const chain = caip2Of(scope)
     if (!chain) return []
@@ -71,8 +71,7 @@ export const fetchNfdBulkRead = async (
         })
         return []
     }
-    const adapter = nameServiceAdapterFor(scope)
-    const { normalizeName } = adapter
+    const { normalizeName } = nameServiceAdapterFor(scope)
     // Only a name already in the service's normal form is shown, because any other could pass for a different name.
     return transformBulkResults(result.data).map(item =>
         item.name &&
