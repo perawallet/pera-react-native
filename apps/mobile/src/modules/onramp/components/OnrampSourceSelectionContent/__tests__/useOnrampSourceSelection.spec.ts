@@ -207,6 +207,16 @@ describe('useOnrampSourceSelection', () => {
             )
         })
 
+        it('shows the chips under the Crypto filter only', () => {
+            serve([...SOURCES, USDC_BASE])
+            const { result } = renderHook(() => useOnrampSourceSelection())
+            expect(result.current.isChainFilterVisible).toBe(false)
+
+            act(() => result.current.setFilter('crypto'))
+
+            expect(result.current.isChainFilterVisible).toBe(true)
+        })
+
         it('offers no chips when crypto comes from a single chain', () => {
             serve(SOURCES.filter(token => token.id !== 'usdc-sol'))
             const { result } = renderHook(() => useOnrampSourceSelection())

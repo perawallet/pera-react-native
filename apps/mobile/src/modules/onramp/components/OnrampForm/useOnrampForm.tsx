@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
     useOnramp,
@@ -106,6 +106,10 @@ export const useOnrampForm = (
     const sourceChain = sourceToken?.network.name ?? ''
 
     const [sourceAmountText, setSourceAmountText] = useState('')
+    const sourceAmountTextRef = useRef(sourceAmountText)
+    useEffect(() => {
+        sourceAmountTextRef.current = sourceAmountText
+    }, [sourceAmountText])
 
     // Display units; null while the text is empty or not a plain decimal.
     const sourceAmount = useMemo(
@@ -177,8 +181,13 @@ export const useOnrampForm = (
                     ? undefined
                     : { [AnalyticsMetadataKey.SourceChain]: sourceChain },
             )
+            const textAtTap = sourceAmountTextRef.current
             const limit = await resolveQuoteLimit(bound)
-            if (limit !== null) setSourceAmountText(limit.toFixed())
+            // A probe can take a while; what the user typed meanwhile wins.
+            if (limit === null || sourceAmountTextRef.current !== textAtTap) {
+                return
+            }
+            setSourceAmountText(limit.toFixed())
         },
         [resolveQuoteLimit, sourceChain, trackOnrampEvent],
     )

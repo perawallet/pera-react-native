@@ -49,6 +49,8 @@ type UseOnrampSourceSelectionResult = {
     setChainFilter: (network: Nullable<string>) => void
     /** All, then one chip per source chain; empty when crypto comes from fewer than two. */
     chainOptions: FilterOption<Nullable<string>>[]
+    /** Chips show only under the Crypto filter, and only for two or more chains. */
+    isChainFilterVisible: boolean
 }
 
 const chainTestIdOf = (network: string): string =>
@@ -106,8 +108,8 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
 
     // The chips only show under the Crypto filter, so a pick there doesn't
     // silently narrow the All view.
-    const activeChain =
-        filter === 'crypto' && chainOptions.length > 0 ? chainFilter : null
+    const isChainFilterVisible = filter === 'crypto' && chainOptions.length > 0
+    const activeChain = isChainFilterVisible ? chainFilter : null
 
     const query = search.trim().toLowerCase()
     const matchesSearch = (token: RampToken) =>
@@ -214,5 +216,6 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         chainFilter,
         setChainFilter,
         chainOptions,
+        isChainFilterVisible,
     }
 }

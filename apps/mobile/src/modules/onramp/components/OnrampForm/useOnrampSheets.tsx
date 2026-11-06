@@ -202,10 +202,12 @@ export const useOnrampSheets = ({
                 enablePanDownToClose: true,
             },
         })
-        if (resolvedAddress) {
+        // Undefined is a dismissal; an empty string clears the address.
+        if (resolvedAddress === undefined) return
+        if (resolvedAddress !== '') {
             trackOnrampEvent(OnrampEvent.SenderAddressApply)
-            setSenderAddress(resolvedAddress)
         }
+        setSenderAddress(resolvedAddress)
     }, [
         requestBottomSheet,
         senderAddress,

@@ -37,7 +37,7 @@ export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
 
 /** The chain a source pays from, as the router names it; the token's own name when it gives none. */
 export const sourceNetworkLabelOf = (token: RampToken): string =>
-    token.network.name || token.name
+    token.network.name !== '' ? token.network.name : token.name
 
 /**
  * Shape a freshly-created deposit order as a (pending) history item so the

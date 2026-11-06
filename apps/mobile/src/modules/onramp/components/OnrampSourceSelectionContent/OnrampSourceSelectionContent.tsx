@@ -62,6 +62,7 @@ export const OnrampSourceSelectionContent = () => {
         chainFilter,
         setChainFilter,
         chainOptions,
+        isChainFilterVisible,
     } = useOnrampSourceSelection()
 
     const handleSelect = useCallback(
@@ -117,7 +118,7 @@ export const OnrampSourceSelectionContent = () => {
                             contentContainerStyle={styles.filterRow}
                         />
 
-                        {filter === 'crypto' && chainOptions.length > 0 && (
+                        {isChainFilterVisible && (
                             <FilterSelection<Nullable<string>>
                                 options={chainOptions}
                                 selectedValue={chainFilter}

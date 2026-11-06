@@ -714,6 +714,36 @@ describe('useOnrampForm', () => {
         expect(result.current.sourceAmountText).toBe('0.00000001')
     })
 
+    it('keeps what the user typed while the limit probe was out', async () => {
+        const { result } = renderHook(() => useOnrampForm(xoPair))
+        let refuse: (error: unknown) => void = () => undefined
+        mockCreateQuote.mockReturnValueOnce(
+            new Promise((_, reject) => {
+                refuse = reject
+            }),
+        )
+
+        let tap: Promise<void> = Promise.resolve()
+        act(() => {
+            tap = result.current.handleMinPress()
+        })
+        act(() => {
+            result.current.setSourceAmountText('2')
+        })
+        await act(async () => {
+            refuse(
+                new RampAmountOutOfRangeError(
+                    'min',
+                    { min: new Decimal('0.5'), max: null },
+                    'Too low.',
+                ),
+            )
+            await tap
+        })
+
+        expect(result.current.sourceAmountText).toBe('2')
+    })
+
     it("names a crypto source's chain when MIN is tapped", async () => {
         const { result } = renderHook(() => useOnrampForm(xoPair))
 

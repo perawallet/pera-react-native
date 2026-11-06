@@ -286,6 +286,18 @@ describe('useOnrampSheets', () => {
             expect(params.setSenderAddress).toHaveBeenCalledWith('NEW_SENDER')
         })
 
+        it('clears the sender when an emptied entry is confirmed', async () => {
+            mocks.requestBottomSheet.mockResolvedValue('')
+            const { result } = renderSheets()
+
+            await act(() => result.current.handleOpenSenderAddress())
+
+            expect(params.setSenderAddress).toHaveBeenCalledWith('')
+            expect(mocks.trackOnrampEvent.mock.calls).toEqual([
+                [OnrampEvent.SenderAddressOpen],
+            ])
+        })
+
         it('keeps the sender when the sheet is dismissed', async () => {
             const { result } = renderSheets()
 
