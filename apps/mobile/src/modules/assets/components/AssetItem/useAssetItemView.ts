@@ -46,6 +46,8 @@ type UseAssetItemViewResult = {
     isDeleted: boolean
     displayName: string
     secondaryText: string
+    /** The secondary text already names the asset's network. */
+    namesNetwork: boolean
     verificationIcon: Nullable<IconName>
     iconShape: 'circle' | 'square'
     /** Row-level long-press copy. Undefined when copying is off or the asset
@@ -115,6 +117,8 @@ export const useAssetItemView = (
             ? chainDisplayNameOf(chainId)
             : undefined
 
+    const namesNetwork = !isNativeAsset && networkName !== undefined
+
     const secondaryTextOf = () => {
         if (isNativeAsset) return asset.unitName ?? ''
         if (networkName) {
@@ -141,6 +145,7 @@ export const useAssetItemView = (
         isDeleted,
         displayName,
         secondaryText,
+        namesNetwork,
         verificationIcon,
         iconShape: isCollectible ? 'square' : 'circle',
         onCopyAssetId:

@@ -38,7 +38,7 @@ export type AssetItemViewProps = {
     titleAccessory?: ReactNode
     /** Replaces the secondary line under the name; the deleted label still wins. */
     subtitle?: ReactNode
-    /** A further line under the secondary one, such as the asset's network. */
+    /** A further line under the secondary one, such as the asset's network; left out when the secondary line already names it. */
     footer?: ReactNode
     iconSize?: PWIconSize
     /** Draws the asset's network on its icon. */
@@ -82,6 +82,7 @@ export const AssetItemView = ({
         isDeleted,
         displayName,
         secondaryText,
+        namesNetwork,
         verificationIcon,
         iconShape,
         onCopyAssetId,
@@ -117,6 +118,9 @@ export const AssetItemView = ({
         )
     }
     const subtitle = renderSubtitle()
+    // A footer that names the network would repeat the subtitle.
+    const isNetworkInSubtitle =
+        namesNetwork && !showDeleted && !subtitleOverride
 
     return (
         <PWTouchableOpacity
@@ -182,7 +186,7 @@ export const AssetItemView = ({
                     ) : null}
                 </PWView>
                 {subtitle}
-                {footer}
+                {isNetworkInSubtitle ? null : footer}
             </PWView>
             {right ? (
                 <PWView

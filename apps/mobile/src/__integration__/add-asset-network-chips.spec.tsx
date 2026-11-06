@@ -153,7 +153,12 @@ describe('Flow: Add Asset with a second chain registered', () => {
         expect(screen.getByText('Ether')).toBeTruthy()
         expect(screen.getByTestId('add_asset_network_filter_all')).toBeTruthy()
         expect(screen.getAllByTestId('chain_label_algorand')).toHaveLength(1)
-        expect(screen.getAllByTestId('chain_label_ethereum')).toHaveLength(2)
+        // Ether has no address to swap for its network, so it keeps the label;
+        // Dai's subtitle names Ethereum, so it doesn't repeat it.
+        expect(screen.getAllByTestId('chain_label_ethereum')).toHaveLength(1)
+        expect(screen.getByTestId(`asset_row_${DAI}`).textContent).toContain(
+            'DAI · Ethereum',
+        )
         expect(
             screen.getByTestId('asset_search_item_add_31566704'),
         ).toBeTruthy()

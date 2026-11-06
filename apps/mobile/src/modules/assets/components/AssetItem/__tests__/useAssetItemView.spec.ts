@@ -350,6 +350,15 @@ describe('useAssetItemView', () => {
             },
         )
 
+        it('reports that the network is named only when the subtitle names it', () => {
+            expect(tokenOn('verified', 'ethereum').namesNetwork).toBe(true)
+            expect(tokenOn('unverified', 'ethereum').namesNetwork).toBe(false)
+            expect(
+                tokenOn('verified', 'algorand', { assetId: '31566704' })
+                    .namesNetwork,
+            ).toBe(false)
+        })
+
         it('keeps the id of a verified token whose id is not an address', () => {
             const { secondaryText } = tokenOn('verified', 'algorand', {
                 assetId: '31566704',
