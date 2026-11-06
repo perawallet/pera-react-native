@@ -47,6 +47,16 @@ describe('useCanFundAccount', () => {
         expect(result.current).toBe(false)
     })
 
+    it('follows the pinned chain only, not another chain the account could use', () => {
+        const account = algorandAccountAt('ALGORAND_ADDRESS')
+        const { result } = renderHook(() => ({
+            pinned: useCanFundAccount(account, 'algorand'),
+            elsewhere: useCanFundAccount(account, 'ethereum'),
+        }))
+
+        expect(result.current).toEqual({ pinned: true, elsewhere: false })
+    })
+
     it('is false for an account with no address on an onramp chain', () => {
         const { result } = renderHook(() =>
             useCanFundAccount({

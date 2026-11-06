@@ -143,6 +143,17 @@ describe('useAccountChainOptionsResolver', () => {
             EVM_CHAINS.filter(chainId => chainId !== BASE) as ChainId[],
         )
     })
+
+    test('keeps its identity across renders while the enabled chains are unchanged', () => {
+        const { result, rerender } = renderHook(() =>
+            useAccountChainOptionsResolver('receive'),
+        )
+        const first = result.current
+
+        rerender()
+
+        expect(result.current).toBe(first)
+    })
 })
 
 describe('signability', () => {

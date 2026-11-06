@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -44,9 +45,17 @@ export const useCanBuyAsset = ({
         enabled: isLimited,
     })
 
+    const isListed = useMemo(
+        () =>
+            isLimited &&
+            scope !== null &&
+            destinations.data.some(
+                token => rampTokenAsset(token, scope)?.assetId === assetId,
+            ),
+        [isLimited, scope, destinations.data, assetId],
+    )
+
     if (scope === null) return false
     if (!isLimited) return true
-    return destinations.data.some(
-        token => rampTokenAsset(token, scope)?.assetId === assetId,
-    )
+    return isListed
 }

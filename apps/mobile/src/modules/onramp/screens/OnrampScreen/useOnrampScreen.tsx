@@ -110,7 +110,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const routeChainId = params?.chainId
     const routeDestinationAssetId = params?.destinationAssetId
 
-    // Before the seeding effects: a chain change reseeds the destination.
+    // A chain change reseeds the destination.
     useEffect(() => {
         if (routeChainId) setSelectedChainId(routeChainId)
     }, [routeChainId, setSelectedChainId])

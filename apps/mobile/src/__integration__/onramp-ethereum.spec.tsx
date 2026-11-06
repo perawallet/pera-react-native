@@ -786,6 +786,7 @@ describe('Flow: Fund an Ethereum account', () => {
 
             await screen.findByTestId('asset_detail_receive_button')
             expect(screen.queryByTestId('asset_detail_buy_button')).toBeNull()
+            expect(requestsTo('GET', '/pairs/')).toHaveLength(0)
         })
 
         it('Given onramp is off, then the Fund screen says the account cannot be funded', async () => {
