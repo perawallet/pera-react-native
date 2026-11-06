@@ -65,6 +65,7 @@ export const AccountAssetList = ({
         convertFiat,
         isReadOnly,
         canManageAssets,
+        canOpenManage,
         listRef,
         headerState,
         setSearchFilter,
@@ -82,12 +83,12 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={row}
                     chainId={chainId}
-                    isSwipeEnabled={renderItemProps.isSwipeable(row)}
+                    swipeAction={renderItemProps.swipeActionOf(row)}
                     isGroupMember={isGroupMember}
                     shouldShowChainBadge={renderItemProps.shouldShowChainBadge}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
-                    onOptOut={renderItemProps.handleOptOut}
+                    onSwipeAction={renderItemProps.handleSwipeAction}
                 />
             )
         },
@@ -153,7 +154,7 @@ export const AccountAssetList = ({
                             </PWText>
                         </PWView>
                         <PWView style={styles.titleBarButtonContainer}>
-                            {canManageAssets && (
+                            {canOpenManage && (
                                 <PWButton
                                     testID='manage_assets_button'
                                     icon='sliders'

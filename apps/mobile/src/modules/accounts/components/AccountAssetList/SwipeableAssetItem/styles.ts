@@ -29,4 +29,8 @@ export const useStyles = makeStyles(theme => ({
         marginVertical: theme.spacing.lg,
         marginLeft: theme.spacing.lg,
     },
+    // Hiding is reversible, so it doesn't wear opt-out's destructive red.
+    hideSwipeAction: {
+        backgroundColor: theme.colors.textGray,
+    },
 }))

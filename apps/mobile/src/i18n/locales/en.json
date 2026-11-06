@@ -52,7 +52,8 @@
         "title": "Manage Assets",
         "sort": "Sort",
         "filter": "Filter",
-        "remove_assets": "Remove Assets"
+        "hide_tokens": "Hide Tokens",
+        "remove_assets": "Remove Algorand Assets"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Opt-out"
     },
     "remove_assets": {
-        "title": "Remove Assets",
+        "title": "Remove Algorand Assets",
         "select_all": "Select All",
         "deselect_all": "Deselect All",
         "empty_title": "No Removable Assets",
-        "empty_body": "Only assets with a zero balance that you didn't create can be removed."
+        "empty_body": "Only Algorand assets with a zero balance that you didn't create can be removed. Removing one opts your account out of it in a transaction."
+    },
+    "hide_tokens": {
+        "title": "Hide Tokens",
+        "tokens_section": "Tokens",
+        "hidden_section": "Hidden Tokens",
+        "empty_title": "No Tokens to Hide",
+        "empty_body": "This account holds no tokens that can be hidden."
+    },
+    "token_visibility": {
+        "hide": "Hide token",
+        "unhide": "Unhide token",
+        "hide_action": "Hide",
+        "unhide_action": "Unhide",
+        "hidden_toast_title": "{{assetName}} hidden",
+        "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
+        "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
+        "shown_toast_title": "{{assetName}} shown",
+        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. List it with Show suspicious assets in the asset filters."
     },
     "deeplink": {
         "error": {

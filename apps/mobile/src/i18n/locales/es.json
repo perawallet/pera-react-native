@@ -52,7 +52,8 @@
         "title": "Gestionar activos",
         "sort": "Ordenar",
         "filter": "Filtrar",
-        "remove_assets": "Eliminar activos"
+        "hide_tokens": "Ocultar tokens",
+        "remove_assets": "Eliminar activos de Algorand"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Eliminar"
     },
     "remove_assets": {
-        "title": "Eliminar activos",
+        "title": "Eliminar activos de Algorand",
         "select_all": "Seleccionar todo",
         "deselect_all": "Deseleccionar todo",
         "empty_title": "No hay activos eliminables",
-        "empty_body": "Solo se pueden eliminar los activos con saldo cero que no hayas creado."
+        "empty_body": "Solo se pueden eliminar los activos de Algorand con saldo cero que no hayas creado. Al eliminar uno, tu cuenta se da de baja de ese activo mediante una transacción."
+    },
+    "hide_tokens": {
+        "title": "Ocultar tokens",
+        "tokens_section": "Tokens",
+        "hidden_section": "Tokens ocultos",
+        "empty_title": "No hay tokens para ocultar",
+        "empty_body": "Esta cuenta no tiene tokens que se puedan ocultar."
+    },
+    "token_visibility": {
+        "hide": "Ocultar token",
+        "unhide": "Mostrar token",
+        "hide_action": "Ocultar",
+        "unhide_action": "Mostrar",
+        "hidden_toast_title": "Se ocultó {{assetName}}",
+        "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
+        "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
+        "shown_toast_title": "Se mostró {{assetName}}",
+        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo con «Mostrar activos sospechosos» en los filtros de activos."
     },
     "deeplink": {
         "error": {

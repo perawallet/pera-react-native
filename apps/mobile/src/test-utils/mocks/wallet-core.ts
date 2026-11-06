@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { create } from 'zustand'
 import type { Decimal } from 'decimal.js'
 import {
     i18nKey,
@@ -315,8 +316,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
               ? ethereumNativeAsset
               : undefined,
     ),
-    isNativeAssetId: (_chainId: string, assetId: string) =>
-        assetId === nativeAsset.assetId,
+    isNativeAssetId: (chainId: string, assetId: string) =>
+        assetId ===
+        (chainId === 'ethereum' ? ethereumNativeAsset : nativeAsset).assetId,
     useIsNativeAssetId:
         () => (assetId: string | number | bigint | null | undefined) =>
             assetId != null && String(assetId) === nativeAsset.assetId,
@@ -439,6 +441,50 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 
 // Mock @perawallet/wallet-core-accounts
 vi.mock('@perawallet/wallet-core-accounts', () => {
+    // Light stand-ins, not the real modules: those load the provider and the
+    // persisted-store helpers, which a spec with a minimal shared mock lacks.
+    // Their own specs cover the real ones.
+    const receivesUnaskedAssets = (chainId: string) => chainId === 'ethereum'
+    const canHideHolding = (chainId: string, assetId: string) =>
+        receivesUnaskedAssets(chainId) && assetId !== 'native'
+    const hiddenScopeKey = (scope: ChainScope) =>
+        `${scope.chainId}/${scope.networkId}`
+    const hiddenAssetIdsOf = (
+        hiddenTokens: Record<string, Record<string, string[]>>,
+        address: string,
+        scope: ChainScope,
+    ): readonly string[] => hiddenTokens[hiddenScopeKey(scope)]?.[address] ?? []
+    const useHiddenTokensStore = create<{
+        hiddenTokens: Record<string, Record<string, string[]>>
+        setTokenHidden: (params: {
+            address: string
+            scope: ChainScope
+            assetId: string
+            isHidden: boolean
+        }) => void
+        replaceHiddenTokens: (
+            hiddenTokens: Record<string, Record<string, string[]>>,
+        ) => void
+        resetState: () => void
+    }>(set => ({
+        hiddenTokens: {},
+        setTokenHidden: ({ address, scope, assetId, isHidden }) =>
+            set(state => {
+                const key = hiddenScopeKey(scope)
+                const held = state.hiddenTokens[key]?.[address] ?? []
+                const next = isHidden
+                    ? [...new Set([...held, assetId])].sort()
+                    : held.filter(id => id !== assetId)
+                return {
+                    hiddenTokens: {
+                        ...state.hiddenTokens,
+                        [key]: { ...state.hiddenTokens[key], [address]: next },
+                    },
+                }
+            }),
+        replaceHiddenTokens: hiddenTokens => set({ hiddenTokens }),
+        resetState: () => set({ hiddenTokens: {} }),
+    }))
     // Pure re-implementations of the accessors: an account is its custody and
     // its per-chain entries.
     const entriesOf = (account: any): any[] =>
@@ -492,6 +538,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     }
     const NO_UNREAD_CHAIN_IDS: ReadonlySet<string> = new Set()
     return {
+        canHideHolding,
+        receivesUnaskedAssets,
+        hiddenAssetIdsOf,
+        useHiddenTokensStore,
+        useHiddenTokensInvalidation: vi.fn(),
         accountChainIdOf: vi.fn(accountChainIdOf),
         useAccountHoldingSources: vi.fn(holdingSourcesOf),
         useUnreadHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
