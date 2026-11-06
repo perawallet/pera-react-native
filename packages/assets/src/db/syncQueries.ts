@@ -283,11 +283,6 @@ async function getUnreadGroupAssetIds({
     return rows.map(row => row.assetId).filter(id => candidates.has(id))
 }
 
-// A verified token the backend has no logo for is asked about again after
-// this, so a logo it backfills reaches the device within a day rather than the
-// metadata TTL.
-const LOGO_RETRY_TTL_MS = 24 * 60 * 60 * 1000
-
 /**
  * Verified tokens whose stored Pera row carries no logo. Only verified ones:
  * the unvetted and node-only majority of an airdrop-heavy account would
@@ -298,10 +293,12 @@ async function getLogolessVerifiedAssetIds({
     db,
     assetIds,
     scopeKey,
+    ttlMs,
 }: {
     db: Database
     assetIds: string[]
     scopeKey: ChainScopeKey
+    ttlMs: number
 }): Promise<string[]> {
     const rows = await db
         .select({ assetId: AssetsPeraSchema.assetId })
@@ -315,7 +312,7 @@ async function getLogolessVerifiedAssetIds({
                 ),
                 isNotNull(AssetsPeraSchema.peraMetadataJson),
                 sql`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.logo') IS NULL`,
-                lt(AssetsPeraSchema.updatedAt, Date.now() - LOGO_RETRY_TTL_MS),
+                lt(AssetsPeraSchema.updatedAt, Date.now() - ttlMs),
                 or(
                     isNull(AssetsPeraSchema.assetType),
                     ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
@@ -388,7 +385,7 @@ export async function getCollectibleIdsMissingUrl({
  * `getStaleArc19CollectibleIds`. `recheckUnreadGroup` additionally returns
  * tokens no sync has read the cross-chain group of — see
  * `getUnreadGroupAssetIds`. `recheckMissingLogo` additionally returns verified
- * tokens stored without a logo once a day old — see
+ * tokens stored without a logo once older than its `ttlMs` — see
  * `getLogolessVerifiedAssetIds`.
  */
 export async function getStaleOrMissingAssetIds({
@@ -399,12 +396,13 @@ export async function getStaleOrMissingAssetIds({
     recheckUnclassified,
     recheckArc19,
     recheckUnreadGroup = false,
-    recheckMissingLogo = false,
+    recheckMissingLogo,
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
     recheckUnreadGroup?: boolean
-    recheckMissingLogo?: boolean
+    /** How long a verified token the backend has no logo for waits before it is asked about again. */
+    recheckMissingLogo?: { ttlMs: number }
 }): Promise<string[]> {
     const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
@@ -438,7 +436,12 @@ export async function getStaleOrMissingAssetIds({
         : []
 
     const missingLogo = recheckMissingLogo
-        ? await getLogolessVerifiedAssetIds({ db, assetIds, scopeKey })
+        ? await getLogolessVerifiedAssetIds({
+              db,
+              assetIds,
+              scopeKey,
+              ...recheckMissingLogo,
+          })
         : []
 
     return unclassified.length === 0 &&

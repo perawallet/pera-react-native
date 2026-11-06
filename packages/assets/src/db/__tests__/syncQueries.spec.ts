@@ -485,12 +485,19 @@ describe('asset sync queries', () => {
                 sql`update assets_pera set updated_at = ${Date.now() - 2 * 24 * 60 * 60 * 1000}`,
             )
 
-        const recheck = (recheckMissingLogo = true, assetIds = ['31566704']) =>
+        const DAY_MS = 24 * 60 * 60 * 1000
+
+        const recheck = (
+            recheckMissingLogo: { ttlMs: number } | undefined = {
+                ttlMs: DAY_MS,
+            },
+            assetIds = ['31566704'],
+        ) =>
             getStaleOrMissingAssetIds({
                 db,
                 assetIds,
                 scope: MAINNET_SCOPE,
-                ttlMs: 7 * 24 * 60 * 60 * 1000,
+                ttlMs: 7 * DAY_MS,
                 recheckMissingLogo,
             })
 
@@ -547,9 +554,16 @@ describe('asset sync queries', () => {
             await ageRows()
             const filler = Array.from({ length: 2000 }, (_, i) => `x${i}`)
 
-            expect(await recheck(true, ['31566704', ...filler])).toContain(
+            expect(await recheck(undefined, ['31566704', ...filler])).toContain(
                 '31566704',
             )
+        })
+
+        it('waits out the interval the caller gives', async () => {
+            await seedPera(withLogo(null))
+            await ageRows()
+
+            expect(await recheck({ ttlMs: 3 * DAY_MS })).toEqual([])
         })
 
         it('waits out the day after a read that found no logo', async () => {
@@ -562,7 +576,14 @@ describe('asset sync queries', () => {
             await seedPera(withLogo(null))
             await ageRows()
 
-            expect(await recheck(false)).toEqual([])
+            expect(
+                await getStaleOrMissingAssetIds({
+                    db,
+                    assetIds: ['31566704'],
+                    scope: MAINNET_SCOPE,
+                    ttlMs: 7 * DAY_MS,
+                }),
+            ).toEqual([])
         })
     })
 

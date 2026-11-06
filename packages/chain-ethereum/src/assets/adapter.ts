@@ -66,6 +66,10 @@ import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 // Token metadata rarely changes; the same window as Algorand's asset cache.
 const ASSET_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
+// A verified token the backend has no logo for is asked about again this
+// often, so a logo it backfills arrives well before the metadata TTL lapses.
+const LOGO_RETRY_TTL_MS = 24 * 60 * 60 * 1000
+
 const evmAssetIdOf = (chain: EvmChain, ref: AssetRef): string => {
     if (ref.chainId !== chain.row.id) {
         throw new Error(
@@ -252,7 +256,7 @@ const syncTokens = async (
         recheckUnreadGroup: true,
         // A verified token the backend still lacks a logo for shouldn't wait
         // out the metadata TTL once the backend adds one.
-        recheckMissingLogo: true,
+        recheckMissingLogo: { ttlMs: LOGO_RETRY_TTL_MS },
     })
     if (stale.length === 0) return
 

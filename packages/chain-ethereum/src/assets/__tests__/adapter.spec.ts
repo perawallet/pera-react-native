@@ -412,7 +412,7 @@ describe('syncAssets', () => {
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
             expect.objectContaining({
                 assetIds: [USDC, DAI],
-                recheckMissingLogo: true,
+                recheckMissingLogo: { ttlMs: 24 * 60 * 60 * 1000 },
             }),
         )
         expect(requested).toEqual([{ ids: [USDC_CAIP19] }])
