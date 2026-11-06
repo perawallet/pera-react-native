@@ -23,7 +23,6 @@ import { ScreenHeader } from '@components/ScreenHeader'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const WatchAccountScreen = () => {
     const styles = useStyles()
@@ -31,12 +30,12 @@ export const WatchAccountScreen = () => {
     const {
         address,
         watchableChainIds,
-        resolvedAddress,
+        truncatedResolvedAddress,
         isValidAddress,
         isDuplicateAddress,
-        isNfdResolved,
-        isNfdResolving,
-        nfdName,
+        isNameResolved,
+        isNameResolving,
+        resolvedName,
         handleAddressChange,
         handleWatchAccount,
         descriptionKey,
@@ -46,7 +45,7 @@ export const WatchAccountScreen = () => {
     const showInvalidError =
         address.length > 0 &&
         !isValidAddress &&
-        !isNfdResolving &&
+        !isNameResolving &&
         !address.includes('.')
 
     const errorMessageOf = () => {
@@ -84,28 +83,28 @@ export const WatchAccountScreen = () => {
                 onScanned={handleAddressChange}
                 errorMessage={errorMessage}
             />
-            {isNfdResolving && (
-                <PWView style={styles.nfdStatus}>
+            {isNameResolving && (
+                <PWView style={styles.nameStatus}>
                     <PWLoadingIndicator size='sm' />
                     <PWText
                         variant='caption'
-                        style={styles.nfdStatusText}
+                        style={styles.nameStatusText}
                     >
-                        {t('address_entry.nfd_resolving')}
+                        {t('address_entry.name_resolving')}
                     </PWText>
                 </PWView>
             )}
-            {isNfdResolved && nfdName && (
-                <PWView style={styles.nfdStatus}>
+            {isNameResolved && resolvedName && (
+                <PWView style={styles.nameStatus}>
                     <PWText
                         variant='caption'
-                        style={styles.nfdStatusText}
+                        style={styles.nameStatusText}
                     >
-                        {t('address_entry.nfd_resolved', {
-                            name: nfdName,
+                        {t('address_entry.name_resolved', {
+                            name: resolvedName,
                         })}
                         {' — '}
-                        {truncateAlgorandAddress(resolvedAddress)}
+                        {truncatedResolvedAddress}
                     </PWText>
                 </PWView>
             )}

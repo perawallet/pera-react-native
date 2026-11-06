@@ -196,6 +196,8 @@
             "body_network_mismatch": "Cambia a {{network}} para abrir este enlace.",
             "title_no_account": "No hay cuenta para este enlace",
             "body_no_account": "No tienes una cuenta de {{chain}}.",
+            "title_name_not_found": "Nombre no encontrado",
+            "body_name_not_found": "{{name}} no tiene una dirección en {{chain}}.",
             "title_unsupported": "Enlace no compatible",
             "body_unsupported_on_chain": "Pera no puede abrir este enlace en {{chain}}.",
             "title_recover": "No se pudo importar la cuenta",
@@ -235,8 +237,8 @@
         "search_placeholder_neutral": "Dirección o nombre de cuenta",
         "nfd_results": "NFDomains",
         "ens_results": "ENS",
-        "nfd_resolving": "Resolviendo NFD...",
-        "nfd_resolved": "Resuelto desde {{name}}",
+        "name_resolving": "Resolviendo nombre...",
+        "name_resolved": "Resuelto desde {{name}}",
         "wrong_network": {
             "title": {
                 "algorand": "Esta es una dirección de Algorand",

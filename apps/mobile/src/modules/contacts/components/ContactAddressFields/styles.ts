@@ -25,12 +25,12 @@ export const useStyles = makeStyles(theme => ({
     entry: {
         gap: theme.spacing.sm,
     },
-    nfdStatus: {
+    nameStatus: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
     },
-    nfdStatusText: {
+    nameStatusText: {
         color: theme.colors.textGray,
     },
     paste: {

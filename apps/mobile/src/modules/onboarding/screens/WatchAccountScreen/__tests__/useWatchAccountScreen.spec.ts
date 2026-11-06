@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNameSearchQuery } from '@perawallet/wallet-core-nfd'
+import { useNameResolutionQuery } from '@perawallet/wallet-core-nfd'
 import {
     addressCodecs,
     type ChainId,
@@ -124,9 +124,20 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNameSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
-    nameServiceOf: vi.fn(() => 'nfd'),
+    useNameResolutionQuery: vi.fn(),
+    nameServiceOf: vi.fn((scope: { chainId: string }) =>
+        scope.chainId === 'algorand' ? 'nfd' : 'ens',
+    ),
 }))
+
+const mockResolution = (
+    data?: { name: string; address: string },
+    isLoading = false,
+) =>
+    vi.mocked(useNameResolutionQuery).mockReturnValue({
+        data,
+        isLoading,
+    } as unknown as ReturnType<typeof useNameResolutionQuery>)
 
 describe('useWatchAccountScreen', () => {
     beforeEach(() => {
@@ -149,10 +160,7 @@ describe('useWatchAccountScreen', () => {
         watchAccountsOff.clear()
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
-        vi.mocked(useNameSearchQuery).mockReturnValue({
-            data: [],
-            isLoading: false,
-        } as unknown as ReturnType<typeof useNameSearchQuery>)
+        mockResolution()
     })
 
     it('initializes with empty address and invalid state', () => {
@@ -297,6 +305,36 @@ describe('useWatchAccountScreen', () => {
             restoreAlgorandOnlyChains()
         })
 
+        it('imports an ENS name as an Ethereum watch account at the address it resolves to', async () => {
+            mockResolution({ name: 'alice.eth', address: ETHEREUM_ADDRESS })
+            const { result } = renderHook(() => useWatchAccountScreen())
+
+            act(() => {
+                result.current.handleAddressChange('alice.eth')
+            })
+            act(() => {
+                result.current.handleWatchAccount()
+            })
+
+            expect(result.current.truncatedResolvedAddress).toBe(
+                addressCodecs.get(ETHEREUM_CHAIN_ID).truncate(ETHEREUM_ADDRESS),
+            )
+            expect(mockImportWatchAccount).toHaveBeenCalledWith(
+                ETHEREUM_CHAIN_ID,
+                ETHEREUM_ADDRESS,
+            )
+        })
+
+        it("searches names on the watchable chains, so the record is the watched chain's", () => {
+            renderHook(() => useWatchAccountScreen())
+
+            const scopes = vi.mocked(useNameResolutionQuery).mock.lastCall?.[0]
+            expect(scopes?.map(scope => scope.chainId)).toEqual([
+                'algorand',
+                ETHEREUM_CHAIN_ID,
+            ])
+        })
+
         it('tracks watching a 0x address on ethereum', async () => {
             const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -318,6 +356,37 @@ describe('useWatchAccountScreen', () => {
                 ETHEREUM_ADDRESS,
             )
         })
+    })
+
+    it('imports an NFD name on Algorand at the address it resolves to', async () => {
+        mockResolution({ name: 'alice.algo', address: VALID_ALGORAND_ADDRESS })
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('alice.algo')
+        })
+        act(() => {
+            result.current.handleWatchAccount()
+        })
+
+        expect(mockImportWatchAccount).toHaveBeenCalledWith(
+            'algorand',
+            VALID_ALGORAND_ADDRESS,
+        )
+    })
+
+    it('imports nothing for a name that resolves to nothing', () => {
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('nobody.eth')
+        })
+        act(() => {
+            result.current.handleWatchAccount()
+        })
+
+        expect(result.current.isValidAddress).toBe(false)
+        expect(mockImportWatchAccount).not.toHaveBeenCalled()
     })
 
     it('shows why, and stays, when the store refuses the address', async () => {
@@ -349,16 +418,7 @@ describe('useWatchAccountScreen', () => {
     })
 
     it('resolves NFD name to address when input contains a dot', () => {
-        vi.mocked(useNameSearchQuery).mockReturnValue({
-            data: [
-                {
-                    name: 'alice.algo',
-                    address: VALID_ALGORAND_ADDRESS,
-                    service: { name: 'NFD', logo: '' },
-                },
-            ],
-            isLoading: false,
-        } as unknown as ReturnType<typeof useNameSearchQuery>)
+        mockResolution({ name: 'alice.algo', address: VALID_ALGORAND_ADDRESS })
 
         const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -366,8 +426,8 @@ describe('useWatchAccountScreen', () => {
             result.current.handleAddressChange('alice.algo')
         })
 
-        expect(result.current.isNfdResolved).toBe(true)
-        expect(result.current.nfdName).toBe('alice.algo')
+        expect(result.current.isNameResolved).toBe(true)
+        expect(result.current.resolvedName).toBe('alice.algo')
         expect(result.current.resolvedAddress).toBe(VALID_ALGORAND_ADDRESS)
         expect(result.current.isValidAddress).toBe(true)
     })
@@ -379,8 +439,8 @@ describe('useWatchAccountScreen', () => {
             result.current.handleAddressChange('alice')
         })
 
-        expect(result.current.isNfdResolved).toBe(false)
-        expect(result.current.nfdName).toBeUndefined()
+        expect(result.current.isNameResolved).toBe(false)
+        expect(result.current.resolvedName).toBeUndefined()
     })
 
     it('accepts a quantum-derived address and creates a plain watch account (FR-6)', async () => {
@@ -409,10 +469,7 @@ describe('useWatchAccountScreen', () => {
     })
 
     it('shows resolving state during NFD lookup', () => {
-        vi.mocked(useNameSearchQuery).mockReturnValue({
-            data: [],
-            isLoading: true,
-        } as unknown as ReturnType<typeof useNameSearchQuery>)
+        mockResolution(undefined, true)
 
         const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -420,7 +477,7 @@ describe('useWatchAccountScreen', () => {
             result.current.handleAddressChange('alice.algo')
         })
 
-        expect(result.current.isNfdResolving).toBe(true)
+        expect(result.current.isNameResolving).toBe(true)
     })
 
     describe('on a second registered chain', () => {
