@@ -51,6 +51,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+import { withSecret } from '@perawallet/wallet-core-kms'
 import { deleteLogin, listLogins, readLogin, saveLogin } from '../loginStore'
 
 const input = {
@@ -94,6 +95,34 @@ describe('loginStore', () => {
         const created = await saveLogin(input, 1_700_000_000_000)
 
         expect(metadata.get(created.id)).toEqual({ kind: 'login', v: 1 })
+        expect(metadata.get(`${created.id}.password`)).toEqual({
+            kind: 'login-password',
+            v: 1,
+        })
+    })
+
+    it('keeps the password out of the summary record', async () => {
+        const created = await saveLogin(input, 1_700_000_000_000)
+
+        const summary = new TextDecoder().decode(secrets.get(created.id))
+
+        expect(summary).not.toContain(input.password)
+    })
+
+    it('never unseals a password record when listing', async () => {
+        const created = await saveLogin(input, 1_700_000_000_000)
+        vi.mocked(withSecret).mockClear()
+
+        await listLogins()
+
+        const unsealed = vi.mocked(withSecret).mock.calls.map(call => call[0])
+        expect(unsealed).toEqual([created.id])
+    })
+
+    it('does not list a password record as a login', async () => {
+        await saveLogin(input, 1_700_000_000_000)
+
+        expect(await listLogins()).toHaveLength(1)
     })
 
     it('updates in place, preserving createdAt and advancing updatedAt', async () => {
@@ -117,6 +146,14 @@ describe('loginStore', () => {
         await deleteLogin(created.id)
 
         expect(await listLogins()).toEqual([])
+        expect(await readLogin(created.id)).toBeNull()
+        expect([...secrets.keys()]).toEqual([])
+    })
+
+    it('reads a login as missing when its password record is gone', async () => {
+        const created = await saveLogin(input, 1_700_000_000_000)
+        secrets.delete(`${created.id}.password`)
+
         expect(await readLogin(created.id)).toBeNull()
     })
 

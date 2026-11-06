@@ -552,10 +552,10 @@ index 0000000000000000000000000000000000000000..452ead69fc9c4ab167c1e642d4c3838b
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e63c6a36f
+index 0000000000000000000000000000000000000000..1ff48433436b92d7771f5968fc6233dd3a6d4e35
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
-@@ -0,0 +1,297 @@
+@@ -0,0 +1,316 @@
 +package co.algorand.passkeyautofill
 +
 +import android.content.Context
@@ -629,6 +629,17 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +        const val PAYLOAD_VERSION = 1
 +
 +        /**
++         * Plaintext discriminator of the record holding only a login's password.
++         * A login is two sealed records — the summary under its id and the
++         * password under [passwordRecordId] — so a bulk read never unseals a
++         * password. Mirrors `loginPasswordId` in
++         * `packages/passwords/src/models/login.ts`.
++         */
++        const val PASSWORD_KIND = "login-password"
++
++        fun passwordRecordId(recordIdentifier: String): String = "$recordIdentifier.password"
++
++        /**
 +         * A stored `example.com` answers a request for `example.com` and for
 +         * any subdomain of it.
 +         *
@@ -680,20 +691,16 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +        }
 +
 +        /**
-+         * Reads the summary half of the payload the wallet's
-+         * `encodeLoginPayload` writes (`packages/passwords/src/models/login.ts`):
-+         * UTF-8 JSON, no envelope of its own.
-+         *
-+         * Deliberately does not bind `password` — listing logins must not put a
-+         * decrypted password into a variable that outlives the parse.
++         * Reads the summary record the wallet's `encodeLoginPayload` writes
++         * (`packages/passwords/src/models/login.ts`): UTF-8 JSON, no envelope of
++         * its own. It carries no password, so listing never holds one.
 +         */
 +        fun decodeSummary(payload: ByteArray, recordIdentifier: String): LoginSummary? {
 +            val json = parse(payload) ?: return null
 +            val domain = json.optString("domain").takeUnless { it.isEmpty() } ?: return null
-+            if (json.isNull("username") || json.isNull("password")) return null
++            if (json.isNull("username")) return null
 +            // Mirror decode()'s shape check so a malformed record is rejected
-+            // the same way in both readers instead of surfacing here and only
-+            // failing later, at release, when decode() is the one called.
++            // the same way in both readers.
 +            json.opt("createdAt") as? Number ?: return null
 +            json.opt("updatedAt") as? Number ?: return null
 +            val host = host(domain)
@@ -701,18 +708,24 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +            return LoginSummary(recordIdentifier, host, json.optString("username"))
 +        }
 +
-+        /** The whole payload, password included. See [StoredLogin]. */
-+        fun decode(payload: ByteArray, recordIdentifier: String): StoredLogin? {
++        /** The summary joined with the password record's payload. See [StoredLogin]. */
++        fun decode(
++            payload: ByteArray,
++            passwordPayload: ByteArray,
++            recordIdentifier: String,
++        ): StoredLogin? {
 +            val json = parse(payload) ?: return null
++            val password = parse(passwordPayload)?.takeUnless { it.isNull("password") }
++                ?.optString("password") ?: return null
 +            val domain = json.optString("domain").takeUnless { it.isEmpty() } ?: return null
-+            if (json.isNull("username") || json.isNull("password")) return null
++            if (json.isNull("username")) return null
 +            val createdAt = json.opt("createdAt") as? Number ?: return null
 +            val updatedAt = json.opt("updatedAt") as? Number ?: return null
 +            return StoredLogin(
 +                recordIdentifier = recordIdentifier,
 +                domain = domain,
 +                username = json.optString("username"),
-+                password = json.optString("password"),
++                password = password,
 +                note = if (json.isNull("note")) null else json.optString("note"),
 +                createdAt = createdAt.toLong(),
 +                updatedAt = updatedAt.toLong(),
@@ -758,7 +771,10 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +    fun login(context: Context, recordIdentifier: String): StoredLogin? {
 +        if (!isLoginRecord(repository.recordMetadata(context, recordIdentifier))) return null
 +        val payload = repository.recordMaterial(context, recordIdentifier) ?: return null
-+        return decode(payload, recordIdentifier)
++        val passwordRecord = passwordRecordId(recordIdentifier)
++        if (!isPasswordRecord(repository.recordMetadata(context, passwordRecord))) return null
++        val passwordPayload = repository.recordMaterial(context, passwordRecord) ?: return null
++        return decode(payload, passwordPayload, recordIdentifier)
 +    }
 +
 +    private fun summaryOf(context: Context, recordIdentifier: String): LoginSummary? {
@@ -770,12 +786,15 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +     * Whether a plaintext metadata record is one of the wallet's logins. This
 +     * is what keeps a non-login record from ever being unsealed.
 +     */
-+    private fun isLoginRecord(record: JSONObject?): Boolean {
-+        if (record == null) return false
++    private fun isLoginRecord(record: JSONObject?): Boolean = kindOf(record) == LOGIN_KIND
++
++    private fun isPasswordRecord(record: JSONObject?): Boolean = kindOf(record) == PASSWORD_KIND
++
++    private fun kindOf(record: JSONObject?): String? {
++        if (record == null) return null
 +        val metadata = record.optJSONObject("metadata")
-+        val kind = metadata?.optString("kind").takeUnless { it.isNullOrEmpty() }
++        return metadata?.optString("kind").takeUnless { it.isNullOrEmpty() }
 +            ?: record.optString("kind").takeUnless { it.isEmpty() }
-+        return kind == LOGIN_KIND
 +    }
 +}
 +
@@ -6062,10 +6081,10 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..a4024e1493d110d888cc62a9dba3bf51
  
 diff --git a/ios/AutofillCredentialProvider/PasswordCredentialStore.swift b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..f05ed731ac4ab07703691d778c22953d28c33692
+index 0000000000000000000000000000000000000000..cce7f11997d7fba829eaba7129c7d44e63d2206d
 --- /dev/null
 +++ b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
-@@ -0,0 +1,234 @@
+@@ -0,0 +1,251 @@
 +import Foundation
 +
 +/// A login the wallet sealed into the shared keystore.
@@ -6114,6 +6133,16 @@ index 0000000000000000000000000000000000000000..f05ed731ac4ab07703691d778c22953d
 +  /// The only sealed-payload version this build understands. A record from a
 +  /// newer wallet is skipped rather than guessed at.
 +  static let payloadVersion = 1
++
++  /// Plaintext discriminator of the record holding only a login's password. A
++  /// login is two sealed records — the summary under its id and the password
++  /// under `passwordRecordId` — so a bulk read never unseals a password.
++  /// Mirrors `loginPasswordId` in `packages/passwords/src/models/login.ts`.
++  static let passwordKind = "login-password"
++
++  static func passwordRecordId(_ recordIdentifier: String) -> String {
++    "\(recordIdentifier).password"
++  }
 +
 +  private let appGroup: String
 +  private let secrets: KeystoreSecretReader
@@ -6167,23 +6196,33 @@ index 0000000000000000000000000000000000000000..f05ed731ac4ab07703691d778c22953d
 +  }
 +
 +  private func summary(recordIdentifier: String, masterKey: Data) -> LoginSummary? {
-+    guard let payload = loginPayload(recordIdentifier: recordIdentifier, masterKey: masterKey) else {
++    guard let payload = sealedPayload(of: recordIdentifier, kind: Self.loginKind, masterKey: masterKey) else {
 +      return nil
 +    }
 +    return Self.decodeSummary(payload: payload, recordIdentifier: recordIdentifier)
 +  }
 +
 +  private func login(recordIdentifier: String, masterKey: Data) -> StoredLogin? {
-+    guard let payload = loginPayload(recordIdentifier: recordIdentifier, masterKey: masterKey) else {
++    guard let payload = sealedPayload(of: recordIdentifier, kind: Self.loginKind, masterKey: masterKey),
++          let passwordPayload = sealedPayload(
++            of: Self.passwordRecordId(recordIdentifier),
++            kind: Self.passwordKind,
++            masterKey: masterKey
++          )
++    else {
 +      return nil
 +    }
-+    return Self.decode(payload: payload, recordIdentifier: recordIdentifier)
++    return Self.decode(
++      payload: payload,
++      passwordPayload: passwordPayload,
++      recordIdentifier: recordIdentifier
++    )
 +  }
 +
-+  /// The sealed bytes of a login record, or `nil` when the record is not a login.
-+  /// The `k/<id>` metadata is plaintext, so a non-login record is rejected
-+  /// before anything is unsealed.
-+  private func loginPayload(recordIdentifier: String, masterKey: Data) -> Data? {
++  /// The sealed bytes of a record of the given kind, or `nil` when the record is
++  /// not one. The `k/<id>` metadata is plaintext, so a record of another kind is
++  /// rejected before anything is unsealed.
++  private func sealedPayload(of recordIdentifier: String, kind expectedKind: String, masterKey: Data) -> Data? {
 +    guard let record = secrets.metadata(
 +      of: recordIdentifier,
 +      masterKey: masterKey,
@@ -6193,21 +6232,23 @@ index 0000000000000000000000000000000000000000..f05ed731ac4ab07703691d778c22953d
 +    }
 +    let metadata = record["metadata"] as? [String: Any]
 +    let kind = metadata?["kind"] as? String ?? record["kind"] as? String
-+    guard kind == Self.loginKind else {
++    guard kind == expectedKind else {
 +      return nil
 +    }
 +    return secrets.material(of: recordIdentifier, masterKey: masterKey, appGroup: appGroup)
 +  }
 +
-+  /// Decodes the sealed payload the wallet's `encodeLoginPayload` writes: UTF-8
-+  /// JSON, no envelope of its own.
-+  static func decode(payload: Data, recordIdentifier: String) -> StoredLogin? {
++  /// Joins the summary record the wallet's `encodeLoginPayload` writes with the
++  /// password record's payload: UTF-8 JSON, no envelope of its own.
++  static func decode(payload: Data, passwordPayload: Data, recordIdentifier: String) -> StoredLogin? {
 +    guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
 +          let version = json["v"] as? Int,
 +          version == payloadVersion,
++          let secret = try? JSONSerialization.jsonObject(with: passwordPayload) as? [String: Any],
++          secret["v"] as? Int == payloadVersion,
++          let password = secret["password"] as? String,
 +          let domain = json["domain"] as? String,
 +          let username = json["username"] as? String,
-+          let password = json["password"] as? String,
 +          let createdAt = json["createdAt"] as? Double,
 +          let updatedAt = json["updatedAt"] as? Double
 +    else {
@@ -6224,21 +6265,16 @@ index 0000000000000000000000000000000000000000..f05ed731ac4ab07703691d778c22953d
 +    )
 +  }
 +
-+  /// The summary half of the payload. Deliberately does not bind `password`:
-+  /// listing logins must not put a decrypted password into a variable that
-+  /// outlives the parse.
++  /// The summary record. It carries no password, so listing never holds one.
 +  ///
-+  /// Mirrors `decode`'s shape check (password presence, `createdAt`/`updatedAt`)
-+  /// so a malformed record is rejected the same way in both readers instead of
-+  /// surfacing here and only failing later, at release, when `decode` is the
-+  /// one called.
++  /// Mirrors `decode`'s shape check (`createdAt`/`updatedAt`) so a malformed
++  /// record is rejected the same way in both readers.
 +  static func decodeSummary(payload: Data, recordIdentifier: String) -> LoginSummary? {
 +    guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
 +          let version = json["v"] as? Int,
 +          version == payloadVersion,
 +          let domain = json["domain"] as? String,
 +          let username = json["username"] as? String,
-+          json["password"] is String,
 +          json["createdAt"] is Double,
 +          json["updatedAt"] is Double
 +    else {

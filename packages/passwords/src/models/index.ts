@@ -12,10 +12,14 @@
 
 export {
     LOGIN_KIND,
+    LOGIN_PASSWORD_KIND,
     LOGIN_PAYLOAD_VERSION,
     decodeLoginPayload,
+    decodePasswordPayload,
     encodeLoginPayload,
+    encodePasswordPayload,
     isLoginKey,
+    loginPasswordId,
     newLoginId,
     type Login,
     type LoginSecret,

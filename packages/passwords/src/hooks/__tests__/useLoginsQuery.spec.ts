@@ -68,7 +68,7 @@ describe('useLoginsQuery', () => {
         expect(result.current.logins).toEqual([])
     })
 
-    // listLogins unseals every stored password to build its summaries, so a
+    // listLogins unseals every stored summary, so a
     // disabled query has to leave the vault alone rather than fetch and hide.
     it('does not read the store when disabled', () => {
         listLogins.mockResolvedValue([])

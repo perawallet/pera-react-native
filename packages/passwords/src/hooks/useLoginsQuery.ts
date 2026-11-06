@@ -36,9 +36,9 @@ export type UseLoginsQueryResult = {
 export type UseLoginsQueryOptions = {
     /**
      * Defaults to true. Set false to keep `listLogins` from running at all:
-     * it materialises every stored secret while building its summaries, so a
-     * caller that must not touch the vault yet has to stop the fetch, not just
-     * hide the result.
+     * it unseals every stored summary (domain and username), so a caller that
+     * must not touch the vault yet has to stop the fetch, not just hide the
+     * result.
      */
     enabled?: boolean
 }

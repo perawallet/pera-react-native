@@ -16,6 +16,9 @@ import type { Key } from '@algorandfoundation/keystore-core'
 /** Plaintext discriminator written to the keystore's unsealed `k/<id>` record. */
 export const LOGIN_KIND = 'login'
 
+/** Plaintext discriminator of the record holding only a login's password. */
+export const LOGIN_PASSWORD_KIND = 'login-password'
+
 export const LOGIN_PAYLOAD_VERSION = 1
 
 const ID_PREFIX = 'pera.login.'
@@ -38,6 +41,13 @@ export type LoginSecret = Login & { password: string }
 export const newLoginId = (): string => `${ID_PREFIX}${uuidv4()}`
 
 /**
+ * A login is two sealed records: the summary under `id` and the password under
+ * this id, so listing never unseals a password. The Android and iOS providers
+ * derive the same id (`PasswordCredentialStore`); change both together.
+ */
+export const loginPasswordId = (id: string): string => `${id}.password`
+
+/**
  * Logins share the canonical `secret-key` type with the hashed PIN record, the
  * mirrored biometric blob and the Pera Card session tokens, so the record type
  * cannot tell them apart. The discriminator lives in plaintext metadata
@@ -46,28 +56,27 @@ export const newLoginId = (): string => `${ID_PREFIX}${uuidv4()}`
 export const isLoginKey = (key: Key): boolean =>
     (key.metadata as Record<string, unknown> | undefined)?.kind === LOGIN_KIND
 
-export const encodeLoginPayload = (
-    secret: Omit<LoginSecret, 'id'>,
-): Uint8Array =>
+export const encodeLoginPayload = (summary: Omit<Login, 'id'>): Uint8Array =>
     new TextEncoder().encode(
         JSON.stringify({
             v: LOGIN_PAYLOAD_VERSION,
-            domain: secret.domain,
-            username: secret.username,
-            password: secret.password,
-            note: secret.note,
-            createdAt: secret.createdAt,
-            updatedAt: secret.updatedAt,
+            domain: summary.domain,
+            username: summary.username,
+            note: summary.note,
+            createdAt: summary.createdAt,
+            updatedAt: summary.updatedAt,
         }),
+    )
+
+export const encodePasswordPayload = (password: string): Uint8Array =>
+    new TextEncoder().encode(
+        JSON.stringify({ v: LOGIN_PAYLOAD_VERSION, password }),
     )
 
 const isString = (value: unknown): value is string => typeof value === 'string'
 const isNumber = (value: unknown): value is number => typeof value === 'number'
 
-export const decodeLoginPayload = (
-    id: string,
-    bytes: Uint8Array,
-): LoginSecret | null => {
+const parseVersioned = (bytes: Uint8Array): Record<string, unknown> | null => {
     let parsed: unknown
     try {
         parsed = JSON.parse(new TextDecoder().decode(bytes))
@@ -77,11 +86,18 @@ export const decodeLoginPayload = (
     if (typeof parsed !== 'object' || parsed === null) return null
 
     const record = parsed as Record<string, unknown>
-    if (record.v !== LOGIN_PAYLOAD_VERSION) return null
+    return record.v === LOGIN_PAYLOAD_VERSION ? record : null
+}
+
+export const decodeLoginPayload = (
+    id: string,
+    bytes: Uint8Array,
+): Login | null => {
+    const record = parseVersioned(bytes)
     if (
+        record === null ||
         !isString(record.domain) ||
         !isString(record.username) ||
-        !isString(record.password) ||
         !isNumber(record.createdAt) ||
         !isNumber(record.updatedAt)
     ) {
@@ -92,9 +108,13 @@ export const decodeLoginPayload = (
         id,
         domain: record.domain,
         username: record.username,
-        password: record.password,
         note: isString(record.note) ? record.note : null,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
     }
+}
+
+export const decodePasswordPayload = (bytes: Uint8Array): string | null => {
+    const record = parseVersioned(bytes)
+    return record !== null && isString(record.password) ? record.password : null
 }

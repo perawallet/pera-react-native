@@ -18,10 +18,14 @@ import {
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import {
     LOGIN_KIND,
+    LOGIN_PASSWORD_KIND,
     LOGIN_PAYLOAD_VERSION,
     decodeLoginPayload,
+    decodePasswordPayload,
     encodeLoginPayload,
+    encodePasswordPayload,
     isLoginKey,
+    loginPasswordId,
     newLoginId,
     type Login,
     type LoginSecret,
@@ -36,30 +40,33 @@ export type SaveLoginInput = {
     note: string | null
 }
 
-const withoutPassword = (secret: LoginSecret): Login => {
-    const { password: _sealed, ...rest } = secret
-    return rest
-}
-
 const loginIds = (): string[] =>
     getKeystoreStore()
         .state.keys.filter(isLoginKey)
         .map(key => key.id)
 
-export const readLogin = async (id: string): Promise<LoginSecret | null> =>
+const readSummary = async (id: string): Promise<Login | null> =>
     (await withSecret(id, bytes => decodeLoginPayload(id, bytes))) ?? null
+
+/** The only reader of a password record; listing must never call it. */
+export const readLogin = async (id: string): Promise<LoginSecret | null> => {
+    const summary = await readSummary(id)
+    if (summary === null) return null
+    const password = await withSecret(loginPasswordId(id), decodePasswordPayload)
+    return password === null || password === undefined
+        ? null
+        : { ...summary, password }
+}
 
 /**
  * Every field but the plaintext discriminator is sealed, so listing means
- * unsealing each record. Cheap at the record counts this feature produces, and
- * it is what keeps the set of services a person has accounts with off disk in
- * the clear.
+ * unsealing each summary record. It never touches the password records, so no
+ * plaintext password is materialised by a list render or an identity publish.
  */
 export const listLogins = async (): Promise<Login[]> => {
-    const secrets = await Promise.all(loginIds().map(readLogin))
-    return secrets
-        .filter((secret): secret is LoginSecret => secret !== null)
-        .map(withoutPassword)
+    const summaries = await Promise.all(loginIds().map(readSummary))
+    return summaries
+        .filter((summary): summary is Login => summary !== null)
         .sort((a, b) => a.domain.localeCompare(b.domain))
 }
 
@@ -68,28 +75,35 @@ export const saveLogin = async (
     now: number = Date.now(),
 ): Promise<Login> => {
     const id = input.id ?? newLoginId()
-    const existing = input.id ? await readLogin(input.id) : null
+    const existing = input.id ? await readSummary(input.id) : null
 
-    const secret: LoginSecret = {
+    const summary: Login = {
         id,
         domain: input.domain,
         username: input.username,
-        password: input.password,
         note: input.note,
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
     }
 
-    const bytes = encodeLoginPayload(secret)
+    // Password first: a summary is what makes a login visible, so a failure
+    // between the two writes leaves an unlisted orphan rather than a login
+    // that lists but cannot be revealed.
+    await commitSecret({
+        id: loginPasswordId(id),
+        bytes: encodePasswordPayload(input.password),
+        metadata: { kind: LOGIN_PASSWORD_KIND, v: LOGIN_PAYLOAD_VERSION },
+    })
     await commitSecret({
         id,
-        bytes,
+        bytes: encodeLoginPayload(summary),
         metadata: { kind: LOGIN_KIND, v: LOGIN_PAYLOAD_VERSION },
     })
 
-    return withoutPassword(secret)
+    return summary
 }
 
 export const deleteLogin = async (id: string): Promise<void> => {
     await removeSecret(id)
+    await removeSecret(loginPasswordId(id))
 }

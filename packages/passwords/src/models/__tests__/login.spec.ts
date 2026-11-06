@@ -16,15 +16,17 @@ import {
     LOGIN_KIND,
     LOGIN_PAYLOAD_VERSION,
     decodeLoginPayload,
+    decodePasswordPayload,
     encodeLoginPayload,
+    encodePasswordPayload,
     isLoginKey,
+    loginPasswordId,
     newLoginId,
 } from '../login'
 
 const secret = {
     domain: 'example.com',
     username: 'ada@example.com',
-    password: 'correct horse battery staple',
     note: null,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
@@ -65,7 +67,7 @@ describe('isLoginKey', () => {
 })
 
 describe('login payload codec', () => {
-    it('round-trips every field', () => {
+    it('round-trips every summary field', () => {
         const bytes = encodeLoginPayload(secret)
 
         expect(decodeLoginPayload('pera.login.abc', bytes)).toEqual({
@@ -86,5 +88,35 @@ describe('login payload codec', () => {
         )
 
         expect(decodeLoginPayload('pera.login.abc', bytes)).toBeNull()
+    })
+
+    it('never writes a password into the summary payload', () => {
+        const bytes = encodeLoginPayload(secret)
+
+        expect(new TextDecoder().decode(bytes)).not.toContain('password')
+    })
+
+    it('round-trips the password payload', () => {
+        const bytes = encodePasswordPayload('correct horse battery staple')
+
+        expect(decodePasswordPayload(bytes)).toBe(
+            'correct horse battery staple',
+        )
+    })
+
+    it('rejects a password payload of another version or shape', () => {
+        const wrongVersion = new TextEncoder().encode(
+            JSON.stringify({ v: 2, password: 'x' }),
+        )
+        const wrongShape = new TextEncoder().encode(JSON.stringify({ v: 1 }))
+
+        expect(decodePasswordPayload(wrongVersion)).toBeNull()
+        expect(decodePasswordPayload(wrongShape)).toBeNull()
+    })
+})
+
+describe('loginPasswordId', () => {
+    it('derives a distinct id that is not itself a login id', () => {
+        expect(loginPasswordId('pera.login.abc')).toBe('pera.login.abc.password')
     })
 })
