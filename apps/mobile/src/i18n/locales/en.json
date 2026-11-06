@@ -3559,6 +3559,12 @@
                 "spender": "Spender",
                 "operator": "Operator"
             }
+        },
+        "predicted_failure": {
+            "title": "This transaction will likely fail",
+            "body": "Pera ran it against the latest block and it failed. If you sign anyway, you may still pay the network fee.",
+            "reason": "The contract's reason: \"{{reason}}\"",
+            "acknowledge": "I understand it will likely fail and want to sign anyway"
         }
     },
     "site_safety": {
@@ -4867,6 +4873,15 @@
             "title": "Contract",
             "verified": "Verified contract",
             "matches_site": "Matches {{domain}}"
+        },
+        "simulation": {
+            "title": "Estimated changes",
+            "estimate_note": "Estimated against the latest block. The result can change before your transaction is included.",
+            "approvals_title": "Approvals",
+            "revoke_title": "Remove permission to use your {{asset}}",
+            "revoke_title_assets": "Remove permission to use your assets",
+            "no_changes": "No changes to your balances or approvals are expected.",
+            "unavailable": "Couldn't simulate this transaction. Review it carefully before you sign."
         }
     }
 }

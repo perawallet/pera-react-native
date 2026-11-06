@@ -3559,6 +3559,12 @@
                 "spender": "Yetkili adres",
                 "operator": "Operatör"
             }
+        },
+        "predicted_failure": {
+            "title": "Bu işlem büyük olasılıkla başarısız olacak",
+            "body": "Pera işlemi en son blokta çalıştırdı ve başarısız oldu. Yine de imzalarsan ağ ücretini ödeyebilirsin.",
+            "reason": "Sözleşmenin gerekçesi: “{{reason}}”",
+            "acknowledge": "Büyük olasılıkla başarısız olacağını anlıyorum ve yine de imzalamak istiyorum"
         }
     },
     "site_safety": {
@@ -4867,6 +4873,15 @@
             "title": "Sözleşme",
             "verified": "Doğrulanmış sözleşme",
             "matches_site": "{{domain}} ile eşleşiyor"
+        },
+        "simulation": {
+            "title": "Tahmini değişiklikler",
+            "estimate_note": "En son bloka göre tahmin edildi. Sonuç, işlemin dahil edilmesinden önce değişebilir.",
+            "approvals_title": "Onaylar",
+            "revoke_title": "{{asset}} varlığını kullanma iznini kaldır",
+            "revoke_title_assets": "Varlıklarını kullanma iznini kaldır",
+            "no_changes": "Bakiyelerinde veya onaylarında bir değişiklik beklenmiyor.",
+            "unavailable": "Bu işlem simüle edilemedi. İmzalamadan önce dikkatlice incele."
         }
     }
 }

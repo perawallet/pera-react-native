@@ -3559,6 +3559,12 @@
                 "spender": "Adresse autorisée",
                 "operator": "Opérateur"
             }
+        },
+        "predicted_failure": {
+            "title": "Cette transaction va probablement échouer",
+            "body": "Pera l’a exécutée sur le dernier bloc et elle a échoué. Si vous signez quand même, vous pourriez tout de même payer les frais de réseau.",
+            "reason": "Motif du contrat : « {{reason}} »",
+            "acknowledge": "Je comprends qu’elle va probablement échouer et je veux signer quand même"
         }
     },
     "site_safety": {
@@ -4867,6 +4873,15 @@
             "title": "Contrat",
             "verified": "Contrat vérifié",
             "matches_site": "Correspond à {{domain}}"
+        },
+        "simulation": {
+            "title": "Modifications estimées",
+            "estimate_note": "Estimation établie sur le dernier bloc. Le résultat peut changer avant que votre transaction soit incluse.",
+            "approvals_title": "Autorisations",
+            "revoke_title": "Retirer l’autorisation d’utiliser vos {{asset}}",
+            "revoke_title_assets": "Retirer l’autorisation d’utiliser vos actifs",
+            "no_changes": "Aucune modification de vos soldes ni de vos autorisations n’est attendue.",
+            "unavailable": "Impossible de simuler cette transaction. Examinez-la attentivement avant de signer."
         }
     }
 }

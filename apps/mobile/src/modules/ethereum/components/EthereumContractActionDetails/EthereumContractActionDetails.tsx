@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethereum'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWView } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { contractCallNoticeOf } from '../EthereumContractCallDetails'
+import {
+    contractCallNoticeOf,
+    isCallUnexplained,
+} from '../EthereumContractCallDetails'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
 import { ActionRows } from './ActionRows'
 import { useStyles } from './styles'
@@ -40,7 +42,7 @@ export const EthereumContractActionDetails = ({
     const { view, scope, knownContract, contractAction } = presentation
     // The detail screen renders the notice with its raw call; only the review has no other place for it.
     const notice =
-        variant === 'review' && !hidesUnknownContractNotice(view.action)
+        variant === 'review' && isCallUnexplained(presentation)
             ? contractCallNoticeOf(source, verifiedOrigin)
             : undefined
 
