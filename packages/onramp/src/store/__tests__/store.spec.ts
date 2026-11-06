@@ -32,9 +32,25 @@ describe('useOnrampStore', () => {
         )
     })
 
-    it('resetState clears both token ids, senderAddress and the remembered deposits', () => {
+    it('setSelectedChainId updates selectedChainId', () => {
+        useOnrampStore.getState().setSelectedChainId('ethereum')
+        expect(useOnrampStore.getState().selectedChainId).toBe('ethereum')
+    })
+
+    it('persists the chosen chain beside the destination', () => {
+        useOnrampStore.getState().setSelectedChainId('ethereum')
+
+        const persisted = useOnrampStore.persist
+            .getOptions()
+            .partialize?.(useOnrampStore.getState())
+
+        expect(persisted).toMatchObject({ selectedChainId: 'ethereum' })
+    })
+
+    it('resetState clears both token ids, the chain, senderAddress and the remembered deposits', () => {
         useOnrampStore.getState().setSelectedSourceTokenId('USD')
         useOnrampStore.getState().setSelectedDestinationTokenId('ALGO')
+        useOnrampStore.getState().setSelectedChainId('ethereum')
         useOnrampStore.getState().setSenderAddress('ADDR')
         useOnrampStore
             .getState()
@@ -43,6 +59,7 @@ describe('useOnrampStore', () => {
         const s = useOnrampStore.getState()
         expect(s.selectedSourceTokenId).toBeNull()
         expect(s.selectedDestinationTokenId).toBeNull()
+        expect(s.selectedChainId).toBeNull()
         expect(s.senderAddress).toBe('')
         expect(s.depositInstructions).toEqual({})
     })

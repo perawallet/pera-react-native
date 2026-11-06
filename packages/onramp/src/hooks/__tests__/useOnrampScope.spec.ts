@@ -11,104 +11,203 @@
  */
 
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, test } from 'vitest'
-import { act, renderHook } from '@testing-library/react'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
-import { registerFakeChain } from '../../__tests__/fakeChains'
 import { registerFakeRampAdapters } from '../../__tests__/fakeRampAdapter'
-import { onrampChainIdOf, useOnrampScope } from '../useOnrampScope'
+import { useOnrampStore } from '../../store'
+import {
+    useOnrampDestinationChains,
+    useOnrampDestinationScope,
+    useOnrampScope,
+    useOnrampSigningAccounts,
+} from '../useOnrampScope'
 
-const ON_BOTH_CHAINS = { algorand: {}, ethereum: {} }
+type ChainOption = { chainId: ChainId; isEnabled: boolean }
 
-describe('onrampChainIdOf', () => {
+const mocks = vi.hoisted(() => ({
+    accounts: [] as WalletAccount[],
+    capabilityScope: vi.fn(),
+    optionsOf: vi.fn<(account: WalletAccount) => ChainOption[]>(),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => mocks.accounts,
+    useAccountCapabilityScope: mocks.capabilityScope,
+    useAccountChainOptionsResolver: () => mocks.optionsOf,
+}))
+
+const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const SCOPES: Record<string, typeof ALGORAND | typeof ETHEREUM> = {
+    algorand: ALGORAND,
+    ethereum: ETHEREUM,
+}
+
+const account = (id: string): WalletAccount => ({
+    id,
+    custody: { kind: 'local', seed: null },
+    chains: { algorand: { address: id }, ethereum: { address: id } },
+})
+
+const enabled = (...chainIds: ChainId[]): ChainOption[] =>
+    chainIds.map(chainId => ({ chainId, isEnabled: true }))
+
+describe('onramp scope hooks', () => {
+    const held = account('held')
+
     beforeEach(() => {
-        getProvider().chains.reset()
-        registerFakeChain({ chainId: 'algorand', caip2: 'algorand:a' })
-        registerFakeChain({ chainId: 'ethereum', caip2: 'eip155:1' })
+        useOnrampStore.getState().resetState()
         registerFakeRampAdapters(
             { chainId: 'algorand' },
             { chainId: 'ethereum' },
         )
-    })
-
-    test('takes the first eligible chain in registry order', () => {
-        expect(onrampChainIdOf(ON_BOTH_CHAINS, () => true)).toBe('algorand')
-    })
-
-    test('skips a chain without the capability', () => {
-        expect(
-            onrampChainIdOf(ON_BOTH_CHAINS, chainId => chainId === 'ethereum'),
-        ).toBe('ethereum')
-    })
-
-    test('skips a chain the account is not on', () => {
-        expect(onrampChainIdOf({ ethereum: {} }, () => true)).toBe('ethereum')
-    })
-
-    test('skips a chain with no ramp adapter', () => {
-        registerFakeRampAdapters({ chainId: 'ethereum' })
-
-        expect(onrampChainIdOf({ algorand: {} }, () => true)).toBeNull()
-    })
-
-    test('is null when nothing qualifies', () => {
-        expect(onrampChainIdOf({}, () => true)).toBeNull()
-        expect(onrampChainIdOf(ON_BOTH_CHAINS, () => false)).toBeNull()
-    })
-})
-
-describe('useOnrampScope', () => {
-    beforeEach(() => {
-        getProvider().chains.reset()
-        registerFakeRampAdapters({ chainId: 'algorand' })
-    })
-
-    test("is the chain's selected network when it has onramp", () => {
-        registerFakeChain({ chainId: 'algorand', caip2: 'algorand:a' })
-
-        const { result } = renderHook(() => useOnrampScope({ algorand: {} }))
-
-        expect(result.current).toEqual({
-            chainId: 'algorand',
-            networkId: 'mainnet',
-        })
-    })
-
-    test('is null when the chain has onramp switched off', () => {
-        registerFakeChain({
-            chainId: 'algorand',
-            caip2: 'algorand:a',
-            onramp: false,
-        })
-
-        const { result } = renderHook(() => useOnrampScope({ algorand: {} }))
-
-        expect(result.current).toBeNull()
-    })
-
-    test('is null without an account', () => {
-        registerFakeChain({ chainId: 'algorand', caip2: 'algorand:a' })
-
-        const { result } = renderHook(() => useOnrampScope(null))
-
-        expect(result.current).toBeNull()
-    })
-
-    test('follows a remote switch of the capability', () => {
-        registerFakeChain({ chainId: 'algorand', caip2: 'algorand:a' })
-        const { result, rerender } = renderHook(() =>
-            useOnrampScope({ algorand: {} }),
+        mocks.capabilityScope.mockReset()
+        // Pinned resolution never falls back; unpinned takes the first chain.
+        mocks.capabilityScope.mockImplementation(
+            (_account, _capability, chainId?: ChainId) =>
+                SCOPES[chainId ?? 'algorand'] ?? null,
         )
-        expect(result.current).not.toBeNull()
+        mocks.optionsOf.mockReset()
+        mocks.optionsOf.mockReturnValue(enabled('algorand', 'ethereum'))
+    })
 
-        act(() => {
-            getProvider().chains.setCapabilityOverrides(() => ({
-                remote: { algorand: { onramp: false } },
-            }))
+    describe('useOnrampScope', () => {
+        test('asks for the onramp capability on the pinned chain', () => {
+            const { result } = renderHook(() =>
+                useOnrampScope(held, 'ethereum'),
+            )
+
+            expect(mocks.capabilityScope).toHaveBeenCalledWith(
+                held,
+                'onramp',
+                'ethereum',
+            )
+            expect(result.current).toEqual(ETHEREUM)
         })
-        rerender()
 
-        expect(result.current).toBeNull()
+        test('is null when the pinned chain is not available, with no fallback', () => {
+            mocks.capabilityScope.mockReturnValue(null)
+
+            const { result } = renderHook(() =>
+                useOnrampScope(held, 'ethereum'),
+            )
+
+            expect(result.current).toBeNull()
+        })
+
+        test('is null for a chain with no ramp adapter', () => {
+            registerFakeRampAdapters({ chainId: 'algorand' })
+
+            const { result } = renderHook(() =>
+                useOnrampScope(held, 'ethereum'),
+            )
+
+            expect(result.current).toBeNull()
+        })
+
+        test('is null without an account', () => {
+            mocks.capabilityScope.mockReturnValue(null)
+
+            const { result } = renderHook(() => useOnrampScope(null))
+
+            expect(result.current).toBeNull()
+        })
+    })
+
+    describe('useOnrampDestinationChains', () => {
+        test('lists the enabled chains with a ramp adapter, in order', () => {
+            mocks.optionsOf.mockReturnValue([
+                ...enabled('algorand'),
+                { chainId: 'ethereum', isEnabled: false },
+                ...enabled('base' as ChainId),
+            ])
+
+            const { result } = renderHook(() =>
+                useOnrampDestinationChains(held),
+            )
+
+            expect(result.current).toEqual(['algorand'])
+        })
+
+        test('is empty without an account', () => {
+            const { result } = renderHook(() =>
+                useOnrampDestinationChains(null),
+            )
+
+            expect(result.current).toEqual([])
+        })
+    })
+
+    describe('useOnrampDestinationScope', () => {
+        test('is the first signing chain with none chosen', () => {
+            const { result } = renderHook(() => useOnrampDestinationScope(held))
+
+            expect(result.current).toEqual(ALGORAND)
+        })
+
+        test('defaults to the only chain something held signs on', () => {
+            mocks.optionsOf.mockReturnValue(enabled('ethereum'))
+
+            const { result } = renderHook(() => useOnrampDestinationScope(held))
+
+            expect(result.current).toEqual(ETHEREUM)
+        })
+
+        test('is the chosen chain where the account can be funded', () => {
+            useOnrampStore.getState().setSelectedChainId('ethereum')
+
+            const { result } = renderHook(() => useOnrampDestinationScope(held))
+
+            expect(result.current).toEqual(ETHEREUM)
+        })
+
+        test('falls back to the signing chain where the chosen one is unavailable', () => {
+            useOnrampStore.getState().setSelectedChainId('ethereum')
+            mocks.optionsOf.mockReturnValue(enabled('algorand'))
+            mocks.capabilityScope.mockImplementation(
+                (_account, _capability, chainId?: ChainId) =>
+                    chainId === 'algorand' ? ALGORAND : null,
+            )
+
+            const { result } = renderHook(() => useOnrampDestinationScope(held))
+
+            expect(result.current).toEqual(ALGORAND)
+        })
+
+        test('is null when no chain has onramp', () => {
+            mocks.optionsOf.mockReturnValue([])
+            mocks.capabilityScope.mockReturnValue(null)
+
+            const { result } = renderHook(() => useOnrampDestinationScope(held))
+
+            expect(result.current).toBeNull()
+        })
+    })
+
+    describe('useOnrampSigningAccounts', () => {
+        test('keeps accounts with a destination chain and drops the rest', () => {
+            const signer = account('signer')
+            const watch = account('watch')
+            mocks.accounts = [signer, watch]
+            mocks.optionsOf.mockImplementation(candidate =>
+                candidate.id === 'signer' ? enabled('ethereum') : [],
+            )
+
+            const { result } = renderHook(() => useOnrampSigningAccounts())
+
+            expect(result.current).toEqual([signer])
+        })
+
+        test('drops an account whose only chain has no ramp adapter', () => {
+            mocks.accounts = [account('a')]
+            mocks.optionsOf.mockReturnValue(enabled('base' as ChainId))
+
+            const { result } = renderHook(() => useOnrampSigningAccounts())
+
+            expect(result.current).toEqual([])
+        })
     })
 })

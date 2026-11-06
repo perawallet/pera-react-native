@@ -58,6 +58,11 @@ export interface RampChainAdapter {
      * a device attestation. Omit it on a chain that needs no preparation.
      */
     useEnsureCanReceive?: () => EnsureCanReceive
+    /**
+     * True when asset details offer Buy only on a token the router lists as a
+     * destination. A chain that omits it offers Buy on every asset.
+     */
+    isBuyLimitedToDestinations?: boolean
 }
 
 export const rampChainAdapters =

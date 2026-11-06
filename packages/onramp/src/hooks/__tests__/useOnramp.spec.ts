@@ -50,6 +50,17 @@ describe('onramp/useOnramp', () => {
         expect(result.current.selectedDestinationTokenId).toBe('ALGO')
     })
 
+    test('setSelectedChainId updates selectedChainId', () => {
+        const { result } = renderHook(() => useOnramp())
+        expect(result.current.selectedChainId).toBeNull()
+
+        act(() => {
+            result.current.setSelectedChainId('ethereum')
+        })
+
+        expect(result.current.selectedChainId).toBe('ethereum')
+    })
+
     test('setSenderAddress updates senderAddress', () => {
         const { result } = renderHook(() => useOnramp())
 
