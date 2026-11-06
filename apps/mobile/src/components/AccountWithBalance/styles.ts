@@ -34,9 +34,11 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
     accountDisplay: {
         flex: 1,
     },
+    // Capped so the name keeps at least half the row at any font size.
     balanceContainer: {
         alignItems: 'flex-end',
-        flexShrink: 0,
+        flexShrink: 1,
+        maxWidth: '50%',
     },
     secondaryLabel: {
         flexShrink: 1,
