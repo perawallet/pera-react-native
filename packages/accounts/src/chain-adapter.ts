@@ -128,6 +128,7 @@ export type LocalKeyKind = {
     seed: LocalKeySeed
     signingScheme: SigningScheme
     isHd: boolean
+    /** The first is the count an import entry opens when it names none. */
     mnemonicWordCounts: readonly number[]
     /** False: reachable only from its own import entry, never from a word count. */
     isAutoDetected: boolean

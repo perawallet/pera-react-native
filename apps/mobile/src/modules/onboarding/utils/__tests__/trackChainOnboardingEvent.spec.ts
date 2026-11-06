@@ -75,12 +75,12 @@ describe('the registered chain key-kind options', () => {
         const events = offeredLocalKeyKinds(ALGORAND_CHAIN_ID).flatMap(
             ({ options }) =>
                 [
-                    options.recover?.analyticsEvent,
+                    ...(options.recover ?? []).map(row => row.analyticsEvent),
                     options.create?.analyticsEvent,
                 ].filter((event): event is string => event !== undefined),
         )
 
-        expect(events.length).toBeGreaterThan(0)
+        expect(events).toContain(OnboardingEvent.RecoverTwelveWord)
         for (const event of events) {
             expect(Object.values(OnboardingEvent)).toContain(event)
             mockTrackEvent.mockClear()

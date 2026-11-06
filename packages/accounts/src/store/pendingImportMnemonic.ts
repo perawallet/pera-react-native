@@ -21,7 +21,7 @@ import {
 
 /**
  * Transient, in-memory handoff for a recovery passphrase scanned from a QR /
- * recover-address deeplink. The scan resolves the account type (24 vs 25 words)
+ * recover-address deeplink. The scan resolves the account type (12/24 vs 25 words)
  * and then opens the Import screen pre-filled so the user confirms the words
  * before importing.
  *

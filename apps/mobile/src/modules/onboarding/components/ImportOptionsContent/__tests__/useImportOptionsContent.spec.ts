@@ -30,7 +30,7 @@ describe('useImportOptionsContent', () => {
         capabilityState.reset()
     })
 
-    it("offers Universal Wallet, Quantum and Algo25 in the chain's chooser order", () => {
+    it("offers Universal Wallet, Quantum, Algo25 and the 12-word seed in the chain's chooser order", () => {
         const { result } = renderHook(() =>
             useImportOptionsContent({ chainId: 'algorand' }),
         )
@@ -39,11 +39,16 @@ describe('useImportOptionsContent', () => {
             'bip39',
             'quantum',
             null,
+            'bip39',
+        ])
+        expect(result.current.options.map(o => o.wordCount)).toEqual([
+            24, 25, 25, 12,
         ])
         expect(result.current.options.map(o => o.testID)).toEqual([
             'import_options_hd_wallet_button',
             'import_options_quantum_button',
             'import_options_algo25_button',
+            'import_options_twelve_word_button',
         ])
     })
 
@@ -54,7 +59,11 @@ describe('useImportOptionsContent', () => {
             useImportOptionsContent({ chainId: 'algorand' }),
         )
 
-        expect(result.current.options.map(o => o.seed)).toEqual(['bip39', null])
+        expect(result.current.options.map(o => o.testID)).toEqual([
+            'import_options_hd_wallet_button',
+            'import_options_algo25_button',
+            'import_options_twelve_word_button',
+        ])
     })
 
     it('chips only the legacy kind', () => {

@@ -73,7 +73,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
                 showError({
                     variant: 'recover',
                     parsedType: 'RECOVER_ADDRESS',
-                    error: 'Invalid mnemonic length (need 24 or 25 words)',
+                    error: 'Invalid mnemonic length',
                 })
                 return Promise.resolve()
             }
@@ -86,6 +86,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
                 screen: 'ImportAccount',
                 params: {
                     accountType: resolved.seed,
+                    wordCount: resolved.wordCount,
                 },
             })
 

@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import type { LocalKeySeed } from '@perawallet/wallet-core-accounts'
+import type { MnemonicImportFormat } from '@perawallet/wallet-core-accounts'
 import { PWSheetLayout, PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { SheetOptionCard } from '../SheetOptionCard'
@@ -22,7 +22,7 @@ import {
 } from './useImportOptionsContent'
 import { useStyles } from './styles'
 
-export type ImportOptionsContentResult = LocalKeySeed
+export type ImportOptionsContentResult = MnemonicImportFormat
 
 export type ImportOptionsContentProps = UseImportOptionsContentParams
 
@@ -54,7 +54,12 @@ export const ImportOptionsContent = (props: ImportOptionsContentProps) => {
                                 variant: option.chipVariant,
                             }
                         }
-                        onPress={() => resolve(option.seed)}
+                        onPress={() =>
+                            resolve({
+                                seed: option.seed,
+                                wordCount: option.wordCount,
+                            })
+                        }
                     />
                 ))}
             </PWView>

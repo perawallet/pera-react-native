@@ -309,6 +309,43 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
+    it('Given a valid 12-word wallet phrase typed as the recovery key, then it does not unlock the backup and no account is imported', async () => {
+        vi.mocked(File.pickFileAsync).mockResolvedValueOnce(
+            fakeFileFor(buildSingleAccountAsbBackup()),
+        )
+
+        renderAsbImportFromOnboarding()
+        await enterAsbFlow()
+
+        fireEvent.click(
+            screen.getByTestId('asb_import_backup_pick_file_button'),
+        )
+        await waitForButtonEnabled('asb_import_backup_continue_button')
+        fireEvent.click(screen.getByTestId('asb_import_backup_continue_button'))
+
+        await waitFor(() => screen.getByTestId('asb_import_key_word_0'))
+        // A checksum-valid BIP-39 phrase that is not this backup's key.
+        typeRecoveryWords(
+            'test test test test test test test test test test test junk'.split(
+                ' ',
+            ),
+        )
+        await waitForButtonEnabled('asb_import_key_continue_button')
+        fireEvent.click(screen.getByTestId('asb_import_key_continue_button'))
+
+        await waitFor(
+            () => {
+                expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled()
+            },
+            { timeout: 5000 },
+        )
+
+        expect(
+            screen.queryByTestId('asb_import_select_continue_button'),
+        ).toBeNull()
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+    })
+
     it('Given the backup contains an account that is already in the wallet, the recovery succeeds and the duplicate is counted as skipped, not failed', async () => {
         // Pre-seed the wallet with the algo25 entry that the fixture
         // would otherwise recover. The select screen should mark it

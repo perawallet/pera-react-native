@@ -85,11 +85,14 @@ export type ImportFlowParamList = {
         accounts: WalletAccount[]
     }
     // `null` is the chain's standalone kind.
+    // `wordCount` absent: the kind's first word count.
     ImportInfo: {
         accountType: LocalKeySeed
+        wordCount?: number
     }
     ImportAccount: {
         accountType: LocalKeySeed
+        wordCount?: number
     }
     ImportPrivateKey: { chainId: ChainId }
     SearchAccounts: SearchAccountsParams

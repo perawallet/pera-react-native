@@ -25,7 +25,7 @@ export const ethereumLocalKeyKinds: readonly LocalKeyKind[] = [
         seed: SeedScheme.Bip39,
         signingScheme: 'secp256k1',
         isHd: true,
-        mnemonicWordCounts: [24],
+        mnemonicWordCounts: [24, 12],
         isAutoDetected: true,
     },
 ]

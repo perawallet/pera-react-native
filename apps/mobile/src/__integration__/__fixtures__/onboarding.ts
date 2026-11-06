@@ -37,6 +37,26 @@ export const HD_TEST_MNEMONIC_24_ALT_INDICES = mnemonicWordsToIndices(
     HD_TEST_MNEMONIC_24_ALT.split(' '),
 )!
 
+// The BIP39 zero-entropy vector: the 12-word phrase other wallets hand out.
+// Its Ethereum accounts at m/44'/60'/0'/0/{0,1} are the first two a standard
+// BIP-44 wallet such as MetaMask lists.
+export const HD_TEST_MNEMONIC_12 =
+    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+
+export const HD_TEST_MNEMONIC_12_WORDS = HD_TEST_MNEMONIC_12.split(' ')
+
+export const HD_12_ETHEREUM_ADDRESS_0 =
+    '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
+
+export const HD_12_ETHEREUM_ADDRESS_1 =
+    '0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0'
+
+// 12 valid wordlist words whose checksum fails.
+export const INVALID_HD_MNEMONIC_12_WORDS = Array.from(
+    { length: 12 },
+    () => 'abandon',
+)
+
 export const HD_TEST_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 
@@ -78,20 +98,21 @@ export const INVALID_ALGO25_MNEMONIC_WORDS = Array.from(
 export const REKEY_TARGET_ADDRESS =
     'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
 
-// Compute the Algorand address derived from `HD_TEST_MNEMONIC_24` at the
-// supplied BIP44 indexes (using Peikert's BIP32-Ed25519 amendment, which
-// matches production). Useful for tests that mock fast-lookup to surface
+// Compute the Algorand address derived from `mnemonic` (default
+// `HD_TEST_MNEMONIC_24`) at the supplied BIP44 indexes (using Peikert's
+// BIP32-Ed25519 amendment, which matches production). Useful for tests that mock fast-lookup to surface
 // "active" derivations beyond the master (0,0).
 export const deriveTestHDAddress = async (
     account: number,
     keyIndex: number,
+    mnemonic: string = HD_TEST_MNEMONIC_24,
 ): Promise<string> => {
     const [bip39, xhd, algosdk] = await Promise.all([
         import('@scure/bip39'),
         import('@algorandfoundation/xhd-wallet-api'),
         import('algosdk'),
     ])
-    const seed = await bip39.mnemonicToSeed(HD_TEST_MNEMONIC_24)
+    const seed = await bip39.mnemonicToSeed(mnemonic)
     const rootKey = xhd.fromSeed(Buffer.from(seed))
     const api = new xhd.XHDWalletAPI()
     const publicKey = await api.keyGen(

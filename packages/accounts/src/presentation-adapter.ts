@@ -72,6 +72,8 @@ export type LocalKeyCreateOption = LocalKeyEntryOption & {
 export type LocalKeyRecoverOption = {
     /** Stable slug the option's test id is built from. */
     id: string
+    /** The word count the row's entry opens; one of the kind's `mnemonicWordCounts`. */
+    wordCount: number
     titleKey: I18nKey
     chipKey?: I18nKey
     descriptionKey: I18nKey
@@ -85,7 +87,8 @@ export type LocalKeyRecoverOption = {
 
 /** How the onboarding screens offer one local key kind; an absent entry leaves that screen without a row for it. */
 export type LocalKeyKindOptions = {
-    recover?: LocalKeyRecoverOption
+    /** One row per word count the chooser offers the kind from. */
+    recover?: readonly LocalKeyRecoverOption[]
     create?: LocalKeyCreateOption
 }
 

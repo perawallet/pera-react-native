@@ -2300,6 +2300,10 @@
             "quantum": {
                 "title": "Quantum hesabı",
                 "description": "Algorand üzerinde doğal olarak güvence altına alınan Falcon-1024 imzaları"
+            },
+            "twelve_word": {
+                "title": "12 kelimelik passphrase",
+                "description": "12 kelimelik kurtarma passphrase’i kullanan başka bir cüzdandan içe aktar"
             }
         },
         "import_info": {
@@ -2311,6 +2315,7 @@
             "title": "Kurtarma passphrase’ini gir",
             "quantum_title": "Quantum passphrase’ini gir",
             "quantum_info_note": "Normal bir Algorand hesabına ait 25 kelimelik passphrase bir Quantum hesabı değildir ve buradan içe aktarılamaz.",
+            "twelve_word_info_note": "Algorand Secure Backup kurtarma anahtarı bir kurtarma passphrase’i değildir ve burada hesapları kurtarmaz. Bir yedeği geri yüklemek için “Algorand Secure Backup’tan kurtar” seçeneğini kullan.",
             "importing": "Cüzdan içe aktarılıyor...",
             "button": "Kurtar",
             "failed_title": "İçe aktarma başarısız",

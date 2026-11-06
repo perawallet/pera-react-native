@@ -144,11 +144,15 @@ export const useImportAccountOptionsScreen =
             )
             if (result === undefined) return
             trackChainOnboardingEvent(
-                keyKindOptionsOf(ALGORAND_CHAIN_ID, result)?.recover
-                    ?.analyticsEvent,
+                keyKindOptionsOf(ALGORAND_CHAIN_ID, result.seed)?.recover?.find(
+                    row => row.wordCount === result.wordCount,
+                )?.analyticsEvent,
                 ALGORAND_CHAIN_ID,
             )
-            navigation.push('ImportInfo', { accountType: result })
+            navigation.push('ImportInfo', {
+                accountType: result.seed,
+                wordCount: result.wordCount,
+            })
         }, [requestBottomSheet, navigation])
 
         // Asked here because the add-account flow has no chain step; with a
@@ -258,6 +262,7 @@ export const useImportAccountOptionsScreen =
                 setPendingImportMnemonic(parsedDeeplink.mnemonic)
                 navigation.push('ImportAccount', {
                     accountType: resolved.seed,
+                    wordCount: resolved.wordCount,
                 })
             },
             [closeQRScanner, parseDeeplink, navigation, errorToast, t],

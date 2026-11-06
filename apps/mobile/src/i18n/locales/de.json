@@ -2292,6 +2292,10 @@
             "quantum": {
                 "title": "Quantum-Konto",
                 "description": "Falcon-1024-Signaturen, nativ auf Algorand gesichert"
+            },
+            "twelve_word": {
+                "title": "12-Wort-Passphrase",
+                "description": "Aus einem anderen Wallet importieren, das eine 12-Wort-Wiederherstellungsphrase verwendet"
             }
         },
         "import_info": {
@@ -2303,6 +2307,7 @@
             "title": "Gib deine Wiederherstellungsphrase ein",
             "quantum_title": "Gib deine Quantum-Passphrase ein",
             "quantum_info_note": "Eine 25-Wort-Passphrase eines regulären Algorand-Kontos ist kein Quantum-Konto und kann hier nicht importiert werden.",
+            "twelve_word_info_note": "Ein Algorand Secure Backup-Wiederherstellungsschlüssel ist keine Wiederherstellungsphrase und stellt hier keine Konten wieder her. Um ein Backup wiederherzustellen, nutze „Aus Algorand Secure Backup wiederherstellen“.",
             "importing": "Wallet wird importiert...",
             "button": "Wiederherstellen",
             "failed_title": "Import fehlgeschlagen",

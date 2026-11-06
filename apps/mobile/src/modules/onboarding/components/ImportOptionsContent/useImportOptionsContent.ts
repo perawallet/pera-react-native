@@ -24,6 +24,7 @@ import { useCapability } from '@hooks/useCapability'
 
 export type ImportOptionRow = {
     seed: LocalKeySeed
+    wordCount: number
     testID: string
     titleKey: I18nKey
     descriptionKey: I18nKey
@@ -52,16 +53,18 @@ export const useImportOptionsContent = ({
     const options = useMemo(
         () =>
             offeredLocalKeyKinds(chainId)
-                .flatMap(({ kind, options: { recover } }) =>
-                    recover &&
-                    (!isPostQuantumScheme(kind.signingScheme) ||
-                        isQuantumEnabled)
-                        ? [{ kind, recover }]
-                        : [],
+                .filter(
+                    ({ kind }) =>
+                        !isPostQuantumScheme(kind.signingScheme) ||
+                        isQuantumEnabled,
+                )
+                .flatMap(({ kind, options: { recover = [] } }) =>
+                    recover.map(row => ({ kind, recover: row })),
                 )
                 .sort((a, b) => a.recover.order - b.recover.order)
                 .map(({ kind, recover }): ImportOptionRow => ({
                     seed: kind.seed,
+                    wordCount: recover.wordCount,
                     testID: `import_options_${recover.id}_button`,
                     titleKey: recover.titleKey,
                     descriptionKey: recover.descriptionKey,
