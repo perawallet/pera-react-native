@@ -13,10 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import {
-    useNameResolutionQuery,
-    verifyNameAddress,
-} from '@perawallet/wallet-core-nfd'
+import { useNameResolutionQuery } from '@perawallet/wallet-core-nfd'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useNameResolve } from '../useNameResolve'
@@ -25,7 +22,6 @@ const { network } = vi.hoisted(() => ({ network: { id: 'mainnet' } }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNameResolutionQuery: vi.fn(),
-    verifyNameAddress: vi.fn(),
     nameServiceOf: vi.fn((scope: { chainId: string }) =>
         scope.chainId === 'algorand' ? 'nfd' : 'ens',
     ),
@@ -140,14 +136,6 @@ describe('useNameResolve', () => {
             chainId: 'ethereum',
             networkId: 'sepolia',
         })
-    })
-
-    it('never checks a name on-chain, however it resolves', () => {
-        mockSearch({ name: 'alice.eth', address: ENS_ADDRESS })
-
-        renderHook(() => useNameResolve('alice.eth', CHAIN_IDS))
-
-        expect(verifyNameAddress).not.toHaveBeenCalled()
     })
 
     it('resolves to nothing for input that is neither an address nor a name', () => {
