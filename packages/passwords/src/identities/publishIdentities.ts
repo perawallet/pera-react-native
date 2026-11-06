@@ -53,3 +53,18 @@ export const publishLoginIdentities = async (
         logger.error(err as Error, { step: 'publishLoginIdentities' })
     }
 }
+
+/**
+ * Empties the OS index without reading the vault, so logins saved before the
+ * feature was switched off stop being offered while the UI to manage them is
+ * hidden.
+ */
+export const clearLoginIdentities = async (
+    service: IdentityPublisher,
+): Promise<void> => {
+    try {
+        await service.replacePasswordCredentialIdentities([])
+    } catch (err) {
+        logger.error(err as Error, { step: 'clearLoginIdentities' })
+    }
+}

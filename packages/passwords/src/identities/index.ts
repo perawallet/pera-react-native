@@ -11,6 +11,7 @@
  */
 
 export {
+    clearLoginIdentities,
     publishLoginIdentities,
     toPasswordIdentities,
 } from './publishIdentities'

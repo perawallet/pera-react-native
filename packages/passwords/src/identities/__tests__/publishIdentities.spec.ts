@@ -18,6 +18,7 @@ const { listLogins } = vi.hoisted(() => ({ listLogins: vi.fn() }))
 vi.mock('../../storage/loginStore', () => ({ listLogins }))
 
 import {
+    clearLoginIdentities,
     publishLoginIdentities,
     toPasswordIdentities,
 } from '../publishIdentities'
@@ -72,5 +73,17 @@ describe('publishLoginIdentities', () => {
         await expect(
             publishLoginIdentities({ replacePasswordCredentialIdentities }),
         ).resolves.toBeUndefined()
+    })
+})
+
+describe('clearLoginIdentities', () => {
+    it('publishes an empty set without reading the vault', async () => {
+        listLogins.mockClear()
+        const replacePasswordCredentialIdentities = vi.fn(async () => undefined)
+
+        await clearLoginIdentities({ replacePasswordCredentialIdentities })
+
+        expect(replacePasswordCredentialIdentities).toHaveBeenCalledWith([])
+        expect(listLogins).not.toHaveBeenCalled()
     })
 })

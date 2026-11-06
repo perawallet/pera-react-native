@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
-import { AppState } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { AppState, Platform } from 'react-native'
 import {
     bootstrapPasskeyAutofill,
     type PasskeyAutofillService,
@@ -21,8 +21,13 @@ import {
     getProvider,
     reconcileKeystore,
 } from '@perawallet/wallet-extension-provider'
-import { publishLoginIdentities } from '@perawallet/wallet-core-passwords'
+import {
+    clearLoginIdentities,
+    publishLoginIdentities,
+} from '@perawallet/wallet-core-passwords'
+import { isProd } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useIsPasswordManagerEnabled } from '@hooks/useIsPasswordManagerEnabled'
 
 const PASSKEY_INTENT_ACTIONS = {
     getPasskeyAction: 'com.algorand.perarn.passkeyautofill.GET_PASSKEY',
@@ -56,6 +61,22 @@ export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
 }
 
 /**
+ * Only iOS has an OS identity index to feed (Android resolves logins at fill
+ * time), and production never publishes one, so neither pays for a vault read.
+ * With the feature off, an empty set stops logins saved earlier from being
+ * offered while the UI to manage them is hidden.
+ */
+const syncLoginIdentities = (
+    service: PasskeyAutofillService,
+    isEnabled: boolean,
+): void => {
+    if (Platform.OS !== 'ios' || isProd) return
+    void (isEnabled
+        ? publishLoginIdentities(service)
+        : clearLoginIdentities(service))
+}
+
+/**
  * App-lifetime side effects for the passkey autofill subsystem:
  *
  *  - Re-bootstrap when the keystore's reactive store changes (keys hydrated
@@ -67,13 +88,34 @@ export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
  *    enabled the credential provider in system settings).
  *  - Re-bootstrap when the native side reports a passkey was registered or
  *    authenticated via the system credential provider.
+ *
+ * Login identities are republished on foreground, on keystore hydration and
+ * when the feature flag flips. Saves and deletes publish from their own
+ * mutations, so key-count changes after hydration must not publish again.
  */
 export const usePasskeyAutofillLifecycle = (): void => {
+    const isPasswordManagerEnabled = useIsPasswordManagerEnabled()
+    const isEnabledRef = useRef(isPasswordManagerEnabled)
+    isEnabledRef.current = isPasswordManagerEnabled
+
+    useEffect(() => {
+        const service = getService()
+        if (!service) return
+        // Before hydration an enabled publish would replace the index with an
+        // empty set; the hydration refresh below publishes once keys exist.
+        if (
+            !isPasswordManagerEnabled ||
+            getKeystoreStore().state.keys.length > 0
+        ) {
+            syncLoginIdentities(service, isPasswordManagerEnabled)
+        }
+    }, [isPasswordManagerEnabled])
+
     useEffect(() => {
         const service = getService()
         if (!service) return
 
-        const handleRefresh = () => {
+        const handleRefresh = (shouldPublishLogins: boolean) => {
             // Pull any keys the credential provider wrote to MMKV out-of-process
             // (e.g. a passkey just registered via the system UI) into the
             // reactive store so the Settings list reflects them without a
@@ -98,10 +140,12 @@ export const usePasskeyAutofillLifecycle = (): void => {
                     step: 'passkeyAutofillRefresh',
                 }),
             )
-            // publishLoginIdentities swallows its own failures; the OS index is
-            // a cache of the keystore, so a missed publish costs autofill
+            // The publishers swallow their own failures; the OS index is a
+            // cache of the keystore, so a missed publish costs autofill
             // availability rather than data.
-            void publishLoginIdentities(service)
+            if (shouldPublishLogins) {
+                syncLoginIdentities(service, isEnabledRef.current)
+            }
         }
 
         // Re-run whenever the number of keystore keys changes — covers the
@@ -111,17 +155,18 @@ export const usePasskeyAutofillLifecycle = (): void => {
         const keystoreSub = getKeystoreStore().subscribe(() => {
             const nextCount = getKeystoreStore().state.keys.length
             if (nextCount !== lastKeyCount) {
+                const isHydration = lastKeyCount === 0
                 lastKeyCount = nextCount
-                handleRefresh()
+                handleRefresh(isHydration)
             }
         })
 
         const appStateSub = AppState.addEventListener('change', state => {
-            if (state === 'active') handleRefresh()
+            if (state === 'active') handleRefresh(true)
         })
 
-        const addedSub = service.onPasskeyAdded(handleRefresh)
-        const authedSub = service.onPasskeyAuthenticated(handleRefresh)
+        const addedSub = service.onPasskeyAdded(() => handleRefresh(false))
+        const authedSub = service.onPasskeyAuthenticated(() => handleRefresh(false))
 
         return () => {
             keystoreSub.unsubscribe()
