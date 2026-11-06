@@ -117,6 +117,7 @@ export const useHDImportSession = (
             const chainIds = hdDiscoveryChains()
             let discovered: LocalAccount[]
             let failedChainIds: WalletCandidates['failedChainIds'] = []
+            let isOriginFallback = false
             if (chainIds.length > 1) {
                 const needsKeystore = chainIds.some(
                     chainId =>
@@ -168,6 +169,7 @@ export const useHDImportSession = (
                 })
                 discovered = walked.accounts
                 failedChainIds = walked.failedChainIds
+                isOriginFallback = walked.isOriginFallback ?? false
                 // A cancel mid-walk removed the seed while a derive was still
                 // writing children under it, so they are swept once it ends.
                 if (
@@ -194,9 +196,11 @@ export const useHDImportSession = (
                 const merged = mergeWalletCandidates(previous, {
                     accounts: discovered,
                     failedChainIds,
+                    isOriginFallback,
                 })
                 discovered = merged.accounts
                 failedChainIds = merged.failedChainIds
+                isOriginFallback = merged.isOriginFallback ?? false
             }
             // Only the indexes the user can pick: one the wallet already holds
             // is shown disabled, and must not read as declined later.
@@ -209,7 +213,7 @@ export const useHDImportSession = (
                         : (hdIndexOf(account) ?? []),
                 ),
             )
-            return { accounts: discovered, failedChainIds }
+            return { accounts: discovered, failedChainIds, isOriginFallback }
         },
         [scope, persistHDMasterKey, removeKeyAndChildren],
     )

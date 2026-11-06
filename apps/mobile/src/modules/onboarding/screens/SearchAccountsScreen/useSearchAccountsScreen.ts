@@ -168,8 +168,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             // picks the account(s) to import.
             if ('mode' in params && params.mode === 'import') {
                 isSearchingImportRef.current = true
-                const { accounts: discovered, failedChainIds } =
-                    await discoverImportAccounts({
+                const {
+                    accounts: discovered,
+                    failedChainIds,
+                    isOriginFallback,
+                } = await discoverImportAccounts({
                         walletKeyId: params.walletKeyId,
                         signal: searchAbort.signal,
                         onProgress: setProgress,
@@ -186,6 +189,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     walletKeyId: params.walletKeyId,
                     accounts: discovered,
                     failedChainIds,
+                    isOriginFallback,
                 })
                 return
             }

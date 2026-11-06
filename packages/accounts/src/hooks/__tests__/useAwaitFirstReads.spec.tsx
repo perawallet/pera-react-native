@@ -148,6 +148,52 @@ describe('useAwaitFirstReads', () => {
         expect(isListInvalidated()).toBe(true)
     })
 
+    it('fails the wait when a read rejects within the deadline', async () => {
+        vi.mocked(ensureAccountFetched).mockImplementation(address =>
+            address === ETH_SOURCE.address
+                ? Promise.reject(new Error('database is locked'))
+                : Promise.resolve(),
+        )
+        const { awaitFirstReads } = setUp()
+
+        await expect(
+            awaitFirstReads([ALGO_SOURCE, ETH_SOURCE]),
+        ).rejects.toThrow('database is locked')
+    })
+
+    it('leaves no unhandled rejection when a read it stopped waiting on rejects later', async () => {
+        let reject: (error: Error) => void = () => {}
+        vi.mocked(ensureAccountFetched).mockImplementation(address =>
+            address === ETH_SOURCE.address
+                ? new Promise<void>((_, fail) => {
+                      reject = fail
+                  })
+                : Promise.resolve(),
+        )
+        const { awaitFirstReads, isListInvalidated } = setUp()
+
+        await awaitFirstReads([ALGO_SOURCE, ETH_SOURCE])
+        await act(() => reject(new Error('database is locked')))
+        await settle()
+
+        expect(isListInvalidated()).toBe(false)
+    })
+
+    it('leaves no unhandled rejection when the retried read of a failed chain rejects', async () => {
+        markEthereumFailed(true)
+        vi.mocked(ensureAccountFetched).mockImplementation(address =>
+            address === ETH_SOURCE.address
+                ? Promise.reject(new Error('database is locked'))
+                : Promise.resolve(),
+        )
+        const { awaitFirstReads, invalidate } = setUp()
+
+        await awaitFirstReads([ALGO_SOURCE, ETH_SOURCE])
+        await settle()
+
+        expect(invalidate).not.toHaveBeenCalled()
+    })
+
     it('re-reads the list once, not on every read, for a chain that keeps failing', async () => {
         markEthereumFailed(true)
         const { awaitFirstReads, invalidate } = setUp()

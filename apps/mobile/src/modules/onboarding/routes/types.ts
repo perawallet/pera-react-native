@@ -60,6 +60,8 @@ export type ImportSelectAddressesParams =
           accounts: LocalAccount[]
           /** Networks the search couldn't check, named on the selection. */
           failedChainIds?: ChainId[]
+          /** `accounts` is the first account alone, offered because no activity was found. */
+          isOriginFallback?: boolean
       }
 
 /**

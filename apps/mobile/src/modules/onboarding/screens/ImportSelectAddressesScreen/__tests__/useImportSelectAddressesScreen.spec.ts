@@ -198,6 +198,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
     })
 
     test('Continue commits the import with selected accounts and marks each backed up', async () => {
+        mockCommitImport.mockResolvedValue(sampleDiscovered)
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
         await act(async () => {
@@ -211,6 +212,30 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[0])
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(sampleDiscovered[1])
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
+    })
+
+    test('marks the account commit stored, not the candidate, as commit can add a key the candidate lacked', async () => {
+        const stored = {
+            ...sampleDiscovered[0],
+            chains: {
+                ...sampleDiscovered[0].chains,
+                ethereum: { address: '0xA', keyPairId: 'w-1-evm' },
+            },
+        }
+        mockCommitImport.mockResolvedValue([stored])
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+        act(() => {
+            result.current.toggleSelection('2')
+        })
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockMarkBackupComplete).toHaveBeenCalledWith(stored)
+        expect(mockMarkBackupComplete).not.toHaveBeenCalledWith(
+            sampleDiscovered[0],
+        )
     })
 
     test('marks an account already held from the same seed backed up too', async () => {
@@ -488,6 +513,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         mockRouteParams.current = {
             ...mockRouteParams.current,
             failedChainIds: ['ethereum'],
+            isOriginFallback: true,
         }
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
@@ -500,6 +526,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
             previous: {
                 accounts: sampleDiscovered,
                 failedChainIds: ['ethereum'],
+                isOriginFallback: true,
             },
         })
         expect(mockCancelImport).not.toHaveBeenCalled()

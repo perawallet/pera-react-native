@@ -411,7 +411,11 @@ describe('useHDImportSession', () => {
         })
 
         expect(adapter.checkActivity).not.toHaveBeenCalled()
-        expect(walked!).toEqual({ accounts: [], failedChainIds: [] })
+        expect(walked!).toEqual({
+            accounts: [],
+            failedChainIds: [],
+            isOriginFallback: false,
+        })
     })
 
     test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {

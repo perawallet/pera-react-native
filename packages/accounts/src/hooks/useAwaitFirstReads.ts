@@ -18,7 +18,7 @@ import {
     RemoteConfigKeys,
     useRemoteConfigStore,
 } from '@perawallet/wallet-core-remote-config'
-import { withTimeout } from '@perawallet/wallet-core-shared'
+import { timeoutErrorOf, withTimeout } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountHoldingSource } from '../db'
 import { useHoldingsRefreshStore } from '../store/holdingsRefresh'
@@ -43,6 +43,10 @@ export const readFirstReadWaitMs = (): number => {
     )
     return Number.isFinite(value) && value > 0 ? value : FALLBACK_WAIT_MS
 }
+
+// A background read that rejects has nothing to re-read; the next list read
+// asks again.
+const ignoreRejection = (): void => undefined
 
 const isReadFailed = ({ address, scope }: AccountHoldingSource): boolean =>
     useHoldingsRefreshStore.getState().failed[toScopeKey(scope)]?.[address] ===
@@ -94,17 +98,24 @@ export const useAwaitFirstReads = (
                                 refreshedAfterFailure.current.add(key)
                                 refresh(source.address)
                             }
-                        })
+                        }, ignoreRejection)
                         return undefined
                     }
-                    // `ensureAccountFetched` never rejects, so only the
-                    // deadline lands here.
+                    // Only the deadline is swallowed: the read can still reject
+                    // (its state-row lookup is outside its own catch), and that
+                    // fails the list as before.
+                    const deadline = timeoutErrorOf('First account read', waitMs)
                     return withTimeout(
                         fetched,
                         waitMs,
                         'First account read',
-                    ).catch(() => {
-                        void fetched.then(() => refresh(source.address))
+                        () => deadline,
+                    ).catch((error: unknown) => {
+                        if (error !== deadline) throw error
+                        void fetched.then(
+                            () => refresh(source.address),
+                            ignoreRejection,
+                        )
                     })
                 }),
             )

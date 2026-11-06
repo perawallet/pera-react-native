@@ -20,6 +20,7 @@ import {
     useAccountHoldingSources,
     useCanSignWith,
     useHasAccountChainState,
+    useFailedFirstReadChainIds,
     useIsHoldingsRefreshFailed,
     useUnreadHoldingChainIds,
     assetFromHoldingLiteRow,
@@ -264,7 +265,11 @@ export const useAccountAssetList = ({
 
     // Exchange rates read once here; the visible rows convert themselves. Keeps
     // per-row render observer-free without precomputing all N holdings.
-    const convertFiat = useAssetListFiatConverter(unreadChainIds)
+    const placeholderChainIds = useFailedFirstReadChainIds(sources)
+    const convertFiat = useAssetListFiatConverter(
+        unreadChainIds,
+        placeholderChainIds,
+    )
 
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
     const { showToast } = useToast()

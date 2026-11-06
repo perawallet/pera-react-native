@@ -56,7 +56,7 @@ describe('useAssetListItemView', () => {
         const convertFiat = vi.fn(() => ({
             displayCurrency: 'USD',
             value: null,
-            isUnread: true,
+            isPlaceholderZero: true,
         }))
 
         const { result } = renderHook(() =>

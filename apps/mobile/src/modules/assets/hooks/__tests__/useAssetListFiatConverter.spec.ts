@@ -72,7 +72,6 @@ describe('useAssetListFiatConverter', () => {
             result.current(onBase, new Decimal(3), new Decimal(0)).value,
         ).toBeNull()
         expect(result.current(onBase, null, new Decimal(0)).value).toBeNull()
-        expect(result.current(onBase, null, new Decimal(0)).isUnread).toBe(true)
         expect(
             result.current(
                 { chainId: 'ethereum', assetId: ETHER.assetId },
@@ -80,6 +79,43 @@ describe('useAssetListFiatConverter', () => {
                 new Decimal(0),
             ).value,
         ).toEqual(new Decimal(0))
+    })
+
+    it("flags only the native zero of a chain whose first read failed as a placeholder, not a token's real zero", () => {
+        const { result } = renderHook(() =>
+            useAssetListFiatConverter(
+                new Set(['ethereum']),
+                new Set(['ethereum']),
+            ),
+        )
+        const usdcOnEthereum = { chainId: 'ethereum' as const, assetId: 'usdc' }
+
+        expect(
+            result.current(
+                { chainId: 'ethereum', assetId: ETHER.assetId },
+                null,
+                new Decimal(0),
+            ).isPlaceholderZero,
+        ).toBe(true)
+        expect(
+            result.current(usdcOnEthereum, null, new Decimal(0))
+                .isPlaceholderZero,
+        ).toBe(false)
+    })
+
+    it("doesn't flag a zero on a chain that was read but left holdings unrefreshed", () => {
+        const { result } = renderHook(() =>
+            useAssetListFiatConverter(new Set(['ethereum'])),
+        )
+
+        const fiat = result.current(
+            { chainId: 'ethereum', assetId: ETHER.assetId },
+            null,
+            new Decimal(0),
+        )
+
+        expect(fiat.value).toBeNull()
+        expect(fiat.isPlaceholderZero).toBe(false)
     })
 
     it('converts a plain USD amount with no asset straight to the preferred currency', () => {

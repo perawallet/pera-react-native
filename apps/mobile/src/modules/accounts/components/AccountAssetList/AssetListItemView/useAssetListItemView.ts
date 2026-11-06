@@ -37,7 +37,7 @@ export type UseAssetListItemViewProps = {
 export type UseAssetListItemViewResult = {
     asset: ReturnType<typeof assetFromHoldingLiteRow>
     amount: Decimal
-    /** `amount`, or null while the chain is unread and the zero is a placeholder. */
+    /** `amount`, or null for the placeholder zero of a chain whose first read failed. */
     displayAmount: Nullable<Decimal>
     fiat: AssetFiatValue
     fiatAssetId: Nullable<string>
@@ -85,7 +85,7 @@ export const useAssetListItemView = ({
     return {
         asset,
         amount,
-        displayAmount: fiat.isUnread ? null : amount,
+        displayAmount: fiat.isPlaceholderZero ? null : amount,
         fiat,
         fiatAssetId: displayCurrencyToAssetId(fiat.displayCurrency, chainId),
         collectibleItem,

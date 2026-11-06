@@ -92,6 +92,8 @@ export type WalletCandidates = {
     accounts: LocalAccount[]
     /** The chains the walk couldn't fully check, as `WalletDiscoveryResult.failedChainIds` says. */
     failedChainIds: ChainId[]
+    /** No index was active on a chain the walk heard from, so `accounts` is the first account alone. */
+    isOriginFallback?: boolean
 }
 
 export type AccountsState = BaseStoreState & {

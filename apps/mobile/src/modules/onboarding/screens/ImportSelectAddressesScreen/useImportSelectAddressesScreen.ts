@@ -87,6 +87,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const isImportMode = 'mode' in params && params.mode === 'import'
     const importWalletKeyId = isImportMode ? params.walletKeyId : null
     const failedChainIds = isImportMode ? params.failedChainIds : undefined
+    const isOriginFallback = isImportMode ? params.isOriginFallback : undefined
 
     const { t } = useLanguage()
     const { errorToast } = useToast()
@@ -191,8 +192,9 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
             try {
                 if (isImportMode && importWalletKeyId) {
+                    let committed: LocalAccount[] = []
                     if (accountsToAdd.length > 0) {
-                        await commitImport({
+                        committed = await commitImport({
                             walletKeyId: importWalletKeyId,
                             selectedAccounts: accountsToAdd,
                         })
@@ -207,15 +209,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         hasCommittedRef.current = true
                     }
                     // Re-entering the mnemonic proves possession of every
-                    // account on this seed, whether or not anything new was
-                    // added. The backup flag is keyed per derived child id,
-                    // so each account, new or already held, is marked.
+                    // account on this seed. Marks what commit stored, which can
+                    // hold a default chain's key the candidate lacked.
                     const seedSiblings = allAccounts.filter(
                         a =>
                             seedIdOf(signingKeyOn(a, scope.chainId)) ===
                             importWalletKeyId,
                     )
-                    for (const account of [...accountsToAdd, ...seedSiblings]) {
+                    for (const account of [...committed, ...seedSiblings]) {
                         markBackupComplete(account)
                     }
                 } else if (accountsToAdd.length > 0) {
@@ -360,9 +361,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         navigation.replace('SearchAccounts', {
             mode: 'import',
             walletKeyId: importWalletKeyId,
-            previous: { accounts, failedChainIds: failedChainIds ?? [] },
+            previous: {
+                accounts,
+                failedChainIds: failedChainIds ?? [],
+                isOriginFallback,
+            },
         })
-    }, [importWalletKeyId, navigation, accounts, failedChainIds])
+    }, [importWalletKeyId, navigation, accounts, failedChainIds, isOriginFallback])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAccountIds.size > 0
