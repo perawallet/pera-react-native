@@ -17,14 +17,12 @@ import {
     ALGO_ROUTER_ID,
     USDC_ROUTER_ID,
     makeAlgoToken,
-    makeFiatToken,
     makeRampToken,
 } from '@test-utils/rampFixtures'
 
 // USDC is listed first so the alphabetical-by-name sort must reorder it
 // after ALGO ('Algorand' < 'USD Coin') in the result below.
 const DESTINATIONS = [makeRampToken(), makeAlgoToken()]
-const SOURCES = [makeFiatToken('USD')]
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const SELECTED = {
@@ -38,7 +36,6 @@ const mockResolve = vi.fn()
 const mockUseAssetsQuery = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 const mockUseRampDestinationsQuery = vi.hoisted(() => vi.fn())
-const mockUseRampSourcesQuery = vi.hoisted(() => vi.fn())
 const mockDestinationChains = vi.hoisted(() => ({
     current: [] as string[],
 }))
@@ -52,8 +49,6 @@ vi.mock('@perawallet/wallet-core-onramp', async importOriginal => ({
         typeof import('@perawallet/wallet-core-onramp')
     >()),
     useRampDestinationsQuery: mockUseRampDestinationsQuery,
-    useRampSourcesQuery: mockUseRampSourcesQuery,
-    useOnramp: () => ({ selectedDestinationTokenId: ALGO_ROUTER_ID }),
     useOnrampDestinationChains: () => mockDestinationChains.current,
 }))
 
@@ -96,9 +91,7 @@ import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
 import { useOnrampPairSelectionContent } from '../useOnrampPairSelectionContent'
 
 const renderDestinations = () =>
-    renderHook(() =>
-        useOnrampPairSelectionContent({ variant: 'destination', scope: SCOPE }),
-    )
+    renderHook(() => useOnrampPairSelectionContent({ scope: SCOPE }))
 
 describe('useOnrampPairSelectionContent', () => {
     beforeEach(() => {
@@ -107,10 +100,6 @@ describe('useOnrampPairSelectionContent', () => {
         mockDestinationChains.current = ['algorand']
         mockUseRampDestinationsQuery.mockReturnValue({
             data: DESTINATIONS,
-            isLoading: false,
-        })
-        mockUseRampSourcesQuery.mockReturnValue({
-            data: SOURCES,
             isLoading: false,
         })
         mockUseAssetsQuery.mockReturnValue({ data: new Map() })
@@ -126,33 +115,6 @@ describe('useOnrampPairSelectionContent', () => {
             ALGO_ROUTER_ID,
             USDC_ROUTER_ID,
         ])
-    })
-
-    it("lists the selected destination's sources for the source variant", () => {
-        const { result } = renderHook(() =>
-            useOnrampPairSelectionContent({ variant: 'source', scope: SCOPE }),
-        )
-
-        expect(result.current.items.map(i => i.token.id)).toEqual([
-            SOURCES[0].id,
-        ])
-        expect(mockUseRampSourcesQuery).toHaveBeenCalledWith(
-            expect.objectContaining({
-                destinationId: ALGO_ROUTER_ID,
-                enabled: true,
-            }),
-        )
-    })
-
-    it('reads only the list its variant shows', () => {
-        renderDestinations()
-
-        expect(mockUseRampDestinationsQuery).toHaveBeenCalledWith(
-            expect.objectContaining({ enabled: true }),
-        )
-        expect(mockUseRampSourcesQuery).toHaveBeenCalledWith(
-            expect.objectContaining({ enabled: false }),
-        )
     })
 
     it('filters by name or symbol (case-insensitive)', () => {
@@ -316,19 +278,6 @@ describe('useOnrampPairSelectionContent', () => {
                 chainId: 'ethereum',
                 tokenId: ALGO_ROUTER_ID,
             })
-        })
-
-        it('offers no chips for the source variant', () => {
-            mockDestinationChains.current = ['algorand', 'ethereum']
-
-            const { result } = renderHook(() =>
-                useOnrampPairSelectionContent({
-                    variant: 'source',
-                    scope: SCOPE,
-                }),
-            )
-
-            expect(result.current.chainOptions).toEqual([])
         })
     })
 

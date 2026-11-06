@@ -4144,6 +4144,7 @@
             "you_receive": "Recibes",
             "sender_address_optional": "Dirección del remitente (opcional)",
             "enter_sender_address": "Introduce tu dirección de {{name}}",
+            "network_line": "Red {{network}}",
             "provider": "Proveedor",
             "payment_method": "Método de pago",
             "choose_asset": "Elige un activo",
@@ -4156,7 +4157,6 @@
         },
         "pair_selection": {
             "title_to": "A",
-            "title_from": "De",
             "search": "Buscar",
             "empty": "No hay tokens disponibles"
         },
@@ -4166,6 +4166,7 @@
             "filter_all": "Todos",
             "filter_fiat": "Fiat",
             "filter_crypto": "Cripto",
+            "chain_all": "Todos",
             "fiat_section": "Fiat",
             "crypto_section": "Cripto",
             "see_all_fiat": "Ver todas las monedas fiat",
@@ -4183,7 +4184,7 @@
         "sender_address": {
             "title": "Dirección del remitente",
             "body": "Esta es la dirección que se usará para enviar los fondos al destinatario. Es opcional, pero puede agilizar el proceso y ayudar en caso de consultas de soporte relacionadas con esta compra.",
-            "placeholder": "Introduce tu dirección de remitente",
+            "invalid": "Esta no es una dirección de {{network}} válida",
             "confirm": "Confirmar"
         },
         "order_review": {

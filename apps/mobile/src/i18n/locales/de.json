@@ -4136,6 +4136,7 @@
             "you_receive": "Du erhältst",
             "sender_address_optional": "Absenderadresse (Optional)",
             "enter_sender_address": "Gib deine {{name}}-Adresse ein",
+            "network_line": "{{network}}-Netzwerk",
             "provider": "Anbieter",
             "payment_method": "Zahlungsmethode",
             "choose_asset": "Asset auswählen",
@@ -4148,7 +4149,6 @@
         },
         "pair_selection": {
             "title_to": "An",
-            "title_from": "Von",
             "search": "Suchen",
             "empty": "Keine Token verfügbar"
         },
@@ -4158,6 +4158,7 @@
             "filter_all": "Alle",
             "filter_fiat": "Fiat",
             "filter_crypto": "Krypto",
+            "chain_all": "Alle",
             "fiat_section": "Fiat",
             "crypto_section": "Krypto",
             "see_all_fiat": "Alle Fiat-Währungen anzeigen",
@@ -4175,7 +4176,7 @@
         "sender_address": {
             "title": "Absenderadresse",
             "body": "Dies ist die Adresse, die zum Senden der Gelder an den Empfänger verwendet wird. Sie ist optional, kann aber den Ablauf beschleunigen und bei Support-Anfragen zu diesem Kauf helfen.",
-            "placeholder": "Gib deine Absenderadresse ein",
+            "invalid": "Dies ist keine gültige {{network}}-Adresse",
             "confirm": "Bestätigen"
         },
         "order_review": {

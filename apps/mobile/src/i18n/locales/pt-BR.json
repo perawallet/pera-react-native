@@ -4166,6 +4166,7 @@
             "you_receive": "Você recebe",
             "sender_address_optional": "Endereço do remetente (opcional)",
             "enter_sender_address": "Digite seu endereço {{name}}",
+            "network_line": "Rede {{network}}",
             "provider": "Provedor",
             "payment_method": "Método de pagamento",
             "choose_asset": "Escolha um ativo",
@@ -4178,7 +4179,6 @@
         },
         "pair_selection": {
             "title_to": "Para",
-            "title_from": "De",
             "search": "Buscar",
             "empty": "Nenhum token disponível"
         },
@@ -4188,6 +4188,7 @@
             "filter_all": "Todos",
             "filter_fiat": "Fiat",
             "filter_crypto": "Cripto",
+            "chain_all": "Todos",
             "fiat_section": "Fiat",
             "crypto_section": "Cripto",
             "see_all_fiat": "Ver todas as moedas fiat",
@@ -4205,7 +4206,7 @@
         "sender_address": {
             "title": "Endereço do remetente",
             "body": "Este é o endereço que será usado para enviar os fundos ao destinatário. É opcional, mas pode agilizar o processo e ajudar em caso de dúvidas de suporte relacionadas a esta compra.",
-            "placeholder": "Digite seu endereço de remetente",
+            "invalid": "Este não é um endereço {{network}} válido",
             "confirm": "Confirmar"
         },
         "order_review": {

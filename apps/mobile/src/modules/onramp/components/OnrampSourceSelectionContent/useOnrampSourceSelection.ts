@@ -18,8 +18,11 @@ import {
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { FilterOption } from '@components/FilterSelection'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type OnrampSourceFilter = 'all' | 'fiat' | 'crypto'
 
@@ -41,12 +44,15 @@ type UseOnrampSourceSelectionResult = {
     fiatTokens: RampToken[]
     cryptoTokens: RampToken[]
     isFiat: (token: RampToken) => boolean
-    /**
-     * Lower-cased symbols shared by more than one source token (e.g. USDC on
-     * Solana and on Base) — those rows show a network sub-badge to disambiguate.
-     */
-    duplicatedSymbols: Set<string>
+    /** The source chain the crypto list is narrowed to, as the router names it; null for all. */
+    chainFilter: Nullable<string>
+    setChainFilter: (network: Nullable<string>) => void
+    /** All, then one chip per source chain; empty when crypto comes from fewer than two. */
+    chainOptions: FilterOption<Nullable<string>>[]
 }
+
+const chainTestIdOf = (network: string): string =>
+    `onramp_source_chain_${network.toLowerCase().replace(/\s+/g, '_')}`
 
 /**
  * Drives the "From" source-selection sheet: reads the selected destination's
@@ -54,6 +60,7 @@ type UseOnrampSourceSelectionResult = {
  * filter chip + collapsed-fiat state.
  */
 export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
+    const { t } = useLanguage()
     const { scope } = useOnrampAccount()
     const { selectedDestinationTokenId } = useOnramp()
     const { data: sourceTokens, isLoading } = useRampSourcesQuery({
@@ -68,21 +75,39 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
     const [filter, setFilter] = useState<OnrampSourceFilter>('all')
     const [search, setSearch] = useState('')
     const [isFiatExpanded, setIsFiatExpanded] = useState(false)
+    const [chainFilter, setChainFilter] = useState<Nullable<string>>(null)
 
-    // Symbols carried by more than one source token (same ticker, different
-    // network) — those rows get a network sub-badge to tell them apart.
-    const duplicatedSymbols = useMemo(() => {
-        const counts = new Map<string, number>()
+    // First-seen order, so the chips follow the router's listing.
+    const sourceNetworks = useMemo(() => {
+        const networks = new Set<string>()
         for (const token of sourceTokens) {
-            const key = token.symbol.toLowerCase()
-            counts.set(key, (counts.get(key) ?? 0) + 1)
+            if (!isFiatToken(token) && token.network.name !== '') {
+                networks.add(token.network.name)
+            }
         }
-        return new Set(
-            [...counts.entries()]
-                .filter(([, count]) => count > 1)
-                .map(([symbol]) => symbol),
-        )
+        return [...networks]
     }, [sourceTokens])
+
+    const chainOptions = useMemo((): FilterOption<Nullable<string>>[] => {
+        if (sourceNetworks.length < 2) return []
+        return [
+            {
+                value: null,
+                label: t('onramp.source_selection.chain_all'),
+                testID: 'onramp_source_chain_all',
+            },
+            ...sourceNetworks.map(network => ({
+                value: network,
+                label: network,
+                testID: chainTestIdOf(network),
+            })),
+        ]
+    }, [sourceNetworks, t])
+
+    // The chips only show under the Crypto filter, so a pick there doesn't
+    // silently narrow the All view.
+    const activeChain =
+        filter === 'crypto' && chainOptions.length > 0 ? chainFilter : null
 
     const query = search.trim().toLowerCase()
     const matchesSearch = (token: RampToken) =>
@@ -91,16 +116,26 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         token.symbol.toLowerCase().includes(query)
 
     const fiatTokens = useMemo(
-        () => sourceTokens.filter(t => isFiatToken(t) && matchesSearch(t)),
+        () =>
+            sourceTokens.filter(
+                token => isFiatToken(token) && matchesSearch(token),
+            ),
         // matchesSearch closes over `query`; tracking it covers search edits.
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [sourceTokens, query],
     )
 
     const cryptoTokens = useMemo(
-        () => sourceTokens.filter(t => !isFiatToken(t) && matchesSearch(t)),
+        () =>
+            sourceTokens.filter(
+                token =>
+                    !isFiatToken(token) &&
+                    matchesSearch(token) &&
+                    (activeChain === null ||
+                        token.network.name === activeChain),
+            ),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [sourceTokens, query],
+        [sourceTokens, query, activeChain],
     )
 
     // Collapse fiat only when not narrowing (no search, "all" or "fiat"
@@ -135,7 +170,7 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         if (regionCode) {
             pushToken(
                 fiatTokens.find(
-                    t => t.countryCode?.toLowerCase() === regionCode,
+                    token => token.countryCode?.toLowerCase() === regionCode,
                 ),
             )
         }
@@ -144,7 +179,9 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         for (const symbol of [preferredCurrency, 'USD', 'EUR'].map(s =>
             s.toLowerCase(),
         )) {
-            pushToken(fiatTokens.find(t => t.symbol.toLowerCase() === symbol))
+            pushToken(
+                fiatTokens.find(token => token.symbol.toLowerCase() === symbol),
+            )
         }
 
         // None of the priority currencies are available (exotic region with
@@ -174,6 +211,8 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         fiatTokens: visibleFiatTokens,
         cryptoTokens,
         isFiat: isFiatToken,
-        duplicatedSymbols,
+        chainFilter,
+        setChainFilter,
+        chainOptions,
     }
 }
