@@ -27,7 +27,7 @@ import {
     sendFlowChainAdapters,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
-import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-names'
 import { cardChainAdapters } from '@perawallet/wallet-core-card'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { messageSignerChainAdapters } from '@perawallet/wallet-core-signing'

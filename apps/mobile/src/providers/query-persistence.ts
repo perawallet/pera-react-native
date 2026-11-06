@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { Query } from '@tanstack/react-query'
+import { hashKey, type Query } from '@tanstack/react-query'
+import type { Persister } from '@tanstack/react-query-persist-client'
 
 // Caches written before the serializer tagged Decimals hold them as bare
 // strings, and consumers call Decimal methods on hydrated data during render.
@@ -70,7 +71,7 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     currencies: 'persist',
     'delegation-transaction-fee': 'persist',
     multisig: 'persist',
-    nfd: 'persist',
+    names: 'persist',
     notifications: 'persist',
     projects: 'persist',
     staking: 'persist',
@@ -103,3 +104,27 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
 
     return verdict === 'persist'
 }
+
+const LEGACY_NAME_PREFIX = 'nfd'
+const NAME_PREFIX = 'names'
+
+// Queries persisted as 'nfd' would hydrate under a key nothing reads,
+// so every name row would start pending until the batch queue re-reads SQLite.
+export const withLegacyNameQueryKeys = (persister: Persister): Persister => ({
+    ...persister,
+    restoreClient: async () => {
+        const client = await persister.restoreClient()
+        if (!client) return client
+        return {
+            ...client,
+            clientState: {
+                ...client.clientState,
+                queries: client.clientState.queries.map(query => {
+                    if (query.queryKey[0] !== LEGACY_NAME_PREFIX) return query
+                    const queryKey = [NAME_PREFIX, ...query.queryKey.slice(1)]
+                    return { ...query, queryKey, queryHash: hashKey(queryKey) }
+                }),
+            },
+        }
+    },
+})

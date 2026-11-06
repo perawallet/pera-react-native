@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
     nameServiceOf: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameForAddressQuery: mocks.useNameForAddressQuery,
     nameServiceOf: mocks.nameServiceOf,
 }))

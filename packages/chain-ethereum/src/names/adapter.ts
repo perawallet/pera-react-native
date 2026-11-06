@@ -11,7 +11,7 @@
  */
 
 import type { AddressCodec } from '@perawallet/wallet-core-chain-contract'
-import type { NameServiceChainAdapter } from '@perawallet/wallet-core-nfd'
+import type { NameServiceChainAdapter } from '@perawallet/wallet-core-names'
 import type { EvmChain } from '../chains/types'
 import { normalizeEnsName } from './normalizeEnsName'
 import { verifyEnsAddress } from './verifyEnsAddress'

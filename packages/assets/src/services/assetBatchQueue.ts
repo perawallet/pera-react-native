@@ -20,7 +20,7 @@ import { fetchAndPersistAssets } from '../chain-adapter'
 import { getAssetsByIds } from '../db'
 import type { PeraAsset } from '../models'
 
-const ASSET_BATCH_DELAY_MS = 100 // same value as NFD
+const ASSET_BATCH_DELAY_MS = 100 // same value as the name batch queue
 
 /**
  * On-demand asset batch queue. Used by `useSingleAssetDetailsQuery`'s DB-miss

@@ -33,7 +33,10 @@ import {
     useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { nameServiceOf, useNameSearchQuery } from '@perawallet/wallet-core-nfd'
+import {
+    nameServiceOf,
+    useNameSearchQuery,
+} from '@perawallet/wallet-core-names'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -110,7 +113,7 @@ const ETHEREUM_SCOPE: ChainScope = {
     networkId: 'mainnet',
 }
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
     nameServiceOf: vi.fn(() => 'nfd'),
 }))

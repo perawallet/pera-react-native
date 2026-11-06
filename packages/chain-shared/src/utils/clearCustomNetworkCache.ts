@@ -54,7 +54,7 @@ export const NETWORK_PARTITIONED_TABLES = [
     'asset_price_misses',
     'transactions',
     'account_transactions',
-    'nfd_cache',
+    'name_cache',
     'submission_attempts',
     'transaction_batches',
     'review_approvals',
@@ -75,7 +75,7 @@ export const NETWORK_PARTITIONED_QUERY_MODULES: ReadonlySet<string> = new Set([
     'accounts',
     'assets',
     'transactions',
-    'nfd',
+    'names',
 ])
 
 const queryKeyTargetsCustomNetwork = (

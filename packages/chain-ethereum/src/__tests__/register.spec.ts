@@ -32,7 +32,7 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { nodeEndpointAdapters } from '@perawallet/wallet-core-chain-shared'
-import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-names'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
