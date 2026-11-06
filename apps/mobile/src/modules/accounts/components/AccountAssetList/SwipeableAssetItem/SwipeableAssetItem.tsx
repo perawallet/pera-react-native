@@ -27,11 +27,10 @@ import { useSwipeableAssetItem } from './useSwipeableAssetItem'
 export type SwipeableAssetItemProps = {
     item: AccountHoldingsLiteRow
     chainId: ChainId
-    isNativeAsset: boolean
     isSwipeEnabled: boolean
     /** Listed under its group: names its network in the subtitle. */
     isGroupMember?: boolean
-    shouldShowNetwork?: boolean
+    shouldShowChainBadge?: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
     onOptOut: (item: AccountHoldingsLiteRow) => void
@@ -40,10 +39,9 @@ export type SwipeableAssetItemProps = {
 const SwipeableAssetItemInner = ({
     item,
     chainId,
-    isNativeAsset,
     isSwipeEnabled,
     isGroupMember,
-    shouldShowNetwork = false,
+    shouldShowChainBadge = false,
     convertFiat,
     onPress,
     onOptOut,
@@ -59,9 +57,8 @@ const SwipeableAssetItemInner = ({
             <AssetListItemView
                 holding={item}
                 chainId={chainId}
-                isNativeAsset={isNativeAsset}
                 isGroupMember={isGroupMember}
-                shouldShowNetwork={shouldShowNetwork}
+                shouldShowChainBadge={shouldShowChainBadge}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
@@ -92,9 +89,8 @@ const SwipeableAssetItemInner = ({
                 <AssetListItemView
                     holding={item}
                     chainId={chainId}
-                    isNativeAsset={isNativeAsset}
                     isGroupMember={isGroupMember}
-                    shouldShowNetwork={shouldShowNetwork}
+                    shouldShowChainBadge={shouldShowChainBadge}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}
