@@ -13,7 +13,11 @@
 import type { RampToken, RampTokenKind } from '../../models'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { knownFractionDecimalsOf, toRampToken } from '../router-asset'
+import {
+    caip2OfRouterAsset,
+    knownFractionDecimalsOf,
+    toRampToken,
+} from '../router-asset'
 import type { RampPairRowApiResponse } from './schema'
 
 const isTokenKind = (kind: unknown): kind is RampTokenKind =>
@@ -39,5 +43,36 @@ export const dedupeRampTokens = (tokens: RampToken[]): RampToken[] => {
         if (seen.has(token.id)) return false
         seen.add(token.id)
         return true
+    })
+}
+
+const NATIVE_COIN_NAMESPACE = 'slip44:'
+
+const isNativeCoin = (token: RampToken): boolean =>
+    token.id.slice(token.id.indexOf('/') + 1).startsWith(NATIVE_COIN_NAMESPACE)
+
+/**
+ * The router sends no chain logo, so a deposit coin borrows the logo of its
+ * chain's native coin (the SLIP-44 asset on the same CAIP-2) when that coin is
+ * listed too.
+ */
+export const attachNetworkLogos = (tokens: RampToken[]): RampToken[] => {
+    const nativeLogos = new Map<string, string>()
+    for (const token of tokens) {
+        if (
+            token.kind === 'deposit' &&
+            token.logo !== null &&
+            isNativeCoin(token)
+        ) {
+            nativeLogos.set(caip2OfRouterAsset(token.id), token.logo)
+        }
+    }
+    return tokens.map(token => {
+        if (token.kind !== 'deposit' || token.network.logo !== null)
+            return token
+        const logo = nativeLogos.get(caip2OfRouterAsset(token.id)) ?? null
+        return logo === null
+            ? token
+            : { ...token, network: { ...token.network, logo } }
     })
 }
