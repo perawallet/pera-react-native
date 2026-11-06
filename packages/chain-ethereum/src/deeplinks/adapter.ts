@@ -138,7 +138,7 @@ export const parseEip681Uri = (
     if (!match) return fail('malformed')
     const [, target, rawChainId, functionName] = match
 
-    // Before the chain and the function, as an address always was.
+    // Before the chain and the function, so a bad target reports malformed before an unsupported network.
     let targetRecipient: Optional<PaymentRecipient>
     if (functionName === undefined) {
         const read = readRecipient(target)

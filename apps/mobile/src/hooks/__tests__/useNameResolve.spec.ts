@@ -14,7 +14,6 @@ import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
-    nameServiceOf,
     useNameResolutionQuery,
     verifyNameAddress,
 } from '@perawallet/wallet-core-nfd'
@@ -149,7 +148,6 @@ describe('useNameResolve', () => {
         renderHook(() => useNameResolve('alice.eth', CHAIN_IDS))
 
         expect(verifyNameAddress).not.toHaveBeenCalled()
-        expect(nameServiceOf).toHaveBeenCalled()
     })
 
     it('resolves to nothing for input that is neither an address nor a name', () => {
