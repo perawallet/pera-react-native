@@ -384,6 +384,11 @@
             "suspicious_description": "This ASA has been flagged as suspicious by the Pera ASA Verification program.",
             "learn_more": "Learn more about ASA verification"
         },
+        "token_warning": {
+            "unverified_title": "Unverified token",
+            "suspicious_title": "Suspicious token",
+            "body": "Pera hasn't verified this token. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
+        },
         "copy_full_amount_hint": "Long press to copy the full amount"
     },
     "accounts": {

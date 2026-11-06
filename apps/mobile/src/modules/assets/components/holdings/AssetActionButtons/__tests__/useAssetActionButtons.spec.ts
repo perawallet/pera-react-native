@@ -152,6 +152,39 @@ describe('useAssetActionButtons', () => {
         expect(result.current.canSwap).toBe(false)
     })
 
+    it.each(['unverified', 'suspicious'] as const)(
+        'drops swap for a %s token on a chain where tokens arrive unasked',
+        verificationTier => {
+            const { result } = renderHook(() =>
+                useAssetActionButtons(onEthereumOnly, 'ethereum', {
+                    assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+                    peraMetadata: { verificationTier },
+                }),
+            )
+
+            expect(result.current.canSwap).toBe(false)
+            expect(result.current.canSend).toBe(true)
+        },
+    )
+
+    it('keeps swap for a verified token and for the native coin', () => {
+        const verified = renderHook(() =>
+            useAssetActionButtons(onEthereumOnly, 'ethereum', {
+                assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+                peraMetadata: { verificationTier: 'verified' },
+            }),
+        )
+        const native = renderHook(() =>
+            useAssetActionButtons(onEthereumOnly, 'ethereum', {
+                assetId: 'native',
+                peraMetadata: { verificationTier: 'unverified' },
+            }),
+        )
+
+        expect(verified.result.current.canSwap).toBe(true)
+        expect(native.result.current.canSwap).toBe(true)
+    })
+
     it('drops swap for an account with no address on the asset chain', () => {
         const { result } = renderHook(() =>
             useAssetActionButtons(account, 'ethereum'),

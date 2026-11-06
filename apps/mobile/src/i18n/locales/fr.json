@@ -384,6 +384,11 @@
             "suspicious_description": "Cet ASA a été signalé comme suspect par le programme de vérification des ASA de Pera.",
             "learn_more": "En savoir plus sur la vérification des ASA"
         },
+        "token_warning": {
+            "unverified_title": "Jeton non vérifié",
+            "suspicious_title": "Jeton suspect",
+            "body": "Pera n’a pas vérifié ce jeton. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
+        },
         "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet"
     },
     "accounts": {

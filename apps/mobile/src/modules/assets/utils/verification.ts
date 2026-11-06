@@ -11,6 +11,13 @@
  */
 
 import type { IconName } from '@components/core'
+import { canHideHolding } from '@perawallet/wallet-core-accounts'
+import {
+    PeraAssetType,
+    PeraAssetVerificationTier,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const VERIFICATION_ICON_MAP: Record<string, Nullable<IconName>> = {
@@ -24,4 +31,26 @@ export const getVerificationIcon = (
     verificationTier: string,
 ): Nullable<IconName> => {
     return VERIFICATION_ICON_MAP[verificationTier] ?? null
+}
+
+/**
+ * The tier of a token Pera hasn't vetted, when the chain lets anyone send one
+ * unasked. On an opt-in chain the user chose the asset, so it is never one.
+ */
+export const unvettedTierOf = (
+    asset: DisplayableAsset,
+    chainId: ChainId,
+): Nullable<
+    | typeof PeraAssetVerificationTier.unverified
+    | typeof PeraAssetVerificationTier.suspicious
+> => {
+    const tier = asset.peraMetadata?.verificationTier
+    if (
+        tier !== PeraAssetVerificationTier.unverified &&
+        tier !== PeraAssetVerificationTier.suspicious
+    ) {
+        return null
+    }
+    if (asset.peraMetadata?.type === PeraAssetType.collectible) return null
+    return canHideHolding(chainId, asset.assetId) ? tier : null
 }

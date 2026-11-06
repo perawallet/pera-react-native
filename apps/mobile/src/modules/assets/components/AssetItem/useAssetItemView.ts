@@ -16,11 +16,7 @@ import {
     PeraAssetVerificationTier,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    chainDisplayNameOf,
-    getChainDescriptor,
-} from '@perawallet/wallet-core-chain-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -29,7 +25,10 @@ import {
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import {
+    getVerificationIcon,
+    unvettedTierOf,
+} from '@modules/assets/utils/verification'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean
@@ -66,14 +65,8 @@ export const useAssetItemView = (
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'
     const isDeleted = meta?.isDeleted === true
-    // On an opt-in chain the user chose the asset, so only the unasked kind is
-    // flagged. A chain this build doesn't register has no descriptor to ask.
     const isUnverified =
-        tier === PeraAssetVerificationTier.unverified &&
-        !isNativeAsset &&
-        !isCollectible &&
-        getProvider().chains.has(chainId) &&
-        !getChainDescriptor(chainId).protocol.requiresAssetOptIn
+        unvettedTierOf(asset, chainId) === PeraAssetVerificationTier.unverified
 
     const verificationIconOf = (): Nullable<IconName> => {
         if (isNativeAsset) return 'assets/trusted'

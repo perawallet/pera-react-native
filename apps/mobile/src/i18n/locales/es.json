@@ -384,6 +384,11 @@
             "suspicious_description": "Este ASA se ha marcado como sospechoso en el programa de verificación de ASA de Pera.",
             "learn_more": "Más información sobre la verificación de ASA"
         },
+        "token_warning": {
+            "unverified_title": "Token sin verificar",
+            "suspicious_title": "Token sospechoso",
+            "body": "Pera no ha verificado este token. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
+        },
         "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo"
     },
     "accounts": {

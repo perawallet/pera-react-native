@@ -384,6 +384,11 @@
             "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
         },
+        "token_warning": {
+            "unverified_title": "Doğrulanmamış token",
+            "suspicious_title": "Şüpheli token",
+            "body": "Pera bu tokenı doğrulamadı. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
+        },
         "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
     },
     "accounts": {
