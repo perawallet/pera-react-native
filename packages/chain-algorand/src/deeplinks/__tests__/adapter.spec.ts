@@ -87,7 +87,7 @@ describe('algorandDeeplinkAdapter', () => {
             ).toEqual({
                 kind: 'payment',
                 target: { chainId: ALGORAND },
-                recipient: ADDR,
+                recipient: { address: ADDR },
                 assetRef: { chainId: ALGORAND, assetId: '0' },
                 amount: new Decimal(1_000_000),
                 label: 'L',
@@ -113,7 +113,7 @@ describe('algorandDeeplinkAdapter', () => {
                 intentOf(`algorand://${ADDR}?amount=100&asset=123456`),
             ).toMatchObject({
                 kind: 'payment',
-                recipient: ADDR,
+                recipient: { address: ADDR },
                 assetRef: { chainId: ALGORAND, assetId: '123456' },
                 amount: new Decimal(100),
             })
@@ -126,7 +126,7 @@ describe('algorandDeeplinkAdapter', () => {
                 ),
             ).toMatchObject({
                 kind: 'payment',
-                recipient: RECEIVER,
+                recipient: { address: RECEIVER },
                 amount: new Decimal(99999),
                 assetRef: { chainId: ALGORAND, assetId: '31566704' },
                 chainData: { family: 'algorand', xnote: 'HELLO WORLD XNOTE' },
@@ -528,7 +528,7 @@ describe('algorandDeeplinkAdapter', () => {
             expect(intentOf(`algo:31566704/transfer?address=${ADDR}`)).toEqual({
                 kind: 'payment',
                 target: { chainId: ALGORAND },
-                recipient: ADDR,
+                recipient: { address: ADDR },
                 assetRef: { chainId: ALGORAND, assetId: '31566704' },
             })
         })
@@ -536,7 +536,7 @@ describe('algorandDeeplinkAdapter', () => {
         it('trims stray spaces around the receiver', () => {
             expect(
                 intentOf(`algo:31566704/transfer?address=%20${ADDR}%20`),
-            ).toMatchObject({ recipient: ADDR })
+            ).toMatchObject({ recipient: { address: ADDR } })
         })
 
         it('is not claimed for another scheme', () => {

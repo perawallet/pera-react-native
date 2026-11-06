@@ -34,7 +34,9 @@ export const linkFromIntent = (
                 type: DeeplinkType.TRANSFER,
                 sourceUrl,
                 target: intent.target,
-                receiverAddress: intent.recipient,
+                ...('address' in intent.recipient
+                    ? { receiverAddress: intent.recipient.address }
+                    : { receiverName: intent.recipient.name }),
                 assetRef: intent.assetRef,
                 amount: intent.amount,
                 note: intent.note,
