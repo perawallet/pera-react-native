@@ -58,6 +58,27 @@ describe('useDeeplinkErrorHandler', () => {
     })
 
     it.each([
+        ['ens', 'name-mismatch', 'ens_mismatch'],
+        ['ens', 'name-unavailable', 'ens_unavailable'],
+        ['nfd', 'name-mismatch', 'nfd_mismatch'],
+    ] as const)(
+        'words a %s %s with that service copy, never the other',
+        (service, variant, keyPrefix) => {
+            const { result } = renderHook(() => useDeeplinkErrorHandler())
+
+            act(() => {
+                result.current({ variant, service, values: { name: 'a.b' } })
+                vi.runAllTimers()
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                `send_funds.destination.${keyPrefix}_title:{"name":"a.b"}`,
+                `send_funds.destination.${keyPrefix}_body:{"name":"a.b"}`,
+            )
+        },
+    )
+
+    it.each([
         [
             'generic',
             'deeplink.error.title_generic',
