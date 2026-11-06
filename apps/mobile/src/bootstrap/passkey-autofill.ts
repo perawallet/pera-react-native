@@ -166,7 +166,9 @@ export const usePasskeyAutofillLifecycle = (): void => {
         })
 
         const addedSub = service.onPasskeyAdded(() => handleRefresh(false))
-        const authedSub = service.onPasskeyAuthenticated(() => handleRefresh(false))
+        const authedSub = service.onPasskeyAuthenticated(() =>
+            handleRefresh(false),
+        )
 
         return () => {
             keystoreSub.unsubscribe()

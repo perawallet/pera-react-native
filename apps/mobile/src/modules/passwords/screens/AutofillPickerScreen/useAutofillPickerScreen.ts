@@ -61,7 +61,10 @@ const sanitizeCallerText = (
 // dot are dropped and case folded, and a subdomain matches only across a dot of
 // a stored host that has one itself (a stored `com` must not match every .com).
 const toHost = (value: string): string => {
-    const withoutScheme = value.trim().toLowerCase().replace(/^[^/?#]*:\/\//, '')
+    const withoutScheme = value
+        .trim()
+        .toLowerCase()
+        .replace(/^[^/?#]*:\/\//, '')
     const authority = withoutScheme.split(/[/?#]/)[0] ?? ''
     const hostAndPort = authority.slice(authority.lastIndexOf('@') + 1)
     const host = hostAndPort.startsWith('[')

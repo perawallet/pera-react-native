@@ -150,11 +150,15 @@ describe('useAutofillPickerScreen', () => {
         expect(result.current.logins).toHaveLength(1)
     })
 
-    it('lists logins for the caller\'s own domain first', async () => {
+    it("lists logins for the caller's own domain first", async () => {
         useLoginsQuery.mockReturnValue({
             logins: [
                 { ...login, id: 'a', domain: 'aardvark.example' },
-                { ...login, id: 'b', domain: 'https://Login.Example.com:8443/x' },
+                {
+                    ...login,
+                    id: 'b',
+                    domain: 'https://Login.Example.com:8443/x',
+                },
                 { ...login, id: 'c', domain: 'evil-example.com' },
                 { ...login, id: 'd', domain: 'example.com' },
             ],

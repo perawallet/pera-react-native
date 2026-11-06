@@ -52,7 +52,10 @@ const readSummary = async (id: string): Promise<Login | null> =>
 export const readLogin = async (id: string): Promise<LoginSecret | null> => {
     const summary = await readSummary(id)
     if (summary === null) return null
-    const password = await withSecret(loginPasswordId(id), decodePasswordPayload)
+    const password = await withSecret(
+        loginPasswordId(id),
+        decodePasswordPayload,
+    )
     return password === null || password === undefined
         ? null
         : { ...summary, password }

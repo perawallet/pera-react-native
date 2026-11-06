@@ -117,6 +117,8 @@ describe('login payload codec', () => {
 
 describe('loginPasswordId', () => {
     it('derives a distinct id that is not itself a login id', () => {
-        expect(loginPasswordId('pera.login.abc')).toBe('pera.login.abc.password')
+        expect(loginPasswordId('pera.login.abc')).toBe(
+            'pera.login.abc.password',
+        )
     })
 })
