@@ -10,166 +10,80 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
+import {
+    baseUnitsToDisplayUnits,
+    type Maybe,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { RampHistoryItem, RampQuoteKind, RampToken } from '../../models'
+import { buildRampPair } from '../../utils'
+import {
+    addressOfRouterAccount,
+    fractionDecimalsOf,
+    toRampToken,
+    type RampAssetItem,
+} from '../router-asset'
+import type { RampHistoryItemApiResponse } from './schema'
 
-import type { RampHistoryItem } from '../../models'
-import { transformRampPair } from '../pairs/transformers'
-import { transformPaymentMethod } from '../quotes/transformers'
-import type {
-    MeldProviderResponsesApiResponse,
-    RampHistoryItemApiResponse,
-    RampHistoryPageApiResponse,
-    XoProviderResponsesApiResponse,
-} from './schema'
-
-export type RampHistoryPage = {
-    count: number
-    next: Nullable<string>
-    previous: Nullable<string>
-    results: RampHistoryItem[]
+// What a legacy order that names no asset renders as.
+const PLACEHOLDER_TOKEN: RampToken = {
+    id: '',
+    kind: 'token',
+    symbol: '',
+    name: '',
+    fractionDecimals: 0,
+    logo: null,
+    network: { name: '', logo: null },
 }
 
-type ProviderSummary = {
-    sourceAmount: Nullable<Decimal>
-    destinationAmount: Nullable<Decimal>
-    sourceCurrencyCode: Nullable<string>
-    destinationCurrencyCode: Nullable<string>
+// A `wallet_transaction` order is a Swap; Fund lists the others, and an order
+// with no funding method is a legacy Fund order.
+const WALLET_FUNDING_METHOD = 'wallet_transaction'
+
+const QUOTE_KIND_BY_FUNDING_METHOD: Readonly<
+    Record<string, Optional<RampQuoteKind>>
+> = {
+    provider_checkout: 'meld',
+    external_deposit: 'xo',
 }
 
-const EMPTY_SUMMARY: ProviderSummary = {
-    sourceAmount: null,
-    destinationAmount: null,
-    sourceCurrencyCode: null,
-    destinationCurrencyCode: null,
-}
+export const isFundHistoryItem = (item: RampHistoryItemApiResponse): boolean =>
+    item.funding_method !== WALLET_FUNDING_METHOD
 
-// XO order amounts are `number | string`; normalize through String() so a
-// numeric value never loses precision on the way into Decimal.
-const toDecimal = (value: number | string): Decimal =>
-    new Decimal(String(value))
-
-// Flattens the provider-specific summary embedded in `provider_responses`.
-// Meld carries fiat currency codes; XO is crypto-to-crypto and has no fiat
-// currency code, so both codes are null and the amounts are derived from the
-// XO order's `amount` (source) / `toAmount` (destination).
-type ProviderResponses =
-    RampHistoryItemApiResponse['ramp_quote']['provider_responses']
-
-// Both union members carry a `passthrough` index signature, so a bare
-// `'quotes_response' in responses` check leaves the field typed `unknown`.
-// These guards key on the discriminating field shape to restore the typed
-// member.
-const isMeldResponses = (
-    responses: ProviderResponses,
-): responses is MeldProviderResponsesApiResponse =>
-    typeof (responses as MeldProviderResponsesApiResponse).quotes_response ===
-    'object'
-
-const isXoResponses = (
-    responses: ProviderResponses,
-): responses is XoProviderResponsesApiResponse => {
-    const order = (responses as XoProviderResponsesApiResponse).order_response
-    return (
-        typeof order === 'object' &&
-        order !== null &&
-        'amount' in order &&
-        'toAmount' in order
-    )
-}
-
-const transformProviderSummary = (
-    responses: ProviderResponses,
-): ProviderSummary => {
-    if (isMeldResponses(responses)) {
-        const quote = responses.quotes_response
-        return {
-            sourceAmount: new Decimal(quote.sourceAmount),
-            destinationAmount: new Decimal(quote.destinationAmount),
-            sourceCurrencyCode: quote.sourceCurrencyCode,
-            destinationCurrencyCode: quote.destinationCurrencyCode,
-        }
-    }
-
-    if (isXoResponses(responses)) {
-        const order = responses.order_response
-        return {
-            sourceAmount: toDecimal(order.amount.value),
-            destinationAmount: toDecimal(order.toAmount.value),
-            sourceCurrencyCode: null,
-            destinationCurrencyCode: null,
-        }
-    }
-
-    return EMPTY_SUMMARY
-}
-
-// Pull the XO pay-in fields (if present) so the order-details sheet can show
-// the QR/address + cancel for a still-pending order. Undefined for Meld.
-//
-// `swapOrderId` is the history item's top-level id (the Pera order id the
-// cancel endpoint expects) — NOT the embedded provider `order_response.id`.
-// The web app does the same (`swap_order_id: item.id`); using the provider id
-// makes the backend 500 on cancel.
-const extractXoOrderFields = (
-    responses: ProviderResponses,
-    peraOrderId: string,
-): Pick<
-    RampHistoryItem,
-    'swapOrderId' | 'payInAddress' | 'payInAddressTag' | 'toAddress'
-> => {
-    if (!isXoResponses(responses)) return {}
-    const order = responses.order_response
-    return {
-        swapOrderId: peraOrderId,
-        payInAddress: order.payInAddress ?? undefined,
-        payInAddressTag: order.payInAddressTag ?? undefined,
-        toAddress: order.toAddress ?? undefined,
-    }
-}
+const toAmount = (
+    baseUnits: Maybe<string>,
+    asset: Maybe<RampAssetItem>,
+): Nullable<Decimal> =>
+    baseUnits == null || asset == null
+        ? null
+        : baseUnitsToDisplayUnits(baseUnits, fractionDecimalsOf(asset))
 
 export const transformRampHistoryItem = (
-    api: RampHistoryItemApiResponse,
-): RampHistoryItem => {
-    const summary = transformProviderSummary(api.ramp_quote.provider_responses)
-    const xoFields = extractXoOrderFields(
-        api.ramp_quote.provider_responses,
-        api.id,
-    )
-
-    // The embedded pair may omit `provider`; fall back to a stub built from the
-    // quote's top-level provider name so transformRampPair has what it needs.
-    const apiPair = api.ramp_quote.pair
-    const normalizedPair = {
-        ...apiPair,
-        provider: apiPair.provider ?? {
-            id: api.ramp_quote.provider,
-            payment_types: [],
-            limits: null,
-        },
-    }
-
-    return {
-        id: api.id,
-        status: api.status,
-        creationDatetime: api.creation_datetime,
-        provider: api.ramp_quote.provider,
-        pair: transformRampPair(normalizedPair),
-        paymentMethod: transformPaymentMethod(api.ramp_quote.payment_method),
-        sourceAmount: summary.sourceAmount,
-        destinationAmount: summary.destinationAmount,
-        sourceCurrencyCode: summary.sourceCurrencyCode,
-        destinationCurrencyCode: summary.destinationCurrencyCode,
-        ...xoFields,
-    }
-}
-
-export const transformRampHistoryPage = (
-    api: RampHistoryPageApiResponse,
-): RampHistoryPage => ({
-    count: api.count ?? api.results.length,
-    next: api.next ?? null,
-    previous: api.previous ?? null,
-    results: api.results.map(transformRampHistoryItem),
+    item: RampHistoryItemApiResponse,
+): RampHistoryItem => ({
+    id: item.order_id,
+    kind:
+        item.funding_method == null
+            ? null
+            : (QUOTE_KIND_BY_FUNDING_METHOD[item.funding_method] ?? null),
+    status: item.status,
+    creationDatetime: item.created_at,
+    provider: item.provider ?? '',
+    pair: buildRampPair(
+        item.source_asset ? toRampToken(item.source_asset) : PLACEHOLDER_TOKEN,
+        item.destination_asset
+            ? toRampToken(item.destination_asset)
+            : PLACEHOLDER_TOKEN,
+    ),
+    sourceAmount: toAmount(item.source_amount, item.source_asset),
+    destinationAmount: toAmount(
+        item.destination_amount_received ?? item.destination_amount_expected,
+        item.destination_asset,
+    ),
+    ...(item.destination_account
+        ? { toAddress: addressOfRouterAccount(item.destination_account) }
+        : {}),
 })

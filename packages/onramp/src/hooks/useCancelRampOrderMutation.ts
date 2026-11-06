@@ -39,8 +39,9 @@ export const useCancelRampOrderMutation =
             // (@perawallet/wallet-core-shared), which already sets
             // throwOnError: false.
             throwOnError: false,
-            // Refresh the history list so the cancelled order updates ASAP.
-            onSuccess: () =>
+            // Refresh the history on failure too: a 409 means the order's
+            // status moved on, and the list should show where it is now.
+            onSettled: () =>
                 queryClient.invalidateQueries({
                     queryKey: onrampQueryKeys.historyRoot(),
                 }),

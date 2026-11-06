@@ -11,24 +11,66 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { cursorOf, routerRequest } from '@perawallet/wallet-core-swaps'
 
-import type { RampPair } from '../../models'
-import { rampPairsResponseSchema, type RampPairsApiResponse } from './schema'
-import { transformRampPair } from './transformers'
+import type { RampToken } from '../../models'
+import {
+    rampPairRowSchema,
+    rampPairsPageSchema,
+    type RampPairRowApiResponse,
+} from './schema'
+import { dedupeRampTokens, transformRampPairRow } from './transformers'
 
-export const getRampPairs = async (
-    destinationTokenIds: string[],
+const PAGE_LIMIT = 50
+const MAX_PAGES = 20
+
+// `signable=false` keeps out every pair Swap signs for: Fund lists only
+// provider checkout and external deposit routes.
+const fetchRows = async (
     scope: ChainScope,
-): Promise<RampPair[]> => {
-    const response = await queryClient<RampPairsApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'GET',
-        url: `/v1/ramp/pairs/`,
-        params: { destination_tokens: destinationTokenIds.join(',') },
-    })
-
-    const parsed = rampPairsResponseSchema.parse(response.data)
-    return parsed.map(transformRampPair)
+    destinationId: Nullable<string>,
+): Promise<RampPairRowApiResponse[]> => {
+    const rows: RampPairRowApiResponse[] = []
+    let cursor: Nullable<string> = null
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const data = await routerRequest({
+            scope,
+            method: 'GET',
+            path: 'pairs/',
+            params: {
+                signable: 'false',
+                limit: PAGE_LIMIT,
+                ...(destinationId === null
+                    ? {}
+                    : { destination: destinationId }),
+                ...(cursor === null ? {} : { cursor }),
+            },
+        })
+        const parsed = rampPairsPageSchema.parse(data)
+        for (const raw of parsed.results) {
+            const row = rampPairRowSchema.safeParse(raw)
+            if (row.success) rows.push(row.data)
+        }
+        cursor = cursorOf(parsed.next)
+        if (cursor === null) break
+    }
+    return rows
 }
+
+/** Everything Fund can deliver, with no anchor. */
+export const getRampDestinations = async (
+    scope: ChainScope,
+): Promise<RampToken[]> =>
+    dedupeRampTokens((await fetchRows(scope, null)).map(transformRampPairRow))
+
+/** What can fund `destinationId`: its fiat currencies and deposit coins. */
+export const getRampSources = async (
+    destinationId: string,
+    scope: ChainScope,
+): Promise<RampToken[]> =>
+    dedupeRampTokens(
+        (await fetchRows(scope, destinationId))
+            .map(transformRampPairRow)
+            .filter(token => token.kind !== 'token'),
+    )

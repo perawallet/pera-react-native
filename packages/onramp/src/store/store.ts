@@ -20,21 +20,36 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
+import type { RampDepositInstructions } from '../models'
+
 const STORE_NAME = 'onramp-store'
+
+const MAX_REMEMBERED_DEPOSITS = 20
 
 type OnrampState = BaseStoreState & {
     selectedSourceTokenId: Nullable<string>
     selectedDestinationTokenId: Nullable<string>
     senderAddress: string
+    /**
+     * Pay-in details of the deposit orders placed on this device, by order id.
+     * The router's order items don't carry them, so History's pay-in card and
+     * Cancel depend on this. Newest 20 kept.
+     */
+    depositInstructions: Record<string, RampDepositInstructions>
     setSelectedSourceTokenId: (id: Nullable<string>) => void
     setSelectedDestinationTokenId: (id: Nullable<string>) => void
     setSenderAddress: (address: string) => void
+    rememberDepositInstructions: (
+        orderId: string,
+        instructions: RampDepositInstructions,
+    ) => void
 }
 
 const initialState = {
     selectedSourceTokenId: null as Nullable<string>,
     selectedDestinationTokenId: null as Nullable<string>,
     senderAddress: '',
+    depositInstructions: {} as Record<string, RampDepositInstructions>,
 }
 
 export const useOnrampStore: UseBoundStore<
@@ -48,15 +63,31 @@ export const useOnrampStore: UseBoundStore<
             setSelectedDestinationTokenId: (id: Nullable<string>) =>
                 set({ selectedDestinationTokenId: id }),
             setSenderAddress: (senderAddress: string) => set({ senderAddress }),
+            rememberDepositInstructions: (orderId, instructions) =>
+                set(state => {
+                    const { [orderId]: _replaced, ...others } =
+                        state.depositInstructions
+                    const kept = Object.entries(others).slice(
+                        -(MAX_REMEMBERED_DEPOSITS - 1),
+                    )
+                    return {
+                        depositInstructions: {
+                            ...Object.fromEntries(kept),
+                            [orderId]: instructions,
+                        },
+                    }
+                }),
             resetState: () => set({ ...initialState }),
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
-            // Only the destination sticks across sessions; the source is
-            // session-only so it's unset on every fresh entry.
+            // The destination and the deposit instructions stick across
+            // sessions; the source is session-only so it's unset on every
+            // fresh entry.
             partialize: state => ({
                 selectedDestinationTokenId: state.selectedDestinationTokenId,
+                depositInstructions: state.depositInstructions,
             }),
         },
     ),

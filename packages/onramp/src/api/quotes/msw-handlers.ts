@@ -15,17 +15,21 @@ import {
     validateMockRequest,
     validateMockResponse,
 } from '@perawallet/wallet-core-shared/test-utils'
+import { SWAP_ROUTER_PATH } from '@perawallet/wallet-core-swaps'
 
+import type { RouterErrorBody } from '../../errors'
 import {
     createRampQuoteRequestSchema,
     createRampQuoteResponseSchema,
-    type CreateRampQuoteApiResponse,
+    type CreateRampQuoteApiInput,
 } from './schema'
 
 export type MockCreateRampQuoteParams = {
-    response: CreateRampQuoteApiResponse
+    response: CreateRampQuoteApiInput
     status?: number
 }
+
+const QUOTES_PATH = `*${SWAP_ROUTER_PATH}quotes/`
 
 export const mockCreateRampQuote = ({
     response,
@@ -36,7 +40,7 @@ export const mockCreateRampQuote = ({
         response,
         'mockCreateRampQuote',
     )
-    return http.post('*/v1/ramp/quotes/', async ({ request }) => {
+    return http.post(QUOTES_PATH, async ({ request }) => {
         const validated = await validateMockRequest(
             createRampQuoteRequestSchema,
             request,
@@ -47,18 +51,18 @@ export const mockCreateRampQuote = ({
 }
 
 export type MockCreateRampQuoteErrorParams = {
-    /** Pera error envelope (e.g. SourceAmountIsTooLow); not the quotes schema. */
-    response: Record<string, unknown>
+    /** The router's error body (e.g. `amount_too_low`); not the quotes schema. */
+    response: RouterErrorBody
     status?: number
 }
 
-// Error twin of mockCreateRampQuote: serves a Pera API error body, which the
+// Error twin of mockCreateRampQuote: serves a router error body, which the
 // success-schema validation above would reject by design.
 export const mockCreateRampQuoteError = ({
     response,
     status = 400,
 }: MockCreateRampQuoteErrorParams): HttpHandler =>
-    http.post('*/v1/ramp/quotes/', async ({ request }) => {
+    http.post(QUOTES_PATH, async ({ request }) => {
         const validated = await validateMockRequest(
             createRampQuoteRequestSchema,
             request,

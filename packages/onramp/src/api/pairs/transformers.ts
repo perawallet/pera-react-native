@@ -10,57 +10,23 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import type { RampToken, RampTokenKind } from '../../models'
+import { toRampToken } from '../router-asset'
+import type { RampPairRowApiResponse } from './schema'
 
-import type {
-    RampNetwork,
-    RampPair,
-    RampProvider,
-    RampToken,
-} from '../../models'
-import type {
-    RampNetworkApiResponse,
-    RampPairApiResponse,
-    RampProviderApiResponse,
-    RampTokenApiResponse,
-} from './schema'
+const isTokenKind = (kind: unknown): kind is RampTokenKind =>
+    kind === 'token' || kind === 'deposit' || kind === 'fiat'
 
-const transformRampNetwork = (data: RampNetworkApiResponse): RampNetwork => ({
-    id: data.id,
-    name: data.name,
-    logo: data.logo,
-})
+/** The row's own kind when it names one the app knows, else read off the asset. */
+export const transformRampPairRow = (row: RampPairRowApiResponse): RampToken =>
+    toRampToken(row.asset, isTokenKind(row.kind) ? row.kind : undefined)
 
-const transformRampToken = (data: RampTokenApiResponse): RampToken => ({
-    id: data.id,
-    symbol: data.symbol,
-    name: data.name,
-    fractionDecimals: data.fraction_decimals,
-    logo: data.logo,
-    network: transformRampNetwork(data.network),
-    priceInUsd:
-        data.price_in_usd === null ? null : new Decimal(data.price_in_usd),
-    countryCode: data.extra.country_code,
-    caip19: data.caip19 ?? undefined,
-})
-
-const transformRampProvider = (
-    data: RampProviderApiResponse,
-): RampProvider => ({
-    id: data.id,
-    paymentTypes: data.payment_types,
-    limits:
-        data.limits === null
-            ? null
-            : {
-                  minSourceAmount: new Decimal(data.limits.min_source_amount),
-                  maxSourceAmount: new Decimal(data.limits.max_source_amount),
-              },
-})
-
-export const transformRampPair = (data: RampPairApiResponse): RampPair => ({
-    id: data.id,
-    sourceToken: transformRampToken(data.source_token),
-    destinationToken: transformRampToken(data.destination_token),
-    provider: transformRampProvider(data.provider),
-})
+/** First occurrence wins: a coin listed by two aggregators is one row. */
+export const dedupeRampTokens = (tokens: RampToken[]): RampToken[] => {
+    const seen = new Set<string>()
+    return tokens.filter(token => {
+        if (seen.has(token.id)) return false
+        seen.add(token.id)
+        return true
+    })
+}

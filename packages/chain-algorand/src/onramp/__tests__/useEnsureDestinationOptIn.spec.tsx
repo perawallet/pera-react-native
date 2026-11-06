@@ -75,13 +75,8 @@ import { useEnsureDestinationOptIn } from '../useEnsureDestinationOptIn'
 const ADDRESS = 'TESTADDRESS'
 const ASSET_ID = 31566704n
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-const RAMP_NETWORK = { id: 'ALGORAND', name: 'Algorand', logo: null }
-const ALGO_TOKEN = { id: 'ALGO', symbol: 'ALGO', network: RAMP_NETWORK }
-const USDC_TOKEN = {
-    id: 'USDC_ALGORAND',
-    symbol: 'USDC',
-    network: RAMP_NETWORK,
-}
+const ALGO_ASSET_ID = '0'
+const USDC_ASSET_ID = ASSET_ID.toString()
 
 function createWrapper() {
     const queryClient = new QueryClient({
@@ -123,25 +118,9 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: ALGO_TOKEN,
+                assetId: ALGO_ASSET_ID,
             }),
         ).resolves.toBe(true)
-
-        expect(accountInformationMock).not.toHaveBeenCalled()
-        expect(optInMock).not.toHaveBeenCalled()
-        expect(submitWithFeeDelegationMock).not.toHaveBeenCalled()
-    })
-
-    test('a token with no asset on the network resolves false and performs nothing', async () => {
-        const result = renderEnsure()
-
-        await expect(
-            result.current.ensureOptIn({
-                address: ADDRESS,
-                scope: MAINNET,
-                destinationToken: { ...USDC_TOKEN, id: 'NOT_LISTED' },
-            }),
-        ).resolves.toBe(false)
 
         expect(accountInformationMock).not.toHaveBeenCalled()
         expect(optInMock).not.toHaveBeenCalled()
@@ -161,7 +140,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: USDC_TOKEN,
+                assetId: USDC_ASSET_ID,
             }),
         ).resolves.toBe(true)
 
@@ -182,7 +161,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await result.current.ensureOptIn({
             address: ADDRESS,
             scope: MAINNET,
-            destinationToken: USDC_TOKEN,
+            assetId: USDC_ASSET_ID,
         })
 
         expect(optInMock).toHaveBeenCalledWith({
@@ -205,7 +184,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await result.current.ensureOptIn({
             address: ADDRESS,
             scope: MAINNET,
-            destinationToken: USDC_TOKEN,
+            assetId: USDC_ASSET_ID,
         })
 
         expect(optInMock).not.toHaveBeenCalled()
@@ -250,7 +229,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         await result.current.ensureOptIn({
             address: ADDRESS,
             scope: MAINNET,
-            destinationToken: USDC_TOKEN,
+            assetId: USDC_ASSET_ID,
         })
 
         expect(optInMock).not.toHaveBeenCalled()
@@ -272,7 +251,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: USDC_TOKEN,
+                assetId: USDC_ASSET_ID,
                 confirm,
             }),
         ).resolves.toBe(true)
@@ -299,7 +278,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: USDC_TOKEN,
+                assetId: USDC_ASSET_ID,
                 confirm,
             }),
         ).resolves.toBe(true)
@@ -325,7 +304,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: USDC_TOKEN,
+                assetId: USDC_ASSET_ID,
                 confirm,
             }),
         ).resolves.toBe(false)
@@ -349,7 +328,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: USDC_TOKEN,
+                assetId: USDC_ASSET_ID,
             }),
         ).rejects.toBe(failure)
     })
@@ -370,7 +349,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
             result.current.ensureOptIn({
                 address: ADDRESS,
                 scope: MAINNET,
-                destinationToken: USDC_TOKEN,
+                assetId: USDC_ASSET_ID,
             }),
         ).rejects.toBeInstanceOf(RampAttestationRequiredError)
     })

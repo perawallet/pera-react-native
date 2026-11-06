@@ -13,19 +13,10 @@
 import { fakeRampAdapter } from './fakeRampAdapter'
 import { rampContractTests } from './adapter-contract'
 
-const FAKE_NETWORK = { id: 'FAKE', name: 'Fake', logo: null }
-
-rampContractTests(
-    () =>
-        fakeRampAdapter({
-            toAssetId: token => (token.id === 'NATIVE' ? '0' : token.id),
-        }),
-    {
-        scope: { chainId: 'algorand', networkId: 'mainnet' },
-        native: { id: 'NATIVE', symbol: 'NAT', network: FAKE_NETWORK },
-        nonNative: {
-            token: { id: '31566704', symbol: 'USDC', network: FAKE_NETWORK },
-            assetId: '31566704',
-        },
-    },
-)
+rampContractTests(() => fakeRampAdapter(), {
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+    native: { routerAssetId: 'fake:a/asset:0', assetId: '0' },
+    nonNative: { routerAssetId: 'fake:a/asset:31566704', assetId: '31566704' },
+    foreignRouterAssetId: 'fake:b/token:31566704',
+    malformedRouterAssetIds: ['', 'fake:a', 'fake:a/asset:'],
+})

@@ -19,13 +19,21 @@ vi.mock('../useEnsureDestinationOptIn', () => ({
     useEnsureDestinationOptIn: vi.fn(),
 }))
 
-const RAMP_NETWORK = { id: 'ALGORAND', name: 'Algorand', logo: null }
+const MAINNET_CAIP2 = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
 
 rampContractTests(() => algorandRampAdapter, {
     scope: { chainId: 'algorand', networkId: 'mainnet' },
-    native: { id: 'ALGO', symbol: 'ALGO', network: RAMP_NETWORK },
+    native: { routerAssetId: `${MAINNET_CAIP2}/asa:0`, assetId: '0' },
     nonNative: {
-        token: { id: 'USDC_ALGORAND', symbol: 'USDC', network: RAMP_NETWORK },
+        routerAssetId: `${MAINNET_CAIP2}/asa:31566704`,
         assetId: '31566704',
     },
+    foreignRouterAssetId: 'eip155:1/slip44:60',
+    malformedRouterAssetIds: [
+        '',
+        MAINNET_CAIP2,
+        `${MAINNET_CAIP2}/asa:`,
+        `${MAINNET_CAIP2}/asa:01`,
+        `${MAINNET_CAIP2}/slip44:283`,
+    ],
 })

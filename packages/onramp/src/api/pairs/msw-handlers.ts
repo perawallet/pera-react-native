@@ -12,20 +12,49 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import { SWAP_ROUTER_PATH } from '@perawallet/wallet-core-swaps'
 
-import { rampPairsResponseSchema, type RampPairsApiResponse } from './schema'
+import {
+    rampPairsMockResponseSchema,
+    rampPairsQuerySchema,
+    type RampPairsMockResponse,
+} from './schema'
 
 export type MockRampPairsParams = {
-    response: RampPairsApiResponse
+    response: RampPairsMockResponse
     status?: number
 }
 
-export const mockRampPairs = ({
-    response,
-    status = 200,
-}: MockRampPairsParams): HttpHandler => {
-    validateMockResponse(rampPairsResponseSchema, response, 'mockRampPairs')
-    return http.get('*/v1/ramp/pairs/', () =>
-        HttpResponse.json(response, { status }),
-    )
+const pairsHandler = (
+    { response, status = 200 }: MockRampPairsParams,
+    name: string,
+    appliesTo: (hasDestination: boolean) => boolean,
+): HttpHandler => {
+    validateMockResponse(rampPairsMockResponseSchema, response, name)
+    return http.get(`*${SWAP_ROUTER_PATH}pairs/`, ({ request }) => {
+        const params = new URL(request.url).searchParams
+        if (!appliesTo(params.has('destination'))) return undefined
+        const query = rampPairsQuerySchema.safeParse(Object.fromEntries(params))
+        if (!query.success) {
+            return HttpResponse.json(
+                { error: 'Invalid request', details: query.error.issues },
+                { status: 422 },
+            )
+        }
+        return HttpResponse.json(response, { status })
+    })
 }
+
+/** Serves the destination list: a pairs request with no `destination`. */
+export const mockRampDestinations = (
+    params: MockRampPairsParams,
+): HttpHandler =>
+    pairsHandler(
+        params,
+        'mockRampDestinations',
+        hasDestination => !hasDestination,
+    )
+
+/** Serves the sources of any destination: a pairs request carrying `destination`. */
+export const mockRampSources = (params: MockRampPairsParams): HttpHandler =>
+    pairsHandler(params, 'mockRampSources', hasDestination => hasDestination)

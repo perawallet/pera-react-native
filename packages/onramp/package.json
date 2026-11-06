@@ -22,6 +22,7 @@
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-chain-shared": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-swaps": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",

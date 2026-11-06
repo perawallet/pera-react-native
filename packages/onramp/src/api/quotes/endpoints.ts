@@ -12,41 +12,114 @@
 
 import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
-
-import type { RampQuote } from '../../models'
 import {
-    createRampQuoteResponseSchema,
-    type CreateRampQuoteApiResponse,
-} from './schema'
-import { transformRampQuote } from './transformers'
+    baseUnitsToDisplayUnits,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import { routerAccountId, routerRequest } from '@perawallet/wallet-core-swaps'
+
+import {
+    RampAmountOutOfRangeError,
+    resolveRouterErrorBody,
+    type RampQuoteLimits,
+    type RouterErrorBody,
+} from '../../errors'
+import type { RampQuote, RampToken } from '../../models'
+import { caip2OfRouterAsset, toBaseUnitString } from '../router-asset'
+import { createRampQuoteResponseSchema } from './schema'
+import { transformRampOffer } from './transformers'
 
 export type CreateRampQuoteParams = {
-    pair: string
-    destinationAddress: string
+    sourceToken: Pick<RampToken, 'id' | 'kind' | 'fractionDecimals'>
+    destinationToken: Pick<RampToken, 'id' | 'fractionDecimals'>
     /** Display units. */
-    sourceAmount: Nullable<Decimal>
+    sourceAmount: Decimal
+    destinationAddress: string
+    countryCode: Nullable<string>
+    /** Where a deposit is returned to; sent for a deposit source only. */
+    refundAddress: Nullable<string>
 }
 
+const toLimit = (
+    baseUnits: Optional<string>,
+    decimals: number,
+): Nullable<Decimal> =>
+    baseUnits === undefined
+        ? null
+        : baseUnitsToDisplayUnits(baseUnits, decimals)
+
+const toAmountOutOfRange = (
+    body: RouterErrorBody,
+    decimals: number,
+): Nullable<RampAmountOutOfRangeError> => {
+    if (body.code !== 'amount_too_low' && body.code !== 'amount_too_high') {
+        return null
+    }
+    const limits: RampQuoteLimits = {
+        min: toLimit(body.source_amount_minimum, decimals),
+        max: toLimit(body.source_amount_maximum, decimals),
+    }
+    return new RampAmountOutOfRangeError(
+        body.code === 'amount_too_low' ? 'min' : 'max',
+        limits,
+        body.error,
+    )
+}
+
+/**
+ * Offers best first. An amount the router refuses as too low or too high
+ * throws `RampAmountOutOfRangeError`; any other error is rethrown unchanged.
+ */
 export const createRampQuote = async (
     params: CreateRampQuoteParams,
     scope: ChainScope,
-    signal?: AbortSignal,
 ): Promise<RampQuote[]> => {
-    const response = await queryClient<CreateRampQuoteApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'POST',
-        url: `/v1/ramp/quotes/`,
-        data: {
-            pair: params.pair,
-            destination_address: params.destinationAddress,
-            // The quote endpoint takes a JSON number, not the decimal string orders take.
-            source_amount: params.sourceAmount?.toNumber() ?? null,
-        },
-        signal,
-    })
+    const { sourceToken, destinationToken } = params
+    const sendsRefundAccount =
+        sourceToken.kind === 'deposit' && params.refundAddress !== null
+    let data: unknown
+    try {
+        data = await routerRequest({
+            scope,
+            method: 'POST',
+            path: 'quotes/',
+            data: {
+                source_asset_id: sourceToken.id,
+                destination_asset_id: destinationToken.id,
+                source_amount: toBaseUnitString(
+                    params.sourceAmount,
+                    sourceToken.fractionDecimals,
+                ),
+                destination_account: routerAccountId(
+                    scope,
+                    params.destinationAddress,
+                ),
+                ...(params.countryCode === null
+                    ? {}
+                    : { country: params.countryCode }),
+                ...(sendsRefundAccount
+                    ? {
+                          source_account: `${caip2OfRouterAsset(sourceToken.id)}:${params.refundAddress}`,
+                      }
+                    : {}),
+            },
+        })
+    } catch (error) {
+        const body = resolveRouterErrorBody(error)
+        const outOfRange =
+            body === null
+                ? null
+                : toAmountOutOfRange(body, sourceToken.fractionDecimals)
+        throw outOfRange ?? error
+    }
 
-    const parsed = createRampQuoteResponseSchema.parse(response.data)
-    return parsed.map(transformRampQuote)
+    const parsed = createRampQuoteResponseSchema.parse(data)
+    return parsed.results.flatMap(offer => {
+        const quote = transformRampOffer(offer, {
+            source: sourceToken.fractionDecimals,
+            destination: destinationToken.fractionDecimals,
+        })
+        return quote === null ? [] : [quote]
+    })
 }

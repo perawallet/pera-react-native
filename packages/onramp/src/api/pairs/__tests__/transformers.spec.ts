@@ -11,145 +11,88 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { Decimal } from 'decimal.js'
 
-import { transformRampPair } from '../transformers'
-import type { RampPairApiResponse } from '../schema'
+import {
+    COIN_ID,
+    FIAT_ID,
+    NATIVE_ID,
+    STABLE_ID,
+    coinAsset,
+    fiatAsset,
+    pairRow,
+    stableAsset,
+} from '../../../__tests__/routerFixtures'
+import { transformRampPairRow } from '../transformers'
 
-const buildPair = (
-    overrides?: Partial<RampPairApiResponse>,
-): RampPairApiResponse => ({
-    id: 'pair-1',
-    source_token: {
-        id: 'usd',
-        symbol: 'USD',
-        name: 'US Dollar',
-        fraction_decimals: 6,
-        logo: 'https://example.com/usd.png',
-        network: { id: 'fiat', name: 'Fiat', logo: null },
-        price_in_usd: '1',
-        extra: { country_code: 'US' },
-    },
-    destination_token: {
-        id: 'algo',
-        symbol: 'ALGO',
-        name: 'Algorand',
-        fraction_decimals: 6,
-        logo: null,
-        network: { id: 'algorand', name: 'Algorand', logo: null },
-        price_in_usd: null,
-        extra: {},
-    },
-    provider: {
-        id: 'meld',
-        payment_types: ['CARD', 'BANK'],
-        limits: { min_source_amount: '10', max_source_amount: '5000' },
-    },
-    ...overrides,
-})
-
-describe('pairs transformers', () => {
-    describe('transformRampPair', () => {
-        it('maps source token fraction_decimals to fractionDecimals', () => {
-            const result = transformRampPair(buildPair())
-
-            expect(result.sourceToken.fractionDecimals).toBe(6)
+describe('transformRampPairRow', () => {
+    it('maps a token row', () => {
+        expect(transformRampPairRow(pairRow(stableAsset()))).toEqual({
+            id: STABLE_ID,
+            kind: 'token',
+            symbol: 'STB',
+            name: 'Stable',
+            fractionDecimals: 6,
+            logo: 'https://logo/stb.png',
+            network: { name: '', logo: null },
         })
+    })
 
-        it('maps provider limit amounts to Decimal instances', () => {
-            const result = transformRampPair(buildPair())
+    it("maps a deposit coin, taking its chain label as the network's name", () => {
+        const token = transformRampPairRow(
+            pairRow(coinAsset(), { kind: 'deposit' }),
+        )
 
-            expect(result.provider.limits).not.toBeNull()
-            expect(result.provider.limits?.minSourceAmount).toBeInstanceOf(
-                Decimal,
-            )
-            expect(
-                result.provider.limits?.minSourceAmount.equals(
-                    new Decimal('10'),
-                ),
-            ).toBe(true)
-            expect(
-                result.provider.limits?.maxSourceAmount.equals(
-                    new Decimal('5000'),
-                ),
-            ).toBe(true)
+        expect(token).toMatchObject({
+            id: COIN_ID,
+            kind: 'deposit',
+            fractionDecimals: 8,
+            network: { name: 'Other Chain' },
         })
+    })
 
-        it('maps null limits to null', () => {
-            const result = transformRampPair(
-                buildPair({
-                    provider: {
-                        id: 'xo',
-                        payment_types: [],
-                        limits: null,
-                    },
-                }),
-            )
+    it("derives a fiat's country code from the first two letters of its currency", () => {
+        const token = transformRampPairRow(
+            pairRow(fiatAsset(), { kind: 'fiat' }),
+        )
 
-            expect(result.provider.limits).toBeNull()
+        expect(token).toMatchObject({
+            id: FIAT_ID,
+            kind: 'fiat',
+            fractionDecimals: 2,
+            countryCode: 'EU',
         })
+    })
 
-        it('maps null price_in_usd to null priceInUsd', () => {
-            const result = transformRampPair(buildPair())
+    it('reads the kind off the asset when the row names none', () => {
+        expect(
+            transformRampPairRow(pairRow(fiatAsset(), { kind: null })).kind,
+        ).toBe('fiat')
+        expect(
+            transformRampPairRow(pairRow(coinAsset(), { kind: undefined }))
+                .kind,
+        ).toBe('deposit')
+        expect(
+            transformRampPairRow(
+                pairRow({ asset_id: NATIVE_ID }, { kind: null }),
+            ).kind,
+        ).toBe('token')
+    })
 
-            expect(result.destinationToken.priceInUsd).toBeNull()
-        })
+    it('reads either spelling of the asset fields', () => {
+        const token = transformRampPairRow(
+            pairRow({
+                asset_id: STABLE_ID,
+                symbol: 'STB',
+                decimals: 3,
+                logo_url: 'https://logo/x.png',
+            }),
+        )
 
-        it('maps non-null price_in_usd to a Decimal', () => {
-            const result = transformRampPair(buildPair())
-
-            expect(result.sourceToken.priceInUsd).toBeInstanceOf(Decimal)
-            expect(
-                result.sourceToken.priceInUsd?.equals(new Decimal('1')),
-            ).toBe(true)
-        })
-
-        it('maps extra.country_code to optional countryCode', () => {
-            const result = transformRampPair(buildPair())
-
-            expect(result.sourceToken.countryCode).toBe('US')
-            expect(result.destinationToken.countryCode).toBeUndefined()
-        })
-
-        it('maps caip19 when the backend sends it', () => {
-            const caip19 =
-                'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/slip44:283'
-            const pair = buildPair()
-            const result = transformRampPair({
-                ...pair,
-                destination_token: { ...pair.destination_token, caip19 },
-            })
-
-            expect(result.destinationToken.caip19).toBe(caip19)
-            expect(result.sourceToken.caip19).toBeUndefined()
-        })
-
-        it('treats a null caip19 as absent', () => {
-            const pair = buildPair()
-            const result = transformRampPair({
-                ...pair,
-                source_token: { ...pair.source_token, caip19: null },
-            })
-
-            expect(result.sourceToken.caip19).toBeUndefined()
-        })
-
-        it('maps network fields and preserves null logo', () => {
-            const result = transformRampPair(buildPair())
-
-            expect(result.destinationToken.network).toEqual({
-                id: 'algorand',
-                name: 'Algorand',
-                logo: null,
-            })
-        })
-
-        it('maps top-level pair fields and provider payment types', () => {
-            const result = transformRampPair(buildPair())
-
-            expect(result.id).toBe('pair-1')
-            expect(result.provider.id).toBe('meld')
-            expect(result.provider.paymentTypes).toEqual(['CARD', 'BANK'])
+        expect(token).toMatchObject({
+            symbol: 'STB',
+            name: 'STB',
+            fractionDecimals: 3,
+            logo: 'https://logo/x.png',
         })
     })
 })

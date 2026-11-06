@@ -20,19 +20,19 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { getRampPairs } from '../api'
+import { getRampDestinations } from '../api'
 import { rampChainAdapters } from '../chain-adapter'
-import type { RampPair } from '../models'
-import { isOfferedRampPair } from '../token-identity'
+import type { RampToken } from '../models'
+import { rampTokenAsset } from '../token-identity'
 import { onrampQueryKeys } from './querykeys'
 
-export type UseRampPairsQueryParams = {
+export type UseRampDestinationsQueryParams = {
     scope: Nullable<ChainScope>
     enabled?: boolean
 }
 
-export type UseRampPairsQueryResult = {
-    data: RampPair[]
+export type UseRampDestinationsQueryResult = {
+    data: RampToken[]
     isLoading: boolean
     isError: boolean
     /** The failure behind `isError`, for callers that branch on its kind (an integrity refusal); null otherwise. */
@@ -42,32 +42,32 @@ export type UseRampPairsQueryResult = {
 }
 
 // One stable empty array, so memos that depend on `data` don't re-run every render.
-const NO_RESULTS: RampPair[] = []
-const NO_TOKEN_IDS: readonly string[] = []
+const NO_RESULTS: RampToken[] = []
 
-export const useRampPairsQuery = ({
+/** What Fund can deliver on `scope`'s chain: the router's destinations that chain's adapter can read. */
+export const useRampDestinationsQuery = ({
     scope,
     enabled = true,
-}: UseRampPairsQueryParams): UseRampPairsQueryResult => {
-    const destinationTokenIds = [
-        ...(scope !== null && rampChainAdapters.has(scope.chainId)
-            ? rampChainAdapters.get(scope.chainId).destinationTokenIds
-            : NO_TOKEN_IDS),
-    ]
+}: UseRampDestinationsQueryParams): UseRampDestinationsQueryResult => {
+    const hasAdapter = scope !== null && rampChainAdapters.has(scope.chainId)
 
     const query = useQuery({
-        queryKey: onrampQueryKeys.pairs(destinationTokenIds, scope),
+        queryKey: onrampQueryKeys.destinations(scope),
         queryFn:
             scope === null
                 ? skipToken
-                : (): Promise<RampPair[]> =>
-                      getRampPairs(destinationTokenIds, scope),
-        enabled: enabled && destinationTokenIds.length > 0,
+                : (): Promise<RampToken[]> => getRampDestinations(scope),
+        enabled: enabled && hasAdapter,
     })
 
     const data = useMemo(
-        () => query.data?.filter(isOfferedRampPair) ?? NO_RESULTS,
-        [query.data],
+        () =>
+            scope === null
+                ? NO_RESULTS
+                : (query.data?.filter(
+                      token => rampTokenAsset(token, scope) !== null,
+                  ) ?? NO_RESULTS),
+        [query.data, scope],
     )
 
     return {

@@ -19,8 +19,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
-import { getRampHistory, getRampHistoryByUrl } from '../api'
-import type { RampHistoryPage } from '../api/history/transformers'
+import { getRampHistory, type RampHistoryPage } from '../api'
 import type { OnrampStatus, RampHistoryItem } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
@@ -46,6 +45,7 @@ export type UseRampHistoryInfiniteQueryParams = {
     scope: Nullable<ChainScope>
     deviceId: string
     accountAddress: string
+    /** Filters the loaded items: the router's history has no status filter. */
     status?: OnrampStatus
     /**
      * When false, the query stops polling (it stays enabled, so cached data
@@ -74,35 +74,30 @@ export const useRampHistoryInfiniteQuery = ({
     isActive = true,
 }: UseRampHistoryInfiniteQueryParams): UseRampHistoryInfiniteQueryResult => {
     const query = useInfiniteQuery({
-        queryKey: onrampQueryKeys.history(
-            deviceId,
-            accountAddress,
-            status,
-            scope,
-        ),
+        queryKey: onrampQueryKeys.history(deviceId, accountAddress, scope),
         queryFn:
             scope === null
                 ? skipToken
                 : ({ pageParam }: { pageParam: Optional<string> }) =>
-                      pageParam
-                          ? getRampHistoryByUrl(pageParam, scope)
-                          : getRampHistory(
-                                { deviceId, accountAddress, status },
-                                scope,
-                            ),
+                      getRampHistory(
+                          { deviceId, accountAddress, cursor: pageParam },
+                          scope,
+                      ),
         initialPageParam: undefined as Optional<string>,
         getNextPageParam: (lastPage: RampHistoryPage) =>
-            lastPage.next ?? undefined,
+            lastPage.cursor ?? undefined,
         enabled: Boolean(deviceId && accountAddress),
         refetchInterval: currentQuery =>
             getRampHistoryRefetchIntervalMs(currentQuery.state.error, isActive),
     })
 
     // Stable identity while pages are unchanged — consumers feed this to lists.
-    const items = useMemo(
-        () => query.data?.pages.flatMap(page => page.results) ?? [],
-        [query.data],
-    )
+    const items = useMemo(() => {
+        const all = query.data?.pages.flatMap(page => page.results) ?? []
+        return status === undefined
+            ? all
+            : all.filter(item => item.status === status)
+    }, [query.data, status])
 
     return {
         items,

@@ -18,10 +18,7 @@ import {
     isPeraNetworkError,
     type Nullable,
     type Maybe,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
-
-import { parseRampAmount } from '../quotes'
 
 const GENERIC_FALLBACK = 'Something went wrong. Please try again.'
 
@@ -39,7 +36,34 @@ export class RampAttestationRequiredError extends AppError {
     }
 }
 
-const SOURCE_AMOUNT_TOO_LOW_FALLBACK = "Amount is below the provider's minimum."
+/**
+ * Source-amount limits of a quote the router refused, in the source's display
+ * units. Either bound may be absent.
+ */
+export type RampQuoteLimits = {
+    min: Nullable<Decimal>
+    max: Nullable<Decimal>
+}
+
+/** The router refused a quote because the amount is below its minimum or above its maximum. */
+export class RampAmountOutOfRangeError extends AppError {
+    readonly bound: 'min' | 'max'
+    readonly limits: RampQuoteLimits
+
+    constructor(
+        bound: 'min' | 'max',
+        limits: RampQuoteLimits,
+        message: string,
+    ) {
+        super(message, {
+            category: ErrorCategory.VALIDATION,
+            recoverable: true,
+        })
+        this.name = 'RampAmountOutOfRangeError'
+        this.bound = bound
+        this.limits = limits
+    }
+}
 
 // Shape of a Pera API exception response body, ported from the web
 // onramp peraApi.exception.types.ts.
@@ -76,128 +100,47 @@ function unwrapNetworkError(error: unknown): unknown {
     return isPeraNetworkError(error) ? (error.originalError ?? error) : error
 }
 
-type SourceAmountLeaf = {
-    message?: string
-    min_amount?: string
-    max_amount?: string
-}
-
-// The SourceAmountIsTooLow detail carries a single-quoted JSON payload in
-// non_field_errors[0]; normalise the quotes before parsing. Null when the
-// leaf is absent or malformed.
-function parseSourceAmountLeaf(
-    exception: PeraApiException,
-): Nullable<SourceAmountLeaf> {
-    try {
-        const nonFieldErrors = (exception.detail as Record<string, unknown>)
-            .non_field_errors
-
-        if (
-            Array.isArray(nonFieldErrors) &&
-            typeof nonFieldErrors[0] === 'string'
-        ) {
-            const normalised = (nonFieldErrors[0] as string).replace(/'/g, '"')
-            return JSON.parse(normalised) as SourceAmountLeaf
-        }
-    } catch {
-        // fall through to null
-    }
-
-    return null
-}
-
-// `fallback_message` is not always prose: the same serialised dict that fills
-// `non_field_errors` can land in it verbatim, and showing "{'message': ...}" to
-// a user is worse than a generic apology.
+// `fallback_message` is not always prose: a serialised dict can land in it
+// verbatim, and showing "{'message': ...}" to a user is worse than a generic
+// apology.
 function isDisplayableMessage(message: string): boolean {
     return message.trim() !== '' && !message.trimStart().startsWith('{')
 }
 
-/** An amount field that is present but is not a number the UI can render. */
-function isUnusableAmount(raw: Optional<string>): boolean {
-    return raw !== undefined && parseRampAmount(raw) === null
-}
-
-function parseSourceAmountIsTooLow(exception: PeraApiException): string {
-    const leaf = parseSourceAmountLeaf(exception)
-
-    // The backend can substitute a non-numeric token for the limit — the TRY
-    // pair returns the literal word "for" as `min_amount`, and the same token
-    // is interpolated into `message` and `fallback_message` ("...which is
-    // for."). One bad amount therefore condemns the whole payload, prose
-    // included, so fall back rather than echo any of it.
-    const isCoherent =
-        leaf !== null &&
-        !isUnusableAmount(leaf.min_amount) &&
-        !isUnusableAmount(leaf.max_amount)
-
-    if (isCoherent) {
-        const parts: string[] = []
-
-        if (leaf.message) {
-            parts.push(leaf.message)
-        }
-
-        if (leaf.min_amount) {
-            parts.push(`Minimum amount: ${leaf.min_amount}`)
-        }
-
-        if (leaf.max_amount) {
-            parts.push(`Maximum amount: ${leaf.max_amount}`)
-        }
-
-        if (parts.length > 0) {
-            return parts.join(' ')
-        }
-    }
-
-    return SOURCE_AMOUNT_TOO_LOW_FALLBACK
-}
-
-/**
- * Provider source-amount limits extracted from a SourceAmountIsTooLow quote
- * error, in the pair's source (fiat) display units. Either bound may be
- * absent.
- */
-export type RampQuoteLimits = {
-    min: Nullable<Decimal>
-    max: Nullable<Decimal>
-}
-
-/**
- * Whether the error is the provider rejecting the amount as below its minimum,
- * regardless of whether a usable limit came with it. Lets the UI show its own
- * localized copy instead of the backend's (sometimes corrupt) prose.
- */
+/** Whether the error is the router refusing the amount as below its minimum. */
 export function isSourceAmountTooLowError(error: unknown): boolean {
-    const exception = resolvePeraApiException(unwrapNetworkError(error))
-    return exception?.type === 'SourceAmountIsTooLow'
+    const raw = unwrapNetworkError(error)
+    return raw instanceof RampAmountOutOfRangeError && raw.bound === 'min'
+}
+
+/** Whether the error is the router refusing the amount as above its maximum. */
+export function isSourceAmountTooHighError(error: unknown): boolean {
+    const raw = unwrapNetworkError(error)
+    return raw instanceof RampAmountOutOfRangeError && raw.bound === 'max'
 }
 
 /**
- * Extracts structured min/max limits from a SourceAmountIsTooLow quote error
- * so the UI can offer tap-to-fix. Returns null for any other error, or when
- * no limit can be parsed out of the payload.
+ * The limits a refused amount came with, so the UI can offer tap-to-fix. Null
+ * for any other error, or when the router named neither bound.
  */
 export function resolveRampQuoteLimits(
     error: unknown,
 ): Nullable<RampQuoteLimits> {
-    const exception = resolvePeraApiException(unwrapNetworkError(error))
-    if (!exception || exception.type !== 'SourceAmountIsTooLow') return null
-
-    const leaf = parseSourceAmountLeaf(exception)
-    if (!leaf) return null
-
-    const min = leaf.min_amount ? parseRampAmount(leaf.min_amount) : null
-    const max = leaf.max_amount ? parseRampAmount(leaf.max_amount) : null
-    return min === null && max === null ? null : { min, max }
+    const raw = unwrapNetworkError(error)
+    if (!(raw instanceof RampAmountOutOfRangeError)) return null
+    const { min, max } = raw.limits
+    return min === null && max === null ? null : raw.limits
 }
 
-// Bun-backend error body (e.g. the sponsored-transaction route): `{ error, code }`.
-// Resolved from the error itself or the parsed body the ky client attaches.
-type BunApiError = { error: string; code?: string }
+/** The `{ error, code }` body the swap router and the sponsor route answer with. */
+export type RouterErrorBody = {
+    error: string
+    code?: string
+    source_amount_minimum?: string
+    source_amount_maximum?: string
+}
 
-function isBunApiError(value: unknown): value is BunApiError {
+function isRouterErrorBody(value: unknown): value is RouterErrorBody {
     return (
         typeof value === 'object' &&
         value !== null &&
@@ -205,21 +148,22 @@ function isBunApiError(value: unknown): value is BunApiError {
     )
 }
 
-function resolveBunApiError(error: unknown): Nullable<BunApiError> {
-    if (isBunApiError(error)) return error
-    const data = (error as Maybe<{ data?: unknown }>)?.data
-    return isBunApiError(data) ? data : null
+/** The router's error body, from the error itself or the parsed body the ky client attaches. */
+export function resolveRouterErrorBody(
+    error: unknown,
+): Nullable<RouterErrorBody> {
+    const raw = unwrapNetworkError(error)
+    if (isRouterErrorBody(raw)) return raw
+    const data = (raw as Maybe<{ data?: unknown }>)?.data
+    return isRouterErrorBody(data) ? data : null
 }
 
 const ATTESTATION_REQUIRED_MESSAGE =
     'Device verification is required to fund this account.'
 
 /**
- * Maps any error value (Pera API exception, bun API error, JS Error, unknown)
+ * Maps any error value (Pera API exception, router error, JS Error, unknown)
  * to a human-readable message suitable for display in a toast or inline error.
- *
- * For SourceAmountIsTooLow errors the message includes the min/max limits
- * extracted from the API response payload.
  */
 export function toOnrampUserMessage(error: unknown): string {
     const raw = unwrapNetworkError(error)
@@ -228,23 +172,24 @@ export function toOnrampUserMessage(error: unknown): string {
         return ATTESTATION_REQUIRED_MESSAGE
     }
 
+    if (raw instanceof RampAmountOutOfRangeError) {
+        return raw.message
+    }
+
     const exception = resolvePeraApiException(raw)
     if (exception) {
-        if (exception.type === 'SourceAmountIsTooLow') {
-            return parseSourceAmountIsTooLow(exception)
-        }
         return isDisplayableMessage(exception.fallback_message)
             ? exception.fallback_message
             : GENERIC_FALLBACK
     }
 
-    const bunError = resolveBunApiError(raw)
-    if (bunError) {
+    const routerError = resolveRouterErrorBody(raw)
+    if (routerError) {
         // The server can also reject a token it considers invalid/expired.
-        if (bunError.code?.startsWith('APP_INTEGRITY_TOKEN')) {
+        if (routerError.code?.startsWith('APP_INTEGRITY_TOKEN')) {
             return ATTESTATION_REQUIRED_MESSAGE
         }
-        return bunError.error
+        return routerError.error
     }
 
     return GENERIC_FALLBACK

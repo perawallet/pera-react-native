@@ -13,14 +13,17 @@
 import { vi } from 'vitest'
 import { rampChainAdapters, type RampChainAdapter } from '../chain-adapter'
 
+/** Reads `fake:<caip2>/asset:<id>`-style ids: everything after the last `asset:` is the chain's own id. */
+export const fakeFromRouterAssetId = (routerAssetId: string): string | null => {
+    const match = /\/asset:([^/]+)$/.exec(routerAssetId)
+    return match ? match[1] : null
+}
+
 export const fakeRampAdapter = (
     overrides: Partial<RampChainAdapter> = {},
 ): RampChainAdapter => ({
     chainId: 'algorand',
-    rampNetworkIds: ['FAKE'],
-    destinationTokenIds: ['NATIVE', 'STABLE'],
-    isNativeToken: vi.fn(token => token.id === 'NATIVE'),
-    toAssetId: vi.fn(token => (token.id === 'NATIVE' ? '0' : token.id)),
+    fromRouterAssetId: vi.fn(fakeFromRouterAssetId),
     ...overrides,
 })
 
