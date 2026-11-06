@@ -18,6 +18,7 @@ import {
     parsePasskeyPayload,
     parsePasskeySecretsPayload,
     parseSecretsPayload,
+    parseSettingsPayload,
     BackupPayloadParseError,
 } from '../payloadParsers'
 import { isChainAddressPayload, isChainHdAddressPayload } from '../../models'
@@ -493,5 +494,35 @@ describe('parsePasskeySecretsPayload', () => {
                 JSON.stringify({ credentialId: 'Y3JlZC1pZA==' }),
             ),
         ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parseSettingsPayload', () => {
+    it('keeps a well-formed hidden token map', () => {
+        const hiddenTokens = {
+            value: { 'ethereum/mainnet': { '0xabc': ['0x1', '0x2'] } },
+            updatedAt: 4,
+        }
+
+        expect(
+            parseSettingsPayload(JSON.stringify({ hiddenTokens })).hiddenTokens,
+        ).toEqual(hiddenTokens)
+    })
+
+    it('drops a malformed hidden token map without losing the other settings', () => {
+        const language = { value: 'tr', updatedAt: 2 }
+
+        const parsed = parseSettingsPayload(
+            JSON.stringify({
+                language,
+                hiddenTokens: {
+                    value: { 'ethereum/mainnet': ['0x1'] },
+                    updatedAt: 4,
+                },
+            }),
+        )
+
+        expect(parsed.hiddenTokens).toBeUndefined()
+        expect(parsed.language).toEqual(language)
     })
 })

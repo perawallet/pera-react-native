@@ -13,7 +13,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    hiddenAssetIdsOf,
+    useAccountsStore,
+    useHiddenTokensStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     useNetworkStore,
     useSelectedScope,
@@ -49,6 +53,10 @@ import {
     BACKUP_SALT,
     renderQueryHook,
 } from './__fixtures__/cloudBackup'
+
+const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const HIDDEN_TOKEN = '0x514B0000000000000000000000000000000046ca'
 
 const setupSyncedBackup = async () => {
     const { backupId, encryptionKey, authSecretKey, itemKey } =
@@ -118,6 +126,7 @@ describe('Flow: Cloud backup → Settings sync', () => {
     beforeEach(async () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useHiddenTokensStore.getState().resetState()
         useContactsStore.getState().resetState()
         useCurrenciesStore.getState().resetState()
         useSettingsStore.getState().resetState()
@@ -150,7 +159,50 @@ describe('Flow: Cloud backup → Settings sync', () => {
                 value: { mode: 'manual', addresses: [] },
                 updatedAt: 0,
             },
+            hiddenTokens: { value: {}, updatedAt: 0 },
         })
+    })
+
+    it('backs up a token hidden on this device', async () => {
+        const { manager, remoteSettings } = await setupSyncedBackup()
+        await manager.syncNow()
+
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: ETH_ADDRESS,
+            scope: ETH_SCOPE,
+            assetId: HIDDEN_TOKEN,
+            isHidden: true,
+        })
+        await manager.syncNow()
+
+        expect(remoteSettings().hiddenTokens.value).toEqual({
+            'ethereum/mainnet': { [ETH_ADDRESS]: [HIDDEN_TOKEN] },
+        })
+    })
+
+    it('hides a token another device hid, so it does not reappear after a restore', async () => {
+        const { manager, remoteSettings, pushSettingsFromOtherDevice } =
+            await setupSyncedBackup()
+        await manager.syncNow()
+        pushSettingsFromOtherDevice({
+            ...remoteSettings(),
+            hiddenTokens: {
+                value: {
+                    'ethereum/mainnet': { [ETH_ADDRESS]: [HIDDEN_TOKEN] },
+                },
+                updatedAt: 10,
+            },
+        })
+
+        await manager.syncNow()
+
+        expect(
+            hiddenAssetIdsOf(
+                useHiddenTokensStore.getState().hiddenTokens,
+                ETH_ADDRESS,
+                ETH_SCOPE,
+            ),
+        ).toEqual([HIDDEN_TOKEN])
     })
 
     it('adopts a setting another device chose instead of overwriting it with a default', async () => {
