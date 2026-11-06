@@ -14,9 +14,10 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
-import { useStableIdList } from '@perawallet/wallet-core-shared'
+import { logger, useStableIdList } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAssetPricesByIds } from '../db'
+import { fetchAndPersistPrices } from '../sync/price-syncer'
 
 type UseAssetPricesQueryResult = {
     data: AssetPrices
@@ -27,10 +28,21 @@ type UseAssetPricesQueryResult = {
     isPaused: boolean
 }
 
+type UseAssetPricesQueryOptions = {
+    /**
+     * Fetch+persist the prices of the ids (those fresh enough are skipped)
+     * before reading, for flows that value assets the user may not hold (a
+     * signing review). Best effort: a failed fetch falls back to the stored
+     * rows rather than failing.
+     */
+    fetchMissing?: boolean
+}
+
 export const useAssetPricesQuery = (
     scope: ChainScope,
     ids: string[],
     enabled?: boolean,
+    { fetchMissing = false }: UseAssetPricesQueryOptions = {},
 ): UseAssetPricesQueryResult => {
     // Keep a stable reference to ids — only update when the actual content
     // changes. This prevents query recomputation when callers pass a new array
@@ -40,10 +52,24 @@ export const useAssetPricesQuery = (
     const isEnabled = enabled ?? true
 
     const query = useQuery({
-        queryKey: getAssetPricesQueryKey(stableIds, scope),
+        queryKey: getAssetPricesQueryKey(stableIds, scope, { fetchMissing }),
         enabled: isEnabled,
         staleTime: Infinity,
-        queryFn: () => getAssetPricesByIds({ assetIds: stableIds, scope }),
+        queryFn: async () => {
+            if (fetchMissing) {
+                // Every requested id, not only those with no row: a token the
+                // user doesn't hold is never refreshed by the background sync,
+                // and the fetch skips any price fresher than its own TTL.
+                try {
+                    await fetchAndPersistPrices(stableIds, scope)
+                } catch (error) {
+                    logger.warn('Could not fetch prices for requested assets', {
+                        error,
+                    })
+                }
+            }
+            return getAssetPricesByIds({ assetIds: stableIds, scope })
+        },
         // SQLite is the source of truth; run the queryFn even while offline instead
         // of pausing it (TanStack's default networkMode: 'online'), which would strand
         // consumers in `pending`.
