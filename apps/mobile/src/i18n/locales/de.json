@@ -1078,6 +1078,8 @@
             "failed_title": "Seite konnte nicht geladen werden",
             "reload": "Neu laden",
             "failed_body": "Beim Laden dieser Seite ist ein Fehler aufgetreten. Bitte überprüfe deine Internetverbindung und versuche es erneut.",
+            "unavailable_title": "Diese Seite ist gerade nicht verfügbar",
+            "unavailable_body": "Bitte versuche es gleich noch einmal.",
             "offline_title": "Du bist offline",
             "offline_body": "Diese Seite kann ohne Internetverbindung nicht geladen werden. Sie wird automatisch neu geladen, sobald du wieder online bist.",
             "unknown_host": "Unbekannte Website"

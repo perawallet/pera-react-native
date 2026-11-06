@@ -1086,6 +1086,8 @@
             "failed_title": "Sayfa yüklenemedi",
             "reload": "Yeniden yükle",
             "failed_body": "Bu sayfa yüklenirken bir hata oluştu. Lütfen internet bağlantını kontrol et ve tekrar dene.",
+            "unavailable_title": "Bu sayfa şu anda kullanılamıyor",
+            "unavailable_body": "Lütfen birazdan tekrar dene.",
             "offline_title": "Çevrimdışısın",
             "offline_body": "Bu sayfa internet bağlantısı olmadan yüklenemez. Yeniden çevrimiçi olduğunda kendiliğinden yüklenecek.",
             "unknown_host": "Bilinmeyen site"

@@ -1086,6 +1086,8 @@
             "failed_title": "Échec du chargement de la page",
             "reload": "Recharger",
             "failed_body": "Une erreur s’est produite lors du chargement de cette page. Vérifiez votre connexion Internet et réessayez.",
+            "unavailable_title": "Cette page n’est pas disponible pour le moment",
+            "unavailable_body": "Veuillez réessayer dans un instant.",
             "offline_title": "Vous êtes hors ligne",
             "offline_body": "Cette page ne peut pas se charger sans connexion Internet. Elle se rechargera automatiquement dès votre retour en ligne.",
             "unknown_host": "Site inconnu"
