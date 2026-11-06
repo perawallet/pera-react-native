@@ -16,7 +16,10 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import { useAccountDisplay } from '../useAccountDisplay'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    withAccountNames,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
@@ -216,19 +219,23 @@ describe('useAccountDisplay', () => {
         expect(result.current.renderSecondary).toBe(true)
     })
 
-    it('shows a name that is a truncated address as it is', () => {
+    it('shows an account the store named by its truncated address on one line', () => {
         const legacyName = `${ADDRESS.slice(0, 6)}...${ADDRESS.slice(-6)}`
+        const [account] = withAccountNames([makeAccount(legacyName)])
 
         const { result } = renderHook(() =>
             useAccountDisplay({
-                account: makeAccount(legacyName),
+                account,
                 compact: false,
                 showAccountType: false,
                 iconSize: 'xl',
             }),
         )
 
-        expect(result.current.displayName).toBe(legacyName)
+        expect(result.current.displayName).toBe(
+            truncateAlgorandAddress(ADDRESS),
+        )
+        expect(result.current.renderSecondary).toBe(false)
     })
 
     it('shows the account type for unnamed accounts when requested', () => {

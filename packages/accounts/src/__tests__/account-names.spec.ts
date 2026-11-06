@@ -11,6 +11,7 @@
  */
 
 import { afterEach, describe, expect, test } from 'vitest'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import {
     DEFAULT_ACCOUNT_NAME_TEMPLATES,
     accountNameKindOf,
@@ -20,6 +21,9 @@ import {
 } from '../account-names'
 import type { WalletAccount } from '../models'
 import { testAccount, type TestCustody } from './accountFactory'
+import { FAKE_CHAIN_ID } from './fakeAccountsChain'
+
+const ADDRESS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 const named = (
     name: string,
@@ -113,6 +117,40 @@ describe('account names', () => {
             ledger: 'Ledger-Konto Nr. {{number}}',
         })
         expect(nextAccountName([named('Konto Nr. 2')])).toBe('Konto Nr. 3')
+    })
+
+    test('numbers past names given in any known language', () => {
+        const german = {
+            account: 'Konto Nr. {{number}}',
+            shared: 'Gemeinschaftskonto Nr. {{number}}',
+            ledger: 'Ledger-Konto Nr. {{number}}',
+        }
+        setAccountNameTemplates(german, [german])
+
+        expect(nextAccountName([named('Account #3')])).toBe('Konto Nr. 4')
+        setAccountNameTemplates(DEFAULT_ACCOUNT_NAME_TEMPLATES, [german])
+        expect(nextAccountName([named('Konto Nr. 5')])).toBe('Account #6')
+    })
+
+    test.each([
+        ['a 6+6 cut', 'ABCDEF...UVWXYZ'],
+        ['an ellipsis cut', 'ABCDEF…UVWXYZ'],
+        ['the full address', ADDRESS],
+    ])(
+        "gives an account named with %s of its own address the chain's truncation",
+        (_, name) => {
+            const [account] = withAccountNames([named(name, ADDRESS)])
+
+            expect(account?.name).toBe(
+                addressCodecs.get(FAKE_CHAIN_ID).truncate(ADDRESS),
+            )
+        },
+    )
+
+    test('keeps a name that is a cut of some other address', () => {
+        const [account] = withAccountNames([named('ZZZZZZ...UVWXYZ', ADDRESS)])
+
+        expect(account?.name).toBe('ZZZZZZ...UVWXYZ')
     })
 
     test('keeps a template when handed one without the number', () => {

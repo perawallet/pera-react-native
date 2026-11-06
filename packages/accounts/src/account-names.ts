@@ -11,6 +11,10 @@
  */
 
 import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    addressCodecs,
+    CHAIN_IDS,
+} from '@perawallet/wallet-core-chain-contract'
 import { hasCustody } from './credentials/accessors'
 import type { WalletAccount } from './models'
 import { isLedgerAccount } from './utils'
@@ -29,9 +33,18 @@ export const DEFAULT_ACCOUNT_NAME_TEMPLATES: AccountNameTemplates = {
 }
 
 let templates: AccountNameTemplates = { ...DEFAULT_ACCOUNT_NAME_TEMPLATES }
+// Numbering reads names in every language, so it continues past names given
+// in another one, such as the English the store migration writes.
+let knownTemplates: AccountNameTemplates[] = [DEFAULT_ACCOUNT_NAME_TEMPLATES]
 
-/** Takes the app's translations; one without the `{{number}}` placeholder is ignored. */
-export const setAccountNameTemplates = (next: AccountNameTemplates): void => {
+/**
+ * Takes the app's translations: `next` names new accounts, `known` holds
+ * every language's. A template without the `{{number}}` placeholder is ignored.
+ */
+export const setAccountNameTemplates = (
+    next: AccountNameTemplates,
+    known: readonly AccountNameTemplates[] = [],
+): void => {
     templates = Object.fromEntries(
         Object.entries(next).map(([kind, template]) => [
             kind,
@@ -40,6 +53,7 @@ export const setAccountNameTemplates = (next: AccountNameTemplates): void => {
                 : templates[kind as AccountNameKind],
         ]),
     ) as AccountNameTemplates
+    knownTemplates = [DEFAULT_ACCOUNT_NAME_TEMPLATES, ...known]
 }
 
 export const accountNameKindOf = (account: WalletAccount): AccountNameKind => {
@@ -64,17 +78,72 @@ const numberInName = (template: string, name: string): Optional<number> => {
     return /^\d+$/.test(digits) ? Number(digits) : undefined
 }
 
-// One past the highest number any name in `template` uses: a removed
-// account's number is never handed out again.
+// One past the highest number any name of this kind uses, in any language: a
+// removed account's number is never handed out again.
 const nextNumber = (
     accounts: readonly WalletAccount[],
+    kind: AccountNameKind,
     template: string,
-): number =>
-    accounts.reduce(
-        (max, { name }) =>
-            Math.max(max, (name && numberInName(template, name)) || 0),
-        0,
-    ) + 1
+): number => {
+    const kindTemplates = new Set(
+        [template, ...knownTemplates.map(known => known[kind])].filter(t =>
+            t.includes(NUMBER_PLACEHOLDER),
+        ),
+    )
+    let max = 0
+    for (const { name } of accounts) {
+        if (!name) continue
+        for (const t of kindTemplates) {
+            max = Math.max(max, numberInName(t, name) ?? 0)
+        }
+    }
+    return max + 1
+}
+
+// The native apps auto-named accounts with a 6+6 cut of the address, kept
+// verbatim through migration and backups. Any `...`/`…` cut, or the full address.
+const TRUNCATION_SEPARATORS = ['...', '…'] as const
+
+// Split on the first separator by index: a backtracking regex here runs in
+// polynomial time on long names.
+const splitTruncation = (name: string): Optional<[string, string]> => {
+    const cuts = TRUNCATION_SEPARATORS.flatMap(separator => {
+        const at = name.indexOf(separator, 1)
+        return at === -1 ? [] : [{ at, separator }]
+    })
+    if (cuts.length === 0) return undefined
+    const { at, separator } = cuts.reduce((a, b) => (b.at < a.at ? b : a))
+    const suffix = name.slice(at + separator.length)
+    return suffix.length > 0 ? [name.slice(0, at), suffix] : undefined
+}
+
+const isNameOfAddress = (name: string, address: string): boolean => {
+    if (name === address) return true
+    const parts = splitTruncation(name)
+    if (!parts) return false
+    const [prefix, suffix] = parts
+    return (
+        prefix.length + suffix.length < address.length &&
+        address.startsWith(prefix) &&
+        address.endsWith(suffix)
+    )
+}
+
+// A name that is the account's own address becomes that chain's truncation,
+// so it equals the address line beneath it and the row shows it once.
+const withCodecTruncatedName = (account: WalletAccount): WalletAccount => {
+    const { name } = account
+    if (!name) return account
+    for (const chainId of CHAIN_IDS) {
+        const address = account.chains[chainId]?.address
+        if (!address || !isNameOfAddress(name, address)) continue
+        const truncated = addressCodecs.has(chainId)
+            ? addressCodecs.get(chainId).truncate(address)
+            : address
+        return truncated === name ? account : { ...account, name: truncated }
+    }
+    return account
+}
 
 // A record built by hand or parsed from JSON can arrive with no name at all.
 export const isUnnamed = (account: WalletAccount): boolean =>
@@ -83,18 +152,22 @@ export const isUnnamed = (account: WalletAccount): boolean =>
 export const nextAccountName = (
     accounts: readonly WalletAccount[],
     kind: AccountNameKind = 'account',
-): string => formatName(templates[kind], nextNumber(accounts, templates[kind]))
+): string =>
+    formatName(templates[kind], nextNumber(accounts, kind, templates[kind]))
 
-/** Names each unnamed account in list order, counting up per kind from the next free number. */
+/**
+ * Names each unnamed account in list order, counting up per kind from the next
+ * free number, and gives a name that is the account's own address the chain's truncation.
+ */
 export const withAccountNames = (
     accounts: readonly WalletAccount[],
     using: AccountNameTemplates = templates,
 ): WalletAccount[] => {
     const next = new Map<AccountNameKind, number>()
     return accounts.map(account => {
-        if (!isUnnamed(account)) return account
+        if (!isUnnamed(account)) return withCodecTruncatedName(account)
         const kind = accountNameKindOf(account)
-        const number = next.get(kind) ?? nextNumber(accounts, using[kind])
+        const number = next.get(kind) ?? nextNumber(accounts, kind, using[kind])
         next.set(kind, number + 1)
         return { ...account, name: formatName(using[kind], number) }
     })
