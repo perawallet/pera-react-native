@@ -11,7 +11,7 @@
  */
 
 import { BaseError, ContractFunctionRevertedError, type Address } from 'viem'
-import { getEnsAddress, normalize, toCoinType } from 'viem/ens'
+import { getEnsAddress, toCoinType } from 'viem/ens'
 import {
     defaultNetworkForTier,
     networkTierOf,
@@ -28,18 +28,14 @@ import type {
     NameAddressVerification,
     VerifyForwardResolutionParams,
 } from '@perawallet/wallet-core-nfd'
-import {
-    logger,
-    toError,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { abortError } from '../blockchain/utils/evmHttpTransport'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ENS_HOST_CHAIN_ID, evmChainOf } from '../chains/table'
 import type { EvmChain } from '../chains/types'
+import { normalizeEnsName } from './normalizeEnsName'
 
 // The same proxy on Ethereum and Sepolia, inlined because viem/chains would
 // ship every chain definition to Metro.
@@ -108,15 +104,6 @@ const isNoRecord = (error: unknown): boolean => {
         !!reverted.data &&
         NO_RECORD_ERRORS.has(reverted.data.errorName)
     )
-}
-
-/** The ENSIP-15 form of `name`, or `undefined` for a name ENS refuses. */
-export const normalizeEnsName = (name: string): Optional<string> => {
-    try {
-        return normalize(name)
-    } catch {
-        return undefined
-    }
 }
 
 /**

@@ -13,7 +13,8 @@
 import type { AddressCodec } from '@perawallet/wallet-core-chain-contract'
 import type { NameServiceChainAdapter } from '@perawallet/wallet-core-nfd'
 import type { EvmChain } from '../chains/types'
-import { normalizeEnsName, verifyEnsAddress } from './verifyEnsAddress'
+import { normalizeEnsName } from './normalizeEnsName'
+import { verifyEnsAddress } from './verifyEnsAddress'
 
 export const createEvmNameServiceAdapter = (
     chain: EvmChain,

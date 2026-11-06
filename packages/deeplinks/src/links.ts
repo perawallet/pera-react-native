@@ -99,9 +99,8 @@ export interface AddressActionsDeeplink extends ChainScopedDeeplink {
     label?: string
 }
 
-export interface TransferDeeplink extends ChainScopedDeeplink {
+interface TransferDeeplinkFields extends ChainScopedDeeplink {
     type: typeof DeeplinkType.TRANSFER
-    receiverAddress: string
     /** Absent: the target chain's native asset. */
     assetRef?: AssetRef
     /** Base units of the asset. */
@@ -110,6 +109,13 @@ export interface TransferDeeplink extends ChainScopedDeeplink {
     label?: string
     chainData?: ChainPaymentData
 }
+
+/** Exactly one recipient: an address, or a name still to be resolved and checked. */
+export type TransferDeeplink = TransferDeeplinkFields &
+    (
+        | { receiverAddress: string; receiverName?: never }
+        | { receiverName: string; receiverAddress?: never }
+    )
 
 export interface ChainActionDeeplink extends ChainScopedDeeplink {
     type: typeof DeeplinkType.CHAIN_ACTION

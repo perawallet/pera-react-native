@@ -28,11 +28,13 @@ import {
     type DeeplinkChainAdapter,
     type DeeplinkParseFailure,
     type DeeplinkParseResult,
+    type PaymentRecipient,
 } from '@perawallet/wallet-core-deeplinks'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { evmChainOf, evmChainOfEip155Id } from '../chains/table'
 import type { EvmChain } from '../chains/types'
+import { normalizeEnsName } from '../names/normalizeEnsName'
 
 const SCHEME = 'ethereum:'
 // EIP-681 reads a link without `@<chain id>` as one for chain 1.
@@ -80,13 +82,33 @@ const fail = (reason: DeeplinkParseFailure): DeeplinkParseResult => ({
     reason,
 })
 
-// viem's strict isAddress is what the codec's isValid is; the codec imports
-// this module, so it cannot be called from here.
+// A token contract is never resolved from a name, so an ENS-shaped one is
+// refused rather than malformed. viem's strict isAddress is what the codec's
+// isValid is; the codec imports this module, so it cannot be called from here.
 const checkAddress = (raw: string): Optional<DeeplinkParseFailure> => {
     if (ADDRESS_PATTERN.test(raw)) {
         return isAddress(raw) ? undefined : 'malformed'
     }
     return ENS_NAME_PATTERN.test(raw) ? 'unsupported-action' : 'malformed'
+}
+
+type RecipientRead =
+    | { recipient: PaymentRecipient }
+    | { failure: DeeplinkParseFailure }
+
+// An EIP-681 address position takes an ENS name too; it stays a name here and
+// is resolved and checked on-chain before it becomes a destination.
+const readRecipient = (raw: string): RecipientRead => {
+    if (ADDRESS_PATTERN.test(raw)) {
+        return isAddress(raw)
+            ? { recipient: { address: getAddress(raw) } }
+            : { failure: 'malformed' }
+    }
+    if (!ENS_NAME_PATTERN.test(raw)) return { failure: 'malformed' }
+    const name = normalizeEnsName(raw)
+    return name === undefined
+        ? { failure: 'malformed' }
+        : { recipient: { name } }
 }
 
 const canParseWith =
@@ -116,8 +138,16 @@ export const parseEip681Uri = (
     if (!match) return fail('malformed')
     const [, target, rawChainId, functionName] = match
 
-    const targetFailure = checkAddress(target)
-    if (targetFailure) return fail(targetFailure)
+    // Before the chain and the function, as an address always was.
+    let targetRecipient: Optional<PaymentRecipient>
+    if (functionName === undefined) {
+        const read = readRecipient(target)
+        if ('failure' in read) return fail(read.failure)
+        targetRecipient = read.recipient
+    } else {
+        const contractFailure = checkAddress(target)
+        if (contractFailure) return fail(contractFailure)
+    }
 
     let linkTarget: ChainLinkTarget
     if (rawChainId !== undefined) {
@@ -142,7 +172,7 @@ export const parseEip681Uri = (
 
     const value = params.get('value') ?? null
 
-    if (functionName === undefined) {
+    if (targetRecipient) {
         const amount = value === null ? undefined : parseBaseUnits(value)
         if (value !== null && !amount) return fail('malformed')
         return {
@@ -150,7 +180,7 @@ export const parseEip681Uri = (
             intent: {
                 kind: 'payment',
                 target: linkTarget,
-                recipient: getAddress(target),
+                recipient: targetRecipient,
                 assetRef: nativeAssetOf(linkTarget.chainId),
                 ...(amount && { amount }),
             },
@@ -159,10 +189,10 @@ export const parseEip681Uri = (
 
     // A token transfer cannot carry ether.
     if (value !== null) return fail('unsupported-action')
-    const recipient = params.get('address') ?? null
-    if (recipient === null) return fail('malformed')
-    const recipientFailure = checkAddress(recipient)
-    if (recipientFailure) return fail(recipientFailure)
+    const rawRecipient = params.get('address') ?? null
+    if (rawRecipient === null) return fail('malformed')
+    const read = readRecipient(rawRecipient)
+    if ('failure' in read) return fail(read.failure)
     const rawAmount = params.get('uint256') ?? null
     const amount = rawAmount === null ? undefined : parseBaseUnits(rawAmount)
     if (rawAmount !== null && !amount) return fail('malformed')
@@ -171,7 +201,7 @@ export const parseEip681Uri = (
         intent: {
             kind: 'payment',
             target: linkTarget,
-            recipient: getAddress(recipient),
+            recipient: read.recipient,
             assetRef: {
                 chainId: linkTarget.chainId,
                 assetId: getAddress(target),
