@@ -126,6 +126,11 @@ export type CurrencyAmountProps = {
      * text several times, too costly for list rows.
      */
     shouldFitWidth?: boolean
+    /**
+     * Truncates a leading unit instead of the amount when the row is too
+     * narrow for both, for an asset whose unit has no length cap.
+     */
+    isUnitShrinkable?: boolean
 } & PrecisionProps &
     Omit<PWTextProps, 'children' | 'variant'>
 
@@ -151,6 +156,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         variant = 'body',
         isInline = false,
         shouldFitWidth = false,
+        isUnitShrinkable = false,
         ...rest
     } = props
 
@@ -343,7 +349,11 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
             {showUnitSymbolStart && (
                 <PWText
                     variant={variant}
-                    style={[themeStyle.symbol, props.style]}
+                    style={[
+                        isUnitShrinkable ? themeStyle.unit : themeStyle.symbol,
+                        props.style,
+                    ]}
+                    numberOfLines={isUnitShrinkable ? 1 : undefined}
                 >
                     {currency}
                 </PWText>

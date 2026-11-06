@@ -250,6 +250,9 @@ const syncTokens = async (
         scope,
         ttlMs: ASSET_CACHE_TTL_MS,
         recheckUnreadGroup: true,
+        // A verified token the backend still lacks a logo for shouldn't wait
+        // out the metadata TTL once the backend adds one.
+        recheckMissingLogo: true,
     })
     if (stale.length === 0) return
 
@@ -393,7 +396,9 @@ const readToken = async (
         asset: fromPera
             ? withChainIntrinsics(fromPera, fromNode.value)
             : fromNode.value,
-        cache: 'node',
+        // Without Pera's half the row reads as fresh for the TTL, so the
+        // token's logo and tier would stay out of the store.
+        cache: fromPera ? 'both' : 'node',
     }
 }
 

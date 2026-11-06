@@ -482,8 +482,54 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockSetQueryData).toHaveBeenCalledOnce()
         })
 
-        it('does not seed the query cache when the asset is already cached', () => {
-            mockGetQueryData.mockReturnValue([{ assetId: '31566704' }])
+        it("adds the router's logo to a cached asset that has none", () => {
+            mockGetQueryData.mockReturnValue([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'verified',
+                        logo: null,
+                    },
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            const usdc = result.current.items.find(
+                i => i.swapAsset.assetId === '31566704',
+            )!
+
+            act(() => {
+                result.current.handleAssetSelected(usdc)
+            })
+
+            expect(mockSetQueryData).toHaveBeenCalledWith(
+                ['assets-query-key'],
+                [
+                    expect.objectContaining({
+                        decimals: 6,
+                        peraMetadata: expect.objectContaining({
+                            logo: 'https://example.com/usdc.png',
+                        }),
+                    }),
+                ],
+            )
+        })
+
+        it('does not seed the query cache when the asset is already cached with a logo', () => {
+            mockGetQueryData.mockReturnValue([
+                {
+                    assetId: '31566704',
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'verified',
+                        logo: 'https://cached/usdc.png',
+                    },
+                },
+            ])
 
             const { result } = renderHook(() =>
                 useSwapToAssetSelectionList(defaultParams),

@@ -233,7 +233,9 @@ describe("Flow: an Ethereum account holding a token Pera doesn't list", () => {
             undefined,
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        expect(within(row).getByText(/UNL/)).toBeTruthy()
+        // The unit is its own element beside the amount, so it shows twice
+        // (subtitle and amount) and the amount is the second.
+        expect(within(row).getAllByText(/UNL/)).toHaveLength(2)
         expect(within(row).getByText(/25/)).toBeTruthy()
     })
 

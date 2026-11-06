@@ -42,8 +42,6 @@ export const useAddTokenMutation = (): UseAddTokenMutationResult => {
             scope,
             assetId,
         }: AddTokenVariables) => {
-            // Not fetchAssetMetadata: it stores only the chain's half, and the
-            // resync won't refetch the logo or tier while that half is fresh.
             await fetchAndPersistAssets([assetId], scope)
             // The sync skips a token it can't read rather than throwing.
             if (!(await getAssetById({ assetId, scope }))) {

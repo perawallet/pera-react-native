@@ -19,7 +19,6 @@ import type {
     AccountHoldingsLiteRow,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { findNativeAsset } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
@@ -83,12 +82,9 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={row}
                     chainId={chainId}
-                    isNativeAsset={
-                        findNativeAsset(chainId)?.assetId === row.assetId
-                    }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
                     isGroupMember={isGroupMember}
-                    shouldShowNetwork={renderItemProps.shouldShowNetwork}
+                    shouldShowChainBadge={renderItemProps.shouldShowChainBadge}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}

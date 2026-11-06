@@ -442,9 +442,9 @@ describe("Flow: One account's assets across chains", () => {
         expect(rows).toHaveLength(2)
         expect(
             rows.map(row =>
-                within(row).queryByTestId('chain_label_ethereum')
+                within(row).queryByTestId('chain_avatar_badge_ethereum')
                     ? 'ethereum'
-                    : within(row).queryByTestId('chain_label_base')
+                    : within(row).queryByTestId('chain_avatar_badge_base')
                       ? 'base'
                       : null,
             ),
@@ -503,7 +503,7 @@ describe("Flow: One account's assets across chains", () => {
         })
         expect(
             within(screen.getByTestId('asset_row_0')).getByTestId(
-                'chain_label_algorand',
+                'chain_avatar_badge_algorand',
             ),
         ).toBeTruthy()
 

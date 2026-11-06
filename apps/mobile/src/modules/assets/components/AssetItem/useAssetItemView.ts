@@ -16,7 +16,10 @@ import {
     PeraAssetVerificationTier,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
@@ -78,11 +81,12 @@ export const useAssetItemView = (
     }
     const verificationIcon = verificationIconOf()
 
-    const shownAssetId =
+    const isAddressId =
         addressCodecs.has(chainId) &&
         addressCodecs.get(chainId).isValid(asset.assetId)
-            ? addressCodecs.get(chainId).truncate(asset.assetId)
-            : asset.assetId
+    const shownAssetId = isAddressId
+        ? addressCodecs.get(chainId).truncate(asset.assetId)
+        : asset.assetId
 
     const collectibleTitle = meta?.collectible?.title
     const collectionName = meta?.collectible?.collection?.name
@@ -102,8 +106,22 @@ export const useAssetItemView = (
         ? (collectionName ?? asset.unitName)
         : asset.unitName
 
+    // A contract address says nothing to the user about a token Pera vouches
+    // for; its network does. An unvetted token keeps its address visible.
+    const networkName =
+        isAddressId &&
+        !isCollectible &&
+        tier === PeraAssetVerificationTier.verified
+            ? chainDisplayNameOf(chainId)
+            : undefined
+
     const secondaryTextOf = () => {
         if (isNativeAsset) return asset.unitName ?? ''
+        if (networkName) {
+            return subtitleLeading
+                ? `${subtitleLeading} · ${networkName}`
+                : networkName
+        }
         return subtitleLeading
             ? `${subtitleLeading} · ${shownAssetId}`
             : shownAssetId

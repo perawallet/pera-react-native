@@ -50,5 +50,11 @@ export const useStyles = makeStyles((theme, props: CurrencyAmountProps) => {
         symbol: {
             flexShrink: 0,
         },
+        // For a token's own unit, which has no length cap: it truncates
+        // rather than pushing the amount out, but keeps a few characters.
+        unit: {
+            flexShrink: 100,
+            minWidth: theme.spacing.xxl,
+        },
     }
 })

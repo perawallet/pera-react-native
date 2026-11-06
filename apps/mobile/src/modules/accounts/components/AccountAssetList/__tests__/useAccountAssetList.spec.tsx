@@ -1100,7 +1100,7 @@ describe('useAccountAssetList', () => {
         })
     })
 
-    describe('network labels while searching', () => {
+    describe('network badges on the icons', () => {
         const renderTwoChains = () => {
             registerEthereum()
             return renderHook(() =>
@@ -1108,37 +1108,22 @@ describe('useAccountAssetList', () => {
             )
         }
 
-        it('shows none while nothing is searched', () => {
+        it('shows them on All for an account on two chains, search or not', () => {
             const { result } = renderTwoChains()
 
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
-        })
-
-        it('shows them on All once a search is typed', () => {
-            const { result } = renderTwoChains()
-
-            act(() => result.current.setSearchFilter('eth'))
-
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(true)
-        })
-
-        it('shows none for a whitespace-only search', () => {
-            const { result } = renderTwoChains()
-
-            act(() => result.current.setSearchFilter('   '))
-
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+            expect(result.current.renderItemProps.shouldShowChainBadge).toBe(
+                true,
+            )
         })
 
         it('shows none once a single network is selected', () => {
             const { result } = renderTwoChains()
 
-            act(() => {
-                result.current.setSelectedChainId('ethereum')
-                result.current.setSearchFilter('eth')
-            })
+            act(() => result.current.setSelectedChainId('ethereum'))
 
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+            expect(result.current.renderItemProps.shouldShowChainBadge).toBe(
+                false,
+            )
         })
 
         it('shows none for an account on one chain', () => {
@@ -1147,9 +1132,9 @@ describe('useAccountAssetList', () => {
                 useAccountAssetList({ account: mockAccount, t: mockT }),
             )
 
-            act(() => result.current.setSearchFilter('eth'))
-
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+            expect(result.current.renderItemProps.shouldShowChainBadge).toBe(
+                false,
+            )
         })
     })
 })

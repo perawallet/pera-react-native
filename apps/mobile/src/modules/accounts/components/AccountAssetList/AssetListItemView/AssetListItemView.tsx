@@ -30,12 +30,10 @@ import { useAssetListItemView } from './useAssetListItemView'
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
     chainId: ChainId
-    /** The account chain's native asset, which shows its currency symbol. */
-    isNativeAsset: boolean
     /** Listed under its group: names its network in the subtitle. */
     isGroupMember?: boolean
-    /** Names the holding's network under the row; a group member already names it in its subtitle. */
-    shouldShowNetwork?: boolean
+    /** The account spans more than one chain: the icon names its network (a group member names it in its subtitle). */
+    shouldShowChainBadge?: boolean
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
@@ -53,9 +51,8 @@ export type AssetListItemViewProps = {
 const AssetListItemViewBase = ({
     holding,
     chainId,
-    isNativeAsset,
     isGroupMember = false,
-    shouldShowNetwork = false,
+    shouldShowChainBadge = false,
     convertFiat,
     onPress,
     style,
@@ -80,15 +77,12 @@ const AssetListItemViewBase = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
-            {/* No unit next to the figure: the row already carries it under the
-                asset name, and a long one squeezed the amount out.
-                ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 chainId={chainId}
                 asset={asset}
                 value={amount}
                 density='compact'
-                showSymbol={isNativeAsset}
+                isUnitShrinkable
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
@@ -118,14 +112,11 @@ const AssetListItemViewBase = ({
             asset={asset}
             chainId={chainId}
             right={balance}
+            shouldCapRightSlot
             subtitle={
                 isGroupMember ? <ChainLabel chainId={chainId} /> : undefined
             }
-            footer={
-                shouldShowNetwork && !isGroupMember ? (
-                    <ChainLabel chainId={chainId} />
-                ) : undefined
-            }
+            showChainBadge={shouldShowChainBadge && !isGroupMember}
             iconSize={isGroupMember ? 'md' : undefined}
             showFavorite
             showDeletedLabel
