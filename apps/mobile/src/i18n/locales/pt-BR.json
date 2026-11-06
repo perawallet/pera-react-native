@@ -2324,6 +2324,7 @@
             "cancel": "Cancelar",
             "network_checking": "Verificando",
             "network_failed": "Não verificada",
+            "network_unavailable": "Indisponível",
             "checked_accounts_one": "{{count}} conta verificada",
             "checked_accounts_other": "{{count}} contas verificadas",
             "new_found_one": "{{count}} conta nova encontrada",
@@ -2391,12 +2392,16 @@
             "all_imported_title": "Já está na sua wallet",
             "all_imported_body": "Todas as contas desta wallet já estão na Pera. Se alguma foi adicionada como conta de observação, remova-a primeiro e importe novamente para adicioná-la com acesso completo.",
             "unchecked_networks_title": "Não foi possível verificar: {{networks}}",
-            "unchecked_networks_body": "As contas das outras redes estão listadas. Você pode buscar novas contas novamente mais tarde."
+            "unchecked_networks_body": "As contas das outras redes estão listadas. Você pode buscar novas contas novamente mais tarde.",
+            "retry_networks": "Verificar novamente: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} contas com rekey encontradas",
-            "description_line_1": "Você tem {{count}} contas com rekey. Isso significa que você pode assinar as transações dessas contas com a conta que acabou de adicionar",
-            "description_line_2": "Selecione as contas com rekey que você quer adicionar à sua wallet:",
+            "title_one": "{{count}} conta com rekey encontrada",
+            "title_other": "{{count}} contas com rekey encontradas",
+            "description_line_1_one": "Você tem {{count}} conta com rekey. Isso significa que você pode assinar as transações dessa conta com a conta que acabou de adicionar",
+            "description_line_1_other": "Você tem {{count}} contas com rekey. Isso significa que você pode assinar as transações dessas contas com a conta que acabou de adicionar",
+            "description_line_2_one": "Selecione a conta com rekey que você quer adicionar à sua wallet:",
+            "description_line_2_other": "Selecione as contas com rekey que você quer adicionar à sua wallet:",
             "already_imported": "já importada",
             "continue": "Escolher contas para adicionar",
             "skip": "Pular por agora",

@@ -1982,6 +1982,9 @@ importers:
       '@perawallet/wallet-core-multisig':
         specifier: workspace:*
         version: link:../multisig
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

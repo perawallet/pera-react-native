@@ -14,6 +14,7 @@ import type {
     LocalAccount,
     LocalKeySeed,
     WalletAccount,
+    WalletCandidates,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
@@ -44,6 +45,8 @@ export type SearchAccountsParams =
     | {
           mode: 'import'
           walletKeyId: string
+          /** What an earlier search of this import found, which a retry adds to. */
+          previous?: WalletCandidates
       }
 
 export type ImportSelectAddressesParams =
@@ -57,6 +60,8 @@ export type ImportSelectAddressesParams =
           accounts: LocalAccount[]
           /** Networks the search couldn't check, named on the selection. */
           failedChainIds?: ChainId[]
+          /** `accounts` is the first account alone, offered because no activity was found. */
+          isOriginFallback?: boolean
       }
 
 /**

@@ -27,6 +27,8 @@ import { useHomeChainScope } from '@hooks/useHomeChainScope'
 export type AssetFiatValue = {
     displayCurrency: string
     value: Nullable<Decimal>
+    /** The native zero seeded after a chain's first read failed: the amount is unknown too, not 0. */
+    isPlaceholderZero?: boolean
 }
 
 export type AssetFiatConverter = (
@@ -47,9 +49,14 @@ export type AssetFiatConverter = (
  */
 const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
 
-/** `unreadChainIds`: chains whose holdings no read vouches for, so a zero there may be a placeholder. */
+/**
+ * `unreadChainIds`: chains whose holdings no read vouches for, so a zero there
+ * has no value. `placeholderChainIds`: chains whose first read failed, the only
+ * ones whose native zero is a placeholder rather than a balance.
+ */
 export const useAssetListFiatConverter = (
     unreadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
+    placeholderChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
 ): AssetFiatConverter => {
     const scope = useHomeChainScope()
     const nativeAsset = useNativeAsset(scope)
@@ -72,7 +79,13 @@ export const useAssetListFiatConverter = (
                 amountDisplayUnits.isZero() &&
                 unreadChainIds.has(ref.chainId)
             ) {
-                return { displayCurrency: preferredCurrency, value: null }
+                return {
+                    displayCurrency: preferredCurrency,
+                    value: null,
+                    isPlaceholderZero:
+                        placeholderChainIds.has(ref.chainId) &&
+                        findNativeAsset(ref.chainId)?.assetId === ref.assetId,
+                }
             }
             // Holding none is worth nothing, whether or not the asset is priced.
             const usdPrice =
@@ -110,6 +123,7 @@ export const useAssetListFiatConverter = (
             usdToPreferred,
             fallbackRate,
             unreadChainIds,
+            placeholderChainIds,
         ],
     )
 }

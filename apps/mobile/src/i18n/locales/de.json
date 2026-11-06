@@ -2312,6 +2312,7 @@
             "cancel": "Abbrechen",
             "network_checking": "Wird geprüft",
             "network_failed": "Nicht geprüft",
+            "network_unavailable": "Nicht verfügbar",
             "checked_accounts_one": "{{count}} Konto geprüft",
             "checked_accounts_other": "{{count}} Konten geprüft",
             "new_found_one": "{{count}} neues Konto gefunden",
@@ -2379,12 +2380,16 @@
             "all_imported_title": "Bereits in deinem Wallet",
             "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
             "unchecked_networks_title": "Nicht geprüft: {{networks}}",
-            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen."
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen.",
+            "retry_networks": "Erneut prüfen: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekeyed Konten gefunden",
-            "description_line_1": "Du hast {{count}} rekeyed Konten. Das bedeutet, dass du Transaktionen der rekeyed Konten mit dem soeben hinzugefügten Konto signieren kannst",
-            "description_line_2": "Wähle die rekeyed Konten aus, die du deinem Wallet hinzufügen möchtest:",
+            "title_one": "{{count}} rekeyed Konto gefunden",
+            "title_other": "{{count}} rekeyed Konten gefunden",
+            "description_line_1_one": "Du hast {{count}} rekeyed Konto. Das bedeutet, dass du Transaktionen des rekeyed Kontos mit dem soeben hinzugefügten Konto signieren kannst",
+            "description_line_1_other": "Du hast {{count}} rekeyed Konten. Das bedeutet, dass du Transaktionen der rekeyed Konten mit dem soeben hinzugefügten Konto signieren kannst",
+            "description_line_2_one": "Wähle das rekeyed Konto aus, das du deinem Wallet hinzufügen möchtest:",
+            "description_line_2_other": "Wähle die rekeyed Konten aus, die du deinem Wallet hinzufügen möchtest:",
             "already_imported": "bereits importiert",
             "continue": "Konten zum Hinzufügen auswählen",
             "skip": "Vorerst überspringen",

@@ -67,11 +67,14 @@ export type UseImportSelectAddressesScreenResult = {
     importedAccountIds: Set<string>
     /** The networks the search couldn't check, as a list to read aloud; undefined when it checked them all. */
     uncheckedNetworks: Optional<string>
+    /** An import whose search left networks unchecked can search the wallet again. */
+    canRetryNetworks: boolean
     /** Some account holds more than one distinct address, so rows and copy speak of accounts rather than addresses. */
     hasLinkedAddresses: boolean
     toggleSelection: (accountId: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
+    handleRetryNetworks: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -84,10 +87,17 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const isImportMode = 'mode' in params && params.mode === 'import'
     const importWalletKeyId = isImportMode ? params.walletKeyId : null
     const failedChainIds = isImportMode ? params.failedChainIds : undefined
+    const isOriginFallback = isImportMode ? params.isOriginFallback : undefined
 
     const { t } = useLanguage()
     const { errorToast } = useToast()
-    const allAccounts = useAllAccounts()
+    const liveAccounts = useAllAccounts()
+    // Frozen when the user taps Import: the commit writes the selection into
+    // the store, and reading it live would flip every row to "already
+    // imported" (and the screen to its all-imported state) mid-import.
+    const [frozenAccounts, setFrozenAccounts] =
+        useState<Optional<WalletAccount[]>>()
+    const allAccounts = frozenAccounts ?? liveAccounts
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const addressOf = useCallback(
         (account: WalletAccount) => addressOn(account, scope.chainId),
@@ -163,14 +173,17 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         toggle: toggleSelection,
         toggleSelectAll,
     } = useAddressSelection(selectableAccountIds, {
-        initial: newAccounts.length > 0 ? [newAccounts[0].id] : [],
+        initial: selectableAccountIds,
         disabledAddresses: importedAccountIds,
     })
     const [isProcessing, setIsProcessing] = useState(false)
     const hasCommittedRef = useRef(false)
+    // The search screen takes the session over, so leaving must not cancel it.
+    const isRetryingRef = useRef(false)
 
     const handleContinue = useCallback(async () => {
         setIsProcessing(true)
+        setFrozenAccounts(allAccounts)
 
         void deferToNextCycle(async () => {
             const accountsToAdd = newAccounts.filter(acc =>
@@ -179,8 +192,9 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
             try {
                 if (isImportMode && importWalletKeyId) {
+                    let committed: LocalAccount[] = []
                     if (accountsToAdd.length > 0) {
-                        await commitImport({
+                        committed = await commitImport({
                             walletKeyId: importWalletKeyId,
                             selectedAccounts: accountsToAdd,
                         })
@@ -194,22 +208,17 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         cancelImport()
                         hasCommittedRef.current = true
                     }
-                    // Re-entering the mnemonic proves possession, so mark the
-                    // wallet's bip39 seed as backed up regardless of whether
-                    // any new addresses were actually added — re-imports
-                    // (every discovered address already in the store) and
-                    // accounts created before this feature shipped both rely
-                    // on this path to clear the backup banner. Match on the
-                    // child→seed parent since `account.keyPairId` is now
-                    // the child's id.
-                    const accountToMark =
-                        accountsToAdd[0] ??
-                        allAccounts.find(
-                            a =>
-                                seedIdOf(signingKeyOn(a, scope.chainId)) ===
-                                importWalletKeyId,
-                        )
-                    if (accountToMark) markBackupComplete(accountToMark)
+                    // Re-entering the mnemonic proves possession of every
+                    // account on this seed. Marks what commit stored, which can
+                    // hold a default chain's key the candidate lacked.
+                    const seedSiblings = allAccounts.filter(
+                        a =>
+                            seedIdOf(signingKeyOn(a, scope.chainId)) ===
+                            importWalletKeyId,
+                    )
+                    for (const account of [...committed, ...seedSiblings]) {
+                        markBackupComplete(account)
+                    }
                 } else if (accountsToAdd.length > 0) {
                     // Read the store fresh: this is a replace-array write,
                     // and a concurrent store write since render must not be
@@ -328,7 +337,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             // beforeRemove fires after navigation.replace too, so guard on a
             // commit flag rather than isProcessing (which the success path
             // resets in finally before this listener runs).
-            if (!hasCommittedRef.current) {
+            if (!hasCommittedRef.current && !isRetryingRef.current) {
                 cancelImport()
             }
         })
@@ -338,6 +347,33 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const uncheckedNetworks = failedChainIds?.length
         ? networkListOf(failedChainIds, t)
         : undefined
+    const canRetryNetworks =
+        importWalletKeyId !== null &&
+        uncheckedNetworks !== undefined &&
+        !isProcessing
+
+    // Searches every network again, not only the unchecked ones: a walk over
+    // some chains alone lists accounts without the others' addresses. The new
+    // search adds to this one, so a retry that hears from less loses nothing.
+    const handleRetryNetworks = useCallback(() => {
+        if (!importWalletKeyId) return
+        isRetryingRef.current = true
+        navigation.replace('SearchAccounts', {
+            mode: 'import',
+            walletKeyId: importWalletKeyId,
+            previous: {
+                accounts,
+                failedChainIds: failedChainIds ?? [],
+                isOriginFallback,
+            },
+        })
+    }, [
+        importWalletKeyId,
+        navigation,
+        accounts,
+        failedChainIds,
+        isOriginFallback,
+    ])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAccountIds.size > 0
@@ -351,10 +387,12 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         isProcessing,
         importedAccountIds,
         uncheckedNetworks,
+        canRetryNetworks,
         hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue: () => void handleContinue(),
+        handleRetryNetworks,
         t,
     }
 }

@@ -53,18 +53,19 @@ export const createWalletDiscoveryTracker = ({
 }: TrackerParams): WalletDiscoveryTracker => {
     const outcomes = new Map<ChainId, Set<HdProbeOutcome>>()
     const failedSoFar = new Set<ChainId>()
-    // Switched off on the backend: not a network the user can scan, so it
-    // leaves the progress rows.
+    // Switched off on the backend: not scannable, but kept in the rows with its
+    // own status so a network never silently disappears mid-scan.
     const refused = new Set<ChainId>()
     const found = new Set<string>()
     let checkedAccountCount = 0
 
     const reportProgress = () =>
         onProgress?.({
-            chainIds: chainIds.filter(chainId => !refused.has(chainId)),
+            chainIds: [...chainIds],
             failedChainIds: chainIds.filter(chainId =>
                 failedSoFar.has(chainId),
             ),
+            refusedChainIds: chainIds.filter(chainId => refused.has(chainId)),
             checkedAccountCount,
             foundCount: found.size,
         })

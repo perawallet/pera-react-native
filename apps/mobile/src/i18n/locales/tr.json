@@ -2320,6 +2320,7 @@
             "cancel": "İptal",
             "network_checking": "Kontrol ediliyor",
             "network_failed": "Kontrol edilemedi",
+            "network_unavailable": "Kullanılamıyor",
             "checked_accounts_one": "{{count}} hesap kontrol edildi",
             "checked_accounts_other": "{{count}} hesap kontrol edildi",
             "new_found_one": "{{count}} yeni hesap bulundu",
@@ -2387,12 +2388,16 @@
             "all_imported_title": "Zaten cüzdanında",
             "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
             "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
-            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin."
+            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin.",
+            "retry_networks": "Yeniden kontrol et: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekey yapılmış hesap bulundu",
-            "description_line_1": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
-            "description_line_2": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
+            "title_one": "{{count}} rekey yapılmış hesap bulundu",
+            "title_other": "{{count}} rekey yapılmış hesap bulundu",
+            "description_line_1_one": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_1_other": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_2_one": "Cüzdanına eklemek istediğin rekey yapılmış hesabı seç:",
+            "description_line_2_other": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
             "already_imported": "zaten içe aktarıldı",
             "continue": "Eklenecek hesapları seç",
             "skip": "Şimdilik atla",

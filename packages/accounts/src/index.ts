@@ -52,6 +52,7 @@ export {
 export {
     fetchAndPersistAccount,
     ensureAccountFetched,
+    settleAccountFetches,
     syncAndEnrichNewAccount,
     type AccountSyncResult,
 } from './sync/account-syncer'

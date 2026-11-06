@@ -10,11 +10,18 @@
  limitations under the License
  */
 
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainIcon } from '@modules/chain-ui'
-import type { ScanNetwork } from '../useSearchAccountsScreen'
+import type { ScanNetwork, ScanNetworkStatus } from '../useSearchAccountsScreen'
 import { useStyles } from './styles'
+
+const STATUS_LABEL_KEYS: Record<ScanNetworkStatus, I18nKey> = {
+    checking: i18nKey('onboarding.searching_accounts.network_checking'),
+    failed: i18nKey('onboarding.searching_accounts.network_failed'),
+    unavailable: i18nKey('onboarding.searching_accounts.network_unavailable'),
+}
 
 export type ScanNetworkRowProps = {
     network: ScanNetwork
@@ -24,6 +31,7 @@ export const ScanNetworkRow = ({ network }: ScanNetworkRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const isFailed = network.status === 'failed'
+    const isUnavailable = network.status === 'unavailable'
 
     return (
         <PWView
@@ -33,22 +41,28 @@ export const ScanNetworkRow = ({ network }: ScanNetworkRowProps) => {
             <ChainIcon chainId={network.chainId} />
             <PWText style={styles.name}>{network.name}</PWText>
             <PWView style={styles.status}>
-                {isFailed ? (
+                {isFailed && (
                     <PWIcon
                         name='error-circle'
                         variant='negative'
                         size='sm'
                     />
-                ) : (
+                )}
+                {isUnavailable && (
+                    <PWIcon
+                        name='info'
+                        variant='secondary'
+                        size='sm'
+                    />
+                )}
+                {!isFailed && !isUnavailable && (
                     <PWLoadingIndicator size='sm' />
                 )}
                 <PWText
                     variant='body'
                     style={isFailed ? styles.failedText : styles.statusText}
                 >
-                    {isFailed
-                        ? t('onboarding.searching_accounts.network_failed')
-                        : t('onboarding.searching_accounts.network_checking')}
+                    {t(STATUS_LABEL_KEYS[network.status])}
                 </PWText>
             </PWView>
         </PWView>
