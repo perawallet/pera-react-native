@@ -56,6 +56,10 @@ import {
     type DeviceChainAdapter,
 } from '@perawallet/wallet-core-device'
 import {
+    rampChainAdapters,
+    type RampChainAdapter,
+} from '@perawallet/wallet-core-onramp'
+import {
     swapChainAdapters,
     type SwapChainAdapter,
 } from '@perawallet/wallet-core-swaps'
@@ -90,6 +94,7 @@ import { createEvmDeviceAdapter } from './device'
 import { createEvmHistoryAdapter } from './history'
 import { createEvmLedgerAppDriver } from './ledger/driver'
 import { createEvmNameServiceAdapter } from './names/adapter'
+import { createEvmRampAdapter } from './onramp'
 import { createEvmPlannerAdapter } from './signing/adapter'
 import { createEvmLocalKeySignerAdapter } from './signing/localKeySigner'
 import { withMessageSigningGate } from './signing/messageSigningGate'
@@ -121,6 +126,7 @@ type EvmChainAdapters = {
     device: DeviceChainAdapter
     ledgerDriver: LedgerAppDriver
     swap: SwapChainAdapter
+    ramp: RampChainAdapter
     nameService: NameServiceChainAdapter
 }
 
@@ -163,6 +169,7 @@ const buildAdapters = (
         device: createEvmDeviceAdapter(chain),
         ledgerDriver: createEvmLedgerAppDriver(chain),
         swap: createEvmSwapAdapter(ctx, chain),
+        ramp: createEvmRampAdapter(chain),
         nameService: createEvmNameServiceAdapter(chain, addressCodec),
     }
 }
@@ -203,6 +210,7 @@ export const createEvmChainRegistration = (
         ledgerAppDriverRegistry.register(adapters.ledgerDriver)
         deviceChainAdapters.register(adapters.device)
         swapChainAdapters.register(adapters.swap)
+        rampChainAdapters.register(adapters.ramp)
         nameServiceChainAdapters.register(adapters.nameService)
         // The first EVM chain registered serves every EVM chain's links.
         if (!isSchemeClaimed(chain)) {

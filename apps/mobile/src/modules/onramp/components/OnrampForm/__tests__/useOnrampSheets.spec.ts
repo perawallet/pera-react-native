@@ -70,6 +70,7 @@ const params = {
     senderAddress: 'SENDER',
     setSelectedSourceTokenId: vi.fn(),
     setSelectedDestinationTokenId: vi.fn(),
+    setSelectedChainId: vi.fn(),
     setSenderAddress: vi.fn(),
 }
 
@@ -113,8 +114,11 @@ describe('useOnrampSheets', () => {
     })
 
     describe('destination selection', () => {
-        it('opens the destination picker for the account scope and commits the pick', async () => {
-            mocks.requestBottomSheet.mockResolvedValue('algo')
+        it('opens the destination picker for the account scope and commits the picked token and its chain', async () => {
+            mocks.requestBottomSheet.mockResolvedValue({
+                chainId: 'ethereum',
+                tokenId: 'eth',
+            })
             const { result } = renderSheets()
 
             await act(() => result.current.handleOpenDestinationSelection())
@@ -125,16 +129,18 @@ describe('useOnrampSheets', () => {
                 scope: SCOPE,
             })
             expect(params.setSelectedDestinationTokenId).toHaveBeenCalledWith(
-                'algo',
+                'eth',
             )
+            expect(params.setSelectedChainId).toHaveBeenCalledWith('ethereum')
         })
 
-        it('keeps the destination when the sheet is dismissed', async () => {
+        it('keeps the destination and the chain when the sheet is dismissed', async () => {
             const { result } = renderSheets()
 
             await act(() => result.current.handleOpenDestinationSelection())
 
             expect(params.setSelectedDestinationTokenId).not.toHaveBeenCalled()
+            expect(params.setSelectedChainId).not.toHaveBeenCalled()
         })
 
         it('opens nothing without an onramp account scope', async () => {

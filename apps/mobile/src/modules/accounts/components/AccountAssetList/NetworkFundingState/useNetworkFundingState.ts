@@ -66,7 +66,7 @@ export const useNetworkFundingState = ({
 
     const handleBuy = useCallback(() => {
         trackEvent(HomeEvent.Fund, { [AnalyticsMetadataKey.ChainId]: chainId })
-        navigation.navigate('TabBar', { screen: 'Fund' })
+        navigation.navigate('TabBar', { screen: 'Fund', params: { chainId } })
     }, [chainId, navigation])
 
     const handleSwap = useCallback(() => {

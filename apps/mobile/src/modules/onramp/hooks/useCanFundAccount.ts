@@ -12,8 +12,15 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useOnrampScope } from '@perawallet/wallet-core-onramp'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 
-/** Whether Fund can buy onto the account, so its entry points show. */
-export const useCanFundAccount = (account: Maybe<WalletAccount>): boolean =>
-    useOnrampScope(account?.chains ?? null) !== null
+/**
+ * Whether Fund can buy onto the account, so its entry points show. An entry
+ * point that sends Fund to one chain passes it, so a different chain's
+ * `onramp` cannot stand in for it.
+ */
+export const useCanFundAccount = (
+    account: Maybe<WalletAccount>,
+    chainId?: ChainId,
+): boolean => useOnrampScope(account ?? null, chainId) !== null

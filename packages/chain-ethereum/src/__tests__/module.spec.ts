@@ -85,7 +85,8 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
             .map(([capability]) => capability)
 
         // The one row that defaults swap on, in this test environment.
-        const launch = id === 'ethereum' ? [...ENABLED, 'swap'] : ENABLED
+        const launch =
+            id === 'ethereum' ? [...ENABLED, 'swap', 'onramp'] : ENABLED
         expect(enabled.sort()).toEqual([...launch].sort())
     })
 
@@ -168,6 +169,27 @@ describe('every EVM module together', () => {
     })
 })
 
+describe('the onramp capability', () => {
+    it.each(['developer', 'developer-override'] as const)(
+        'is off in %s mode, even where remote config switches it on',
+        mode => {
+            const chains = createChainRegistry()
+            const module = evmChainModules.ethereum
+            chains.register(
+                module.descriptor,
+                module.capabilityDefaults,
+                module.capabilityRestrictions,
+            )
+            chains.setCapabilityOverrides(() => ({
+                remote: { ethereum: { onramp: true } },
+                chainMode: { ethereum: mode },
+            }))
+
+            expect(chains.capabilities('ethereum').onramp).toBe(false)
+        },
+    )
+})
+
 describe('a row override', () => {
     const overridden = createEvmChainModule(
         createEvmChain({
@@ -208,6 +230,13 @@ describe('a row override', () => {
         expect(chains.capabilities('ethereum').pricing).toBe(true)
     })
 
+    it('keeps the shared onramp restriction beside a row restriction', () => {
+        expect(overridden.capabilityRestrictions).toEqual({
+            onramp: ['developer', 'developer-override'],
+            pricing: ['developer'],
+        })
+    })
+
     it('supports a capability its row switches on, for its own chain only', () => {
         const withStaking = createEvmChainModule(
             createEvmChain({ ...BASE.row, capabilities: { staking: true } }),
@@ -226,6 +255,8 @@ describe('a row override', () => {
         expect(evmChainModules.base.supportedCapabilities).toBe(
             evmChainModules.ethereum.supportedCapabilities,
         )
-        expect(evmChainModules.base.capabilityRestrictions).toBeUndefined()
+        expect(evmChainModules.base.capabilityRestrictions).toEqual({
+            onramp: ['developer', 'developer-override'],
+        })
     })
 })

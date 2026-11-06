@@ -13,6 +13,7 @@
 export * from './querykeys'
 export * from './withRampScope'
 export * from './useOnrampScope'
+export * from './useCanBuyAsset'
 export * from './useOnramp'
 export * from './useRampDestinationsQuery'
 export * from './useRampSourcesQuery'

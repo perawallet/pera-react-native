@@ -18,11 +18,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
-import {
-    fromCaip19,
-    InvalidCaip19Error,
-    toCaip19,
-} from '../blockchain/utils/caip19'
+import { evmAssetIdOfRouterId, toCaip19 } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import { executeEvmSwap } from './execute-evm-swap'
@@ -46,14 +42,8 @@ export const createEvmSwapAdapter = (
     defaultReceiveAssetId:
         chain.row.defaultSwapReceiveAssetId ?? chain.nativeAsset.assetId,
     toRouterAssetId: (assetId, scope) => toCaip19(assetId, scope, chain),
-    fromRouterAssetId: (routerAssetId, scope) => {
-        try {
-            return fromCaip19(routerAssetId, scope, chain)
-        } catch (error) {
-            if (error instanceof InvalidCaip19Error) return null
-            throw error
-        }
-    },
+    fromRouterAssetId: (routerAssetId, scope) =>
+        evmAssetIdOfRouterId(routerAssetId, scope, chain),
     maxAmountFeeReserve: displayUnitsToBaseUnits(
         MAX_AMOUNT_FEE_RESERVE,
         chain.row.nativeAsset.decimals,

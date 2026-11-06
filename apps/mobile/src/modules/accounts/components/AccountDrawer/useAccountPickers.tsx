@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useOnrampChainOf } from '@perawallet/wallet-core-onramp'
+import { useOnrampSigningAccounts } from '@perawallet/wallet-core-onramp'
 import {
     type WalletAccount,
     useSigningAccountsOnAnyChain,
@@ -66,24 +66,9 @@ export const useSigningPicker = (): AccountDrawerPickerProps =>
 export const useSwapPicker = (): AccountDrawerPickerProps =>
     useAccountListPicker(useSwapSigningAccounts())
 
-/** Picking an account to fund: signing accounts that live on a chain Fund can buy onto. */
-export const useFundPicker = (): AccountDrawerPickerProps => {
-    const signing = useSigningPicker()
-    const onrampChainOf = useOnrampChainOf()
-    const signingFilter = signing.accountFilter
-
-    const accountFilter = useCallback(
-        (account: WalletAccount) =>
-            (signingFilter?.(account) ?? true) &&
-            onrampChainOf(account.chains) !== null,
-        [signingFilter, onrampChainOf],
-    )
-
-    return useMemo(
-        () => ({ ...signing, accountFilter }),
-        [signing, accountFilter],
-    )
-}
+/** Picking an account to fund: accounts that something held signs for on a chain Fund can buy onto. */
+export const useFundPicker = (): AccountDrawerPickerProps =>
+    useAccountListPicker(useOnrampSigningAccounts())
 
 /**
  * Browsing from a screen that is not an account: the same list as `portfolio`,

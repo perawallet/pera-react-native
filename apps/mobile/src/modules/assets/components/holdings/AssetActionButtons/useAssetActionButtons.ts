@@ -17,7 +17,7 @@ import {
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { useOnrampScope } from '@perawallet/wallet-core-onramp'
+import { useCanBuyAsset } from '@perawallet/wallet-core-onramp'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { unvettedTierOf } from '@modules/assets/utils/verification'
@@ -35,7 +35,11 @@ export const useAssetActionButtons = (
     asset?: DisplayableAsset,
 ): UseAssetActionButtonsResult => {
     const canSwapOnChain = useSwapScope(account ?? null, chainId) !== null
-    const onrampChainId = useOnrampScope(account?.chains ?? null)?.chainId
+    const canBuy = useCanBuyAsset({
+        account: account ?? null,
+        chainId,
+        assetId: asset?.assetId,
+    })
     // A send runs on the asset's chain, whichever of the account's chains that is.
     const canSendOnChain = useChainCapability(chainId, 'send')
     const canReceiveOnChain = useChainCapability(chainId, 'receive')
@@ -46,7 +50,7 @@ export const useAssetActionButtons = (
         asset !== undefined && unvettedTierOf(asset, chainId) !== null
     return {
         canSwap: canSwapOnChain && !isUnvetted,
-        canBuy: onrampChainId === chainId,
+        canBuy,
         canSend: canSendOnChain && isOnChain,
         canReceive: canReceiveOnChain && isOnChain,
     }

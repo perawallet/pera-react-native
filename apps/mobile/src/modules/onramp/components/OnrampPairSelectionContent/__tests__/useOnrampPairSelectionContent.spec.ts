@@ -39,6 +39,9 @@ const mockUseAssetsQuery = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
 const mockUseRampDestinationsQuery = vi.hoisted(() => vi.fn())
 const mockUseRampSourcesQuery = vi.hoisted(() => vi.fn())
+const mockDestinationChains = vi.hoisted(() => ({
+    current: [] as string[],
+}))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: mockResolve }),
@@ -51,6 +54,19 @@ vi.mock('@perawallet/wallet-core-onramp', async importOriginal => ({
     useRampDestinationsQuery: mockUseRampDestinationsQuery,
     useRampSourcesQuery: mockUseRampSourcesQuery,
     useOnramp: () => ({ selectedDestinationTokenId: ALGO_ROUTER_ID }),
+    useOnrampDestinationChains: () => mockDestinationChains.current,
+}))
+
+const SCOPES = {
+    algorand: { chainId: 'algorand', networkId: 'mainnet' },
+    ethereum: { chainId: 'ethereum', networkId: 'mainnet' },
+} as const
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useSelectedScope: (chainId: keyof typeof SCOPES) => SCOPES[chainId],
 }))
 
 vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
@@ -88,6 +104,7 @@ describe('useOnrampPairSelectionContent', () => {
     beforeEach(() => {
         registerAlgorandRampAdapter()
         vi.clearAllMocks()
+        mockDestinationChains.current = ['algorand']
         mockUseRampDestinationsQuery.mockReturnValue({
             data: DESTINATIONS,
             isLoading: false,
@@ -207,7 +224,7 @@ describe('useOnrampPairSelectionContent', () => {
 
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(
             SCOPE,
-            ['0', USDC_MAINNET_ASSET_ID],
+            [USDC_MAINNET_ASSET_ID, '0'],
             { fetchMissing: true },
         )
         const usdc = result.current.items.find(
@@ -231,7 +248,88 @@ describe('useOnrampPairSelectionContent', () => {
             result.current.handleTokenSelected(DESTINATIONS[1])
         })
 
-        expect(mockResolve).toHaveBeenCalledWith(ALGO_ROUTER_ID)
+        expect(mockResolve).toHaveBeenCalledWith({
+            chainId: 'algorand',
+            tokenId: ALGO_ROUTER_ID,
+        })
+    })
+
+    it('keeps the asset ids it fetches the same while the user searches', () => {
+        const { result } = renderDestinations()
+        const idsBefore = mockUseAssetsQuery.mock.calls.at(-1)?.[1]
+
+        act(() => {
+            result.current.setSearchFilter('usd')
+        })
+
+        expect(mockUseAssetsQuery.mock.calls.at(-1)?.[1]).toEqual(idsBefore)
+    })
+
+    describe('the chain chips', () => {
+        it('offers none to an account on one chain', () => {
+            const { result } = renderDestinations()
+
+            expect(result.current.chainOptions).toEqual([])
+        })
+
+        it('offers one chip per fundable chain to an account on two', () => {
+            mockDestinationChains.current = ['algorand', 'ethereum']
+
+            const { result } = renderDestinations()
+
+            expect(result.current.chainOptions.map(o => o.value)).toEqual([
+                'algorand',
+                'ethereum',
+            ])
+            expect(result.current.selectedChainId).toBe('algorand')
+        })
+
+        it("puts Fund's own chain first when the account cannot sign on it", () => {
+            mockDestinationChains.current = ['ethereum']
+
+            const { result } = renderDestinations()
+
+            expect(result.current.chainOptions.map(o => o.value)).toEqual([
+                'algorand',
+                'ethereum',
+            ])
+        })
+
+        it("lists the picked chip's chain, and a pick carries that chain", () => {
+            mockDestinationChains.current = ['algorand', 'ethereum']
+            const { result } = renderDestinations()
+
+            act(() => {
+                result.current.handleSelectChain('ethereum')
+            })
+
+            expect(result.current.listScope).toEqual(SCOPES.ethereum)
+            expect(mockUseRampDestinationsQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({ scope: SCOPES.ethereum }),
+            )
+
+            act(() => {
+                result.current.handleTokenSelected(DESTINATIONS[1])
+            })
+
+            expect(mockResolve).toHaveBeenCalledWith({
+                chainId: 'ethereum',
+                tokenId: ALGO_ROUTER_ID,
+            })
+        })
+
+        it('offers no chips for the source variant', () => {
+            mockDestinationChains.current = ['algorand', 'ethereum']
+
+            const { result } = renderHook(() =>
+                useOnrampPairSelectionContent({
+                    variant: 'source',
+                    scope: SCOPE,
+                }),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+        })
     })
 
     it('exposes isLoading from the query', () => {

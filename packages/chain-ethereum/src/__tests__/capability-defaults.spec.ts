@@ -29,6 +29,26 @@ const loadWith = async (appEnvironment: string) => {
     return { row, supported: evmSupportedCapabilitiesOf(row) }
 }
 
+describe('the onramp capability', () => {
+    afterEach(() => {
+        vi.doUnmock('@perawallet/wallet-core-config')
+        vi.resetModules()
+    })
+
+    it.each(['development', 'staging'])('defaults on in %s', async env => {
+        const { row } = await loadWith(env)
+
+        expect(row.capabilities?.onramp).toBe(true)
+    })
+
+    it('defaults off in production, where remote config can still switch it', async () => {
+        const { row, supported } = await loadWith('production')
+
+        expect(row.capabilities?.onramp).toBe(false)
+        expect(supported).toContain('onramp')
+    })
+})
+
 describe('the swap capability', () => {
     afterEach(() => {
         vi.doUnmock('@perawallet/wallet-core-config')

@@ -15,6 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     eip155ChainIdOf,
     eip155ChainIdOfNetwork,
+    evmAssetIdOfRouterId,
     fromCaip19,
     InvalidCaip19Error,
     isEvmNftAssetId,
@@ -132,6 +133,38 @@ describe('fromCaip19', () => {
         expect(
             fromCaip19(toCaip19(USDC, SEPOLIA, ETHEREUM), SEPOLIA, ETHEREUM),
         ).toBe(USDC)
+    })
+})
+
+describe('evmAssetIdOfRouterId', () => {
+    it('reads a token', () => {
+        expect(evmAssetIdOfRouterId(USDC_CAIP19, MAINNET, ETHEREUM)).toBe(USDC)
+    })
+
+    it('reads the native asset', () => {
+        expect(
+            evmAssetIdOfRouterId('eip155:1/slip44:60', MAINNET, ETHEREUM),
+        ).toBe('native')
+    })
+
+    it("returns null for another chain's id", () => {
+        expect(
+            evmAssetIdOfRouterId(
+                `eip155:5/erc20:${USDC.toLowerCase()}`,
+                MAINNET,
+                ETHEREUM,
+            ),
+        ).toBeNull()
+    })
+
+    it('rethrows a scope that is not an EVM network', () => {
+        expect(() =>
+            evmAssetIdOfRouterId(
+                USDC_CAIP19,
+                { chainId: 'ethereum', networkId: 'nowhere' },
+                ETHEREUM,
+            ),
+        ).toThrow(UnknownEvmNetworkError)
     })
 })
 

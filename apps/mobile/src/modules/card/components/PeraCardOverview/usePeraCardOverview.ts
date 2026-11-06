@@ -107,7 +107,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
     const canSwap = useSwapScope(fundingAccount) !== null
-    const canBuy = useCanFundAccount(fundingAccount)
+    const canBuy = useCanFundAccount(fundingAccount, scope.chainId)
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =
         useAccountAssetBalanceQuery(
@@ -197,7 +197,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         }
         navigation.navigate('TabBar', {
             screen: 'Fund',
-            params: { destinationAssetId: usdcAssetId ?? undefined },
+            params: {
+                chainId: scope.chainId,
+                destinationAssetId: usdcAssetId ?? undefined,
+            },
         })
     }, [
         fundingAccount,

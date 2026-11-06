@@ -89,6 +89,7 @@ export const useOnrampForm = (
         setSenderAddress,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
+        setSelectedChainId,
     } = useOnramp()
 
     const isMeld = isMeldPair(selectedPair)
@@ -143,6 +144,7 @@ export const useOnrampForm = (
         senderAddress,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
+        setSelectedChainId,
         setSenderAddress,
     })
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import type { RampDepositInstructions } from '../models'
@@ -18,9 +19,11 @@ import { useOnrampStore } from '../store'
 type UseOnrampResult = {
     selectedSourceTokenId: Nullable<string>
     selectedDestinationTokenId: Nullable<string>
+    selectedChainId: Nullable<ChainId>
     senderAddress: string
     setSelectedSourceTokenId: (id: Nullable<string>) => void
     setSelectedDestinationTokenId: (id: Nullable<string>) => void
+    setSelectedChainId: (chainId: Nullable<ChainId>) => void
     setSenderAddress: (address: string) => void
     rememberDepositInstructions: (
         orderId: string,
@@ -35,6 +38,7 @@ export const useOnramp = (): UseOnrampResult => {
     const selectedDestinationTokenId = useOnrampStore(
         state => state.selectedDestinationTokenId,
     )
+    const selectedChainId = useOnrampStore(state => state.selectedChainId)
     const senderAddress = useOnrampStore(state => state.senderAddress)
     const setSelectedSourceTokenId = useOnrampStore(
         state => state.setSelectedSourceTokenId,
@@ -42,6 +46,7 @@ export const useOnramp = (): UseOnrampResult => {
     const setSelectedDestinationTokenId = useOnrampStore(
         state => state.setSelectedDestinationTokenId,
     )
+    const setSelectedChainId = useOnrampStore(state => state.setSelectedChainId)
     const setSenderAddress = useOnrampStore(state => state.setSenderAddress)
     const rememberDepositInstructions = useOnrampStore(
         state => state.rememberDepositInstructions,
@@ -50,9 +55,11 @@ export const useOnramp = (): UseOnrampResult => {
     return {
         selectedSourceTokenId,
         selectedDestinationTokenId,
+        selectedChainId,
         senderAddress,
         setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
+        setSelectedChainId,
         setSenderAddress,
         rememberDepositInstructions,
     }

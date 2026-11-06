@@ -62,6 +62,10 @@ export default defineConfig({
                 __dirname,
                 '../nfd/src/__tests__/adapter-contract.ts',
             ),
+            '@perawallet/wallet-core-onramp/testing': path.resolve(
+                __dirname,
+                '../onramp/src/__tests__/adapter-contract.ts',
+            ),
             '@perawallet/wallet-core-swaps/testing': path.resolve(
                 __dirname,
                 '../swaps/src/__tests__/adapter-contract.ts',

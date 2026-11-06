@@ -44,7 +44,13 @@ vi.mock('@modules/transactions/hooks', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    // The real scope, so a spec can switch onramp off.
+    useAccountCapabilityScope: (
+        await vi.importActual<
+            typeof import('@perawallet/wallet-core-accounts')
+        >('@perawallet/wallet-core-accounts')
+    ).useAccountCapabilityScope,
     useAllAccounts: () => [
         { chains: { algorand: { address: 'ACCOUNT_ADDR' } }, name: 'Main' },
         { chains: { ethereum: { address: 'ACCOUNT_ADDR' } }, name: 'Eth' },
@@ -187,7 +193,10 @@ describe('useAssetClaimDetailScreen', () => {
             result.current.handleAddFunds()
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+            params: { chainId: 'algorand' },
+        })
     })
 
     it("offers the Add Funds button only while the receiving account's chain has onramp", () => {

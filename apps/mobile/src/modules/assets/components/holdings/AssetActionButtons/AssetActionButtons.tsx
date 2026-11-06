@@ -13,8 +13,6 @@
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
-import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -42,7 +40,6 @@ export const AssetActionButtons = ({
     isCollectible,
 }: AssetActionButtonsProps) => {
     const styles = useStyles()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const isReadOnly = !useCanSignWith(account, chainId)
@@ -53,12 +50,13 @@ export const AssetActionButtons = ({
         chainId,
         asset,
     )
-    const { openReceiveFunds, handleSwap, handleSend, handleCopyAddress } =
-        useAssetActions({ asset, assetHolding, chainId, account })
-
-    const goToRootPage = (name: string) => {
-        navigation.replace('TabBar', { screen: name })
-    }
+    const {
+        openReceiveFunds,
+        handleSwap,
+        handleBuy,
+        handleSend,
+        handleCopyAddress,
+    } = useAssetActions({ asset, assetHolding, chainId, account })
 
     if (isCollectible) return null
 
@@ -106,7 +104,7 @@ export const AssetActionButtons = ({
                     title={t('asset_details.action_buttons.buy_sell')}
                     icon='buy-sell'
                     variant='secondary'
-                    onPress={() => goToRootPage('Fund')}
+                    onPress={handleBuy}
                     style={styles.buttonFour}
                     testID='asset_detail_buy_button'
                 />

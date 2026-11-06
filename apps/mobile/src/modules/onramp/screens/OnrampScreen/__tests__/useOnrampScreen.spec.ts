@@ -17,9 +17,10 @@ import {
     useRampRegionQuery,
     useRampSourcesQuery,
     useOnramp,
+    useOnrampDestinationChains,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { useIsFocused, useRoute } from '@react-navigation/native'
+import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 
@@ -41,6 +42,7 @@ vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
     useRampSourcesQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
     useOnramp: vi.fn(),
+    useOnrampDestinationChains: vi.fn(),
 }))
 
 let hasInternetMock = true
@@ -68,6 +70,7 @@ const fundableAccount = (): ReturnType<typeof useOnrampAccount> => ({
 vi.mock('@react-navigation/native', () => ({
     useIsFocused: vi.fn(),
     useRoute: vi.fn(),
+    useNavigation: vi.fn(),
 }))
 
 vi.mock('../useOnrampIntroduction', () => ({
@@ -141,14 +144,18 @@ const mockDestinationsQuery = ({
 
 const mockSetSelectedSourceTokenId = vi.fn()
 const mockSetSelectedDestinationTokenId = vi.fn()
+const mockSetSelectedChainId = vi.fn()
+const mockSetParams = vi.fn()
 
 const setupOnramp = (overrides: Partial<ReturnType<typeof useOnramp>> = {}) => {
     vi.mocked(useOnramp).mockReturnValue({
         selectedSourceTokenId: null,
         selectedDestinationTokenId: null,
+        selectedChainId: null,
         senderAddress: '',
         setSelectedSourceTokenId: mockSetSelectedSourceTokenId,
         setSelectedDestinationTokenId: mockSetSelectedDestinationTokenId,
+        setSelectedChainId: mockSetSelectedChainId,
         setSenderAddress: vi.fn(),
         rememberDepositInstructions: vi.fn(),
         ...overrides,
@@ -162,10 +169,17 @@ describe('useOnrampScreen', () => {
         setHasInternet(true)
         vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
         vi.mocked(useIsFocused).mockReturnValue(true)
+        vi.mocked(useNavigation).mockReturnValue({
+            setParams: mockSetParams,
+        } as never)
         vi.mocked(useRampRegionQuery).mockReturnValue({
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
         vi.mocked(useOnrampAccount).mockReturnValue(fundableAccount())
+        vi.mocked(useOnrampDestinationChains).mockReturnValue([
+            'algorand',
+            'ethereum',
+        ])
         mockDestinationsQuery({ data: DESTINATIONS })
         vi.mocked(useRampSourcesQuery).mockReturnValue({
             data: SOURCES,
@@ -224,56 +238,128 @@ describe('useOnrampScreen', () => {
         expect(result.current.canFundSelectedAccount).toBe(false)
     })
 
-    it("seeds the destination from the route's asset id, matched through the chain's adapter", () => {
-        vi.mocked(useRoute).mockReturnValue({
-            params: { destinationAssetId: '31566704' },
-        } as never)
+    describe('the route', () => {
+        const routeTo = (params: {
+            chainId: string
+            destinationAssetId?: string
+        }) => vi.mocked(useRoute).mockReturnValue({ params } as never)
 
-        renderHook(() => useOnrampScreen())
+        it("writes the route's chain to the store", () => {
+            routeTo({ chainId: 'ethereum' })
 
-        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
-            USDC_ROUTER_ID,
-        )
-        expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
-    })
+            renderHook(() => useOnrampScreen())
 
-    it("applies the route's asset over a saved destination the router lists", () => {
-        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
-        vi.mocked(useRoute).mockReturnValue({
-            params: { destinationAssetId: '31566704' },
-        } as never)
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith('ethereum')
+        })
 
-        renderHook(() => useOnrampScreen())
+        it('writes no chain without a route', () => {
+            renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
-            USDC_ROUTER_ID,
-        )
-    })
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
 
-    it("applies the route's asset once, so a refetch doesn't undo a later switch", () => {
-        setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
-        vi.mocked(useRoute).mockReturnValue({
-            params: { destinationAssetId: '31566704' },
-        } as never)
-        const { rerender } = renderHook(() => useOnrampScreen())
-        mockSetSelectedDestinationTokenId.mockClear()
+        it("selects the route's asset, matched through the chain's adapter, over a remembered destination", () => {
+            setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
+            routeTo({ chainId: 'algorand', destinationAssetId: '31566704' })
 
-        mockDestinationsQuery({ data: [...DESTINATIONS] })
-        rerender()
+            renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
-    })
+            expect(mockSetSelectedDestinationTokenId).toHaveBeenLastCalledWith(
+                USDC_ROUTER_ID,
+            )
+            expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
+        })
 
-    it('ignores a route asset id no destination matches', () => {
-        vi.mocked(useRoute).mockReturnValue({
-            params: { destinationAssetId: '999' },
-        } as never)
+        it('spends the route once applied', () => {
+            routeTo({ chainId: 'algorand', destinationAssetId: '31566704' })
 
-        renderHook(() => useOnrampScreen())
+            renderHook(() => useOnrampScreen())
 
-        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
-            ALGO_ROUTER_ID,
-        )
+            expect(mockSetParams).toHaveBeenCalledWith({
+                chainId: undefined,
+                destinationAssetId: undefined,
+            })
+        })
+
+        it('spends a route that names only a chain once the scope is that chain', () => {
+            routeTo({ chainId: 'algorand' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).toHaveBeenCalledTimes(1)
+            expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledTimes(1)
+        })
+
+        it("waits for the scope to be the route's chain", () => {
+            routeTo({ chainId: 'ethereum', destinationAssetId: '31566704' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).not.toHaveBeenCalled()
+            expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledTimes(1)
+            expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
+                ALGO_ROUTER_ID,
+            )
+        })
+
+        it("spends a route to a chain the account can't be funded on, writing no chain", () => {
+            vi.mocked(useOnrampDestinationChains).mockReturnValue(['algorand'])
+            routeTo({ chainId: 'ethereum', destinationAssetId: '31566704' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).toHaveBeenCalledWith({
+                chainId: undefined,
+                destinationAssetId: undefined,
+            })
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
+        it('spends a route whose chain lists nothing, then lets the drop clear the choice', () => {
+            routeTo({ chainId: 'algorand', destinationAssetId: '31566704' })
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+            setupOnramp({ selectedChainId: 'algorand' })
+            const { rerender } = renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).toHaveBeenCalledTimes(1)
+            expect(mockSetSelectedChainId).not.toHaveBeenCalledWith(null)
+
+            vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
+            rerender()
+
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith(null)
+        })
+
+        it("waits for the router's list before applying the route's asset", () => {
+            routeTo({ chainId: 'algorand', destinationAssetId: '31566704' })
+            mockDestinationsQuery({ data: [], isLoading: true })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).not.toHaveBeenCalled()
+        })
+
+        it('keeps the selection, and still spends the route, for an asset the router no longer lists', () => {
+            setupOnramp({ selectedDestinationTokenId: USDC_ROUTER_ID })
+            routeTo({ chainId: 'algorand', destinationAssetId: '999' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
+            expect(mockSetParams).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not overwrite a later pick once the route is spent', () => {
+            setupOnramp({ selectedDestinationTokenId: ALGO_ROUTER_ID })
+            routeTo({ chainId: 'algorand', destinationAssetId: '31566704' })
+            const { rerender } = renderHook(() => useOnrampScreen())
+            mockSetSelectedDestinationTokenId.mockClear()
+
+            vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
+            rerender()
+
+            expect(mockSetSelectedDestinationTokenId).not.toHaveBeenCalled()
+        })
     })
 
     it('resolves selectedPair only when both source and destination are set', () => {
@@ -422,6 +508,63 @@ describe('useOnrampScreen', () => {
             const { result } = renderHook(() => useOnrampScreen())
             expect(result.current.isReady).toBe(false)
             expect(result.current.pairsState).toBe('error')
+        })
+
+        it('drops a chosen chain whose list settled empty, so Fund does not stay on the retry state', () => {
+            setupOnramp({ selectedChainId: 'algorand' })
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith(null)
+        })
+
+        it("keeps a chosen chain the account isn't funded on when the fallback's list settles empty", () => {
+            setupOnramp({ selectedChainId: 'ethereum' })
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
+        it("doesn't undo a pending route's chain when the previous chain's list is settled empty", () => {
+            setupOnramp({ selectedChainId: 'algorand' })
+            vi.mocked(useRoute).mockReturnValue({
+                params: { chainId: 'ethereum' },
+            } as never)
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith('ethereum')
+            expect(mockSetSelectedChainId).not.toHaveBeenCalledWith(null)
+        })
+
+        it('keeps a chosen chain when its list failed to load', () => {
+            setupOnramp({ selectedChainId: 'algorand' })
+            mockDestinationsQuery({
+                isError: true,
+                status: 'error',
+                fetchStatus: 'idle',
+            })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
+        it('keeps a chosen chain while its list is still loading', () => {
+            setupOnramp({ selectedChainId: 'algorand' })
+            mockDestinationsQuery({
+                isLoading: true,
+                fetchStatus: 'fetching',
+                status: 'pending',
+            })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
         })
 
         it('is loading while genuinely fetching', () => {

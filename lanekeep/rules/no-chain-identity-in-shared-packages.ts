@@ -99,6 +99,16 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Checks each account against whichever chain the portfolio chart plots, never a named chain.',
     },
     {
+        file: 'apps/mobile/src/modules/onramp/screens/OnrampScreen/useOnrampScreen.tsx',
+        text: 'scope?.chainId !== routeChainId',
+        reason: "Waits until Fund's scope is on whichever chain the route names, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/onramp/screens/OnrampScreen/useOnrampScreen.tsx',
+        text: 'scope?.chainId === selectedChainId',
+        reason: 'Checks the list in hand belongs to whichever chain the user chose, never a named chain.',
+    },
+    {
         file: 'packages/chain-contract/src/models/domain.ts',
         text: "'algorand'",
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',

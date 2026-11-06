@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    type NavigationProp,
     type RouteProp,
     useIsFocused,
+    useNavigation,
     useRoute,
 } from '@react-navigation/native'
 import {
@@ -22,6 +24,7 @@ import {
     useRampRegionQuery,
     useRampSourcesQuery,
     useOnramp,
+    useOnrampDestinationChains,
     rampTokenAsset,
     type RampPair,
     type RampRegion,
@@ -64,37 +67,36 @@ type UseOnrampScreenResult = {
     handleRetryPairs: () => void
 }
 
-const findRequestedDestination = (
-    destinations: RampToken[],
-    destinationAssetId: Optional<string>,
-    scope: ChainScope,
-): Optional<RampToken> =>
-    destinationAssetId
-        ? destinations.find(
-              token =>
-                  rampTokenAsset(token, scope)?.assetId === destinationAssetId,
-          )
-        : undefined
-
-// The chain's native coin, else the first available destination.
-const resolveFallbackDestinationId = (
+// The destination to seed when none is selected: the chain's native coin, else
+// the first available destination token.
+const resolveSeedDestinationId = (
     destinations: RampToken[],
     scope: ChainScope,
-): Nullable<string> =>
-    destinations.find(token => rampTokenAsset(token, scope)?.isNative)?.id ??
-    destinations[0]?.id ??
-    null
+): Nullable<string> => {
+    const native = destinations.find(
+        token => rampTokenAsset(token, scope)?.isNative,
+    )
+    if (native) return native.id
+    return destinations[0]?.id ?? null
+}
 
 export const useOnrampScreen = (): UseOnrampScreenResult => {
     // The native onramp screen renders on the existing `Fund` tab route, so
     // its params arrive under the `Fund` route name (not `Onramp`).
     const route =
         useRoute<RouteProp<{ Fund: Optional<OnrampScreenParams> }, 'Fund'>>()
+    const navigation =
+        useNavigation<NavigationProp<{ Fund: Optional<OnrampScreenParams> }>>()
     const params = route.params
 
     const isFocused = useIsFocused()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { scope, address: selectedAccountAddress } = useOnrampAccount()
+    const {
+        account,
+        scope,
+        address: selectedAccountAddress,
+    } = useOnrampAccount()
+    const fundableChains = useOnrampDestinationChains(account)
     const trackOnrampEvent = useTrackOnrampEvent()
     const pairsQuery = useRampDestinationsQuery({ scope })
     const { data: destinations, isLoading: pairsLoading } = pairsQuery
@@ -104,43 +106,61 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         selectedSourceTokenId,
         selectedDestinationTokenId,
         setSelectedDestinationTokenId,
+        selectedChainId,
+        setSelectedChainId,
     } = useOnramp()
     const { isIntroductionSeen, markIntroductionSeen } = useOnrampIntroduction()
 
     const [activeTab, setActiveTab] = useState<OnrampTab>('fund')
 
-    const destinationAssetId = params?.destinationAssetId
+    const routeChainId = params?.chainId
+    const routeDestinationAssetId = params?.destinationAssetId
 
-    // A route asset the router lists wins over the remembered destination, once
-    // per asset so a later refetch can't undo the user's own switch. Otherwise
-    // an unset or no longer listed destination is seeded with the native coin,
-    // or the form would wait on it. The source stays unset so the pay selector
-    // shows "Choose an asset" on every fresh entry.
-    const appliedRouteAssetRef = useRef<Optional<string>>(undefined)
+    // The chain chips live in the receive sheet, which only opens from the
+    // form, so a chosen chain with nothing to list would strand Fund on its
+    // retry state. A settled empty answer (not a failure) drops the choice.
+    const isListSettledEmpty =
+        !pairsLoading &&
+        pairsQuery.fetchStatus === 'idle' &&
+        !pairsQuery.isError &&
+        destinations.length === 0
+
+    // A route naming a chain the selected account can't be funded on is spent
+    // unapplied: it would otherwise linger and overwrite a later chip pick.
+    const isRouteReachable =
+        routeChainId !== undefined && fundableChains.includes(routeChainId)
+
+    const spendRoute = useCallback(() => {
+        navigation.setParams({
+            chainId: undefined,
+            destinationAssetId: undefined,
+        })
+    }, [navigation])
+
+    // A chain change reseeds the destination.
     useEffect(() => {
-        if (!destinationAssetId) appliedRouteAssetRef.current = undefined
-        if (scope === null || pairsLoading || destinations.length === 0) return
+        if (routeChainId && isRouteReachable) setSelectedChainId(routeChainId)
+    }, [routeChainId, isRouteReachable, setSelectedChainId])
 
-        const requested = findRequestedDestination(
-            destinations,
-            destinationAssetId,
-            scope,
-        )
-        if (requested && appliedRouteAssetRef.current !== destinationAssetId) {
-            appliedRouteAssetRef.current = destinationAssetId
-            if (requested.id !== selectedDestinationTokenId) {
-                setSelectedDestinationTokenId(requested.id)
-            }
-            return
-        }
+    useEffect(() => {
+        if (routeChainId && !isRouteReachable) spendRoute()
+    }, [routeChainId, isRouteReachable, spendRoute])
+
+    // Seed the destination (defaults to the native coin). The source stays
+    // unset so the pay selector shows "Choose an asset" on every fresh entry.
+    // A persisted destination the router no longer lists is reseeded, or the
+    // form would wait on it.
+    useEffect(() => {
+        if (scope === null || pairsLoading || destinations.length === 0) return
 
         const isDestinationListed = destinations.some(
             token => token.id === selectedDestinationTokenId,
         )
         if (selectedDestinationTokenId === null || !isDestinationListed) {
-            const seedDestinationId =
-                requested?.id ??
-                resolveFallbackDestinationId(destinations, scope)
+            const seedDestinationId = resolveSeedDestinationId(
+                destinations,
+                scope,
+            )
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
             }
@@ -148,12 +168,55 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         // selectedDestination is intentionally omitted: re-seeding on each
         // selection change would fight user-driven switches.
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [destinations, pairsLoading, scope, setSelectedDestinationTokenId])
+
+    // After the seed effect, so the route's token wins over a seeded or
+    // remembered one. The route is spent once applied: left in place, a repeat
+    // visit with the same params would not re-apply and a later pick could be
+    // overwritten. Waits until the scope is the route's chain, since the
+    // destinations in hand belong to the previous one until then. A chain that
+    // lists nothing has no asset to apply, so the route is spent there too.
+    useEffect(() => {
+        if (!routeChainId || scope?.chainId !== routeChainId) return
+        if (routeDestinationAssetId && !isListSettledEmpty) {
+            if (pairsLoading || destinations.length === 0) return
+            const requested = destinations.find(
+                token =>
+                    rampTokenAsset(token, scope)?.assetId ===
+                    routeDestinationAssetId,
+            )
+            if (requested) setSelectedDestinationTokenId(requested.id)
+        }
+        spendRoute()
     }, [
-        destinations,
-        pairsLoading,
-        destinationAssetId,
+        spendRoute,
+        routeChainId,
+        routeDestinationAssetId,
         scope,
+        isListSettledEmpty,
+        pairsLoading,
+        destinations,
         setSelectedDestinationTokenId,
+    ])
+
+    // Only a choice whose own list came back empty is dropped: while the scope
+    // is on another chain (the account isn't funded on the choice) the empty
+    // list is that chain's, and a pending route is about to replace the choice.
+    useEffect(() => {
+        if (routeChainId) return
+        if (
+            selectedChainId !== null &&
+            scope?.chainId === selectedChainId &&
+            isListSettledEmpty
+        ) {
+            setSelectedChainId(null)
+        }
+    }, [
+        routeChainId,
+        isListSettledEmpty,
+        scope,
+        selectedChainId,
+        setSelectedChainId,
     ])
 
     // Show the one-time welcome sheet. Marking it seen the moment it opens makes
