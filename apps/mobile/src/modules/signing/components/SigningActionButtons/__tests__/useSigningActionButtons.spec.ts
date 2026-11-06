@@ -72,6 +72,11 @@ vi.mock('../../../hooks/useRequestSiteSafety', () => ({
     useRequestSiteSafety: () => mockSiteSafety,
 }))
 
+const mockFailureGate = vi.hoisted(() => ({ isConfirmBlocked: false }))
+vi.mock('../../../hooks/usePredictedFailureGate', () => ({
+    usePredictedFailureGate: () => mockFailureGate,
+}))
+
 const mockConfirmQuantumDappUsage = vi.fn()
 vi.mock('@hooks/useQuantumDappWarning', () => ({
     useQuantumDappWarning: () => ({
@@ -141,6 +146,7 @@ describe('useSigningActionButtons', () => {
         mockAddressSafety.isConfirmBlocked = false
         mockAddressSafety.isListedAddressBlocking = false
         mockSiteSafety.isConfirmBlocked = false
+        mockFailureGate.isConfirmBlocked = false
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: undefined,
@@ -194,6 +200,28 @@ describe('useSigningActionButtons', () => {
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(result.current.cannotSignNotice).toBeUndefined()
         expect(mockNext).not.toHaveBeenCalled()
+    })
+
+    it('holds signing while a predicted failure waits on acknowledgement, and signs once it is acknowledged', () => {
+        mockFailureGate.isConfirmBlocked = true
+
+        const { result, rerender } = renderHook(() => useSigningActionButtons())
+
+        act(() => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(result.current.cannotSignNotice).toBeUndefined()
+        expect(mockNext).not.toHaveBeenCalled()
+
+        mockFailureGate.isConfirmBlocked = false
+        rerender()
+        act(() => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(mockNext).toHaveBeenCalledTimes(1)
     })
 
     it('replaces the slider with a notice for a listed address, ahead of a multisig notice', () => {

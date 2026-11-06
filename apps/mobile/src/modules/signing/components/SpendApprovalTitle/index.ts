@@ -12,3 +12,4 @@
 
 export { SpendApprovalTitle } from './SpendApprovalTitle'
 export { useSpendApprovalTitle } from './useSpendApprovalTitle'
+export { spendApprovalTitleOf } from './spendApprovalTitleOf'
