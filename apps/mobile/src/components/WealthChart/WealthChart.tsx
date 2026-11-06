@@ -67,6 +67,7 @@ export const WealthChart = memo(function WealthChart({
         data,
         isPending,
         isError,
+        isRetrying,
         error,
         isPaused,
         refetch,
@@ -100,6 +101,7 @@ export const WealthChart = memo(function WealthChart({
                 onSelectionChanged={onSelectionChanged}
                 isPending={isPending}
                 isError={fallback.isError}
+                isRetrying={isRetrying}
                 isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
                 isPaused={isPaused}
                 isUnavailableOnNetwork={isUnavailableOnNetwork}

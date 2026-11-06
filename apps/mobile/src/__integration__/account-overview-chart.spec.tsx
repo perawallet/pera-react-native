@@ -26,6 +26,7 @@ import {
     vi,
 } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import type { QueryClient } from '@tanstack/react-query'
 import { delay, http, HttpResponse } from 'msw'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -62,11 +63,17 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 // mock exists, and the client reads its deployments once, so everything under
 // test is loaded afresh, the test theme the setup installed included.
 vi.resetModules()
+const { createTestQueryClient } = await import('@test-utils/render')
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
-const { insertAssetHolding, upsertAccountChainState, useAccountsStore } =
-    await import('@perawallet/wallet-core-accounts')
+const {
+    insertAssetHolding,
+    invalidateAccountQueries,
+    isAccountBalancesHistoryQuery,
+    upsertAccountChainState,
+    useAccountsStore,
+} = await import('@perawallet/wallet-core-accounts')
 const { nativeAssetFor, upsertAssets } =
     await import('@perawallet/wallet-core-assets')
 const { Decimal } = await import('decimal.js')
@@ -129,6 +136,7 @@ const seedEthereumHolding = async (baseUnits: string) => {
 const renderHeader = (
     chartVisible: boolean,
     account: WalletAccount = TWO_CHAIN_ACCOUNT,
+    queryClient?: QueryClient,
 ) =>
     renderWithNavigation(
         () => (
@@ -149,6 +157,7 @@ const renderHeader = (
             </AccountOverviewModalContext.Provider>
         ),
         'AccountOverviewHost',
+        { queryClient },
     )
 
 describe('Flow: The balance chart of an account on Algorand and Ethereum', () => {
@@ -352,6 +361,74 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
             screen.queryByText('common.network_unavailable.title'),
         ).toBeNull()
         expect(screen.queryByTestId('wealth_trend')).toBeNull()
+    })
+
+    it('Given Ethereum history fails, when account queries are invalidated and Algorand refreshes badly while Ethereum is asked again, then the chart keeps plotting Algorand instead of dropping to loading or an error', async () => {
+        serveHistory({
+            algorand: [
+                { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
+                { datetime: '2026-10-21T00:00:00Z', usd_value: '12' },
+            ],
+        })
+        let hold: Promise<void> | null = null
+        let release: () => void = () => {}
+        let isAlgorandFailing = false
+        server.use(
+            http.post(`*${ETHEREUM_HISTORY_PATH}`, async () => {
+                if (hold) await hold
+                return HttpResponse.json({}, { status: 500 })
+            }),
+            // Answering nothing hands the request on to serveHistory's handler.
+            http.get(`*${ALGORAND_HISTORY_PATH}`, () =>
+                isAlgorandFailing
+                    ? HttpResponse.json({}, { status: 500 })
+                    : undefined,
+            ),
+        )
+        const queryClient = createTestQueryClient()
+        const isTrendLoading = () =>
+            screen.queryByTestId('wealth_trend_loading') !== null
+        const hasRefreshFailedOnPlottedHistory = () =>
+            queryClient
+                .getQueryCache()
+                .findAll({
+                    predicate: query =>
+                        isAccountBalancesHistoryQuery(query.queryKey),
+                })
+                .some(
+                    query =>
+                        query.state.data !== undefined &&
+                        query.state.errorUpdateCount > 0,
+                )
+
+        try {
+            renderHeader(true, TWO_CHAIN_ACCOUNT, queryClient)
+            await waitFor(() => expect(isTrendLoading()).toBe(false), {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+            hold = new Promise<void>(resolve => {
+                release = resolve
+            })
+            isAlgorandFailing = true
+            const askedBefore = requests.ethereum
+
+            act(() => {
+                void invalidateAccountQueries(queryClient)
+            })
+            await waitFor(
+                () => {
+                    expect(requests.ethereum).toBeGreaterThan(askedBefore)
+                    expect(hasRefreshFailedOnPlottedHistory()).toBe(true)
+                },
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            await act(async () => {})
+
+            expect(isTrendLoading()).toBe(false)
+            expect(screen.queryByText('common.error.title')).toBeNull()
+        } finally {
+            release()
+        }
     })
 
     it('Given neither chain has points yet, when the chart is shown, then it explains that history will appear', async () => {

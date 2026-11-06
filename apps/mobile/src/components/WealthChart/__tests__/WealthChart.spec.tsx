@@ -53,6 +53,7 @@ const mockHistory = (
         data: [],
         isPending: false,
         isError: false,
+        isRetrying: false,
         isPaused: false,
         error: null,
         isUnavailableOnNetwork: false,
@@ -120,6 +121,16 @@ describe('WealthChart', () => {
 
         expect(refetchRate).toHaveBeenCalledTimes(1)
         expect(refetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('holds the retry button while the failed history is being asked again', () => {
+        const refetch = vi.fn()
+        mockHistory({ isError: true, isRetrying: true, refetch })
+
+        renderChart()
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(refetch).not.toHaveBeenCalled()
     })
 
     it('keeps the offline state when the rate is unavailable while offline', () => {

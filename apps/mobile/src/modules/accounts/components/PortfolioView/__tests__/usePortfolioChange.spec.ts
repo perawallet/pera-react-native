@@ -43,6 +43,7 @@ const mockHistory = (
         data: [point('100'), point('120')],
         isPending: false,
         isError: false,
+        isRetrying: false,
         isPaused: false,
         error: null,
         isUnavailableOnNetwork: false,
