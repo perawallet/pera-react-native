@@ -620,11 +620,15 @@ export const createWalletConnectV2Handler = (
         const networkId = getNetworkId(chain.chainId)
         const activeChainId = support.caip2ChainIdFor(networkId)
         if (activeChainId === null || event.params.chainId !== activeChainId) {
+            // Public data is a dApp's own background probe, which the user
+            // never asked for and cannot act on.
             refuseRequest(
                 topic,
                 id,
                 'UNSUPPORTED_CHAINS',
-                new WalletConnectInvalidNetworkError(),
+                route.kind === 'public-data'
+                    ? null
+                    : new WalletConnectInvalidNetworkError(),
                 { support, failure: 'unselected-chain' },
             )
             return
@@ -696,13 +700,13 @@ export const createWalletConnectV2Handler = (
             return
         }
         if (networkId !== getNetworkId(target.chainId)) {
-            refuseRequest(
-                topic,
-                id,
-                'UNSUPPORTED_CHAINS',
-                new WalletConnectInvalidNetworkError(),
-                { support: target.support, failure: 'unselected-chain' },
-            )
+            // Silent: dApps switch on their own right after connecting, and
+            // only the user's developer-mode setting can move the selection.
+            // The dApp gets 4901 and shows its own wrong-network state.
+            refuseRequest(topic, id, 'UNSUPPORTED_CHAINS', null, {
+                support: target.support,
+                failure: 'unselected-chain',
+            })
             return
         }
 
@@ -1035,7 +1039,15 @@ export const createWalletConnectV2Handler = (
                     })
                 })
         }
-        if (error) reportError(error, connectionScope(topic))
+        if (error) {
+            reportError(error, connectionScope(topic))
+            return
+        }
+        logger.debug('[WC v2] refused a request', {
+            connectionId: topic,
+            correlationId: String(id),
+            reason: wire?.failure ?? key,
+        })
     }
 
     /**
@@ -1160,6 +1172,13 @@ export const createWalletConnectV2Handler = (
             }
             await store().upsert(approved)
             pendingOrigins.forget(pairingId)
+            for (const { chain, networkId } of announcementsFor(
+                chains,
+                input.proposal,
+                session,
+            )) {
+                announceChain(session.topic, chain, networkId)
+            }
             return approved
         } catch (error) {
             // The session settled, so the dApp believes it is connected: left
@@ -1621,6 +1640,42 @@ export const createWalletConnectV2Handler = (
             chainId: caip2,
         })
     }
+
+    // A dApp starts on the first chain it named; tell it the selected one when
+    // that isn't it, once per namespace, since chains sharing one would each
+    // move it.
+    const announcementsFor = (
+        chains: readonly WalletConnectV2Chain[],
+        proposal: WalletKitSessionProposal['params'],
+        session: WalletKitSession,
+    ): { chain: WalletConnectV2Chain; networkId: NetworkId }[] =>
+        dedupe(chains.map(({ support }) => support.namespace)).flatMap(
+            namespace => {
+                const inNamespace = chains.filter(
+                    ({ support }) => support.namespace === namespace,
+                )
+                const { support } = inNamespace[0]
+                const held = session.namespaces[namespace]?.chains ?? []
+                const named = dedupe([
+                    ...requestedChains(support, proposal.requiredNamespaces),
+                    ...requestedChains(support, proposal.optionalNamespaces),
+                ]).filter(caip2 => held.includes(caip2))
+                const selectedOn = (caip2: string) => {
+                    const chain = chainServing(inNamespace, caip2)
+                    if (!chain) return null
+                    const networkId = getNetworkId(chain.chainId)
+                    return chain.support.caip2ChainIdFor(networkId) === caip2
+                        ? { chain, networkId }
+                        : null
+                }
+                if (named.length === 0 || selectedOn(named[0])) return []
+                for (const caip2 of named) {
+                    const target = selectedOn(caip2)
+                    if (target) return [target]
+                }
+                return []
+            },
+        )
 
     // Best effort: the switch's answer must not depend on the dApp taking the event.
     const announceChain = (
