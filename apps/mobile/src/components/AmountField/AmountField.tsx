@@ -63,7 +63,7 @@ export const AmountField = ({
 
             <PWView style={styles.inputRow}>
                 <PWView style={styles.amountContainer}>{amount}</PWView>
-                {selector}
+                <PWView style={styles.selectorContainer}>{selector}</PWView>
             </PWView>
 
             <PWView style={styles.fiatValueContainer}>{fiat}</PWView>

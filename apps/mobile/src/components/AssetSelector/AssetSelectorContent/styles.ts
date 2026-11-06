@@ -22,9 +22,7 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
                 ? theme.colors.layerGrayLightest
                 : theme.colors.layerGray,
         flexShrink: 1,
-        flexGrow: 1,
         minWidth: 0,
-        maxWidth: '49%',
     },
     content: {
         flexDirection: 'row',

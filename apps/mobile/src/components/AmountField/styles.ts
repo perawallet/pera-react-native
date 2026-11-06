@@ -55,6 +55,14 @@ export const useStyles = makeStyles(
             minHeight: getTypography(theme, amountSize).lineHeight,
             justifyContent: 'center',
         },
+        // Capped on the row's direct child: a percentage on the button itself
+        // resolves against any content-sized wrapper around it and crushes it.
+        selectorContainer: {
+            flexShrink: 1,
+            minWidth: 0,
+            maxWidth: '49%',
+            alignItems: 'flex-end',
+        },
         fiatValueContainer: {
             minHeight: getTypography(theme, 'body').lineHeight,
             justifyContent: 'center',
