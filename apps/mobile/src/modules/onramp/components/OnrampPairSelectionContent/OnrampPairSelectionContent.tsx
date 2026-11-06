@@ -30,7 +30,7 @@ import { useStyles } from './styles'
 
 export type OnrampPairSelectionContentProps = {
     variant?: 'source' | 'destination'
-    /** The chain and network the listed tokens are bought onto. */
+    /** The chain and network the sheet opens on; the destination variant can switch chain. */
     scope: ChainScope
 }
 

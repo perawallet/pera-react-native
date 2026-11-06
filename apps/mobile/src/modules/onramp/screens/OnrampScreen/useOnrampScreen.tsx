@@ -100,6 +100,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         selectedSourceTokenId,
         selectedDestinationTokenId,
         setSelectedDestinationTokenId,
+        selectedChainId,
         setSelectedChainId,
     } = useOnramp()
     const { isIntroductionSeen, markIntroductionSeen } = useOnrampIntroduction()
@@ -167,6 +168,20 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         destinations,
         setSelectedDestinationTokenId,
     ])
+
+    // The chain chips live in the receive sheet, which only opens from the
+    // form, so a chosen chain with nothing to list would strand Fund on its
+    // retry state. A settled empty answer (not a failure) drops the choice.
+    const isListSettledEmpty =
+        !pairsLoading &&
+        pairsQuery.fetchStatus === 'idle' &&
+        !pairsQuery.isError &&
+        destinations.length === 0
+    useEffect(() => {
+        if (selectedChainId !== null && scope !== null && isListSettledEmpty) {
+            setSelectedChainId(null)
+        }
+    }, [isListSettledEmpty, scope, selectedChainId, setSelectedChainId])
 
     // Show the one-time welcome sheet. Marking it seen the moment it opens makes
     // the persisted flag the single guard, so the effect can't re-open it (and

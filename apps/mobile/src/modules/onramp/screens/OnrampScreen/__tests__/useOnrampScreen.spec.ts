@@ -476,6 +476,41 @@ describe('useOnrampScreen', () => {
             expect(result.current.pairsState).toBe('error')
         })
 
+        it('drops a chosen chain whose list settled empty, so Fund does not stay on the retry state', () => {
+            setupOnramp({ selectedChainId: 'ethereum' })
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith(null)
+        })
+
+        it('keeps a chosen chain when its list failed to load', () => {
+            setupOnramp({ selectedChainId: 'ethereum' })
+            mockDestinationsQuery({
+                isError: true,
+                status: 'error',
+                fetchStatus: 'idle',
+            })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
+        it('keeps a chosen chain while its list is still loading', () => {
+            setupOnramp({ selectedChainId: 'ethereum' })
+            mockDestinationsQuery({
+                isLoading: true,
+                fetchStatus: 'fetching',
+                status: 'pending',
+            })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
         it('is loading while genuinely fetching', () => {
             mockDestinationsQuery({
                 isLoading: true,

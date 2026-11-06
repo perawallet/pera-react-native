@@ -104,18 +104,27 @@ export const useAccountChainOptionsResolver = (
 ): ((account: WalletAccount) => AccountChainOption[]) => {
     const check = useChainCapabilityCheck()
     const canSignOn = useCanSignWithCheck()
+    // Joined so the resolver keeps its identity until the enabled set changes;
+    // the checker itself is a new closure every render.
+    const enabledKey = getProvider()
+        .chains.list()
+        .map(({ id }) => id)
+        .filter(chainId => check({ chain: { chainId, capability } }))
+        .join()
     return useCallback(
-        (account: WalletAccount) =>
-            accountChainOptions(
+        (account: WalletAccount) => {
+            const enabled = enabledKey ? enabledKey.split(',') : []
+            return accountChainOptions(
                 account,
-                chainId => check({ chain: { chainId, capability } }),
+                chainId => enabled.includes(chainId),
                 reach,
             ).filter(
                 option =>
                     !isSignerRequired ||
                     !option.isEnabled ||
                     canSignOn(account, option.chainId),
-            ),
-        [check, canSignOn, capability, reach, isSignerRequired],
+            )
+        },
+        [enabledKey, canSignOn, reach, isSignerRequired],
     )
 }

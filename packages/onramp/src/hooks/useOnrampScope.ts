@@ -15,6 +15,7 @@ import {
     useAccountCapabilityScope,
     useAccountChainOptionsResolver,
     useAllAccounts,
+    type AccountChainOption,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
@@ -25,6 +26,9 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { rampChainAdapters } from '../chain-adapter'
 import { useOnrampStore } from '../store'
+
+const isFundableOption = (option: AccountChainOption): boolean =>
+    option.isEnabled && rampChainAdapters.has(option.chainId)
 
 /**
  * The scope Fund buys onto for `account`. `chainId` pins it to that chain,
@@ -49,11 +53,7 @@ export const useOnrampDestinationChains = (
         () =>
             account
                 ? optionsOf(account)
-                      .filter(
-                          option =>
-                              option.isEnabled &&
-                              rampChainAdapters.has(option.chainId),
-                      )
+                      .filter(isFundableOption)
                       .map(option => option.chainId)
                 : [],
         [account, optionsOf],
@@ -83,11 +83,7 @@ export const useOnrampSigningAccounts = (): WalletAccount[] => {
     return useMemo(
         () =>
             accounts.filter(account =>
-                optionsOf(account).some(
-                    option =>
-                        option.isEnabled &&
-                        rampChainAdapters.has(option.chainId),
-                ),
+                optionsOf(account).some(isFundableOption),
             ),
         [accounts, optionsOf],
     )

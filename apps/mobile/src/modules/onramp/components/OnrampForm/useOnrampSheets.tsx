@@ -55,9 +55,9 @@ type UseOnrampSheetsResult = {
  * content and applies the resolved value back through the form's setters. Split
  * out of `useOnrampForm` to keep that hook under the max-lines threshold.
  *
- * The selection sheets resolve a TOKEN id (source or destination), which the
- * handler commits directly to the store; source and destination are now
- * independent (no pair is resolved here).
+ * The source sheet resolves a token id and the destination sheet a
+ * destination pick (chain and token id); the handler commits either directly
+ * to the store, with no pair resolved here.
  */
 export const useOnrampSheets = ({
     quotes,
