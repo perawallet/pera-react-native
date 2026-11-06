@@ -18,6 +18,7 @@ import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 const KEY_KIND_ONBOARDING_EVENTS = [
     OnboardingEvent.RecoverAlgo25,
     OnboardingEvent.RecoverOneKey,
+    OnboardingEvent.RecoverTwelveWord,
     OnboardingEvent.CreateAccountQuantum,
 ] as const
 
