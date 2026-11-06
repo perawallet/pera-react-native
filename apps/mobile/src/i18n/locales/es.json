@@ -1086,6 +1086,8 @@
             "failed_title": "No se pudo cargar la página",
             "reload": "Recargar",
             "failed_body": "Se produjo un error al cargar esta página. Comprueba tu conexión a internet y vuelve a intentarlo.",
+            "unavailable_title": "Esta página no está disponible en este momento",
+            "unavailable_body": "Vuelve a intentarlo en unos instantes.",
             "offline_title": "Estás sin conexión",
             "offline_body": "Esta página no puede cargarse sin conexión a internet. Se recargará automáticamente cuando vuelvas a estar en línea.",
             "unknown_host": "Sitio desconocido"

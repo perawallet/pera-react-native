@@ -50,8 +50,7 @@ import {
 import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
 import { useWebViewMessageSecurity } from './useWebViewMessageSecurity'
 import { usePWWebViewLoadState } from './usePWWebViewLoadState'
-import { EmptyView } from '@components/EmptyView'
-import { PWView, PWButton } from '@components/core'
+import { PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import {
     logger,
@@ -59,6 +58,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { toLoadableUrl } from './toLoadableUrl'
+import { WebViewErrorOverlay } from './WebViewErrorOverlay'
 import { getWebViewUserAgent } from './getWebViewUserAgent'
 import { HARDENED_WEBVIEW_PROPS } from './hardenedWebViewProps'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -97,7 +97,6 @@ export type UsePWWebViewResult = {
     title: string
     committedUrl: string
     onCloseRequested: () => void
-    reload: () => void
     loadState: ReturnType<typeof usePWWebViewLoadState>
     renderWebView: () => React.ReactElement
     showControls: boolean
@@ -352,7 +351,7 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
         logger.debug('WebView: Title', { title: event.nativeEvent.title })
         setTitle(event.nativeEvent.title)
         loadState.handleLoadEnd()
-        loadState.markDocumentLoaded()
+        loadState.handleDocumentLoaded(event.nativeEvent.url)
         // loadState handlers are stable useCallbacks.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -375,13 +374,24 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
         [],
     )
 
-    const handleHttpError = useCallback((event: WebViewHttpErrorEvent) => {
-        logger.warn('WebView: http error', {
-            url: event.nativeEvent.url,
-            statusCode: event.nativeEvent.statusCode,
-            description: event.nativeEvent.description,
-        })
-    }, [])
+    // react-native-webview's renderError covers network failures only; a 5xx
+    // still renders the server's own error page unless we cover it.
+    const handleHttpError = useCallback(
+        (event: WebViewHttpErrorEvent) => {
+            logger.warn('WebView: http error', {
+                url: event.nativeEvent.url,
+                statusCode: event.nativeEvent.statusCode,
+                description: event.nativeEvent.description,
+            })
+            loadState.handleHttpError({
+                url: event.nativeEvent.url,
+                statusCode: event.nativeEvent.statusCode,
+            })
+        },
+        // loadState handlers are stable useCallbacks.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [],
+    )
 
     // Installed before the page runs any script: @perawallet/connect calls
     // window.open('perawallet-wc://…') on connect, possibly before document-end
@@ -457,23 +467,13 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
                         />
                     </PWView>
                 )}
-                renderError={() => {
-                    return (
-                        <PWView style={styles.absoluteFill}>
-                            <EmptyView
-                                title={t('common.webview.failed_title')}
-                                body={t('common.webview.failed_body')}
-                                button={
-                                    <PWButton
-                                        title={t('common.webview.reload')}
-                                        onPress={reload}
-                                        variant='primary'
-                                    />
-                                }
-                            />
-                        </PWView>
-                    )
-                }}
+                renderError={() => (
+                    <WebViewErrorOverlay
+                        title={t('common.webview.failed_title')}
+                        body={t('common.webview.failed_body')}
+                        onRetry={reload}
+                    />
+                )}
                 containerStyle={styles.container}
                 startInLoadingState
                 onMessage={handleEvent}
@@ -528,7 +528,6 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
         title,
         committedUrl,
         onCloseRequested,
-        reload,
         loadState,
         renderWebView,
         showControls,

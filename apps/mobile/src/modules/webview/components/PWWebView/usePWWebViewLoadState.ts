@@ -22,16 +22,27 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  */
 export const WEBVIEW_LOADING_TIMEOUT_MS = 20_000
 
+// 4xx stays in-page: a site's own 404 page is content the user should see.
+const isServerErrorStatus = (statusCode: number) => statusCode >= 500
+
+// iOS reports the error with the response URL, which never carries the
+// fragment, but the load event with the webview URL, which does.
+const withoutFragment = (url: string) => url.split('#')[0]
+
+export type HttpError = { url: string; statusCode: number }
+
 type UsePWWebViewLoadStateResult = {
     /** No document ever loaded and the device is offline — show the offline surface. */
     showOfflineView: boolean
     /** The initial load overran its budget without a document or a native error. */
     showTimeoutView: boolean
+    /** The main frame answered with a 5xx — cover the server's raw error page. */
+    showUnavailableView: boolean
     handleLoadStart: () => void
     handleLoadEnd: () => void
-    /** Marks that a main-frame document rendered — the in-page content owns the surface from here. */
-    markDocumentLoaded: () => void
-    /** Manual retry from the offline/timeout surface. */
+    handleHttpError: (error: HttpError) => void
+    handleDocumentLoaded: (url: string) => void
+    /** Manual retry from the offline/timeout/unavailable surface. */
     handleRetry: () => void
 }
 
@@ -43,6 +54,8 @@ export const usePWWebViewLoadState = ({
     const { hasInternet } = useNetworkStatus()
     const [hasDocument, setHasDocument] = useState(false)
     const [isTimedOut, setIsTimedOut] = useState(false)
+    const [httpError, setHttpErrorState] = useState<Nullable<HttpError>>(null)
+    const httpErrorRef = useRef<Nullable<HttpError>>(null)
     const timerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const wasOfflineRef = useRef(false)
     const reloadedThisEpisodeRef = useRef(false)
@@ -67,14 +80,40 @@ export const usePWWebViewLoadState = ({
         clearTimer()
     }, [clearTimer])
 
-    const markDocumentLoaded = useCallback(() => {
-        setHasDocument(true)
+    const setHttpError = useCallback((error: Nullable<HttpError>) => {
+        httpErrorRef.current = error
+        setHttpErrorState(error)
     }, [])
+
+    const handleHttpError = useCallback(
+        (error: HttpError) => {
+            if (isServerErrorStatus(error.statusCode)) setHttpError(error)
+        },
+        [setHttpError],
+    )
+
+    // The 5xx report precedes that page's onLoad on both platforms, but its
+    // order against onLoadStart isn't guaranteed, so a load start can't
+    // clear it: only a retry or a page loading at another URL does.
+    const handleDocumentLoaded = useCallback(
+        (url: string) => {
+            const failedUrl = httpErrorRef.current?.url
+            if (
+                failedUrl !== undefined &&
+                withoutFragment(failedUrl) === withoutFragment(url)
+            )
+                return
+            setHttpError(null)
+            setHasDocument(true)
+        },
+        [setHttpError],
+    )
 
     const handleRetry = useCallback(() => {
         setIsTimedOut(false)
+        setHttpError(null)
         onReload()
-    }, [onReload])
+    }, [onReload, setHttpError])
 
     useEffect(() => () => clearTimer(), [clearTimer])
 
@@ -91,15 +130,21 @@ export const usePWWebViewLoadState = ({
         if (hasDocument || reloadedThisEpisodeRef.current) return
         reloadedThisEpisodeRef.current = true
         setIsTimedOut(false)
+        setHttpError(null)
         onReload()
-    }, [hasInternet, hasDocument, onReload])
+    }, [hasInternet, hasDocument, onReload, setHttpError])
+
+    const showOfflineView = !hasInternet && !hasDocument
 
     return {
-        showOfflineView: !hasInternet && !hasDocument,
-        showTimeoutView: hasInternet && isTimedOut && !hasDocument,
+        showOfflineView,
+        showTimeoutView:
+            hasInternet && isTimedOut && !hasDocument && !httpError,
+        showUnavailableView: !!httpError && !showOfflineView,
         handleLoadStart,
         handleLoadEnd,
-        markDocumentLoaded,
+        handleHttpError,
+        handleDocumentLoaded,
         handleRetry,
     }
 }
