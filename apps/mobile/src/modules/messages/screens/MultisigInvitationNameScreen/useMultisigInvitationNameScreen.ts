@@ -20,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     buildAccount,
     findAccountByAddressOn,
+    nextAccountName,
     useAccountsStore,
     useAllAccounts,
     useSelectedAccountId,
@@ -37,7 +38,6 @@ import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
 import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 import { useShouldPlayConfetti } from '@modules/onboarding'
-import { getNextSharedAccountName } from '@modules/multisig'
 import type { MessagesStackParamList } from '../../routes/types'
 
 type UseMultisigInvitationNameScreenResult = {
@@ -81,14 +81,18 @@ export const useMultisigInvitationNameScreen =
             deviceId,
         })
 
-        const [accountName, setAccountName] = useState(() =>
-            getNextSharedAccountName(
+        // An invitation already held doesn't count its own number against itself.
+        const [accountName, setAccountName] = useState(() => {
+            const held = findAccountByAddressOn(
                 accounts,
-                t('multisig.invitation.name.default_name'),
                 ALGORAND_CHAIN_ID,
                 invitation.address,
-            ),
-        )
+            )
+            return nextAccountName(
+                accounts.filter(account => account !== held),
+                'shared',
+            )
+        })
         const [isSaving, setIsSaving] = useState(false)
         const { allowProgrammaticNavigation } = useNavigationLock(isSaving)
 

@@ -163,6 +163,7 @@ vi.mock('@analytics', async () => ({
 
 const HD_ACCOUNT: LocalAccount = {
     id: 'hd-1',
+    name: '',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     chains: { algorand: { address: 'HD_ADDRESS', keyPairId: 'wallet-1' } },
 }

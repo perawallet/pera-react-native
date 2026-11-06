@@ -76,10 +76,12 @@ describe('useDiscoveredAccountRow', () => {
         ])
     })
 
-    it('titles the row with the account number', () => {
-        const { result } = renderHook(() => useDiscoveredAccountRow(linked))
+    it("titles the row with the account's name", () => {
+        const { result } = renderHook(() =>
+            useDiscoveredAccountRow({ ...linked, name: 'Account #3' }),
+        )
 
-        expect(result.current.title).toBe('account_info.account_number')
+        expect(result.current.title).toBe('Account #3')
         expect(result.current.testAddress).toBe(ALGO_ADDRESS)
     })
 

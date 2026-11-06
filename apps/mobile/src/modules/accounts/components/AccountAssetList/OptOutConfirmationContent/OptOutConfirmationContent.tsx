@@ -15,6 +15,7 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
+    getAccountDisplayName,
     findAddressHolder,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
@@ -23,7 +24,6 @@ import { useNativeAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
-import { useAccountName } from '@hooks/useAccountName'
 import { useOptOutConfirmationContent } from './useOptOutConfirmationContent'
 import { useStyles } from './styles'
 
@@ -45,10 +45,11 @@ export const OptOutConfirmationContent = ({
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
     const { fee } = useOptOutConfirmationContent(accountAddress, scope)
 
-    const { getAccountName } = useAccountName()
     const accountName = useAccountsStore(s => {
         const account = findAddressHolder(s.accounts, scope, accountAddress)
-        return account ? getAccountName(account, scope.chainId) : accountAddress
+        return account
+            ? getAccountDisplayName(account, scope.chainId)
+            : accountAddress
     })
 
     const { data: assets } = useAssetsQuery(scope, [assetId])

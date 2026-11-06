@@ -66,6 +66,7 @@ const ASA_ID = '31566704'
 
 const ethereumAccount = (): WalletAccount => ({
     id: 'eth-account',
+    name: '',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     chains: {
         algorand: { address: 'ALGO_ADDR' },

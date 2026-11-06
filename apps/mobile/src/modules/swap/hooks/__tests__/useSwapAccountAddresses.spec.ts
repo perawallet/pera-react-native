@@ -17,6 +17,7 @@ import { useSwapAccountAddresses } from '../useSwapAccountAddresses'
 
 const TWO_CHAIN: WalletAccount = {
     id: 'both',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: {
         algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },

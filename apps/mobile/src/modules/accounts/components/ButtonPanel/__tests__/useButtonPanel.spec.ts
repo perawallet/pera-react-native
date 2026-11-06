@@ -60,12 +60,14 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
 
 const onAlgorand: WalletAccount = {
     id: 'algo',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'ALGO-ADDR', keyPairId: 'algo-key' } },
 }
 
 const onEthereumOnly: WalletAccount = {
     id: 'eth',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { ethereum: { address: '0xabc', keyPairId: 'eth-key' } },
 }

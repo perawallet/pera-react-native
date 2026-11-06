@@ -534,6 +534,8 @@
         "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
         "account_number": "Hesap #{{number}}",
+        "shared_account_number": "Paylaşılan hesap #{{number}}",
+        "ledger_account_number": "Ledger hesabı #{{number}}",
         "name_taken": "Bu isimde bir hesabın zaten var. Birbirinden ayırt edebilmek için farklı bir isim seç.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
@@ -2150,7 +2152,6 @@
         "name": {
             "title": "Hesabına isim ver",
             "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir isim ver. Bu isimler cihazında yerel olarak saklanır ve yalnızca sen görebilirsin.",
-            "default_name": "Paylaşılan hesap",
             "finish_button": "Hesap oluşturmayı tamamla",
             "creating": "Paylaşılan hesap oluşturuluyor...",
             "error_title": "Hesap oluşturulamadı",
@@ -2207,7 +2208,6 @@
                 "screen_title": "Paylaşılan hesap",
                 "title": "Paylaşılan hesabına isim ver",
                 "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir isim ver. Bu isimler cihazında yerel olarak saklanır ve yalnızca sen görebilirsin.",
-                "default_name": "Paylaşılan hesap",
                 "finish_button": "Bitir",
                 "saving": "Paylaşılan hesap kaydediliyor..."
             }
@@ -2393,7 +2393,6 @@
         "name_account": {
             "title": "Hesabına ad ver",
             "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir ad ver. Bu adlar yalnızca cihazında saklanır ve yalnızca senin görebileceğin bilgilerdir.",
-            "wallet_label": "Cüzdan #{{count}}",
             "finish_button": "Hesap oluşturmayı tamamla"
         },
         "import_select_addresses": {
@@ -4441,7 +4440,6 @@
         "scan_header": {
             "having_issues": "Sorun mu yaşıyorsun?"
         },
-        "default_account_name": "Ledger {{number}}",
         "handoff_added": {
             "title": "Ledger hesabı eklendi",
             "body": "Artık onu Pera uzantısında kullanabilirsin."

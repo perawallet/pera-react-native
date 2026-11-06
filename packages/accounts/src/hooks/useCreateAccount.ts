@@ -35,12 +35,21 @@ export const useCreateAccount = (scope: ChainScope) => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { getKey, createHDWalletKey, removeKeyAndChildren } = useKMS()
 
-    const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
+    // Returns the stored record, which the store named if `newAccount` had no name.
+    const saveAndUpdateAccounts = async (
+        newAccount: WalletAccount,
+    ): Promise<WalletAccount> => {
         // We get the state fresh to avoid stale captures
         const currentAccounts = useAccountsStore.getState().accounts
         const nextAccounts = [...currentAccounts, newAccount]
         setAccounts(nextAccounts)
         clearPendingAccountRollback()
+        return (
+            useAccountsStore
+                .getState()
+                .accounts.find(account => account.id === newAccount.id) ??
+            newAccount
+        )
     }
 
     // Pure derivation primitive: given a seed that's already in the keystore,
@@ -154,8 +163,7 @@ export const useCreateAccount = (scope: ChainScope) => {
         keyIndex: number
     }) => {
         const newAccount = await buildHdWalletAccount(params)
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
+        return saveAndUpdateAccounts(newAccount)
     }
 
     const createHdWalletAccountForSeed = async (params: {
@@ -164,8 +172,7 @@ export const useCreateAccount = (scope: ChainScope) => {
         keyIndex: number
     }) => {
         const newAccount = await buildHdWalletAccountForSeed(params)
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
+        return saveAndUpdateAccounts(newAccount)
     }
 
     const createSingleKeyAccount = async (params: {
@@ -173,8 +180,7 @@ export const useCreateAccount = (scope: ChainScope) => {
         id?: string
     }) => {
         const newAccount = await buildSingleKeyAccount(params)
-        await saveAndUpdateAccounts(newAccount)
-        return newAccount
+        return saveAndUpdateAccounts(newAccount)
     }
 
     return {

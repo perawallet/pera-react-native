@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import {
+    getAccountDisplayName,
     accountChainIdOf,
     chainAccountOf,
     ownAddressOf,
@@ -31,7 +32,6 @@ import {
     crossChainTotalOf,
     type CrossChainTotal,
 } from '@components/AccountWithBalance'
-import { useAccountName } from '@hooks/useAccountName'
 
 export type DiscoveredAddressLine = {
     address: string
@@ -53,7 +53,6 @@ export const useDiscoveredAccountRow = (
     const registeredChainIds = useRegisteredChainIds()
     const chainId = accountChainIdOf(account, registeredChainIds)
     const scope = useSelectedScope(chainId)
-    const { getAccountName } = useAccountName()
     const { usdToPreferred } = useCurrency(scope)
     const sources = useAccountHoldingSources(account)
     const failedFirstReadChainIds = useFailedFirstReadChainIds(sources)
@@ -96,7 +95,7 @@ export const useDiscoveredAccountRow = (
     )
 
     return {
-        title: getAccountName(account, chainId),
+        title: getAccountDisplayName(account, chainId),
         addressLines,
         total,
         testAddress: ownAddressOf(account) ?? account.id,

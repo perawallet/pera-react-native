@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    getAccountDisplayName,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { AccountDisplayCard } from '@components/AccountDisplay'
@@ -22,7 +25,6 @@ import {
 } from '@modules/accounts'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAccountName } from '@hooks/useAccountName'
 import { useModalState } from '@hooks/useModalState'
 import { useCardScope } from '../../hooks/useCardScope'
 import { useCardSessionGuard } from '../../hooks/useCardSessionGuard'
@@ -41,7 +43,6 @@ type UsePeraCardAccountScreenResult = {
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const scope = useCardScope()
     const { t } = useLanguage()
-    const { getAccountName } = useAccountName()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
@@ -74,11 +75,11 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
             title: t('peraCard.account.navigation_title'),
             subtitle: account
                 ? t('peraCard.account.linked_to', {
-                      name: getAccountName(account, ALGORAND_CHAIN_ID),
+                      name: getAccountDisplayName(account, ALGORAND_CHAIN_ID),
                   })
                 : t('peraCard.account.linked_to_fallback'),
         }
-    }, [accounts, connectedAddress, escrowCardAddress, t, getAccountName])
+    }, [accounts, connectedAddress, escrowCardAddress, t])
 
     // The switcher here is the shared drawer, which reads its behaviour from the
     // published kind rather than from props on the trigger. Publishing is what

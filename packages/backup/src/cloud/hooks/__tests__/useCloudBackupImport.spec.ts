@@ -633,7 +633,7 @@ describe('useCloudBackupImport', () => {
         expect(storeState.accounts[0].name).toBe('New')
     })
 
-    test("clears an already-present account's name when its record has none", async () => {
+    test("keeps an already-present account's name when its record has none", async () => {
         storeState.accounts = [{ ...held('WATCH_ADDR'), name: 'Old' }]
         const { current } = renderImport()
 
@@ -641,7 +641,8 @@ describe('useCloudBackupImport', () => {
             { ...watchAccount('WATCH_ADDR'), chain: 'algorand' },
         ])
 
-        expect(storeState.accounts[0]).not.toHaveProperty('name')
+        expect(setAccountsMock).not.toHaveBeenCalled()
+        expect(storeState.accounts[0].name).toBe('Old')
     })
 
     test('keeps the name of an already-present account a nameless legacy item names', async () => {

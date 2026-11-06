@@ -166,6 +166,7 @@ describe('Flow: the Pera backend refuses Ethereum', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'eth-watch',
+                name: '',
                 custody: { kind: 'watch' },
                 chains: { ethereum: { address: ETH_ADDRESS } },
             },

@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    getAccountDisplayName,
     type WalletAccount,
     accountChainIdOf,
     addressOn,
@@ -46,7 +47,6 @@ import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAccountName } from '@hooks/useAccountName'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -136,8 +136,7 @@ export const useAccountOptions = ({
     const scope = useSelectedScope(accountChainId)
     const notificationsChainOf = useNotificationsChainResolver()
     const canToggleNotifications = notificationsChainOf(account) !== undefined
-    const { getAccountName } = useAccountName()
-    const sheetTitle = getAccountName(account, accountChainId)
+    const sheetTitle = getAccountDisplayName(account, accountChainId)
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
 

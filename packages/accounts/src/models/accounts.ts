@@ -34,7 +34,8 @@ export type WalletAccount = {
      * address, so an account is referenced the same way on every chain.
      */
     id: string
-    name?: string
+    /** Empty only on an account not yet stored: `setAccounts` names it "Account #N". */
+    name: string
     /** How the account is held; the same on every chain. */
     custody: AccountCustody
     /** Everything that varies by chain, keyed by chain id. */

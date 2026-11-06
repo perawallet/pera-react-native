@@ -35,6 +35,7 @@ import { useOnrampAccount } from '../useOnrampAccount'
 
 const onBoth: WalletAccount = {
     id: 'both',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: {
         algorand: { address: 'ALGORAND_ADDRESS' },
@@ -44,6 +45,7 @@ const onBoth: WalletAccount = {
 
 const onEthereumOnly: WalletAccount = {
     id: 'eth',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { ethereum: { address: '0xdef' } },
 }
@@ -186,6 +188,7 @@ describe('useOnrampAccount', () => {
     it('has no scope for an account with no address on an onramp chain', () => {
         vi.mocked(useSelectedAccount).mockReturnValue({
             id: 'elsewhere',
+            name: '',
             custody: { kind: 'watch' },
             chains: { base: { address: '0xADDRESS' } },
         })

@@ -157,6 +157,7 @@ describe('usePortfolioView', () => {
         registerEthereumChain()
         const ethAccount: WalletAccount = {
             id: 'eth',
+            name: '',
             custody: { kind: 'local', seed: null },
             chains: {
                 ethereum: { address: `0x${'a'.repeat(40)}`, keyPairId: 'k' },

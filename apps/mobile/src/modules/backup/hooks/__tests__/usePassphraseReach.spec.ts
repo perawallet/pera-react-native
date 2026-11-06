@@ -101,6 +101,7 @@ const hdAccount = (
     chains: WalletAccount['chains'],
 ): WalletAccount => ({
     id,
+    name: '',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex } },
     chains,
 })

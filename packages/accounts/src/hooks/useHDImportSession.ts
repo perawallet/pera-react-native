@@ -308,6 +308,14 @@ export const useHDImportSession = (
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...committed]
             setAccounts(next)
+            // The store named each account on the way in.
+            const stored = useAccountsStore.getState().accounts
+            const saved = committed.map(account => ({
+                ...account,
+                name:
+                    stored.find(held => held.id === account.id)?.name ??
+                    account.name,
+            }))
             const selected = new Set(
                 selectedAccounts.flatMap(account => {
                     const index = hdIndexOf(account)
@@ -330,7 +338,7 @@ export const useHDImportSession = (
 
             useHDImportSessionStore.getState().resetState()
 
-            return committed
+            return saved
         },
         [
             persistHDMasterKey,

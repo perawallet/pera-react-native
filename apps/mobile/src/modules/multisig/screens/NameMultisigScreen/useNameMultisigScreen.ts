@@ -16,6 +16,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     buildAccount,
     findAccountByAddressOn,
+    nextAccountName,
     useAccountsStore,
     useAllAccounts,
     useSelectedAccountId,
@@ -36,7 +37,6 @@ import { useToast } from '@hooks/useToast'
 import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 import { useShouldPlayConfetti, useExitAccountFlow } from '@modules/onboarding'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
-import { getNextSharedAccountName } from '../../utils'
 import type { MultisigStackParamList } from '../../routes/types'
 
 type UseNameMultisigScreenResult = {
@@ -87,11 +87,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     })
 
     const [accountName, setAccountName] = useState(() =>
-        getNextSharedAccountName(
-            accounts,
-            t('multisig.name.default_name'),
-            chainId,
-        ),
+        nextAccountName(accounts, 'shared'),
     )
     const [isCreating, setIsCreating] = useState(false)
     // Once saved, the new account's own name is in the store; it must not

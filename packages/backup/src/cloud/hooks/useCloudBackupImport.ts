@@ -583,19 +583,16 @@ const holderOf = (
     })
 }
 
-/** A legacy item without a name says nothing about it, so only a record
- *  clears one. */
+/** An entry without a name keeps the one the store gave the account. */
 const adoptBackupName = (
     context: ImportContext,
     holder: WalletAccount,
-    { chain, addressPayload }: PulledAccount,
+    { addressPayload }: PulledAccount,
 ): void => {
     if (!('customName' in addressPayload)) return
-    const name = addressPayload.customName || undefined
-    if (chain === undefined && name === undefined) return
-    if ((holder.name || undefined) === name) return
-    const { name: _name, ...unnamed } = holder
-    context.replaceAccount(name === undefined ? unnamed : { ...holder, name })
+    const name = addressPayload.customName
+    if (!name || holder.name === name) return
+    context.replaceAccount({ ...holder, name })
 }
 
 /**

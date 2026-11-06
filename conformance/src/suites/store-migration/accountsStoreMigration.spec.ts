@@ -33,6 +33,7 @@ import {
     CUSTOM_NETWORK_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     migrations,
@@ -294,6 +295,15 @@ describe('accounts-store migration conformance', () => {
         // Selection and order move from addresses to the same accounts' ids.
         expect(selectedAccountId).toBe(fixtureAccounts.algo25.id)
         expect(manualAccountOrder).toEqual(accounts.map(account => account.id))
+        // An unnamed account stores the name it showed: its HD position, or
+        // its truncated address.
+        expect(accounts.map(account => account.name)).toEqual([
+            'Main',
+            'Account #1',
+            ...[quantum, rekeyed, fixtureAccounts.watch].map(account =>
+                truncateAlgorandAddress(account.address),
+            ),
+        ])
         for (const account of accounts) {
             for (const entry of Object.values(account.chains)) {
                 expect(entry?.enabledBy).toBe('created')

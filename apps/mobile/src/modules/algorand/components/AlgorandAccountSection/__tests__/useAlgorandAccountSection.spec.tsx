@@ -60,12 +60,14 @@ const scope = { chainId: 'algorand', networkId: 'mainnet' } as ChainScope
 
 const standardAccount: WalletAccount = {
     id: 'acc-1',
+    name: '',
     chains: { algorand: { address: 'ALGO25ADDRESS', keyPairId: 'key-1' } },
     custody: { kind: 'local', seed: null },
 }
 
 const sharedAccount: WalletAccount = {
     id: 'acc-6',
+    name: '',
     chains: {
         algorand: {
             address: 'MULTISIGADDRESS',

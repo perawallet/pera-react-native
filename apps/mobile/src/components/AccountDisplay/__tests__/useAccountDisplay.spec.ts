@@ -53,7 +53,7 @@ const ADDRESS = 'A'.repeat(58)
 
 const ETH_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 
-const makeAccount = (name?: string): WalletAccount => ({
+const makeAccount = (name = ''): WalletAccount => ({
     id: 'account-1',
     name,
     custody: { kind: 'watch' },
@@ -117,6 +117,7 @@ describe('useAccountDisplay', () => {
     it("reports the chain it resolved: the given one, else the account's own", () => {
         const account: WalletAccount = {
             id: 'account-2',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ETH_ADDRESS } },
         }
@@ -140,6 +141,7 @@ describe('useAccountDisplay', () => {
     it('names an unnamed Ethereum-only account by its truncated address', () => {
         const account: WalletAccount = {
             id: 'account-2',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ETH_ADDRESS } },
         }
@@ -182,34 +184,6 @@ describe('useAccountDisplay', () => {
         expect(result.current.secondaryText).toBe('alice.eth')
     })
 
-    it('names an unnamed Universal Wallet account by its number and shows its address, not its type, below', () => {
-        mockAccountTypeLabel = 'account_info.type_universal_wallet'
-        const account: WalletAccount = {
-            id: 'account-3',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            chains: { algorand: { address: ADDRESS, keyPairId: 'key' } },
-        }
-
-        const { result } = renderHook(() =>
-            useAccountDisplay({
-                account,
-                compact: false,
-                showAccountType: true,
-                iconSize: 'xl',
-            }),
-        )
-
-        expect(result.current.displayName).toBe('account_info.account_number')
-        expect(result.current.showTypeAsSecondary).toBe(false)
-        expect(result.current.secondaryText).toBe(
-            truncateAlgorandAddress(ADDRESS),
-        )
-    })
-
     it('suppresses the secondary line when it repeats the primary', () => {
         mockNfdNames = [{ name: 'pera.algo' }]
 
@@ -242,9 +216,7 @@ describe('useAccountDisplay', () => {
         expect(result.current.renderSecondary).toBe(true)
     })
 
-    it('collapses to a single truncated address when the name is a legacy truncation of the address', () => {
-        // Legacy native apps auto-named accounts with a 6+6 truncated address;
-        // migration keeps that name, which must not render as address-twice.
+    it('shows a name that is a truncated address as it is', () => {
         const legacyName = `${ADDRESS.slice(0, 6)}...${ADDRESS.slice(-6)}`
 
         const { result } = renderHook(() =>
@@ -256,30 +228,7 @@ describe('useAccountDisplay', () => {
             }),
         )
 
-        expect(result.current.displayName).toBe(
-            truncateAlgorandAddress(ADDRESS),
-        )
-        expect(result.current.renderSecondary).toBe(false)
-    })
-
-    it('shows the NFD as secondary when a legacy-truncation name is present', () => {
-        mockNfdNames = [{ name: 'flavortown.algo' }]
-        const legacyName = `${ADDRESS.slice(0, 6)}...${ADDRESS.slice(-6)}`
-
-        const { result } = renderHook(() =>
-            useAccountDisplay({
-                account: makeAccount(legacyName),
-                compact: false,
-                showAccountType: false,
-                iconSize: 'xl',
-            }),
-        )
-
-        expect(result.current.displayName).toBe(
-            truncateAlgorandAddress(ADDRESS),
-        )
-        expect(result.current.secondaryText).toBe('flavortown.algo')
-        expect(result.current.renderSecondary).toBe(true)
+        expect(result.current.displayName).toBe(legacyName)
     })
 
     it('shows the account type for unnamed accounts when requested', () => {
@@ -367,6 +316,7 @@ describe('useAccountDisplay', () => {
         const ethAddress = `0x${'c'.repeat(40)}`
         const account: WalletAccount = {
             id: 'account-eth',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ethAddress } },
         }
@@ -395,6 +345,7 @@ describe('useAccountDisplay', () => {
         }
         const evmOnly: WalletAccount = {
             id: 'account-evm',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ETH_ADDRESS } },
         }

@@ -80,6 +80,7 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 const seedLedgerSender = (): HardwareWalletAccount => {
     const sender: HardwareWalletAccount = {
         id: 'hw-ledger-sender',
+        name: '',
         custody: {
             kind: 'hardware',
             device: {

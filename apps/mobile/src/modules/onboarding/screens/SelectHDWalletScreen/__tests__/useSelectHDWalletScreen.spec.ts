@@ -91,6 +91,7 @@ const mockHdSeedGroups: HdSeedGroup[] = [
         accounts: [
             {
                 id: 'hd-2',
+                name: '',
                 chains: {
                     algorand: {
                         address: 'HD_ADDRESS_2',
@@ -106,6 +107,7 @@ const mockHdSeedGroups: HdSeedGroup[] = [
         ],
         firstAccount: {
             id: 'hd-2',
+            name: '',
             chains: {
                 algorand: {
                     address: 'HD_ADDRESS_2',

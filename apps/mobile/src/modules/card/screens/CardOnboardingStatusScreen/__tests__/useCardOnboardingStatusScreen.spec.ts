@@ -251,6 +251,7 @@ const account = (
     }: Partial<WalletAccount> & { keyPairId?: string } = {},
 ): WalletAccount => ({
     id: address,
+    name: '',
     custody: custodyForType(type),
     chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
     ...extra,

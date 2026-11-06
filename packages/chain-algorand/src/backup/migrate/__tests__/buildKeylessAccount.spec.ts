@@ -107,12 +107,12 @@ describe('buildWatchAccount', () => {
         })
     })
 
-    it('returns undefined name when legacy name is an empty string', () => {
+    it('leaves the name empty for the store to fill when the legacy name is empty', () => {
         const legacy = buildLegacyAccount({ name: '' })
 
         const account = buildWatchAccount(legacy)
 
-        expect(account.name).toBeUndefined()
+        expect(account.name).toBe('')
     })
 
     it('carries no authority on the account itself', () => {
@@ -192,7 +192,7 @@ describe('buildLedgerAccount', () => {
         expect(account.custody.device.deviceName).toBe('')
     })
 
-    it('returns undefined name when legacy name is empty', () => {
+    it('leaves the name empty for the store to fill when the legacy name is empty', () => {
         const legacy = buildLegacyAccount({
             type: 'ledger',
             name: '',
@@ -205,7 +205,7 @@ describe('buildLedgerAccount', () => {
 
         const account = buildLedgerAccount(legacy)
 
-        expect(account.name).toBeUndefined()
+        expect(account.name).toBe('')
     })
 })
 

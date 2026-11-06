@@ -77,10 +77,11 @@ describe('buildAccount', () => {
     })
 
     test.each(Object.entries(inputs))(
-        'a %s account holds only its id, custody and chains',
+        'a %s account built without a name holds only its id, an empty name, custody and chains',
         (_kind, input) => {
             expect(buildAccount({ id: 'id', ...input })).toStrictEqual({
                 id: 'id',
+                name: '',
                 custody: input.custody,
                 chains: createdAt(input.chains),
             })
