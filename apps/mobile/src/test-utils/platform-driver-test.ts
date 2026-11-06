@@ -15,8 +15,8 @@
 // third sibling of real-ish in-memory services that don't require MMKV,
 // Keychain or native crypto.
 //
-// The vitest config aliases the package here, so every
-// `getPlatformServices` import resolves to this at test time.
+// The vitest config aliases the package here, but the driver `vi.mock` in
+// `mocks/platform.ts` shadows this file until a spec unmocks the driver.
 import {
     DevicePlatforms,
     type AnalyticsService,
