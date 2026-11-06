@@ -78,7 +78,7 @@ const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
 const { ensResolverCallResponder, evmRpcHandlers } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { mockNameSearch } =
-    await import('@perawallet/wallet-core-nfd/test-handlers')
+    await import('@perawallet/wallet-core-names/test-handlers')
 const { render } = await import('@test-utils/render')
 const { useBottomSheetStore } = await import('@modules/bottom-sheet')
 const { ConnectionsProvider } = await import('@modules/connections/shell')

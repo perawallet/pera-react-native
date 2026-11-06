@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNameResolutionQuery } from '@perawallet/wallet-core-nfd'
+import { useNameResolutionQuery } from '@perawallet/wallet-core-names'
 import {
     addressCodecs,
     type ChainId,
@@ -123,7 +123,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameResolutionQuery: vi.fn(),
     nameServiceOf: vi.fn((scope: { chainId: string }) =>
         scope.chainId === 'algorand' ? 'nfd' : 'ens',

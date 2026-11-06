@@ -38,6 +38,7 @@ import m0022 from './0022_transaction_batches.sql?raw'
 import m0023 from './0023_phishing_list_domains.sql?raw'
 import m0024 from './0024_phishing_list_addresses.sql?raw'
 import m0025 from './0025_account_added_tokens.sql?raw'
+import m0026 from './0026_name_cache.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -107,4 +108,6 @@ export const migrations: MigrationConfig = {
     '0024_phishing_list_addresses': m0024,
     // Created empty; rows only exist once a user adds a token.
     '0025_account_added_tokens': m0025,
+    // Renamed in place, so cached names, the primary key and its index carry over with no refetch.
+    '0026_name_cache': m0026,
 }

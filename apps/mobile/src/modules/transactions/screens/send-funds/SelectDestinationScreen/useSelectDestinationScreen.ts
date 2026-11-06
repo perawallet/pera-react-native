@@ -12,7 +12,7 @@
 
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { nameServiceOf, verifyNameAddress } from '@perawallet/wallet-core-nfd'
+import { nameServiceOf, verifyNameAddress } from '@perawallet/wallet-core-names'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'

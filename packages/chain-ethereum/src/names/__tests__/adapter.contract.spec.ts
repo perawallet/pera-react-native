@@ -13,7 +13,7 @@
 import { afterAll, beforeAll, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import { nameServiceContractTests } from '@perawallet/wallet-core-nfd/testing'
+import { nameServiceContractTests } from '@perawallet/wallet-core-names/testing'
 import { createEvmAddressCodec } from '../../accounts/address-codec'
 import { BASE, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEvmNameServiceAdapter } from '../adapter'

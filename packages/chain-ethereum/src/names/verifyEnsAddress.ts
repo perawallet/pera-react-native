@@ -27,7 +27,7 @@ import { chainEndpointsFor, config } from '@perawallet/wallet-core-config'
 import type {
     NameAddressVerification,
     VerifyForwardResolutionParams,
-} from '@perawallet/wallet-core-nfd'
+} from '@perawallet/wallet-core-names'
 import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { abortError } from '../blockchain/utils/evmHttpTransport'

@@ -84,7 +84,7 @@ const mockUseNameForAddress = vi.fn(() => ({
     isPending: false,
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameForAddressQuery: (
         ...args: Parameters<typeof mockUseNameForAddress>
     ) => mockUseNameForAddress(...args),

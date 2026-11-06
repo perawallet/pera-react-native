@@ -149,7 +149,7 @@ pera-react-native/
 │   ├── shared/              # Common utilities, types, and models
 │   ├── signing/             # Signing pipeline
 │   ├── walletconnect/       # WalletConnect integration
-│   └── …                    # contacts, swaps, staking, card, nfd, …
+│   └── …                    # contacts, swaps, staking, card, names, …
 ├── extensions/              # Platform adapters behind one interface
 │   ├── platform/            # The platform contract
 │   ├── platform-react-native/ # React Native implementation

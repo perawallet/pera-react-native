@@ -109,8 +109,8 @@
       "@perawallet/wallet-core-onramp/test-handlers": [
         "../../packages/onramp/src/test-handlers.ts"
       ],
-      "@perawallet/wallet-core-nfd/test-handlers": [
-        "../../packages/nfd/src/test-handlers.ts"
+      "@perawallet/wallet-core-names/test-handlers": [
+        "../../packages/names/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-site-safety/test-handlers": [
         "../../packages/site-safety/src/test-handlers.ts"

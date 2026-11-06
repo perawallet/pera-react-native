@@ -16,7 +16,7 @@ import {
     type ChainActionData,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type { NameServiceId } from '@perawallet/wallet-core-nfd'
+import type { NameServiceId } from '@perawallet/wallet-core-names'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { NAME_SERVICE_COPY } from '@utils/nameServiceCopy'

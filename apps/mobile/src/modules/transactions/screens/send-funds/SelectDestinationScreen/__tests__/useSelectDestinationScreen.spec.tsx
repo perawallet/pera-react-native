@@ -70,7 +70,7 @@ vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
 
 const mockVerifyNameAddress = vi.hoisted(() => vi.fn())
 const mockNameServiceOf = vi.hoisted(() => vi.fn(() => 'nfd'))
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     verifyNameAddress: mockVerifyNameAddress,
     nameServiceOf: mockNameServiceOf,
 }))

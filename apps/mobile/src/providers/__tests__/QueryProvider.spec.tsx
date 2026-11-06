@@ -17,6 +17,7 @@ import { act, render, renderHook, waitFor } from '@testing-library/react'
 import {
     QueryClientProvider,
     focusManager,
+    hashKey,
     useMutation,
     useQuery,
 } from '@tanstack/react-query'
@@ -25,6 +26,7 @@ import {
     logger,
 } from '@perawallet/wallet-core-shared'
 import type { Persister } from '@tanstack/react-query-persist-client'
+import { PERSISTED_CACHE_BUSTER } from '../query-persistence'
 import { QueryProvider, queryClient } from '../QueryProvider'
 import { setOnPeraBackendUnavailable } from '../queryClient'
 import * as queryClientModule from '../queryClient'
@@ -405,5 +407,63 @@ describe('Pera-service-unavailable toast registration', () => {
         render(<QueryProvider persister={noopPersister}>{null}</QueryProvider>)
 
         expect(spy).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('legacy name cache restore', () => {
+    afterEach(() => {
+        queryClient.clear()
+    })
+
+    it('hydrates a cache persisted under the old name prefix into the names keys', async () => {
+        const address = 'ADDR'
+        const scope = 'algorand:mainnet'
+        const persister: Persister = {
+            persistClient: vi.fn(),
+            removeClient: vi.fn(),
+            restoreClient: vi.fn(async () => ({
+                timestamp: Date.now(),
+                buster: PERSISTED_CACHE_BUSTER,
+                clientState: {
+                    mutations: [],
+                    queries: [
+                        {
+                            queryKey: ['nfd', 'address', { address, scope }],
+                            queryHash: hashKey([
+                                'nfd',
+                                'address',
+                                { address, scope },
+                            ]),
+                            state: {
+                                data: { name: 'alice.algo' },
+                                dataUpdateCount: 1,
+                                dataUpdatedAt: Date.now(),
+                                error: null,
+                                errorUpdateCount: 0,
+                                errorUpdatedAt: 0,
+                                fetchFailureCount: 0,
+                                fetchFailureReason: null,
+                                fetchMeta: null,
+                                isInvalidated: false,
+                                status: 'success',
+                                fetchStatus: 'idle',
+                            },
+                        },
+                    ],
+                },
+            })),
+        }
+
+        render(<QueryProvider persister={persister}>{null}</QueryProvider>)
+
+        await waitFor(() =>
+            expect(
+                queryClient.getQueryData([
+                    'names',
+                    'address',
+                    { address, scope },
+                ]),
+            ).toEqual({ name: 'alice.algo' }),
+        )
     })
 })

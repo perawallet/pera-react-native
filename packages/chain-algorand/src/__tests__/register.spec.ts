@@ -39,7 +39,7 @@ import {
     algorandSendFlowAdapter,
     algorandTransferAdapter,
 } from '../transactions'
-import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-names'
 import { algorandLedgerAppDriver } from '../ledger'
 import { algorandSwapAdapter } from '../swaps'
 import { algorandAssetsAdapter } from '../assets'
