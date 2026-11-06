@@ -545,6 +545,7 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toBeTruthy()
             })
 
+            // A received NFT as the backend sends it: transfer log only, sender's gas still reported.
             const serveNftReceive = (hash: string) => {
                 nodeReads.length = 0
                 server.use(
@@ -555,10 +556,7 @@ describe('Flow: History on an Ethereum account', () => {
                                     evmHistoryItem({
                                         hash,
                                         block_time: '2026-01-07T00:00:00Z',
-                                        from: COUNTERPARTY,
-                                        to: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
-                                        value: '0',
-                                        method: 'safeTransferFrom',
+                                        fee: '1950509299200',
                                         nft_transfers: [
                                             evmNftTransferLeg({
                                                 from: COUNTERPARTY,

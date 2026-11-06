@@ -59,7 +59,12 @@ const toRecords = (
             ...(item.block_number !== undefined && {
                 blockNumber: item.block_number,
             }),
-            fee: item.fee === null ? undefined : new Decimal(item.fee),
+            // No `from` means the row is known only from a transfer log, so
+            // another address signed it and the gas was never this account's.
+            fee:
+                item.fee === null || item.from === null
+                    ? undefined
+                    : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
             summary,
             chainData: { family: 'evm', ...(nft && { nft }) },

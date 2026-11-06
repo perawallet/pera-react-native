@@ -179,6 +179,32 @@ describe('getEvmTransactionHistory', () => {
         expect(items[1]?.fee).toBeUndefined()
     })
 
+    it('leaves the fee off a row known only from a transfer log, and keeps it on one another address signed', async () => {
+        serve([
+            [
+                evmHistoryItem({
+                    hash: hash(1),
+                    fee: '21000',
+                    nft_transfers: [evmNftTransferLeg({ from: PEER, to: ME })],
+                }),
+                evmHistoryItem({
+                    hash: hash(2),
+                    from: PEER,
+                    to: ME,
+                    value: '5',
+                    fee: '21000',
+                }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.fee).toBeUndefined()
+        expect(items[0]?.initiator).toBeUndefined()
+        expect(items[1]?.fee).toEqual(new Decimal(21000))
+        expect(items[1]?.initiator).toBe(PEER)
+    })
+
     it('carries the block number onto the record, and keeps a row whose block number is unreadable', async () => {
         serve([
             [

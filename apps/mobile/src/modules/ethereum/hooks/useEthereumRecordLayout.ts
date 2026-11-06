@@ -68,9 +68,9 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
     'nft-transfer',
 ]
 
-// A history row names its signer, who alone paid the gas; a pending send the
-// wallet built names none and is the account's own. Without an own address
-// the payer is unknown, so the fee stays.
+// A history row with a fee names its signer, who alone paid the gas; a
+// pending send the wallet built names none and is the account's own. Without
+// an own address the payer is unknown, so the fee stays.
 const isPaidByAnother = (
     initiator: Optional<string>,
     ownAddress: string,
