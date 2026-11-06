@@ -48,8 +48,6 @@ const ALGORAND_SIGN_PATHS =
 const DAPP_REGISTRY =
     "Only Algorand's Pera backend serves the dApp registry, keyed by URL, so every chain's proposal is checked against it there."
 
-const NFD = 'NFDs name Algorand addresses only.'
-
 const LEGACY_APP =
     'The old native app being migrated held only Algorand accounts.'
 
@@ -147,9 +145,6 @@ export const ALGORAND_ONLY_FEATURES: readonly AlgorandOnlyFeature[] = [
     ...entries(DAPP_REGISTRY, [
         'apps/mobile/src/modules/dapp/screens/WcConnectScreen/useWcConnectScreen.ts',
         'apps/mobile/src/modules/walletconnect/components/ConnectionApprovalView/ConnectionApprovalViewHeader.tsx',
-    ]),
-    ...entries(NFD, [
-        'apps/mobile/src/modules/contacts/screens/ViewContactScreen/useViewContactScreen.tsx',
     ]),
     ...entries(LEGACY_APP, [
         'apps/mobile/src/modules/migration/screens/MigrationSplashScreen/useMigrationSplashScreen.ts',

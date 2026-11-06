@@ -115,6 +115,25 @@ describe('fetchAndPersistNfds', () => {
         expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
     })
 
+    it('matches a hit answered in a different case than the address asked', async () => {
+        mockFetchNfdBulkRead.mockResolvedValue([
+            {
+                address: ADDR_A.toLowerCase(),
+                name: { name: 'alice.algo', image: '', source: 'nfd' },
+            },
+        ])
+
+        await fetchAndPersistNfds([ADDR_A], ALGORAND_MAINNET)
+
+        const persisted = mockUpsertNfdEntries.mock.calls[0][0].entries
+        expect(persisted).toEqual([
+            {
+                address: ADDR_A,
+                name: { name: 'alice.algo', image: '', source: 'nfd' },
+            },
+        ])
+    })
+
     it('persists negative results for addresses absent from response', async () => {
         mockFetchNfdBulkRead.mockResolvedValue([
             {

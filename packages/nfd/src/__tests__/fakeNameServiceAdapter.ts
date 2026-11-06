@@ -11,6 +11,10 @@
  */
 
 import {
+    addressCodecs,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     nameServiceChainAdapters,
     type NameServiceChainAdapter,
 } from '../chain-adapter'
@@ -32,5 +36,12 @@ export const registerFakeNameServiceAdapter = (
     const adapter = fakeNameServiceAdapter(overrides)
     nameServiceChainAdapters.reset()
     nameServiceChainAdapters.register(adapter)
+    // Case-insensitive, like the EVM and base32 encodings the real codecs compare.
+    addressCodecs.reset()
+    addressCodecs.register({
+        chainId: adapter.chainId,
+        isValid: adapter.isValidAddress,
+        normalize: address => address.toLowerCase(),
+    } as AddressCodec)
     return adapter
 }

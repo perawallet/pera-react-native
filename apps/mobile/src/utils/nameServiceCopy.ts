@@ -19,9 +19,11 @@ export type NameServiceCopy = {
     mismatchBodyKey: I18nKey
     unavailableTitleKey: I18nKey
     unavailableBodyKey: I18nKey
+    /** The heading over an address's name on the contact detail. */
+    addressNameLabelKey: I18nKey
 }
 
-/** What the address picker and the send checks say, so a name never gets another service's name. */
+/** What the address picker, the send checks and the contact detail say, so a name never gets another service's name. */
 export const NAME_SERVICE_COPY: Readonly<
     Record<NameServiceId, NameServiceCopy>
 > = {
@@ -35,6 +37,7 @@ export const NAME_SERVICE_COPY: Readonly<
         unavailableBodyKey: i18nKey(
             'send_funds.destination.nfd_unavailable_body',
         ),
+        addressNameLabelKey: i18nKey('contacts.view_contact.nfd_label'),
     },
     ens: {
         resultsTitleKey: i18nKey('address_entry.ens_results'),
@@ -46,5 +49,6 @@ export const NAME_SERVICE_COPY: Readonly<
         unavailableBodyKey: i18nKey(
             'send_funds.destination.ens_unavailable_body',
         ),
+        addressNameLabelKey: i18nKey('contacts.view_contact.ens_label'),
     },
 }

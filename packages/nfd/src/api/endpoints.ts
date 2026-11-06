@@ -41,15 +41,16 @@ export type FetchNfdBulkReadParams = {
 }
 
 /**
- * Bulk reverse lookup: multiple addresses → NFD names. Rejects when Pera's
- * backend can't answer, so the caller never records an outage as "no name".
+ * Bulk reverse lookup: addresses → their names on the scope's chain. Rejects
+ * when Pera's backend can't answer, so the caller never records an outage as
+ * "no name".
  */
 export const fetchNfdBulkRead = async (
     params: FetchNfdBulkReadParams,
 ): Promise<NfdBulkResult[]> => {
     const { addresses, scope, signal } = params
 
-    // Without a Pera backend there is nothing to ask: callers already treat [] as "no NFD match".
+    // Without a Pera backend there is nothing to ask: callers already treat [] as "no name".
     if (!hasPeraBackend(scope)) return []
     const chain = caip2Of(scope)
     if (!chain) return []
@@ -70,7 +71,15 @@ export const fetchNfdBulkRead = async (
         })
         return []
     }
-    return transformBulkResults(result.data)
+    const { normalizeName } = nameServiceAdapterFor(scope)
+    // Only a name already in the service's normal form is shown, because any other could pass for a different name.
+    return transformBulkResults(result.data).map(item =>
+        item.name &&
+        normalizeName &&
+        normalizeName(item.name.name) !== item.name.name
+            ? { ...item, name: null }
+            : item,
+    )
 }
 
 export type FetchNameSearchParams = {

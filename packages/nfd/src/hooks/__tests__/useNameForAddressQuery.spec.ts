@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
-import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
+import { useNameForAddressQuery } from '../useNameForAddressQuery'
 import { registerFakeNameServiceAdapter } from '../../__tests__/fakeNameServiceAdapter'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
@@ -43,7 +43,7 @@ const ETHEREUM_SEPOLIA = { chainId: 'ethereum', networkId: 'sepolia' } as const
 
 const VALID_ADDRESS = 'A'.repeat(58)
 
-describe('useNfdForAddressQuery', () => {
+describe('useNameForAddressQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -73,7 +73,7 @@ describe('useNfdForAddressQuery', () => {
             })
 
             const { result } = renderHook(
-                () => useNfdForAddressQuery(scope, VALID_ADDRESS),
+                () => useNameForAddressQuery(scope, VALID_ADDRESS),
                 { wrapper },
             )
 
@@ -88,27 +88,70 @@ describe('useNfdForAddressQuery', () => {
         },
     )
 
-    it('does not enqueue an address of a chain whose names are ENS', () => {
+    it('enqueues an address of a chain whose names are ENS', async () => {
         registerFakeNameServiceAdapter({
             chainId: 'ethereum',
             service: 'ens',
             isValidAddress: () => true,
         })
+        mockEnqueue.mockResolvedValue({
+            name: 'alice.eth',
+            image: '',
+            source: 'ens',
+        })
 
         const { result } = renderHook(
-            () => useNfdForAddressQuery(ETHEREUM_SEPOLIA, '0xabc'),
+            () => useNameForAddressQuery(ETHEREUM_SEPOLIA, '0xabc'),
             { wrapper },
         )
 
-        expect(mockEnqueue).not.toHaveBeenCalled()
-        expect(result.current.isPending).toBe(false)
+        await waitFor(() =>
+            expect(result.current.data.at(0)?.name).toBe('alice.eth'),
+        )
+        expect(mockEnqueue).toHaveBeenCalledWith(
+            '0xabc',
+            toScopeKey(ETHEREUM_SEPOLIA),
+        )
+    })
+
+    it('asks once per distinct address when many rows share a query client', async () => {
+        const addresses = ['A', 'B', 'C', 'D', 'E'].map(c => c.repeat(58))
+
+        for (let row = 0; row < 50; row++) {
+            renderHook(
+                () =>
+                    useNameForAddressQuery(
+                        ALGORAND_TESTNET,
+                        addresses[row % addresses.length],
+                    ),
+                { wrapper },
+            )
+        }
+
+        await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(5))
+        expect(new Set(mockEnqueue.mock.calls.map(call => call[0])).size).toBe(
+            5,
+        )
+    })
+
+    it('shows no name and no error when the lookup fails', async () => {
+        mockEnqueue.mockRejectedValue(new Error('503'))
+
+        const { result } = renderHook(
+            () => useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.data).toEqual([])
+        expect(Object.keys(result.current)).toEqual(['data', 'isPending'])
     })
 
     it('returns empty array when the queue resolves with null (negative cache)', async () => {
         mockEnqueue.mockResolvedValue(null)
 
         const { result } = renderHook(
-            () => useNfdForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
+            () => useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
             { wrapper },
         )
 
@@ -121,7 +164,7 @@ describe('useNfdForAddressQuery', () => {
         mockEnqueue.mockResolvedValue(undefined)
 
         const { result } = renderHook(
-            () => useNfdForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
+            () => useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
             { wrapper },
         )
 
@@ -148,10 +191,10 @@ describe('useNfdForAddressQuery', () => {
         const ADDR_1 = 'A'.repeat(58)
         const ADDR_2 = 'B'.repeat(58)
 
-        renderHook(() => useNfdForAddressQuery(ALGORAND_TESTNET, ADDR_1), {
+        renderHook(() => useNameForAddressQuery(ALGORAND_TESTNET, ADDR_1), {
             wrapper,
         })
-        renderHook(() => useNfdForAddressQuery(ALGORAND_TESTNET, ADDR_2), {
+        renderHook(() => useNameForAddressQuery(ALGORAND_TESTNET, ADDR_2), {
             wrapper,
         })
 
@@ -165,7 +208,7 @@ describe('useNfdForAddressQuery', () => {
         nameService.isEnabled = false
 
         renderHook(
-            () => useNfdForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
+            () => useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS),
             { wrapper },
         )
 
@@ -175,7 +218,7 @@ describe('useNfdForAddressQuery', () => {
     it('does not query when enabled is false', () => {
         const { result } = renderHook(
             () =>
-                useNfdForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS, {
+                useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS, {
                     enabled: false,
                 }),
             { wrapper },
@@ -186,7 +229,7 @@ describe('useNfdForAddressQuery', () => {
 
     it('does not query for invalid addresses', () => {
         renderHook(
-            () => useNfdForAddressQuery(ALGORAND_TESTNET, 'not-an-address'),
+            () => useNameForAddressQuery(ALGORAND_TESTNET, 'not-an-address'),
             { wrapper },
         )
         expect(mockEnqueue).not.toHaveBeenCalled()
@@ -194,7 +237,7 @@ describe('useNfdForAddressQuery', () => {
     it('returns one stable empty array while disabled', () => {
         const { result, rerender } = renderHook(
             () =>
-                useNfdForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS, {
+                useNameForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS, {
                     enabled: false,
                 }),
             { wrapper },

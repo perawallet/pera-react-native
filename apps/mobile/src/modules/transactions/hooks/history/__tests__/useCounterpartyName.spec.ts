@@ -26,7 +26,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 vi.mock('@hooks/useResolvedAddress', () => ({
     useResolvedAddress: vi.fn(() => ({
         displayName: 'resolved',
-        isNfd: false,
+        isNamed: false,
         isResolving: false,
     })),
 }))

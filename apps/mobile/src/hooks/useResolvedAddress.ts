@@ -18,17 +18,17 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
 
 export type AddressFormat = 'short' | 'long' | 'full'
 
 type UseResolvedAddressResult = {
-    /** NFD name if resolved, otherwise truncated/full address */
+    /** The address's name if resolved, otherwise truncated/full address */
     displayName: string
-    /** Whether the display name is an NFD name */
-    isNfd: boolean
-    /** Whether an NFD lookup is in progress */
+    /** Whether the display name is the address's resolved name */
+    isNamed: boolean
+    /** Whether a name lookup is in progress */
     isResolving: boolean
 }
 
@@ -40,7 +40,7 @@ export const useResolvedAddress = (
         format?: AddressFormat
     },
 ): UseResolvedAddressResult => {
-    const { data: nfdNames, isPending } = useNfdForAddressQuery(
+    const { data: addressNames, isPending } = useNameForAddressQuery(
         scope,
         address,
         {
@@ -48,7 +48,7 @@ export const useResolvedAddress = (
         },
     )
 
-    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
+    const addressName = useMemo(() => addressNames?.at(0)?.name, [addressNames])
 
     const format = options?.format ?? 'short'
 
@@ -60,11 +60,12 @@ export const useResolvedAddress = (
                   address,
                   format === 'long' ? LONG_ADDRESS_LENGTH : undefined,
               )
-    const displayName = nfdName ?? (format === 'full' ? address : truncate())
+    const displayName =
+        addressName ?? (format === 'full' ? address : truncate())
 
     return {
         displayName,
-        isNfd: !!nfdName,
+        isNamed: !!addressName,
         isResolving: isPending,
     }
 }

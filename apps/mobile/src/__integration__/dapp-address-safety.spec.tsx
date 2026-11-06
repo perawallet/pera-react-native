@@ -367,7 +367,7 @@ const recordRequest = ({ request }: { request: Request }) => {
 }
 
 // The chain's node reads the transaction to price it, and the review asks
-// Pera for an Algorand address's NFD name to display it, as for any request.
+// Pera for an address's name to display it, as for any request.
 // What must never happen is a request address going anywhere else.
 const isDisplayOrChainRequest = (url: URL) =>
     url.host === RPC_HOST || url.pathname.endsWith('/api/v4/accounts/names/')
