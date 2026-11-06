@@ -164,7 +164,7 @@ export const buildAccountRecord = (
     if (chains.length === 0) return null
     return {
         formatVersion: ACCOUNT_RECORD_FORMAT_VERSION,
-        customName: account.name ?? null,
+        customName: account.name || null,
         updatedAt,
         chains,
     }

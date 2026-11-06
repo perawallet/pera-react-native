@@ -34,6 +34,7 @@ import { isLegacyQuantumChild } from '../legacyQuantum'
 
 const QUANTUM_ACCOUNT: WalletAccount = {
     id: 'quantum-account-1',
+    name: '',
     custody: { kind: 'local', seed: 'quantum' },
     chains: {
         algorand: { address: 'QUANTUMADDRESS', keyPairId: 'seed-1-quantum' },
@@ -42,6 +43,7 @@ const QUANTUM_ACCOUNT: WalletAccount = {
 
 const STANDALONE_ACCOUNT: WalletAccount = {
     id: 'standalone-account-1',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: {
         algorand: { address: 'STANDALONEADDRESS', keyPairId: 'seed-2-ed25519' },
@@ -52,6 +54,7 @@ const falconChild = (metadata: object) => ({ type: 'falcon-1024', metadata })
 
 const WATCH_ACCOUNT: WalletAccount = {
     id: 'watch-account-1',
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address: 'WATCHADDRESS' } },
 }

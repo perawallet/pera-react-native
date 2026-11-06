@@ -70,6 +70,7 @@ const account = (
     extra: Partial<WalletAccount> = {},
 ): WalletAccount => ({
     id: `id-${address}`,
+    name: '',
     custody,
     chains: {
         [ALGORAND_CHAIN_ID]:

@@ -181,6 +181,7 @@ describe('Flow: Ethereum switched off remotely, then back on', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'eth-watch',
+                name: '',
                 custody: { kind: 'watch' },
                 chains: { ethereum: { address: ETH_ADDRESS } },
             },

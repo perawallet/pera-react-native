@@ -11,6 +11,7 @@
  */
 
 import {
+    getAccountDisplayName,
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -21,7 +22,6 @@ import {
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { AccountIcon } from '@components/AccountIcon'
-import { useAccountName } from '@hooks/useAccountName'
 import { useStyles } from './styles'
 
 export type RekeySummaryRowProps = {
@@ -39,14 +39,13 @@ export const RekeySummaryRow = ({
     ignoreRekey,
 }: RekeySummaryRowProps) => {
     const styles = useStyles()
-    const { getAccountName } = useAccountName()
 
     if (!account) return null
 
     const truncated = truncateAlgorandAddress(
         chainAccountOf(account, ALGORAND_CHAIN_ID)?.address ?? '',
     )
-    const name = getAccountName(account, ALGORAND_CHAIN_ID)
+    const name = getAccountDisplayName(account, ALGORAND_CHAIN_ID)
 
     return (
         <PWListItemLayout

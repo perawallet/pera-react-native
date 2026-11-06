@@ -534,6 +534,8 @@
         "viewing": "Actual",
         "wallet_label": "Wallet n.º {{number}}",
         "account_number": "Cuenta n.º {{number}}",
+        "shared_account_number": "Cuenta compartida n.º {{number}}",
+        "ledger_account_number": "Cuenta Ledger n.º {{number}}",
         "name_taken": "Ya tienes una cuenta con este nombre. Elige otro nombre para poder distinguirlas.",
         "type_universal_wallet": "Wallet universal",
         "type_algo25": "Cuenta Algo25",
@@ -2150,7 +2152,6 @@
         "name": {
             "title": "Nombra tu cuenta",
             "description": "Nombra tu cuenta para reconocerla fácilmente mientras usas Pera Wallet. Estos nombres se guardan localmente y solo tú puedes verlos.",
-            "default_name": "Cuenta compartida",
             "finish_button": "Finalizar creación de cuenta",
             "creating": "Creando cuenta compartida...",
             "error_title": "No se pudo crear la cuenta",
@@ -2207,7 +2208,6 @@
                 "screen_title": "Cuenta compartida",
                 "title": "Nombra tu cuenta compartida",
                 "description": "Nombra tu cuenta para reconocerla fácilmente mientras usas Pera Wallet. Estos nombres se guardan localmente y solo tú puedes verlos.",
-                "default_name": "Cuenta compartida",
                 "finish_button": "Finalizar",
                 "saving": "Guardando cuenta compartida..."
             }
@@ -2393,7 +2393,6 @@
         "name_account": {
             "title": "Ponle un nombre a tu cuenta",
             "description": "Ponle un nombre a tu cuenta para identificarla fácilmente mientras usas Pera Wallet. Estos nombres se guardan localmente y solo tú puedes verlos.",
-            "wallet_label": "Wallet n.º {{count}}",
             "finish_button": "Finalizar creación de cuenta"
         },
         "import_select_addresses": {
@@ -4441,7 +4440,6 @@
         "scan_header": {
             "having_issues": "¿Tienes problemas?"
         },
-        "default_account_name": "Ledger {{number}}",
         "handoff_added": {
             "title": "Cuenta Ledger añadida",
             "body": "Ya puedes usarla en la extensión de Pera."

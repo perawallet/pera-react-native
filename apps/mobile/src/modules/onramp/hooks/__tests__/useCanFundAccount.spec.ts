@@ -61,6 +61,7 @@ describe('useCanFundAccount', () => {
         const { result } = renderHook(() =>
             useCanFundAccount({
                 id: 'elsewhere',
+                name: '',
                 custody: { kind: 'watch' },
                 chains: { ethereum: { address: '0xADDRESS' } },
             }),

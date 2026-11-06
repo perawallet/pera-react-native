@@ -120,12 +120,14 @@ const buildSignRequest = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
+    name: '',
     custody: {
         kind: 'hardware',
         device: {
@@ -338,6 +340,7 @@ describe('useHandleMultisigSignTap', () => {
         accountsMock.current = [
             {
                 id: 'eth-A',
+                name: '',
                 custody: { kind: 'local', seed: null },
                 chains: { ethereum: { address: 'A', keyPairId: 'kp-A' } },
             },

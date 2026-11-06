@@ -59,6 +59,7 @@ import {
 
 const account: WalletAccount = {
     id: 'funding',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address: 'FUNDINGADDR' } },
 }

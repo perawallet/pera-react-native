@@ -13,6 +13,10 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { logger, setActiveLocale } from '@perawallet/wallet-core-shared'
+import {
+    setAccountNameTemplates,
+    type AccountNameTemplates,
+} from '@perawallet/wallet-core-accounts'
 import { BASE_LOCALE, TRANSLATION_BUNDLES } from './locales'
 import { getPseudoResources } from './pseudoResources'
 import 'intl-pluralrules'
@@ -40,6 +44,22 @@ setActiveLocale(BASE_LOCALE)
 // every subsequent change (useAppBootstrap's resolution, or a future
 // language-picker selection) — not just this initial value.
 i18n.on('languageChanged', setActiveLocale)
+// The store names new accounts in the current language; a name keeps the
+// language it was given in.
+const accountNameTemplatesIn = (lng: string): AccountNameTemplates => {
+    const template = { lng, number: '{{number}}' }
+    return {
+        account: i18n.t('account_info.account_number', template),
+        shared: i18n.t('account_info.shared_account_number', template),
+        ledger: i18n.t('account_info.ledger_account_number', template),
+    }
+}
+i18n.on('languageChanged', lng => {
+    setAccountNameTemplates(
+        accountNameTemplatesIn(lng),
+        Object.keys(TRANSLATION_BUNDLES).map(accountNameTemplatesIn),
+    )
+})
 
 void i18n.use(initReactI18next).init({
     resources,

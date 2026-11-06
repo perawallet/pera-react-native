@@ -149,6 +149,7 @@ const BAANX_USER_ID = 'mock-baanx-user-id'
 
 const LEDGER_ACCOUNT: HardwareWalletAccount = {
     id: 'hw-ledger-1',
+    name: '',
     custody: {
         kind: 'hardware',
         device: {

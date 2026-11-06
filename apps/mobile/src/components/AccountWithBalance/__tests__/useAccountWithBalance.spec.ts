@@ -106,12 +106,14 @@ const ETH_ADDRESS = `0x${'b'.repeat(40)}`
 
 const ALGO_ACCOUNT: WalletAccount = {
     id: 'account-1',
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address: ALGO_ADDRESS } },
 }
 
 const ETH_ACCOUNT: WalletAccount = {
     id: 'account-2',
+    name: '',
     custody: { kind: 'watch' },
     chains: { ethereum: { address: ETH_ADDRESS } },
 }

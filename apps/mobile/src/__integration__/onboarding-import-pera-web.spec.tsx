@@ -199,6 +199,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
+                name: '',
                 custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {

@@ -18,7 +18,6 @@ export {
 export { buildSignerRows, type SignerRow } from './buildSignerRows'
 export { getInFlightCosignAddresses } from './getInFlightCosignAddresses'
 export { getLocalUnsignedSigners } from './getLocalUnsignedSigners'
-export { getNextSharedAccountName } from './getNextSharedAccountName'
 export {
     getStatusBannerVariant,
     type StatusBannerVariant,

@@ -132,9 +132,10 @@ export type AccountsState = BaseStoreState & {
     /**
      * Appends one account, throwing `DuplicateAccountError` naming the
      * existing account when one of its chain addresses is already taken.
-     * Unlike `setAccounts`, which resolves duplicates silently.
+     * Unlike `setAccounts`, which resolves duplicates silently. Returns the
+     * stored account, named if it arrived without a name.
      */
-    addAccount: (account: WalletAccount) => void
+    addAccount: (account: WalletAccount) => WalletAccount
     /**
      * Imports `privateKey` through the chain's KMS derivation and adds it as a
      * standalone account on `chainId`. Throws `RawKeyImportUnsupportedError`

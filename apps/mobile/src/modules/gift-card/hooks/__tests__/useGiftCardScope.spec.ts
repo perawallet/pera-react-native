@@ -30,6 +30,7 @@ import { useGiftCardScope } from '../useGiftCardScope'
 
 const accountOn = (chainId: string): WalletAccount => ({
     id: `account-${chainId}`,
+    name: '',
     chains: { [chainId]: { address: 'ADDR', keyPairId: 'kp' } },
     custody: { kind: 'local', seed: null },
 })

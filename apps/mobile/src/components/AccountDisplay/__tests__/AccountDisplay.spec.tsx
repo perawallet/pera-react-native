@@ -35,6 +35,7 @@ vi.mock('@components/AccountIcon', () => ({
 
 const ACCOUNT: WalletAccount = {
     id: 'account-1',
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address: 'A'.repeat(58) } },
 }

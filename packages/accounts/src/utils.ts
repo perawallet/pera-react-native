@@ -25,83 +25,17 @@ import type {
     WatchAccount,
 } from './models'
 import { accountsChainAdapters } from './chain-adapter'
-import {
-    chainAccountOf,
-    hardwareDeviceOf,
-    hasCustody,
-    hdIndexOf,
-} from './credentials/accessors'
+import { chainAccountOf, hasCustody, hdIndexOf } from './credentials/accessors'
 
-// Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
-// not just our own format — legacy apps auto-named accounts with a 6+6
-// truncation that migration carries over verbatim.
-const TRUNCATION_SEPARATORS = ['...', '…'] as const
-
-// Split on the first separator by index: a backtracking regex here runs in
-// polynomial time on long names.
-const splitTruncation = (name: string): Optional<[string, string]> => {
-    const cuts = TRUNCATION_SEPARATORS.flatMap(separator => {
-        const at = name.indexOf(separator, 1)
-        return at === -1 ? [] : [{ at, separator }]
-    })
-    if (cuts.length === 0) return undefined
-    const { at, separator } = cuts.reduce((a, b) => (b.at < a.at ? b : a))
-    const suffix = name.slice(at + separator.length)
-    return suffix.length > 0 ? [name.slice(0, at), suffix] : undefined
-}
-
-const isTruncationOfAddress = (name: string, address: string) => {
-    const parts = splitTruncation(name)
-    if (!parts) return false
-    const [prefix, suffix] = parts
-    return (
-        prefix.length + suffix.length < address.length &&
-        address.startsWith(prefix) &&
-        address.endsWith(suffix)
-    )
-}
-
-/**
- * The account's name is just its own address on one of its chains, full or
- * any `...`/`…` cut of it. That isn't a distinguishing label, so callers treat
- * the account as unnamed.
- */
-export const isNamedAfterOwnAddress = (account: WalletAccount): boolean => {
-    const { name } = account
-    if (!name) return false
-    return Object.values(account.chains).some(entry => {
-        const address = entry?.address
-        return (
-            !!address &&
-            (name === address || isTruncationOfAddress(name, address))
-        )
-    })
-}
-
-/**
- * The account's 1-based position in its seed or device, or `undefined` for
- * custody with no index. HD accounts sum both axes: the app advances one at a
- * time, so the other is 0 for every account it creates.
- */
-export const accountNumberOf = (account: WalletAccount): Optional<number> => {
-    const hd = hdIndexOf(account)
-    if (hd) return hd.account + hd.keyIndex + 1
-    const hardware = hardwareDeviceOf(account)
-    return hardware ? hardware.accountIndex + 1 : undefined
-}
-
-/** The account's name, or its address on `chainId` truncated by the chain's codec when it has none. */
+/** The account's name; an account not stored yet can have none, and shows its address on `chainId`. */
 export const getAccountDisplayName = (
     account: Nullable<WalletAccount>,
     chainId: ChainId,
 ) => {
     if (!account) return 'No Account'
+    if (account.name) return account.name
     const address = chainAccountOf(account, chainId)?.address
-    if (!address) return account.name || 'No Address Found'
-    // Unnamed renders a single truncated address rather than the address twice.
-    if (account.name && !isNamedAfterOwnAddress(account)) {
-        return account.name
-    }
+    if (!address) return 'No Address Found'
     return addressCodecs.has(chainId)
         ? addressCodecs.get(chainId).truncate(address)
         : address

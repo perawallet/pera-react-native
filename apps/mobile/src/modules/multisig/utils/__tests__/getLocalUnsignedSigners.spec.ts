@@ -48,18 +48,21 @@ beforeEach(() => {
 
 const buildAlgo25Account = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildQuantumAccount = (address: string): WalletAccount => ({
     id: `quantum-${address}`,
+    name: '',
     custody: { kind: 'local', seed: 'quantum' },
     chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
+    name: '',
     custody: {
         kind: 'hardware',
         device: {
@@ -182,6 +185,7 @@ describe('getLocalUnsignedSigners', () => {
         const a = buildAlgo25Account('A')
         const watch: WalletAccount = {
             id: 'watch-w',
+            name: '',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'W' } },
         }
@@ -209,6 +213,7 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildAlgo25Account('AUTH')
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-local',
+            name: '',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'PARTICIPANT' } },
         }
@@ -228,6 +233,7 @@ describe('getLocalUnsignedSigners', () => {
         const auth = buildHardwareAccount('AUTH')
         const rekeyed: WalletAccount = {
             id: 'watch-rekeyed-hardware',
+            name: '',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'PARTICIPANT' } },
         }

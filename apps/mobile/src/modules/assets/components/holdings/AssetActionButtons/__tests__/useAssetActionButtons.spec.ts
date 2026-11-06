@@ -53,6 +53,7 @@ const account = algorandAccountAt('ALGORAND_ADDRESS')
 
 const onEthereumOnly: WalletAccount = {
     id: 'eth',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { ethereum: { address: '0xabc' } },
 }
@@ -233,6 +234,7 @@ describe('useAssetActionButtons', () => {
         const { result } = renderButtons(
             {
                 id: 'elsewhere',
+                name: '',
                 custody: { kind: 'watch' },
                 chains: { ethereum: { address: '0xADDRESS' } },
             },

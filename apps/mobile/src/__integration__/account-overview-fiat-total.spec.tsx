@@ -322,6 +322,7 @@ describe('Flow: Account overview fiat total', () => {
             chains: WalletAccount['chains'],
         ): WalletAccount => ({
             id,
+            name: '',
             custody: {
                 kind: 'local',
                 seed: 'bip39',

@@ -19,5 +19,5 @@ export { MultisigIntroductionDialog } from './components/MultisigIntroductionDia
 export { useHandleMultisigSignTap } from './hooks/useHandleMultisigSignTap'
 export { useMultisigCreationStore } from './hooks/useMultisigCreation'
 export { usePendingSignaturesSheet } from './hooks/usePendingSignaturesSheet'
-export { getNextSharedAccountName, getSignedResponseCount } from './utils'
+export { getSignedResponseCount } from './utils'
 export type { MultisigStackParamList } from './routes'
