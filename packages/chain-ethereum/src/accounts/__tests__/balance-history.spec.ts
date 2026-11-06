@@ -24,7 +24,10 @@ import {
 import { delay, http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { Decimal } from 'decimal.js'
-import { getAccountHoldings } from '@perawallet/wallet-core-accounts'
+import {
+    getAccountHoldings,
+    useHiddenTokensStore,
+} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     balanceHistoryPath,
@@ -108,6 +111,7 @@ const chartPoint = (datetime: string, price: string) => ({
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
+    useHiddenTokensStore.getState().resetState()
     stored.holdings = {}
     stored.decimals = { [USDC]: 6 }
 })
@@ -473,6 +477,79 @@ describe('the adapter methods', () => {
         ])
     })
 
+    it('leaves a whitelisted token out of the past points for the account that hid it, and counts it for another', async () => {
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: ALICE,
+            scope: SCOPE,
+            assetId: USDC,
+            isHidden: true,
+        })
+        stored.holdings[BOB] = [{ assetId: USDC, amount: '2000000' }]
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-21T00:00:00Z', {
+                            [ALICE.toLowerCase()]: {
+                                [ETH]: '1000000000000000000',
+                                [USDC_CAIP19]: '5000000',
+                            },
+                            [BOB.toLowerCase()]: { [USDC_CAIP19]: '1000000' },
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [ETH]: [chartPoint('2026-10-21T00:00:00Z', '2000')],
+                    [USDC_CAIP19]: [chartPoint('2026-10-21T00:00:00Z', '1')],
+                },
+            }),
+        )
+
+        const points = await ops().fetchPortfolioHistory!(
+            [ALICE, BOB],
+            'one-month',
+            SCOPE,
+        )
+
+        // Alice's 1 ETH ($2000) and Bob's 1 USDC; Alice's 5 USDC is hidden.
+        expect(points[0]?.usdValue.toFixed()).toBe('2001')
+    })
+
+    it("reads a token's own history from its stored balance even when the user hid it", async () => {
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: ALICE,
+            scope: SCOPE,
+            assetId: USDC,
+            isHidden: true,
+        })
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '3000000' }]
+        server.use(
+            ...peraEvmHandlers({
+                baseUrl: TEST_PERA_URL,
+                balanceHistory: {
+                    results: [
+                        answered('2026-10-21T14:00:00Z', {
+                            [ALICE.toLowerCase()]: {},
+                        }),
+                    ],
+                } as BalanceHistoryResponse,
+                charts: {
+                    [USDC_CAIP19]: [chartPoint('2026-10-21T14:30:00Z', '1')],
+                },
+            }),
+        )
+
+        await ops().fetchHoldingBalanceHistory!(ALICE, USDC, 'one-day', SCOPE)
+
+        expect(getAccountHoldings).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                hideSuspicious: false,
+                excludeHidden: false,
+            }),
+        )
+    })
+
     it('fetches at most four price charts at once for a portfolio of many tokens', async () => {
         const tokens = Array.from(
             { length: 8 },
@@ -544,7 +621,7 @@ describe('the adapter methods', () => {
         ).toHaveLength(1)
     })
 
-    it('reads only holdings that count toward the total', async () => {
+    it('reads only holdings that count toward the total, leaving out suspicious and hidden ones', async () => {
         stored.holdings[ALICE] = [{ assetId: USDC, amount: '2000000' }]
         server.use(
             ...peraEvmHandlers({
@@ -559,6 +636,7 @@ describe('the adapter methods', () => {
             expect.objectContaining({
                 hideZeroBalance: true,
                 hideSuspicious: true,
+                excludeHidden: true,
             }),
         )
     })

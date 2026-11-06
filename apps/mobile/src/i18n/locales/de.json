@@ -52,7 +52,8 @@
         "title": "Assets verwalten",
         "sort": "Sortieren",
         "filter": "Filter",
-        "remove_assets": "Assets entfernen"
+        "hide_tokens": "Tokens ausblenden",
+        "remove_assets": "Algorand-Assets entfernen"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Abmelden"
     },
     "remove_assets": {
-        "title": "Assets entfernen",
+        "title": "Algorand-Assets entfernen",
         "select_all": "Alle auswählen",
         "deselect_all": "Alle abwählen",
         "empty_title": "Keine entfernbaren Assets",
-        "empty_body": "Es können nur Assets mit einem Guthaben von null entfernt werden, die du nicht selbst erstellt hast."
+        "empty_body": "Es können nur Algorand-Assets mit einem Guthaben von null entfernt werden, die du nicht selbst erstellt hast. Beim Entfernen meldet sich dein Konto in einer Transaktion von dem Asset ab."
+    },
+    "hide_tokens": {
+        "title": "Tokens ausblenden",
+        "tokens_section": "Tokens",
+        "hidden_section": "Ausgeblendete Tokens",
+        "empty_title": "Keine Tokens zum Ausblenden",
+        "empty_body": "Dieses Konto hält keine Tokens, die ausgeblendet werden können."
+    },
+    "token_visibility": {
+        "hide": "Token ausblenden",
+        "unhide": "Token einblenden",
+        "hide_action": "Ausblenden",
+        "unhide_action": "Einblenden",
+        "hidden_toast_title": "{{assetName}} ausgeblendet",
+        "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
+        "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
+        "shown_toast_title": "{{assetName}} eingeblendet",
+        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Mit „Verdächtige Assets anzeigen“ in den Asset-Filtern kannst du es einblenden."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "Verdächtiges ASA",
             "suspicious_description": "Dieses ASA wurde vom Pera ASA-Verifizierungsprogramm als verdächtig markiert.",
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
+        },
+        "token_warning": {
+            "unverified_title": "Nicht verifiziertes Token",
+            "suspicious_title": "Verdächtiges Token",
+            "body": "Pera hat dieses Token nicht verifiziert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
         },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
     },

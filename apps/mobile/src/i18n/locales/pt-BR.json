@@ -52,7 +52,8 @@
         "title": "Gerenciar ativos",
         "sort": "Ordenar",
         "filter": "Filtrar",
-        "remove_assets": "Remover ativos"
+        "hide_tokens": "Ocultar tokens",
+        "remove_assets": "Remover ativos Algorand"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Remover"
     },
     "remove_assets": {
-        "title": "Remover ativos",
+        "title": "Remover ativos Algorand",
         "select_all": "Selecionar todos",
         "deselect_all": "Desmarcar todos",
         "empty_title": "Nenhum ativo removível",
-        "empty_body": "Somente ativos com saldo zero que não foram criados por você podem ser removidos."
+        "empty_body": "Somente ativos Algorand com saldo zero que não foram criados por você podem ser removidos. Ao remover um, sua conta deixa de aceitá-lo por meio de uma transação."
+    },
+    "hide_tokens": {
+        "title": "Ocultar tokens",
+        "tokens_section": "Tokens",
+        "hidden_section": "Tokens ocultos",
+        "empty_title": "Nenhum token para ocultar",
+        "empty_body": "Esta conta não tem tokens que possam ser ocultados."
+    },
+    "token_visibility": {
+        "hide": "Ocultar token",
+        "unhide": "Mostrar token",
+        "hide_action": "Ocultar",
+        "unhide_action": "Mostrar",
+        "hidden_toast_title": "{{assetName}} oculto",
+        "hidden_toast_body": "Ele não aparecerá mais nos seus ativos nem contará no seu saldo. Mostre-o de novo em Gerenciar ativos > Ocultar tokens.",
+        "hidden_swipe_toast_body": "Toque para desfazer. Ele não aparecerá mais nos seus ativos nem contará no seu saldo.",
+        "shown_toast_title": "{{assetName}} exibido",
+        "filtered_note": "A Pera sinalizou este token como suspeito, então ele fica fora dos seus ativos. Mostre-o com “Exibir ativos suspeitos” nos filtros de ativos."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "ASA suspeito",
             "suspicious_description": "Este ASA foi sinalizado como suspeito pelo programa de verificação de ASA da Pera.",
             "learn_more": "Saiba mais sobre a verificação de ASA"
+        },
+        "token_warning": {
+            "unverified_title": "Token não verificado",
+            "suspicious_title": "Token suspeito",
+            "body": "A Pera não verificou este token. Você não o solicitou e ele pode ser um golpe. Não interaja com sites ou links relacionados a ele."
         },
         "copy_full_amount_hint": "Toque e segure para copiar o valor completo"
     },

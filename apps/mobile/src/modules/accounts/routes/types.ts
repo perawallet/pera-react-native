@@ -23,5 +23,6 @@ export type AccountStackParamsList = {
         isCollectible?: boolean
     }
     CollectibleDetails?: { assetId: string; chainId: ChainId }
+    HideTokens?: undefined
     RemoveAssets?: undefined
 } & PeraCardAccountStackParamList

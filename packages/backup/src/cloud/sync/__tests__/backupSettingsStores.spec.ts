@@ -15,6 +15,7 @@ import {
     AccountSortModes,
     LaunchAccountModes,
     useAccountsStore,
+    useHiddenTokensStore,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
@@ -25,6 +26,7 @@ import {
 } from '../backupSettingsStores'
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
 
+const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const HELD_ID = 'held-id'
 const OTHER_ID = 'other-id'
 const ETH_ONLY_ID = 'eth-only-id'
@@ -34,6 +36,7 @@ describe('backupSettingsStores', () => {
         useCurrenciesStore.getState().resetState()
         useSettingsStore.getState().resetState()
         useAccountsStore.getState().resetState()
+        useHiddenTokensStore.getState().resetState()
         useAccountsStore.setState({
             accounts: [
                 {
@@ -58,6 +61,12 @@ describe('backupSettingsStores', () => {
             sortMode: AccountSortModes.alphabeticalAsc,
             manualAccountOrder: [HELD_ID],
         })
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: '0xabc',
+            scope: ETH_SCOPE,
+            assetId: '0x1',
+            isHidden: true,
+        })
 
         expect(readBackupSettings('algorand')).toEqual({
             currency: { preferred: 'EUR', fallback: 'ALGO' },
@@ -65,6 +74,7 @@ describe('backupSettingsStores', () => {
             confirmationMode: 'tap',
             launchAccount: { mode: 'specific', address: 'HELD' },
             accountOrder: { mode: 'alphabeticalAsc', addresses: ['HELD'] },
+            hiddenTokens: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
         })
     })
 
@@ -76,6 +86,7 @@ describe('backupSettingsStores', () => {
                 confirmationMode: 'tap',
                 launchAccount: { mode: 'specific', address: 'HELD' },
                 accountOrder: { mode: 'balanceDesc', addresses: ['HELD'] },
+                hiddenTokens: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
             },
             'algorand',
         )
@@ -86,6 +97,22 @@ describe('backupSettingsStores', () => {
             confirmationMode: 'tap',
             launchAccount: { mode: 'specific', address: 'HELD' },
             accountOrder: { mode: 'balanceDesc', addresses: ['HELD'] },
+            hiddenTokens: { 'ethereum/mainnet': { '0xabc': ['0x1'] } },
+        })
+    })
+
+    it('leaves the hidden tokens alone when the backup carries none', () => {
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: '0xabc',
+            scope: ETH_SCOPE,
+            assetId: '0x1',
+            isHidden: true,
+        })
+
+        applyBackupSettings({ language: 'de' }, 'algorand')
+
+        expect(readBackupSettings('algorand').hiddenTokens).toEqual({
+            'ethereum/mainnet': { '0xabc': ['0x1'] },
         })
     })
 
@@ -183,7 +210,7 @@ describe('backupSettingsStores', () => {
         expect(readBackupSettings('algorand')).toEqual(before)
     })
 
-    it('notifies on a write to any of the three stores until unsubscribed', () => {
+    it('notifies on a write to any of the four stores until unsubscribed', () => {
         const listener = vi.fn()
         const unsubscribe = subscribeBackupSettings(listener)
 
@@ -192,9 +219,15 @@ describe('backupSettingsStores', () => {
         useAccountsStore
             .getState()
             .setLaunchAccountPreference(LaunchAccountModes.specific, HELD_ID)
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: '0xabc',
+            scope: ETH_SCOPE,
+            assetId: '0x1',
+            isHidden: true,
+        })
         unsubscribe()
         useSettingsStore.getState().setLanguage('de')
 
-        expect(listener).toHaveBeenCalledTimes(3)
+        expect(listener).toHaveBeenCalledTimes(4)
     })
 })

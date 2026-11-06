@@ -36,6 +36,7 @@ const remoteOf = (updatedAt: number): SettingsBackupPayload => ({
     confirmationMode: { value: TEST_SETTINGS.confirmationMode, updatedAt },
     launchAccount: { value: TEST_SETTINGS.launchAccount, updatedAt },
     accountOrder: { value: TEST_SETTINGS.accountOrder, updatedAt },
+    hiddenTokens: { value: TEST_SETTINGS.hiddenTokens, updatedAt },
 })
 
 describe('observeLocalSettings', () => {
@@ -118,6 +119,63 @@ describe('observeLocalSettings', () => {
 })
 
 describe('mergeRemoteSettings', () => {
+    describe('hidden tokens', () => {
+        const hiddenOn = (assetId: string) => ({
+            'ethereum/mainnet': { '0xabc': [assetId] },
+        })
+
+        it('replaces this device’s map with a newer remote one rather than uniting them', () => {
+            const local = observeLocalSettings(
+                synced(5),
+                { ...TEST_SETTINGS, hiddenTokens: hiddenOn('0x1') },
+                100,
+            ).doc
+
+            const { toApply, isRemoteBehind } = mergeRemoteSettings(local, {
+                ...remoteOf(5),
+                hiddenTokens: { value: hiddenOn('0x2'), updatedAt: 200 },
+            })
+
+            expect(toApply.hiddenTokens).toEqual(hiddenOn('0x2'))
+            expect(isRemoteBehind).toBe(false)
+        })
+
+        it('keeps a newer local map and asks for it to be pushed', () => {
+            const local = observeLocalSettings(
+                synced(5),
+                { ...TEST_SETTINGS, hiddenTokens: hiddenOn('0x1') },
+                300,
+            ).doc
+
+            const { doc, toApply, isRemoteBehind } = mergeRemoteSettings(
+                local,
+                {
+                    ...remoteOf(5),
+                    hiddenTokens: { value: hiddenOn('0x2'), updatedAt: 200 },
+                },
+            )
+
+            expect(doc.hiddenTokens?.value).toEqual(hiddenOn('0x1'))
+            expect(toApply.hiddenTokens).toBeUndefined()
+            expect(isRemoteBehind).toBe(true)
+        })
+
+        it('carries an unhide made on another device', () => {
+            const local = observeLocalSettings(
+                synced(5),
+                { ...TEST_SETTINGS, hiddenTokens: hiddenOn('0x1') },
+                100,
+            ).doc
+
+            const { toApply } = mergeRemoteSettings(local, {
+                ...remoteOf(5),
+                hiddenTokens: { value: {}, updatedAt: 200 },
+            })
+
+            expect(toApply.hiddenTokens).toEqual({})
+        })
+    })
+
     it('adopts a newer remote field and asks for it to be applied', () => {
         const { doc, toApply, isRemoteBehind } = mergeRemoteSettings(
             synced(5),

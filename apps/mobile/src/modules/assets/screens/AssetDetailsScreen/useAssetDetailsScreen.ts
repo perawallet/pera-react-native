@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
+    addressOn,
+    canHideHolding,
+    hiddenAssetIdsOf,
+    useAccountAssetBalanceQuery,
     useAccountHoldingSources,
+    useHiddenTokensStore,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -34,6 +39,9 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
+import type { PWDropdownItem } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { chainUiFor } from '@modules/chain-ui'
 import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
 import type {
@@ -63,6 +71,8 @@ export type UseAssetDetailsScreenResult = {
     supply: Nullable<AssetSupplyDisplay>
     isNetworkLineVisible: boolean
     isMarketsTabVisible: boolean
+    /** Hide or unhide, for a token the account holds on a chain that receives unasked assets; empty otherwise. */
+    headerMenuItems: PWDropdownItem[]
 }
 
 export const useAssetDetailsScreen = ({
@@ -138,6 +148,81 @@ export const useAssetDetailsScreen = ({
         }
     }, [assetId, chainId, isCollectible])
 
+    const { t } = useLanguage()
+    const { showToast } = useToast()
+    const address = account ? addressOn(account, scope) : undefined
+    const { data: holding } = useAccountAssetBalanceQuery(
+        account ?? undefined,
+        assetId,
+        scope,
+    )
+    const isHidden = useHiddenTokensStore(
+        state =>
+            address !== undefined &&
+            hiddenAssetIdsOf(state.hiddenTokens, address, scope).includes(
+                assetId,
+            ),
+    )
+    const setTokenHidden = useHiddenTokensStore(state => state.setTokenHidden)
+    // The route flag is missing for an NFT opened from a chain without the nft
+    // capability, so the asset's own type decides too.
+    const canHide =
+        !isCollectible &&
+        !(asset && isCollectibleAsset(asset)) &&
+        canHideHolding(chainId, assetId) &&
+        address !== undefined &&
+        holding !== null
+    const assetName = asset?.name || asset?.unitName || ''
+
+    const handleToggleHidden = useCallback(() => {
+        if (address === undefined) return
+        setTokenHidden({ address, scope, assetId, isHidden: !isHidden })
+        showToast(
+            isHidden
+                ? {
+                      title: t('token_visibility.shown_toast_title', {
+                          assetName,
+                      }),
+                      body: '',
+                      type: 'success',
+                  }
+                : {
+                      title: t('token_visibility.hidden_toast_title', {
+                          assetName,
+                      }),
+                      body: t('token_visibility.hidden_toast_body'),
+                      type: 'success',
+                  },
+        )
+    }, [
+        address,
+        scope,
+        assetId,
+        isHidden,
+        assetName,
+        setTokenHidden,
+        showToast,
+        t,
+    ])
+
+    const headerMenuItems = useMemo<PWDropdownItem[]>(
+        () =>
+            canHide
+                ? [
+                      {
+                          label: t(
+                              isHidden
+                                  ? 'token_visibility.unhide'
+                                  : 'token_visibility.hide',
+                          ),
+                          icon: 'eye',
+                          onPress: handleToggleHidden,
+                      },
+                  ]
+                : [],
+        [canHide, isHidden, handleToggleHidden, t],
+    )
+
     const headerTitle = asset
         ? (nativeAssetInfoOf({ chainId, assetId })?.symbol ??
           (asset.unitName || asset.name || ''))
@@ -155,5 +240,6 @@ export const useAssetDetailsScreen = ({
         supply,
         isNetworkLineVisible,
         isMarketsTabVisible,
+        headerMenuItems,
     }
 }

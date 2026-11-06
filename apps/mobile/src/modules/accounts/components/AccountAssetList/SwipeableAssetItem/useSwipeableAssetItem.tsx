@@ -17,10 +17,17 @@ import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
+/** What a swipe does to the row: opt the account out of the asset on chain, or hide the token locally. */
+export type AssetRowSwipeAction = 'optOut' | 'hide'
+
 export type UseSwipeableAssetItemProps = {
     item: AccountHoldingsLiteRow
+    swipeAction: Nullable<AssetRowSwipeAction>
     onPress: (item: AccountHoldingsLiteRow) => void
-    onOptOut: (item: AccountHoldingsLiteRow) => void
+    onSwipeAction: (
+        item: AccountHoldingsLiteRow,
+        action: AssetRowSwipeAction,
+    ) => void
 }
 
 export type UseSwipeableAssetItemResult = {
@@ -32,16 +39,17 @@ export type UseSwipeableAssetItemResult = {
 
 export const useSwipeableAssetItem = ({
     item,
+    swipeAction,
     onPress,
-    onOptOut,
+    onSwipeAction,
 }: UseSwipeableAssetItemProps): UseSwipeableAssetItemResult => {
     const styles = useStyles()
     const swipeableRef = useRef<PWSwipeableRef>(null)
 
     const handleSwipeOpen = useCallback(() => {
         swipeableRef.current?.close()
-        onOptOut(item)
-    }, [item, onOptOut])
+        if (swipeAction) onSwipeAction(item, swipeAction)
+    }, [item, swipeAction, onSwipeAction])
 
     const handlePress = useCallback(
         (event: GestureResponderEvent) => {
@@ -53,14 +61,19 @@ export const useSwipeableAssetItem = ({
 
     const renderRightActions = useCallback(() => {
         return (
-            <PWView style={styles.swipeAction}>
+            <PWView
+                style={[
+                    styles.swipeAction,
+                    swipeAction === 'hide' && styles.hideSwipeAction,
+                ]}
+            >
                 <PWIcon
-                    name='trash'
+                    name={swipeAction === 'hide' ? 'eye' : 'trash'}
                     variant='white'
                 />
             </PWView>
         )
-    }, [styles.swipeAction])
+    }, [styles.swipeAction, styles.hideSwipeAction, swipeAction])
 
     return {
         swipeableRef,

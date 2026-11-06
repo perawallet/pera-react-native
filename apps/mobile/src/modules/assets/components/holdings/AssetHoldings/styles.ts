@@ -52,4 +52,7 @@ export const useStyles = makeStyles(theme => ({
     tokenAmount: {
         color: theme.colors.textGray,
     },
+    tokenWarning: {
+        marginBottom: theme.spacing.md,
+    },
 }))

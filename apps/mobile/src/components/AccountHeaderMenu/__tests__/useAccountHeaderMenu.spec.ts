@@ -122,6 +122,19 @@ describe('useAccountHeaderMenu', () => {
         expect(labels).toContain('search.title')
     })
 
+    it("lists the screen's own items before the shared ones", () => {
+        const leadingItems = [
+            { label: 'screen.action', icon: 'eye' as const, onPress: vi.fn() },
+        ]
+
+        const { result } = renderHook(() =>
+            useAccountHeaderMenu({ leadingItems }),
+        )
+
+        expect(result.current.items[0]).toBe(leadingItems[0])
+        expect(result.current.items.length).toBeGreaterThan(1)
+    })
+
     it('adds the gallery shortcut to the developer items where the build includes it', () => {
         enableDebugTools()
 

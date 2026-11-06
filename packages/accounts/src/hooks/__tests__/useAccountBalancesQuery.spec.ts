@@ -96,6 +96,7 @@ type Row = {
     } | null
     usdPrice: Decimal | null
     isFavorited: boolean
+    isHidden: boolean
 }
 const algoRow = (microalgos: number, usd: number | null): Row => ({
     assetId: '0',
@@ -103,6 +104,7 @@ const algoRow = (microalgos: number, usd: number | null): Row => ({
     asset: { assetId: '0', decimals: 6, name: 'Algo' },
     usdPrice: usd === null ? null : new Decimal(usd),
     isFavorited: false,
+    isHidden: false,
 })
 const asaRow = (
     assetId: string,
@@ -116,6 +118,7 @@ const asaRow = (
     asset: decimals === null ? null : { assetId, decimals, name },
     usdPrice: usd === null ? null : new Decimal(usd),
     isFavorited: false,
+    isHidden: false,
 })
 
 const createWrapper = () => {
@@ -320,6 +323,25 @@ describe('useAccountBalances', () => {
 
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData?.assetBalances.map(b => b.assetId)).toContain('666')
+        expect(accountData?.usdValue).toEqual(new Decimal(2))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
+    })
+
+    it('lists a hidden holding but leaves it out of the totals', async () => {
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2), // 1 ALGO @ $2
+            { ...asaRow('777', 1_000_000, 6, 100, 'Hidden'), isHidden: true },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account], SCOPE),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const accountData = result.current.accountBalances.get('ADDR1')
+        expect(accountData?.assetBalances.map(b => b.assetId)).toContain('777')
         expect(accountData?.usdValue).toEqual(new Decimal(2))
         expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
     })

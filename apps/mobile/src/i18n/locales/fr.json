@@ -52,7 +52,8 @@
         "title": "Gérer les actifs",
         "sort": "Trier",
         "filter": "Filtrer",
-        "remove_assets": "Supprimer des actifs"
+        "hide_tokens": "Masquer des jetons",
+        "remove_assets": "Supprimer des actifs Algorand"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Supprimer"
     },
     "remove_assets": {
-        "title": "Supprimer des actifs",
+        "title": "Supprimer des actifs Algorand",
         "select_all": "Tout sélectionner",
         "deselect_all": "Tout désélectionner",
         "empty_title": "Aucun actif supprimable",
-        "empty_body": "Seuls les actifs dont le solde est nul et que vous n’avez pas créés peuvent être supprimés."
+        "empty_body": "Seuls les actifs Algorand dont le solde est nul et que vous n’avez pas créés peuvent être supprimés. En supprimer un désinscrit votre compte de cet actif par une transaction."
+    },
+    "hide_tokens": {
+        "title": "Masquer des jetons",
+        "tokens_section": "Jetons",
+        "hidden_section": "Jetons masqués",
+        "empty_title": "Aucun jeton à masquer",
+        "empty_body": "Ce compte ne détient aucun jeton pouvant être masqué."
+    },
+    "token_visibility": {
+        "hide": "Masquer le jeton",
+        "unhide": "Afficher le jeton",
+        "hide_action": "Masquer",
+        "unhide_action": "Afficher",
+        "hidden_toast_title": "{{assetName}} masqué",
+        "hidden_toast_body": "Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde. Affichez-le de nouveau depuis Gérer les actifs > Masquer des jetons.",
+        "hidden_swipe_toast_body": "Touchez pour annuler. Il n’apparaîtra plus dans vos actifs et ne comptera plus dans votre solde.",
+        "shown_toast_title": "{{assetName}} affiché",
+        "filtered_note": "Pera a signalé ce jeton comme suspect, il reste donc hors de vos actifs. Affichez-le avec « Afficher les actifs suspects » dans les filtres d’actifs."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "ASA suspect",
             "suspicious_description": "Cet ASA a été signalé comme suspect par le programme de vérification des ASA de Pera.",
             "learn_more": "En savoir plus sur la vérification des ASA"
+        },
+        "token_warning": {
+            "unverified_title": "Jeton non vérifié",
+            "suspicious_title": "Jeton suspect",
+            "body": "Pera n’a pas vérifié ce jeton. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
         },
         "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet"
     },

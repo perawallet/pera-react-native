@@ -42,6 +42,7 @@ import {
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
 import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
+import { useHiddenTokensStore } from '../../store/hiddenTokens'
 
 const MAINNET_SCOPE = {
     chainId: 'algorand',
@@ -175,6 +176,123 @@ describe('account holdings queries', () => {
             registerFakeNativeAsset(6, { requiresAssetOptIn: true })
 
             expect(await idsOf(true)).toEqual(['10', '20', '30', '40'])
+        })
+    })
+
+    describe('excludeHidden', () => {
+        const token = (
+            assetId: string,
+            verificationTier: 'verified' | 'suspicious',
+        ): PeraAsset => ({
+            assetId,
+            decimals: 0,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier,
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        const hide = (address: string, assetId: string) =>
+            useHiddenTokensStore.getState().setTokenHidden({
+                address,
+                scope: MAINNET_SCOPE,
+                assetId,
+                isHidden: true,
+            })
+
+        const rowsOf = (address: string, filters: object = {}) =>
+            getAccountHoldingsLite({
+                db,
+                sources: [{ address, scope: MAINNET_SCOPE }],
+                ...filters,
+            })
+
+        beforeEach(async () => {
+            useHiddenTokensStore.getState().resetState()
+            for (const address of ['ADDR1', 'ADDR2']) {
+                await refreshAccountHoldings({
+                    db,
+                    accountAddress: address,
+                    scope: MAINNET_SCOPE,
+                    holdings: ['10', '20', '30'].map(assetId => ({
+                        assetId,
+                        amount: new Decimal(5),
+                    })),
+                })
+            }
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [token('10', 'suspicious'), token('20', 'verified')],
+            })
+        })
+
+        afterEach(() => {
+            useHiddenTokensStore.getState().resetState()
+        })
+
+        it('drops a hidden row even when suspicious rows are kept', async () => {
+            hide('ADDR1', '20')
+
+            const rows = await rowsOf('ADDR1', {
+                excludeHidden: true,
+                hideSuspicious: false,
+            })
+
+            expect(rows.map(row => row.assetId).sort()).toEqual(['10', '30'])
+        })
+
+        it('drops hidden and suspicious rows together', async () => {
+            hide('ADDR1', '30')
+
+            const rows = await rowsOf('ADDR1', {
+                excludeHidden: true,
+                hideSuspicious: true,
+            })
+
+            expect(rows.map(row => row.assetId)).toEqual(['20'])
+        })
+
+        it('lists a hidden row without the filter', async () => {
+            hide('ADDR1', '20')
+
+            expect(await rowsOf('ADDR1')).toHaveLength(3)
+        })
+
+        it('hides for the account that hid it only', async () => {
+            hide('ADDR1', '20')
+
+            const rows = await rowsOf('ADDR2', { excludeHidden: true })
+
+            expect(rows).toHaveLength(3)
+        })
+
+        it('hides nothing on a chain where the user opts in to each asset', async () => {
+            hide('ADDR1', '20')
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+            const rows = await rowsOf('ADDR1', { excludeHidden: true })
+
+            expect(rows).toHaveLength(3)
+        })
+
+        it('marks hidden rows on the enriched page read', async () => {
+            hide('ADDR1', '20')
+
+            const rows = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(
+                rows.filter(row => row.isHidden).map(row => row.assetId),
+            ).toEqual(['20'])
         })
     })
 

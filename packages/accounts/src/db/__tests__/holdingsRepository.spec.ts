@@ -37,6 +37,7 @@ import {
 } from '../holdingsRepository'
 import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 import { addAccountToken } from '../addedTokensRepository'
+import { useHiddenTokensStore } from '../../store/hiddenTokens'
 import { getAccountHoldingsPage } from '../holdingsQueries'
 
 const MAINNET_SCOPE = {
@@ -674,6 +675,27 @@ describe('account holdings repository', () => {
             })
 
             expect(await idsOf({ hideSuspicious: true })).toContain('200')
+        })
+
+        it('excludeHidden leaves out a token the user hid, whatever else is kept', async () => {
+            useHiddenTokensStore.getState().setTokenHidden({
+                address: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                assetId: '200',
+                isHidden: true,
+            })
+
+            try {
+                expect(await idsOf({ excludeHidden: true })).toEqual([
+                    '100',
+                    '300',
+                    '400',
+                    '500',
+                ])
+                expect(await idsOf({})).toContain('200')
+            } finally {
+                useHiddenTokensStore.getState().resetState()
+            }
         })
 
         it('hideNfts excludes all collectibles but keeps unknown asset types', async () => {
