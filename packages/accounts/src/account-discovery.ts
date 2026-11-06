@@ -233,7 +233,9 @@ export const mergeWalletCandidates = (
         ...(previous.isOriginFallback && hasActivity(next)
             ? []
             : previous.accounts),
-        ...(next.isOriginFallback && hasActivity(previous) ? [] : next.accounts),
+        ...(next.isOriginFallback && hasActivity(previous)
+            ? []
+            : next.accounts),
     ]
     const byIndex = new Map<string, LocalAccount>()
     const unindexed: LocalAccount[] = []

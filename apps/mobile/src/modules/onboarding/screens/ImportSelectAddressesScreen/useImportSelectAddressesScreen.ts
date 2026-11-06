@@ -367,7 +367,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 isOriginFallback,
             },
         })
-    }, [importWalletKeyId, navigation, accounts, failedChainIds, isOriginFallback])
+    }, [
+        importWalletKeyId,
+        navigation,
+        accounts,
+        failedChainIds,
+        isOriginFallback,
+    ])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAccountIds.size > 0

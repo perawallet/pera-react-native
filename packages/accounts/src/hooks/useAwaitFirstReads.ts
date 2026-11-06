@@ -104,7 +104,10 @@ export const useAwaitFirstReads = (
                     // Only the deadline is swallowed: the read can still reject
                     // (its state-row lookup is outside its own catch), and that
                     // fails the list as before.
-                    const deadline = timeoutErrorOf('First account read', waitMs)
+                    const deadline = timeoutErrorOf(
+                        'First account read',
+                        waitMs,
+                    )
                     return withTimeout(
                         fetched,
                         waitMs,

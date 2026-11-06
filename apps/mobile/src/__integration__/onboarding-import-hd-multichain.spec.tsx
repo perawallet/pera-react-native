@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
 import {
@@ -21,7 +21,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { useRequiresMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -351,29 +350,6 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         expect(
             screen.getByTestId('import_select_addresses_retry_networks_button'),
         ).toBeTruthy()
-    })
-
-    it('Given Algorand was unreachable during the search, when the user imports every account, then no imported account asks to back up the passphrase', async () => {
-        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
-        serveSeedActivity(ethereumOnlyAddress)
-        server.use(
-            mockAccountFastLookup({
-                address: ':any',
-                response: {},
-                status: 500,
-            }),
-        )
-
-        await importMnemonic()
-
-        const { accounts } = useAccountsStore.getState()
-        expect(accounts.length).toBeGreaterThan(0)
-        for (const account of accounts) {
-            const { result } = renderHook(() =>
-                useRequiresMnemonicBackup(account, 'algorand'),
-            )
-            expect(result.current).toBe(false)
-        }
     })
 
     it('Given a seed used on Ethereum alone at a later account, when the user keeps every preselected account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {

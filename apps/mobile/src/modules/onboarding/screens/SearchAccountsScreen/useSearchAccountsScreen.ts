@@ -173,11 +173,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     failedChainIds,
                     isOriginFallback,
                 } = await discoverImportAccounts({
-                        walletKeyId: params.walletKeyId,
-                        signal: searchAbort.signal,
-                        onProgress: setProgress,
-                        previous: params.previous,
-                    })
+                    walletKeyId: params.walletKeyId,
+                    signal: searchAbort.signal,
+                    onProgress: setProgress,
+                    previous: params.previous,
+                })
                 isSearchingImportRef.current = false
                 if (hasLeftRef.current) return
                 uncheckedChainIdsRef.current = failedChainIds
