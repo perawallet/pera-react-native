@@ -73,9 +73,9 @@ export const useNameResolve = (
             const service = nameServiceOf(scope)
             byService.set(service, [...(byService.get(service) ?? []), scope])
         }
-        return [...byService.values()].flatMap(group => {
-            const preferred = preferDefaultChain(group.map(s => s.chainId))
-            return group.filter(scope => scope.chainId === preferred)
+        return [...byService.values()].map(group => {
+            const ids = group.map(scope => scope.chainId)
+            return group[ids.indexOf(preferDefaultChain(ids) ?? ids[0])]
         })
     }, [capableScopes])
 
