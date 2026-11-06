@@ -34,25 +34,39 @@ import {
 } from './fakeAccountsChain'
 
 const HD_OPTIONS: LocalKeyKindOptions = {
-    recover: {
-        id: 'fake_hd',
-        titleKey: i18nKey('fake.recover.title'),
-        chipKey: i18nKey('fake.recover.chip'),
-        descriptionKey: i18nKey('fake.recover.description'),
-        isSuggested: true,
-        order: 0,
-        analyticsEvent: 'fake_recover',
-    },
+    recover: [
+        {
+            id: 'fake_hd',
+            wordCount: 24,
+            titleKey: i18nKey('fake.recover.title'),
+            chipKey: i18nKey('fake.recover.chip'),
+            descriptionKey: i18nKey('fake.recover.description'),
+            isSuggested: true,
+            order: 0,
+            analyticsEvent: 'fake_recover',
+        },
+        {
+            id: 'fake_hd_short',
+            wordCount: 12,
+            titleKey: i18nKey('fake.short.title'),
+            descriptionKey: i18nKey('fake.short.description'),
+            isSuggested: false,
+            order: 2,
+        },
+    ],
 }
 
 const EXPLICIT_OPTIONS: LocalKeyKindOptions = {
-    recover: {
-        id: 'fake_explicit',
-        titleKey: i18nKey('fake.explicit.title'),
-        descriptionKey: i18nKey('fake.explicit.description'),
-        isSuggested: false,
-        order: 1,
-    },
+    recover: [
+        {
+            id: 'fake_explicit',
+            wordCount: 25,
+            titleKey: i18nKey('fake.explicit.title'),
+            descriptionKey: i18nKey('fake.explicit.description'),
+            isSuggested: false,
+            order: 1,
+        },
+    ],
 }
 
 // Offers the HD and explicit kinds only, so the single kind has no rows.
@@ -84,6 +98,15 @@ describe('detectImportKind', () => {
         expect(detectImportKind(FAKE_CHAIN_ID, words(24))).toEqual({
             success: true,
             seed: FAKE_HD_SEED,
+            wordCount: 24,
+        })
+    })
+
+    it('detects the same HD kind from 12 words, naming the count', () => {
+        expect(detectImportKind(FAKE_CHAIN_ID, words(12))).toEqual({
+            success: true,
+            seed: FAKE_HD_SEED,
+            wordCount: 12,
         })
     })
 
@@ -91,6 +114,7 @@ describe('detectImportKind', () => {
         expect(detectImportKind(FAKE_CHAIN_ID, words(25))).toEqual({
             success: true,
             seed: FAKE_SINGLE_SEED,
+            wordCount: 25,
         })
     })
 
@@ -112,6 +136,10 @@ describe('detectImportKind', () => {
             success: false,
             wordCount: 13,
         })
+        expect(detectImportKind(FAKE_CHAIN_ID, words(15))).toEqual({
+            success: false,
+            wordCount: 15,
+        })
     })
 
     it('counts words across any whitespace', () => {
@@ -120,7 +148,7 @@ describe('detectImportKind', () => {
                 FAKE_CHAIN_ID,
                 `  ${words(12).replace(/ /g, '\n  ')} `,
             ),
-        ).toEqual({ success: true, seed: FAKE_HD_SEED })
+        ).toEqual({ success: true, seed: FAKE_HD_SEED, wordCount: 12 })
     })
 })
 

@@ -2276,6 +2276,10 @@
             "quantum": {
                 "title": "Compte Quantum",
                 "description": "Signatures Falcon-1024, sécurisées nativement sur Algorand"
+            },
+            "twelve_word": {
+                "title": "Seed de 12 mots",
+                "description": "Importez depuis un autre wallet qui utilise des seed phrases de 12 mots"
             }
         },
         "import_info": {

@@ -238,6 +238,58 @@ describe('useImportAccountScreen', () => {
         expect(result.current.canImport).toBe(true)
     })
 
+    describe('opened for a 12-word seed', () => {
+        beforeEach(() => {
+            vi.mocked(useRoute).mockReturnValue({
+                params: { accountType: 'bip39', wordCount: 12 },
+            } as never)
+        })
+
+        it('offers 12 slots', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            expect(result.current.mnemonicLength).toBe(12)
+            expect(result.current.words).toHaveLength(12)
+        })
+
+        it('fills every slot when 12 words are pasted, and can then import', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord(
+                    new Array(12).fill('abandon').join(' '),
+                    3,
+                )
+            })
+
+            expect(result.current.words.every(w => w === 'abandon')).toBe(true)
+            expect(result.current.canImport).toBe(true)
+        })
+
+        it('pre-fills the 12 slots from a scanned phrase', () => {
+            vi.mocked(consumePendingImportMnemonic).mockReturnValue(
+                new Array(12).fill('abandon').join(' '),
+            )
+
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            expect(result.current.words.every(w => w === 'abandon')).toBe(true)
+        })
+
+        it('rejects a 24-word paste as too many words', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord(
+                    new Array(24).fill('abandon').join(' '),
+                    0,
+                )
+            })
+
+            expect(result.current.words.every(w => w === '')).toBe(true)
+        })
+    })
+
     it('updates a single word at a specific index', () => {
         const { result } = renderHook(() => useImportAccountScreen())
 

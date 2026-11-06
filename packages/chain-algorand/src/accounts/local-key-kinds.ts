@@ -25,7 +25,7 @@ export const algorandLocalKeyKinds: readonly LocalKeyKind[] = [
         seed: SeedScheme.Bip39,
         signingScheme: 'ed25519',
         isHd: true,
-        mnemonicWordCounts: [24],
+        mnemonicWordCounts: [24, 12],
         isAutoDetected: true,
     },
     {

@@ -2268,6 +2268,10 @@
             "quantum": {
                 "title": "Quantum-Konto",
                 "description": "Falcon-1024-Signaturen, nativ auf Algorand gesichert"
+            },
+            "twelve_word": {
+                "title": "12-Wort-Seed",
+                "description": "Aus einem anderen Wallet importieren, das 12-Wort-Seed-Phrasen verwendet"
             }
         },
         "import_info": {

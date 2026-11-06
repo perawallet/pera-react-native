@@ -2276,6 +2276,10 @@
             "quantum": {
                 "title": "Quantum hesabı",
                 "description": "Algorand üzerinde doğal olarak güvence altına alınan Falcon-1024 imzaları"
+            },
+            "twelve_word": {
+                "title": "12 kelimelik seed",
+                "description": "12 kelimelik seed ifadeleri kullanan başka bir cüzdandan içe aktar"
             }
         },
         "import_info": {

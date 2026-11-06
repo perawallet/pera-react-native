@@ -60,7 +60,7 @@ import {
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
-        params: { accountType },
+        params: { accountType, wordCount },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
@@ -78,7 +78,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { readText } = useClipboard()
 
     const importKind = localKeyKindOf(scope.chainId, accountType)
-    const mnemonicLength = importKind?.mnemonicWordCounts[0] ?? 0
+    const mnemonicLength = wordCount ?? importKind?.mnemonicWordCounts[0] ?? 0
 
     const isQuantum =
         importKind !== undefined &&
