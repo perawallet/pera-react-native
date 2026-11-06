@@ -17,6 +17,7 @@ import {
     useRampRegionQuery,
     useRampSourcesQuery,
     useOnramp,
+    useOnrampDestinationChains,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native'
@@ -41,6 +42,7 @@ vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
     useRampSourcesQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
     useOnramp: vi.fn(),
+    useOnrampDestinationChains: vi.fn(),
 }))
 
 let hasInternetMock = true
@@ -174,6 +176,10 @@ describe('useOnrampScreen', () => {
             data: { countryCode: 'US', countryName: 'United States' },
         } as never)
         vi.mocked(useOnrampAccount).mockReturnValue(fundableAccount())
+        vi.mocked(useOnrampDestinationChains).mockReturnValue([
+            'algorand',
+            'ethereum',
+        ])
         mockDestinationsQuery({ data: DESTINATIONS })
         vi.mocked(useRampSourcesQuery).mockReturnValue({
             data: SOURCES,
@@ -294,6 +300,34 @@ describe('useOnrampScreen', () => {
             expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith(
                 ALGO_ROUTER_ID,
             )
+        })
+
+        it("spends a route to a chain the account can't be funded on, writing no chain", () => {
+            vi.mocked(useOnrampDestinationChains).mockReturnValue(['algorand'])
+            routeTo({ chainId: 'ethereum', destinationAssetId: '31566704' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).toHaveBeenCalledWith({
+                chainId: undefined,
+                destinationAssetId: undefined,
+            })
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
+        it('spends a route whose chain lists nothing, then lets the drop clear the choice', () => {
+            routeTo({ chainId: 'algorand', destinationAssetId: '31566704' })
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+            setupOnramp({ selectedChainId: 'algorand' })
+            const { rerender } = renderHook(() => useOnrampScreen())
+
+            expect(mockSetParams).toHaveBeenCalledTimes(1)
+            expect(mockSetSelectedChainId).not.toHaveBeenCalledWith(null)
+
+            vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
+            rerender()
+
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith(null)
         })
 
         it("waits for the router's list before applying the route's asset", () => {
@@ -477,7 +511,7 @@ describe('useOnrampScreen', () => {
         })
 
         it('drops a chosen chain whose list settled empty, so Fund does not stay on the retry state', () => {
-            setupOnramp({ selectedChainId: 'ethereum' })
+            setupOnramp({ selectedChainId: 'algorand' })
             mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
 
             renderHook(() => useOnrampScreen())
@@ -485,8 +519,30 @@ describe('useOnrampScreen', () => {
             expect(mockSetSelectedChainId).toHaveBeenCalledWith(null)
         })
 
-        it('keeps a chosen chain when its list failed to load', () => {
+        it("keeps a chosen chain the account isn't funded on when the fallback's list settles empty", () => {
             setupOnramp({ selectedChainId: 'ethereum' })
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).not.toHaveBeenCalled()
+        })
+
+        it("doesn't undo a pending route's chain when the previous chain's list is settled empty", () => {
+            setupOnramp({ selectedChainId: 'algorand' })
+            vi.mocked(useRoute).mockReturnValue({
+                params: { chainId: 'ethereum' },
+            } as never)
+            mockDestinationsQuery({ data: [], fetchStatus: 'idle' })
+
+            renderHook(() => useOnrampScreen())
+
+            expect(mockSetSelectedChainId).toHaveBeenCalledWith('ethereum')
+            expect(mockSetSelectedChainId).not.toHaveBeenCalledWith(null)
+        })
+
+        it('keeps a chosen chain when its list failed to load', () => {
+            setupOnramp({ selectedChainId: 'algorand' })
             mockDestinationsQuery({
                 isError: true,
                 status: 'error',
@@ -499,7 +555,7 @@ describe('useOnrampScreen', () => {
         })
 
         it('keeps a chosen chain while its list is still loading', () => {
-            setupOnramp({ selectedChainId: 'ethereum' })
+            setupOnramp({ selectedChainId: 'algorand' })
             mockDestinationsQuery({
                 isLoading: true,
                 fetchStatus: 'fetching',

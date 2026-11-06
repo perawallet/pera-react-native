@@ -177,6 +177,15 @@ describe('onramp scope hooks', () => {
             expect(result.current).toEqual(ALGORAND)
         })
 
+        test('ignores a chosen chain the account only watches or has rekeyed away', () => {
+            useOnrampStore.getState().setSelectedChainId('ethereum')
+            mocks.optionsOf.mockReturnValue(enabled('algorand'))
+
+            const { result } = renderHook(() => useOnrampDestinationScope(held))
+
+            expect(result.current).toEqual(ALGORAND)
+        })
+
         test('is null when no chain has onramp', () => {
             mocks.optionsOf.mockReturnValue([])
             mocks.capabilityScope.mockReturnValue(null)

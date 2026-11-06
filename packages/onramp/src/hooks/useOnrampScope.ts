@@ -61,15 +61,22 @@ export const useOnrampDestinationChains = (
 }
 
 /**
- * The scope Fund runs on: the chain the user chose when `account` can be
- * funded there, else its first chain that something held signs for.
+ * The scope Fund runs on: the chain the user chose when something held signs
+ * for `account` there, else its first chain that something held signs for.
  */
 export const useOnrampDestinationScope = (
     account: Nullable<WalletAccount>,
 ): Nullable<ChainScope> => {
     const selectedChainId = useOnrampStore(state => state.selectedChainId)
-    const signingChainId = useOnrampDestinationChains(account)[0]
-    const chosen = useOnrampScope(account, selectedChainId ?? signingChainId)
+    const signingChains = useOnrampDestinationChains(account)
+    const signingChainId = signingChains[0]
+    // The choice is wallet-wide, so it can name a chain this account only
+    // watches or has rekeyed away; the chips and picker already exclude those.
+    const chosenChainId =
+        selectedChainId !== null && signingChains.includes(selectedChainId)
+            ? selectedChainId
+            : signingChainId
+    const chosen = useOnrampScope(account, chosenChainId)
     const fallback = useOnrampScope(account, signingChainId)
     return chosen ?? fallback
 }

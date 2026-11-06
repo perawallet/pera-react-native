@@ -24,6 +24,7 @@ import {
     useRampRegionQuery,
     useRampSourcesQuery,
     useOnramp,
+    useOnrampDestinationChains,
     rampTokenAsset,
     type RampPair,
     type RampRegion,
@@ -90,7 +91,12 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
 
     const isFocused = useIsFocused()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { scope, address: selectedAccountAddress } = useOnrampAccount()
+    const {
+        account,
+        scope,
+        address: selectedAccountAddress,
+    } = useOnrampAccount()
+    const fundableChains = useOnrampDestinationChains(account)
     const trackOnrampEvent = useTrackOnrampEvent()
     const pairsQuery = useRampDestinationsQuery({ scope })
     const { data: destinations, isLoading: pairsLoading } = pairsQuery
@@ -110,10 +116,35 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const routeChainId = params?.chainId
     const routeDestinationAssetId = params?.destinationAssetId
 
+    // The chain chips live in the receive sheet, which only opens from the
+    // form, so a chosen chain with nothing to list would strand Fund on its
+    // retry state. A settled empty answer (not a failure) drops the choice.
+    const isListSettledEmpty =
+        !pairsLoading &&
+        pairsQuery.fetchStatus === 'idle' &&
+        !pairsQuery.isError &&
+        destinations.length === 0
+
+    // A route naming a chain the selected account can't be funded on is spent
+    // unapplied: it would otherwise linger and overwrite a later chip pick.
+    const isRouteReachable =
+        routeChainId !== undefined && fundableChains.includes(routeChainId)
+
+    const spendRoute = useCallback(() => {
+        navigation.setParams({
+            chainId: undefined,
+            destinationAssetId: undefined,
+        })
+    }, [navigation])
+
     // A chain change reseeds the destination.
     useEffect(() => {
-        if (routeChainId) setSelectedChainId(routeChainId)
-    }, [routeChainId, setSelectedChainId])
+        if (routeChainId && isRouteReachable) setSelectedChainId(routeChainId)
+    }, [routeChainId, isRouteReachable, setSelectedChainId])
+
+    useEffect(() => {
+        if (routeChainId && !isRouteReachable) spendRoute()
+    }, [routeChainId, isRouteReachable, spendRoute])
 
     // Seed the destination (defaults to the native coin). The source stays
     // unset so the pay selector shows "Choose an asset" on every fresh entry.
@@ -143,10 +174,11 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     // remembered one. The route is spent once applied: left in place, a repeat
     // visit with the same params would not re-apply and a later pick could be
     // overwritten. Waits until the scope is the route's chain, since the
-    // destinations in hand belong to the previous one until then.
+    // destinations in hand belong to the previous one until then. A chain that
+    // lists nothing has no asset to apply, so the route is spent there too.
     useEffect(() => {
         if (!routeChainId || scope?.chainId !== routeChainId) return
-        if (routeDestinationAssetId) {
+        if (routeDestinationAssetId && !isListSettledEmpty) {
             if (pairsLoading || destinations.length === 0) return
             const requested = destinations.find(
                 token =>
@@ -155,33 +187,37 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
             )
             if (requested) setSelectedDestinationTokenId(requested.id)
         }
-        navigation.setParams({
-            chainId: undefined,
-            destinationAssetId: undefined,
-        })
+        spendRoute()
     }, [
-        navigation,
+        spendRoute,
         routeChainId,
         routeDestinationAssetId,
         scope,
+        isListSettledEmpty,
         pairsLoading,
         destinations,
         setSelectedDestinationTokenId,
     ])
 
-    // The chain chips live in the receive sheet, which only opens from the
-    // form, so a chosen chain with nothing to list would strand Fund on its
-    // retry state. A settled empty answer (not a failure) drops the choice.
-    const isListSettledEmpty =
-        !pairsLoading &&
-        pairsQuery.fetchStatus === 'idle' &&
-        !pairsQuery.isError &&
-        destinations.length === 0
+    // Only a choice whose own list came back empty is dropped: while the scope
+    // is on another chain (the account isn't funded on the choice) the empty
+    // list is that chain's, and a pending route is about to replace the choice.
     useEffect(() => {
-        if (selectedChainId !== null && scope !== null && isListSettledEmpty) {
+        if (routeChainId) return
+        if (
+            selectedChainId !== null &&
+            scope?.chainId === selectedChainId &&
+            isListSettledEmpty
+        ) {
             setSelectedChainId(null)
         }
-    }, [isListSettledEmpty, scope, selectedChainId, setSelectedChainId])
+    }, [
+        routeChainId,
+        isListSettledEmpty,
+        scope,
+        selectedChainId,
+        setSelectedChainId,
+    ])
 
     // Show the one-time welcome sheet. Marking it seen the moment it opens makes
     // the persisted flag the single guard, so the effect can't re-open it (and
