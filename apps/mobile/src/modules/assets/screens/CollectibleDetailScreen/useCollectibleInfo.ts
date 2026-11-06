@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
-    formatWithUnits,
+    abbreviateLargeAmount,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -45,8 +45,8 @@ export type UseCollectibleInfoResult = {
     explorerLabelKey: Nullable<I18nKey>
     explorerDomain: Optional<string>
     hasTotalSupply: boolean
-    totalSupplyAmount: ReturnType<typeof formatWithUnits>['amount']
-    totalSupplyUnit: ReturnType<typeof formatWithUnits>['unit']
+    totalSupplyAmount: ReturnType<typeof abbreviateLargeAmount>['amount']
+    totalSupplyUnit: ReturnType<typeof abbreviateLargeAmount>['unit']
 }
 
 export const useCollectibleInfo = (
@@ -120,7 +120,9 @@ export const useCollectibleInfo = (
     )
 
     const { amount: totalSupplyAmount, unit: totalSupplyUnit } =
-        formatWithUnits(toWholeUnits(asset.totalSupply, asset))
+        abbreviateLargeAmount(toWholeUnits(asset.totalSupply, asset), 2, {
+            from: 'K',
+        })
 
     return {
         identityLabelKey: display.identityLabelKey,

@@ -19,7 +19,7 @@ import { Decimal } from 'decimal.js'
 import {
     decodeBytesToText,
     formatNumber,
-    formatWithUnits,
+    abbreviateLargeAmount,
 } from '@perawallet/wallet-core-shared'
 
 export const useAssetConfigDisplay = (transaction: AlgorandTransactionView) => {
@@ -30,8 +30,10 @@ export const useAssetConfigDisplay = (transaction: AlgorandTransactionView) => {
 
     const supply = useMemo(() => {
         const { amount, unit } = assetConfig?.params?.total
-            ? formatWithUnits(
+            ? abbreviateLargeAmount(
                   new Decimal(assetConfig?.params?.total.toString()),
+                  2,
+                  { from: 'K' },
               )
             : { amount: undefined, unit: undefined }
 

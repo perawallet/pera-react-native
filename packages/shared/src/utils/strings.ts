@@ -155,48 +155,6 @@ export const formatNumber = (
     return { sign, integer: formattedInteger, fraction }
 }
 
-export const formatWithUnits = (
-    amount: Decimal,
-    units?: '' | 'K' | 'M' | 'B' | 'T',
-) => {
-    let resultAmount = amount
-    let resultUnit = units
-
-    if (!units) {
-        const absAmount = amount.abs()
-        if (absAmount.gte(1_000_000_000_000)) {
-            resultUnit = 'T'
-        } else if (absAmount.gte(1_000_000_000)) {
-            resultUnit = 'B'
-        } else if (absAmount.gte(1_000_000)) {
-            resultUnit = 'M'
-        } else if (absAmount.gte(1000)) {
-            resultUnit = 'K'
-        }
-    }
-
-    switch (resultUnit) {
-        case 'K': {
-            resultAmount = amount.div(1000)
-            break
-        }
-        case 'M': {
-            resultAmount = amount.div(1_000_000)
-            break
-        }
-        case 'B': {
-            resultAmount = amount.div(1_000_000_000)
-            break
-        }
-        case 'T': {
-            resultAmount = amount.div(1_000_000_000_000)
-            break
-        }
-    }
-
-    return { amount: resultAmount, unit: resultUnit ?? '' }
-}
-
 export const formatRawNumberInput = (
     rawValue: string,
     locale: string = getActiveLocale(),

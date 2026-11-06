@@ -525,7 +525,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         formatCurrency: vi.fn(
             (value, _decimals, currency) => `${currency || '$'}${value}`,
         ),
-        formatWithUnits: vi.fn(value => String(value)),
         formatNumber: vi.fn(value => String(value)),
         formatPercentage: vi.fn(
             (value: { toFixed: (p: number) => string }, precision = 2) =>

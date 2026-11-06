@@ -39,10 +39,6 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
             integer: val.toString(),
             fraction: '',
         })),
-        formatWithUnits: vi.fn((val: number | Decimal) => ({
-            amount: val.toString(),
-            unit: '',
-        })),
     }
 })
 

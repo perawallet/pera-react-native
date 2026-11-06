@@ -274,8 +274,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         has: vi.fn(() => false),
         reset: vi.fn(),
     },
-    toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
-        Number(value) / Math.pow(10, asset.decimals),
+    toWholeUnits: (
+        value: Decimal | number | bigint,
+        asset: { decimals: number },
+    ) =>
+        new (require('decimal.js').Decimal)(value.toString()).div(
+            10 ** asset.decimals,
+        ),
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
         asset.peraMetadata?.type === 'collectible',
     isUniqueCollectible: (asset: {
