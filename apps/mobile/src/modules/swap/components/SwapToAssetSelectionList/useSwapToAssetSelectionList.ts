@@ -186,23 +186,38 @@ export const useSwapToAssetSelectionList = ({
             // An empty array counts as "not cached": the asset may be absent
             // on this network, and an [] entry never refetches (staleTime
             // Infinity).
-            const cached = queryClient.getQueryData<PeraAsset[]>(queryKey)
-            if (!cached || cached.length === 0) {
+            const [cachedAsset] =
+                queryClient.getQueryData<PeraAsset[]>(queryKey) ?? []
+            const { swapAsset } = item
+            const tier = swapAsset.verificationTier as PeraAssetVerificationTier
+            if (!cachedAsset) {
                 const peraAsset: PeraAsset = {
                     assetId,
-                    decimals: item.swapAsset.decimals ?? 0,
+                    decimals: swapAsset.decimals ?? 0,
                     creator: { address: '' },
                     totalSupply: new Decimal(0),
-                    name: item.swapAsset.name,
-                    unitName: item.swapAsset.unitName,
+                    name: swapAsset.name,
+                    unitName: swapAsset.unitName,
                     peraMetadata: {
                         isDeleted: false,
-                        verificationTier: item.swapAsset
-                            .verificationTier as PeraAssetVerificationTier,
-                        logo: item.swapAsset.logo,
+                        verificationTier: tier,
+                        logo: swapAsset.logo,
                     },
                 }
                 queryClient.setQueryData(queryKey, [peraAsset])
+            } else if (!cachedAsset.peraMetadata?.logo && swapAsset.logo) {
+                // A stored row can lack the logo the router has.
+                queryClient.setQueryData(queryKey, [
+                    {
+                        ...cachedAsset,
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: tier,
+                            ...cachedAsset.peraMetadata,
+                            logo: swapAsset.logo,
+                        },
+                    },
+                ])
             }
             onAssetSelected(
                 {
