@@ -27,6 +27,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import {
@@ -36,6 +37,7 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import { Linking } from 'react-native'
 import { QueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import {
@@ -663,6 +665,91 @@ describe('Flow: Onramp buy (native XO)', () => {
         // No webview was pushed — XO orders render in-sheet, not a Meld
         // widget.
         expect(useWebViewStore.getState().openWebViews).toHaveLength(0)
+    })
+
+    it('Given an Algorand-only account, when the user picks USD and taps Proceed, then the form quotes ALGO to the account and opens the Meld checkout', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        useOnrampStore.setState({ selectedDestinationTokenId: ALGO_ID })
+        const openUrl = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        onTestFinished(() => openUrl.mockRestore())
+        const checkoutUrl = 'https://checkout.meld.test/session-1'
+
+        const quoteBodies: Record<string, unknown>[] = []
+        server.use(
+            mockRampDestinations({
+                response: { next: null, results: [row(ALGO_ASSET, 'token')] },
+            }),
+            mockRampSources({
+                response: {
+                    next: null,
+                    results: [
+                        row(USD_ASSET, 'fiat'),
+                        row(BTC_ASSET, 'deposit'),
+                    ],
+                },
+            }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            http.post('*/api/v4/swap/quotes/', async ({ request }) => {
+                quoteBodies.push(
+                    (await request.json()) as Record<string, unknown>,
+                )
+                return HttpResponse.json({
+                    results: [buildMeldQuoteResponse()],
+                })
+            }),
+            mockCreateRampOrder({
+                response: {
+                    order_id: 'order-meld-1',
+                    status: 'pending',
+                    steps: [{ kind: 'open_checkout', url: checkoutUrl }],
+                },
+            }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+        await screen.findByTestId('onramp-pay-input', {}, { timeout: 5000 })
+
+        fireEvent.click(screen.getAllByTestId('onramp-pair-selector')[0])
+        fireEvent.click(
+            await screen.findByTestId(
+                `onramp-source-row-${USD_ID}`,
+                {},
+                { timeout: 5000 },
+            ),
+        )
+
+        const input = screen.getByTestId('onramp-pay-input') as HTMLInputElement
+        await waitFor(() => expect(input.value).toBe('100'))
+        expect(
+            screen.getAllByTestId('onramp-pair-selector')[1].textContent,
+        ).toContain('ALGO')
+        // A fiat source has no chain to name and no sender to ask for.
+        expect(screen.queryByTestId('onramp-pay-network')).toBeNull()
+        expect(screen.queryByTestId('onramp-sender-address-row')).toBeNull()
+
+        await waitFor(
+            () =>
+                expect(quoteBodies.at(-1)).toMatchObject({
+                    source_asset_id: USD_ID,
+                    destination_asset_id: ALGO_ID,
+                    destination_account: `${MAINNET_CAIP2}:${TO_ADDRESS}`,
+                }),
+            { timeout: 5000 },
+        )
+
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        await waitFor(
+            () => expect(isElementDisabled(buyButton())).toBe(false),
+            {
+                timeout: 5000,
+            },
+        )
+        fireEvent.click(buyButton())
+
+        await waitFor(() =>
+            expect(Linking.openURL).toHaveBeenCalledWith(checkoutUrl),
+        )
     })
 
     it('Given deposit coins on two chains, when the user picks USDC under the Solana chip and enters a sender address, then the form names the network, refuses an address from another chain and quotes from the Solana account', async () => {
