@@ -39,3 +39,5 @@ export type {
     WalletConnectDeeplinkHandler,
     WalletConnectDeeplinkParams,
 } from './useWalletConnectDeeplink'
+export { useLinkRecipientResolver } from './useLinkRecipientResolver'
+export type { LinkRecipientResolver } from './useLinkRecipientResolver'

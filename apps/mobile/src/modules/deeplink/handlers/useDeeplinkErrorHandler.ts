@@ -16,8 +16,10 @@ import {
     type ChainActionData,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { NameServiceId } from '@perawallet/wallet-core-nfd'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { NAME_SERVICE_COPY } from '@utils/nameServiceCopy'
 import { DEEPLINK_TIMEOUT_TAG } from './timeout'
 
 type Variant =
@@ -27,10 +29,13 @@ type Variant =
     | 'walletconnect_unsupported'
     | 'network-mismatch'
     | 'no-account'
+    | 'name-not-found'
     | 'unsupported-on-chain'
     | 'recover'
     | 'recover_duplicate'
     | 'timeout'
+
+type NameVariant = 'name-mismatch' | 'name-unavailable'
 
 type ChainActionVariant =
     | 'chain-action'
@@ -40,11 +45,12 @@ type ChainActionVariant =
 export type ShowDeeplinkErrorParams = {
     parsedType?: string
     error?: unknown
-    /** Display names the copy interpolates: `network` or `chain`. */
+    /** Display names the copy interpolates: `network`, `chain` or `name`. */
     values?: Record<string, string>
 } & (
     | { variant: Variant }
     | { variant: ChainActionVariant; action: ChainActionData['action'] }
+    | { variant: NameVariant; service: NameServiceId }
 )
 
 type MessageKeys = { title: I18nKey; body: I18nKey }
@@ -75,6 +81,10 @@ const MESSAGE_KEYS: Record<Variant, MessageKeys> = {
     'no-account': {
         title: i18nKey('deeplink.error.title_no_account'),
         body: i18nKey('deeplink.error.body_no_account'),
+    },
+    'name-not-found': {
+        title: i18nKey('deeplink.error.title_name_not_found'),
+        body: i18nKey('deeplink.error.body_name_not_found'),
     },
     'unsupported-on-chain': {
         title: i18nKey('deeplink.error.title_unsupported'),
@@ -115,10 +125,25 @@ const CHAIN_ACTION_MESSAGE_KEYS: Record<
     },
 }
 
-const messageKeysFor = (params: ShowDeeplinkErrorParams): MessageKeys =>
-    'action' in params
-        ? CHAIN_ACTION_MESSAGE_KEYS[params.action][params.variant]
-        : MESSAGE_KEYS[params.variant]
+const nameMessageKeys = (
+    service: NameServiceId,
+    variant: NameVariant,
+): MessageKeys => {
+    const copy = NAME_SERVICE_COPY[service]
+    return variant === 'name-mismatch'
+        ? { title: copy.mismatchTitleKey, body: copy.mismatchBodyKey }
+        : { title: copy.unavailableTitleKey, body: copy.unavailableBodyKey }
+}
+
+const messageKeysFor = (params: ShowDeeplinkErrorParams): MessageKeys => {
+    if ('action' in params) {
+        return CHAIN_ACTION_MESSAGE_KEYS[params.action][params.variant]
+    }
+    if ('service' in params) {
+        return nameMessageKeys(params.service, params.variant)
+    }
+    return MESSAGE_KEYS[params.variant]
+}
 
 /**
  * react-native-notifier renders into a `NotifierRoot` in the React tree, so a
