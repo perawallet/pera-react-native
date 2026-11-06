@@ -205,6 +205,17 @@ describe('AccountWithBalance', () => {
         expect(props).not.toHaveProperty('value')
     })
 
+    it('abbreviates every balance it shows, so a large one leaves the name room', () => {
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAssetAmount).toHaveBeenCalledWith(
+            expect.objectContaining({ shouldAbbreviate: true }),
+        )
+        expect(mockPreferredAmount).toHaveBeenCalledWith(
+            expect.objectContaining({ shouldAbbreviate: true }),
+        )
+    })
+
     describe('chain-agnostic row', () => {
         beforeEach(() => {
             mockHookResult.isMultiChain = true
@@ -225,7 +236,10 @@ describe('AccountWithBalance', () => {
             )
             expect(mockAssetAmount).not.toHaveBeenCalled()
             expect(mockPreferredAmount).toHaveBeenCalledWith(
-                expect.objectContaining({ value: total }),
+                expect.objectContaining({
+                    value: total,
+                    shouldAbbreviate: true,
+                }),
             )
         })
 

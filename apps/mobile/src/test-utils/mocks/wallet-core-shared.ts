@@ -84,6 +84,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         await vi.importActual<
             typeof import('@packages/shared/src/utils/asset-precision')
         >('@packages/shared/src/utils/asset-precision')
+    // Imports only decimal.js; a stub would hide the unit CurrencyAmount appends.
+    const { abbreviateLargeAmount } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/amount-abbreviation')
+    >('@packages/shared/src/utils/amount-abbreviation')
     const { percentChange } = await vi.importActual<
         typeof import('@packages/shared/src/utils/percent-change')
     >('@packages/shared/src/utils/percent-change')
@@ -508,6 +512,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         DEFAULT_PRECISION: 2,
         ASSET_MAX_PRECISION: 6,
         resolveAssetDisplayPrecision,
+        abbreviateLargeAmount,
         roundAssetAmountForDisplay,
         ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
         ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',

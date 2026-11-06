@@ -1096,7 +1096,12 @@
         "copy": "Kopyala",
         "send": "Gönder",
         "show_more": "Daha fazla göster",
-        "show_less": "Daha az göster"
+        "show_less": "Daha az göster",
+        "amount_abbreviation": {
+            "million": "{{amount}} Mn",
+            "billion": "{{amount}} Mr",
+            "trillion": "{{amount}} Tn"
+        }
     },
     "contacts": {
         "edit_contact": {

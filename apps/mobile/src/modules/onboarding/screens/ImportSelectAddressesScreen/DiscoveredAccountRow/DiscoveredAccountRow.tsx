@@ -87,6 +87,7 @@ export const DiscoveredAccountRow = ({
                                         key='total'
                                         value={total.value}
                                         density='compact'
+                                        shouldAbbreviate
                                         variant='footnoteMedium'
                                         isInline
                                     />,

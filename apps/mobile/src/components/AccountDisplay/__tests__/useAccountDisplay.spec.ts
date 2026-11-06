@@ -88,6 +88,7 @@ describe('useAccountDisplay', () => {
             truncateAlgorandAddress(ADDRESS),
         )
         expect(result.current.renderSecondary).toBe(true)
+        expect(result.current.isNameAddress).toBe(false)
     })
 
     it("shows a named account's address on the given chain, truncated by that chain's codec", () => {
@@ -157,6 +158,7 @@ describe('useAccountDisplay', () => {
 
         expect(result.current.displayName).toBe(truncated)
         expect(result.current.renderSecondary).toBe(false)
+        expect(result.current.isNameAddress).toBe(true)
     })
 
     it("keeps a named Ethereum account's name and shows its primary name beneath", () => {

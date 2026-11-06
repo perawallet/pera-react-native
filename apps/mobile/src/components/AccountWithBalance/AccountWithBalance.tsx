@@ -98,6 +98,7 @@ export const AccountWithBalance = ({
                             <PreferredAmount
                                 value={crossChainTotal.value}
                                 density='compact'
+                                shouldAbbreviate
                                 variant='bodyLarge'
                                 weight={500}
                             />
@@ -121,6 +122,7 @@ export const AccountWithBalance = ({
                     asset={availability.nativeAsset}
                     value={nativeValue}
                     density='compact'
+                    shouldAbbreviate
                     variant='bodyLarge'
                     weight={500}
                 />
@@ -130,6 +132,7 @@ export const AccountWithBalance = ({
                     <PreferredAmount
                         value={preferredValue}
                         density='compact'
+                        shouldAbbreviate
                         variant='footnoteMedium'
                         weight={400}
                         style={styles.fiatBalance}
@@ -142,6 +145,7 @@ export const AccountWithBalance = ({
                         sourceAmount={nativeValue}
                         scope={scope}
                         density='compact'
+                        shouldAbbreviate
                         variant='footnoteMedium'
                         weight={400}
                         style={styles.fiatBalance}

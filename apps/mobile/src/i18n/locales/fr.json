@@ -1096,7 +1096,12 @@
         "copy": "Copier",
         "send": "Envoyer",
         "show_more": "Afficher plus",
-        "show_less": "Afficher moins"
+        "show_less": "Afficher moins",
+        "amount_abbreviation": {
+            "million": "{{amount}} M",
+            "billion": "{{amount}} Md",
+            "trillion": "{{amount}} Bn"
+        }
     },
     "contacts": {
         "edit_contact": {
