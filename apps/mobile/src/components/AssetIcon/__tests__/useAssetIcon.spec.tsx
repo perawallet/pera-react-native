@@ -37,4 +37,26 @@ describe('useAssetIcon', () => {
 
         expect(screen.getByText('PU')).toBeTruthy()
     })
+
+    it("draws a token's stored logo, not its initials, on an EVM chain", () => {
+        const { result } = renderHook(() =>
+            useAssetIcon({
+                asset: asset({
+                    assetId: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                    unitName: 'USDC',
+                    peraMetadata: { logo: 'https://pera.test/usdc.png' },
+                }),
+                chainId: 'ethereum',
+                svgProps: {},
+            }),
+        )
+
+        render(<>{result.current.icon}</>)
+
+        expect(screen.queryByText('US')).toBeNull()
+        const { source } = result.current.icon.props as {
+            source: { uri: string }
+        }
+        expect(source.uri).toContain('https://pera.test/usdc.png?width=')
+    })
 })
