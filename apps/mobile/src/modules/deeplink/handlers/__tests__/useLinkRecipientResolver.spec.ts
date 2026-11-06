@@ -19,7 +19,7 @@ const { mockResolve, mockShowError, mockNameServiceOf } = vi.hoisted(() => ({
     mockNameServiceOf: vi.fn(() => 'ens'),
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     resolveVerifiedNameAddress: mockResolve,
     nameServiceOf: mockNameServiceOf,
 }))

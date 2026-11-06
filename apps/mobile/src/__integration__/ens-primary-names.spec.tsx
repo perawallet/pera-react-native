@@ -27,7 +27,7 @@ import {
 } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import type { NfdBulkReadRequestBody } from '@perawallet/wallet-core-nfd/test-handlers'
+import type { AddressNamesRequestBody } from '@perawallet/wallet-core-names/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 import { ENS_UNIVERSAL_RESOLVER } from './__fixtures__/ens-send'
@@ -87,8 +87,8 @@ const { addressCodecs } = await import('@perawallet/wallet-core-chain-contract')
 const { useContacts } = await import('@perawallet/wallet-core-contacts')
 const { evmHistoryItem, evmRpcHandlers } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
-const { mockNfdBulkRead } =
-    await import('@perawallet/wallet-core-nfd/test-handlers')
+const { mockAddressNames } =
+    await import('@perawallet/wallet-core-names/test-handlers')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
 const { renderWithNavigation } =
@@ -149,13 +149,13 @@ const rowText = (hash: string) =>
 
 type NamesByChain = Record<string, Record<string, string>>
 
-const requests: NfdBulkReadRequestBody[] = []
+const requests: AddressNamesRequestBody[] = []
 
 // Answers as the backend does: each address with its verified primary name on
 // the chain asked about, or none.
 const serveNames = (namesByChain: NamesByChain, status = 200) =>
     server.use(
-        mockNfdBulkRead({
+        mockAddressNames({
             status,
             response: body => {
                 requests.push(body)

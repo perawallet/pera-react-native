@@ -76,7 +76,7 @@ import {
 import {
     nameServiceChainAdapters,
     type NameServiceChainAdapter,
-} from '@perawallet/wallet-core-nfd'
+} from '@perawallet/wallet-core-names'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     createEthereumAccountsAdapter,

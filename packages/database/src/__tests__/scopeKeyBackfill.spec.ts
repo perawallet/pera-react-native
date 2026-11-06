@@ -244,7 +244,9 @@ describe('scope key backfill migration', () => {
                 if (table === 'submission_attempts') continue
                 // 0013 drops it.
                 if (table === 'account_balances') continue
-                expect(await countByNetwork(test.db, table, 'scope')).toEqual(
+                // 0026 renames it.
+                const current = table === 'nfd_cache' ? 'name_cache' : table
+                expect(await countByNetwork(test.db, current, 'scope')).toEqual(
                     {},
                 )
             }

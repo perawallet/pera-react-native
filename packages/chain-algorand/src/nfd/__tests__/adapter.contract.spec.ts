@@ -11,7 +11,7 @@
  */
 
 import { vi } from 'vitest'
-import { nameServiceContractTests } from '@perawallet/wallet-core-nfd/testing'
+import { nameServiceContractTests } from '@perawallet/wallet-core-names/testing'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandNameServiceAdapter } from '../adapter'
 

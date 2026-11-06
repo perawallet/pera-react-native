@@ -13,7 +13,7 @@
 import {
     nameServiceOf,
     useNameForAddressQuery,
-} from '@perawallet/wallet-core-nfd'
+} from '@perawallet/wallet-core-names'
 import type { ChainId, I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'

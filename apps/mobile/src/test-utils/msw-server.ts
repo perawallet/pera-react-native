@@ -21,7 +21,7 @@ import {
     mockAssetItems,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
-import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
+import { mockAddressNames } from '@perawallet/wallet-core-names/test-handlers'
 
 // Shared MSW server for integration tests. vitest.integration-setup.ts owns its
 // listen / resetHandlers / close lifecycle, so flow files never call those.
@@ -34,11 +34,11 @@ import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 // regardless of scenario. They survive `server.resetHandlers()`; tests can
 // still override them with `server.use(...)`.
 export const server = setupServer(
-    // The NFD batch queue bulk-reads names for any address rendered on
+    // The name batch queue bulk-reads names for any address rendered on
     // screen. Unhandled, the request escapes to staging, 403s, and
     // error-logs after the test ends — racing vitest's worker teardown
     // ("Closing rpc while onUserConsoleLog was pending") and failing CI.
-    mockNfdBulkRead({ response: { results: [] } }),
+    mockAddressNames({ response: { results: [] } }),
     // The preferred-currency query (default USD) fires from any screen that
     // renders a fiat value — same escape-to-staging teardown race as above
     // (it has failed CI runs blaming whichever integration file happened to

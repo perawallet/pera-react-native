@@ -66,7 +66,7 @@ const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
 const { evmRpcHandlers } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { mockNameSearch } =
-    await import('@perawallet/wallet-core-nfd/test-handlers')
+    await import('@perawallet/wallet-core-names/test-handlers')
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')
 const { resetTestKeystore } = await import('@test-utils/algorand-keystore-test')

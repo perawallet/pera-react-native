@@ -41,7 +41,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             flexShrink: 1,
         },
-        nfdItem: {
+        nameRow: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
@@ -60,12 +60,6 @@ export const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.buttonSquareBg,
             alignItems: 'center',
             justifyContent: 'center',
-        },
-        nfdInfo: {
-            flex: 1,
-        },
-        nfdAddress: {
-            color: theme.colors.textGray,
         },
         loadingContainer: {
             paddingVertical: theme.spacing.xl,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { NameServiceChainAdapter } from '@perawallet/wallet-core-nfd'
+import type { NameServiceChainAdapter } from '@perawallet/wallet-core-names'
 import { isValidAlgorandAddress } from '../blockchain/utils/addresses'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { verifyNfdAddress } from './verifyNfdAddress'

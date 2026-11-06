@@ -71,7 +71,7 @@ export type BatchQueueOptions = {
  * waiters. Across adjacent windows it's two fetches, by design — widen the
  * window for longer dedup.
  *
- * Partitions suit a segmented API: NFD lookups are per-network, so different
+ * Partitions suit a segmented API: name lookups are per-network, so different
  * networks fire separate executor calls in the same flush. Leave `TPartition`
  * defaulted for un-partitioned use.
  */

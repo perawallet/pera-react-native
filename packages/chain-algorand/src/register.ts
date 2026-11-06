@@ -31,7 +31,7 @@ import {
     sendFlowChainAdapters,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
-import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
+import { nameServiceChainAdapters } from '@perawallet/wallet-core-names'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
