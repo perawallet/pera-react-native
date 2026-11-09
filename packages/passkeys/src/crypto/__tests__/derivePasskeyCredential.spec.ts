@@ -39,6 +39,24 @@ describe('derivePasskeyMainKey', () => {
         expect(Array.from(first)).toEqual(Array.from(second))
     })
 
+    it('gives the same credential for the same 16-byte entropy of a 12-word phrase', async () => {
+        const entropy12 = new Uint8Array(16).fill(5)
+
+        const credentialFor = async () =>
+            derivePasskeyCredential({
+                mainKey: await derivePasskeyMainKey(entropy12, subtle),
+                origin: 'webauthn.io',
+                identity: 'alice',
+            })
+        const first = await credentialFor()
+        const second = await credentialFor()
+
+        expect(first.credentialId).toBe(second.credentialId)
+        expect(Array.from(first.publicKeySpkiDer)).toEqual(
+            Array.from(second.publicKeySpkiDer),
+        )
+    })
+
     it('produces a different key for different entropy', async () => {
         const other = new Uint8Array(32).fill(9)
 
