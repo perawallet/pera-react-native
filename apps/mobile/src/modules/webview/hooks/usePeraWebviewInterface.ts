@@ -169,7 +169,9 @@ export const usePeraWebviewInterface = (
                 }
                 const route = routes[method]
                 // Runs inside the native onMessage callback, where an
-                // uncaught throw is fatal in a release build.
+                // uncaught throw is fatal in a release build. A handler that
+                // answers and then throws gets a second answer for the id, so
+                // handlers send last.
                 try {
                     if (!route.requiresTrustedOrigin) {
                         route.handle(msg, security)

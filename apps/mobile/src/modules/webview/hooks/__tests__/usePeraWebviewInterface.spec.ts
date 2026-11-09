@@ -230,7 +230,6 @@ describe('usePeraWebviewInterface', () => {
         expect(order).toEqual(['settings', 'addresses'])
     })
 
-    // A throw inside onMessage is an uncaught exception, fatal in release.
     describe('a handler that throws', () => {
         const ADDRESS =
             'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
@@ -257,6 +256,7 @@ describe('usePeraWebviewInterface', () => {
                 'WebView bridge handler threw',
                 { method: 'getAddresses', error },
             )
+            logError.mockRestore()
         })
 
         it('still dispatches the rest of the batch', () => {
