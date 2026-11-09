@@ -29,6 +29,7 @@ import {
     createHistoryScanBudget,
     createTokenSightings,
     TOKEN_SCAN_INTERVAL_MS,
+    TOKEN_SCAN_MAX_PAGES,
 } from '../token-detection'
 import {
     nativeWhitelistItem,
@@ -265,6 +266,43 @@ describe('fetchAccountState received-token detection', () => {
         await vi.waitFor(() => expect(historyRequests).toBe(2))
 
         expect(state.chainState).toMatchObject({ tokenScanBlock: 95 })
+    })
+
+    it('keeps the recorded block while a gap above it is unread, and finds a token received in it on a later scan', async () => {
+        const gapToken = getAddress(
+            '0x00000000000000000000000000000000000000dd',
+        )
+        serve(
+            [
+                ...Array.from({ length: TOKEN_SCAN_MAX_PAGES }, (_, page) => [
+                    receivedTsla(99 - page),
+                ]),
+                [receivedTsla(60, gapToken)],
+                [receivedTsla(40)],
+            ],
+            { [TSLAX]: token(5n), [gapToken]: token(7n) },
+        )
+        let now = 1_000
+        const tokenSightings = createTokenSightings()
+        const ops = opsWith(SERVICES, { now: () => now, tokenSightings })
+        const sinceGap = { priorChainState: evmState(50), isPersisted: true }
+
+        await ops.fetchAccountState(ADDRESS, SCOPE, sinceGap)
+        await vi.waitFor(() =>
+            expect(historyRequests).toBe(TOKEN_SCAN_MAX_PAGES),
+        )
+        const cutShort = await ops.fetchAccountState(ADDRESS, SCOPE, sinceGap)
+        now += TOKEN_SCAN_INTERVAL_MS
+        await ops.fetchAccountState(ADDRESS, SCOPE, sinceGap)
+        await vi.waitFor(() =>
+            expect(tokenSightings.of(SCOPE, ADDRESS)).toContain(gapToken),
+        )
+        const caughtUp = await ops.fetchAccountState(ADDRESS, SCOPE, sinceGap)
+
+        expect(cutShort.chainState).toMatchObject({ tokenScanBlock: 50 })
+        expect(historyRequests).toBe(TOKEN_SCAN_MAX_PAGES + 2)
+        expect(caughtUp.holdings.map(h => h.assetId)).toContain(gapToken)
+        expect(caughtUp.chainState).toMatchObject({ tokenScanBlock: 99 })
     })
 
     it('keeps a stored token and the marker when the history read fails', async () => {
