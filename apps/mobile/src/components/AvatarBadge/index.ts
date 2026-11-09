@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { AvatarBadge, type AvatarBadgeProps } from './AvatarBadge'
+export { AvatarBadge } from './AvatarBadge'
+export type { AvatarBadgeProps } from './AvatarBadge'

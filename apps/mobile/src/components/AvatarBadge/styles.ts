@@ -12,8 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// The ring gets its own view because RN counts borders inside min sizes; min (not fixed)
-// sizes let the 16px disc widen for two digits and grow with OS font scaling.
+// The ring gets its own view because RN counts borders inside min sizes.
 export const useStyles = makeStyles(theme => ({
     ring: {
         borderRadius: theme.borderRadius.full,
