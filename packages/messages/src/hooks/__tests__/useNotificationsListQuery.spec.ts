@@ -250,6 +250,42 @@ describe('useNotificationsListQuery', () => {
         expect(result.current.fetchNextPage).toBe(fetchNextPage)
     })
 
+    it('keeps a refetch result when the list reaches its end on the last page mid-refetch', async () => {
+        const page = (message: string) => ({
+            next: null,
+            previous: null,
+            results: [
+                {
+                    id: '1',
+                    message,
+                    creation_datetime: '2026-11-09T12:00:00Z',
+                },
+            ],
+        })
+        vi.mocked(fetchNotificationList).mockResolvedValueOnce(page('English'))
+
+        const { result } = renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+        await waitFor(() => expect(result.current.data).toHaveLength(1))
+
+        let resolveRefetch: (value: ReturnType<typeof page>) => void = () => {}
+        vi.mocked(fetchNotificationList).mockReturnValueOnce(
+            new Promise(resolve => {
+                resolveRefetch = resolve
+            }),
+        )
+
+        // A short list fires onEndReached as soon as the refreshed screen lays out.
+        result.current.refetch()
+        result.current.fetchNextPage()
+        resolveRefetch(page('Deutsch'))
+
+        await waitFor(() =>
+            expect(result.current.data[0]?.message).toBe('Deutsch'),
+        )
+    })
+
     it('treats a next URL with an empty cursor as the last page instead of refetching page one forever', async () => {
         vi.mocked(fetchNotificationList).mockClear()
         // Staging returns `next` with `?cursor=` (empty) on the last page;

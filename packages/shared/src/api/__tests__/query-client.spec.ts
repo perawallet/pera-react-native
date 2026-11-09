@@ -1086,6 +1086,60 @@ describe('queryClient', () => {
         })
     })
 
+    describe('Accept-Language header', () => {
+        let setStandardHeadersUnderTest: (state: {
+            request: { headers: Map<string, string> }
+        }) => void
+        // Same resetModules generation as query-client, so this setter
+        // writes the locale its header hook reads.
+        let scopedSetActiveLocale: (locale: string) => void
+
+        beforeAll(async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { queryClient } = await import('../query-client')
+            scopedSetActiveLocale = (await import('../../utils'))
+                .setActiveLocale
+            mockJson.mockResolvedValue({ status: 'ok' })
+
+            await queryClient({
+                backend: 'pera',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                method: 'GET',
+                url: '/warm-up',
+            })
+
+            const peraConfig = findClientConfig(
+                backendUrlByNetwork.mainnet,
+            ) as CapturedClientConfig
+            setStandardHeadersUnderTest = peraConfig.hooks.beforeRequest[0]
+        })
+
+        afterEach(() => {
+            scopedSetActiveLocale('en')
+        })
+
+        it("sends the app's language, not the device's", () => {
+            scopedSetActiveLocale('de')
+
+            const headers = new Map<string, string>()
+            setStandardHeadersUnderTest({ request: { headers } })
+
+            expect(headers.get('Accept-Language')).toBe('de,en;q=0.8')
+        })
+
+        it('follows a language change on the next request', () => {
+            const headers = new Map<string, string>()
+            setStandardHeadersUnderTest({ request: { headers } })
+            expect(headers.get('Accept-Language')).toBe('en')
+
+            scopedSetActiveLocale('tr')
+            setStandardHeadersUnderTest({ request: { headers } })
+
+            expect(headers.get('Accept-Language')).toBe('tr,en;q=0.8')
+        })
+    })
+
     it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {
         const { queryClient } = await import('../query-client')
         mockText.mockReset()

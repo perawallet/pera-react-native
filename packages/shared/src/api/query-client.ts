@@ -38,7 +38,12 @@ import type {
     RequestRetryOverrides,
     ResponseConfiguration,
 } from '../models/queries'
-import { logger, parsePrecisionSafeJson } from '../utils'
+import {
+    buildAcceptLanguage,
+    getActiveLocale,
+    logger,
+    parsePrecisionSafeJson,
+} from '../utils'
 import {
     CHAIN_REFUSAL_CODES,
     PeraNetworkError,
@@ -359,6 +364,14 @@ let backupClient: KyInstance | undefined
 
 const setStandardHeaders = ({ request }: BeforeRequestState) => {
     request.headers.set('Content-Type', 'application/json')
+
+    // Some backend text (shared-account and card rows in the notification list)
+    // is rendered per request in this language, not the device row's; left unset,
+    // iOS sends the phone's languages instead of the app's.
+    request.headers.set(
+        'Accept-Language',
+        buildAcceptLanguage(getActiveLocale()),
+    )
 
     if (config.backendAPIKey?.length) {
         request.headers.set('X-API-Key', config.backendAPIKey)

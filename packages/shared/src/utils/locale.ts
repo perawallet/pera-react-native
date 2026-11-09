@@ -33,6 +33,21 @@ export const setActiveLocale = (locale: string): void => {
     listeners.forEach(listener => listener())
 }
 
+/**
+ * `Accept-Language` for a locale tag. English trails as a graded fallback so a
+ * backend with no translation answers in English rather than its own default;
+ * a regional tag offers its base language in between (`pt-BR` → `pt`).
+ */
+export const buildAcceptLanguage = (locale: string): string => {
+    if (locale === DEFAULT_LOCALE) return DEFAULT_LOCALE
+
+    const baseLanguage = locale.split('-')[0] ?? locale
+    const parts = [locale]
+    if (baseLanguage !== locale) parts.push(`${baseLanguage};q=0.9`)
+    if (baseLanguage !== DEFAULT_LOCALE) parts.push(`${DEFAULT_LOCALE};q=0.8`)
+    return parts.join(',')
+}
+
 /** Notifies `listener` after each change; returns the unsubscribe. */
 export const subscribeActiveLocale = (listener: () => void): (() => void) => {
     listeners.add(listener)
