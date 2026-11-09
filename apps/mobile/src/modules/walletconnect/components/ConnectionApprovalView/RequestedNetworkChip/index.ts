@@ -11,4 +11,3 @@
  */
 
 export { RequestedNetworkChip } from './RequestedNetworkChip'
-export type { RequestedNetworkChipProps } from './RequestedNetworkChip'

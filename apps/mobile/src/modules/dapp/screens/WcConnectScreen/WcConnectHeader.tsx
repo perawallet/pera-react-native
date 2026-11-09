@@ -82,7 +82,7 @@ export const WcConnectHeader = ({
                     <PWIcon
                         name='wallet-connect'
                         variant='secondary'
-                        size='xl'
+                        size='lg'
                     />
                 </PWView>
             )}

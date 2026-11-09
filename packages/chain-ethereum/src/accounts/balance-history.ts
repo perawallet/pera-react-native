@@ -476,7 +476,8 @@ export const createEthereumBalanceHistoryOps = (
     const fetchPortfolioHistory: AccountsChainAdapter['fetchPortfolioHistory'] =
         async (addresses, period, scope, signal) => {
             eip155ChainIdOf(scope, chain)
-            // An empty source adds nothing to the sum, so a network holding nothing must not blank the chart.
+            // An empty source adds nothing to the sum, so a network
+            // holding nothing must not blank the chart.
             if (!hasServices(ctx, scope)) {
                 const unservedHoldings = await readHoldings(scope, addresses, {
                     isCounted: true,

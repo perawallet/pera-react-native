@@ -102,7 +102,7 @@ export const useStyles = makeStyles(
                 paddingBottom: theme.spacing.lg,
                 width: '100%',
             },
-            permissionsContent: {
+            panelContent: {
                 gap: theme.spacing.md,
                 paddingTop: theme.spacing.md,
             },

@@ -81,7 +81,7 @@ export const RequestedNetworksPanel = ({
                 </PWView>
             }
         >
-            <PWView style={styles.list}>
+            <PWView style={sharedStyles.panelContent}>
                 {addedNetworks.map(network => (
                     <RequestedNetworkListItem
                         key={network.chainId}

@@ -17,7 +17,7 @@ import { ChainIcon } from '@modules/chain-ui/icon'
 import type { RequestedNetwork } from '../useConnectionApprovalView'
 import { useStyles } from './styles'
 
-export type RequestedNetworkChipProps = {
+type RequestedNetworkChipProps = {
     network: RequestedNetwork
 }
 

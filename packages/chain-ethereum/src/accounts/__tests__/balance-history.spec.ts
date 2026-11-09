@@ -864,7 +864,7 @@ describe('the adapter methods', () => {
         ).toEqual([])
     })
 
-    it('answers no points on a chain the backend serves no balance history for, and no portfolio source at all', async () => {
+    it('answers no points on a chain the backend serves no balance history for', async () => {
         server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
 
         await expect(

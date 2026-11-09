@@ -24,16 +24,12 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
         minWidth: 0,
         overflow: 'hidden',
     },
     moreText: {
         color: theme.colors.textGray,
-    },
-    list: {
-        gap: theme.spacing.md,
-        paddingTop: theme.spacing.md,
     },
     optionalNote: {
         color: theme.colors.textGray,

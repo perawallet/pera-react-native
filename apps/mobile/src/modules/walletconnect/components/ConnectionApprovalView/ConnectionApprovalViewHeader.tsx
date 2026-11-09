@@ -118,7 +118,7 @@ export const ConnectionApprovalViewHeader = ({
                     <PWIcon
                         name='wallet-connect'
                         variant='secondary'
-                        size='xl'
+                        size='lg'
                     />
                 </PWView>
             )}
