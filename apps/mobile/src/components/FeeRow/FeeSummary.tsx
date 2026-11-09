@@ -29,6 +29,8 @@ export type FeeSummaryProps = {
     /** Base units of the scope's native asset. */
     estimate?: { preset: FeePreset; amount: Decimal }
     testID?: string
+    /** Each row's amount and fiat value sit side by side, for a footer that can't spare the height. */
+    isCompact?: boolean
 }
 
 /** The fee as a tier, an estimate and a max, none of them editable. */
@@ -37,6 +39,7 @@ export const FeeSummary = ({
     maxAmount,
     estimate,
     testID,
+    isCompact = false,
 }: FeeSummaryProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -66,6 +69,7 @@ export const FeeSummary = ({
                         scope={scope}
                         amount={estimate.amount}
                         testID='fee_summary_estimate'
+                        isCompact={isCompact}
                     />
                 </PWView>
             )}
@@ -88,6 +92,7 @@ export const FeeSummary = ({
                     scope={scope}
                     amount={maxAmount}
                     testID='fee_summary_max'
+                    isCompact={isCompact}
                 />
             </PWView>
         </PWView>

@@ -394,6 +394,33 @@ describe('vault-chrome webauthn signer', () => {
             expect([...publicKeyXY]).toEqual(expected)
         })
 
+        it('derives from a 16-byte entropy child, as a 12-word wallet stores', async () => {
+            const entropy12 = new Uint8Array(16).fill(5)
+            engine.addMaterial(ENTROPY_CHILD_ID, entropy12)
+            const signer = createKeystoreSigner(engine, store)
+
+            const { publicKeyXY } =
+                await signer.createP256Credential(credentialParams())
+
+            const dp = new DeterministicP256()
+            const mainKey = await dp.genDerivedMainKey(
+                entropy12,
+                PBKDF2_SALT,
+                10,
+                32,
+            )
+            const pk = dp.getPurePKBytes(
+                await dp.genDomainSpecificKeyPair(
+                    mainKey,
+                    'webauthn.io',
+                    'alice',
+                    0,
+                ),
+            )
+            const { x, y } = splitP256PublicKey(pk)
+            expect([...publicKeyXY]).toEqual([...x, ...y])
+        })
+
         // Same formula as `usePasskeyMainKey`/`repairs/0003` on mobile, so a
         // keystore written by either side is recognised by the other.
         it('names the main key with the shared `<seedKeyId>-passkey-main` id', async () => {

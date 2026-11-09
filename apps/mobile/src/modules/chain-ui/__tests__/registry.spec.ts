@@ -53,6 +53,15 @@ describe('chainUiFor', () => {
         expect(ui.assetDetails?.IssuerControlsSection).toBeUndefined()
     })
 
+    it('gives Algorand a 12-word passphrase paragraph and Ethereum none', () => {
+        expect(
+            chainUiFor('algorand').passphraseCompatibilityKeyByWordCount?.[12],
+        ).toBe('view_passphrase.compatibility.algorand_twelve_word')
+        expect(
+            chainUiFor('evm').passphraseCompatibilityKeyByWordCount,
+        ).toBeUndefined()
+    })
+
     it('gives each bundled family its own passphrase explainer paragraph', () => {
         expect(chainUiFor('algorand').passphraseCompatibilityKey).toBe(
             'view_passphrase.compatibility.algorand',

@@ -607,6 +607,7 @@
             "title": "Passphrase in anderen Wallets verwenden",
             "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask, Uniswap oder Rabby können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Nach dem Import siehst du eventuell nur diese erste Adresse. Manche Wallets zeigen deine weiteren Adressen an, sobald sie verwendet wurden; in anderen musst du sie manuell hinzufügen. Sie erscheinen in der Reihenfolge, in der du sie in Pera erstellt hast.",
             "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
+            "algorand_twelve_word": "Algorand: funktioniert in Pera. Andere Algorand-Wallets akzeptieren möglicherweise nur Passphrasen mit 24 Wörtern. Prüfe daher, ob ein Wallet 12 Wörter unterstützt, bevor du dich darauf verlässt. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
             "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
     },
@@ -3597,8 +3598,11 @@
         "predicted_failure": {
             "title": "Diese Transaktion wird wahrscheinlich fehlschlagen",
             "body": "Pera hat sie anhand des neuesten Blocks ausgeführt und sie ist fehlgeschlagen. Wenn du trotzdem signierst, zahlst du möglicherweise trotzdem die Netzwerkgebühr.",
-            "reason": "Grund des Contracts: „{{reason}}“",
-            "acknowledge": "Ich verstehe, dass sie wahrscheinlich fehlschlägt, und möchte trotzdem signieren"
+            "reason": "Grund des Contracts: „{{reason}}“"
+        },
+        "review_warnings": {
+            "summary": "{{count}} Dinge zu prüfen",
+            "acknowledge": "Ich verstehe die Risiken und möchte trotzdem signieren"
         }
     },
     "site_safety": {
@@ -4930,6 +4934,11 @@
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",
             "matches_site": "Entspricht {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
+            "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
         },
         "simulation": {
             "title": "Geschätzte Änderungen",

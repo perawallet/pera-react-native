@@ -12,11 +12,7 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import {
-    formatAssetAmount,
-    useNativeAsset,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     useFindAccountByAddress,
     type WalletAccount,
@@ -100,11 +96,8 @@ export type EthereumTransactionPresentation = {
     maxFee: Nullable<EthereumAmount>
     /** Null on a batch call not yet reached and on a mined transaction. */
     reviewFee: Nullable<EthereumReviewFee>
-    /**
-     * Set when a dApp's gas limit and fees authorise far more than the wallet's
-     * own pricing would: `maxFee` formatted for the warning. Null otherwise.
-     */
-    highFeeText: Nullable<string>
+    /** A dApp's gas limit and fees authorise far more than the wallet's own pricing would. */
+    hasHighFee: boolean
     /** `view.feePaid` in ether, on a transaction already on chain whose history gave a fee; whoever paid it. */
     feePaid: Nullable<EthereumAmount>
     signingAccount: Nullable<WalletAccount>
@@ -262,10 +255,7 @@ export const useEthereumTransactionPresentation = (
                           }),
                       }
                     : null,
-            highFeeText:
-                'fee' in view && view.hasHighFee
-                    ? formatAssetAmount(view.fee.maxFee, nativeAsset)
-                    : null,
+            hasHighFee: 'fee' in view && !!view.hasHighFee,
             feePaid:
                 'isMined' in view && view.feePaid
                     ? toEther(view.feePaid)

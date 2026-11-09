@@ -607,6 +607,7 @@
             "title": "Using this passphrase in other wallets",
             "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask, Uniswap or Rabby can import these words, and your first account's address will match. After importing, you may only see that first address. Some wallets show your other addresses once they've been used; in others, you'll need to add them manually. They appear in the order you created them in Pera.",
             "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
+            "algorand_twelve_word": "Algorand: works in Pera. Other Algorand wallets may only accept 24-word passphrases, so check that a wallet supports 12 words before relying on it there. Legacy 25-word Algorand wallets can't import it.",
             "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
     },
@@ -3605,8 +3606,11 @@
         "predicted_failure": {
             "title": "This transaction will likely fail",
             "body": "Pera ran it against the latest block and it failed. If you sign anyway, you may still pay the network fee.",
-            "reason": "The contract's reason: \"{{reason}}\"",
-            "acknowledge": "I understand it will likely fail and want to sign anyway"
+            "reason": "The contract's reason: \"{{reason}}\""
+        },
+        "review_warnings": {
+            "summary": "{{count}} things to check",
+            "acknowledge": "I understand the risks and want to sign anyway"
         }
     },
     "site_safety": {
@@ -4930,6 +4934,11 @@
             "title": "Contract",
             "verified": "Verified contract",
             "matches_site": "Matches {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Unusually high network fee",
+            "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less.",
+            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less."
         },
         "simulation": {
             "title": "Estimated changes",

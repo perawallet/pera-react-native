@@ -607,6 +607,7 @@
             "title": "Usar esta passphrase en otras wallets",
             "evm": "Redes compatibles con Ethereum: las wallets BIP39 estándar, como MetaMask, Uniswap o Rabby, pueden importar estas palabras, y la dirección de tu primera cuenta coincidirá. Después de importarlas, es posible que solo veas esa primera dirección. Algunas wallets muestran tus otras direcciones una vez que se han usado; en otras, tendrás que agregarlas manualmente. Aparecen en el orden en que las creaste en Pera.",
             "algorand": "Algorand: funciona en Pera y en otras wallets compatibles con las wallets HD de Algorand de 24 palabras. Las wallets de Algorand antiguas de 25 palabras no pueden importarla.",
+            "algorand_twelve_word": "Algorand: funciona en Pera. Otras wallets de Algorand pueden aceptar solo passphrases de 24 palabras, así que comprueba que una wallet admite 12 palabras antes de confiar en ella. Las wallets de Algorand antiguas de 25 palabras no pueden importarla.",
             "warning": "Cualquiera que tenga estas palabras controla tus fondos en todas las redes. Nunca las introduzcas en un sitio web ni las compartas con nadie."
         }
     },
@@ -3605,8 +3606,11 @@
         "predicted_failure": {
             "title": "Es probable que esta transacción falle",
             "body": "Pera la ejecutó con el último bloque y falló. Si firmas de todos modos, es posible que aun así pagues la comisión de red.",
-            "reason": "Motivo del contrato: «{{reason}}»",
-            "acknowledge": "Entiendo que probablemente falle y quiero firmar de todos modos"
+            "reason": "Motivo del contrato: «{{reason}}»"
+        },
+        "review_warnings": {
+            "summary": "{{count}} cosas que revisar",
+            "acknowledge": "Entiendo los riesgos y quiero firmar de todos modos"
         }
     },
     "site_safety": {
@@ -4930,6 +4934,11 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Coincide con {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Comisión de red inusualmente alta",
+            "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su ajuste Normal. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
+            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su ajuste Normal. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
         },
         "simulation": {
             "title": "Cambios estimados",

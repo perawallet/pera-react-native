@@ -607,6 +607,7 @@
             "title": "Utiliser cette passphrase dans d’autres wallets",
             "evm": "Réseaux compatibles Ethereum : les wallets BIP39 standard, comme MetaMask, Uniswap ou Rabby, peuvent importer ces mots, et l’adresse de votre premier compte sera identique. Après l’import, il est possible que vous ne voyiez que cette première adresse. Certains wallets affichent vos autres adresses dès qu’elles ont été utilisées ; dans d’autres, vous devrez les ajouter manuellement. Elles apparaissent dans l’ordre dans lequel vous les avez créées dans Pera.",
             "algorand": "Algorand : fonctionne dans Pera et dans les autres wallets compatibles avec les wallets HD Algorand à 24 mots. Les anciens wallets Algorand à 25 mots ne peuvent pas l’importer.",
+            "algorand_twelve_word": "Algorand : fonctionne dans Pera. D’autres wallets Algorand n’acceptent parfois que les passphrases de 24 mots : vérifiez qu’un wallet prend en charge 12 mots avant de vous y fier. Les anciens wallets Algorand à 25 mots ne peuvent pas l’importer.",
             "warning": "Toute personne qui possède ces mots contrôle vos fonds sur tous les réseaux. Ne les saisissez jamais sur un site web et ne les partagez avec personne."
         }
     },
@@ -3605,8 +3606,11 @@
         "predicted_failure": {
             "title": "Cette transaction va probablement échouer",
             "body": "Pera l’a exécutée sur le dernier bloc et elle a échoué. Si vous signez quand même, vous pourriez tout de même payer les frais de réseau.",
-            "reason": "Motif du contrat : « {{reason}} »",
-            "acknowledge": "Je comprends qu’elle va probablement échouer et je veux signer quand même"
+            "reason": "Motif du contrat : « {{reason}} »"
+        },
+        "review_warnings": {
+            "summary": "{{count}} points à vérifier",
+            "acknowledge": "Je comprends les risques et je veux quand même signer"
         }
     },
     "site_safety": {
@@ -4930,6 +4934,11 @@
             "title": "Contrat",
             "verified": "Contrat vérifié",
             "matches_site": "Correspond à {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Frais de réseau anormalement élevés",
+            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
+            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins."
         },
         "simulation": {
             "title": "Modifications estimées",

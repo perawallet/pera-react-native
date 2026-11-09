@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-export {
-    PredictedFailureWarning,
-    type PredictedFailureWarningProps,
-} from './PredictedFailureWarning'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.md,
+    },
+    reason: {
+        color: theme.colors.textMain,
+    },
+}))
