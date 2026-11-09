@@ -39,6 +39,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { FilterOption } from '@components/FilterSelection'
+import { scopedAssetKey } from '@utils/scopedAssetKey'
 import { useSwapChainFilter } from '../../hooks/useSwapChainFilter'
 import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
 import { swapSearchPlaceholderKey } from '../../utils/swapSearchPlaceholderKey'
@@ -142,13 +143,11 @@ export const useSwapToAssetSelectionList = ({
     const { assetBalances } =
         useAccountHoldingsAcrossChainsQuery(selectedAccount)
 
-    // Asset ids are only unique within a scope: every EVM chain's native
-    // asset is 'native'.
     const balanceMap = useMemo(
         (): Map<string, Decimal> =>
             new Map(
                 assetBalances.map(item => [
-                    `${toScopeKey(item.scope)}/${item.assetId}`,
+                    scopedAssetKey(item.scope, item.assetId),
                     item.amount,
                 ]),
             ),
@@ -167,7 +166,7 @@ export const useSwapToAssetSelectionList = ({
                 swapAsset,
                 balance:
                     balanceMap.get(
-                        `${toScopeKey(swapAsset.ref)}/${swapAsset.assetId}`,
+                        scopedAssetKey(swapAsset.ref, swapAsset.assetId),
                     ) ?? null,
             }))
     }, [availableAssets, balanceMap, excludeAssetId, scope])

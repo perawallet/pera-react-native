@@ -133,7 +133,8 @@ export const useAccountAssetSelectionList = ({
         const filtered = searchTerm
             ? items.filter(item => {
                   return (
-                      item.assetId.includes(searchTerm) ||
+                      // EVM contract ids are stored checksummed (mixed case).
+                      item.assetId.toLowerCase().includes(searchTerm) ||
                       item.asset?.name?.toLowerCase().includes(searchTerm) ||
                       item.asset?.unitName?.toLowerCase().includes(searchTerm)
                   )
