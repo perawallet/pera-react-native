@@ -397,6 +397,7 @@ describe('useWcConnectScreen', () => {
         act(() => result.current.handleConnect())
 
         expect(mocks.approve).not.toHaveBeenCalled()
+        expect(result.current.canConnect).toBe(false)
     })
 
     describe('site safety', () => {

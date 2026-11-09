@@ -197,14 +197,20 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         })
     }, [])
 
+    // An account picked and then dropped from the list is not granted.
+    const addresses = useMemo(
+        () =>
+            [...selected].flatMap(id => {
+                const account = accounts.find(a => a.id === id)
+                const address =
+                    account && chainAccountOf(account, chainId)?.address
+                return address ? [address] : []
+            }),
+        [selected, accounts, chainId],
+    )
+
     const handleConnect = useCallback((): void => {
         if (!isArmed || !siteSafety.isApprovalAllowed || isConnecting) return
-        // An account picked and then removed no longer lists; it is not granted.
-        const addresses = [...selected].flatMap(id => {
-            const account = accounts.find(a => a.id === id)
-            const address = account && chainAccountOf(account, chainId)?.address
-            return address ? [address] : []
-        })
         if (addresses.length === 0) return
         setIsConnecting(true)
         // No `finally` reset: approve() settles the approval and closes this
@@ -213,9 +219,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         void approve(addresses)
     }, [
         approve,
-        accounts,
-        chainId,
-        selected,
+        addresses,
         isArmed,
         siteSafety.isApprovalAllowed,
         isConnecting,
@@ -266,7 +270,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         selected,
         toggle,
         canConnect:
-            selected.size > 0 && isArmed && siteSafety.isApprovalAllowed,
+            addresses.length > 0 && isArmed && siteSafety.isApprovalAllowed,
         isLoading,
         isConnecting: isConnecting && !isConfirmed,
         isConfirmed,
