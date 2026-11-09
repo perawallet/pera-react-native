@@ -25,7 +25,7 @@ import {
     vi,
 } from 'vitest'
 import React, { useEffect, useRef } from 'react'
-import { act, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook } from '@testing-library/react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
@@ -246,6 +246,8 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         useSwapTrackingStore.getState().resetState()
     })
     afterEach(() => {
+        // A mounted picker would re-render against the reset registry.
+        cleanup()
         host = null
         vi.restoreAllMocks()
         getProvider().chains.reset()
@@ -344,6 +346,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
                         scope: ALGO_SCOPE,
                         fromAssetId: '0',
                         onAssetSelected: vi.fn(),
+                        onSwitchPayAsset: vi.fn(),
                     }),
                 { wrapper: createQueryClientWrapper() },
             )
