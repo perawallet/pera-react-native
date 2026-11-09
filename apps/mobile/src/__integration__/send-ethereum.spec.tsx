@@ -631,6 +631,23 @@ describe('Flow: send from an Ethereum account', () => {
         })
     })
 
+    it('Given an ERC-20 send, when the user reviews it, then the amount shows the figure alone, its unit named only in the title', async () => {
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: TOKEN })
+        useSendFundsStore.getState().setAmount(new Decimal('0.015865'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+
+        const amount = await screen.findByTestId('send_confirm_amount')
+        expect(amount.textContent).toBe('0.015865')
+        // The Current Balance row keeps its unit; the Amount row drops it.
+        await waitFor(() => expect(screen.getAllByText('USDC')).toHaveLength(1))
+    })
+
     it('Given a token no Pera list names that the account added and holds, when the user sends 12.5 of it, then a token transfer call to its contract reaches the node', async () => {
         server.use(
             ...evmRpcHandlers({

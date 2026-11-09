@@ -25,7 +25,7 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import {
@@ -342,12 +342,14 @@ describe('Flow: send an NFT from an Ethereum account', () => {
         renderSendConfirmationStack()
         // The amount row shows the NFT itself and no fiat value beside it:
         // the amount is followed directly by the network chip.
-        await waitFor(() =>
+        await waitFor(() => {
+            const amountRow = screen.getByTestId('send_confirm_network')
+                .previousElementSibling as HTMLElement
             expect(
-                screen.getByTestId('send_confirm_network')
-                    .previousElementSibling?.textContent,
-            ).toMatch(/BORE1$/),
-        )
+                within(amountRow).getByTestId('send_confirm_amount')
+                    .textContent,
+            ).toBe('1')
+        })
         await confirmSend()
 
         expect(sentRawTransactions).toHaveLength(1)

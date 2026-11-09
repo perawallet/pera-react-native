@@ -39,6 +39,7 @@ import { SendTotalRow } from './SendTotalRow'
 import { RecipientWarning } from '../RecipientWarning/RecipientWarning'
 import { RecipientSafetyNotice } from '../RecipientSafetyNotice'
 import { useSaveRecipientContact } from './useSaveRecipientContact'
+import { confirmAmountLines, confirmAmountWrap } from './confirmAmountPlatform'
 
 export const TransactionConfirmationScreen = () => {
     const styles = useStyles()
@@ -166,13 +167,17 @@ export const TransactionConfirmationScreen = () => {
                             />
                         )}
                         <PWView style={styles.amount}>
+                            {/* The title names the asset, so the figure gets the row's whole width. */}
                             <AssetAmount
                                 chainId={scope.chainId}
                                 variant='h3'
                                 asset={asset}
-                                showSymbol
+                                showSymbol={false}
                                 ignorePrivacyMode
                                 value={amount ?? new Decimal(0)}
+                                shouldFitWidth
+                                numberOfLines={confirmAmountLines}
+                                style={confirmAmountWrap}
                                 testID='send_confirm_amount'
                             />
                         </PWView>
