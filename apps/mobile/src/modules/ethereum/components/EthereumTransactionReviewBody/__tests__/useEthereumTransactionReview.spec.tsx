@@ -52,7 +52,7 @@ const review = (verifiedOrigin?: string) =>
     ).result.current
 
 describe('useEthereumTransactionReview', () => {
-    it('makes the predicted failure and the high fee high-risk, and the notices advisory', () => {
+    it('makes only the predicted failure high-risk, and the high fee and notices advisory', () => {
         vi.mocked(useEthereumSimulationSection).mockReturnValue({
             status: 'reverted',
             reason: null,
@@ -64,7 +64,7 @@ describe('useEthereumTransactionReview', () => {
             warningItems.map(({ id, isHighRisk }) => [id, isHighRisk]),
         ).toEqual([
             ['predicted_failure_warning', true],
-            ['ethereum_high_fee_warning', true],
+            ['ethereum_high_fee_warning', false],
             ['ethereum_contract_call_warning', false],
         ])
     })

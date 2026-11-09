@@ -44,7 +44,7 @@ export const ethereumReviewWarningItemOf = (
                         requesterHost={warning.requesterHost}
                     />
                 ),
-                isHighRisk: true,
+                isHighRisk: false,
             }
         }
         case 'unchecked-call': {

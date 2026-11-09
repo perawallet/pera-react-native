@@ -938,7 +938,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBe(false)
             })
 
-            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
+            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee without blocking Confirm", async () => {
                 const walletKit = await settle()
                 renderSignReview()
 
@@ -967,20 +967,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 expect(warning.textContent).toContain(
                     'ethereum.review_warnings.high_fee_body_no_source',
                 )
-                const slide = screen.getAllByTestId('signing-confirm-slide')[0]
-                expect(isElementDisabled(slide)).toBe(true)
-
-                fireEvent.click(
-                    screen.getAllByTestId('review_warnings_acknowledge')[0],
-                )
-
-                await waitFor(() => {
-                    expect(
-                        isElementDisabled(
-                            screen.getAllByTestId('signing-confirm-slide')[0],
-                        ),
-                    ).toBe(false)
-                })
+                expect(
+                    screen.queryByTestId('review_warnings_acknowledge'),
+                ).toBeNull()
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
             it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
@@ -1014,7 +1008,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     isElementDisabled(
                         screen.getAllByTestId('signing-confirm-slide')[0],
                     ),
-                ).toBe(true)
+                ).toBe(false)
             })
 
             it('Given a call the node says would revert, when the dApp sends it with its own gas, then nothing is queued and the user is told why', async () => {
