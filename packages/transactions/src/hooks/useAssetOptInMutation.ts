@@ -52,15 +52,7 @@ const SOURCE = {
 // `shortfall` is in base units. minPrecision 0 trims trailing zeros, so 0.1
 // ALGO reads "0.1", not "0.100000".
 const formatAlgoShortfall = (shortfall: bigint): string =>
-    formatCurrency(
-        microAlgosToAlgos(shortfall),
-        6,
-        'ALGO',
-        undefined,
-        false,
-        false,
-        0,
-    )
+    formatCurrency(microAlgosToAlgos(shortfall), 6, 'ALGO', undefined, false, 0)
 
 export const useAssetOptInMutation = (
     scope: ChainScope,

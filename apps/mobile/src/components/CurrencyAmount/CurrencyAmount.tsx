@@ -14,6 +14,9 @@ import { useStyles } from './styles'
 import { PWSkeleton, PWText, type PWTextProps, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
+    abbreviateLargeAmount,
+    DEFAULT_PRECISION,
+    type AbbreviationUnit,
     formatCurrency,
     formatRawNumberInput,
     type Maybe,
@@ -34,8 +37,19 @@ import {
     resolvePrecision,
     type PrecisionVariant,
 } from './precision'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type ChainId,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetGlyphOf } from '@modules/chain-ui/icon'
+
+const ABBREVIATION_KEYS: Record<Exclude<AbbreviationUnit, ''>, I18nKey> = {
+    K: i18nKey('common.amount_abbreviation.thousand'),
+    M: i18nKey('common.amount_abbreviation.million'),
+    B: i18nKey('common.amount_abbreviation.billion'),
+    T: i18nKey('common.amount_abbreviation.trillion'),
+}
 
 /** U+00A6 Algo glyph is only patched in DMSans 400/500/700 — bump 600 → 700. */
 export const getAlgoSymbolWeight = (
@@ -109,7 +123,6 @@ export type CurrencyAmountProps = {
     showSymbol?: boolean
     symbolPosition?: 'start' | 'end'
     isLoading?: boolean
-    truncateToUnits?: boolean
     rawValue?: Nullable<string>
     ignorePrivacyMode?: boolean
     variant?: TypographyVariant
@@ -126,6 +139,13 @@ export type CurrencyAmountProps = {
      * text several times, too costly for list rows.
      */
     shouldFitWidth?: boolean
+    /**
+     * Shows an amount from a thousand or a million up scaled to that unit or a
+     * larger one, with 2 decimals and the locale's unit (AOA 11.06T, AOA 11,06 Bn
+     * in French), for a row whose width the amount must not take over. The
+     * full figure belongs on the detail surface.
+     */
+    abbreviateFrom?: 'thousand' | 'million'
     /**
      * Truncates a leading unit instead of the amount when the row is too
      * narrow for both, for an asset whose unit has no length cap.
@@ -147,7 +167,6 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         alignRight: _alignRight,
         prefix,
         sign,
-        truncateToUnits,
         showSymbol = true,
         symbolPosition = 'start',
         isLoading = false,
@@ -156,6 +175,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         variant = 'body',
         isInline = false,
         shouldFitWidth = false,
+        abbreviateFrom,
         isUnitShrinkable = false,
         ...rest
     } = props
@@ -171,17 +191,30 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         flooredValue,
         isFiat,
     )
-    const shownValue =
+    const roundedValue =
         rounding != null && flooredValue != null
             ? flooredValue.toDecimalPlaces(precision, rounding)
             : flooredValue
+    const abbreviated =
+        abbreviateFrom !== undefined && roundedValue != null
+            ? abbreviateLargeAmount(roundedValue, DEFAULT_PRECISION, {
+                  from: abbreviateFrom === 'thousand' ? 'K' : 'M',
+                  rounding,
+              })
+            : undefined
+    const abbreviationUnit = abbreviated?.unit ?? ''
+    const shownValue = abbreviationUnit ? abbreviated?.amount : roundedValue
+    const shownPrecision = abbreviationUnit ? DEFAULT_PRECISION : precision
+    const shownMinPrecision = abbreviationUnit
+        ? DEFAULT_PRECISION
+        : minPrecision
     const nativeGlyph =
         chainId === null || assetId === null
             ? undefined
             : nativeAssetGlyphOf({ chainId, assetId })
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
-    const { currentLanguage } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
@@ -222,13 +255,15 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
 
         const formatted = formatCurrency(
             shownValue,
-            precision,
+            shownPrecision,
             currency,
             currentLanguage,
             shouldShowSymbolInFormat,
-            truncateToUnits,
-            minPrecision,
+            shownMinPrecision,
         )
+        if (abbreviationUnit) {
+            return t(ABBREVIATION_KEYS[abbreviationUnit], { amount: formatted })
+        }
         if (!fiatFloor) {
             return formatted
         }
@@ -236,11 +271,12 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     }, [
         shownValue,
         fiatFloor,
-        precision,
+        shownPrecision,
         currency,
         shouldShowSymbolInFormat,
-        truncateToUnits,
-        minPrecision,
+        shownMinPrecision,
+        abbreviationUnit,
+        t,
         privacyMode,
         rawValue,
         currentLanguage,

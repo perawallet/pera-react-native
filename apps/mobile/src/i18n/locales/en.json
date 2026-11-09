@@ -1122,7 +1122,13 @@
         "copy": "Copy",
         "send": "Send",
         "show_more": "Show more",
-        "show_less": "Show less"
+        "show_less": "Show less",
+        "amount_abbreviation": {
+            "thousand": "{{amount}}K",
+            "million": "{{amount}}M",
+            "billion": "{{amount}}B",
+            "trillion": "{{amount}}T"
+        }
     },
     "contacts": {
         "edit_contact": {

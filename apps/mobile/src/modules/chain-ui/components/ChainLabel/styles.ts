@@ -17,8 +17,11 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
+        flexShrink: 1,
+        minWidth: 0,
     },
     label: {
+        flexShrink: 1,
         color: theme.colors.textGray,
     },
 }))
