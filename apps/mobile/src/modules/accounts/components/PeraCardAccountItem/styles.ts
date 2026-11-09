@@ -58,7 +58,7 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
         },
         statusLabel: {
-            color: theme.colors.textGrayLighter,
+            color: theme.colors.textGray,
         },
         // Activated state: indent the card and draw an L-connector up toward
         // the account it is nested under.

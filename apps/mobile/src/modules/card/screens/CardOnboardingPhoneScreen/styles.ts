@@ -21,11 +21,11 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     label: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     // Sets the SMS expectation; same muted token as the label.
     helper: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     // Top-aligned so the number's error line doesn't offset the calling code.
     phoneRow: {

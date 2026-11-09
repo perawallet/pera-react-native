@@ -23,7 +23,7 @@ export const useStyles = makeStyles(theme => ({
     },
     label: {
         ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     errorMessage: {
         marginTop: theme.spacing.xs,

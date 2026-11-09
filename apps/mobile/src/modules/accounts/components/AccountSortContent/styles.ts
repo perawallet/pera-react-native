@@ -27,7 +27,7 @@ export const useStyles = makeStyles(
             flex: 1,
         },
         subtitle: {
-            color: theme.colors.textGrayLighter,
+            color: theme.colors.textGray,
             marginTop: theme.spacing.lg,
             marginBottom: theme.spacing.sm,
         },

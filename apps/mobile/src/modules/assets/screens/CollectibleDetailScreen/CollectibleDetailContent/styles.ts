@@ -64,7 +64,7 @@ export const useStyles = makeStyles(theme => ({
         marginVertical: theme.spacing.sm,
     },
     optOutNoticeText: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
         flexShrink: 1,
     },
 }))

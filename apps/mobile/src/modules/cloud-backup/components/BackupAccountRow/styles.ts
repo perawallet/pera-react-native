@@ -50,6 +50,6 @@ export const useSummaryStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     text: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

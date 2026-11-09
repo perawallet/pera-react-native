@@ -25,7 +25,7 @@ export const useStyles = makeStyles(theme => ({
     },
     label: {
         ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     // Always-rendered error line (RNElements collapses it otherwise) with a
     // constant minHeight so showing/clearing the message never shifts the

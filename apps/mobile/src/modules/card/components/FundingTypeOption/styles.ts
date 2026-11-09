@@ -31,6 +31,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     optionHint: {
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
 }))

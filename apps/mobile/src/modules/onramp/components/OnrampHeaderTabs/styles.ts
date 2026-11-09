@@ -30,7 +30,7 @@ export const useStyles = makeStyles(theme => ({
     },
     label: {
         ...getFontWeightVariant(theme, 'h1', 500),
-        color: theme.colors.textGrayLighter,
+        color: theme.colors.textGray,
     },
     activeLabel: {
         ...getFontWeightVariant(theme, 'h1', 700),
