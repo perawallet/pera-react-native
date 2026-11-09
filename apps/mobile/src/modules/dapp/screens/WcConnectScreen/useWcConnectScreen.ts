@@ -19,16 +19,8 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    i18nKey,
-    type ChainId,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    getChainDescriptor,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
@@ -37,6 +29,10 @@ import {
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import type { Nullable, Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
+import {
+    chainNetworkOf,
+    type ChainNetworkLabel,
+} from '@modules/chain-ui/chainNetwork'
 import {
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,
@@ -55,11 +51,6 @@ import {
 } from '@modules/walletconnect'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
-
-export type ChainNetworkLabel = {
-    chain: string
-    network: string
-}
 
 type UseWcConnectScreenResult = {
     /** `null` until a `connection-proposal` approval has loaded. */
@@ -129,16 +120,6 @@ const isDistinctFromPeerUrl = (
         return true
     }
 }
-
-const chainNetworkOf = ({
-    chainId,
-    networkId,
-}: ChainScope): ChainNetworkLabel => ({
-    chain: chainDisplayNameOf(chainId) ?? chainId,
-    network:
-        getChainDescriptor(chainId).networks.find(({ id }) => id === networkId)
-            ?.displayName ?? networkId,
-})
 
 export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const { approval, isLoading, approve, reject, deliveryError } =

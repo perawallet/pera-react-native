@@ -32,7 +32,7 @@ import {
     type ConnectionPermission,
 } from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
-import type { ChainNetworkLabel } from './useWcConnectScreen'
+import type { ChainNetworkLabel } from '@modules/chain-ui/chainNetwork'
 
 export type WcConnectHeaderProps = {
     peer: ConnectionPeer
