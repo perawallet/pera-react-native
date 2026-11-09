@@ -103,6 +103,42 @@ export const SwapToAssetSelectionList = ({
         [handleAssetSelected, isChainShown, scope, styles],
     )
 
+    const renderEmptyView = () => {
+        if (crossNetworkEmptyState) {
+            return (
+                <EmptyView
+                    title={crossNetworkEmptyState.title}
+                    body={crossNetworkEmptyState.body}
+                    shouldTruncateBody={false}
+                    testID='swap_to_cross_network_empty'
+                    button={
+                        crossNetworkEmptyState.actionLabel ? (
+                            <PWButton
+                                variant='primary'
+                                title={crossNetworkEmptyState.actionLabel}
+                                onPress={handleSwapOnSelectedNetwork}
+                                testID='swap_to_switch_network_button'
+                            />
+                        ) : undefined
+                    }
+                />
+            )
+        }
+        if (isLoading || (!debouncedSearchFilter && selectedChainId === null)) {
+            return undefined
+        }
+        return (
+            <EmptyView
+                title={emptyResultTitle}
+                body={
+                    debouncedSearchFilter
+                        ? emptyResultBody
+                        : emptyChainResultBody
+                }
+            />
+        )
+    }
+
     return (
         <AssetSelectionList
             data={items}
@@ -129,36 +165,7 @@ export const SwapToAssetSelectionList = ({
             skeletonCount={3}
             cardLayout
             inBottomSheet={inBottomSheet}
-            ListEmptyComponent={
-                crossNetworkEmptyState ? (
-                    <EmptyView
-                        title={crossNetworkEmptyState.title}
-                        body={crossNetworkEmptyState.body}
-                        shouldTruncateBody={false}
-                        testID='swap_to_cross_network_empty'
-                        button={
-                            crossNetworkEmptyState.actionLabel ? (
-                                <PWButton
-                                    variant='primary'
-                                    title={crossNetworkEmptyState.actionLabel}
-                                    onPress={handleSwapOnSelectedNetwork}
-                                    testID='swap_to_switch_network_button'
-                                />
-                            ) : undefined
-                        }
-                    />
-                ) : !isLoading &&
-                  (debouncedSearchFilter || selectedChainId !== null) ? (
-                    <EmptyView
-                        title={emptyResultTitle}
-                        body={
-                            debouncedSearchFilter
-                                ? emptyResultBody
-                                : emptyChainResultBody
-                        }
-                    />
-                ) : undefined
-            }
+            ListEmptyComponent={renderEmptyView()}
         />
     )
 }

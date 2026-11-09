@@ -259,11 +259,19 @@ export const useSwapToAssetSelectionList = ({
         [onAssetSelected, queryClient],
     )
 
+    const selectedScope = useMemo(
+        () =>
+            destinationScopes.find(
+                ({ chainId }) => chainId === selectedChainId,
+            ) ?? null,
+        [destinationScopes, selectedChainId],
+    )
+
     const crossNetworkEmptyState =
         useMemo((): Nullable<SwapCrossNetworkEmptyState> => {
             if (
-                selectedChainId === null ||
-                selectedChainId === scope.chainId ||
+                selectedScope === null ||
+                toScopeKey(selectedScope) === toScopeKey(scope) ||
                 isLoading ||
                 searchFilter ||
                 debouncedSearchFilter ||
@@ -271,10 +279,12 @@ export const useSwapToAssetSelectionList = ({
             ) {
                 return null
             }
-            const canPayOnSelected = sourceChainIds.includes(selectedChainId)
+            const { chainId: networkId } = selectedScope
+            const { chainId: payChainId } = scope
+            const canPayOnSelected = sourceChainIds.includes(networkId)
             const params = {
-                network: chainDisplayNameOf(selectedChainId) ?? selectedChainId,
-                payNetwork: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+                network: chainDisplayNameOf(networkId) ?? networkId,
+                payNetwork: chainDisplayNameOf(payChainId) ?? payChainId,
                 asset: payAsset?.unitName ?? payAsset?.name ?? fromAssetId,
             }
             return {
@@ -296,8 +306,8 @@ export const useSwapToAssetSelectionList = ({
                     : null,
             }
         }, [
-            selectedChainId,
-            scope.chainId,
+            selectedScope,
+            scope,
             isLoading,
             searchFilter,
             debouncedSearchFilter,
@@ -309,20 +319,14 @@ export const useSwapToAssetSelectionList = ({
         ])
 
     const handleSwapOnSelectedNetwork = useCallback(() => {
-        if (!crossNetworkEmptyState?.actionLabel || selectedChainId === null) {
+        if (!crossNetworkEmptyState?.actionLabel || selectedScope === null) {
             return
         }
-        const targetScope = destinationScopes.find(
-            ({ chainId }) => chainId === selectedChainId,
+        onSwitchPayAsset(
+            nativeAssetFor(selectedScope.chainId).assetId,
+            selectedScope,
         )
-        if (!targetScope) return
-        onSwitchPayAsset(nativeAssetFor(selectedChainId).assetId, targetScope)
-    }, [
-        crossNetworkEmptyState,
-        selectedChainId,
-        destinationScopes,
-        onSwitchPayAsset,
-    ])
+    }, [crossNetworkEmptyState, selectedScope, onSwitchPayAsset])
 
     return {
         items,
