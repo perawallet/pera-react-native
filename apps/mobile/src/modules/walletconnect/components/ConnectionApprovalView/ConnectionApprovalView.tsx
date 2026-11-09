@@ -17,7 +17,7 @@ import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SiteSafetyGate } from '@modules/site-safety'
 import { useStyles } from '@components/ConnectionApproval/styles'
-import { ConnectionApprovalAccountRow } from './ConnectionApprovalAccountRow'
+import { ConnectionApprovalAccountRow } from '../ConnectionApprovalAccountRow'
 import { ConnectionApprovalViewHeader } from './ConnectionApprovalViewHeader'
 import {
     useConnectionApprovalView,

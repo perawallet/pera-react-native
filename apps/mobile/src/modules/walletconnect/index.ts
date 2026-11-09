@@ -13,6 +13,10 @@
 // The approval sheets and the pairing overlay are mounted by the
 // app shell and ConnectionsProvider: `@modules/walletconnect/shell`.
 export { WalletConnectErrorBoundary } from './components/BaseErrorBoundary'
+export {
+    ConnectionApprovalAccountRow,
+    type ConnectionApprovalAccountRowProps,
+} from './components/ConnectionApprovalAccountRow'
 export { ConnectionPermissionsPanel } from './components/ConnectionPermissionsPanel'
 export { PermissionItem } from './components/PermissionItem'
 export { WalletConnectErrorContent } from './components/WalletConnectErrorContent'
