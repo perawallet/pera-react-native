@@ -88,6 +88,11 @@ vi.mock('@rneui/themed', () => {
             xl: 24,
             full: 999,
         },
+        controlHeight: {
+            sm: 40,
+            md: 48,
+            lg: 52,
+        },
         borders: {
             none: 0,
             sm: 1,

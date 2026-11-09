@@ -101,7 +101,6 @@ export const OptOutConfirmationContent = ({
                         paddingStyle='dense'
                         onPress={handleCopyId}
                         testID='opt_out_copy_id'
-                        rounded
                     />
                 </PWView>
 
