@@ -430,9 +430,16 @@ test.describe('signing from a connected dApp', () => {
         ).toBeVisible({ timeout: 20_000 })
         await expect(
             approvalPage.getByTestId('ethereum_review_fee'),
-        ).toBeVisible()
+        ).toBeInViewport()
         const confirm = approvalPage.getByTestId('signing-confirm-slide')
         await expect(confirm).toBeVisible({ timeout: 20_000 })
+        await expect(confirm).toBeInViewport()
+        await approvalPage
+            .getByTestId('ethereum_view_details')
+            .scrollIntoViewIfNeeded()
+        await expect(
+            approvalPage.getByTestId('ethereum_review_header'),
+        ).toBeInViewport()
         await tapToConfirm(approvalPage, confirm)
 
         const sent = await outcomeOf('send')

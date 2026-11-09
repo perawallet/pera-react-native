@@ -3604,8 +3604,11 @@
         "predicted_failure": {
             "title": "Cette transaction va probablement échouer",
             "body": "Pera l’a exécutée sur le dernier bloc et elle a échoué. Si vous signez quand même, vous pourriez tout de même payer les frais de réseau.",
-            "reason": "Motif du contrat : « {{reason}} »",
-            "acknowledge": "Je comprends qu’elle va probablement échouer et je veux signer quand même"
+            "reason": "Motif du contrat : « {{reason}} »"
+        },
+        "review_warnings": {
+            "summary": "{{count}} points à vérifier",
+            "acknowledge": "Je comprends les risques et je veux quand même signer"
         }
     },
     "site_safety": {
@@ -4921,6 +4924,11 @@
             "title": "Contrat",
             "verified": "Contrat vérifié",
             "matches_site": "Correspond à {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Frais de réseau anormalement élevés",
+            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
+            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins."
         },
         "simulation": {
             "title": "Modifications estimées",

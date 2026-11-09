@@ -77,10 +77,7 @@ export const EthereumTransactionDetailSection = ({
                 )}
                 {/* The detail screen is opened without the request, so it has no origin to match: the site match shows on the review only. */}
                 {!standardCall && !!contractAction && (
-                    <EthereumContractActionDetails
-                        presentation={presentation}
-                        variant='detail'
-                    />
+                    <EthereumContractActionDetails presentation={presentation} />
                 )}
                 <EthereumContractCallDetails
                     presentation={presentation}

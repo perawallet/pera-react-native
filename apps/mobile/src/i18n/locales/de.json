@@ -3596,8 +3596,11 @@
         "predicted_failure": {
             "title": "Diese Transaktion wird wahrscheinlich fehlschlagen",
             "body": "Pera hat sie anhand des neuesten Blocks ausgeführt und sie ist fehlgeschlagen. Wenn du trotzdem signierst, zahlst du möglicherweise trotzdem die Netzwerkgebühr.",
-            "reason": "Grund des Contracts: „{{reason}}“",
-            "acknowledge": "Ich verstehe, dass sie wahrscheinlich fehlschlägt, und möchte trotzdem signieren"
+            "reason": "Grund des Contracts: „{{reason}}“"
+        },
+        "review_warnings": {
+            "summary": "{{count}} Dinge zu prüfen",
+            "acknowledge": "Ich verstehe die Risiken und möchte trotzdem signieren"
         }
     },
     "site_safety": {
@@ -4921,6 +4924,11 @@
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",
             "matches_site": "Entspricht {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
+            "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
         },
         "simulation": {
             "title": "Geschätzte Änderungen",
