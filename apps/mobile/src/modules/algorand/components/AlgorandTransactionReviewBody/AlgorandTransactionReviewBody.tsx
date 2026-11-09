@@ -21,12 +21,22 @@ export const AlgorandTransactionReviewBody = ({
     transaction,
     source,
     verifiedOrigin,
+    actions,
 }: ReviewBodyProps) => {
     const view = readAlgorandNative(transaction)
 
-    return view ? (
+    if (!view) {
+        return (
+            <TransactionReviewLayout
+                participants={null}
+                actions={actions}
+            />
+        )
+    }
+
+    return (
         <TransactionReviewLayout
-            header={
+            hero={
                 <TransactionSummaryHeader
                     transaction={view}
                     metadata={source}
@@ -40,6 +50,7 @@ export const AlgorandTransactionReviewBody = ({
                 ) : undefined
             }
             fee={<FeeDisplay transaction={view} />}
+            actions={actions}
         />
-    ) : null
+    )
 }

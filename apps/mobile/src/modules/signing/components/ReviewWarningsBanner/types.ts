@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-export {
-    PredictedFailureWarning,
-    type PredictedFailureWarningProps,
-} from './PredictedFailureWarning'
+import type { ReactNode } from 'react'
+
+export type ReviewWarningItem = {
+    /** Stable; also the row's testID. */
+    id: string
+    title?: string
+    /** A string is wrapped in `ReviewWarningText`; a node renders as given. */
+    message: ReactNode
+    /** Confirm waits on the user ticking the banner's acknowledgement. */
+    isHighRisk: boolean
+}

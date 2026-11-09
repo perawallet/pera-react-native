@@ -10,24 +10,24 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { create } from 'zustand'
 import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { createAcknowledgementStore } from './createAcknowledgementStore'
 
-type PredictedFailureFlagState = {
-    /** The request a predicted-failure warning is on screen for. */
+type ReviewRiskFlagState = {
+    /** The request a high-risk review warning is on screen for. */
     flaggedRequestId: Optional<string>
 }
 
-type PredictedFailureFlagActions = {
+type ReviewRiskFlagActions = {
     setFlaggedRequestId: (id: Optional<string>) => void
     resetState: () => void
 }
 
-export const usePredictedFailureFlagStore = create<
-    PredictedFailureFlagState & PredictedFailureFlagActions
+export const useReviewRiskFlagStore = create<
+    ReviewRiskFlagState & ReviewRiskFlagActions
 >()(set => ({
     flaggedRequestId: undefined,
     setFlaggedRequestId: id => set({ flaggedRequestId: id }),
@@ -35,36 +35,37 @@ export const usePredictedFailureFlagStore = create<
 }))
 
 registerStore({
-    name: 'predicted-failure-flag-store',
+    name: 'review-risk-flag-store',
     clearStorage: () => {},
-    resetState: () => usePredictedFailureFlagStore.getState().resetState(),
+    resetState: () => useReviewRiskFlagStore.getState().resetState(),
 })
 
-export const usePredictedFailureAcknowledgementStore =
-    createAcknowledgementStore('predicted-failure-acknowledgement-store')
+export const useReviewRiskAcknowledgementStore = createAcknowledgementStore(
+    'review-risk-acknowledgement-store',
+)
 
-export type UsePredictedFailureGateResult = {
+export type UseReviewRiskGateResult = {
     isFlagged: boolean
     isAcknowledged: boolean
     toggleAcknowledged: () => void
-    /** A predicted failure is on screen and the user hasn't acknowledged it. */
+    /** A high-risk warning is on screen and the user hasn't acknowledged it. */
     isConfirmBlocked: boolean
 }
 
 /**
- * Whether Confirm still waits on the user acknowledging a predicted failure.
- * The chain's review sets the flag, so the shared buttons never read a
- * chain's simulation.
+ * Whether Confirm still waits on the user acknowledging a high-risk review
+ * warning. The chain's review sets the flag, so the shared buttons never read
+ * a chain's simulation or fee.
  */
-export const usePredictedFailureGate = (): UsePredictedFailureGateResult => {
+export const useReviewRiskGate = (): UseReviewRiskGateResult => {
     const { currentRequest } = useSigningRequest()
-    const flaggedRequestId = usePredictedFailureFlagStore(
+    const flaggedRequestId = useReviewRiskFlagStore(
         state => state.flaggedRequestId,
     )
-    const acknowledgedRequestId = usePredictedFailureAcknowledgementStore(
+    const acknowledgedRequestId = useReviewRiskAcknowledgementStore(
         state => state.acknowledgedRequestId,
     )
-    const setAcknowledgedRequestId = usePredictedFailureAcknowledgementStore(
+    const setAcknowledgedRequestId = useReviewRiskAcknowledgementStore(
         state => state.setAcknowledgedRequestId,
     )
 
@@ -82,4 +83,26 @@ export const usePredictedFailureGate = (): UsePredictedFailureGateResult => {
         toggleAcknowledged,
         isConfirmBlocked: isFlagged && !isAcknowledged,
     }
+}
+
+/** Flags the current request while mounted with `isFlagged`, so Confirm waits on the acknowledgement. */
+export const useFlagReviewRisk = (isFlagged: boolean): void => {
+    const { currentRequest } = useSigningRequest()
+    const requestId = currentRequest?.id
+    const setFlaggedRequestId = useReviewRiskFlagStore(
+        state => state.setFlaggedRequestId,
+    )
+
+    useEffect(() => {
+        if (!requestId || !isFlagged) return
+        setFlaggedRequestId(requestId)
+        return () => {
+            // A newer request may have flagged itself by now.
+            if (
+                useReviewRiskFlagStore.getState().flaggedRequestId === requestId
+            ) {
+                setFlaggedRequestId(undefined)
+            }
+        }
+    }, [requestId, isFlagged, setFlaggedRequestId])
 }

@@ -30,7 +30,10 @@ import {
     FIXTURE_SENDER,
     type AlgorandDisplayFixtureKind,
 } from '@test-utils/algorand-display-fixtures'
+import { PWText } from '@components/core'
 import { TransactionReviewBody } from '../TransactionReviewBody'
+
+const REVIEW_ACTIONS = <PWText testID='review_actions_probe' />
 
 // The global mock stubs the blockchain barrel; the bodies classify with the real utils.
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
@@ -102,6 +105,7 @@ const renderReview = (
     ]
     const Review = () => (
         <TransactionReviewBody
+            actions={REVIEW_ACTIONS}
             transaction={transaction}
             source={origin.source}
             verifiedOrigin={origin.verifiedOrigin}
@@ -218,6 +222,7 @@ describe('TransactionReviewBody', () => {
         const { container } = renderWithNavigation(
             () => (
                 <TransactionReviewBody
+                    actions={REVIEW_ACTIONS}
                     transaction={{ family: 'evm', transaction: {} }}
                 />
             ),

@@ -28,9 +28,14 @@ export {
     useSpendApprovalTitle,
 } from './components/SpendApprovalTitle'
 export {
-    PredictedFailureWarning,
-    type PredictedFailureWarningProps,
-} from './components/PredictedFailureWarning'
+    PredictedFailureMessage,
+    type PredictedFailureMessageProps,
+} from './components/PredictedFailureMessage'
+export {
+    ReviewWarningText,
+    type ReviewWarningItem,
+} from './components/ReviewWarningsBanner'
+export { useReviewNetworkLabel } from './hooks/useReviewNetworkLabel'
 export {
     BalanceImpactSection,
     balanceImpactItemOf,

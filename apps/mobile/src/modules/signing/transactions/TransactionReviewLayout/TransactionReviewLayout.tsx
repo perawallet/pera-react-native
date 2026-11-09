@@ -12,56 +12,87 @@
 
 import type { ReactNode } from 'react'
 import { useTheme } from '@rneui/themed'
-import { PWDivider } from '@components/core'
+import { PWDivider, PWScreen, PWView } from '@components/core'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
+import {
+    ReviewWarningsBanner,
+    type ReviewWarningItem,
+} from '@modules/signing/components/ReviewWarningsBanner'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { useStyles } from './styles'
+import { useTransactionReviewLayout } from './useTransactionReviewLayout'
 
 export type TransactionReviewLayoutProps = {
-    header: ReactNode
+    /** Pinned above the scrolling body. */
+    header?: ReactNode
+    /** What the transaction is, first in the scrolling body. */
+    hero?: ReactNode
+    /** The review's own warnings, folded into one banner. */
+    warnings?: readonly ReviewWarningItem[]
     /** What the transaction will do, ahead of every other section. */
     summary?: ReactNode
     participants: ReactNode
+    /** The cost, in the scrolling body right after the participants. A chain passes this or `stickyFee`. */
+    fee?: ReactNode
+    /** The cost, pinned directly above `actions` so it is on screen beside Confirm. */
+    stickyFee?: ReactNode
     /** What the transaction does in full, after the fee. */
     details?: ReactNode
-    /** The cost and its warnings, right after the participants so it is on screen without scrolling. */
-    fee: ReactNode
+    /** The screen's Confirm and Cancel. */
+    actions: ReactNode
 }
 
-// A Fragment, not a view: the screen's container spaces these children with its gap.
 export const TransactionReviewLayout = ({
     header,
+    hero,
+    warnings,
     summary,
     participants,
-    details,
     fee,
+    stickyFee,
+    details,
+    actions,
 }: TransactionReviewLayoutProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
+    const { warningItems } = useTransactionReviewLayout(warnings)
 
     return (
-        <>
-            {header}
+        <PWScreen
+            header={header}
+            footer={
+                <PWView style={styles.footer}>
+                    {stickyFee}
+                    {actions}
+                </PWView>
+            }
+            testID='signing_transaction_review'
+        >
+            <PWView style={styles.content}>
+                {hero}
 
-            {summary}
+                <ReviewWarningsBanner items={warningItems} />
 
-            <SigningWarnings />
+                <SigningWarnings />
 
-            <RequestSiteWarning />
+                <RequestSiteWarning />
 
-            <RequestAddressWarning />
+                <RequestAddressWarning />
 
-            <PWDivider
-                color={theme.colors.layerGray}
-                style={styles.paddedDivider}
-            />
+                {summary}
 
-            {participants}
+                <PWDivider
+                    color={theme.colors.layerGray}
+                    style={styles.paddedDivider}
+                />
 
-            {fee}
+                {participants}
 
-            {details}
-        </>
+                {fee}
+
+                {details}
+            </PWView>
+        </PWScreen>
     )
 }

@@ -14,10 +14,11 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
-    usePredictedFailureGate,
-    usePredictedFailureAcknowledgementStore,
-    usePredictedFailureFlagStore,
-} from '../usePredictedFailureGate'
+    useFlagReviewRisk,
+    useReviewRiskAcknowledgementStore,
+    useReviewRiskFlagStore,
+    useReviewRiskGate,
+} from '../useReviewRiskGate'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
@@ -28,15 +29,17 @@ const setRequest = (id?: string) =>
         currentRequest: id ? { id } : undefined,
     })
 
-describe('usePredictedFailureGate', () => {
+const flagged = () => useReviewRiskFlagStore.getState().flaggedRequestId
+
+describe('useReviewRiskGate', () => {
     beforeEach(() => {
-        usePredictedFailureFlagStore.getState().resetState()
-        usePredictedFailureAcknowledgementStore.getState().resetState()
+        useReviewRiskFlagStore.getState().resetState()
+        useReviewRiskAcknowledgementStore.getState().resetState()
         setRequest('request-1')
     })
 
     it('does not block a request nothing flagged', () => {
-        const { result } = renderHook(() => usePredictedFailureGate())
+        const { result } = renderHook(() => useReviewRiskGate())
 
         expect(result.current).toMatchObject({
             isFlagged: false,
@@ -45,12 +48,10 @@ describe('usePredictedFailureGate', () => {
     })
 
     it('blocks a flagged request until it is acknowledged, and again once the acknowledgement is withdrawn', () => {
-        const { result } = renderHook(() => usePredictedFailureGate())
+        const { result } = renderHook(() => useReviewRiskGate())
 
         act(() => {
-            usePredictedFailureFlagStore
-                .getState()
-                .setFlaggedRequestId('request-1')
+            useReviewRiskFlagStore.getState().setFlaggedRequestId('request-1')
         })
         expect(result.current.isConfirmBlocked).toBe(true)
 
@@ -65,11 +66,9 @@ describe('usePredictedFailureGate', () => {
     })
 
     it('starts the next request unacknowledged and unflagged', () => {
-        const { result, rerender } = renderHook(() => usePredictedFailureGate())
+        const { result, rerender } = renderHook(() => useReviewRiskGate())
         act(() => {
-            usePredictedFailureFlagStore
-                .getState()
-                .setFlaggedRequestId('request-1')
+            useReviewRiskFlagStore.getState().setFlaggedRequestId('request-1')
         })
         act(() => result.current.toggleAcknowledged())
 
@@ -85,14 +84,57 @@ describe('usePredictedFailureGate', () => {
 
     it('has nothing to acknowledge without a request', () => {
         setRequest(undefined)
-        const { result } = renderHook(() => usePredictedFailureGate())
+        const { result } = renderHook(() => useReviewRiskGate())
 
         act(() => result.current.toggleAcknowledged())
 
         expect(result.current.isAcknowledged).toBe(false)
         expect(
-            usePredictedFailureAcknowledgementStore.getState()
-                .acknowledgedRequestId,
+            useReviewRiskAcknowledgementStore.getState().acknowledgedRequestId,
         ).toBeUndefined()
+    })
+})
+
+describe('useFlagReviewRisk', () => {
+    beforeEach(() => {
+        useReviewRiskFlagStore.getState().resetState()
+        useReviewRiskAcknowledgementStore.getState().resetState()
+        setRequest('request-1')
+    })
+
+    it('flags the request while mounted and clears the flag on unmount', () => {
+        const { unmount } = renderHook(() => useFlagReviewRisk(true))
+        expect(flagged()).toBe('request-1')
+
+        unmount()
+
+        expect(flagged()).toBeUndefined()
+    })
+
+    it('leaves the request unflagged when nothing is high-risk', () => {
+        renderHook(() => useFlagReviewRisk(false))
+
+        expect(flagged()).toBeUndefined()
+    })
+
+    it('holds Confirm until the warning is acknowledged', () => {
+        renderHook(() => useFlagReviewRisk(true))
+        const gate = renderHook(() => useReviewRiskGate())
+        expect(gate.result.current.isConfirmBlocked).toBe(true)
+
+        act(() => gate.result.current.toggleAcknowledged())
+
+        expect(gate.result.current.isConfirmBlocked).toBe(false)
+    })
+
+    it("leaves a newer request's flag alone when an older review unmounts late", () => {
+        const { unmount } = renderHook(() => useFlagReviewRisk(true))
+        act(() => {
+            useReviewRiskFlagStore.getState().setFlaggedRequestId('request-2')
+        })
+
+        unmount()
+
+        expect(flagged()).toBe('request-2')
     })
 })

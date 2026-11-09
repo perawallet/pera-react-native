@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { PWScreen, PWView } from '@components/core'
-import { ChainNotice } from '@components/ChainNotice'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewBody } from '@modules/signing/transactions/TransactionReviewBody'
@@ -20,16 +18,10 @@ import {
     useSigningPipeline,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import {
-    LONG_ADDRESS_LENGTH,
-    truncateAlgorandAddress,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
-import { useStyles } from './styles'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 
 export const SingleTransactionScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const pipeline = useSigningPipeline()
     const request = pipeline.currentRequest as Optional<TransactionSignRequest>
@@ -57,30 +49,11 @@ export const SingleTransactionScreen = () => {
     }
 
     return (
-        <PWScreen
-            footer={<SigningActionButtons />}
-            testID='signing_transaction_review'
-        >
-            <PWView style={styles.contentContainer}>
-                {!!request.replacesTxId && (
-                    <ChainNotice
-                        testID='signing_replaces_notice'
-                        kind='warning'
-                        titleKey='transactions.replacement.review_notice'
-                        params={{
-                            txId: truncateAlgorandAddress(
-                                request.replacesTxId,
-                                LONG_ADDRESS_LENGTH,
-                            ),
-                        }}
-                    />
-                )}
-                <TransactionReviewBody
-                    transaction={native}
-                    source={request.sourceMetadata}
-                    verifiedOrigin={request.verifiedOrigin}
-                />
-            </PWView>
-        </PWScreen>
+        <TransactionReviewBody
+            transaction={native}
+            source={request.sourceMetadata}
+            verifiedOrigin={request.verifiedOrigin}
+            actions={<SigningActionButtons />}
+        />
     )
 }

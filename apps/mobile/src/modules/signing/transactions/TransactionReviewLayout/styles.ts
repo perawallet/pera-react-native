@@ -13,6 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    content: {
+        flexGrow: 1,
+        gap: theme.spacing.lg,
+        justifyContent: 'space-between',
+    },
+    footer: {
+        gap: theme.spacing.md,
+    },
     paddedDivider: {
         marginVertical: theme.spacing.xs,
     },
