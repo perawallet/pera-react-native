@@ -17,7 +17,7 @@ import {
     DEFAULT_MAX_FRACTION_DIGITS,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { makeFiatToken } from '@test-utils/rampFixtures'
+import { makeDepositToken, makeFiatToken } from '@test-utils/rampFixtures'
 import {
     getFiatBaseAmount,
     sanitizeAmountInput,
@@ -150,5 +150,37 @@ describe('useOnrampAmountSection', () => {
         result.current.handleTextChange('$1,5')
 
         expect(onAmountTextChange).toHaveBeenCalledWith('1.5')
+    })
+
+    describe('sourceNetworkName', () => {
+        const render = (variant: 'pay' | 'receive', token: RampToken) =>
+            renderHook(() =>
+                useOnrampAmountSection({
+                    variant,
+                    token,
+                    amountText: '',
+                    amount: null,
+                }),
+            )
+
+        it('names the chain a crypto pay asset comes from', () => {
+            const { result } = render('pay', makeDepositToken())
+
+            expect(result.current.sourceNetworkName).toBe('Bitcoin')
+        })
+
+        it.each([
+            ['a fiat pay asset', 'pay' as const, usdToken],
+            ['the receive side', 'receive' as const, makeDepositToken()],
+            [
+                'a crypto pay asset the router gives no chain for',
+                'pay' as const,
+                makeDepositToken('BTC', { network: { name: '', logo: null } }),
+            ],
+        ])('is null for %s', (_label, variant, token) => {
+            const { result } = render(variant, token)
+
+            expect(result.current.sourceNetworkName).toBeNull()
+        })
     })
 })

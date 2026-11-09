@@ -35,4 +35,7 @@ export const useStyles = makeStyles(theme => ({
     fiatValue: {
         color: theme.colors.textGray,
     },
+    networkLine: {
+        color: theme.colors.textGray,
+    },
 }))

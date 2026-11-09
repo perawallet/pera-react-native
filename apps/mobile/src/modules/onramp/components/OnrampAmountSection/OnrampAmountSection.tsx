@@ -66,6 +66,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
         logoUrl,
         fiatBaseAmount,
         shouldUseUsdFallback,
+        sourceNetworkName,
         handleTextChange,
     } = useOnrampAmountSection({
         variant,
@@ -127,6 +128,19 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                 isPay ? t('onramp.form.you_pay') : t('onramp.form.you_receive')
             }
             amountSize='h2'
+            headerTrailing={
+                sourceNetworkName ? (
+                    <PWText
+                        variant='footnoteMedium'
+                        style={styles.networkLine}
+                        testID='onramp-pay-network'
+                    >
+                        {t('onramp.form.network_line', {
+                            network: sourceNetworkName,
+                        })}
+                    </PWText>
+                ) : undefined
+            }
             amount={renderAmount()}
             selector={
                 <AssetSelector

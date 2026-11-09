@@ -24,10 +24,8 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     rampTokenAsset,
-    useOnramp,
     useOnrampDestinationChains,
     useRampDestinationsQuery,
-    useRampSourcesQuery,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -50,7 +48,6 @@ export type OnrampDestinationPick = {
 }
 
 type UseOnrampPairSelectionContentParams = {
-    variant: 'source' | 'destination'
     /** Fund's own scope; the list opens on its chain. */
     scope: ChainScope
 }
@@ -70,23 +67,21 @@ type UseOnrampPairSelectionContentResult = {
 }
 
 export const useOnrampPairSelectionContent = ({
-    variant,
     scope,
 }: UseOnrampPairSelectionContentParams): UseOnrampPairSelectionContentResult => {
     const { account } = useOnrampAccount()
     const { resolve } = useBottomSheetResult<OnrampDestinationPick>()
-    const { selectedDestinationTokenId } = useOnramp()
     const destinationChains = useOnrampDestinationChains(account)
     const [pickedChainId, setPickedChainId] = useState<Nullable<ChainId>>(null)
 
     // Fund's own chain leads when the account cannot sign on it, so the sheet
     // still opens on the chain Fund is on.
     const chainIds = useMemo((): ChainId[] => {
-        if (variant === 'source' || destinationChains.length === 0) return []
+        if (destinationChains.length === 0) return []
         return destinationChains.includes(scope.chainId)
             ? destinationChains
             : [scope.chainId, ...destinationChains]
-    }, [variant, destinationChains, scope.chainId])
+    }, [destinationChains, scope.chainId])
     const selectedChainId =
         pickedChainId !== null && chainIds.includes(pickedChainId)
             ? pickedChainId
@@ -101,18 +96,9 @@ export const useOnrampPairSelectionContent = ({
         [chainIds],
     )
 
-    // Both queries are hooks, so each runs; the one the variant doesn't list stays idle.
-    const destinationsQuery = useRampDestinationsQuery({
+    const { data: listed, isLoading } = useRampDestinationsQuery({
         scope: listScope,
-        enabled: variant === 'destination',
     })
-    const sourcesQuery = useRampSourcesQuery({
-        scope: listScope,
-        destinationId: selectedDestinationTokenId,
-        enabled: variant === 'source',
-    })
-    const { data: listed, isLoading } =
-        variant === 'source' ? sourcesQuery : destinationsQuery
     const { accountBalances } = useAccountBalancesQuery(
         account ? [account] : [],
         listScope,

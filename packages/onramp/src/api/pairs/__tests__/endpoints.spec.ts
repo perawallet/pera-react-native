@@ -184,6 +184,33 @@ describe('getRampSources', () => {
         expect(tokens.map(token => token.id)).toEqual([NATIVE_ID])
     })
 
+    it("fills each deposit coin's network logo from its chain's native coin", async () => {
+        serve([
+            {
+                next: null,
+                results: [
+                    pairRow(coinAsset({ asset_id: 'other:1/token:usdc' }), {
+                        kind: 'deposit',
+                    }),
+                    pairRow(
+                        coinAsset({
+                            asset_id: 'other:1/slip44:9',
+                            logo: 'https://logo/other.png',
+                        }),
+                        { kind: 'deposit' },
+                    ),
+                ],
+            },
+        ])
+
+        const tokens = await getRampSources(NATIVE_ID, SCOPE)
+
+        expect(tokens.map(token => token.network.logo)).toEqual([
+            'https://logo/other.png',
+            'https://logo/other.png',
+        ])
+    })
+
     it('lists a coin offered by two aggregators once', async () => {
         serve([
             {

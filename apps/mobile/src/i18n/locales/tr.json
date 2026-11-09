@@ -4150,6 +4150,7 @@
             "you_receive": "Alacağın",
             "sender_address_optional": "Gönderen adresi (isteğe bağlı)",
             "enter_sender_address": "{{name}} adresini gir",
+            "network_line": "{{network}} ağı",
             "provider": "Sağlayıcı",
             "payment_method": "Ödeme yöntemi",
             "choose_asset": "Bir varlık seç",
@@ -4162,7 +4163,6 @@
         },
         "pair_selection": {
             "title_to": "Hedef",
-            "title_from": "Kaynak",
             "search": "Ara",
             "empty": "Kullanılabilir token yok"
         },
@@ -4172,6 +4172,7 @@
             "filter_all": "Tümü",
             "filter_fiat": "Fiat",
             "filter_crypto": "Kripto",
+            "chain_all": "Tümü",
             "fiat_section": "Fiat",
             "crypto_section": "Kripto",
             "see_all_fiat": "Tüm fiat para birimlerini gör",
@@ -4189,7 +4190,7 @@
         "sender_address": {
             "title": "Gönderen adresi",
             "body": "Bu, fonların alıcıya gönderilmesi için kullanılacak adrestir. İsteğe bağlıdır ancak süreci hızlandırabilir ve bu satın alma ile ilgili destek taleplerinde yardımcı olabilir.",
-            "placeholder": "Gönderen adresini gir",
+            "invalid": "Bu geçerli bir {{network}} adresi değil",
             "confirm": "Onayla"
         },
         "order_review": {

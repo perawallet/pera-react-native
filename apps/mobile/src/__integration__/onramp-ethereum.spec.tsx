@@ -652,7 +652,9 @@ describe('Flow: Fund an Ethereum account', () => {
                 FORM_TIMEOUT,
             )
             expect(
-                within(usdcRow).getByTestId('chain_label_ethereum'),
+                within(usdcRow).getByTestId(
+                    `onramp-asset-network-${USDC_ETH_ID}`,
+                ),
             ).toBeTruthy()
             expect(
                 screen.queryByTestId(`onramp-asset-row-${ALGO_ID}`),

@@ -57,9 +57,12 @@ export class RampAmountOutOfRangeError extends AppError {
         limits: RampQuoteLimits,
         message: string,
     ) {
+        // A refusal is a user-input outcome, and a MIN/MAX tap provokes one on
+        // purpose to learn the limit, so it never reaches crash reporting.
         super(message, {
             category: ErrorCategory.VALIDATION,
             recoverable: true,
+            expected: true,
         })
         this.name = 'RampAmountOutOfRangeError'
         this.bound = bound

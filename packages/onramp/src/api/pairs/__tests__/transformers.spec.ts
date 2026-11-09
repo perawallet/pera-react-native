@@ -22,7 +22,8 @@ import {
     pairRow,
     stableAsset,
 } from '../../../__tests__/routerFixtures'
-import { transformRampPairRow } from '../transformers'
+import type { RampToken } from '../../../models'
+import { attachNetworkLogos, transformRampPairRow } from '../transformers'
 
 describe('transformRampPairRow', () => {
     it('maps a token row', () => {
@@ -111,5 +112,70 @@ describe('transformRampPairRow', () => {
                 ),
             ),
         ).toBeNull()
+    })
+})
+
+const token = (id: string, overrides: Partial<RampToken> = {}): RampToken => ({
+    id,
+    kind: 'deposit',
+    symbol: 'C',
+    name: 'Coin',
+    fractionDecimals: 8,
+    logo: null,
+    network: { name: 'Chain', logo: null },
+    ...overrides,
+})
+
+const SOL_ID = 'solana:main/slip44:501'
+const USDC_SOL_ID = 'solana:main/token:usdc'
+const USDC_BASE_ID = 'eip155:8453/erc20:0xusdc'
+
+describe('attachNetworkLogos', () => {
+    it("gives a deposit coin its chain's native coin logo", () => {
+        const tokens = attachNetworkLogos([
+            token(USDC_SOL_ID, { logo: 'https://logo/usdc.png' }),
+            token(SOL_ID, { logo: 'https://logo/sol.png' }),
+        ])
+
+        expect(tokens.map(item => item.network.logo)).toEqual([
+            'https://logo/sol.png',
+            'https://logo/sol.png',
+        ])
+    })
+
+    it('leaves a coin whose chain has no native coin listed without a logo', () => {
+        const [usdcOnBase] = attachNetworkLogos([
+            token(USDC_BASE_ID),
+            token(SOL_ID, { logo: 'https://logo/sol.png' }),
+        ])
+
+        expect(usdcOnBase.network.logo).toBeNull()
+    })
+
+    it('leaves fiat alone and keeps a network logo the token already has', () => {
+        const fiat = token('swift:0/iso4217:EUR', { kind: 'fiat' })
+        const withLogo = token(USDC_SOL_ID, {
+            network: { name: 'Solana', logo: 'https://logo/own.png' },
+        })
+
+        const [fiatOut, withLogoOut] = attachNetworkLogos([
+            fiat,
+            withLogo,
+            token(SOL_ID, { logo: 'https://logo/sol.png' }),
+        ])
+
+        expect(fiatOut).toBe(fiat)
+        expect(withLogoOut.network.logo).toBe('https://logo/own.png')
+    })
+
+    it('does not mutate its input', () => {
+        const usdc = token(USDC_SOL_ID)
+
+        attachNetworkLogos([
+            usdc,
+            token(SOL_ID, { logo: 'https://logo/sol.png' }),
+        ])
+
+        expect(usdc.network.logo).toBeNull()
     })
 })

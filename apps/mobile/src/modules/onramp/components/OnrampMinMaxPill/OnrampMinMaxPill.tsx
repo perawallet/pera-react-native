@@ -15,50 +15,45 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type OnrampMinMaxPillProps = {
-    onMin?: () => void
-    onMax?: () => void
+    onMin: () => void
+    onMax: () => void
 }
 
 // Floating pill that straddles the top-right edge of the receive card; it sets
-// the pay amount to the provider min/max from the form's `limits`. Only the
-// segments with a handler render (Meld errors may carry a single bound).
+// the pay amount to the provider's min/max for the chosen pair.
 export const OnrampMinMaxPill = ({ onMin, onMax }: OnrampMinMaxPillProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     return (
         <PWView style={styles.container}>
-            {onMin ? (
-                <PWTouchableOpacity
-                    style={styles.segment}
-                    onPress={onMin}
-                    testID='onramp-min-button'
+            <PWTouchableOpacity
+                style={styles.segment}
+                onPress={onMin}
+                testID='onramp-min-button'
+            >
+                <PWText
+                    variant='captionMedium'
+                    style={styles.label}
                 >
-                    <PWText
-                        variant='captionMedium'
-                        style={styles.label}
-                    >
-                        {t('onramp.form.min')}
-                    </PWText>
-                </PWTouchableOpacity>
-            ) : null}
+                    {t('onramp.form.min')}
+                </PWText>
+            </PWTouchableOpacity>
 
-            {onMin && onMax ? <PWView style={styles.divider} /> : null}
+            <PWView style={styles.divider} />
 
-            {onMax ? (
-                <PWTouchableOpacity
-                    style={styles.segment}
-                    onPress={onMax}
-                    testID='onramp-max-button'
+            <PWTouchableOpacity
+                style={styles.segment}
+                onPress={onMax}
+                testID='onramp-max-button'
+            >
+                <PWText
+                    variant='captionMedium'
+                    style={styles.label}
                 >
-                    <PWText
-                        variant='captionMedium'
-                        style={styles.label}
-                    >
-                        {t('onramp.form.max')}
-                    </PWText>
-                </PWTouchableOpacity>
-            ) : null}
+                    {t('onramp.form.max')}
+                </PWText>
+            </PWTouchableOpacity>
         </PWView>
     )
 }

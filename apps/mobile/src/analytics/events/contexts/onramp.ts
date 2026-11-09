@@ -11,6 +11,7 @@
  */
 
 import type { ChainPayload } from '../chain-payload'
+import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /**
  * Native onramp (Buy) flow. Event names mirror the legacy onramp-mobile-web
@@ -29,9 +30,18 @@ export enum OnrampEvent {
     ProviderSelect = 'onramp_provider_select', // Picked a specific provider quote
     HistoryCategoryTap = 'onramp_history_category_tap', // Picked a status filter in buy history
     HistoryTransactionTap = 'onramp_history_transaction_tap', // Tapped a buy-history transaction
+    SourceSelect = 'onramp_source_select', // Picked a pay/source asset
+    DestinationSelect = 'onramp_destination_select', // Picked a receive/destination asset
+    MinTap = 'onramp_min_tap', // Filled the pay amount with the provider minimum
+    MaxTap = 'onramp_max_tap', // Filled the pay amount with the provider maximum
+}
+
+/** What an onramp event may add to its chain: the router's chain label of a crypto source. */
+export type OnrampEventDetails = {
+    [Key.SourceChain]?: string
 }
 
 /** Every onramp event names the chain Fund is buying onto. */
 export type OnrampRequiredPayloads = {
-    [E in OnrampEvent]: ChainPayload
+    [E in OnrampEvent]: ChainPayload & OnrampEventDetails
 }

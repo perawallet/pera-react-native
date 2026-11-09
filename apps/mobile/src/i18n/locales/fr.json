@@ -4150,6 +4150,7 @@
             "you_receive": "Vous recevez",
             "sender_address_optional": "Adresse de l’expéditeur (facultatif)",
             "enter_sender_address": "Saisissez votre adresse {{name}}",
+            "network_line": "Réseau {{network}}",
             "provider": "Fournisseur",
             "payment_method": "Moyen de paiement",
             "choose_asset": "Choisir un actif",
@@ -4162,7 +4163,6 @@
         },
         "pair_selection": {
             "title_to": "Vers",
-            "title_from": "De",
             "search": "Rechercher",
             "empty": "Aucun token disponible"
         },
@@ -4172,6 +4172,7 @@
             "filter_all": "Tous",
             "filter_fiat": "Fiat",
             "filter_crypto": "Crypto",
+            "chain_all": "Tous",
             "fiat_section": "Fiat",
             "crypto_section": "Crypto",
             "see_all_fiat": "Voir toutes les devises fiat",
@@ -4189,7 +4190,7 @@
         "sender_address": {
             "title": "Adresse de l’expéditeur",
             "body": "Il s’agit de l’adresse qui sera utilisée pour envoyer les fonds au destinataire. Elle est facultative, mais peut accélérer le processus et faciliter le traitement des demandes d’assistance relatives à cet achat.",
-            "placeholder": "Saisissez votre adresse d’expéditeur",
+            "invalid": "Ceci n'est pas une adresse {{network}} valide",
             "confirm": "Confirmer"
         },
         "order_review": {

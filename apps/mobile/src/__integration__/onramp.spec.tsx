@@ -27,6 +27,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import {
@@ -36,6 +37,7 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import { Linking } from 'react-native'
 import { QueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import {
@@ -172,6 +174,27 @@ const USD_ASSET: RampAsset = {
     unit_name: 'USD',
     fraction_decimals: 2,
 }
+
+const SOLANA_CAIP2 = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+const SOL_ID = `${SOLANA_CAIP2}/slip44:501`
+const USDC_SOL_ID = `${SOLANA_CAIP2}/token:EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
+const SOL_ASSET: RampAsset = {
+    asset_id: SOL_ID,
+    name: 'Solana',
+    unit_name: 'SOL',
+    fraction_decimals: 9,
+    chain: 'Solana',
+    logo: 'https://example.test/sol.png',
+}
+// The router sends no logo for a token's chain; it borrows SOL's.
+const USDC_SOL_ASSET: RampAsset = {
+    asset_id: USDC_SOL_ID,
+    name: 'USD Coin',
+    unit_name: 'USDC',
+    fraction_decimals: 6,
+    chain: 'Solana',
+}
+const SOLANA_SENDER = '7EcDhSYGxXyscszYEp35KHN8vvw3svAuLKTzXwCFLtV'
 
 const row = (asset: RampAsset, kind: string): RampPairRow => ({
     kind,
@@ -644,6 +667,212 @@ describe('Flow: Onramp buy (native XO)', () => {
         expect(useWebViewStore.getState().openWebViews).toHaveLength(0)
     })
 
+    it('Given an Algorand-only account, when the user picks USD and taps Proceed, then the form quotes ALGO to the account and opens the Meld checkout', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        useOnrampStore.setState({ selectedDestinationTokenId: ALGO_ID })
+        const openUrl = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        onTestFinished(() => openUrl.mockRestore())
+        const checkoutUrl = 'https://checkout.meld.test/session-1'
+
+        const quoteBodies: Record<string, unknown>[] = []
+        server.use(
+            mockRampDestinations({
+                response: { next: null, results: [row(ALGO_ASSET, 'token')] },
+            }),
+            mockRampSources({
+                response: {
+                    next: null,
+                    results: [
+                        row(USD_ASSET, 'fiat'),
+                        row(BTC_ASSET, 'deposit'),
+                    ],
+                },
+            }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            http.post('*/api/v4/swap/quotes/', async ({ request }) => {
+                quoteBodies.push(
+                    (await request.json()) as Record<string, unknown>,
+                )
+                return HttpResponse.json({
+                    results: [buildMeldQuoteResponse()],
+                })
+            }),
+            mockCreateRampOrder({
+                response: {
+                    order_id: 'order-meld-1',
+                    status: 'pending',
+                    steps: [{ kind: 'open_checkout', url: checkoutUrl }],
+                },
+            }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+        await screen.findByTestId('onramp-pay-input', {}, { timeout: 5000 })
+
+        fireEvent.click(screen.getAllByTestId('onramp-pair-selector')[0])
+        fireEvent.click(
+            await screen.findByTestId(
+                `onramp-source-row-${USD_ID}`,
+                {},
+                { timeout: 5000 },
+            ),
+        )
+
+        const input = screen.getByTestId('onramp-pay-input') as HTMLInputElement
+        await waitFor(() => expect(input.value).toBe('100'))
+        expect(
+            screen.getAllByTestId('onramp-pair-selector')[1].textContent,
+        ).toContain('ALGO')
+        // A fiat source has no chain to name and no sender to ask for.
+        expect(screen.queryByTestId('onramp-pay-network')).toBeNull()
+        expect(screen.queryByTestId('onramp-sender-address-row')).toBeNull()
+
+        await waitFor(
+            () =>
+                expect(quoteBodies.at(-1)).toMatchObject({
+                    source_asset_id: USD_ID,
+                    destination_asset_id: ALGO_ID,
+                    destination_account: `${MAINNET_CAIP2}:${TO_ADDRESS}`,
+                }),
+            { timeout: 5000 },
+        )
+
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        await waitFor(
+            () => expect(isElementDisabled(buyButton())).toBe(false),
+            {
+                timeout: 5000,
+            },
+        )
+        fireEvent.click(buyButton())
+
+        await waitFor(() =>
+            expect(Linking.openURL).toHaveBeenCalledWith(checkoutUrl),
+        )
+    })
+
+    it('Given deposit coins on two chains, when the user picks USDC under the Solana chip and enters a sender address, then the form names the network, refuses an address from another chain and quotes from the Solana account', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        markXoTermsAccepted()
+        useOnrampStore.setState({ selectedDestinationTokenId: ALGO_ID })
+
+        const quoteBodies: Record<string, unknown>[] = []
+        server.use(
+            mockRampDestinations({
+                response: { next: null, results: [row(ALGO_ASSET, 'token')] },
+            }),
+            mockRampSources({
+                response: {
+                    next: null,
+                    results: [
+                        row(USD_ASSET, 'fiat'),
+                        row(BTC_ASSET, 'deposit'),
+                        row(SOL_ASSET, 'deposit'),
+                        row(USDC_SOL_ASSET, 'deposit'),
+                    ],
+                },
+            }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+            http.post('*/api/v4/swap/quotes/', async ({ request }) => {
+                quoteBodies.push(
+                    (await request.json()) as Record<string, unknown>,
+                )
+                return HttpResponse.json({
+                    results: [
+                        {
+                            ...buildXoQuote(),
+                            source_asset: USDC_SOL_ASSET,
+                            source_amount: '100000000',
+                        },
+                    ],
+                })
+            }),
+            mockCreateRampOrder({ response: buildXoOrder() }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+        await screen.findByTestId('onramp-pay-input', {}, { timeout: 5000 })
+
+        // The pay and receive selectors share a testID; pay comes first.
+        fireEvent.click(screen.getAllByTestId('onramp-pair-selector')[0])
+        fireEvent.click(
+            await screen.findByTestId(
+                'onramp-source-filter-crypto',
+                {},
+                { timeout: 5000 },
+            ),
+        )
+        fireEvent.click(await screen.findByTestId('onramp_source_chain_solana'))
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId(`onramp-source-row-${BTC_ID}`),
+            ).toBeNull(),
+        )
+        expect(
+            screen.getByTestId(`onramp-source-network-badge-${USDC_SOL_ID}`),
+        ).toBeTruthy()
+        fireEvent.click(screen.getByTestId(`onramp-source-row-${USDC_SOL_ID}`))
+
+        expect(
+            await screen.findByTestId(
+                'onramp-pay-network',
+                {},
+                { timeout: 5000 },
+            ),
+        ).toBeTruthy()
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'onramp-sender-address-row',
+                {},
+                { timeout: 5000 },
+            ),
+        )
+        const addressInput = (await screen.findByTestId(
+            'onramp-sender-address-input',
+            {},
+            { timeout: 5000 },
+        )) as HTMLInputElement
+        const confirm = () =>
+            screen.getByTestId('onramp-sender-address-confirm')
+
+        fireEvent.change(addressInput, {
+            target: { value: '0x52908400098527886E0F7030069857D2E4169EE7' },
+        })
+        expect(
+            await screen.findByTestId('onramp-sender-address-error'),
+        ).toBeTruthy()
+        expect(isElementDisabled(confirm())).toBe(true)
+
+        fireEvent.change(addressInput, { target: { value: SOLANA_SENDER } })
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId('onramp-sender-address-error'),
+            ).toBeNull(),
+        )
+        expect(isElementDisabled(confirm())).toBe(false)
+        fireEvent.click(confirm())
+
+        enterPayAmount('100')
+        await waitFor(
+            () =>
+                expect(quoteBodies.at(-1)).toMatchObject({
+                    source_asset_id: USDC_SOL_ID,
+                    source_account: `${SOLANA_CAIP2}:${SOLANA_SENDER}`,
+                }),
+            { timeout: 5000 },
+        )
+
+        const buyButton = () => screen.getByTestId('onramp-buy-button')
+        await waitFor(() => expect(isElementDisabled(buyButton())).toBe(false))
+        fireEvent.click(buyButton())
+        expect(
+            await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
+        ).toBeTruthy()
+    })
+
     it('Given a Meld pair whose seeded amount is below the provider minimum, when the user taps MIN, then the form re-quotes at the minimum and Proceed enables', async () => {
         seedSelectedAccount()
         markIntroSeen()
@@ -687,7 +916,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         fireEvent.click(screen.getByTestId('onramp-min-button'))
 
         const input = screen.getByTestId('onramp-pay-input') as HTMLInputElement
-        expect(input.value).toBe('600')
+        await waitFor(() => expect(input.value).toBe('600'))
 
         await waitFor(
             () => {
@@ -772,7 +1001,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         ).toContain('480')
     })
 
-    it('Given a min-only below-minimum error, when the pill renders, then only the MIN segment shows', async () => {
+    it('Given a min-only below-minimum error, when the user taps MAX, then a probe quote reveals the maximum and fills it', async () => {
         seedSelectedAccount()
         markIntroSeen()
         useOnrampStore.setState({
@@ -790,8 +1019,36 @@ describe('Flow: Onramp buy (native XO)', () => {
 
         renderWithNavigation(OnrampScreen, 'Fund')
 
-        await screen.findByTestId('onramp-min-button', {}, { timeout: 5000 })
-        expect(screen.queryByTestId('onramp-max-button')).toBeNull()
+        await screen.findByText(
+            'onramp.form.amount_below_min',
+            {},
+            { timeout: 5000 },
+        )
+        expect(screen.getByTestId('onramp-min-button')).toBeTruthy()
+
+        const probedAmounts: string[] = []
+        server.use(
+            http.post('*/api/v4/swap/quotes/', async ({ request }) => {
+                const body = (await request.json()) as { source_amount: string }
+                probedAmounts.push(body.source_amount)
+                return HttpResponse.json(
+                    {
+                        error: 'Source amount is above the maximum allowed.',
+                        code: 'amount_too_high',
+                        source_amount_maximum: '500000',
+                    },
+                    { status: 400 },
+                )
+            }),
+        )
+        fireEvent.click(screen.getByTestId('onramp-max-button'))
+
+        const input = screen.getByTestId('onramp-pay-input') as HTMLInputElement
+        await waitFor(() => expect(input.value).toBe('5000'), {
+            timeout: 5000,
+        })
+        // One billion USD in cents: the probe asks above any provider's cap.
+        expect(probedAmounts[0]).toBe('100000000000')
     })
 
     it('Given a seeded history item, when the user opens the History tab and taps the row, then the Order Details sheet opens', async () => {

@@ -15,11 +15,13 @@ import type { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetItemView } from '@modules/assets'
-import { ChainLabel } from '@modules/chain-ui/icon'
-import type { PWTouchableOpacityProps } from '@components/core'
+import { PWText, type PWTouchableOpacityProps } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { buildAccountBalanceFromRampToken } from './buildAccountBalanceFromRampToken'
+import { useOnrampAssetItemViewStyles } from './styles'
 
 export type OnrampAssetItemViewProps = {
     token: RampToken
@@ -35,6 +37,8 @@ export const OnrampAssetItemView = ({
     scope,
     ...rest
 }: OnrampAssetItemViewProps) => {
+    const { t } = useLanguage()
+    const styles = useOnrampAssetItemViewStyles()
     const accountBalance = useMemo(
         () => buildAccountBalanceFromRampToken(token, balance, scope, asset),
         [token, balance, scope, asset],
@@ -46,7 +50,20 @@ export const OnrampAssetItemView = ({
             scope={scope}
             logoUrl={token.logo ?? undefined}
             showBalance={balance !== null}
-            footer={<ChainLabel chainId={scope.chainId} />}
+            subtitle={
+                <PWText
+                    variant='footnoteMedium'
+                    numberOfLines={1}
+                    style={styles.network}
+                    testID={`onramp-asset-network-${token.id}`}
+                >
+                    {t('onramp.source_selection.network_suffix', {
+                        symbol: token.symbol,
+                        network:
+                            chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+                    })}
+                </PWText>
+            }
             {...rest}
         />
     )

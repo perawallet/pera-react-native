@@ -172,4 +172,99 @@ describe('useOnrampSourceSelection', () => {
         expect(result.current.isFiat(SOURCES[0])).toBe(true)
         expect(result.current.isFiat(SOURCES[4])).toBe(false)
     })
+
+    describe('source chains', () => {
+        const USDC_BASE = makeDepositToken('USDC', {
+            id: 'usdc-base',
+            name: 'USD Coin',
+            network: { name: 'Base Mainnet', logo: null },
+        })
+
+        const serve = (tokens: RampToken[]) =>
+            vi.mocked(useRampSourcesQuery).mockReturnValue({
+                data: tokens,
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+        it('offers All, then one chip per source chain in listing order', () => {
+            serve([...SOURCES, USDC_BASE])
+            const { result } = renderHook(() => useOnrampSourceSelection())
+
+            expect(
+                result.current.chainOptions.map(option => [
+                    option.value,
+                    option.testID,
+                ]),
+            ).toEqual([
+                [null, 'onramp_source_chain_all'],
+                ['Bitcoin', 'onramp_source_chain_bitcoin'],
+                ['Solana', 'onramp_source_chain_solana'],
+                ['Base Mainnet', 'onramp_source_chain_base_mainnet'],
+            ])
+            expect(result.current.chainOptions[0].label).toBe(
+                'onramp.source_selection.chain_all',
+            )
+        })
+
+        it('shows the chips under the Crypto filter only', () => {
+            serve([...SOURCES, USDC_BASE])
+            const { result } = renderHook(() => useOnrampSourceSelection())
+            expect(result.current.isChainFilterVisible).toBe(false)
+
+            act(() => result.current.setFilter('crypto'))
+
+            expect(result.current.isChainFilterVisible).toBe(true)
+        })
+
+        it('offers no chips when crypto comes from a single chain', () => {
+            serve(SOURCES.filter(token => token.id !== 'usdc-sol'))
+            const { result } = renderHook(() => useOnrampSourceSelection())
+
+            expect(result.current.chainOptions).toEqual([])
+        })
+
+        it('narrows the crypto list to the chosen chain under the Crypto filter', () => {
+            const { result } = renderHook(() => useOnrampSourceSelection())
+
+            act(() => {
+                result.current.setFilter('crypto')
+                result.current.setChainFilter('Solana')
+            })
+
+            expect(result.current.cryptoTokens.map(t => t.id)).toEqual([
+                'usdc-sol',
+            ])
+        })
+
+        it('ignores a chosen chain outside the Crypto filter', () => {
+            const { result } = renderHook(() => useOnrampSourceSelection())
+
+            act(() => {
+                result.current.setFilter('crypto')
+                result.current.setChainFilter('Solana')
+            })
+            act(() => result.current.setFilter('all'))
+
+            expect(result.current.cryptoTokens.map(t => t.id)).toEqual([
+                'btc',
+                'usdc-sol',
+            ])
+        })
+
+        it('applies the search and the chain together', () => {
+            serve([...SOURCES, USDC_BASE])
+            const { result } = renderHook(() => useOnrampSourceSelection())
+
+            act(() => {
+                result.current.setFilter('crypto')
+                result.current.setChainFilter('Base Mainnet')
+                result.current.setSearch('usd')
+            })
+
+            expect(result.current.cryptoTokens.map(t => t.id)).toEqual([
+                'usdc-base',
+            ])
+        })
+    })
 })
