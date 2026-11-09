@@ -44,7 +44,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         destructive: {
             backgroundColor: theme.colors.alertNegative,
-            color: theme.colors.textWhite,
+            color: theme.colors.alertContent,
         },
         destructiveLight: {
             backgroundColor: theme.colors.negativeLighter,
