@@ -39,6 +39,12 @@ const readableLegs = <Leg extends z.ZodType>(leg: Leg) =>
 
 const nftTransfersSchema = readableLegs(nftTransferSchema)
 
+// EIP-7708 logs every ETH transfer as an ERC-20 `Transfer` from this system
+// address. Indexers list it as a token, so the row would show its ETH twice.
+const EIP7708_SYSTEM_ADDRESS = '0xfffffffffffffffffffffffffffffffffffffffe'
+const isEip7708Mirror = (contract: string): boolean =>
+    contract.toLowerCase() === EIP7708_SYSTEM_ADDRESS
+
 const tokenTransferSchema = z.object({
     contract: address,
     from: address,
@@ -76,18 +82,27 @@ export const evmHistoryItemSchema = z.object({
     fee: amount.nullable(),
     status: z.enum(['success', 'failed']),
     method: z.string().nullable(),
-    token_transfers: z.array(tokenTransferSchema),
+    token_transfers: z
+        .array(tokenTransferSchema)
+        .transform(legs => legs.filter(leg => !isEip7708Mirror(leg.contract))),
     internal_transfers: readableLegs(internalTransferSchema).catch([]),
     nft_transfers: nftTransfersSchema,
     withdrawals: z.array(z.object({ index: z.number().int().min(0) })),
-    balance_impacts: z.array(
-        z.object({
-            /** CAIP-19. */
-            asset_id: z.string(),
-            /** Signed base units. */
-            amount: z.string().regex(/^-?\d+$/),
-        }),
-    ),
+    balance_impacts: z
+        .array(
+            z.object({
+                /** CAIP-19. */
+                asset_id: z.string(),
+                /** Signed base units. */
+                amount: z.string().regex(/^-?\d+$/),
+            }),
+        )
+        .transform(impacts =>
+            impacts.filter(
+                ({ asset_id }) =>
+                    !isEip7708Mirror(asset_id.split('/erc20:')[1] ?? ''),
+            ),
+        ),
 })
 
 export type EvmHistoryItem = z.output<typeof evmHistoryItemSchema>
