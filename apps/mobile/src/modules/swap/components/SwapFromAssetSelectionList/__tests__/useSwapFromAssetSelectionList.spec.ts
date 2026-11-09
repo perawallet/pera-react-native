@@ -48,6 +48,21 @@ describe('useSwapFromAssetSelectionList', () => {
         expect(result.current.isChainShown).toBe(false)
     })
 
+    it('names the contract address once the search narrows to an EVM chain', () => {
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+        expect(result.current.searchPlaceholderKey).toBe(
+            'swap.asset_selection.search_placeholder_all',
+        )
+
+        act(() => result.current.handleSelectChain('ethereum'))
+
+        expect(result.current.searchPlaceholderKey).toBe(
+            'swap.asset_selection.search_placeholder_evm',
+        )
+    })
+
     it('has no chips for an account on one chain', () => {
         mockSourceChainIds = ['algorand']
 

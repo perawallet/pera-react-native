@@ -4037,6 +4037,8 @@
             "swap_from_title": "Converter de",
             "swap_to_title": "Converter para",
             "search_placeholder": "Buscar por nome ou ID",
+            "search_placeholder_evm": "Buscar por nome, símbolo ou endereço do contrato",
+            "search_placeholder_all": "Buscar por nome, símbolo, ID do ativo ou endereço",
             "no_results_title": "Nenhum ativo encontrado",
             "no_results_body": "Nenhum ativo corresponde à sua busca",
             "no_chain_results_body": "Nenhum ativo disponível nesta rede"

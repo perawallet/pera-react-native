@@ -4015,6 +4015,8 @@
             "swap_from_title": "Échanger depuis",
             "swap_to_title": "Échanger vers",
             "search_placeholder": "Rechercher par nom ou ID",
+            "search_placeholder_evm": "Rechercher par nom, symbole ou adresse du contrat",
+            "search_placeholder_all": "Rechercher par nom, symbole, ID d’actif ou adresse",
             "no_results_title": "Aucun actif correspondant",
             "no_results_body": "Aucun actif ne correspond à votre recherche",
             "no_chain_results_body": "Aucun actif disponible sur ce réseau"

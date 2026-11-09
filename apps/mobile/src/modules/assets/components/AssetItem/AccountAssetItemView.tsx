@@ -43,6 +43,8 @@ export type AccountAssetItemViewProps = {
     subtitle?: ReactNode
     /** A further line under the secondary one, such as the holding's chain. */
     footer?: ReactNode
+    /** Draws the holding's network on its icon. */
+    showChainBadge?: boolean
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -56,6 +58,7 @@ export const AccountAssetItemView = ({
     scope,
     subtitle,
     footer,
+    showChainBadge = false,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
@@ -124,6 +127,7 @@ export const AccountAssetItemView = ({
             copyableAssetId
             subtitle={subtitle}
             footer={footer}
+            showChainBadge={showChainBadge}
             onPress={onPress}
             {...rest}
         />

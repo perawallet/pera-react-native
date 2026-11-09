@@ -14,8 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-    addressOn,
-    useAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery,
     useSelectedAccount,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
@@ -28,6 +27,7 @@ import {
     toScopeKey,
     type ChainId,
     type ChainScope,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     scopeOfSwapAsset,
@@ -41,6 +41,7 @@ import {
 import type { FilterOption } from '@components/FilterSelection'
 import { useSwapChainFilter } from '../../hooks/useSwapChainFilter'
 import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
+import { swapSearchPlaceholderKey } from '../../utils/swapSearchPlaceholderKey'
 
 export type AvailableAssetWithBalance = {
     swapAsset: SwapAsset
@@ -60,6 +61,7 @@ type UseSwapToAssetSelectionListResult = {
     searchFilter: string
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
+    searchPlaceholderKey: I18nKey
     chainOptions: FilterOption<Nullable<ChainId>>[]
     selectedChainId: Nullable<ChainId>
     handleSelectChain: (chainId: Nullable<ChainId>) => void
@@ -137,40 +139,36 @@ export const useSwapToAssetSelectionList = ({
         if (hasNextPage) fetchNextPage()
     }, [hasNextPage, fetchNextPage])
 
-    const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-        scope,
+    const { assetBalances } =
+        useAccountHoldingsAcrossChainsQuery(selectedAccount)
+
+    // Asset ids are only unique within a scope: every EVM chain's native
+    // asset is 'native'.
+    const balanceMap = useMemo(
+        (): Map<string, Decimal> =>
+            new Map(
+                assetBalances.map(item => [
+                    `${toScopeKey(item.scope)}/${item.assetId}`,
+                    item.amount,
+                ]),
+            ),
+        [assetBalances],
     )
-
-    const selectedAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
-
-    const balanceMap = useMemo((): Map<string, Decimal> => {
-        if (!selectedAddress) return new Map()
-        const assetBalances =
-            accountBalances.get(selectedAddress)?.assetBalances ?? []
-        return new Map(assetBalances.map(item => [item.assetId, item.amount]))
-    }, [accountBalances, selectedAddress])
 
     const items = useMemo((): AvailableAssetWithBalance[] => {
         const scopeKey = toScopeKey(scope)
-        // Asset ids are only unique within a scope: every EVM chain's native
-        // asset is 'native'.
         return availableAssets
+            .filter(
+                swapAsset =>
+                    toScopeKey(swapAsset.ref) !== scopeKey ||
+                    swapAsset.assetId !== excludeAssetId,
+            )
             .map(swapAsset => ({
                 swapAsset,
-                isOnScope: toScopeKey(swapAsset.ref) === scopeKey,
-            }))
-            .filter(
-                ({ swapAsset, isOnScope }) =>
-                    !isOnScope || swapAsset.assetId !== excludeAssetId,
-            )
-            .map(({ swapAsset, isOnScope }) => ({
-                swapAsset,
-                balance: isOnScope
-                    ? (balanceMap.get(swapAsset.assetId) ?? null)
-                    : null,
+                balance:
+                    balanceMap.get(
+                        `${toScopeKey(swapAsset.ref)}/${swapAsset.assetId}`,
+                    ) ?? null,
             }))
     }, [availableAssets, balanceMap, excludeAssetId, scope])
 
@@ -238,6 +236,7 @@ export const useSwapToAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        searchPlaceholderKey: swapSearchPlaceholderKey(visibleChainIds),
         chainOptions,
         selectedChainId,
         handleSelectChain,

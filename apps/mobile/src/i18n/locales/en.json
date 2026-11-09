@@ -4015,6 +4015,8 @@
             "swap_from_title": "Swap From",
             "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
+            "search_placeholder_evm": "Search by name, symbol or contract address",
+            "search_placeholder_all": "Search by name, symbol, asset ID or address",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term",
             "no_chain_results_body": "No assets available on this network"

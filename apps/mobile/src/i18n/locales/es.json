@@ -4015,6 +4015,8 @@
             "swap_from_title": "Intercambiar desde",
             "swap_to_title": "Intercambiar a",
             "search_placeholder": "Buscar por nombre o ID",
+            "search_placeholder_evm": "Buscar por nombre, símbolo o dirección del contrato",
+            "search_placeholder_all": "Buscar por nombre, símbolo, ID de activo o dirección",
             "no_results_title": "No hay activos coincidentes",
             "no_results_body": "Ningún activo coincide con tu búsqueda",
             "no_chain_results_body": "No hay activos disponibles en esta red"

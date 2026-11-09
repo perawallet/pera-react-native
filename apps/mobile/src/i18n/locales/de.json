@@ -4007,6 +4007,8 @@
             "swap_from_title": "Tauschen von",
             "swap_to_title": "Tauschen zu",
             "search_placeholder": "Nach Name oder ID suchen",
+            "search_placeholder_evm": "Nach Name, Symbol oder Vertragsadresse suchen",
+            "search_placeholder_all": "Nach Name, Symbol, Asset-ID oder Adresse suchen",
             "no_results_title": "Keine passenden Assets",
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
             "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar"

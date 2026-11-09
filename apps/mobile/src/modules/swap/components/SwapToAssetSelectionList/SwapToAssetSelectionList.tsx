@@ -21,6 +21,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
+import { useLanguage } from '@hooks/useLanguage'
 import { AssetSelectionList } from '@modules/assets'
 import {
     useSwapToAssetSelectionList,
@@ -35,7 +36,6 @@ export type SwapToAssetSelectionListProps = {
     onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
     isVisible?: boolean
     excludeAssetId?: string
-    searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
     emptyChainResultBody: string
@@ -48,18 +48,19 @@ export const SwapToAssetSelectionList = ({
     onAssetSelected,
     isVisible,
     excludeAssetId,
-    searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
     emptyChainResultBody,
     inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         items,
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        searchPlaceholderKey,
         chainOptions,
         selectedChainId,
         handleSelectChain,
@@ -108,7 +109,7 @@ export const SwapToAssetSelectionList = ({
             }
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
-            searchPlaceholder={searchPlaceholder}
+            searchPlaceholder={t(searchPlaceholderKey)}
             searchAccessory={
                 chainOptions.length > 0 ? (
                     <FilterSelection<Nullable<ChainId>>

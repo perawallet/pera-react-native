@@ -4015,6 +4015,8 @@
             "swap_from_title": "Kaynak varlık",
             "swap_to_title": "Hedef varlık",
             "search_placeholder": "Ada veya ID’ye göre ara",
+            "search_placeholder_evm": "Ad, sembol veya kontrat adresine göre ara",
+            "search_placeholder_all": "Ad, sembol, varlık ID’si veya adrese göre ara",
             "no_results_title": "Eşleşen varlık yok",
             "no_results_body": "Arama terimine uyan varlık bulunamadı",
             "no_chain_results_body": "Bu ağda kullanılabilir varlık yok"

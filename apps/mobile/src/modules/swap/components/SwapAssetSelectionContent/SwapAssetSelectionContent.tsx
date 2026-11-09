@@ -89,9 +89,6 @@ export const SwapAssetSelectionContent = (
                         isVisible
                         excludeAssetId={excludeAsset?.assetId}
                         inBottomSheet
-                        searchPlaceholder={t(
-                            'swap.asset_selection.search_placeholder',
-                        )}
                         emptyResultTitle={t(
                             'swap.asset_selection.no_results_title',
                         )}
@@ -107,9 +104,6 @@ export const SwapAssetSelectionContent = (
                         scope={scope}
                         excludeAsset={excludeAsset}
                         onAssetSelected={handleFromAssetSelected}
-                        searchPlaceholder={t(
-                            'swap.asset_selection.search_placeholder',
-                        )}
                         emptyResultTitle={t(
                             'swap.asset_selection.no_results_title',
                         )}

@@ -18,7 +18,7 @@ import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockTrackEvent = vi.hoisted(() => vi.fn())
-const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
+const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 const mockUseSwapPairsInfiniteQuery = vi.hoisted(() => vi.fn())
 const mockGetQueryData = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
@@ -34,9 +34,8 @@ const mockGetAssetsQueryKey = vi.hoisted(() =>
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
-    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
-        account.chains.algorand?.address,
-    useAccountBalancesQuery: mockUseAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery:
+        mockUseAccountHoldingsAcrossChainsQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -126,10 +125,22 @@ const ETH_NATIVE = {
     logo: null,
 }
 
-const mockAssetBalances = [
-    { assetId: '31566704', amount: new Decimal('500') },
-    { assetId: '0', amount: new Decimal('1000000') },
+type HeldBalance = {
+    assetId: string
+    amount: Decimal
+    scope: { chainId: string; networkId: string }
+}
+
+const mockAssetBalances: HeldBalance[] = [
+    { assetId: '31566704', amount: new Decimal('500'), scope: ALGO_SCOPE },
+    { assetId: '0', amount: new Decimal('1000000'), scope: ALGO_SCOPE },
 ]
+
+const holdingsOf = (assetBalances: HeldBalance[]) => ({
+    assetBalances,
+    isPending: false,
+    isError: false,
+})
 
 const mockOnAssetSelected = vi.fn()
 
@@ -147,16 +158,32 @@ describe('useSwapToAssetSelectionList', () => {
         mockUseSelectedAccount.mockReturnValue({
             chains: { algorand: { address: 'TEST_ADDRESS' } },
         })
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map([
-                ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
-            ]),
-        })
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
+            holdingsOf(mockAssetBalances),
+        )
         mockUseSwapPairsInfiniteQuery.mockReturnValue({
             assets: mockAvailableAssets,
             isLoading: false,
             hasNextPage: false,
             fetchNextPage: mockFetchNextPage,
+        })
+    })
+
+    describe('search placeholder', () => {
+        it('names the contract address once the search narrows to an EVM network', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            expect(result.current.searchPlaceholderKey).toBe(
+                'swap.asset_selection.search_placeholder_all',
+            )
+
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.searchPlaceholderKey).toBe(
+                'swap.asset_selection.search_placeholder_evm',
+            )
         })
     })
 
@@ -238,6 +265,61 @@ describe('useSwapToAssetSelectionList', () => {
         expect(usdc?.balance?.toString()).toBe('500')
         expect(wsol?.balance).toBeNull()
         expect(algo?.balance?.toString()).toBe('1000000')
+    })
+
+    it('shows the balance of a token held on another network', () => {
+        mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
+            holdingsOf([
+                ...mockAssetBalances,
+                { assetId: '0', amount: new Decimal('2'), scope: ETH_SCOPE },
+            ]),
+        )
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [...mockAvailableAssets, ETH_NATIVE],
+            isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+        const eth = result.current.items.find(
+            i => i.swapAsset.unitName === 'ETH',
+        )!
+        act(() => result.current.handleAssetSelected(eth))
+
+        expect(eth.balance?.toString()).toBe('2')
+        expect(mockOnAssetSelected).toHaveBeenCalledWith(
+            expect.objectContaining({ amount: new Decimal('2') }),
+            ETH_SCOPE,
+        )
+    })
+
+    it('shows no balance held on another network of the same chain', () => {
+        mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
+            holdingsOf([
+                {
+                    assetId: '0',
+                    amount: new Decimal('2'),
+                    scope: { chainId: 'ethereum', networkId: 'sepolia' },
+                },
+            ]),
+        )
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [ETH_NATIVE],
+            isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+
+        expect(result.current.items[0].balance).toBeNull()
     })
 
     it('excludes asset when excludeAssetId is provided', () => {
@@ -322,9 +404,7 @@ describe('useSwapToAssetSelectionList', () => {
 
     it('returns empty items when no account is selected', () => {
         mockUseSelectedAccount.mockReturnValue(null)
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map(),
-        })
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(holdingsOf([]))
 
         const { result } = renderHook(() =>
             useSwapToAssetSelectionList(defaultParams),
@@ -409,7 +489,7 @@ describe('useSwapToAssetSelectionList', () => {
             )
         })
 
-        it('passes the scope of an asset on another chain, unbalanced and cached there', () => {
+        it('passes the scope of an unheld asset on another chain, unbalanced and cached there', () => {
             mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
             mockUseSwapPairsInfiniteQuery.mockReturnValue({
                 assets: [...mockAvailableAssets, ETH_NATIVE],
