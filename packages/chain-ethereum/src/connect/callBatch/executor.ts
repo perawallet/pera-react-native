@@ -161,7 +161,7 @@ type Unsent = {
 const historyEntryOf = (
     unsigned: UnsignedTransaction,
 ): SubmissionHistoryEntry => ({
-    summary: unsigned.summary,
+    summary: unsigned.historySummary ?? unsigned.summary,
     chainData: unsigned.chainData,
 })
 

@@ -363,7 +363,7 @@ describe('with contractDecoding', () => {
     // No RPC handler is registered, so a node read would fail the test.
     it.each([
         [true, 'transactions.list_item.interpreted_title'],
-        [false, 'transactions.list_item.contract_call'],
+        [false, 'transactions.list_item.contract_interaction'],
     ])(
         'reads the history without touching the node (decoding %s)',
         async (isDecoding, titleKey) => {
@@ -409,7 +409,7 @@ describe('with contractDecoding', () => {
         const second = await read(true, 'page:1')
 
         expect(first.items[0]?.summary.title.key).toBe(
-            'transactions.list_item.contract_call',
+            'transactions.list_item.contract_interaction',
         )
         expect(second.items[0]?.summary.title.key).toBe(
             'transactions.list_item.interpreted_title',
@@ -423,7 +423,7 @@ describe('with contractDecoding', () => {
         const { items } = await adapter.getTransactionHistory(ME, MAINNET)
 
         expect(items[0]?.summary.title.key).toBe(
-            'transactions.list_item.contract_call',
+            'transactions.list_item.contract_interaction',
         )
     })
 

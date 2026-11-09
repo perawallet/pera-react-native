@@ -39,9 +39,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 const CAPABILITIES = vi.hoisted(() => ({ contractDecoding: true }))
+const FEE_MODEL = vi.hoisted(() => ({ current: 'gas' }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainCapabilities: () => CAPABILITIES,
+    getChainDescriptor: () => ({ protocol: { feeModel: FEE_MODEL.current } }),
 }))
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -107,6 +109,7 @@ const pendingRecords = (listedIds: string[] = []) =>
 describe('getPendingTransactionRecords', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        FEE_MODEL.current = 'gas'
     })
 
     it.each([
@@ -168,6 +171,33 @@ describe('getPendingTransactionRecords', () => {
             summary: { title: { key: 'transactions.list_item.send' } },
         })
         expect(record.fee?.toString()).toBe('420000000000000')
+    })
+
+    it('marks a gas-priced fee as the most the send can be charged, not what it paid', async () => {
+        ledger(attempt())
+
+        const [record] = await pendingRecords()
+
+        expect(record.isFeeMaximum).toBe(true)
+    })
+
+    it('marks no maximum on a chain whose fee is flat, since the recorded fee is what it pays', async () => {
+        FEE_MODEL.current = 'flat'
+        ledger(attempt())
+
+        const [record] = await pendingRecords()
+
+        expect(record.isFeeMaximum).toBeUndefined()
+    })
+
+    it('marks no maximum on an attempt that recorded no fee', async () => {
+        const { historyEntry } = attempt()
+        ledger(attempt({ historyEntry: { ...historyEntry, fee: undefined } }))
+
+        const [record] = await pendingRecords()
+
+        expect(record.fee).toBeUndefined()
+        expect(record.isFeeMaximum).toBeUndefined()
     })
 
     it('leaves out an attempt once the chain lists its transaction', async () => {

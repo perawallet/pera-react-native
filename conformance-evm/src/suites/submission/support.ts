@@ -210,6 +210,7 @@ export const submitAndRecord = async (
             await historyEntryOfSigned(
                 raw as TransactionSerializedEIP1559,
                 env.evmChain,
+                env.scope,
             ),
         ],
         db: env.db,

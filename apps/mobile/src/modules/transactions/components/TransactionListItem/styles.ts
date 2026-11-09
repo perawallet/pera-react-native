@@ -47,6 +47,14 @@ export const useStyles = makeStyles(theme => {
         amountNegative: {
             color: theme.colors.negative,
         },
+        fee: {
+            flexDirection: 'row' as const,
+            gap: theme.spacing.xs,
+            marginTop: theme.spacing.xxs,
+        },
+        feeText: {
+            color: theme.colors.textGray,
+        },
         amountOverflow: {
             color: theme.colors.textGray,
             marginTop: theme.spacing.xxs,

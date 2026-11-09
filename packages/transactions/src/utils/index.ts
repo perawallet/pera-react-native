@@ -11,6 +11,7 @@
  */
 
 export { getDebitedAddress, isOutgoingFor } from './direction'
+export { isFeePaidByAccount } from './fee'
 export {
     replacementNotNeededNotice,
     transactionStatusNotice,

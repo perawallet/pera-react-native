@@ -15,7 +15,7 @@ import {
     chainAccountOf,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     i18nKey,
     type ChainScope,
@@ -23,6 +23,7 @@ import {
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    isFeePaidByAccount,
     summarizeHistoryItem,
     type SuspectedPoisoning,
     type TransactionHistoryItem,
@@ -37,6 +38,7 @@ import { useSuspectedPoisoningSheet } from '../../hooks/address-safety/useSuspec
 import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
 import { useOpenRecordDetails } from '../../hooks/history/useOpenRecordDetails'
 import { useReplaceTransaction } from '../../hooks/history/useReplaceTransaction'
+import { useSummaryTitle } from '../../hooks/history/useSummaryTitle'
 import {
     MAX_VISIBLE_AMOUNTS,
     summaryAmountsOf,
@@ -47,6 +49,8 @@ import {
 const WAITING_ON_EARLIER = {
     key: i18nKey('transactions.notice.waiting_on_earlier'),
 }
+const FEE_LABEL = i18nKey('transactions.common.fee')
+const MAX_FEE_LABEL = i18nKey('send_funds.fee.max_fee')
 
 export type UseTransactionListItemParams = (
     | {
@@ -66,6 +70,9 @@ export type UseTransactionListItemResult = {
     amounts: AmountDisplay[]
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
+    /** The network fee in the native asset, only for a row the account paid for that shows no other amount. */
+    fee: Nullable<AmountDisplay>
+    feeLabel: string
     /** Set when the chain flags a non-final status (pending, failed, replaced). */
     notice: Nullable<ChainNoticeContent>
     /** Opens the row's detail; a history item pressed without an `onPress` opens nothing, and long-press still copies. */
@@ -108,7 +115,7 @@ export const useTransactionListItem = (
         [t],
     )
 
-    const title = useMemo(() => render(summary.title), [render, summary])
+    const title = useSummaryTitle(summary, scope)
 
     const subtitle = useMemo(() => {
         if (summary.subtitle) return render(summary.subtitle)
@@ -145,6 +152,22 @@ export const useTransactionListItem = (
         [visibleAmounts, storedAssets],
     )
 
+    const nativeAsset = useNativeAsset(scope)
+    const fee = useMemo<Nullable<AmountDisplay>>(() => {
+        if (!record?.fee || allAmounts.length > 0) return null
+        if (!isFeePaidByAccount(record, address)) return null
+        return toAmountDisplay(
+            {
+                assetRef: {
+                    chainId: scope.chainId,
+                    assetId: nativeAsset.assetId,
+                },
+                baseUnits: record.fee,
+            },
+            nativeAsset,
+        )
+    }, [record, allAmounts, address, scope.chainId, nativeAsset])
+
     const handleTransactionPress = useCallback(() => {
         if (transaction) onPress?.(transaction)
     }, [onPress, transaction])
@@ -180,6 +203,8 @@ export const useTransactionListItem = (
             0,
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
         ),
+        fee,
+        feeLabel: t(record?.isFeeMaximum ? MAX_FEE_LABEL : FEE_LABEL),
         notice,
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,

@@ -211,9 +211,11 @@ const signedDataOf = async (
     return {
         type: 'signed-transactions',
         signed,
-        historyEntries: transactions.map(({ summary, chainData }) => ({
-            summary,
-            chainData,
-        })),
+        historyEntries: transactions.map(
+            ({ summary, historySummary, chainData }) => ({
+                summary: historySummary ?? summary,
+                chainData,
+            }),
+        ),
     }
 }

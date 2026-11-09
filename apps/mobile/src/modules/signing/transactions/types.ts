@@ -72,6 +72,8 @@ export type TransactionDetailSummary = {
     to?: string
     /** In the native asset. Unset when the chain's history or signing flow gave none. */
     fee?: TransactionDetailAmount
+    /** `fee` is the most the transaction can be charged, not what it paid. */
+    isFeeMaximum?: boolean
     /** Decoded text. */
     note?: string
 }

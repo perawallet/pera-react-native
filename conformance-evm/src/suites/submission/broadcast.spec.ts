@@ -167,6 +167,7 @@ describe('evm broadcast', () => {
             await historyEntryOfSigned(
                 raw as TransactionSerializedEIP1559,
                 env.evmChain,
+                env.scope,
             ),
         )
         // Wei: the most the send can be charged, gas limit times fee cap.

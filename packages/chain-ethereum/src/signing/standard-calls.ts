@@ -198,7 +198,8 @@ export const isEvmApprovalCall = (call: EvmStandardCall): boolean =>
     call.kind === 'increase-allowance' ||
     call.kind === 'set-approval-for-all'
 
-const isRevocation = (call: EvmStandardCall): boolean =>
+/** An approve for nothing or a collection approval withdrawn. */
+export const isEvmRevocationCall = (call: EvmStandardCall): boolean =>
     (call.kind === 'approve' && call.value.isZero()) ||
     (call.kind === 'set-approval-for-all' && !call.isApproved)
 
@@ -208,7 +209,7 @@ const approvalSummary = (
 ): TransactionSummary => ({
     kind: 'approval',
     title: {
-        key: isRevocation(call)
+        key: isEvmRevocationCall(call)
             ? REVOKE_APPROVAL_TITLE_KEY
             : APPROVAL_TITLE_KEY,
     },
@@ -299,7 +300,7 @@ const LIMITED_APPROVAL_WARNING: ReviewWarning = {
 export const approvalWarningOf = (
     call: EvmStandardCall,
 ): Optional<ReviewWarning> => {
-    if (isRevocation(call)) return undefined
+    if (isEvmRevocationCall(call)) return undefined
     switch (call.kind) {
         case 'approve':
         case 'increase-allowance': {

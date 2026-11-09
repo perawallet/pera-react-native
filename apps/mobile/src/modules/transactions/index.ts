@@ -38,6 +38,7 @@ export {
     useSuspectedAddressReuseGuard,
     useTransactionHistoryRows,
     useMergedTransactionHistoryRows,
+    useResolvedSummaryTitle,
     type HistoryFeedProps,
     type HistoryFeedSource,
     type UseTransactionHistoryRowsResult,

@@ -20,6 +20,7 @@ import {
     contractActionSummary,
     contractActionTitleKeyOf,
     decodeEvmContractAction,
+    decodePermit2Approval,
     hidesUnknownContractNotice,
 } from '../contract-actions'
 import { findKnownEvmContract } from '../known-contracts'
@@ -255,6 +256,34 @@ describe('decodeEvmContractAction', () => {
     it('leaves a call to Permit2 a plain contract call', () => {
         expect(decode(PERMIT2, '0x87517c45')).toBeUndefined()
         expect(decode(ROUTER, '0x')).toBeUndefined()
+    })
+})
+
+describe('decodePermit2Approval', () => {
+    const PERMIT2_ABI = parseAbi([
+        'function approve(address token, address spender, uint160 amount, uint48 expiration)',
+    ])
+    const data = encodeFunctionData({
+        abi: PERMIT2_ABI,
+        functionName: 'approve',
+        args: [USDC, OTHER, 5n, 1_800_000_000],
+    })
+
+    it('reads the token, spender and amount of an exact approve', () => {
+        expect(decodePermit2Approval({ data, value: 0n })).toEqual({
+            token: USDC,
+            spender: OTHER,
+            amount: 5n,
+        })
+    })
+
+    it.each([
+        ['sends ether', { data, value: 1n }],
+        ['has trailing bytes', { data: `${data}00` as Hex, value: 0n }],
+        ['is cut short', { data: data.slice(0, 40) as Hex, value: 0n }],
+        ['is another function', { data: '0x12345678' as Hex, value: 0n }],
+    ])('refuses a call that %s', (_, call) => {
+        expect(decodePermit2Approval(call)).toBeUndefined()
     })
 })
 
