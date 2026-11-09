@@ -113,11 +113,24 @@ import {
 import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 // The integration harness has no i18next instance, so <Trans> renders nothing;
-// echoing its components lets the specs read the amounts it embeds.
+// echoing its key, values and components lets the specs read the copy it picks
+// and the amounts it embeds.
 vi.mock('react-i18next', async importOriginal => ({
     ...(await importOriginal<typeof import('react-i18next')>()),
-    Trans: ({ components }: { components?: React.ReactNode[] }) => (
-        <>{components}</>
+    Trans: ({
+        i18nKey,
+        values,
+        components,
+    }: {
+        i18nKey?: string
+        values?: object
+        components?: React.ReactNode[]
+    }) => (
+        <>
+            {i18nKey}
+            {values ? JSON.stringify(values) : null}
+            {components}
+        </>
     ),
 }))
 
@@ -950,6 +963,10 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     'ethereum_high_fee_body',
                 )[0]
                 expect(warning.textContent).toContain(maxFee.textContent)
+                // No observed origin in this harness, so the sourceless copy.
+                expect(warning.textContent).toContain(
+                    'ethereum.review_warnings.high_fee_body_no_source',
+                )
                 const slide = screen.getAllByTestId('signing-confirm-slide')[0]
                 expect(isElementDisabled(slide)).toBe(true)
 

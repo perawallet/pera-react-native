@@ -107,4 +107,32 @@ describe('useReviewWarningsBanner', () => {
 
         expect(result.current.isAcknowledged).toBe(true)
     })
+
+    it('keeps the acknowledgement when a second banner mounts for the same request', () => {
+        const first = renderHook(() =>
+            useReviewWarningsBanner([item('fee', true)]),
+        )
+        act(() => first.result.current.toggleAcknowledged())
+
+        const second = renderHook(() =>
+            useReviewWarningsBanner([item('fee', true)]),
+        )
+
+        expect(second.result.current.isAcknowledged).toBe(true)
+        expect(first.result.current.isAcknowledged).toBe(true)
+    })
+
+    it('keeps the acknowledgement across a remount of the same warnings', () => {
+        const first = renderHook(() =>
+            useReviewWarningsBanner([item('fee', true)]),
+        )
+        act(() => first.result.current.toggleAcknowledged())
+        first.unmount()
+
+        const again = renderHook(() =>
+            useReviewWarningsBanner([item('fee', true)]),
+        )
+
+        expect(again.result.current.isAcknowledged).toBe(true)
+    })
 })

@@ -30,7 +30,10 @@ vi.mock('../EthereumHighFeeMessage', () => ({
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
+    useLanguage: () => ({
+        t: (key: string, params?: object) =>
+            params ? `${key}|${JSON.stringify(params)}` : key,
+    }),
 }))
 
 const presentation = {
@@ -43,9 +46,10 @@ const presentation = {
     view: { action: undefined },
 } as unknown as EthereumTransactionPresentation
 
-const review = () =>
-    renderHook(() => useEthereumTransactionReview({ presentation })).result
-        .current
+const review = (verifiedOrigin?: string) =>
+    renderHook(() =>
+        useEthereumTransactionReview({ presentation, verifiedOrigin }),
+    ).result.current
 
 describe('useEthereumTransactionReview', () => {
     it('makes the predicted failure and the high fee high-risk, and the notices advisory', () => {
@@ -63,6 +67,39 @@ describe('useEthereumTransactionReview', () => {
             ['ethereum_high_fee_warning', true],
             ['ethereum_contract_call_warning', false],
         ])
+    })
+
+    it('names the requesting host in the unchecked-call notice and the high-fee message', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'hidden',
+        })
+
+        const { warningItems } = review('https://app.uniswap.org/swap')
+
+        const byId = (id: string) => warningItems.find(item => item.id === id)
+        expect(byId('ethereum_contract_call_warning')?.message).toBe(
+            'transactions.contract_call.unchecked_warning|{"domain":"app.uniswap.org"}',
+        )
+        expect(byId('ethereum_high_fee_warning')?.message).toMatchObject({
+            props: {
+                maxFee: presentation.reviewFee?.maxAmount,
+                requesterHost: 'app.uniswap.org',
+            },
+        })
+    })
+
+    it('uses the no-source notice when nothing observed who asked', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'hidden',
+        })
+
+        const { warningItems } = review()
+
+        expect(
+            warningItems.find(
+                item => item.id === 'ethereum_contract_call_warning',
+            )?.message,
+        ).toBe('transactions.contract_call.unchecked_warning_no_source')
     })
 
     it('gives an unavailable simulation an advisory item', () => {

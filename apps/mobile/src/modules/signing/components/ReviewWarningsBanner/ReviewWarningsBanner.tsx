@@ -67,6 +67,8 @@ export const ReviewWarningsBanner = ({ items }: ReviewWarningsBannerProps) => {
         >
             {isCollapsible ? (
                 <TitledExpandablePanel
+                    // startExpanded only applies on mount; remount when a high-risk item arrives.
+                    key={String(hasHighRisk)}
                     hasVerticalChevron
                     startExpanded={hasHighRisk}
                     headerStyle={styles.panelHeader}

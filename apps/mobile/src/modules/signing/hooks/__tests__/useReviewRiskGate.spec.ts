@@ -138,3 +138,25 @@ describe('useFlagReviewRisk', () => {
         expect(flagged()).toBe('request-2')
     })
 })
+
+describe('useReviewRiskFlagStore seen ids', () => {
+    beforeEach(() => {
+        useReviewRiskFlagStore.getState().resetState()
+    })
+
+    it('reports an id as new once per request', () => {
+        const { markSeen } = useReviewRiskFlagStore.getState()
+
+        expect(markSeen('request-1', ['fee'])).toBe(true)
+        expect(markSeen('request-1', ['fee'])).toBe(false)
+        expect(markSeen('request-1', ['fee', 'failure'])).toBe(true)
+    })
+
+    it('forgets the ids when the request changes', () => {
+        const { markSeen } = useReviewRiskFlagStore.getState()
+        markSeen('request-1', ['fee'])
+
+        expect(markSeen('request-2', ['fee'])).toBe(true)
+        expect(useReviewRiskFlagStore.getState().seenIds).toEqual(['fee'])
+    })
+})

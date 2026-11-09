@@ -19,8 +19,8 @@ import { createAcknowledgementStore } from './createAcknowledgementStore'
 type ReviewRiskFlagState = {
     /** The request a high-risk review warning is on screen for. */
     flaggedRequestId: Optional<string>
-    /** High-risk warning ids already on screen for `seenRequestId`, kept here so every banner instance agrees. */
     seenRequestId: Optional<string>
+    /** High-risk warning ids already on screen for `seenRequestId`, kept here so every banner instance agrees. */
     seenIds: readonly string[]
 }
 
