@@ -114,7 +114,7 @@ const openSpeeds = () =>
 describe('FeeRow', () => {
     beforeEach(() => {
         vi.mocked(nativeAssetFor).mockReturnValue(NATIVE_ASSET)
-        vi.mocked(PreferredAmount).mockClear()
+        vi.mocked(PreferredAmount).mockReset()
     })
 
     describe('on a flat-fee chain', () => {
@@ -204,7 +204,9 @@ describe('FeeRow', () => {
             ])
             expect(screen.getByText('send_funds.fee.slow')).toBeTruthy()
             expect(screen.getByText('send_funds.fee.fast')).toBeTruthy()
-            expect(screen.getByTestId('fee_preset_slow_amount')).toBeTruthy()
+            expect(
+                screen.getByTestId('fee_preset_slow_amount').textContent,
+            ).toMatch(/0\.001(?!5)/)
             expect(
                 screen.getByTestId('fee_preset_fast_amount').textContent,
             ).toMatch(/0\.005/)
@@ -255,8 +257,7 @@ describe('FeeRow', () => {
             }
         })
 
-        it('prices every preset and the maximum fee in the preferred currency', async () => {
-            const { PWText } = await import('@components/core')
+        it('prices every preset and the maximum fee in the preferred currency', () => {
             vi.mocked(PreferredAmount).mockImplementation(
                 ({ testID, ...props }) => (
                     <PWText testID={testID}>
