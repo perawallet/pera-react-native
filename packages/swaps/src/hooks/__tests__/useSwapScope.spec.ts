@@ -52,11 +52,7 @@ describe('swaps/useSwapSourceScope', () => {
         useSwapsStore.getState().resetState()
         mocks.capabilityScope.mockReset()
         mocks.capabilityScope.mockImplementation(
-            (
-                _account: WalletAccount,
-                _capability: string,
-                chainId?: ChainId,
-            ) =>
+            (_account: WalletAccount, _capability: string, chainId?: ChainId) =>
                 chainId === 'algorand'
                     ? null
                     : chainId
@@ -82,11 +78,8 @@ describe('swaps/useSwapSourceScope', () => {
     test('falls back to the default where it cannot', () => {
         useSwapsStore.getState().setSourceChainId('algorand')
         mocks.capabilityScope.mockImplementation(
-            (
-                _account: WalletAccount,
-                _capability: string,
-                chainId?: ChainId,
-            ) => (chainId ? null : SECOND_CHAIN),
+            (_account: WalletAccount, _capability: string, chainId?: ChainId) =>
+                chainId ? null : SECOND_CHAIN,
         )
 
         const { result } = renderHook(() => useSwapSourceScope(held))

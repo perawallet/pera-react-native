@@ -24,9 +24,8 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         },
     ),
     hasSecret: vi.fn((id: string) => store.has(id)),
-    withSecret: vi.fn(
-        async (id: string, handler: (b: Uint8Array) => unknown) =>
-            store.has(id) ? handler(store.get(id)!) : null,
+    withSecret: vi.fn(async (id: string, handler: (b: Uint8Array) => unknown) =>
+        store.has(id) ? handler(store.get(id)!) : null,
     ),
     removeSecret: vi.fn(async (id: string) => void store.delete(id)),
     zeroBytes: vi.fn((bytes: Uint8Array) => bytes.fill(0)),
