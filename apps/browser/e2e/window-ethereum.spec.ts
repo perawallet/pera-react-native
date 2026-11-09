@@ -434,15 +434,20 @@ test.describe('signing from a connected dApp', () => {
         const confirm = approvalPage.getByTestId('signing-confirm-slide')
         await expect(confirm).toBeVisible({ timeout: 20_000 })
         await expect(confirm).toBeInViewport()
-        // The window surface keeps the OS window's size; pin the popup's.
-        await approvalPage.setViewportSize({ width: 360, height: 600 })
+        // A plain transfer fits the popup's 360x600, so shrink further for the body to scroll.
+        await approvalPage.setViewportSize({ width: 360, height: 420 })
         const viewDetails = approvalPage.getByTestId('ethereum_view_details')
         // Guards the premise: if the review fits, scrolling proves nothing.
         await expect(viewDetails).not.toBeInViewport()
         await viewDetails.scrollIntoViewIfNeeded()
-        await expect(
-            approvalPage.getByTestId('ethereum_review_header'),
-        ).toBeInViewport()
+        await expect(viewDetails).toBeInViewport()
+        for (const pinned of [
+            'ethereum_review_header',
+            'ethereum_review_fee',
+            'signing-confirm-slide',
+        ]) {
+            await expect(approvalPage.getByTestId(pinned)).toBeInViewport()
+        }
         await tapToConfirm(approvalPage, confirm)
 
         const sent = await outcomeOf('send')
