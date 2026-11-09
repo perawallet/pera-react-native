@@ -168,20 +168,35 @@ export const usePeraWebviewInterface = (
                     return
                 }
                 const route = routes[method]
-                if (!route.requiresTrustedOrigin) {
-                    route.handle(msg, security)
-                    return
-                }
-                requireSecure(
-                    security.securedConnection,
-                    {
-                        operation: method,
-                        messageId: msg.id,
-                        sourceUrl: security.sourceUrl,
+                // Runs inside the native onMessage callback, where an
+                // uncaught throw is fatal in a release build.
+                try {
+                    if (!route.requiresTrustedOrigin) {
+                        route.handle(msg, security)
+                        return
+                    }
+                    requireSecure(
+                        security.securedConnection,
+                        {
+                            operation: method,
+                            messageId: msg.id,
+                            sourceUrl: security.sourceUrl,
+                            webview,
+                        },
+                        () => route.handle(msg, security),
+                    )
+                } catch (error) {
+                    logger.error('WebView bridge handler threw', {
+                        method,
+                        error,
+                    })
+                    sendErrorToWebview(
+                        msg.id,
+                        JsonRpcErrorCode.InternalError,
+                        'Internal error',
                         webview,
-                    },
-                    () => route.handle(msg, security),
-                )
+                    )
+                }
             })
         },
         [
