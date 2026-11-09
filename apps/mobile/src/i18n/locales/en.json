@@ -3116,7 +3116,8 @@
             "max_fee_for_preset": "Max fee ({{preset}})",
             "max_fee_info": "The most you'll pay if network fees rise. You're usually charged less.",
             "wait_seconds": "~{{seconds}} sec",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Shows the fee options"
         },
         "confirmation": {
             "add_to_contacts": "+ Add to Contacts",

@@ -83,6 +83,9 @@ export const SENDER_SIGNATURES: Record<string, string> = {
     // ... and 10 ETH less 21000 x 4 gwei (normal).
     '90fac667aad1a634739d01e2823d7da0caa379757a3afa6331859377cb65ef42':
         '791adf986b26f0aeabb69961bec577d4fed0ad0534722123c4881c9ee84cb8f21a86a6dbacc3ceacfbb595cc9f71662cb3af58fd38c082a42b613cee122e3ca100',
+    // 0.5 ETH to RECEIVER at send-ethereum.spec's Fast tip: 21000 x 5 gwei.
+    '484bbbeb2619becc52b946f2fd8edae806d76bab00f40582ed54071336ad3d13':
+        '1b8079e22474d28909df616bb9fe104cb59ab0480aed83ebc2c008e83fcb80a24d9dcb15c6ba875561251f5d5339ea759466a9f9ea13fada08a1260680f9d89800',
     // 12.5 USDC to RECEIVER.
     '9fb86b86dc2f2049311d8e7f546c5ec37a26292006ba046332e4e5f34af71644':
         'f3c568bd1aff4046a6c9b73aeed1af980ba26029d498707a9ad018f73ccf793949d3dba1d1a62cdc88ff598ef04c2a94ce063db4de0fa750eeb1dd18aa6b31f801',

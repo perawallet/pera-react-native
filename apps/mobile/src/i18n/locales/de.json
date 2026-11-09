@@ -3108,7 +3108,8 @@
             "max_fee_for_preset": "Maximale Gebühr ({{preset}})",
             "max_fee_info": "Das Maximum, das du zahlst, falls die Netzwerkgebühren steigen. Meist zahlst du weniger.",
             "wait_seconds": "~{{seconds}} Sek.",
-            "wait_minutes": "~{{minutes}} Min."
+            "wait_minutes": "~{{minutes}} Min.",
+            "show_options": "Zeigt die Gebührenoptionen an"
         },
         "confirmation": {
             "add_to_contacts": "+ Zu Kontakten hinzufügen",

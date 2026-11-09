@@ -13,7 +13,7 @@
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { render, fireEvent, screen } from '@test-utils/render'
+import { render, fireEvent, screen, within } from '@test-utils/render'
 import { nativeAssetFor, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type {
     ChainScope,
@@ -107,10 +107,14 @@ const renderRow = (props: Partial<FeeRowProps> = {}) =>
 const isRadioSelected = (preset: FeePreset): boolean =>
     screen.getByTestId(`fee_preset_${preset}-radio`).childElementCount > 0
 
+// A second press on the toggle inside 500 ms is swallowed by PWTouchableOpacity.
+const openSpeeds = () =>
+    fireEvent.click(screen.getByTestId('fee_preset_toggle'))
+
 describe('FeeRow', () => {
     beforeEach(() => {
         vi.mocked(nativeAssetFor).mockReturnValue(NATIVE_ASSET)
-        vi.mocked(PreferredAmount).mockClear()
+        vi.mocked(PreferredAmount).mockReset()
     })
 
     describe('on a flat-fee chain', () => {
@@ -124,6 +128,7 @@ describe('FeeRow', () => {
             expect(screen.getByTestId(FEE_ROW_TEST_ID)).toBeTruthy()
             expect(screen.getByText(/0\.001/)).toBeTruthy()
             expect(screen.queryByTestId(/^fee_preset_/)).toBeNull()
+            expect(screen.queryByTestId('fee_preset_toggle')).toBeNull()
         })
 
         it('shows the accessory beside the fee', () => {
@@ -145,8 +150,49 @@ describe('FeeRow', () => {
             vi.mocked(useChainFeeModel).mockReturnValue('gas')
         })
 
+        it('shows the selected speed and its fee closed, with no speed list', () => {
+            renderRow({ presets: PRESETS })
+
+            const toggle = screen.getByTestId('fee_preset_toggle')
+            expect(toggle.textContent).toContain('send_funds.fee.normal')
+            expect(
+                screen.getByTestId('fee_preset_selected_amount').textContent,
+            ).toMatch(/0\.002 TKN$/)
+            expect(screen.queryByTestId('fee_preset_slow')).toBeNull()
+            expect(screen.getByTestId('fee_preset_max')).toBeTruthy()
+            expect(screen.getByTestId('fee_max_info')).toBeTruthy()
+            expect(toggle.getAttribute('aria-expanded')).toBe('false')
+        })
+
+        it('names a speed chosen earlier when it renders closed', () => {
+            renderRow({ presets: PRESETS, selectedPreset: 'fast' })
+
+            expect(
+                screen.getByTestId('fee_preset_selected_label').textContent,
+            ).toBe('send_funds.fee.fast')
+            expect(
+                screen.getByTestId('fee_preset_selected_amount').textContent,
+            ).toMatch(/0\.005/)
+        })
+
+        it('opens the list when the fee is pressed', () => {
+            renderRow({ presets: PRESETS })
+
+            openSpeeds()
+
+            for (const preset of ['slow', 'normal', 'fast']) {
+                expect(screen.getByTestId(`fee_preset_${preset}`)).toBeTruthy()
+            }
+            expect(
+                screen
+                    .getByTestId('fee_preset_toggle')
+                    .getAttribute('aria-expanded'),
+            ).toBe('true')
+        })
+
         it('lists slow, normal and fast in that order with their amounts', () => {
             renderRow({ presets: PRESETS })
+            openSpeeds()
 
             const presetIds = screen
                 .getAllByTestId(/^fee_preset_(slow|normal|fast)$/)
@@ -157,14 +203,23 @@ describe('FeeRow', () => {
                 'fee_preset_fast',
             ])
             expect(screen.getByText('send_funds.fee.slow')).toBeTruthy()
-            expect(screen.getByText('send_funds.fee.normal')).toBeTruthy()
             expect(screen.getByText('send_funds.fee.fast')).toBeTruthy()
-            expect(screen.getByText(/0\.001(?!5)/)).toBeTruthy()
-            expect(screen.getByText(/0\.005/)).toBeTruthy()
+            expect(
+                screen.getByTestId('fee_preset_slow_amount').textContent,
+            ).toMatch(/0\.001(?!5)/)
+            expect(
+                screen.getByTestId('fee_preset_fast_amount').textContent,
+            ).toMatch(/0\.005/)
+            expect(
+                within(screen.getByTestId('fee_preset_normal')).getByText(
+                    'send_funds.fee.normal',
+                ),
+            ).toBeTruthy()
         })
 
         it("shows each preset's expected wait", () => {
             renderRow({ presets: PRESETS })
+            openSpeeds()
 
             expect(screen.getByTestId('fee_preset_slow_wait').textContent).toBe(
                 'send_funds.fee.wait_minutes {"minutes":2}',
@@ -176,6 +231,7 @@ describe('FeeRow', () => {
 
         it('writes the unit after each amount, apart from the tier label', () => {
             renderRow({ presets: PRESETS })
+            openSpeeds()
 
             // The shared-package stub of formatCurrency prefixes the currency
             // itself, so only the trailing unit is this component's doing.
@@ -188,8 +244,13 @@ describe('FeeRow', () => {
 
         it('wraps the fee amounts instead of cutting them to one line', () => {
             renderRow({ presets: PRESETS })
+            openSpeeds()
 
-            for (const testID of ['fee_preset_fast_amount', 'fee_preset_max']) {
+            for (const testID of [
+                'fee_preset_selected_amount',
+                'fee_preset_fast_amount',
+                'fee_preset_max',
+            ]) {
                 expect(
                     screen.getByTestId(testID).getAttribute('numberoflines'),
                 ).toBeNull()
@@ -197,16 +258,25 @@ describe('FeeRow', () => {
         })
 
         it('prices every preset and the maximum fee in the preferred currency', () => {
+            vi.mocked(PreferredAmount).mockImplementation(
+                ({ testID, ...props }) => (
+                    <PWText testID={testID}>
+                        {'sourceAmount' in props
+                            ? props.sourceAmount?.toString()
+                            : undefined}
+                    </PWText>
+                ),
+            )
             renderRow({ presets: PRESETS, selectedPreset: 'normal' })
+            openSpeeds()
 
-            const converted = vi
-                .mocked(PreferredAmount)
-                .mock.calls.map(([props]) =>
-                    'sourceAmount' in props
-                        ? props.sourceAmount?.toString()
-                        : undefined,
-                )
-            expect(converted).toEqual(['0.001', '0.002', '0.005', '0.003'])
+            const fiat = (testID: string) =>
+                screen.getByTestId(testID).textContent
+            expect(fiat('fee_preset_selected_amount_fiat')).toBe('0.002')
+            expect(fiat('fee_preset_slow_amount_fiat')).toBe('0.001')
+            expect(fiat('fee_preset_normal_amount_fiat')).toBe('0.002')
+            expect(fiat('fee_preset_fast_amount_fiat')).toBe('0.005')
+            expect(fiat('fee_preset_max_fiat')).toBe('0.003')
             expect(vi.mocked(PreferredAmount).mock.calls[0][0]).toMatchObject({
                 sourceAssetId: 'native',
                 scope: SCOPE,
@@ -228,20 +298,50 @@ describe('FeeRow', () => {
 
         it('marks only the selected preset', () => {
             renderRow({ presets: PRESETS, selectedPreset: 'normal' })
+            openSpeeds()
 
             expect(isRadioSelected('normal')).toBe(true)
             expect(isRadioSelected('slow')).toBe(false)
             expect(isRadioSelected('fast')).toBe(false)
         })
 
-        it('reports the preset the user presses', () => {
+        it('reports the pressed speed and closes the list', () => {
             const onPresetChange = vi.fn()
             renderRow({ presets: PRESETS, onPresetChange })
+            openSpeeds()
 
             fireEvent.click(screen.getByTestId('fee_preset_fast'))
 
             expect(onPresetChange).toHaveBeenCalledTimes(1)
             expect(onPresetChange).toHaveBeenCalledWith('fast')
+            expect(screen.queryByTestId('fee_preset_slow')).toBeNull()
+        })
+
+        it('keeps the list open and re-prices it when the presets update', () => {
+            const { rerender } = renderRow({ presets: PRESETS })
+            openSpeeds()
+
+            rerender(
+                <FeeRow
+                    scope={SCOPE}
+                    amount={new Decimal(2500)}
+                    presets={{ ...PRESETS, normal: estimate(2500, 3500, 36) }}
+                    isLoading={false}
+                    selectedPreset='normal'
+                    onPresetChange={vi.fn()}
+                />,
+            )
+
+            expect(screen.getByTestId('fee_preset_slow')).toBeTruthy()
+            expect(
+                screen.getByTestId('fee_preset_selected_amount').textContent,
+            ).toMatch(/0\.0025/)
+            expect(
+                screen.getByTestId('fee_preset_normal_amount').textContent,
+            ).toMatch(/0\.0025/)
+            expect(screen.getByTestId('fee_preset_max').textContent).toMatch(
+                /0\.0035/,
+            )
         })
 
         it("shows the selected preset's maximum fee", () => {
@@ -276,11 +376,13 @@ describe('FeeRow', () => {
                 selectedPreset: 'slow',
                 onPresetChange,
             })
-
-            fireEvent.click(screen.getByTestId('fee_preset_normal'))
+            openSpeeds()
 
             expect(isRadioSelected('slow')).toBe(true)
             expect(isRadioSelected('normal')).toBe(false)
+
+            fireEvent.click(screen.getByTestId('fee_preset_normal'))
+
             expect(onPresetChange).toHaveBeenCalledWith('normal')
         })
 

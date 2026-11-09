@@ -3116,7 +3116,8 @@
             "max_fee_for_preset": "Comisión máxima ({{preset}})",
             "max_fee_info": "Lo máximo que pagarás si suben las comisiones de la red. Normalmente pagas menos.",
             "wait_seconds": "~{{seconds}} s",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Muestra las opciones de comisión"
         },
         "confirmation": {
             "add_to_contacts": "+ Añadir a contactos",
