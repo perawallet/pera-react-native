@@ -23,7 +23,9 @@ export type TransactionReviewLayoutProps = {
     /** What the transaction will do, ahead of every other section. */
     summary?: ReactNode
     participants: ReactNode
+    /** What the transaction does in full, after the fee. */
     details?: ReactNode
+    /** The cost and its warnings, right after the participants so it is on screen without scrolling. */
     fee: ReactNode
 }
 
@@ -57,9 +59,9 @@ export const TransactionReviewLayout = ({
 
             {participants}
 
-            {details}
-
             {fee}
+
+            {details}
         </>
     )
 }
