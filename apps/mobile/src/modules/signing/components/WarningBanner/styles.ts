@@ -32,12 +32,4 @@ export const useStyles = makeStyles(theme => ({
     body: {
         color: theme.colors.suspiciousBannerContent,
     },
-    acknowledge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    acknowledgeLabel: {
-        flexShrink: 1,
-    },
 }))

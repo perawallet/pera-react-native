@@ -13,24 +13,24 @@
 import { PWCheckbox, PWText, PWTouchableOpacity } from '@components/core'
 import { useStyles } from './styles'
 
-export type WarningAcknowledgeRowProps = {
+export type CheckboxRowProps = {
     label: string
     isChecked: boolean
     onToggle: () => void
     testID: string
 }
 
-export const WarningAcknowledgeRow = ({
+export const CheckboxRow = ({
     label,
     isChecked,
     onToggle,
     testID,
-}: WarningAcknowledgeRowProps) => {
+}: CheckboxRowProps) => {
     const styles = useStyles()
 
     return (
         <PWTouchableOpacity
-            style={styles.acknowledge}
+            style={styles.row}
             onPress={onToggle}
             testID={testID}
         >
@@ -38,7 +38,7 @@ export const WarningAcknowledgeRow = ({
                 checked={isChecked}
                 onPress={onToggle}
             />
-            <PWText style={styles.acknowledgeLabel}>{label}</PWText>
+            <PWText style={styles.label}>{label}</PWText>
         </PWTouchableOpacity>
     )
 }

@@ -23,7 +23,7 @@ import {
 import { useStyles } from './styles'
 
 // The theme pins the CheckBox container to a fixed square, so a title rendered
-// inside it collapses the box; callers put the label beside it in their own row.
+// inside it collapses the box. A labelled checkbox is CheckboxRow.
 export type PWCheckboxProps = Omit<
     CheckBoxProps,
     'title' | 'checkedTitle' | 'titleProps' | 'textStyle' | 'children'

@@ -15,7 +15,3 @@ export {
     WarningBannerBody,
     type WarningBannerBodyProps,
 } from './WarningBannerBody'
-export {
-    WarningAcknowledgeRow,
-    type WarningAcknowledgeRowProps,
-} from './WarningAcknowledgeRow'
