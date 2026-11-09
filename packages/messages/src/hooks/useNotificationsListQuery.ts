@@ -122,9 +122,12 @@ export const useNotificationsListQuery =
         // infinite request loop with the refresh spinner pinned.
         const { fetchNextPage: fetchNextQueryPage, refetch: refetchQuery } =
             query
+        // A list shorter than the screen fires onEndReached right after the
+        // focus refetch starts. Cancelling that refetch keeps the stale pages:
+        // new rows, and text re-rendered in a newly picked language, never show.
         const fetchNextPage = useCallback(() => {
             if (!isEnabled) return
-            void fetchNextQueryPage()
+            void fetchNextQueryPage({ cancelRefetch: false })
         }, [isEnabled, fetchNextQueryPage])
 
         const refetch = useCallback(() => {
