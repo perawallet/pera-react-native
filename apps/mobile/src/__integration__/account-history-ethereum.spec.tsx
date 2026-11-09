@@ -33,6 +33,7 @@ import {
     renderHook,
     screen,
     waitFor,
+    within,
 } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
@@ -343,7 +344,10 @@ describe('Flow: History on an Ethereum account', () => {
 
         const SWAP_HASH = hashOf(14)
         const UNKNOWN_TOKEN = '0x1111111111111111111111111111111111111112'
-        const swapRow = () =>
+        const OTHER_TOKEN = '0x1111111111111111111111111111111111111113'
+        const swapRow = (
+            overrides: Parameters<typeof evmHistoryItem>[0] = {},
+        ) =>
             evmHistoryItem({
                 hash: SWAP_HASH,
                 block_time: '2026-01-08T00:00:00Z',
@@ -383,14 +387,15 @@ describe('Flow: History on an Ethereum account', () => {
                         amount: '9',
                     },
                 ],
+                ...overrides,
             })
         const rpcRequests: string[] = []
-        const serveSwap = (input: `0x${string}`) => {
+        const serveSwap = (input: `0x${string}`, row = swapRow()) => {
             nodeReads.length = 0
             rpcRequests.length = 0
             server.use(
                 ...peraEvmHistoryHandlers({
-                    history: { [ETH_ADDRESS]: [[swapRow()]] },
+                    history: { [ETH_ADDRESS]: [[row]] },
                 }),
                 ...evmRpcHandlers({
                     responses: {
@@ -465,12 +470,155 @@ describe('Flow: History on an Ethereum account', () => {
             nftService.isServed = false
         })
 
+        const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7'
+        const AUSDT = '0x23878914efe38d27c4d67ab83ed1b93a74d4086a'
+        const ROUTER = '0x66a9893cc07d91d95644aedd05d03f95e1dba8af'
+        const AAVE_POOL = '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2'
+        const POOL = '0x00000000000000000000000000000000000000ee'
+        const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+        const ROUTER_SWAP_HASH = hashOf(31)
+        const USDT_APPROVE_HASH = hashOf(32)
+        const SUPPLY_HASH = hashOf(33)
+        const GAS = '21000000000000'
+        const ETH_ASSET_ID = 'eip155:1/slip44:60'
+        const erc20Leg = (
+            token: string,
+            symbol: string,
+            from: string,
+            to: string,
+        ) => ({
+            asset_id: `eip155:1/erc20:${token}`,
+            contract: token,
+            from,
+            to,
+            value: '2230000',
+            token_name: symbol,
+            token_symbol: symbol,
+            token_decimals: 6,
+        })
+        // The QA account's rows: a router swap, a USDT approve and an Aave supply.
+        const serveActionRows = () => {
+            nodeReads.length = 0
+            rpcRequests.length = 0
+            server.use(
+                ...peraEvmHistoryHandlers({
+                    history: {
+                        [ETH_ADDRESS]: [
+                            [
+                                evmHistoryItem({
+                                    hash: SUPPLY_HASH,
+                                    block_time: '2026-01-11T00:00:00Z',
+                                    from: ETH_ADDRESS,
+                                    to: AAVE_POOL,
+                                    value: '0',
+                                    method: 'supply',
+                                    fee: GAS,
+                                    token_transfers: [
+                                        erc20Leg(
+                                            USDT,
+                                            'USDT',
+                                            ETH_ADDRESS,
+                                            AUSDT,
+                                        ),
+                                        erc20Leg(
+                                            AUSDT,
+                                            'aEthUSDT',
+                                            ZERO_ADDRESS,
+                                            ETH_ADDRESS,
+                                        ),
+                                    ],
+                                    balance_impacts: [
+                                        {
+                                            asset_id: ETH_ASSET_ID,
+                                            amount: `-${GAS}`,
+                                        },
+                                        {
+                                            asset_id: `eip155:1/erc20:${USDT}`,
+                                            amount: '-2230000',
+                                        },
+                                        {
+                                            asset_id: `eip155:1/erc20:${AUSDT}`,
+                                            amount: '2230000',
+                                        },
+                                    ],
+                                }),
+                                evmHistoryItem({
+                                    hash: USDT_APPROVE_HASH,
+                                    block_time: '2026-01-10T00:00:00Z',
+                                    from: ETH_ADDRESS,
+                                    to: USDT,
+                                    value: '0',
+                                    method: 'approve',
+                                    fee: GAS,
+                                    balance_impacts: [
+                                        {
+                                            asset_id: ETH_ASSET_ID,
+                                            amount: `-${GAS}`,
+                                        },
+                                    ],
+                                }),
+                                evmHistoryItem({
+                                    hash: ROUTER_SWAP_HASH,
+                                    block_time: '2026-01-09T00:00:00Z',
+                                    from: ETH_ADDRESS,
+                                    to: ROUTER,
+                                    value: '1143000000000000',
+                                    method: 'execute',
+                                    fee: GAS,
+                                    token_transfers: [
+                                        erc20Leg(
+                                            USDT,
+                                            'USDT',
+                                            POOL,
+                                            ETH_ADDRESS,
+                                        ),
+                                    ],
+                                    balance_impacts: [
+                                        {
+                                            asset_id: ETH_ASSET_ID,
+                                            amount: '-1164000000000000',
+                                        },
+                                        {
+                                            asset_id: `eip155:1/erc20:${USDT}`,
+                                            amount: '2230000',
+                                        },
+                                    ],
+                                }),
+                            ],
+                        ],
+                    },
+                }),
+                ...evmRpcHandlers({
+                    responses: {
+                        eth_getTransactionByHash: params => {
+                            nodeReads.push(String(params[0]))
+                            return null
+                        },
+                    },
+                }),
+            )
+        }
+        // The stored asset facts resolve after the row mounts, so wait for the amount too.
+        const rowText = async (hash: string, settled: RegExp = /./) => {
+            await waitFor(
+                () =>
+                    expect(
+                        screen.getByTestId(`transaction_row_${hash}`)
+                            .textContent,
+                    ).toMatch(settled),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            return (
+                screen.getByTestId(`transaction_row_${hash}`).textContent ?? ''
+            )
+        }
+
         describe('with contractDecoding on', () => {
             beforeEach(() => {
                 setCapabilityOverrides({ contractDecoding: true }, 'ethereum')
             })
 
-            it('Given approvals in History, when it lists, then each is named by its function and the node is not asked', async () => {
+            it('Given approvals in History, when it lists, then each is named as an approval of its token and the node is not asked', async () => {
                 serveApprovals()
 
                 renderHistory()
@@ -484,9 +632,7 @@ describe('Flow: History on an Ethereum account', () => {
                     { timeout: SLOW_WAIT_TIMEOUT_MS },
                 )
                 expect(
-                    screen.getAllByText(
-                        'transactions.list_item.interpreted_title',
-                    ),
+                    screen.getAllByText('transactions.list_item.approve_asset'),
                 ).toHaveLength(2)
                 expect(nodeReads).toEqual([])
             })
@@ -507,19 +653,31 @@ describe('Flow: History on an Ethereum account', () => {
                     { timeout: SLOW_WAIT_TIMEOUT_MS },
                 )
                 expect(
-                    screen.getAllByText('transactions.list_item.approval'),
+                    screen.getAllByText('transactions.list_item.approve_asset'),
                 ).not.toHaveLength(0)
                 expect(
                     screen.getAllByText('signing.spend_approval.unlimited'),
                 ).not.toHaveLength(0)
                 expect(
-                    screen.getByTestId('ethereum_record_amount_0'),
+                    screen.getByTestId('transaction_detail_fee'),
                 ).toBeTruthy()
                 expect(nodeReads).toEqual([APPROVE_HASH])
             })
 
-            it('Given a swap the decoder does not know, when its row is opened, then it keeps the function name and balance changes and says the call is not decoded', async () => {
-                serveSwap('0x38ed1739')
+            it('Given a call neither the decoder nor History can name, when its row is opened, then it keeps the function name and balance changes and says the call is not decoded', async () => {
+                // Two tokens out and one in: no swap shape for History to name.
+                serveSwap(
+                    '0x38ed1739',
+                    swapRow({
+                        balance_impacts: [
+                            ...swapRow().balance_impacts,
+                            {
+                                asset_id: `eip155:1/erc20:${OTHER_TOKEN}`,
+                                amount: '-3',
+                            },
+                        ],
+                    }),
+                )
                 renderHistory()
 
                 await openRow(SWAP_HASH)
@@ -538,11 +696,71 @@ describe('Flow: History on an Ethereum account', () => {
                     ),
                 ).toBeTruthy()
                 expect(
-                    screen.queryByText('transactions.list_item.contract_call'),
+                    screen.queryByText(
+                        'transactions.list_item.contract_interaction',
+                    ),
                 ).toBeNull()
                 expect(
                     screen.getByTestId('ethereum_record_amount_1'),
                 ).toBeTruthy()
+            })
+
+            it("Given the QA account's rows, when History lists them, then each says what it did with its own amounts and the approval carries a fee instead of a red ETH line", async () => {
+                serveActionRows()
+
+                renderHistory()
+
+                const swap = await rowText(ROUTER_SWAP_HASH, /ETH/)
+                expect(swap).toContain('transactions.list_item.swap_pair')
+                expect(swap).toContain(
+                    'transactions.list_item.interpreted_title',
+                )
+                expect(swap).toMatch(/-.*0\.001143.*ETH/)
+                expect(swap).toMatch(/\+.*2\.23.*USDT/)
+                expect(swap).not.toContain('transactions.common.fee')
+
+                const approve = await rowText(USDT_APPROVE_HASH)
+                expect(approve).toContain(
+                    'transactions.list_item.approve_asset',
+                )
+                expect(approve).toContain('transactions.common.fee')
+                expect(approve).not.toContain('-')
+                expect(
+                    within(
+                        screen.getByTestId(
+                            `transaction_row_${USDT_APPROVE_HASH}`,
+                        ),
+                    ).queryByText(/ETH/),
+                ).not.toBeNull()
+
+                const supply = await rowText(SUPPLY_HASH)
+                expect(supply).toContain('transactions.list_item.supply')
+                expect(supply).toMatch(/-.*2\.23.*USDT/)
+                expect(supply).toMatch(/\+.*2\.23.*aEthUSDT/)
+                expect(supply).not.toContain(
+                    'transactions.list_item.more_impacts',
+                )
+                expect(supply).not.toContain('transactions.common.fee')
+            })
+
+            it('Given a named swap row, when it is opened, then the page carries the same title', async () => {
+                serveActionRows()
+                renderHistory()
+                await rowText(ROUTER_SWAP_HASH)
+
+                await openRow(ROUTER_SWAP_HASH)
+
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
+                expect(
+                    screen.getAllByText('transactions.list_item.swap_pair')
+                        .length,
+                ).toBeGreaterThan(0)
+                expect(
+                    screen.queryByText('transactions.list_item.contract_call'),
+                ).toBeNull()
+                expect(screen.queryByTestId('ethereum_record_asset')).toBeNull()
             })
 
             // A received NFT as the backend sends it: transfer log only, sender's gas still reported.
@@ -811,7 +1029,7 @@ describe('Flow: History on an Ethereum account', () => {
                     },
                 )
                 expect(
-                    screen.getByTestId('ethereum_record_amount_0'),
+                    screen.getByTestId('transaction_detail_fee'),
                 ).toBeTruthy()
             })
         })
@@ -839,22 +1057,40 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(rpcRequests).toEqual([])
             })
 
-            it('Given an approval, when its row is opened, then the page shows what the history gave with a notice that the call is not decoded, and the node is not asked', async () => {
+            it("Given the QA account's rows, when History lists them, then the approval is still named and the router call reads Contract interaction", async () => {
+                serveActionRows()
+
+                renderHistory()
+
+                const approve = await rowText(USDT_APPROVE_HASH)
+                expect(approve).toContain(
+                    'transactions.list_item.approve_asset',
+                )
+                expect(approve).toContain('transactions.common.fee')
+
+                const swap = await rowText(ROUTER_SWAP_HASH)
+                expect(swap).toContain(
+                    'transactions.list_item.contract_interaction',
+                )
+                expect(swap).not.toContain('transactions.list_item.swap_pair')
+                expect(swap).not.toContain(
+                    'transactions.list_item.interpreted_title',
+                )
+                expect(rpcRequests).toEqual([])
+            })
+
+            it('Given an approval, when its row is opened, then the page shows the approval the history gave with its fee, no notice that the call is not decoded, and the node is not asked', async () => {
                 serveApprovals()
                 renderHistory()
 
                 await openRow(APPROVE_HASH)
 
-                await screen.findByTestId(
-                    'ethereum_record_undecoded_warning',
-                    undefined,
-                    {
-                        timeout: SLOW_WAIT_TIMEOUT_MS,
-                    },
-                )
+                await screen.findByTestId('transaction_detail_fee', undefined, {
+                    timeout: SLOW_WAIT_TIMEOUT_MS,
+                })
                 expect(
-                    screen.getByTestId('ethereum_record_amount_0'),
-                ).toBeTruthy()
+                    screen.queryByTestId('ethereum_record_undecoded_warning'),
+                ).toBeNull()
                 expect(
                     screen.queryByTestId(
                         'message-signing-spend-approval-warning',

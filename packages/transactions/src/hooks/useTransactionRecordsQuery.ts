@@ -22,6 +22,7 @@ import type {
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
+import { isNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
@@ -34,6 +35,7 @@ import {
     getPendingTransactionRecords,
     getTransactionHistoryWithPending,
 } from '../pending-history'
+import { isFeePaidByAccount } from '../utils/fee'
 import {
     consumeFullRefetchRequest,
     requestFullRefetch,
@@ -125,6 +127,9 @@ const involvesAsset = (record: TransactionRecord, assetId: string): boolean =>
         change => change.assetRef.assetId === assetId,
     )
 
+const movesNothing = ({ summary }: TransactionRecord): boolean =>
+    summary.amount === undefined && !summary.balanceChanges?.length
+
 const unixMsOf = (isoDate?: string): Optional<number> => {
     const seconds = isoDateToUnixSeconds(isoDate)
     return Number.isFinite(seconds) ? seconds * 1000 : undefined
@@ -155,9 +160,18 @@ export const useTransactionRecordsQuery = ({
             ? undefined
             : beforeDayMs + SECONDS_PER_DAY * 1000
 
+    // Gas is paid in the native asset, so its History also keeps the calls the
+    // account paid for that moved nothing else: approvals and failed calls.
+    const isNativeFilter =
+        assetId !== undefined && isNativeAssetId(scope.chainId, assetId)
+
     // A record with no timestamp has no time to rule it out by, so the date range keeps it.
     const isKept = (record: TransactionRecord): boolean =>
-        (assetId === undefined || involvesAsset(record, assetId)) &&
+        (assetId === undefined ||
+            involvesAsset(record, assetId) ||
+            (isNativeFilter &&
+                movesNothing(record) &&
+                isFeePaidByAccount(record, accountAddress))) &&
         (record.timestamp === undefined ||
             ((fromMs === undefined || record.timestamp >= fromMs) &&
                 (untilMs === undefined || record.timestamp < untilMs)))

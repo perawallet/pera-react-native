@@ -24,14 +24,19 @@ import {
     bytesToHex,
     encodeFunctionData,
     erc20Abi,
+    getAddress,
     keccak256,
     type Hex,
 } from 'viem'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     findTransactionBatch,
     getSubmissionAttemptsAtNonce,
     recordSubmissionAttempt,
+    getSubmissionAttemptsWithHistoryEntry,
     recordTransactionBatch,
     resolveSubmissionAttempt,
     retireReviewApproval,
@@ -44,15 +49,21 @@ import {
     initializeDatabase,
     resetDatabase,
 } from '@perawallet/wallet-core-database'
+import type { Database } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { testChainContext } from '../../../__tests__/context'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { evmCapabilityDefaults } from '../../../capability-defaults'
 import {
     resumeEthereumCallBatches,
     runEthereumCallBatch,
     startEthereumCallBatch,
     type CallBatchExecutorDeps,
 } from '../executor'
+import { ETH_IN_V3_EXACT_IN } from '../../../signing/__tests__/contract-action-fixtures'
+import { findKnownEvmContract } from '../../../signing/known-contracts'
+import { createEthereumReviewer } from '../../../signing/review'
 import { prepareEthereumCallBatch } from '../prepare'
 import { callsStatusCodeOf } from '../status'
 import {
@@ -102,21 +113,27 @@ const PAYLOAD = {
     maxFeePerGasCeiling: (10n ** 18n).toString(),
 }
 
-const readBatch = async (batchId = 'batch-1'): Promise<TransactionBatch> => {
+const readBatch = async (
+    batchId = 'batch-1',
+    sender = SENDER,
+): Promise<TransactionBatch> => {
     const batch = await findTransactionBatch({
         chainId: 'ethereum',
         batchId,
-        senders: [SENDER],
+        senders: [sender],
     })
     if (!batch) throw new Error(`no batch ${batchId}`)
     return batch
 }
 
-const settled = async (batchId = 'batch-1'): Promise<TransactionBatch> => {
-    let batch = await readBatch(batchId)
+const settled = async (
+    batchId = 'batch-1',
+    sender = SENDER,
+): Promise<TransactionBatch> => {
+    let batch = await readBatch(batchId, sender)
     for (let i = 0; i < 100 && batch.outcome === 'running'; i++) {
         await new Promise(resolve => setTimeout(resolve, 20))
-        batch = await readBatch(batchId)
+        batch = await readBatch(batchId, sender)
     }
     return batch
 }
@@ -129,7 +146,7 @@ const approve = async (
 ) => {
     const prepared = await prepareEthereumCallBatch(ctx, ETHEREUM, {
         batchId: 'batch-1',
-        from: SENDER,
+        from: calls[0].from,
         calls,
     })
     const first = await signAsSender(prepared.first)
@@ -145,10 +162,12 @@ const approve = async (
 }
 
 describe('call batch execution', () => {
+    let db: Database
     let teardown: () => void
 
     beforeEach(async () => {
         const result = createTestDatabase()
+        db = result.db
         teardown = result.teardown
         await initializeDatabase({
             getDatabase: async () => result.db,
@@ -330,6 +349,105 @@ describe('call batch execution', () => {
         expect(await readBatch()).toMatchObject({
             outcome: 'running',
             position: 0,
+        })
+    })
+
+    describe('history entries', () => {
+        const WETH = getAddress('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
+        const WETH_APPROVE = {
+            ...APPROVE,
+            to: WETH,
+        }
+
+        const summaryOf = async (txId: string) => {
+            const attempts = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: MAINNET,
+            })
+            return attempts.find(attempt => attempt.txIds.includes(txId as Hex))
+                ?.historyEntry?.summary
+        }
+
+        const setContractDecoding = (isOn: boolean) =>
+            vi.spyOn(getProvider().chains, 'capabilities').mockReturnValue({
+                ...evmCapabilityDefaults,
+                contractDecoding: isOn,
+            })
+
+        afterEach(() => vi.restoreAllMocks())
+
+        it('Given a batch that approves a token, when its calls are recorded, then each row names what the calldata did', async () => {
+            fakeNode()
+
+            const first = await approve()
+            const batch = await settled()
+
+            expect(await summaryOf(first.id)).toMatchObject({
+                kind: 'approval',
+                counterparty: ROUTER,
+                subjectAsset: { assetId: TOKEN },
+            })
+            expect(await summaryOf(batch.txIds[1]!)).toMatchObject({
+                kind: 'contract-call',
+                title: {
+                    key: 'transactions.list_item.contract_interaction',
+                },
+            })
+        })
+
+        it('Given contract decoding is on, when an approval on a known contract is recorded, then its row carries the protocol subtitle', async () => {
+            fakeNode()
+            setContractDecoding(true)
+
+            const first = await approve([WETH_APPROVE])
+            await settled()
+
+            const summary = await summaryOf(first.id)
+            expect(summary?.kind).toBe('approval')
+            expect(summary?.subtitle?.params).toMatchObject({
+                title: findKnownEvmContract(1, WETH)?.name,
+            })
+        })
+
+        it('Given contract decoding is off, when an approval on a known contract is recorded, then its row has no subtitle', async () => {
+            fakeNode()
+            setContractDecoding(false)
+
+            const first = await approve([WETH_APPROVE])
+            await settled()
+
+            const summary = await summaryOf(first.id)
+            expect(summary?.kind).toBe('approval')
+            expect(summary?.subtitle).toBeUndefined()
+        })
+
+        it('Given contract decoding is on, when a batched swap that pays ETH is signed in the background, then its row names the swap and signing still needs the approved review', async () => {
+            fakeNode()
+            setContractDecoding(true)
+            // The router only reads as a swap for the account it pays out to.
+            const swapper = ETH_IN_V3_EXACT_IN.from
+            const signedInBackground: UnsignedTransaction[] = []
+
+            await approve([{ ...APPROVE, from: swapper }, ETH_IN_V3_EXACT_IN], {
+                ...deps,
+                signTransaction: async (tx, approval) => {
+                    signedInBackground.push(tx)
+                    return deps.signTransaction!(tx, approval)
+                },
+            })
+            const batch = await settled('batch-1', swapper)
+            const reviewer = createEthereumReviewer({ chain: ETHEREUM })
+            const decoded = await reviewer.decoder.decode(signedInBackground, {
+                scope: MAINNET,
+                heldAddresses: [swapper],
+                isWalletBuilt: true,
+                capabilities: getProvider().chains.capabilities('ethereum'),
+            })
+
+            expect((await summaryOf(batch.txIds[1]!))?.kind).toBe('swap')
+            expect(
+                reviewer.policy.autoApproveLocal({ ...decoded, warnings: [] }),
+            ).toBe(false)
         })
     })
 

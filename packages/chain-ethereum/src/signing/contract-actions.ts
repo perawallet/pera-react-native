@@ -176,7 +176,9 @@ export const decodeEvmContractAction = (
             case 'aave-v3-pool': {
                 return decodeAavePoolAction(call)
             }
-            case 'uniswap-permit2': {
+            case 'uniswap-permit2':
+            case 'uniswap-v3-position-manager':
+            case 'uniswap-v4-position-manager': {
                 return undefined
             }
         }

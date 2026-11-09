@@ -41,6 +41,12 @@ describe('TransactionSummary', () => {
             | 'chain-specific'
         >()
     })
+
+    it('carries an optional subject asset ref', () => {
+        expectTypeOf<TransactionSummary['subjectAsset']>().toEqualTypeOf<
+            AssetRef | undefined
+        >()
+    })
 })
 
 describe('family unions', () => {

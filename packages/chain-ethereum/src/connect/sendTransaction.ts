@@ -18,12 +18,13 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestValidation } from '@perawallet/wallet-core-connections'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
-import { ethereumCallSummary } from '../signing/review'
+import { decodedCallSummary } from '../history/decoded-call-summary'
 import type {
     EthereumRevertedEstimate,
     EthereumTransactionPayload,
@@ -352,7 +353,14 @@ export const buildEthereumSendTransaction = async (
     return {
         scope,
         payload,
-        summary: ethereumCallSummary({ from, to, value, data }, chain),
+        // Decoded for History; it must never reach a 'local' (wallet-built) signer,
+        // which would trust it, so the call-batch executor swaps it out.
+        summary: decodedCallSummary(
+            { from, to, value, data },
+            chain,
+            scope,
+            getProvider().chains.capabilities(chain.row.id).contractDecoding,
+        ),
         chainData: { family: 'evm' },
     }
 }

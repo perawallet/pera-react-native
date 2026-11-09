@@ -209,6 +209,8 @@ const KNOWN_CONTRACT_KINDS: readonly unknown[] = [
     'uniswap-permit2',
     'wrapped-native',
     'aave-v3-pool',
+    'uniswap-v3-position-manager',
+    'uniswap-v4-position-manager',
 ]
 
 const isKnownContract = (value: unknown): boolean =>

@@ -35,6 +35,7 @@ export {
     type UseTransactionHistoryRowsParams,
     type UseTransactionHistoryRowsResult,
 } from './history/useTransactionHistoryRows'
+export { useResolvedSummaryTitle } from './history/useSummaryTitle'
 export {
     useMergedTransactionHistoryRows,
     type HistoryFeedProps,

@@ -26,11 +26,14 @@ import { setupServer } from 'msw/node'
 import {
     encodeAbiParameters,
     encodeEventTopics,
+    encodeFunctionData,
     erc20Abi,
     getAddress,
     hexToBytes,
     keccak256,
+    maxUint256,
     parseTransaction,
+    serializeTransaction,
     type Hex,
     type RpcTransaction,
     type TransactionSerializableEIP1559,
@@ -191,6 +194,57 @@ describe('Ethereum broadcaster adapter', () => {
                     chainData: { family: 'evm' },
                 },
             ])
+        })
+
+        it('records an approval’s history entry from its own calldata', async () => {
+            useRpc()
+            const token = getAddress(
+                '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+            )
+            const spender = getAddress(
+                '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+            )
+            const serialized = serializeTransaction(
+                {
+                    type: 'eip1559',
+                    chainId: 1,
+                    nonce: 0,
+                    to: token,
+                    value: 0n,
+                    data: encodeFunctionData({
+                        abi: erc20Abi,
+                        functionName: 'approve',
+                        args: [spender, maxUint256],
+                    }),
+                    gas: 60_000n,
+                    maxFeePerGas: 10n ** 10n,
+                    maxPriorityFeePerGas: 10n ** 9n,
+                },
+                {
+                    r: parseTransaction(VIEM_TRANSFER_NONCE_0).r as Hex,
+                    s: parseTransaction(VIEM_TRANSFER_NONCE_0).s as Hex,
+                    yParity:
+                        parseTransaction(VIEM_TRANSFER_NONCE_0).yParity ?? 0,
+                },
+            )
+
+            await adapter.submitAndAutoRefresh(SCOPE, [
+                {
+                    scope: SCOPE,
+                    id: keccak256(serialized),
+                    bytes: hexToBytes(serialized),
+                },
+            ])
+
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: SCOPE,
+            })
+            expect(attempt!.historyEntry?.summary).toMatchObject({
+                kind: 'approval',
+                counterparty: spender,
+                subjectAsset: { chainId: 'ethereum', assetId: token },
+            })
         })
 
         it('makes no eth_call on a chain without an OP-stack fee oracle', async () => {

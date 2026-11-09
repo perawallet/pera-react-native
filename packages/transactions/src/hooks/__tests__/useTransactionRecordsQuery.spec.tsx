@@ -49,8 +49,20 @@ vi.mock('../../pending-history', () => ({
 
 const capability = vi.hoisted(() => ({ isDecoding: false }))
 
+const NATIVE = vi.hoisted(() => '0')
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapability: () => capability.isDecoding,
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    isNativeAssetId: (_chainId: string, assetId: string) => assetId === NATIVE,
+}))
+
+// EVM's codec compares case-blind.
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    isSameAddress: (_chainId: string, a: string, b: string) =>
+        a.toLowerCase() === b.toLowerCase(),
 }))
 
 const ADDRESS = '0xabc'
@@ -60,7 +72,7 @@ const USDC = '0xusdc'
 const record = (
     id: string,
     timestamp: number | undefined,
-    assetId = '0',
+    assetId = NATIVE,
 ): TransactionRecord => ({
     id,
     scope: SCOPE,
@@ -81,6 +93,22 @@ const record = (
 
 const DAY_MS = 86_400_000
 const JAN_10 = Date.parse('2026-01-10T12:00:00Z')
+
+const gasOnly = (id: string, initiator?: string): TransactionRecord => ({
+    id,
+    scope: SCOPE,
+    status: 'confirmed',
+    timestamp: JAN_10,
+    fee: new Decimal(21_000),
+    ...(initiator !== undefined && { initiator }),
+    summary: {
+        kind: 'approval',
+        title: { key: i18nKey('transactions.list_item.approval') },
+        direction: 'none',
+        icon: 'approval',
+    },
+    chainData: { family: 'evm' },
+})
 
 describe('useTransactionRecordsQuery', () => {
     let queryClient: QueryClient
@@ -764,6 +792,109 @@ describe('useTransactionRecordsQuery', () => {
             expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
         )
         expect(result.current.hasNextPage).toBe(false)
+    })
+
+    test('keeps a call the account paid gas for in the native asset’s History, but not one another address sent', async () => {
+        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            items: [
+                gasOnly('OWN'),
+                gasOnly('OWN_SIGNED', '0xABC'),
+                gasOnly('THEIRS', '0xdef'),
+                record('USDC', JAN_10, USDC),
+            ],
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: NATIVE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'OWN',
+                'OWN_SIGNED',
+            ]),
+        )
+    })
+
+    test('leaves out of the native asset’s History a token movement the account paid gas for, and a replaced or unsigned failed attempt', async () => {
+        const paid = { fee: new Decimal(21_000), initiator: ADDRESS }
+        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            items: [
+                { ...record('TOKEN_SEND', JAN_10, USDC), ...paid },
+                {
+                    ...gasOnly('TOKEN_SWAP', ADDRESS),
+                    summary: {
+                        kind: 'swap',
+                        title: { key: i18nKey('transactions.list_item.swap') },
+                        direction: 'none',
+                        icon: 'swap',
+                        balanceChanges: [
+                            {
+                                assetRef: {
+                                    chainId: 'ethereum',
+                                    assetId: USDC,
+                                },
+                                value: new Decimal(-5),
+                            },
+                            {
+                                assetRef: {
+                                    chainId: 'ethereum',
+                                    assetId: '0xdai',
+                                },
+                                value: new Decimal(5),
+                            },
+                        ],
+                    },
+                },
+                { ...gasOnly('REPLACED'), status: 'replaced' },
+                { ...gasOnly('REJECTED'), status: 'failed' },
+                { ...gasOnly('REVERTED', ADDRESS), status: 'failed' },
+                gasOnly('APPROVE', ADDRESS),
+            ],
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: NATIVE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'REVERTED',
+                'APPROVE',
+            ]),
+        )
+    })
+
+    test('leaves a token’s History to the records that move it, whatever gas the account paid', async () => {
+        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            items: [gasOnly('OWN'), record('USDC', JAN_10, USDC)],
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
+        )
     })
 
     test('keeps the date range inclusive and stops paging once it passes its start', async () => {

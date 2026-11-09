@@ -39,6 +39,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     chainAccountOf: (account: WalletAccount, chainId: 'algorand') =>
         account.chains[chainId],
+    isSameAddress: (_chainId: string, a: string, b: string) =>
+        a.toLowerCase() === b.toLowerCase(),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
@@ -46,6 +48,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
         typeof import('@perawallet/wallet-core-assets')
     >()),
     useAssetsQuery: vi.fn(),
+    useNativeAsset: ({ chainId }: { chainId: string }) =>
+        chainId === 'ethereum'
+            ? { assetId: '0x0', decimals: 18, unitName: 'ETH' }
+            : { assetId: '0', decimals: 6, unitName: 'ALGO' },
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -129,6 +135,14 @@ describe('useTransactionListItem', () => {
         historyChainAdapters.reset()
         historyChainAdapters.register(algorandHistoryAdapter)
         stored([])
+    })
+
+    describe('fee', () => {
+        it('Given an Algorand history item, then fee is null', () => {
+            const row = renderRow(golden('payment sent'))
+
+            expect(row.fee).toBeNull()
+        })
     })
 
     describe('transfers', () => {
@@ -324,14 +338,87 @@ describe('useTransactionListItem with a record', () => {
 
     const renderRecord = (
         params: { suspectedPoisoning?: typeof suspectedPoisoning } = {},
+        row: TransactionRecord = record,
     ) => {
         vi.mocked(useSelectedAccount).mockReturnValue({
             chains: { ethereum: { address: '0xalice' } },
         } as unknown as ReturnType<typeof useSelectedAccount>)
-        return renderHook(() => useTransactionListItem({ record, ...params }), {
-            wrapper,
-        }).result.current
+        return renderHook(
+            () => useTransactionListItem({ record: row, ...params }),
+            { wrapper },
+        ).result.current
     }
+
+    const noAmountRecord: TransactionRecord = {
+        ...record,
+        summary: {
+            kind: 'approval',
+            title: { key: i18nKey('transactions.list_item.approval') },
+            direction: 'none',
+            balanceChanges: [],
+            icon: 'approval',
+        } as TransactionRecord['summary'],
+        fee: new Decimal('6200000000000'),
+        initiator: '0xALICE',
+    }
+
+    describe('fee', () => {
+        it('Given an own record with a fee and no amounts, then fee is the native fee', () => {
+            const row = renderRecord({}, noAmountRecord)
+
+            expect(row.fee?.value).toEqual(new Decimal('0.0000062'))
+            expect(row.fee?.prefix).toBeUndefined()
+            expect(row.fee?.currency).toBe('ETH')
+        })
+
+        it('Given a record with balance changes, then fee is null', () => {
+            const row = renderRecord({}, { ...record, fee: noAmountRecord.fee })
+
+            expect(row.fee).toBeNull()
+        })
+
+        it('Given a record another address initiated, then fee is null', () => {
+            const row = renderRecord(
+                {},
+                { ...noAmountRecord, initiator: '0xcarol' },
+            )
+
+            expect(row.fee).toBeNull()
+        })
+
+        it('Given a record with no fee, then fee is null', () => {
+            const row = renderRecord({}, { ...noAmountRecord, fee: undefined })
+
+            expect(row.fee).toBeNull()
+        })
+
+        it('Given an attempt the wallet replaced, then fee is null, since it never landed', () => {
+            const row = renderRecord(
+                {},
+                { ...noAmountRecord, status: 'replaced', initiator: undefined },
+            )
+
+            expect(row.fee).toBeNull()
+        })
+
+        it('Given an attempt the wallet broadcast that failed, which names no signer, then fee is null', () => {
+            const row = renderRecord(
+                {},
+                { ...noAmountRecord, status: 'failed', initiator: undefined },
+            )
+
+            expect(row.fee).toBeNull()
+        })
+
+        it('Given a mined call of the account that reverted, then fee is the native fee', () => {
+            const row = renderRecord(
+                {},
+                { ...noAmountRecord, status: 'failed' },
+            )
+
+            expect(row.fee?.value).toEqual(new Decimal('0.0000062'))
+        })
+    })
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -357,6 +444,29 @@ describe('useTransactionListItem with a record', () => {
         expect(row.title).toBe('transactions.list_item.send')
         expect(row.subtitle).toBe('Counterparty')
         expect(useCounterpartyName).toHaveBeenCalledWith('0xbob', 'ethereum')
+    })
+
+    it("names an approval's token by its stored unit name", () => {
+        stored([{ assetId: '0xusdt', unitName: 'USDT' }])
+
+        const row = renderRecord(
+            {},
+            {
+                ...noAmountRecord,
+                summary: {
+                    ...noAmountRecord.summary,
+                    title: {
+                        key: i18nKey('transactions.list_item.approve_asset'),
+                        params: { asset: '0xdAC1…1ec7' },
+                    },
+                    subjectAsset: { chainId: 'ethereum', assetId: '0xusdt' },
+                },
+            },
+        )
+
+        expect(row.title).toBe(
+            'transactions.list_item.approve_asset {"asset":"USDT"}',
+        )
     })
 
     it("looks its amounts' assets up on the record's own scope", () => {

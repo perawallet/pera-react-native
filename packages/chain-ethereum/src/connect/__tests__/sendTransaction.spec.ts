@@ -22,7 +22,10 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import {
+    encodeFunctionData,
+    erc20Abi,
     getAddress,
+    maxUint256,
     parseGwei,
     parseTransaction,
     serializeTransaction,
@@ -63,6 +66,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 
 const FROM = getAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed')
 const TO = getAddress('0x2c7536E3605D9C16a7a3D7b1898e529396a65c23')
+const TOKEN = getAddress('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
 const STORAGE_KEY = `0x${'11'.repeat(32)}` as const
 const session = { authorizedAccounts: [FROM], eip155ChainId: 1 }
 
@@ -724,6 +728,35 @@ describe('buildEthereumSendTransaction', () => {
         expect(warnings).toEqual([
             expect.objectContaining({ type: 'unknown-contract' }),
         ])
+    })
+
+    it('names an unlimited dApp approval from its calldata, so its pending row reads as one, and review still reads it on its own', async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+        const data = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [TO, maxUint256],
+        })
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ to: TOKEN, value: 0n, data }),
+        )
+        const decoded = await ethereumReviewerAdapter.decoder.decode(
+            [built],
+            reviewContext,
+        )
+
+        expect(built.summary).toMatchObject({
+            kind: 'approval',
+            counterparty: TO,
+            subjectAsset: { chainId: 'ethereum', assetId: TOKEN },
+        })
+        expect(built.summary.title.key).toBe(
+            'transactions.list_item.approve_asset',
+        )
+        expect(decoded.transactions[0].summary.kind).toBe('approval')
     })
 
     it("refuses a call the node says would revert, even when the dApp gave its own gas, with the revert's reason", async () => {

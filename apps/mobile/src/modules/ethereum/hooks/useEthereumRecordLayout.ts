@@ -19,6 +19,7 @@ import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     i18nKey,
     type BalanceChange,
+    type I18nKey,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -26,6 +27,7 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { isFeePaidByAccount } from '@perawallet/wallet-core-transactions'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -34,9 +36,14 @@ import {
     type TransactionDetailStatus,
     type TransactionDetailSummary,
 } from '@modules/signing'
+import { useResolvedSummaryTitle } from '@modules/transactions'
 import { isEvmTransactionHash } from '../utils/isEvmTransactionHash'
 import { recordAmountsOf } from '../utils/recordAmountsOf'
 import { recordPartiesOf } from '../utils/recordPartiesOf'
+import {
+    GENERIC_CALL_TITLE_KEYS,
+    REVOKE_APPROVAL_TITLE_KEY,
+} from '../utils/recordTitleKeys'
 import type { EthereumTransactionPresentation } from './useEthereumTransactionPresentation'
 
 export type UseEthereumRecordLayoutResult = {
@@ -68,16 +75,12 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
     'nft-transfer',
 ]
 
-// A history row with a fee names its signer, who alone paid the gas; a
-// pending send the wallet built names none and is the account's own. Without
-// an own address the payer is unknown, so the fee stays.
-const isPaidByAnother = (
-    initiator: Optional<string>,
-    ownAddress: string,
-): boolean =>
-    !!ownAddress &&
-    initiator !== undefined &&
-    initiator.toLowerCase() !== ownAddress.toLowerCase()
+// The row's title stands unless the node read knows more: a revocation, or
+// a call the history could only name generically.
+const isReadTitleBetter = (rowKey: I18nKey, readKey: I18nKey): boolean =>
+    readKey === REVOKE_APPROVAL_TITLE_KEY ||
+    (GENERIC_CALL_TITLE_KEYS.has(rowKey) &&
+        !GENERIC_CALL_TITLE_KEYS.has(readKey))
 
 export const useEthereumRecordLayout = (
     record: TransactionRecord,
@@ -86,6 +89,7 @@ export const useEthereumRecordLayout = (
     const { t } = useLanguage()
     const heroTitle = useTransactionHeroTitle()
     const { scope, summary: recordSummary } = record
+    const summaryTitle = useResolvedSummaryTitle(recordSummary, scope)
     const nativeAsset = useNativeAsset(scope)
     const account = useSelectedAccount()
     const ownAddress = account
@@ -140,9 +144,13 @@ export const useEthereumRecordLayout = (
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(
-                    presentation
+                    presentation &&
+                        isReadTitleBetter(
+                            recordSummary.title.key,
+                            presentation.titleKey,
+                        )
                         ? { key: presentation.titleKey }
-                        : recordSummary.title,
+                        : summaryTitle,
                 ),
                 status: STATUS[record.status],
                 amount,
@@ -163,7 +171,7 @@ export const useEthereumRecordLayout = (
                     ? parties.to
                     : undefined,
                 fee:
-                    record.fee && !isPaidByAnother(record.initiator, ownAddress)
+                    record.fee && isFeePaidByAccount(record, ownAddress)
                         ? {
                               asset: nativeAsset,
                               value: baseUnitsToDisplayUnits(
@@ -176,9 +184,13 @@ export const useEthereumRecordLayout = (
             // Keyed off what the hero resolved, so a leg it couldn't name still shows.
             amountRows:
                 amount || isAmountLoading ? [] : recordAmountsOf(recordSummary),
-            assetLabel: recordSummary.subtitle
-                ? t(recordSummary.subtitle.key, recordSummary.subtitle.params)
-                : undefined,
+            assetLabel:
+                recordSummary.kind === 'nft-transfer' && recordSummary.subtitle
+                    ? t(
+                          recordSummary.subtitle.key,
+                          recordSummary.subtitle.params,
+                      )
+                    : undefined,
         }
     }, [
         record,
@@ -190,6 +202,7 @@ export const useEthereumRecordLayout = (
         storedAssets,
         isAssetsPending,
         presentation,
+        summaryTitle,
         heroTitle,
         t,
     ])

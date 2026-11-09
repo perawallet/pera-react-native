@@ -100,6 +100,22 @@ describe('prepareEthereumCallBatch', () => {
         })
     })
 
+    it('Given an approval after the first call, when prepared, then its preview names the approval from its calldata', async () => {
+        const prepared = await prepareEthereumCallBatch(ctx, ETHEREUM, {
+            from: SENDER,
+            calls: [SWAP, APPROVE],
+        })
+
+        expect(prepared.following[0].summary).toMatchObject({
+            kind: 'approval',
+            counterparty: ROUTER,
+            subjectAsset: { assetId: TOKEN },
+        })
+        expect(prepared.following[0].summary.title.key).toBe(
+            'transactions.list_item.approve_asset',
+        )
+    })
+
     it('Given a preview, when the planner is asked to sign it, then it refuses', async () => {
         const { following } = await prepareEthereumCallBatch(ctx, ETHEREUM, {
             from: SENDER,

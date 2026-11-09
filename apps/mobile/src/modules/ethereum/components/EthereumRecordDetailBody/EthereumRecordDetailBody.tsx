@@ -14,6 +14,7 @@ import { ChainNotice } from '@components/ChainNotice'
 import { PWLoadingIndicator } from '@components/core'
 import type { RecordDetailBodyProps } from '@modules/signing'
 import { useEthereumRecordDetail } from '../../hooks/useEthereumRecordDetail'
+import { GENERIC_CALL_TITLE_KEYS } from '../../utils/recordTitleKeys'
 import { EthereumRecordReadBody } from './EthereumRecordReadBody'
 import { EthereumRecordSummary } from './EthereumRecordSummary'
 
@@ -25,8 +26,10 @@ import { EthereumRecordSummary } from './EthereumRecordSummary'
 export const EthereumRecordDetailBody = ({ record }: RecordDetailBodyProps) => {
     const { transaction, isLoading, isReadFailed } =
         useEthereumRecordDetail(record)
+    // A call the history could name (supply, swap) is understood; only the fallbacks warrant the warning.
     const isUndecodedCall =
         record.summary.kind === 'contract-call' &&
+        GENERIC_CALL_TITLE_KEYS.has(record.summary.title.key) &&
         !transaction &&
         !isLoading &&
         !isReadFailed

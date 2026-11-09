@@ -1042,6 +1042,39 @@ describe("a dApp's standard token calls", () => {
         ).not.toHaveProperty('knownSpender')
     })
 
+    it('name no spender for an approve to a Uniswap position manager, and still name the Universal Router', () => {
+        const approveTo = (
+            spender: Address,
+        ): TransactionSerializableEIP1559 => ({
+            ...APPROVE,
+            data: encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'approve',
+                args: [spender, maxUint256],
+            }),
+        })
+
+        expect(
+            ethereumViewOf(
+                unsigned(
+                    approveTo('0xC36442b4a4522E871399CD717aBDD847Ab11FE88'),
+                ),
+                ETHEREUM,
+            ),
+        ).not.toHaveProperty('knownSpender')
+        expect(
+            ethereumViewOf(
+                unsigned(
+                    approveTo('0x66a9893cC07D91D95644AEDD05D03f95e1dBA8Af'),
+                ),
+                ETHEREUM,
+            )?.knownSpender,
+        ).toEqual({
+            name: 'Uniswap Universal Router',
+            projectDomain: 'uniswap.org',
+        })
+    })
+
     describe('under the shipped capability defaults', () => {
         it('reviews an unlimited approve as an approval with a danger warning, behind review', async () => {
             const { reviewed, summary } = await reviewOne(

@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import { getAddress } from 'viem'
 import {
     type AssetDisplayHint,
     type BalanceChange,
@@ -26,11 +27,18 @@ import {
     normalizeEvmAddress,
 } from '../accounts/address-codec'
 import {
+    eip155ChainIdOfNetwork,
     fromCaip19,
     InvalidCaip19Error,
     toEvmNftAssetId,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+import { findKnownEvmContract } from '../signing/known-contracts'
+import {
+    classifyEvmHistoryCall,
+    historyActionSummary,
+    knownContractSubtitle,
+} from './action'
 import type { EvmRecordNft } from './record-nft'
 import type {
     EvmHistoryItem,
@@ -40,7 +48,9 @@ import type {
 
 const SEND = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
-const CONTRACT_CALL = i18nKey('transactions.list_item.contract_call')
+const CONTRACT_INTERACTION = i18nKey(
+    'transactions.list_item.contract_interaction',
+)
 const NFT_SUBTITLE = i18nKey('transactions.list_item.nft_subtitle')
 const NFT_BATCH_SUBTITLE = i18nKey('transactions.list_item.nft_batch_subtitle')
 const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
@@ -208,14 +218,25 @@ const balanceChangesOf = (
         const display = tokenDisplayOf(leg)
         if (display) displayById.set(normalize(leg.contract), display)
     }
+    const nativeId = chain.descriptor.nativeAsset.ref.assetId
+    // The backend folds the gas into the native impact of a row this address sent.
+    const gas =
+        item.fee !== null && item.from !== null && areEqual(item.from, address)
+            ? new Decimal(item.fee)
+            : new Decimal(0)
     const impacts: BalanceChange[] = item.balance_impacts.flatMap(
         ({ asset_id, amount }) => {
             try {
                 const assetId = fromCaip19(asset_id, scope, chain)
                 const display = displayById.get(assetId)
+                const value =
+                    assetId === nativeId
+                        ? new Decimal(amount).plus(gas)
+                        : new Decimal(amount)
+                if (value.isZero()) return []
                 return {
                     assetRef: { chainId: chain.row.id, assetId },
-                    value: new Decimal(amount),
+                    value,
                     ...(display && { display }),
                 }
             } catch (error) {
@@ -348,7 +369,7 @@ const NFT_PRESENTATION: Record<
 > = {
     in: { title: RECEIVE, icon: 'receive' },
     out: { title: SEND, icon: 'send' },
-    self: { title: CONTRACT_CALL, icon: 'contract-call' },
+    self: { title: CONTRACT_INTERACTION, icon: 'contract-call' },
 }
 
 // Only NFTs move: no tokens, and no value that would make it a purchase.
@@ -442,30 +463,52 @@ export const singleNftOf = (
     }
 }
 
+// Only a call the account sent is classified: someone else's call, such as a
+// payment received through a contract, says nothing of the account's own act.
 const summarizeContractCall = (
     item: EvmHistoryItem,
     address: string,
     scope: ChainScope,
     chain: EvmChain,
+    isDecoding: boolean,
 ): TransactionSummary => {
     const sent = item.from !== null && areEqual(item.from, address)
     const other = sent ? item.to : item.from
-    return {
+    const changes = balanceChangesOf(item, address, scope, chain)
+    const base: TransactionSummary = {
         kind: 'contract-call',
-        title: { key: CONTRACT_CALL },
+        title: { key: CONTRACT_INTERACTION },
         icon: 'contract-call',
         direction: 'none',
         ...(other !== null && { counterparty: normalize(other) }),
-        balanceChanges: balanceChangesOf(item, address, scope, chain),
+        balanceChanges: changes,
     }
+    if (!sent || item.to === null) return base
+    const to = getAddress(item.to)
+    const eip155ChainId = eip155ChainIdOfNetwork(chain, scope.networkId)
+    const contract =
+        eip155ChainId === undefined
+            ? undefined
+            : findKnownEvmContract(eip155ChainId, to)
+    const action = classifyEvmHistoryCall({
+        to,
+        method: item.method,
+        changes,
+        nftLegCount: item.nft_transfers.filter(
+            leg => areEqual(leg.from, address) || areEqual(leg.to, address),
+        ).length,
+        nativeSymbol: chain.descriptor.nativeAsset.symbol,
+        contract,
+        isDecoding,
+    })
+    const named = isDecoding ? contract : undefined
+    if (action) return historyActionSummary(action, base, named, chain)
+    return named ? { ...base, subtitle: knownContractSubtitle(named) } : base
 }
 
 /**
- * Read from `address`'s side, from the row's kind, parties, value and
- * transfer legs alone; `method` only tells a plain value transfer from a call.
- * While `isDecoding`, a call also takes the function name the backend gives,
- * and a batch of NFTs from one collection names it. Neither changes what the
- * row did to the account's balances.
+ * Read from `address`'s side. An approval the account sent is named whatever
+ * `isDecoding`; naming any other call needs it, and never alters the balances.
  */
 export const summarizeEthereumHistoryItem = (
     item: EvmHistoryItem,
@@ -480,10 +523,10 @@ export const summarizeEthereumHistoryItem = (
             : (summarizeNativeTransfer(item, address, chain) ??
               summarizeTokenTransfer(item, address, chain) ??
               summarizeNftTransfer(item, address, chain, isDecoding) ??
-              summarizeContractCall(item, address, scope, chain))
+              summarizeContractCall(item, address, scope, chain, isDecoding))
     const named =
         isDecoding &&
-        summary.title.key === CONTRACT_CALL &&
+        summary.title.key === CONTRACT_INTERACTION &&
         item.method !== null &&
         FUNCTION_NAME.test(item.method)
             ? {

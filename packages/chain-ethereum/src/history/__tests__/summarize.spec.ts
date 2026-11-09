@@ -176,7 +176,7 @@ describe('summarizeEthereumHistoryItem', () => {
         })
     })
 
-    it('reads an approval as a contract call carrying only the gas', () => {
+    it('reads an approval the account sent as an approval of its token, keeping its balance changes', () => {
         const summary = summarize(
             row({
                 from: ME,
@@ -188,11 +188,15 @@ describe('summarizeEthereumHistoryItem', () => {
         )
 
         expect(summary).toMatchObject({
-            kind: 'contract-call',
-            title: { key: 'transactions.list_item.contract_call' },
-            icon: 'contract-call',
+            kind: 'approval',
+            title: {
+                key: 'transactions.list_item.approve_asset',
+                params: { asset: '0xA0b8...eB48' },
+            },
+            icon: 'approval',
             direction: 'none',
             counterparty: USDC_CHECKSUMMED,
+            subjectAsset: { chainId: 'ethereum', assetId: USDC_CHECKSUMMED },
         })
         expect(summary.balanceChanges).toEqual([
             {
@@ -243,7 +247,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 from: ME,
                 to: USDC,
                 value: '0',
-                method: 'approve',
+                method: 'execute',
                 status: 'failed',
                 balance_impacts: [{ asset_id: ETH_ID, amount: '-46000' }],
             }),
@@ -431,6 +435,23 @@ describe('summarizeEthereumHistoryItem', () => {
                 amount: { assetRef: { assetId: SWORD } },
             })
             expect(summary.amount?.value).toEqual(new Decimal(3))
+        })
+
+        it('titles an NFT moved back to its owner as a contract interaction', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: BAYC,
+                    nft_transfers: [evmNftTransferLeg({ from: ME, to: ME })],
+                }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'nft-transfer',
+                direction: 'self',
+                icon: 'contract-call',
+                title: { key: 'transactions.list_item.contract_interaction' },
+            })
         })
 
         it('lists every NFT of a batch as a balance change', () => {
@@ -913,6 +934,99 @@ describe('summarizeEthereumHistoryItem', () => {
         )
     })
 
+    describe('gas in balance changes', () => {
+        const GAS = '21000000000000'
+        const nativeChange = (summary: ReturnType<typeof summarize>) =>
+            summary.balanceChanges?.find(
+                change => change.assetRef.assetId === 'native',
+            )
+
+        it('Given a swap the account sent, when summarized, then the native change excludes gas', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '1143000000000000',
+                    method: 'swapExactETHForTokens',
+                    fee: GAS,
+                    token_transfers: [leg(CONTRACT, ME, '2230000')],
+                    balance_impacts: [
+                        { asset_id: ETH_ID, amount: '-1164000000000000' },
+                        { asset_id: USDC_ID, amount: '2230000' },
+                    ],
+                }),
+            )
+
+            expect(nativeChange(summary)?.value).toEqual(
+                new Decimal('-1143000000000000'),
+            )
+            expect(summary.balanceChanges).toHaveLength(2)
+        })
+
+        it('Given an approve the account sent, when summarized, then it has no balance changes', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: USDC,
+                    value: '0',
+                    method: 'approve',
+                    fee: '6200000000000',
+                    balance_impacts: [
+                        { asset_id: ETH_ID, amount: '-6200000000000' },
+                    ],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([])
+        })
+
+        it('Given a failed call the account sent, when summarized, then it has no balance changes', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '0',
+                    method: 'swapExactETHForTokens',
+                    status: 'failed',
+                    fee: GAS,
+                    balance_impacts: [{ asset_id: ETH_ID, amount: `-${GAS}` }],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([])
+        })
+
+        it('Given a row someone else sent, when summarized, then the native change is untouched', () => {
+            const summary = summarize(
+                row({
+                    from: PEER,
+                    to: CONTRACT,
+                    value: '1000',
+                    method: 'distribute',
+                    fee: GAS,
+                    balance_impacts: [{ asset_id: ETH_ID, amount: '900' }],
+                }),
+            )
+
+            expect(nativeChange(summary)?.value).toEqual(new Decimal(900))
+        })
+
+        it('Given a row with no fee, when summarized, then the native change is untouched', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: USDC,
+                    value: '0',
+                    method: 'approve',
+                    fee: null,
+                    balance_impacts: [{ asset_id: ETH_ID, amount: '-46000' }],
+                }),
+            )
+
+            expect(nativeChange(summary)?.value).toEqual(new Decimal('-46000'))
+        })
+    })
+
     describe('with contractDecoding on', () => {
         const decoded = (item: EvmHistoryItem) =>
             summarizeEthereumHistoryItem(item, ME, SCOPE, ETHEREUM, true)
@@ -1051,14 +1165,18 @@ describe('summarizeEthereumHistoryItem', () => {
             })
         })
 
-        it('titles a swap with the function name and keeps its balance changes', () => {
+        it('titles a call it cannot classify with the function name and keeps its balance changes', () => {
             const swap = row({
                 from: ME,
                 to: PEER,
                 value: '0',
                 method: 'swapExactTokensForTokens',
                 token_transfers: [leg(ME, PEER, '250'), leg(PEER, ME, '9')],
-                balance_impacts: [{ asset_id: USDC_ID, amount: '-241' }],
+                balance_impacts: [
+                    { asset_id: ETH_ID, amount: '-5' },
+                    { asset_id: USDC_ID, amount: '-241' },
+                    { asset_id: `eip155:1/erc20:${OTHER}`, amount: '9' },
+                ],
             })
 
             const summary = decoded(swap)
@@ -1072,25 +1190,22 @@ describe('summarizeEthereumHistoryItem', () => {
             )
         })
 
-        it('titles a setApprovalForAll with the function name too', () => {
-            expect(decoded(call('setApprovalForAll')).title).toEqual({
-                key: 'transactions.list_item.interpreted_title',
-                params: { title: 'setApprovalForAll' },
-            })
-        })
-
-        it('titles an approve with the function name, not as an approval', () => {
-            const summary = decoded(call('approve'))
-
-            expect(summary).toMatchObject({
-                kind: 'contract-call',
-                icon: 'contract-call',
-                title: { params: { title: 'approve' } },
-            })
-        })
+        it.each(['approve', 'setApprovalForAll'])(
+            'reads %s as an approval, not by its function name',
+            method => {
+                expect(decoded(call(method))).toMatchObject({
+                    kind: 'approval',
+                    icon: 'approval',
+                    title: {
+                        key: 'transactions.list_item.approve_asset',
+                        params: { asset: '0xA0b8...eB48' },
+                    },
+                })
+            },
+        )
 
         it.each([
-            ['a raw selector', '0x095ea7b3'],
+            ['a raw selector', '0x38ed1739'],
             ['no method', null],
             ['a name that is not an identifier', 'transfer(address'],
         ])('leaves %s as a contract call', (_, method) => {
@@ -1103,11 +1218,26 @@ describe('summarizeEthereumHistoryItem', () => {
             })
 
             expect(decoded(router).title).toEqual({
-                key: 'transactions.list_item.contract_call',
+                key: 'transactions.list_item.contract_interaction',
             })
         })
 
         it('keeps the failed notice on a named call', () => {
+            const failed = row({
+                from: ME,
+                to: USDC,
+                value: '0',
+                method: 'execute',
+                status: 'failed',
+            })
+
+            expect(decoded(failed)).toMatchObject({
+                title: { params: { title: 'execute' } },
+                notice: { kind: 'error' },
+            })
+        })
+
+        it('keeps the failed notice on an approval', () => {
             const failed = row({
                 from: ME,
                 to: USDC,
@@ -1117,7 +1247,7 @@ describe('summarizeEthereumHistoryItem', () => {
             })
 
             expect(decoded(failed)).toMatchObject({
-                title: { params: { title: 'approve' } },
+                kind: 'approval',
                 notice: { kind: 'error' },
             })
         })
@@ -1128,6 +1258,254 @@ describe('summarizeEthereumHistoryItem', () => {
             ).toEqual({
                 key: 'transactions.list_item.send',
             })
+        })
+    })
+
+    // The QA account's rows: a Universal Router swap, a USDT approve and an Aave supply.
+    describe('contract calls the account sent', () => {
+        const GAS = '21000000000000'
+        const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7'
+        const USDT_CHECKSUMMED = getAddress(USDT)
+        const AUSDT = '0x23878914efe38d27c4d67ab83ed1b93a74d4086a'
+        const ROUTER = '0x66a9893cc07d91d95644aedd05d03f95e1dba8af'
+        const AAVE_POOL = '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2'
+        const V3_POSITIONS = '0xc36442b4a4522e871399cd717abdd847ab11fe88'
+        const POOL = '0x00000000000000000000000000000000000000ee'
+        const ZERO = '0x0000000000000000000000000000000000000000'
+        const decoded = (item: EvmHistoryItem) =>
+            summarizeEthereumHistoryItem(item, ME, SCOPE, ETHEREUM, true)
+        const usdtLeg = (from: string, to: string) => ({
+            ...leg(from, to, '2230000', {
+                token_symbol: 'USDT',
+                token_decimals: 6,
+            }),
+            asset_id: `eip155:1/erc20:${USDT}`,
+            contract: USDT,
+        })
+        const ausdtLeg = (from: string, to: string) => ({
+            ...leg(from, to, '2230000', {
+                token_symbol: 'aEthUSDT',
+                token_decimals: 6,
+            }),
+            asset_id: `eip155:1/erc20:${AUSDT}`,
+            contract: AUSDT,
+        })
+        const routerSwap = row({
+            from: ME,
+            to: ROUTER,
+            value: '1143000000000000',
+            method: 'execute',
+            fee: GAS,
+            token_transfers: [usdtLeg(POOL, ME)],
+            balance_impacts: [
+                { asset_id: ETH_ID, amount: '-1164000000000000' },
+                { asset_id: `eip155:1/erc20:${USDT}`, amount: '2230000' },
+            ],
+        })
+        const usdtApprove = row({
+            from: ME,
+            to: USDT,
+            value: '0',
+            method: 'approve',
+            fee: GAS,
+            balance_impacts: [{ asset_id: ETH_ID, amount: `-${GAS}` }],
+        })
+        const aaveSupply = row({
+            from: ME,
+            to: AAVE_POOL,
+            value: '0',
+            method: 'supply',
+            fee: GAS,
+            token_transfers: [usdtLeg(ME, AUSDT), ausdtLeg(ZERO, ME)],
+            balance_impacts: [
+                { asset_id: ETH_ID, amount: `-${GAS}` },
+                { asset_id: `eip155:1/erc20:${USDT}`, amount: '-2230000' },
+                { asset_id: `eip155:1/erc20:${AUSDT}`, amount: '2230000' },
+            ],
+        })
+
+        it('Given the router swap, when decoded, then it is a swap of ETH for USDT named by the router', () => {
+            const summary = decoded(routerSwap)
+
+            expect(summary).toMatchObject({
+                kind: 'swap',
+                icon: 'swap',
+                title: {
+                    key: 'transactions.list_item.swap_pair',
+                    params: { from: 'ETH', to: 'USDT' },
+                },
+                subtitle: {
+                    key: 'transactions.list_item.interpreted_title',
+                    params: { title: 'Uniswap Universal Router' },
+                },
+                counterparty: getAddress(ROUTER),
+            })
+            expect(
+                summary.balanceChanges?.map(c => [
+                    c.assetRef.assetId,
+                    c.value.toFixed(),
+                ]),
+            ).toEqual([
+                ['native', '-1143000000000000'],
+                [USDT_CHECKSUMMED, '2230000'],
+            ])
+        })
+
+        it('Given the router swap, when decoding is off, then it is a contract interaction with no protocol name', () => {
+            const summary = summarize(routerSwap)
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                icon: 'contract-call',
+                title: { key: 'transactions.list_item.contract_interaction' },
+            })
+            expect(summary.subtitle).toBeUndefined()
+        })
+
+        it.each([
+            ['on', true],
+            ['off', false],
+        ])(
+            'Given the USDT approve, when decoding is %s, then it approves USDT and moves nothing',
+            (_, isDecoding) => {
+                const summary = summarizeEthereumHistoryItem(
+                    usdtApprove,
+                    ME,
+                    SCOPE,
+                    ETHEREUM,
+                    isDecoding,
+                )
+
+                expect(summary).toEqual({
+                    kind: 'approval',
+                    icon: 'approval',
+                    direction: 'none',
+                    title: {
+                        key: 'transactions.list_item.approve_asset',
+                        params: { asset: '0xdAC1...1ec7' },
+                    },
+                    counterparty: USDT_CHECKSUMMED,
+                    subjectAsset: {
+                        chainId: 'ethereum',
+                        assetId: USDT_CHECKSUMMED,
+                    },
+                    balanceChanges: [],
+                })
+            },
+        )
+
+        it('Given the Aave supply, when decoded, then it is a supply named by the pool, with USDT out and aUSDT in', () => {
+            const summary = decoded(aaveSupply)
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                icon: 'contract-call',
+                title: { key: 'transactions.list_item.supply' },
+                subtitle: {
+                    key: 'transactions.list_item.interpreted_title',
+                    params: { title: 'Aave V3 Pool' },
+                },
+            })
+            expect(
+                summary.balanceChanges?.map(c => [
+                    c.assetRef.assetId,
+                    c.value.toFixed(),
+                ]),
+            ).toEqual([
+                [USDT_CHECKSUMMED, '-2230000'],
+                [getAddress(AUSDT), '2230000'],
+            ])
+        })
+
+        it('Given a router call someone else sent, when decoded, then it keeps its plain shape', () => {
+            const summary = decoded(
+                row({
+                    from: PEER,
+                    to: ROUTER,
+                    value: '0',
+                    method: 'execute',
+                    token_transfers: [usdtLeg(POOL, ME)],
+                    balance_impacts: [
+                        {
+                            asset_id: `eip155:1/erc20:${USDT}`,
+                            amount: '2230000',
+                        },
+                    ],
+                }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                icon: 'contract-call',
+                counterparty: getAddress(PEER),
+                title: {
+                    key: 'transactions.list_item.interpreted_title',
+                    params: { title: 'execute' },
+                },
+            })
+            expect(summary.subtitle).toBeUndefined()
+        })
+
+        it('Given an unknown contract that moved nothing, when decoded, then it is a contract interaction', () => {
+            const summary = decoded(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '0',
+                    method: '0x12345678',
+                    fee: GAS,
+                    balance_impacts: [{ asset_id: ETH_ID, amount: `-${GAS}` }],
+                }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                title: { key: 'transactions.list_item.contract_interaction' },
+                balanceChanges: [],
+            })
+        })
+
+        it('Given a position manager call it cannot classify, when decoded, then it keeps the function name and names the contract', () => {
+            const summary = decoded(
+                row({
+                    from: ME,
+                    to: V3_POSITIONS,
+                    value: '0',
+                    method: 'collect',
+                    token_transfers: [usdtLeg(POOL, ME)],
+                    balance_impacts: [
+                        {
+                            asset_id: `eip155:1/erc20:${USDT}`,
+                            amount: '2230000',
+                        },
+                    ],
+                }),
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                title: {
+                    key: 'transactions.list_item.interpreted_title',
+                    params: { title: 'collect' },
+                },
+                subtitle: {
+                    key: 'transactions.list_item.interpreted_title',
+                    params: { title: 'Uniswap V3 Positions' },
+                },
+            })
+        })
+
+        it('Given a testnet row to a mainnet registry address, when decoded, then the registry is not consulted', () => {
+            const summary = summarizeEthereumHistoryItem(
+                aaveSupply,
+                ME,
+                { chainId: 'ethereum', networkId: 'sepolia' },
+                ETHEREUM,
+                true,
+            )
+
+            expect(summary.subtitle).toBeUndefined()
+            expect(summary.title.key).not.toBe('transactions.list_item.supply')
         })
     })
 })

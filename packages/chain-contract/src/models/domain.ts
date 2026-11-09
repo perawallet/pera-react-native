@@ -210,6 +210,8 @@ export interface TransactionSummary {
     amount?: { assetRef: AssetRef; value: Decimal; display?: AssetDisplayHint }
     /** Shown instead of `amount` when set. */
     balanceChanges?: BalanceChange[]
+    /** An asset the transaction acts on without moving it, such as an approval's token; the UI fills the title's `asset` param with its stored unit name. */
+    subjectAsset?: AssetRef
     icon: TransactionIconKind
     /** Absent on a confirmed transaction with nothing chain-specific to flag. */
     notice?: TransactionNotice
