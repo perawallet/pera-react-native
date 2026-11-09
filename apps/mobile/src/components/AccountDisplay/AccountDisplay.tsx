@@ -68,7 +68,7 @@ export type AccountDisplayProps = {
     secondaryContent?: ReactNode
     /** False drops the address, name-service name or type under the name; `badges` and `secondaryContent` still show. */
     shouldShowSecondaryLabel?: boolean
-    /** Takes the avatar's corner; the backup warning is not shown with it. */
+    /** Takes the avatar's bottom-right corner; wrap it in AvatarBadge so every corner badge has one size. The backup warning is not shown with it. */
     avatarBadge?: ReactNode
 } & PWViewProps
 
