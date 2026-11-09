@@ -4036,7 +4036,7 @@
             "no_results_title": "Nenhum ativo encontrado",
             "no_results_body": "Nenhum ativo corresponde à sua busca",
             "no_chain_results_body": "Nenhum ativo disponível nesta rede",
-            "cross_network_empty_title": "Não é possível converter para {{network}}",
+            "cross_network_empty_title": "Não é possível converter {{asset}} para {{network}}",
             "cross_network_empty_body": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, pague com um ativo em {{network}}.",
             "cross_network_empty_body_other_account": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, troque para uma conta em {{network}} e pague com um dos ativos dela.",
             "cross_network_empty_action": "Converter em {{network}}"

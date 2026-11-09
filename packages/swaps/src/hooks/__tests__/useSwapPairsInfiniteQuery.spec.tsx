@@ -74,6 +74,20 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
             expect.objectContaining({ anchor: ANCHOR, direction: 'source' }),
         )
         expect(result.current.assets.map(a => a.assetId)).toEqual(['7'])
+        expect(result.current.isSuccess).toBe(true)
+    })
+
+    test('does not report success when the fetch fails', async () => {
+        vi.mocked(fetchSwapPairs).mockRejectedValueOnce(new Error('offline'))
+
+        const { result } = renderHook(
+            () => useSwapPairsInfiniteQuery({ anchor: ANCHOR, scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.assets).toEqual([])
+        expect(result.current.isSuccess).toBe(false)
     })
 
     test('pages past a page the scope filter empties', async () => {

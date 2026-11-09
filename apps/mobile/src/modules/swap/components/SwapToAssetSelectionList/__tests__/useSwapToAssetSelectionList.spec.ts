@@ -622,6 +622,7 @@ describe('useSwapToAssetSelectionList', () => {
             mockUseSwapPairsInfiniteQuery.mockReturnValue({
                 assets: [],
                 isLoading: false,
+                isSuccess: true,
                 hasNextPage: false,
                 fetchNextPage: mockFetchNextPage,
             })
@@ -742,7 +743,40 @@ describe('useSwapToAssetSelectionList', () => {
             mockUseSwapPairsInfiniteQuery.mockReturnValue({
                 assets: [],
                 isLoading: true,
+                isSuccess: false,
                 hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+            })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null when the pairs fetch failed, since an empty list is not "no pairs"', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isSuccess: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+            })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null while more pairs may follow an empty page', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isSuccess: true,
+                hasNextPage: true,
                 fetchNextPage: mockFetchNextPage,
             })
             const { result } = renderHook(() =>
@@ -757,6 +791,7 @@ describe('useSwapToAssetSelectionList', () => {
             mockUseSwapPairsInfiniteQuery.mockReturnValue({
                 assets: mockAvailableAssets,
                 isLoading: false,
+                isSuccess: true,
                 hasNextPage: false,
                 fetchNextPage: mockFetchNextPage,
             })

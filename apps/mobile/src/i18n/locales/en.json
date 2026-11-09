@@ -4014,7 +4014,7 @@
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term",
             "no_chain_results_body": "No assets available on this network",
-            "cross_network_empty_title": "Can't swap to {{network}}",
+            "cross_network_empty_title": "Can't swap {{asset}} to {{network}}",
             "cross_network_empty_body": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, pay with an asset on {{network}} instead.",
             "cross_network_empty_body_other_account": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, switch to an account on {{network}} and pay with one of its assets.",
             "cross_network_empty_action": "Swap on {{network}}"
