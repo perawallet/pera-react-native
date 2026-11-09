@@ -385,7 +385,7 @@ describe('call batch execution', () => {
             expect(await summaryOf(first.id)).toMatchObject({
                 kind: 'approval',
                 counterparty: ROUTER,
-                subjectAsset: { assetId: TOKEN },
+                titleAssets: { asset: { assetId: TOKEN } },
             })
             expect(await summaryOf(batch.txIds[1]!)).toMatchObject({
                 kind: 'contract-call',
@@ -445,6 +445,9 @@ describe('call batch execution', () => {
             })
 
             expect((await summaryOf(batch.txIds[1]!))?.kind).toBe('swap')
+            expect(signedInBackground.map(tx => tx.summary.kind)).toEqual([
+                'contract-call',
+            ])
             expect(
                 reviewer.policy.autoApproveLocal({ ...decoded, warnings: [] }),
             ).toBe(false)

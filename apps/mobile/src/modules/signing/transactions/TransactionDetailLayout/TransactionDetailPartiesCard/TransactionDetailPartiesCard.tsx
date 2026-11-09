@@ -25,7 +25,7 @@ export const TransactionDetailPartiesCard = ({
     summary,
 }: TransactionDetailPartiesCardProps) => {
     const { t } = useLanguage()
-    const { scope, from, to, fee, note } = summary
+    const { scope, from, to, fee, isFeeMaximum, note } = summary
 
     if (!from && !to && !fee && !note) {
         return null
@@ -53,6 +53,7 @@ export const TransactionDetailPartiesCard = ({
                 <TransactionDetailFeeRow
                     fee={fee}
                     scope={scope}
+                    isMaximum={isFeeMaximum}
                 />
             )}
             {!!note && <TransactionDetailNoteRow note={note} />}

@@ -13,7 +13,10 @@
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { getAddress } from 'viem'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    TransactionSummary,
+} from '@perawallet/wallet-core-chain-contract'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     evmHistoryItemSchema,
@@ -195,9 +198,12 @@ describe('summarizeEthereumHistoryItem', () => {
             },
             icon: 'approval',
             direction: 'none',
-            counterparty: USDC_CHECKSUMMED,
-            subjectAsset: { chainId: 'ethereum', assetId: USDC_CHECKSUMMED },
+            titleAssets: {
+                asset: { chainId: 'ethereum', assetId: USDC_CHECKSUMMED },
+            },
         })
+        // The call's target is the token, which would read as the spender.
+        expect(summary.counterparty).toBeUndefined()
         expect(summary.balanceChanges).toEqual([
             {
                 assetRef: { chainId: 'ethereum', assetId: 'native' },
@@ -451,6 +457,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 direction: 'self',
                 icon: 'contract-call',
                 title: { key: 'transactions.list_item.contract_interaction' },
+                isActionUnknown: true,
             })
         })
 
@@ -1011,6 +1018,108 @@ describe('summarizeEthereumHistoryItem', () => {
             expect(nativeChange(summary)?.value).toEqual(new Decimal(900))
         })
 
+        // On an L2 the reported fee can leave out the L1 data fee, so the impact
+        // the backend books for gas is off from it by a few wei.
+        const LEFT_OUT = 100n
+        const offBy = (amount: bigint) => (amount + LEFT_OUT).toString()
+
+        it('Given an approve whose native impact is off from its fee, when summarized, then it is still an approval with no balance changes', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: USDC,
+                    value: '0',
+                    method: 'approve',
+                    fee: GAS,
+                    balance_impacts: [
+                        { asset_id: ETH_ID, amount: `-${offBy(BigInt(GAS))}` },
+                    ],
+                }),
+            )
+
+            expect(summary.kind).toBe('approval')
+            expect(summary.balanceChanges).toEqual([])
+        })
+
+        it('Given a gas-only call to an unknown contract whose native impact is off from its fee, when decoded, then it is a contract interaction, not a send', () => {
+            const summary = summarizeEthereumHistoryItem(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '0',
+                    method: '0x12345678',
+                    fee: GAS,
+                    balance_impacts: [
+                        { asset_id: ETH_ID, amount: `-${offBy(BigInt(GAS))}` },
+                    ],
+                }),
+                ME,
+                SCOPE,
+                ETHEREUM,
+                true,
+            )
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                title: { key: 'transactions.list_item.contract_interaction' },
+                balanceChanges: [],
+            })
+            expect(summary.isInferred).toBeUndefined()
+        })
+
+        it('Given a failed call that paid ETH and whose native impact is off from its fee, when summarized, then it has no balance changes', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '1143000000000000',
+                    method: 'swapExactETHForTokens',
+                    status: 'failed',
+                    fee: GAS,
+                    balance_impacts: [
+                        { asset_id: ETH_ID, amount: `-${offBy(BigInt(GAS))}` },
+                    ],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([])
+        })
+
+        it('Given a swap the account sent whose native impact is off from its fee, when summarized, then it keeps its token line and the ETH line carries the leftover', () => {
+            const value = 1_143_000_000_000_000n
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: value.toString(),
+                    method: 'swapExactETHForTokens',
+                    fee: GAS,
+                    token_transfers: [leg(CONTRACT, ME, '2230000')],
+                    balance_impacts: [
+                        {
+                            asset_id: ETH_ID,
+                            amount: `-${offBy(value + BigInt(GAS))}`,
+                        },
+                        { asset_id: USDC_ID, amount: '2230000' },
+                    ],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([
+                {
+                    assetRef: NATIVE,
+                    value: new Decimal(`-${offBy(value)}`),
+                },
+                expect.objectContaining({
+                    assetRef: {
+                        chainId: 'ethereum',
+                        assetId: USDC_CHECKSUMMED,
+                    },
+                    value: new Decimal('2230000'),
+                }),
+            ])
+        })
+
         it('Given a row with no fee, when summarized, then the native change is untouched', () => {
             const summary = summarize(
                 row({
@@ -1334,11 +1443,17 @@ describe('summarizeEthereumHistoryItem', () => {
                     key: 'transactions.list_item.swap_pair',
                     params: { from: 'ETH', to: 'USDT' },
                 },
+                titleAssets: {
+                    from: NATIVE,
+                    to: { chainId: 'ethereum', assetId: USDT_CHECKSUMMED },
+                },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
                     params: { title: 'Uniswap Universal Router' },
                 },
                 counterparty: getAddress(ROUTER),
+                // The router's calldata isn't read here, so the swap is guessed from its balances.
+                isInferred: true,
             })
             expect(
                 summary.balanceChanges?.map(c => [
@@ -1384,10 +1499,11 @@ describe('summarizeEthereumHistoryItem', () => {
                         key: 'transactions.list_item.approve_asset',
                         params: { asset: '0xdAC1...1ec7' },
                     },
-                    counterparty: USDT_CHECKSUMMED,
-                    subjectAsset: {
-                        chainId: 'ethereum',
-                        assetId: USDT_CHECKSUMMED,
+                    titleAssets: {
+                        asset: {
+                            chainId: 'ethereum',
+                            assetId: USDT_CHECKSUMMED,
+                        },
                     },
                     balanceChanges: [],
                 })
@@ -1406,6 +1522,7 @@ describe('summarizeEthereumHistoryItem', () => {
                     params: { title: 'Aave V3 Pool' },
                 },
             })
+            expect(summary.isInferred).toBeUndefined()
             expect(
                 summary.balanceChanges?.map(c => [
                     c.assetRef.assetId,
@@ -1492,6 +1609,82 @@ describe('summarizeEthereumHistoryItem', () => {
                     key: 'transactions.list_item.interpreted_title',
                     params: { title: 'Uniswap V3 Positions' },
                 },
+            })
+        })
+
+        describe('a title that names no action', () => {
+            const gasOnlyCall = (method: string) =>
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '0',
+                    method,
+                    fee: GAS,
+                    balance_impacts: [{ asset_id: ETH_ID, amount: `-${GAS}` }],
+                })
+            const positionsCollect = row({
+                from: ME,
+                to: V3_POSITIONS,
+                value: '0',
+                method: 'collect',
+                token_transfers: [usdtLeg(POOL, ME)],
+                balance_impacts: [
+                    { asset_id: `eip155:1/erc20:${USDT}`, amount: '2230000' },
+                ],
+            })
+
+            it.each<[string, () => TransactionSummary]>([
+                [
+                    'an unknown call with decoding off',
+                    () => summarize(gasOnlyCall('0x12345678')),
+                ],
+                [
+                    'an unknown call, decoded',
+                    () => decoded(gasOnlyCall('0x12345678')),
+                ],
+                [
+                    'a call titled by its function name',
+                    () => decoded(gasOnlyCall('claim')),
+                ],
+                [
+                    'a known contract call it cannot classify',
+                    () => decoded(positionsCollect),
+                ],
+                [
+                    'the router swap with decoding off',
+                    () => summarize(routerSwap),
+                ],
+            ])('Given %s, then the summary says so', (_, summaryOf) => {
+                expect(summaryOf().isActionUnknown).toBe(true)
+            })
+
+            it.each<[string, () => TransactionSummary]>([
+                [
+                    'the router swap guessed from its balances',
+                    () => decoded(routerSwap),
+                ],
+                ['the Aave supply', () => decoded(aaveSupply)],
+                ['the USDT approve', () => summarize(usdtApprove)],
+                [
+                    'an ETH send',
+                    () => decoded(row({ from: ME, to: PEER, value: '5' })),
+                ],
+                [
+                    'an NFT receive',
+                    () =>
+                        decoded(
+                            row({
+                                from: PEER,
+                                to: ME,
+                                value: '0',
+                                nft_transfers: [
+                                    evmNftTransferLeg({ from: PEER, to: ME }),
+                                ],
+                            }),
+                        ),
+                ],
+            ])('Given %s, then the summary names an action', (_, summaryOf) => {
+                expect(summaryOf().isActionUnknown).toBeUndefined()
             })
         })
 

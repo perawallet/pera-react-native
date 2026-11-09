@@ -26,10 +26,11 @@ import type {
     HardwareRef,
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    SigningRequest,
-    TransactionPlanner,
-    UnsignedTransaction,
+import {
+    i18nKey,
+    type SigningRequest,
+    type TransactionPlanner,
+    type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     createHardwareWalletRegistry,
@@ -198,6 +199,28 @@ describe('signPlannedGroupOnDevice', () => {
                         summary: transaction.summary,
                         chainData: transaction.chainData,
                     },
+                ],
+            })
+        })
+
+        it("records each transaction's History summary when it carries one, and its summary when it does not", async () => {
+            const [withHistory, plain] = transfers(2)
+            const historySummary = {
+                ...withHistory.summary,
+                title: { key: i18nKey('transactions.list_item.swap') },
+            }
+
+            const result = await sign(
+                groupOf([{ ...withHistory, historySummary }, plain]),
+            )
+
+            expect(result.signedData).toMatchObject({
+                historyEntries: [
+                    {
+                        summary: historySummary,
+                        chainData: withHistory.chainData,
+                    },
+                    { summary: plain.summary, chainData: plain.chainData },
                 ],
             })
         })

@@ -123,6 +123,9 @@ const { setCapabilityOverrides } =
     await import('@test-utils/capability-overrides')
 const { TransactionDetailsScreen } = await import('@modules/signing/routes')
 const { useWebViewStore } = await import('@modules/webview')
+const { recordSubmissionAttempt } =
+    await import('@perawallet/wallet-core-signing')
+const { i18nKey } = await import('@perawallet/wallet-core-chain-contract')
 const { closestPressable } = await import('@test-utils/rnw')
 const { useRoute } = await import('@react-navigation/native')
 const { peraEvmHistoryHandlers } =
@@ -705,6 +708,26 @@ describe('Flow: History on an Ethereum account', () => {
                 ).toBeTruthy()
             })
 
+            it('Given a swap History could only guess from its balance changes, when its row is opened, then the page says the name was guessed, not that the call is unknown', async () => {
+                serveSwap('0x38ed1739')
+                renderHistory()
+
+                await openRow(SWAP_HASH)
+
+                await screen.findByTestId(
+                    'ethereum_record_inferred_notice',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(nodeReads).toEqual([SWAP_HASH])
+                expect(
+                    screen.getAllByText('transactions.list_item.swap').length,
+                ).toBeGreaterThan(0)
+                expect(
+                    screen.queryByTestId('ethereum_record_undecoded_warning'),
+                ).toBeNull()
+            })
+
             it("Given the QA account's rows, when History lists them, then each says what it did with its own amounts and the approval carries a fee instead of a red ETH line", async () => {
                 serveActionRows()
 
@@ -1178,6 +1201,55 @@ describe('Flow: History on an Ethereum account', () => {
                     useWebViewStore.getState().openWebViews.map(v => v.url),
                 ).toEqual([`https://etherscan.io/tx/${SENT_HASH}`])
                 expect(nodeReads).toEqual([])
+            })
+        })
+
+        describe('a send the chain has not listed yet', () => {
+            const PENDING_HASH = hashOf(41)
+
+            it('Given an approval the wallet broadcast, when History lists it and its row is opened, then its fee reads as the most it can be charged', async () => {
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [received(1, '2026-01-01T00:00:00Z')],
+                            ],
+                        },
+                    }),
+                )
+                await recordSubmissionAttempt({
+                    scope: SCOPE,
+                    txIds: [PENDING_HASH],
+                    flow: 'pipeline',
+                    sender: ETH_ADDRESS,
+                    historyEntry: {
+                        summary: {
+                            kind: 'approval',
+                            title: {
+                                key: i18nKey('transactions.list_item.approval'),
+                            },
+                            direction: 'none',
+                            icon: 'approval',
+                        },
+                        chainData: { family: 'evm' },
+                        fee: new Decimal('46000000000000'),
+                    },
+                })
+                renderHistory()
+
+                const row = await rowText(PENDING_HASH, /ETH/)
+                expect(row).toContain('send_funds.fee.max_fee')
+                expect(row).not.toContain('transactions.common.fee')
+
+                await openRow(PENDING_HASH)
+
+                const fee = await screen.findByTestId(
+                    'transaction_detail_fee',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(fee.textContent).toContain('send_funds.fee.max_fee')
+                expect(fee.textContent).not.toContain('transactions.common.fee')
             })
         })
     })

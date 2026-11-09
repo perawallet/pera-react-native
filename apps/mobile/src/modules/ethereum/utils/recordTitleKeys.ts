@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
-
-/** The fallbacks for a call nothing could name, an unknown verified method included. */
-export const GENERIC_CALL_TITLE_KEYS: ReadonlySet<I18nKey> = new Set([
-    i18nKey('transactions.list_item.contract_interaction'),
-    i18nKey('transactions.list_item.contract_call'),
-    i18nKey('transactions.list_item.interpreted_title'),
-])
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
 /** A mined approve row can't tell a revocation from a grant; the node read can. */
 export const REVOKE_APPROVAL_TITLE_KEY = i18nKey(
     'transactions.list_item.revoke_approval',
+)
+
+/** The node read's title for a call it names no action for. */
+export const CONTRACT_CALL_TITLE_KEY = i18nKey(
+    'transactions.list_item.contract_call',
 )

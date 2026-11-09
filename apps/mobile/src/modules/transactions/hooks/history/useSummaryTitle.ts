@@ -20,29 +20,37 @@ import type {
 import { useLanguage } from '@hooks/useLanguage'
 
 /**
- * The summary's title with its `asset` param swapped for the stored asset's
- * unit name. Reads the local store only, as the row's amounts do.
+ * The summary's title with each param it has an asset for swapped for that
+ * asset's stored unit name. Reads the local store only, as the row's amounts do.
  */
 export const useResolvedSummaryTitle = (
     summary: TransactionSummary,
     scope: ChainScope,
 ): LocalizedText => {
-    const { title, subjectAsset } = summary
-    const { data: storedAssets } = useAssetsQuery(
-        scope,
-        subjectAsset ? [subjectAsset.assetId] : [],
-    )
-    const unitName = subjectAsset
-        ? storedAssets.get(subjectAsset.assetId)?.unitName
-        : undefined
-
-    return useMemo(
+    const { title, titleAssets } = summary
+    const assetIds = useMemo(
         () =>
-            unitName
-                ? { ...title, params: { ...title.params, asset: unitName } }
-                : title,
-        [title, unitName],
+            Object.values(titleAssets ?? {}).flatMap(ref =>
+                ref ? [ref.assetId] : [],
+            ),
+        [titleAssets],
     )
+    const { data: storedAssets } = useAssetsQuery(scope, assetIds)
+
+    return useMemo(() => {
+        const unitNames = Object.entries(titleAssets ?? {}).flatMap(
+            ([param, ref]) => {
+                const unitName = ref && storedAssets.get(ref.assetId)?.unitName
+                return unitName ? [[param, unitName] as const] : []
+            },
+        )
+        return unitNames.length > 0
+            ? {
+                  ...title,
+                  params: { ...title.params, ...Object.fromEntries(unitNames) },
+              }
+            : title
+    }, [title, titleAssets, storedAssets])
 }
 
 export const useSummaryTitle = (

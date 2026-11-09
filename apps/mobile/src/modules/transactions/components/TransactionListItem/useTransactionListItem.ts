@@ -49,6 +49,8 @@ import {
 const WAITING_ON_EARLIER = {
     key: i18nKey('transactions.notice.waiting_on_earlier'),
 }
+const FEE_LABEL = i18nKey('transactions.common.fee')
+const MAX_FEE_LABEL = i18nKey('send_funds.fee.max_fee')
 
 export type UseTransactionListItemParams = (
     | {
@@ -70,6 +72,7 @@ export type UseTransactionListItemResult = {
     amountsOverflowCount: number
     /** The network fee in the native asset, only for a row the account paid for that shows no other amount. */
     fee: Nullable<AmountDisplay>
+    feeLabel: string
     /** Set when the chain flags a non-final status (pending, failed, replaced). */
     notice: Nullable<ChainNoticeContent>
     /** Opens the row's detail; a history item pressed without an `onPress` opens nothing, and long-press still copies. */
@@ -201,6 +204,7 @@ export const useTransactionListItem = (
             allAmounts.length - MAX_VISIBLE_AMOUNTS,
         ),
         fee,
+        feeLabel: t(record?.isFeeMaximum ? MAX_FEE_LABEL : FEE_LABEL),
         notice,
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,

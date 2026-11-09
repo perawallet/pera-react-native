@@ -3694,6 +3694,7 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
+            "inferred_notice": "Aus den Guthabenänderungen abgeleitet. Pera konnte den Aufruf selbst nicht lesen.",
             "transaction_id": "Transaktions-ID",
             "quantity": "Menge",
             "nft_collection": "{{collection}} · {{standard}}",

@@ -31,7 +31,11 @@ import {
     createEvmPlannerAdapter,
     readEvmTransaction,
 } from '../../../signing/adapter'
-import { createEthereumReviewer, ethereumViewOf } from '../../../signing/review'
+import {
+    createEthereumReviewer,
+    ethereumCallSummary,
+    ethereumViewOf,
+} from '../../../signing/review'
 import { prepareEthereumCallBatch, previewEthereumCall } from '../prepare'
 import {
     APPROVE,
@@ -100,20 +104,21 @@ describe('prepareEthereumCallBatch', () => {
         })
     })
 
-    it('Given an approval after the first call, when prepared, then its preview names the approval from its calldata', async () => {
+    it("Given an approval after the first call, when prepared, then its preview keeps the dApp's plain claim and names the approval only in its History summary", async () => {
         const prepared = await prepareEthereumCallBatch(ctx, ETHEREUM, {
             from: SENDER,
             calls: [SWAP, APPROVE],
         })
 
-        expect(prepared.following[0].summary).toMatchObject({
+        expect(prepared.following[0].summary).toEqual(
+            ethereumCallSummary(APPROVE, ETHEREUM),
+        )
+        expect(prepared.following[0].historySummary).toMatchObject({
             kind: 'approval',
             counterparty: ROUTER,
-            subjectAsset: { assetId: TOKEN },
+            title: { key: 'transactions.list_item.approve_asset' },
+            titleAssets: { asset: { assetId: TOKEN } },
         })
-        expect(prepared.following[0].summary.title.key).toBe(
-            'transactions.list_item.approve_asset',
-        )
     })
 
     it('Given a preview, when the planner is asked to sign it, then it refuses', async () => {

@@ -21,6 +21,7 @@ import {
     type BalanceChange,
     type I18nKey,
     type TransactionRecord,
+    type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
@@ -41,7 +42,7 @@ import { isEvmTransactionHash } from '../utils/isEvmTransactionHash'
 import { recordAmountsOf } from '../utils/recordAmountsOf'
 import { recordPartiesOf } from '../utils/recordPartiesOf'
 import {
-    GENERIC_CALL_TITLE_KEYS,
+    CONTRACT_CALL_TITLE_KEY,
     REVOKE_APPROVAL_TITLE_KEY,
 } from '../utils/recordTitleKeys'
 import type { EthereumTransactionPresentation } from './useEthereumTransactionPresentation'
@@ -76,11 +77,13 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
 ]
 
 // The row's title stands unless the node read knows more: a revocation, or
-// a call the history could only name generically.
-const isReadTitleBetter = (rowKey: I18nKey, readKey: I18nKey): boolean =>
+// an action for a call the history named none for.
+const isReadTitleBetter = (
+    row: TransactionSummary,
+    readKey: I18nKey,
+): boolean =>
     readKey === REVOKE_APPROVAL_TITLE_KEY ||
-    (GENERIC_CALL_TITLE_KEYS.has(rowKey) &&
-        !GENERIC_CALL_TITLE_KEYS.has(readKey))
+    (!!row.isActionUnknown && readKey !== CONTRACT_CALL_TITLE_KEY)
 
 export const useEthereumRecordLayout = (
     record: TransactionRecord,
@@ -145,10 +148,7 @@ export const useEthereumRecordLayout = (
                     transactionIconName(recordSummary.icon),
                 title: heroTitle(
                     presentation &&
-                        isReadTitleBetter(
-                            recordSummary.title.key,
-                            presentation.titleKey,
-                        )
+                        isReadTitleBetter(recordSummary, presentation.titleKey)
                         ? { key: presentation.titleKey }
                         : summaryTitle,
                 ),
@@ -180,6 +180,7 @@ export const useEthereumRecordLayout = (
                               ),
                           }
                         : undefined,
+                isFeeMaximum: record.isFeeMaximum,
             },
             // Keyed off what the hero resolved, so a leg it couldn't name still shows.
             amountRows:

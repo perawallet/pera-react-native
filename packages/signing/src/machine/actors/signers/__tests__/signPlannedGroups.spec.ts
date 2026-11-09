@@ -24,7 +24,10 @@ import {
     seedAuthority,
 } from '../../../../__tests__/registerAlgorandAccounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'
+import {
+    ChainAdapterNotRegisteredError,
+    i18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     SECOND_CHAIN_SCOPE,
     fakeTransactionPlanner,
@@ -128,6 +131,24 @@ describe('signPlannedGroups', () => {
             },
             signers: [{ address: OURS }],
             originalIndices: [0, 1],
+        })
+    })
+
+    it("records each transaction's History summary when it carries one, and its summary when it does not", async () => {
+        const plain = makeUnsignedTransaction(OURS)
+        const historySummary = {
+            ...plain.summary,
+            title: { key: i18nKey('transactions.list_item.swap') },
+        }
+        const withHistory = { ...makeUnsignedTransaction(OURS), historySummary }
+
+        const [result] = await run([neutralGroup([withHistory, plain])])
+
+        expect(result.signedData).toMatchObject({
+            historyEntries: [
+                { summary: historySummary, chainData: withHistory.chainData },
+                { summary: plain.summary, chainData: plain.chainData },
+            ],
         })
     })
 

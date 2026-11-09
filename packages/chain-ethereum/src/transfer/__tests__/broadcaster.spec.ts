@@ -243,7 +243,7 @@ describe('Ethereum broadcaster adapter', () => {
             expect(attempt!.historyEntry?.summary).toMatchObject({
                 kind: 'approval',
                 counterparty: spender,
-                subjectAsset: { chainId: 'ethereum', assetId: token },
+                titleAssets: { asset: { chainId: 'ethereum', assetId: token } },
             })
         })
 

@@ -13,10 +13,9 @@
 import { ChainNotice } from '@components/ChainNotice'
 import { PWLoadingIndicator } from '@components/core'
 import type { RecordDetailBodyProps } from '@modules/signing'
-import { useEthereumRecordDetail } from '../../hooks/useEthereumRecordDetail'
-import { GENERIC_CALL_TITLE_KEYS } from '../../utils/recordTitleKeys'
 import { EthereumRecordReadBody } from './EthereumRecordReadBody'
 import { EthereumRecordSummary } from './EthereumRecordSummary'
+import { useEthereumRecordDetailBody } from './useEthereumRecordDetailBody'
 
 /**
  * Always what the history gave. Once the node's copy is read it is shown in
@@ -24,15 +23,13 @@ import { EthereumRecordSummary } from './EthereumRecordSummary'
  * signing; the balance changes stay below it either way.
  */
 export const EthereumRecordDetailBody = ({ record }: RecordDetailBodyProps) => {
-    const { transaction, isLoading, isReadFailed } =
-        useEthereumRecordDetail(record)
-    // A call the history could name (supply, swap) is understood; only the fallbacks warrant the warning.
-    const isUndecodedCall =
-        record.summary.kind === 'contract-call' &&
-        GENERIC_CALL_TITLE_KEYS.has(record.summary.title.key) &&
-        !transaction &&
-        !isLoading &&
-        !isReadFailed
+    const {
+        transaction,
+        isLoading,
+        isReadFailed,
+        isUndecodedCall,
+        isInferredTitle,
+    } = useEthereumRecordDetailBody(record)
 
     if (transaction) {
         return (
@@ -63,6 +60,13 @@ export const EthereumRecordDetailBody = ({ record }: RecordDetailBodyProps) => {
                             kind='warning'
                             titleKey='transactions.contract_call.warning'
                             testID='ethereum_record_undecoded_warning'
+                        />
+                    )}
+                    {isInferredTitle && (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.record_detail.inferred_notice'
+                            testID='ethereum_record_inferred_notice'
                         />
                     )}
                 </>

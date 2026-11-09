@@ -3702,6 +3702,7 @@
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
+            "inferred_notice": "Named from the balance changes. Pera couldn't read the call itself.",
             "transaction_id": "Transaction ID",
             "quantity": "Quantity",
             "nft_collection": "{{collection}} · {{standard}}",

@@ -44,6 +44,7 @@ const TransactionListItemView = ({
         amounts,
         amountsOverflowCount,
         fee,
+        feeLabel,
         notice,
         handlePress,
         handleLongPress,
@@ -101,9 +102,7 @@ const TransactionListItemView = ({
                     )}
                     {fee && (
                         <PWView style={styles.fee}>
-                            <PWText style={styles.feeText}>
-                                {t('transactions.common.fee')}
-                            </PWText>
+                            <PWText style={styles.feeText}>{feeLabel}</PWText>
                             <CurrencyAmount
                                 chainId={fee.chainId}
                                 value={fee.value}

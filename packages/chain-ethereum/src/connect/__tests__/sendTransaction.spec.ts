@@ -34,6 +34,7 @@ import {
 } from 'viem'
 import type { ReviewContext } from '@perawallet/wallet-core-chain-contract'
 import { getOpenSubmissionAttempts } from '@perawallet/wallet-core-signing'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { EvmErrorCode, isEvmError } from '../../blockchain/errors'
 import {
     EvmRpcErrorFixture,
@@ -45,7 +46,12 @@ import {
     readEvmTransaction,
     type EthereumTransactionPayload,
 } from '../../signing/adapter'
-import { createEthereumReviewer, ethereumViewOf } from '../../signing/review'
+import { ETH_IN_V3_EXACT_IN } from '../../signing/__tests__/contract-action-fixtures'
+import {
+    createEthereumReviewer,
+    ethereumCallSummary,
+    ethereumViewOf,
+} from '../../signing/review'
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
@@ -342,7 +348,10 @@ const feeHistory = (): RpcFeeHistory => ({
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    vi.restoreAllMocks()
+})
 afterAll(() => server.close())
 
 const ctx = testChainContext()
@@ -730,7 +739,7 @@ describe('buildEthereumSendTransaction', () => {
         ])
     })
 
-    it('names an unlimited dApp approval from its calldata, so its pending row reads as one, and review still reads it on its own', async () => {
+    it("keeps the dApp's plain claim as the summary and names an unlimited approval only in its History summary", async () => {
         useRpc({ eth_estimateGas: '0xfde8' })
         const data = encodeFunctionData({
             abi: erc20Abi,
@@ -748,15 +757,51 @@ describe('buildEthereumSendTransaction', () => {
             reviewContext,
         )
 
-        expect(built.summary).toMatchObject({
+        expect(built.summary).toEqual(
+            ethereumCallSummary(
+                { from: FROM, to: TOKEN, value: 0n, data },
+                ETHEREUM,
+            ),
+        )
+        expect(built.historySummary).toMatchObject({
             kind: 'approval',
             counterparty: TO,
-            subjectAsset: { chainId: 'ethereum', assetId: TOKEN },
+            title: { key: 'transactions.list_item.approve_asset' },
+            titleAssets: { asset: { chainId: 'ethereum', assetId: TOKEN } },
         })
-        expect(built.summary.title.key).toBe(
-            'transactions.list_item.approve_asset',
-        )
         expect(decoded.transactions[0].summary.kind).toBe('approval')
+    })
+
+    it("Given contract decoding is on, when a router swap that pays ETH is built, then only its History summary names the swap and the wallet's own review still asks", async () => {
+        useRpc({ eth_estimateGas: '0x30d40' })
+        vi.spyOn(getProvider().chains, 'capabilities').mockReturnValue({
+            ...ethereumCapabilityDefaults,
+            contractDecoding: true,
+        })
+        const { from, to, value, data } = ETH_IN_V3_EXACT_IN
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ from, to, value, data }),
+        )
+        const decoded = await ethereumReviewerAdapter.decoder.decode([built], {
+            ...reviewContext,
+            heldAddresses: [from],
+            isWalletBuilt: true,
+            capabilities: getProvider().chains.capabilities('ethereum'),
+        })
+
+        expect(built.summary).toEqual(
+            ethereumCallSummary({ from, to, value, data }, ETHEREUM),
+        )
+        expect(built.historySummary?.kind).toBe('swap')
+        expect(
+            ethereumReviewerAdapter.policy.autoApproveLocal({
+                ...decoded,
+                warnings: [],
+            }),
+        ).toBe(false)
     })
 
     it("refuses a call the node says would revert, even when the dApp gave its own gas, with the revert's reason", async () => {

@@ -3702,6 +3702,7 @@
         },
         "record_detail": {
             "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
+            "inferred_notice": "Nombre deducido de los cambios de saldo. Pera no pudo leer la llamada en sí.",
             "transaction_id": "ID de transacción",
             "quantity": "Cantidad",
             "nft_collection": "{{collection}} · {{standard}}",

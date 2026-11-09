@@ -21,6 +21,7 @@ import { useSummaryTitle } from '../useSummaryTitle'
 
 const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const TOKEN = '0xdac17f958d2ee523a2206206994597c13d831ec7'
+const OTHER_TOKEN = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 const t = vi.fn((key: string) => key)
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -46,8 +47,22 @@ const approval = (
     },
     direction: 'none',
     icon: 'approval',
-    subjectAsset: { chainId: 'ethereum', assetId: TOKEN },
+    titleAssets: { asset: { chainId: 'ethereum', assetId: TOKEN } },
     ...overrides,
+})
+
+const swap = (): TransactionSummary => ({
+    kind: 'swap',
+    title: {
+        key: i18nKey('transactions.list_item.swap_pair'),
+        params: { from: 'Tether', to: 'USDC.e' },
+    },
+    direction: 'none',
+    icon: 'swap',
+    titleAssets: {
+        from: { chainId: 'ethereum', assetId: TOKEN },
+        to: { chainId: 'ethereum', assetId: OTHER_TOKEN },
+    },
 })
 
 describe('useSummaryTitle', () => {
@@ -56,7 +71,7 @@ describe('useSummaryTitle', () => {
         vi.mocked(useAssetsQuery).mockReset()
     })
 
-    it('Given a subject asset the store knows, then the title names its unit', () => {
+    it('Given a title asset the store knows, then the title names its unit', () => {
         stored([{ assetId: TOKEN, unitName: 'USDT' }])
 
         renderHook(() => useSummaryTitle(approval(), SCOPE))
@@ -67,7 +82,7 @@ describe('useSummaryTitle', () => {
         })
     })
 
-    it('Given a subject asset the store lacks, then the title keeps the fallback param', () => {
+    it('Given a title asset the store lacks, then the title keeps the fallback param', () => {
         stored([])
 
         renderHook(() => useSummaryTitle(approval(), SCOPE))
@@ -77,15 +92,42 @@ describe('useSummaryTitle', () => {
         })
     })
 
-    it('Given no subject asset, then the title renders as given and nothing is looked up', () => {
+    it('Given no title assets, then the title renders as given and nothing is looked up', () => {
         stored([])
-        const summary = approval({ subjectAsset: undefined })
+        const summary = approval({ titleAssets: undefined })
 
         renderHook(() => useSummaryTitle(summary, SCOPE))
 
         expect(useAssetsQuery).toHaveBeenCalledWith(SCOPE, [])
         expect(t).toHaveBeenCalledWith('transactions.list_item.approve_asset', {
             asset: '0xdAC1…1ec7',
+        })
+    })
+
+    it('Given a swap, then both sides are looked up at once and each names its stored unit', () => {
+        stored([
+            { assetId: TOKEN, unitName: 'USDT' },
+            { assetId: OTHER_TOKEN, unitName: 'USDC' },
+        ])
+
+        renderHook(() => useSummaryTitle(swap(), SCOPE))
+
+        expect(useAssetsQuery).toHaveBeenCalledTimes(1)
+        expect(useAssetsQuery).toHaveBeenCalledWith(SCOPE, [TOKEN, OTHER_TOKEN])
+        expect(t).toHaveBeenCalledWith('transactions.list_item.swap_pair', {
+            from: 'USDT',
+            to: 'USDC',
+        })
+    })
+
+    it('Given a swap whose one side the store lacks, then that side keeps its own param', () => {
+        stored([{ assetId: OTHER_TOKEN, unitName: 'USDC' }])
+
+        renderHook(() => useSummaryTitle(swap(), SCOPE))
+
+        expect(t).toHaveBeenCalledWith('transactions.list_item.swap_pair', {
+            from: 'Tether',
+            to: 'USDC',
         })
     })
 })

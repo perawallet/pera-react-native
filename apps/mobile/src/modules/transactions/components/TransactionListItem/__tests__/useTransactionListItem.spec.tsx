@@ -418,6 +418,27 @@ describe('useTransactionListItem with a record', () => {
 
             expect(row.fee?.value).toEqual(new Decimal('0.0000062'))
         })
+
+        it('Given a mined record, then the fee is labelled as the fee paid', () => {
+            const row = renderRecord({}, noAmountRecord)
+
+            expect(row.feeLabel).toBe('transactions.common.fee')
+        })
+
+        it('Given a send whose fee is the most it can be charged, then the fee is labelled Max fee', () => {
+            const row = renderRecord(
+                {},
+                {
+                    ...noAmountRecord,
+                    status: 'pending',
+                    initiator: undefined,
+                    isFeeMaximum: true,
+                },
+            )
+
+            expect(row.fee?.value).toEqual(new Decimal('0.0000062'))
+            expect(row.feeLabel).toBe('send_funds.fee.max_fee')
+        })
     })
 
     beforeEach(() => {
@@ -459,7 +480,9 @@ describe('useTransactionListItem with a record', () => {
                         key: i18nKey('transactions.list_item.approve_asset'),
                         params: { asset: '0xdAC1…1ec7' },
                     },
-                    subjectAsset: { chainId: 'ethereum', assetId: '0xusdt' },
+                    titleAssets: {
+                        asset: { chainId: 'ethereum', assetId: '0xusdt' },
+                    },
                 },
             },
         )

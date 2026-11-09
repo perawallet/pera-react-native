@@ -3702,6 +3702,7 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
+            "inferred_notice": "Ad, bakiye değişikliklerinden çıkarıldı. Pera çağrının kendisini okuyamadı.",
             "transaction_id": "İşlem Kimliği",
             "quantity": "Adet",
             "nft_collection": "{{collection}} · {{standard}}",

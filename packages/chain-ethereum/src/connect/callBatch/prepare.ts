@@ -26,7 +26,10 @@ import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import { decodedCallSummary } from '../../history/decoded-call-summary'
 import type { EthereumTransactionPayload } from '../../signing/adapter'
-import { BATCH_FEE_CEILING_MULTIPLIER } from '../../signing/review'
+import {
+    BATCH_FEE_CEILING_MULTIPLIER,
+    ethereumCallSummary,
+} from '../../signing/review'
 import {
     buildEthereumSendTransaction,
     type EthereumSendTransactionRequest,
@@ -67,7 +70,8 @@ export const previewEthereumCall = (
     return {
         scope,
         payload,
-        summary: decodedCallSummary(
+        summary: ethereumCallSummary(call, chain),
+        historySummary: decodedCallSummary(
             call,
             chain,
             scope,

@@ -210,8 +210,12 @@ export interface TransactionSummary {
     amount?: { assetRef: AssetRef; value: Decimal; display?: AssetDisplayHint }
     /** Shown instead of `amount` when set. */
     balanceChanges?: BalanceChange[]
-    /** An asset the transaction acts on without moving it, such as an approval's token; the UI fills the title's `asset` param with its stored unit name. */
-    subjectAsset?: AssetRef
+    /** Title params the UI fills with each asset's stored unit name, keeping the title's own param when the store lacks the asset. */
+    titleAssets?: Readonly<Partial<Record<string, AssetRef>>>
+    /** The title was guessed from the balance changes, not read from the call. */
+    isInferred?: boolean
+    /** The title names no action: a contract call nothing decoded or recognised. */
+    isActionUnknown?: boolean
     icon: TransactionIconKind
     /** Absent on a confirmed transaction with nothing chain-specific to flag. */
     notice?: TransactionNotice
@@ -276,6 +280,8 @@ export interface UnsignedTransaction {
     /** Chain-native transaction; only the owning adapter reads it. */
     payload: unknown
     summary: TransactionSummary
+    /** What History shows while the transaction is pending; review never reads it. */
+    historySummary?: TransactionSummary
     chainData: ChainTransactionData
 }
 
@@ -290,6 +296,8 @@ export interface TransactionRecord {
     blockNumber?: number
     /** In the native asset. */
     fee?: Decimal
+    /** `fee` is the most the transaction can be charged, not what it paid: a send the chain hasn't listed yet. */
+    isFeeMaximum?: boolean
     /**
      * The address that signed the transaction; absent when the history doesn't
      * say. A `direction: 'out'` summary alone doesn't prove the account sent it.

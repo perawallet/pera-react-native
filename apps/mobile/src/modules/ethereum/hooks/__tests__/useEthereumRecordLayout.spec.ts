@@ -316,6 +316,23 @@ describe('useEthereumRecordLayout', () => {
         expect(summary.fee?.value.toString()).toBe('0.000021')
     })
 
+    it('Given a pending send whose fee is the most it can be charged, then the fee is marked as a maximum', () => {
+        const { summary } = layoutOf(
+            recordOf({
+                initiator: undefined,
+                status: 'pending',
+                isFeeMaximum: true,
+            }),
+        )
+
+        expect(summary.fee?.value.toString()).toBe('0.000021')
+        expect(summary.isFeeMaximum).toBe(true)
+    })
+
+    it('Given a mined record, then its fee is not marked as a maximum', () => {
+        expect(layoutOf(recordOf()).summary.isFeeMaximum).toBeFalsy()
+    })
+
     it('Given a record with no fee, then it shows none', () => {
         expect(
             layoutOf(recordOf({ fee: undefined })).summary.fee,
@@ -379,7 +396,7 @@ describe('useEthereumRecordLayout', () => {
                     key: i18nKey('transactions.list_item.approve_asset'),
                     params: { asset: '0xA0b8…eB48' },
                 },
-                subjectAsset: USDC_REF,
+                titleAssets: { asset: USDC_REF },
                 amount: undefined,
             },
         )
@@ -417,10 +434,14 @@ describe('useEthereumRecordLayout', () => {
             iconName: 'read-icon',
         }) as unknown as EthereumTransactionPresentation
 
-    const titledRecord = (key: string) =>
+    const titledRecord = (key: string, isActionUnknown?: boolean) =>
         recordOf(
             {},
-            { kind: 'contract-call', title: { key: i18nKey(key) as never } },
+            {
+                kind: 'contract-call',
+                title: { key: i18nKey(key) as never },
+                ...(isActionUnknown && { isActionUnknown }),
+            },
         )
 
     it("Given the decoded read of the call, then its icon wins over the history's but the row's title stays", () => {
@@ -442,25 +463,29 @@ describe('useEthereumRecordLayout', () => {
         expect(summary.title).toBe('transactions.list_item.revoke_approval')
     })
 
-    it.each([
-        'transactions.list_item.contract_interaction',
-        'transactions.list_item.contract_call',
-        'transactions.list_item.interpreted_title',
-    ])(
-        'Given a row titled generically (%s) and a read that decodes a send, then the hero says send',
-        rowKey => {
-            const { summary } = layoutOf(
-                titledRecord(rowKey),
-                presentationOf('transactions.list_item.send'),
-            )
+    it('Given a row that names no action and a read that decodes a send, then the hero says send', () => {
+        const { summary } = layoutOf(
+            titledRecord('transactions.list_item.interpreted_title', true),
+            presentationOf('transactions.list_item.send'),
+        )
 
-            expect(summary.title).toBe('transactions.list_item.send')
-        },
-    )
+        expect(summary.title).toBe('transactions.list_item.send')
+    })
 
-    it("Given a generic row and a read that is generic too, then the row's title stays", () => {
+    it("Given a row whose summary doesn't say it names no action, then a read that decodes a send leaves its title, whatever the title's key", () => {
         const { summary } = layoutOf(
             titledRecord('transactions.list_item.contract_interaction'),
+            presentationOf('transactions.list_item.send'),
+        )
+
+        expect(summary.title).toBe(
+            'transactions.list_item.contract_interaction',
+        )
+    })
+
+    it("Given a row that names no action and a read that names none either, then the row's title stays", () => {
+        const { summary } = layoutOf(
+            titledRecord('transactions.list_item.contract_interaction', true),
             presentationOf('transactions.list_item.contract_call'),
         )
 

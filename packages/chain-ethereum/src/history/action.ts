@@ -12,6 +12,7 @@
 
 import type { Address } from 'viem'
 import {
+    type AssetRef,
     type BalanceChange,
     type I18nKey,
     type LocalizedText,
@@ -29,15 +30,19 @@ import { NATIVE_ASSET_ID } from '../chains/create-evm-chain'
 import type { EvmChain } from '../chains/types'
 import type { KnownEvmContract } from '../signing/known-contracts'
 
-/** What a call the account sent did, mined or still pending. */
-export type EvmHistoryAction =
-    /** `token` is absent for Permit2, where `to` is not the token. */
+type SwapSide = { symbol: string; assetRef: AssetRef }
+
+type HistoryActionVariant =
+    /** `token` is absent for a mined Permit2 approval, whose calldata History doesn't read. */
     | { kind: 'approval'; token?: Address }
-    /** `pair` holds the symbols, absent when either side has none. */
-    | { kind: 'swap'; pair?: { from: string; to: string } }
+    /** `pair` is absent when either side has no symbol. */
+    | { kind: 'swap'; pair?: { from: SwapSide; to: SwapSide } }
     | { kind: 'supply' | 'withdraw' | 'borrow' | 'repay' | 'wrap' | 'unwrap' }
     | { kind: 'add-liquidity' | 'remove-liquidity' }
     | { kind: 'send' | 'receive' }
+
+/** What a call the account sent did, mined or still pending; `isInferred` when only its balance changes said so. */
+export type EvmHistoryAction = HistoryActionVariant & { isInferred?: boolean }
 
 type PlainActionKind = Exclude<EvmHistoryAction['kind'], 'approval' | 'swap'>
 
@@ -139,11 +144,11 @@ const positionAction = ({
             areEvmAddressesEqual(nft.contract, to)
         )
     })
-    if (isPositionLeaving) return { kind: 'remove-liquidity' }
+    if (isPositionLeaving) return { kind: 'remove-liquidity', isInferred: true }
     const fungible = changes.filter(change => !isNftChange(change))
     return fungible.length > 0 &&
         fungible.every(change => change.value.isNegative())
-        ? { kind: 'add-liquidity' }
+        ? { kind: 'add-liquidity', isInferred: true }
         : undefined
 }
 
@@ -166,9 +171,11 @@ const shapeAction = ({
     const outs = changes.filter(change => change.value.isNegative())
     const ins = changes.filter(change => change.value.isPositive())
     if (outs.length === 0) {
-        return ins.length > 0 ? { kind: 'receive' } : undefined
+        return ins.length > 0
+            ? { kind: 'receive', isInferred: true }
+            : undefined
     }
-    if (ins.length === 0) return { kind: 'send' }
+    if (ins.length === 0) return { kind: 'send', isInferred: true }
     // A liquidity removal pays out two assets for one, so a swap is exactly one for one.
     if (outs.length > 1 || ins.length > 1 || nftLegCount > 0) return undefined
     const [out] = outs
@@ -182,7 +189,16 @@ const shapeAction = ({
     }
     const from = symbolOf(out, nativeSymbol)
     const to = symbolOf(received, nativeSymbol)
-    return from && to ? { kind: 'swap', pair: { from, to } } : { kind: 'swap' }
+    return from && to
+        ? {
+              kind: 'swap',
+              pair: {
+                  from: { symbol: from, assetRef: out.assetRef },
+                  to: { symbol: to, assetRef: received.assetRef },
+              },
+              isInferred: true,
+          }
+        : { kind: 'swap', isInferred: true }
 }
 
 // Aave, wrapped native and the position managers are read by method, never by
@@ -235,8 +251,8 @@ export const knownContractSubtitle = (
 })
 
 /**
- * `base` retitled for what the call did; its balance changes, counterparty and
- * notice stay. Pass `contract` only where naming it is allowed.
+ * An approval drops `base`'s counterparty: the call's target is the token, which would read as
+ * the spender. Pass `contract` only where naming it is allowed.
  */
 export const historyActionSummary = (
     action: EvmHistoryAction,
@@ -244,15 +260,18 @@ export const historyActionSummary = (
     contract: Optional<KnownEvmContract>,
     chain: EvmChain,
 ): TransactionSummary => {
-    const named = {
-        ...base,
+    const { isActionUnknown: _unknown, ...known } = base
+    const named: TransactionSummary = {
+        ...known,
         ...(contract && { subtitle: knownContractSubtitle(contract) }),
+        ...(action.isInferred && { isInferred: true }),
     }
     switch (action.kind) {
         case 'approval': {
             const { token } = action
+            const { counterparty: _target, ...approval } = named
             return {
-                ...named,
+                ...approval,
                 kind: 'approval',
                 icon: 'approval',
                 title: token
@@ -262,9 +281,11 @@ export const historyActionSummary = (
                       }
                     : { key: APPROVAL },
                 ...(token && {
-                    subjectAsset: {
-                        chainId: chain.row.id,
-                        assetId: normalizeEvmAddress(token),
+                    titleAssets: {
+                        asset: {
+                            chainId: chain.row.id,
+                            assetId: normalizeEvmAddress(token),
+                        },
                     },
                 }),
             }
@@ -275,12 +296,21 @@ export const historyActionSummary = (
                 ...named,
                 kind: 'swap',
                 icon: 'swap',
-                title: pair
+                ...(pair
                     ? {
-                          key: SWAP_PAIR,
-                          params: { from: pair.from, to: pair.to },
+                          title: {
+                              key: SWAP_PAIR,
+                              params: {
+                                  from: pair.from.symbol,
+                                  to: pair.to.symbol,
+                              },
+                          },
+                          titleAssets: {
+                              from: pair.from.assetRef,
+                              to: pair.to.assetRef,
+                          },
                       }
-                    : { key: SWAP },
+                    : { title: { key: SWAP } }),
             }
         }
         default: {

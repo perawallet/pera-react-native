@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { encodeFunctionData, maxUint256, parseAbi } from 'viem'
 import type { Address } from 'viem'
+import type { TransactionSummary } from '@perawallet/wallet-core-chain-contract'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { V3_EXACT_IN_PERMIT_SWEEP } from '../../signing/__tests__/contract-action-fixtures'
 import { SENDER } from '../../signing/__tests__/fixtures'
@@ -28,6 +29,10 @@ const scope = evmScopeOf(ETHEREUM)
 const ERC20 = parseAbi([
     'function approve(address spender, uint256 value)',
     'function setApprovalForAll(address operator, bool approved)',
+])
+
+const PERMIT2_ABI = parseAbi([
+    'function approve(address token, address spender, uint160 amount, uint48 expiration)',
 ])
 
 const summarize = (
@@ -48,6 +53,13 @@ const approve = (value: bigint) =>
         args: [SPENDER, value],
     })
 
+const permit2Approve = (amount: bigint) =>
+    encodeFunctionData({
+        abi: PERMIT2_ABI,
+        functionName: 'approve',
+        args: [USDT, SPENDER, amount, 1_800_000_000],
+    })
+
 describe('decodedCallSummary', () => {
     it('names an unlimited approval after its token and spender, whatever the capabilities', () => {
         const summary = summarize(
@@ -59,7 +71,7 @@ describe('decodedCallSummary', () => {
             kind: 'approval',
             icon: 'approval',
             counterparty: SPENDER,
-            subjectAsset: { chainId: 'ethereum', assetId: USDT },
+            titleAssets: { asset: { chainId: 'ethereum', assetId: USDT } },
         })
         expect(summary.title.key).toBe('transactions.list_item.approve_asset')
         expect(summary.subtitle).toBeUndefined()
@@ -149,6 +161,66 @@ describe('decodedCallSummary', () => {
         expect(off.subtitle).toBeUndefined()
     })
 
+    describe('Permit2 approve', () => {
+        it('names the token it approves and its spender, with the Permit2 subtitle while decoding', () => {
+            const summary = summarize({ to: PERMIT2, data: permit2Approve(5n) })
+
+            expect(summary).toMatchObject({
+                kind: 'approval',
+                icon: 'approval',
+                counterparty: SPENDER,
+                title: {
+                    key: 'transactions.list_item.approve_asset',
+                    params: { asset: '0xdAC1...1ec7' },
+                },
+                titleAssets: { asset: { chainId: 'ethereum', assetId: USDT } },
+                subtitle: { params: { title: 'Permit2' } },
+            })
+        })
+
+        it('names it whatever the capabilities, without the Permit2 subtitle', () => {
+            const summary = summarize(
+                { to: PERMIT2, data: permit2Approve(5n) },
+                false,
+            )
+
+            expect(summary.kind).toBe('approval')
+            expect(summary.title.key).toBe(
+                'transactions.list_item.approve_asset',
+            )
+            expect(summary.counterparty).toBe(SPENDER)
+            expect(summary.subtitle).toBeUndefined()
+        })
+
+        it('calls an approve of zero a revocation', () => {
+            const summary = summarize({ to: PERMIT2, data: permit2Approve(0n) })
+
+            expect(summary.kind).toBe('approval')
+            expect(summary.title.key).toBe(
+                'transactions.list_item.revoke_approval',
+            )
+            expect(summary.counterparty).toBe(SPENDER)
+        })
+
+        it('leaves calldata that does not re-encode exactly a contract call', () => {
+            const summary = summarize({
+                to: PERMIT2,
+                data: `${permit2Approve(5n)}00`,
+            })
+
+            expect(summary.kind).toBe('contract-call')
+            expect(summary.title.key).toBe(
+                'transactions.list_item.contract_interaction',
+            )
+        })
+
+        it('leaves the same call to a contract that is not Permit2 a contract call', () => {
+            const summary = summarize({ to: USDT, data: permit2Approve(5n) })
+
+            expect(summary.kind).toBe('contract-call')
+        })
+    })
+
     it('titles a contract deployment as a generic interaction', () => {
         const summary = summarize({ data: '0x6080604052' })
 
@@ -162,5 +234,42 @@ describe('decodedCallSummary', () => {
         const summary = summarize({ to: SPENDER, data: '0x', value: 5n })
 
         expect(summary.kind).toBe('transfer')
+    })
+
+    describe('a title that names no action', () => {
+        const swap = V3_EXACT_IN_PERMIT_SWEEP
+
+        it.each<[string, () => TransactionSummary]>([
+            ['a router call with decoding off', () => summarize(swap, false)],
+            [
+                'a known contract call it cannot decode',
+                () => summarize({ to: PERMIT2, data: '0x12345678' }),
+            ],
+            [
+                'a contract deployment',
+                () => summarize({ data: '0x6080604052' }),
+            ],
+        ])('Given %s, then the summary says so', (_, summaryOf) => {
+            expect(summaryOf().isActionUnknown).toBe(true)
+        })
+
+        it.each<[string, () => TransactionSummary]>([
+            [
+                'an approval with decoding off',
+                () => summarize({ to: USDT, data: approve(maxUint256) }, false),
+            ],
+            ['a revocation', () => summarize({ to: USDT, data: approve(0n) })],
+            [
+                'a Permit2 approve',
+                () => summarize({ to: PERMIT2, data: permit2Approve(5n) }),
+            ],
+            ['a router swap, decoded', () => summarize(swap)],
+            [
+                'a plain value transfer',
+                () => summarize({ to: SPENDER, data: '0x', value: 5n }),
+            ],
+        ])('Given %s, then the summary names an action', (_, summaryOf) => {
+            expect(summaryOf().isActionUnknown).toBeUndefined()
+        })
     })
 })

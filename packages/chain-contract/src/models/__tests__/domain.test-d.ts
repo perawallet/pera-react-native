@@ -23,6 +23,7 @@ import type {
     ChainTransactionData,
     FeePreset,
     TransactionIntent,
+    TransactionRecord,
     TransactionSummary,
     TransferIntent,
     UnsignedTransaction,
@@ -42,9 +43,29 @@ describe('TransactionSummary', () => {
         >()
     })
 
-    it('carries an optional subject asset ref', () => {
-        expectTypeOf<TransactionSummary['subjectAsset']>().toEqualTypeOf<
-            AssetRef | undefined
+    it('carries optional asset refs keyed by the title param each fills', () => {
+        expectTypeOf<TransactionSummary['titleAssets']>().toEqualTypeOf<
+            Readonly<Partial<Record<string, AssetRef>>> | undefined
+        >()
+    })
+
+    it('can mark its title as inferred', () => {
+        expectTypeOf<TransactionSummary['isInferred']>().toEqualTypeOf<
+            boolean | undefined
+        >()
+    })
+
+    it('can mark its title as naming no action', () => {
+        expectTypeOf<TransactionSummary['isActionUnknown']>().toEqualTypeOf<
+            boolean | undefined
+        >()
+    })
+})
+
+describe('TransactionRecord', () => {
+    it('can mark its fee as the most it could be charged', () => {
+        expectTypeOf<TransactionRecord['isFeeMaximum']>().toEqualTypeOf<
+            boolean | undefined
         >()
     })
 })
@@ -116,6 +137,12 @@ describe('AssetRef', () => {
 describe('UnsignedTransaction', () => {
     it('keeps the payload opaque', () => {
         expectTypeOf<UnsignedTransaction['payload']>().toEqualTypeOf<unknown>()
+    })
+
+    it('can carry a History summary apart from the summary review reads', () => {
+        expectTypeOf<UnsignedTransaction['historySummary']>().toEqualTypeOf<
+            TransactionSummary | undefined
+        >()
     })
 })
 

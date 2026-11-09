@@ -23,6 +23,7 @@ import type { EvmChain } from '../chains/types'
 import {
     contractActionSummary,
     decodeEvmContractAction,
+    decodePermit2Approval,
 } from '../signing/contract-actions'
 import {
     findKnownEvmContract,
@@ -50,9 +51,8 @@ const approvedPartyOf = (standard: EvmStandardCall): Optional<Address> => {
 }
 
 /**
- * The summary of a call the wallet broadcast, read from its own calldata.
- * Approvals are named whatever `isDecoding`; naming a contract call is not.
- * Plain value transfers stay as `ethereumCallSummary` builds them.
+ * Approvals, a Permit2 `approve` among them, are named whatever `isDecoding`; naming a contract
+ * call is not. Plain value transfers stay as `ethereumCallSummary` builds them.
  */
 export const decodedCallSummary = (
     call: DecodableCall,
@@ -65,6 +65,7 @@ export const decodedCallSummary = (
     const base: TransactionSummary = {
         ...plain,
         title: { key: CONTRACT_INTERACTION },
+        isActionUnknown: true,
     }
     const { to } = call
     if (!to) return base
@@ -90,6 +91,23 @@ export const decodedCallSummary = (
             ...(isEvmRevocationCall(standard) && {
                 title: { key: REVOKE_APPROVAL },
             }),
+        }
+    }
+
+    const permit2 =
+        contract?.kind === 'uniswap-permit2'
+            ? decodePermit2Approval(call)
+            : undefined
+    if (permit2) {
+        return {
+            ...historyActionSummary(
+                { kind: 'approval', token: permit2.token },
+                base,
+                named,
+                chain,
+            ),
+            counterparty: permit2.spender,
+            ...(permit2.amount === 0n && { title: { key: REVOKE_APPROVAL } }),
         }
     }
 

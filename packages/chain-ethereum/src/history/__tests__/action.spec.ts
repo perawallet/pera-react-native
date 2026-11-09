@@ -45,6 +45,8 @@ const change = (
     ...(symbol !== undefined && { display: { symbol, decimals: 6 } }),
 })
 
+const NATIVE_REF = { chainId: 'ethereum', assetId: 'native' }
+const USDT_REF = { chainId: 'ethereum', assetId: USDT }
 const ethOut = change('native', '-1143000000000000')
 const usdtIn = change(USDT, '2230000', 'USDT')
 const usdtOut = change(USDT, '-2230000', 'USDT')
@@ -163,13 +165,13 @@ describe('classifyEvmHistoryCall', () => {
                     usdcOut,
                     positionIn,
                 ]),
-            ).toEqual({ kind: 'add-liquidity' })
+            ).toEqual({ kind: 'add-liquidity', isInferred: true })
         })
 
         it('Given modifyLiquidities on the V4 position manager moving tokens out, then add-liquidity', () => {
             expect(
                 classify(V4_POSITIONS, 'modifyLiquidities', [ethOut, usdcOut]),
-            ).toEqual({ kind: 'add-liquidity' })
+            ).toEqual({ kind: 'add-liquidity', isInferred: true })
         })
 
         it('Given multicall on the V3 position manager burning the position, then remove-liquidity', () => {
@@ -179,7 +181,7 @@ describe('classifyEvmHistoryCall', () => {
                     change(USDC, '5000000', 'USDC'),
                     positionOut,
                 ]),
-            ).toEqual({ kind: 'remove-liquidity' })
+            ).toEqual({ kind: 'remove-liquidity', isInferred: true })
         })
 
         it('Given multicall on the V3 position manager only paying tokens in, then no action', () => {
@@ -209,17 +211,21 @@ describe('classifyEvmHistoryCall', () => {
     })
 
     describe('balance shape', () => {
-        it('Given one ETH out and USDT in on the router, then swap ETH → USDT', () => {
+        it('Given one ETH out and USDT in on the router, then an inferred swap ETH → USDT naming each side by symbol and asset', () => {
             expect(classify(ROUTER, 'execute', [ethOut, usdtIn])).toEqual({
                 kind: 'swap',
-                pair: { from: 'ETH', to: 'USDT' },
+                pair: {
+                    from: { symbol: 'ETH', assetRef: NATIVE_REF },
+                    to: { symbol: 'USDT', assetRef: USDT_REF },
+                },
+                isInferred: true,
             })
         })
 
         it('Given a swap whose received token has no symbol, then a swap without a pair', () => {
             expect(
                 classify(ROUTER, 'execute', [ethOut, change(USDT, '2230000')]),
-            ).toEqual({ kind: 'swap' })
+            ).toEqual({ kind: 'swap', isInferred: true })
         })
 
         it('Given a swap whose received token has an empty symbol, then a swap without a pair', () => {
@@ -228,7 +234,7 @@ describe('classifyEvmHistoryCall', () => {
                     usdtOut,
                     change(USDC, '2230000', ''),
                 ]),
-            ).toEqual({ kind: 'swap' })
+            ).toEqual({ kind: 'swap', isInferred: true })
         })
 
         it('Given two tokens out and one in, then not a swap', () => {
@@ -272,15 +278,17 @@ describe('classifyEvmHistoryCall', () => {
             ).toBeUndefined()
         })
 
-        it('Given only a token in from an unknown contract, then receive', () => {
+        it('Given only a token in from an unknown contract, then an inferred receive', () => {
             expect(classify(UNKNOWN, 'claim', [usdtIn])).toEqual({
                 kind: 'receive',
+                isInferred: true,
             })
         })
 
-        it('Given only a token out to an unknown contract, then send', () => {
+        it('Given only a token out to an unknown contract, then an inferred send', () => {
             expect(classify(UNKNOWN, 'bridge', [usdtOut])).toEqual({
                 kind: 'send',
+                isInferred: true,
             })
         })
 
@@ -301,7 +309,7 @@ describe('historyActionSummary', () => {
     }
     const router = findKnownEvmContract(1, ROUTER)
 
-    it('Given an approval of USDT, then an approval titled with the short token address, acting on USDT', () => {
+    it("Given an approval of USDT, then an approval titled with the short token address, filled from USDT's stored name, naming no counterparty", () => {
         expect(
             historyActionSummary(
                 { kind: 'approval', token: USDT },
@@ -310,14 +318,15 @@ describe('historyActionSummary', () => {
                 ETHEREUM,
             ),
         ).toEqual({
-            ...base,
             kind: 'approval',
+            direction: 'none',
+            balanceChanges: [],
             icon: 'approval',
             title: {
                 key: 'transactions.list_item.approve_asset',
                 params: { asset: '0xdAC1...1ec7' },
             },
-            subjectAsset: { chainId: 'ethereum', assetId: USDT },
+            titleAssets: { asset: USDT_REF },
         })
     })
 
@@ -338,13 +347,20 @@ describe('historyActionSummary', () => {
                 params: { title: 'Permit2' },
             },
         })
-        expect(summary.subjectAsset).toBeUndefined()
+        expect(summary.titleAssets).toBeUndefined()
+        expect(summary.counterparty).toBeUndefined()
     })
 
-    it('Given a swap with a pair on the router, then a swap titled by its pair and named by the router', () => {
+    it('Given a swap with a pair on the router, then a swap titled by its pair, each side filled from its stored name, and named by the router', () => {
         expect(
             historyActionSummary(
-                { kind: 'swap', pair: { from: 'ETH', to: 'USDT' } },
+                {
+                    kind: 'swap',
+                    pair: {
+                        from: { symbol: 'ETH', assetRef: NATIVE_REF },
+                        to: { symbol: 'USDT', assetRef: USDT_REF },
+                    },
+                },
                 base,
                 router,
                 ETHEREUM,
@@ -356,12 +372,54 @@ describe('historyActionSummary', () => {
                 key: 'transactions.list_item.swap_pair',
                 params: { from: 'ETH', to: 'USDT' },
             },
+            titleAssets: { from: NATIVE_REF, to: USDT_REF },
             subtitle: {
                 key: 'transactions.list_item.interpreted_title',
                 params: { title: 'Uniswap Universal Router' },
             },
         })
     })
+
+    it('Given an action read from the balance changes, then its summary is marked inferred', () => {
+        expect(
+            historyActionSummary(
+                { kind: 'receive', isInferred: true },
+                base,
+                undefined,
+                ETHEREUM,
+            ).isInferred,
+        ).toBe(true)
+    })
+
+    it('Given an action read from the method, then its summary is not marked inferred', () => {
+        expect(
+            historyActionSummary(
+                { kind: 'supply' },
+                base,
+                findKnownEvmContract(1, AAVE_POOL),
+                ETHEREUM,
+            ).isInferred,
+        ).toBeUndefined()
+    })
+
+    it.each([
+        { kind: 'approval', token: USDT },
+        { kind: 'swap' },
+        { kind: 'supply' },
+        { kind: 'receive', isInferred: true },
+    ] as const)(
+        'Given $kind over a summary that named no action, then it names one',
+        action => {
+            expect(
+                historyActionSummary(
+                    action,
+                    { ...base, isActionUnknown: true },
+                    undefined,
+                    ETHEREUM,
+                ).isActionUnknown,
+            ).toBeUndefined()
+        },
+    )
 
     it('Given a swap without a pair, then a plain swap', () => {
         expect(

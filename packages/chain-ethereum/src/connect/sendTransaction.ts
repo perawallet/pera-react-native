@@ -29,6 +29,7 @@ import type {
     EthereumRevertedEstimate,
     EthereumTransactionPayload,
 } from '../signing/adapter'
+import { ethereumCallSummary } from '../signing/review'
 import {
     evmFeePresetOf,
     readEvmFeePresets,
@@ -350,13 +351,13 @@ export const buildEthereumSendTransaction = async (
                 estimate.gas * paidPerGas(maxFeePerGas, maxPriorityFeePerGas),
         },
     }
+    const call = { from, to, value, data }
     return {
         scope,
         payload,
-        // Decoded for History; it must never reach a 'local' (wallet-built) signer,
-        // which would trust it, so the call-batch executor swaps it out.
-        summary: decodedCallSummary(
-            { from, to, value, data },
+        summary: ethereumCallSummary(call, chain),
+        historySummary: decodedCallSummary(
+            call,
             chain,
             scope,
             getProvider().chains.capabilities(chain.row.id).contractDecoding,

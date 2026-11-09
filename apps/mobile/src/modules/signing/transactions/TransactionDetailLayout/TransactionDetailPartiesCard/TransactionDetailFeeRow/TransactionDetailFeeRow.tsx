@@ -23,11 +23,14 @@ import { useTransactionDetailFeeRow } from './useTransactionDetailFeeRow'
 type TransactionDetailFeeRowProps = {
     fee: TransactionDetailAmount
     scope: ChainScope
+    /** Labels `fee` as the most the transaction can be charged. */
+    isMaximum?: boolean
 }
 
 export const TransactionDetailFeeRow = ({
     fee,
     scope,
+    isMaximum,
 }: TransactionDetailFeeRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -36,7 +39,11 @@ export const TransactionDetailFeeRow = ({
     return (
         <KeyValueRow
             testID='transaction_detail_fee'
-            title={t('transactions.common.fee')}
+            title={t(
+                isMaximum
+                    ? 'send_funds.fee.max_fee'
+                    : 'transactions.common.fee',
+            )}
         >
             <PWView style={styles.amounts}>
                 <AssetAmount

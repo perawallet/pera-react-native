@@ -61,7 +61,6 @@ import {
 } from '../sendTransaction'
 import { EIP5792_ERROR_CODE } from './codes'
 import { readEvmTransaction } from '../../signing/adapter'
-import { ethereumCallSummary } from '../../signing/review'
 import { previewEthereumCall, type PreparedEthereumCallBatch } from './prepare'
 
 /**
@@ -162,7 +161,7 @@ type Unsent = {
 const historyEntryOf = (
     unsigned: UnsignedTransaction,
 ): SubmissionHistoryEntry => ({
-    summary: unsigned.summary,
+    summary: unsigned.historySummary ?? unsigned.summary,
     chainData: unsigned.chainData,
 })
 
@@ -396,15 +395,9 @@ const run = async (
                         'The network fee rose past what the batch review allows',
                     )
                 }
-                // This signer counts as wallet-built, so a decoded swap summary
-                // would pass review's own-swap proof and skip the approved review.
-                const asDappCall: UnsignedTransaction = {
-                    ...unsigned,
-                    summary: ethereumCallSummary(calls[position], chain),
-                }
                 // The review listed the batch's calls in order, so a call's
                 // position in the batch is its place on the review.
-                signed = await signTransaction(asDappCall, {
+                signed = await signTransaction(unsigned, {
                     token: batch.approvalToken,
                     positions: [position],
                 })

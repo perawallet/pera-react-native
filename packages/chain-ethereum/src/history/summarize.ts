@@ -202,6 +202,25 @@ const nftChangeOf = (
     }
 }
 
+// A failed row moves nothing but its gas, whatever it carried.
+const isGasOnly = (item: EvmHistoryItem, address: string): boolean => {
+    if (item.status !== 'success') return true
+    const touches = (leg: { from: string; to: Nullable<string> }) =>
+        areEqual(leg.from, address) ||
+        (leg.to !== null && areEqual(leg.to, address))
+    return (
+        new Decimal(item.value ?? '0').isZero() &&
+        !item.internal_transfers.some(
+            leg =>
+                leg.status === 'success' &&
+                !new Decimal(leg.value).isZero() &&
+                touches(leg),
+        ) &&
+        !item.token_transfers.some(touches) &&
+        !item.nft_transfers.some(touches)
+    )
+}
+
 // The backend's impacts may leave an NFT or the native asset out, so a leg it
 // misses adds its own line; a self-transfer nets to nothing and adds none.
 const balanceChangesOf = (
@@ -223,15 +242,19 @@ const balanceChangesOf = (
     const gas =
         item.fee !== null && item.from !== null && areEqual(item.from, address)
             ? new Decimal(item.fee)
-            : new Decimal(0)
+            : null
+    // That gas is `-fee` alone, which leaves out an L2's L1 data fee, so on a
+    // row that moved nothing else any native impact is gas, never a transfer.
+    const isNativeOnlyGas = gas !== null && isGasOnly(item, address)
     const impacts: BalanceChange[] = item.balance_impacts.flatMap(
         ({ asset_id, amount }) => {
             try {
                 const assetId = fromCaip19(asset_id, scope, chain)
+                if (assetId === nativeId && isNativeOnlyGas) return []
                 const display = displayById.get(assetId)
                 const value =
                     assetId === nativeId
-                        ? new Decimal(amount).plus(gas)
+                        ? new Decimal(amount).plus(gas ?? 0)
                         : new Decimal(amount)
                 if (value.isZero()) return []
                 return {
@@ -395,6 +418,7 @@ const summarizeNftTransfer = (
         title: { key: presentation.title },
         icon: presentation.icon,
         direction,
+        ...(direction === 'self' && { isActionUnknown: true }),
     } as const
     const [only, ...others] = legs
     if (!only || others.length > 0) {
@@ -482,6 +506,7 @@ const summarizeContractCall = (
         direction: 'none',
         ...(other !== null && { counterparty: normalize(other) }),
         balanceChanges: changes,
+        isActionUnknown: true,
     }
     if (!sent || item.to === null) return base
     const to = getAddress(item.to)
@@ -526,7 +551,7 @@ export const summarizeEthereumHistoryItem = (
               summarizeContractCall(item, address, scope, chain, isDecoding))
     const named =
         isDecoding &&
-        summary.title.key === CONTRACT_INTERACTION &&
+        summary.isActionUnknown &&
         item.method !== null &&
         FUNCTION_NAME.test(item.method)
             ? {
