@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { Decimal } from 'decimal.js'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 import type {
@@ -29,6 +29,8 @@ export type ReviewBodyProps = {
     source?: SignRequestSource
     /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
     verifiedOrigin?: string
+    /** The screen's Confirm and Cancel, which the review layout pins under its sticky fee. */
+    actions: ReactNode
 }
 
 export type DetailBodyProps = {

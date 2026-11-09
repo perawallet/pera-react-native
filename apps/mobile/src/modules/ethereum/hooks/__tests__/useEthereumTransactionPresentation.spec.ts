@@ -117,7 +117,7 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.reviewFee).not.toHaveProperty('estimate')
     })
 
-    it('formats the maximum fee as a warning only on a request flagged as paying far more than the wallet would', () => {
+    it('flags a high fee only on a request flagged as paying far more than the wallet would', () => {
         const flagged = {
             ...natives.transfer,
             transaction: {
@@ -133,8 +133,8 @@ describe('useEthereumTransactionPresentation', () => {
             useEthereumTransactionPresentation(flagged),
         )
 
-        expect(unflagged.current?.highFeeText).toBeNull()
-        expect(result.current?.highFeeText).toContain('ETH')
+        expect(unflagged.current?.hasHighFee).toBe(false)
+        expect(result.current?.hasHighFee).toBe(true)
     })
 
     it("shows a token transfer's recipient, not the contract, and the amount in the token's units", () => {

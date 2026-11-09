@@ -11,37 +11,32 @@
  */
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { PWView } from '@components/core'
 import { ExpandableText } from '@components/ExpandableText'
-import { CheckboxRow } from '@components/CheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { WarningBanner, WarningBannerBody } from '../WarningBanner'
+import { ReviewWarningText } from '../ReviewWarningsBanner'
 import { useStyles } from './styles'
-import { usePredictedFailureWarning } from './usePredictedFailureWarning'
 
 // Past this the reason folds behind "show more": it is the contract's own
 // text, so its length is the contract's choice.
 const REASON_PREVIEW_LENGTH = 120
 
-export type PredictedFailureWarningProps = {
+export type PredictedFailureMessageProps = {
     /** The contract's own revert text; null when it gave none. */
     reason: Nullable<string>
 }
 
-export const PredictedFailureWarning = ({
+export const PredictedFailureMessage = ({
     reason,
-}: PredictedFailureWarningProps) => {
+}: PredictedFailureMessageProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { isAcknowledged, toggleAcknowledged } = usePredictedFailureWarning()
 
     return (
-        <WarningBanner
-            title={t('signing.predicted_failure.title')}
-            testID='predicted_failure_warning'
-        >
-            <WarningBannerBody testID='predicted_failure_body'>
+        <PWView style={styles.container}>
+            <ReviewWarningText testID='predicted_failure_body'>
                 {t('signing.predicted_failure.body')}
-            </WarningBannerBody>
+            </ReviewWarningText>
             {!!reason && (
                 <ExpandableText
                     text={t('signing.predicted_failure.reason', { reason })}
@@ -49,12 +44,6 @@ export const PredictedFailureWarning = ({
                     textStyle={styles.reason}
                 />
             )}
-            <CheckboxRow
-                label={t('signing.predicted_failure.acknowledge')}
-                isChecked={isAcknowledged}
-                onToggle={toggleAcknowledged}
-                testID='predicted_failure_acknowledge'
-            />
-        </WarningBanner>
+        </PWView>
     )
 }

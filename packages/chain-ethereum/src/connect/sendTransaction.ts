@@ -62,7 +62,8 @@ const REVERTED_ESTIMATE_GAS = 500_000n
 // A dApp's request is flagged for review when what its gas and fees authorise,
 // or would cost at the current base fee, is more than this many times what the
 // wallet's own pricing would.
-const DAPP_HIGH_FEE_MULTIPLIER = 2n
+// The review copy states this multiplier in words; a test pins it to 2n so changing it breaks loudly.
+export const DAPP_HIGH_FEE_MULTIPLIER = 2n
 
 export type EthereumSendTransactionSession = {
     authorizedAccounts: readonly string[]

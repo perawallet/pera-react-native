@@ -10,157 +10,34 @@
  limitations under the License
  */
 
-import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
-import { PWButton, PWText, PWView } from '@components/core'
-import { AccountWithBalance } from '@components/AccountWithBalance'
-import { ChainNotice } from '@components/ChainNotice'
-import { FeeSummary } from '@components/FeeRow'
-import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
-import type { SigningStackParamList } from '@modules/signing/routes'
-import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
-import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
-import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
-import { EthereumSimulationSection } from '../EthereumSimulationSection'
-import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { EthereumReviewHeader } from './EthereumReviewHeader'
-import { useStyles } from './styles'
-
-type NavigationProp = StackNavigationProp<SigningStackParamList>
+import { EthereumTransactionReview } from './EthereumTransactionReview'
 
 export const EthereumTransactionReviewBody = ({
     transaction,
     source,
     verifiedOrigin,
+    actions,
 }: ReviewBodyProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const navigation = useNavigation<NavigationProp>()
     const presentation = useEthereumTransactionPresentation(transaction)
 
     if (!presentation) {
-        return null
-    }
-
-    const {
-        reviewFee,
-        highFeeText,
-        signingAccount,
-        scope,
-        standardCall,
-        contractAction,
-        isTransfer,
-    } = presentation
-    const handleViewDetails = () => {
-        navigation.navigate('TransactionDetails', { scope, transaction })
-    }
-
-    let callDetails = null
-    if (standardCall && !isTransfer) {
-        callDetails = <EthereumApprovalDetails presentation={presentation} />
-    } else if (contractAction) {
-        callDetails = (
-            <EthereumContractActionDetails
-                presentation={presentation}
-                variant='review'
-                source={source}
-                verifiedOrigin={verifiedOrigin}
-            />
-        )
-    } else if (!isTransfer) {
-        callDetails = (
-            <EthereumContractCallDetails
-                presentation={presentation}
-                variant='review'
-                source={source}
-                verifiedOrigin={verifiedOrigin}
-            />
-        )
-    } else {
-        callDetails = (
-            <EthereumTransferAssetRows
-                presentation={presentation}
-                testIDPrefix='ethereum_review'
+        return (
+            <TransactionReviewLayout
+                participants={null}
+                actions={actions}
             />
         )
     }
 
     return (
-        <TransactionReviewLayout
-            header={
-                <EthereumReviewHeader
-                    presentation={presentation}
-                    source={source}
-                    verifiedOrigin={verifiedOrigin}
-                />
-            }
-            summary={<EthereumSimulationSection presentation={presentation} />}
-            participants={
-                signingAccount ? (
-                    <PWView style={styles.participants}>
-                        <PWText
-                            variant='caption'
-                            style={styles.caption}
-                        >
-                            {t('signing.transactions.signing_with')}
-                        </PWText>
-                        <AccountWithBalance
-                            account={signingAccount}
-                            chainId={scope.chainId}
-                            style={styles.signingAccount}
-                        />
-                    </PWView>
-                ) : null
-            }
-            details={
-                <PWView style={styles.details}>
-                    {callDetails}
-                    <PWButton
-                        testID='ethereum_view_details'
-                        variant='linkPositive'
-                        style={styles.transactionDetails}
-                        paddingStyle='none'
-                        title={t('signing.view_details')}
-                        iconRight='chevron-right'
-                        onPress={handleViewDetails}
-                    />
-                </PWView>
-            }
-            fee={
-                <PWView>
-                    {highFeeText && (
-                        <ChainNotice
-                            kind='warning'
-                            titleKey='transactions.warning.high_fee_warning'
-                            params={{ fee: highFeeText }}
-                            style={styles.highFeeNotice}
-                            testID='ethereum_high_fee_warning'
-                        />
-                    )}
-                    {reviewFee ? (
-                        <FeeSummary
-                            testID='ethereum_review_fee'
-                            scope={scope}
-                            maxAmount={reviewFee.maxAmount}
-                            estimate={reviewFee.estimate}
-                        />
-                    ) : (
-                        <PWView
-                            testID='ethereum_review_fee'
-                            style={styles.feeRow}
-                        >
-                            <PWText style={styles.label}>
-                                {t('send_funds.fee.max_fee')}
-                            </PWText>
-                            <PWText>
-                                {t('ethereum.batch.fee_when_reached')}
-                            </PWText>
-                        </PWView>
-                    )}
-                </PWView>
-            }
+        <EthereumTransactionReview
+            transaction={transaction}
+            presentation={presentation}
+            source={source}
+            verifiedOrigin={verifiedOrigin}
+            actions={actions}
         />
     )
 }

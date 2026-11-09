@@ -94,4 +94,16 @@ describe('FeeSummary', () => {
         expect(screen.getByTestId('fee_summary_max')).toBeTruthy()
         expect(screen.getByTestId('fee_summary_max_fiat')).toBeTruthy()
     })
+
+    it('keeps every row and its fiat value when compact', () => {
+        renderSummary({
+            estimate: { preset: 'fast', amount: new Decimal(2000) },
+            isCompact: true,
+        })
+
+        expect(screen.getByTestId('fee_summary_estimate')).toBeTruthy()
+        expect(screen.getByTestId('fee_summary_estimate_fiat')).toBeTruthy()
+        expect(screen.getByTestId('fee_summary_max')).toBeTruthy()
+        expect(screen.getByTestId('fee_summary_max_fiat')).toBeTruthy()
+    })
 })

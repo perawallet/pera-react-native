@@ -12,50 +12,29 @@
 
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWView } from '@components/core'
-import { ChainNotice } from '@components/ChainNotice'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import {
-    contractCallNoticeOf,
-    isCallUnexplained,
-} from '../EthereumContractCallDetails'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
 import { ActionRows } from './ActionRows'
 import { useStyles } from './styles'
 
 type EthereumContractActionDetailsProps = {
     presentation: EthereumTransactionPresentation
-    /** `'review'` is the signing screen; `'detail'` reads a transaction already made. */
-    variant: 'review' | 'detail'
-    /** Read only on `'review'`. */
+    /** Set only on the review, which is the only place there is a request to match. */
     source?: SignRequestSource
-    /** Read only on `'review'`. Origin the platform observed (never dApp-asserted). */
+    /** Set only on the review. Origin the platform observed (never dApp-asserted). */
     verifiedOrigin?: string
 }
 
 export const EthereumContractActionDetails = ({
     presentation,
-    variant,
     source,
     verifiedOrigin,
 }: EthereumContractActionDetailsProps) => {
     const styles = useStyles()
     const { view, scope, knownContract, contractAction } = presentation
-    // The detail screen renders the notice with its raw call; only the review has no other place for it.
-    const notice =
-        variant === 'review' && isCallUnexplained(presentation)
-            ? contractCallNoticeOf(source, verifiedOrigin)
-            : undefined
 
     return (
         <PWView style={styles.container}>
-            {!!notice && (
-                <ChainNotice
-                    kind='warning'
-                    titleKey={notice.titleKey}
-                    params={notice.params}
-                    testID='ethereum_contract_call_warning'
-                />
-            )}
             {!!knownContract && !!view.to && (
                 <EthereumKnownContractRow
                     knownContract={knownContract}

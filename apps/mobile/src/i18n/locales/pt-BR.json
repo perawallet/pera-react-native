@@ -3623,8 +3623,11 @@
         "predicted_failure": {
             "title": "Esta transação provavelmente vai falhar",
             "body": "O Pera a executou no bloco mais recente e ela falhou. Se você assinar mesmo assim, ainda poderá pagar a taxa de rede.",
-            "reason": "Motivo do contrato: “{{reason}}”",
-            "acknowledge": "Entendo que provavelmente vai falhar e quero assinar mesmo assim"
+            "reason": "Motivo do contrato: “{{reason}}”"
+        },
+        "review_warnings": {
+            "summary": "{{count}} itens para conferir",
+            "acknowledge": "Entendo os riscos e quero assinar mesmo assim"
         }
     },
     "site_safety": {
@@ -4957,6 +4960,11 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Corresponde a {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Taxa de rede muito acima do normal",
+            "high_fee_body": "{{domain}} definiu a taxa desta transação em mais do dobro do que o Pera usaria na configuração Normal. Você pagará no máximo <0/> (taxa máxima), geralmente menos.",
+            "high_fee_body_no_source": "O app que enviou isto definiu a taxa em mais do dobro do que o Pera usaria na configuração Normal. Você pagará no máximo <0/> (taxa máxima), geralmente menos."
         },
         "simulation": {
             "title": "Mudanças estimadas",

@@ -11,3 +11,7 @@
  */
 
 export { EthereumSimulationSection } from './EthereumSimulationSection'
+export {
+    useEthereumSimulationSection,
+    type EthereumSimulationSectionState,
+} from './useEthereumSimulationSection'

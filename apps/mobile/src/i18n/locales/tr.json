@@ -3606,8 +3606,11 @@
         "predicted_failure": {
             "title": "Bu işlem büyük olasılıkla başarısız olacak",
             "body": "Pera işlemi en son blokta çalıştırdı ve başarısız oldu. Yine de imzalarsan ağ ücretini ödeyebilirsin.",
-            "reason": "Sözleşmenin gerekçesi: “{{reason}}”",
-            "acknowledge": "Büyük olasılıkla başarısız olacağını anlıyorum ve yine de imzalamak istiyorum"
+            "reason": "Sözleşmenin gerekçesi: “{{reason}}”"
+        },
+        "review_warnings": {
+            "summary": "Kontrol edilecek {{count}} şey var",
+            "acknowledge": "Riskleri anlıyorum ve yine de imzalamak istiyorum"
         }
     },
     "site_safety": {
@@ -4929,6 +4932,11 @@
             "title": "Sözleşme",
             "verified": "Doğrulanmış sözleşme",
             "matches_site": "{{domain}} ile eşleşiyor"
+        },
+        "review_warnings": {
+            "high_fee_title": "Alışılmadık şekilde yüksek ağ ücreti",
+            "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Normal ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
+            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Normal ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
         },
         "simulation": {
             "title": "Tahmini değişiklikler",

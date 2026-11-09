@@ -125,7 +125,7 @@ const TRANSACTION_SLIDE = 'signing-confirm-slide'
 const CHANGES = 'ethereum_simulation_changes'
 const UNAVAILABLE = 'ethereum_simulation_unavailable'
 const FAILURE_WARNING = 'predicted_failure_warning'
-const FAILURE_ACKNOWLEDGE = 'predicted_failure_acknowledge'
+const FAILURE_ACKNOWLEDGE = 'review_warnings_acknowledge'
 const UNCHECKED_NOTICE = 'ethereum_contract_call_warning'
 
 const ETHEREUM_ACCOUNT = {

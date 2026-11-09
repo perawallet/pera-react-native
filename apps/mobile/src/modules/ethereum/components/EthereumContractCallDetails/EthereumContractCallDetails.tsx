@@ -28,7 +28,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
-import { contractCallNoticeOf, isCallUnexplained } from './contractCallNotice'
+import { isCallUnexplained } from './contractCallNotice'
 import { EthereumVerifiedCallRows } from './EthereumVerifiedCallRows'
 import { useStyles } from './styles'
 
@@ -38,9 +38,8 @@ const CALL_DATA_PREVIEW_LENGTH = 74
 type EthereumContractCallDetailsProps = {
     presentation: EthereumTransactionPresentation
     /**
-     * `'review'` is the signing screen: the notice asks the user to trust the
-     * requesting dApp and the raw call is left to the details screen.
-     * `'detail'` shows the raw call inline.
+     * `'review'` is the signing screen: the raw call is left to the details
+     * screen. `'detail'` shows the raw call inline.
      */
     variant: 'review' | 'detail'
     /** Read only on `'review'`. */
@@ -60,9 +59,6 @@ export const EthereumContractCallDetails = ({
     const { copyToClipboard } = useClipboard()
     const { view, value, contractAction, knownContract, scope } = presentation
     const isReview = variant === 'review'
-    const notice = isReview
-        ? contractCallNoticeOf(source, verifiedOrigin)
-        : undefined
     // Only a review looks the name up; a transaction already made shows its call as recorded.
     const verifiedCall = useEthereumVerifiedCall(view, scope, isReview)
     const isExplained = !isCallUnexplained(presentation)
@@ -111,13 +107,10 @@ export const EthereumContractCallDetails = ({
 
     return (
         <PWView style={styles.container}>
-            {!isExplained && (
+            {!isReview && !isExplained && (
                 <ChainNotice
                     kind='warning'
-                    titleKey={
-                        notice?.titleKey ?? 'transactions.contract_call.warning'
-                    }
-                    params={notice?.params}
+                    titleKey='transactions.contract_call.warning'
                     testID='ethereum_contract_call_warning'
                 />
             )}

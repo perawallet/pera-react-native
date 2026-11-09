@@ -3606,8 +3606,11 @@
         "predicted_failure": {
             "title": "This transaction will likely fail",
             "body": "Pera ran it against the latest block and it failed. If you sign anyway, you may still pay the network fee.",
-            "reason": "The contract's reason: \"{{reason}}\"",
-            "acknowledge": "I understand it will likely fail and want to sign anyway"
+            "reason": "The contract's reason: \"{{reason}}\""
+        },
+        "review_warnings": {
+            "summary": "{{count}} things to check",
+            "acknowledge": "I understand the risks and want to sign anyway"
         }
     },
     "site_safety": {
@@ -4929,6 +4932,11 @@
             "title": "Contract",
             "verified": "Verified contract",
             "matches_site": "Matches {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Unusually high network fee",
+            "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less.",
+            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less."
         },
         "simulation": {
             "title": "Estimated changes",

@@ -112,6 +112,28 @@ import {
 } from '@test-utils/analytics-recorder'
 import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
+// The integration harness has no i18next instance, so <Trans> renders nothing;
+// echoing its key, values and components lets the specs read the copy it picks
+// and the amounts it embeds.
+vi.mock('react-i18next', async importOriginal => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    Trans: ({
+        i18nKey,
+        values,
+        components,
+    }: {
+        i18nKey?: string
+        values?: object
+        components?: React.ReactNode[]
+    }) => (
+        <>
+            {i18nKey}
+            {values ? JSON.stringify(values) : null}
+            {components}
+        </>
+    ),
+}))
+
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -861,11 +883,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     'ethereum_view_details',
                 )[0]
                 expect(
-                    fee.compareDocumentPosition(target) &
+                    target.compareDocumentPosition(viewDetails) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
                 expect(
-                    target.compareDocumentPosition(viewDetails) &
+                    viewDetails.compareDocumentPosition(fee) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
 
@@ -919,9 +941,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 expect(
                     screen.getAllByTestId('signing-confirm-slide'),
                 ).not.toHaveLength(0)
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
-            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
+            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee without blocking Confirm", async () => {
                 const walletKit = await settle()
                 renderSignReview()
 
@@ -941,6 +968,57 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     },
                     { timeout: 5000 },
                 )
+                const maxFee = screen.getAllByTestId('fee_summary_max')[0]
+                const warning = screen.getAllByTestId(
+                    'ethereum_high_fee_body',
+                )[0]
+                expect(warning.textContent).toContain(maxFee.textContent)
+                // No observed origin in this harness, so the sourceless copy.
+                expect(warning.textContent).toContain(
+                    'ethereum.review_warnings.high_fee_body_no_source',
+                )
+                expect(
+                    screen.queryByTestId('review_warnings_acknowledge'),
+                ).toBeNull()
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
+            })
+
+            it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    data: `0x3593564c${'0'.repeat(63)}1${'0'.repeat(64)}`,
+                    gas: '0x989680',
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('review_warnings_summary'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                for (const id of [
+                    'ethereum_high_fee_warning',
+                    'ethereum_contract_call_warning',
+                ]) {
+                    expect(screen.getAllByTestId(id)).not.toHaveLength(0)
+                }
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
             it('Given a call the node says would revert, when the dApp sends it with its own gas, then nothing is queued and the user is told why', async () => {
