@@ -534,6 +534,8 @@
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
         "account_number": "Konto Nr. {{number}}",
+        "shared_account_number": "Gemeinschaftskonto Nr. {{number}}",
+        "ledger_account_number": "Ledger-Konto Nr. {{number}}",
         "name_taken": "Du hast bereits ein Konto mit diesem Namen. Wähle einen anderen Namen, damit du sie unterscheiden kannst.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
@@ -1114,7 +1116,13 @@
         "copy": "Kopieren",
         "send": "Senden",
         "show_more": "Mehr anzeigen",
-        "show_less": "Weniger anzeigen"
+        "show_less": "Weniger anzeigen",
+        "amount_abbreviation": {
+            "thousand": "{{amount}} Tsd.",
+            "million": "{{amount}} Mio.",
+            "billion": "{{amount}} Mrd.",
+            "trillion": "{{amount}} Bio."
+        }
     },
     "contacts": {
         "edit_contact": {
@@ -2142,7 +2150,6 @@
         "name": {
             "title": "Benenne dein Konto",
             "description": "Benenne dein Konto, um es bei der Nutzung von Pera Wallet leicht wiederzuerkennen. Diese Namen werden lokal gespeichert und sind nur für dich sichtbar.",
-            "default_name": "Gemeinschaftskonto",
             "finish_button": "Kontoerstellung abschließen",
             "creating": "Gemeinschaftskonto wird erstellt...",
             "error_title": "Konto konnte nicht erstellt werden",
@@ -2199,7 +2206,6 @@
                 "screen_title": "Gemeinschaftskonto",
                 "title": "Benenne dein Gemeinschaftskonto",
                 "description": "Benenne dein Konto, um es bei der Nutzung von Pera Wallet leicht wiederzuerkennen. Diese Namen werden lokal gespeichert und sind nur für dich sichtbar.",
-                "default_name": "Gemeinschaftskonto",
                 "finish_button": "Fertigstellen",
                 "saving": "Gemeinschaftskonto wird gespeichert..."
             }
@@ -2390,7 +2396,6 @@
         "name_account": {
             "title": "Benenne dein Konto",
             "description": "Benenne dein Konto, um es bei der Nutzung von Pera Wallet leicht wiederzuerkennen. Diese Namen werden lokal gespeichert und sind nur für dich sichtbar.",
-            "wallet_label": "Wallet Nr. {{count}}",
             "finish_button": "Kontoerstellung abschließen"
         },
         "import_select_addresses": {
@@ -3668,6 +3673,11 @@
             "asset_freeze": "Asset-Freeze",
             "app_call": "App-Aufruf",
             "contract_call": "Smart-Contract-Aufruf",
+            "approve_asset": "{{asset}} freigeben",
+            "swap_pair": "Tausch {{from}} → {{to}}",
+            "add_liquidity": "Liquidität hinzufügen",
+            "remove_liquidity": "Liquidität entfernen",
+            "contract_interaction": "Smart-Contract-Interaktion",
             "approval": "Freigabe",
             "revoke_approval": "Freigabe widerrufen",
             "key_registration": "Schlüsselregistrierung",
@@ -3683,6 +3693,7 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
+            "inferred_notice": "Aus den Guthabenänderungen abgeleitet. Pera konnte den Aufruf selbst nicht lesen.",
             "transaction_id": "Transaktions-ID",
             "quantity": "Menge",
             "nft_collection": "{{collection}} · {{standard}}",
@@ -4136,6 +4147,7 @@
             "you_receive": "Du erhältst",
             "sender_address_optional": "Absenderadresse (Optional)",
             "enter_sender_address": "Gib deine {{name}}-Adresse ein",
+            "network_line": "{{network}}-Netzwerk",
             "provider": "Anbieter",
             "payment_method": "Zahlungsmethode",
             "choose_asset": "Asset auswählen",
@@ -4148,7 +4160,6 @@
         },
         "pair_selection": {
             "title_to": "An",
-            "title_from": "Von",
             "search": "Suchen",
             "empty": "Keine Token verfügbar"
         },
@@ -4158,6 +4169,7 @@
             "filter_all": "Alle",
             "filter_fiat": "Fiat",
             "filter_crypto": "Krypto",
+            "chain_all": "Alle",
             "fiat_section": "Fiat",
             "crypto_section": "Krypto",
             "see_all_fiat": "Alle Fiat-Währungen anzeigen",
@@ -4175,7 +4187,7 @@
         "sender_address": {
             "title": "Absenderadresse",
             "body": "Dies ist die Adresse, die zum Senden der Gelder an den Empfänger verwendet wird. Sie ist optional, kann aber den Ablauf beschleunigen und bei Support-Anfragen zu diesem Kauf helfen.",
-            "placeholder": "Gib deine Absenderadresse ein",
+            "invalid": "Dies ist keine gültige {{network}}-Adresse",
             "confirm": "Bestätigen"
         },
         "order_review": {
@@ -4444,7 +4456,6 @@
         "scan_header": {
             "having_issues": "Hast du Probleme?"
         },
-        "default_account_name": "Ledger {{number}}",
         "handoff_added": {
             "title": "Ledger-Konto hinzugefügt",
             "body": "Du kannst es jetzt in der Pera-Erweiterung verwenden."

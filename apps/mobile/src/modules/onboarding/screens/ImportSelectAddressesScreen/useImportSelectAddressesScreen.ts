@@ -19,6 +19,7 @@ import {
 import {
     getAllAccounts,
     useAllAccounts,
+    withAccountNames,
     useSetAccounts,
     useSelectedAccountId,
     useHDImportSession,
@@ -127,11 +128,6 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         [accounts, allAccounts],
     )
 
-    const candidates = useMemo(
-        () => accounts.map(acc => importable.get(acc.id) ?? acc),
-        [accounts, importable],
-    )
-
     const importedAccountIds = useMemo(
         () =>
             new Set(
@@ -141,6 +137,22 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             ),
         [accounts, importable],
     )
+
+    // A new account shows, and is saved with, the name the store would give it.
+    const candidates = useMemo(() => {
+        const drafts = accounts.map(acc => importable.get(acc.id) ?? acc)
+        const nameById = new Map(
+            withAccountNames([
+                ...allAccounts,
+                ...drafts.filter(acc => !importedAccountIds.has(acc.id)),
+            ]).map(acc => [acc.id, acc.name]),
+        )
+        return drafts.map(acc =>
+            importedAccountIds.has(acc.id)
+                ? acc
+                : { ...acc, name: nameById.get(acc.id) ?? acc.name },
+        )
+    }, [accounts, allAccounts, importable, importedAccountIds])
 
     const newAccounts = useMemo(
         () => candidates.filter(acc => !importedAccountIds.has(acc.id)),

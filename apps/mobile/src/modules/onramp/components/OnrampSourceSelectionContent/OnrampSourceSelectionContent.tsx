@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { SearchInput } from '@components/SearchInput'
@@ -44,9 +45,9 @@ const FILTERS: { value: OnrampSourceFilter; labelKey: I18nKey }[] = [
 export const OnrampSourceSelectionContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    // Resolves the selected SOURCE token id; the form handler maps it to a pair
-    // while preserving the current destination.
-    const { resolve } = useBottomSheetResult<string>()
+    // Resolves the selected SOURCE token; the form handler commits its id while
+    // preserving the current destination.
+    const { resolve } = useBottomSheetResult<RampToken>()
     const {
         isLoading,
         filter,
@@ -58,12 +59,15 @@ export const OnrampSourceSelectionContent = () => {
         fiatTokens,
         cryptoTokens,
         isFiat,
-        duplicatedSymbols,
+        chainFilter,
+        setChainFilter,
+        chainOptions,
+        isChainFilterVisible,
     } = useOnrampSourceSelection()
 
     const handleSelect = useCallback(
         (token: RampToken) => {
-            resolve(token.id)
+            resolve(token)
         },
         [resolve],
     )
@@ -78,9 +82,6 @@ export const OnrampSourceSelectionContent = () => {
                 key={token.id}
                 token={token}
                 isFiat={isFiat(token)}
-                showNetworkBadge={duplicatedSymbols.has(
-                    token.symbol.toLowerCase(),
-                )}
                 onPress={() => handleSelect(token)}
             />
         ))
@@ -116,6 +117,16 @@ export const OnrampSourceSelectionContent = () => {
                             onSelect={setFilter}
                             contentContainerStyle={styles.filterRow}
                         />
+
+                        {isChainFilterVisible && (
+                            <FilterSelection<Nullable<string>>
+                                options={chainOptions}
+                                selectedValue={chainFilter}
+                                onSelect={setChainFilter}
+                                contentContainerStyle={styles.filterRow}
+                                testID='onramp_source_chain_filter'
+                            />
+                        )}
 
                         {isEmpty ? (
                             <PWView style={styles.centered}>

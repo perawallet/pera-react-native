@@ -79,7 +79,7 @@ catalog:
   "@types/react": ~19.3.0
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.22
-  "@vitejs/plugin-react": 6.1.2
+  "@vitejs/plugin-react": 6.2.1
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
   # pin: follows @reown/walletkit
@@ -116,7 +116,7 @@ catalog:
   expo-localization: 58.0.5
   expo-notifications: 58.1.6
   expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.6
+  fake-indexeddb: 6.2.7
   falcon-1024: 0.2.0
   # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
   # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
@@ -128,7 +128,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.14.0
   msw: ^2.14.6
-  oxfmt: ^0.74.0
+  oxfmt: ^0.75.0
   punycode: ^2.3.1
   react: 19.3.0
   react-dom: 19.3.0

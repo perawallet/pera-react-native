@@ -64,6 +64,8 @@ type UseOnrampAmountSectionResult = {
     fiatBaseAmount: Decimal
     /** ALGO-preferred users see fiat values in USD, like the rest of the app. */
     shouldUseUsdFallback: boolean
+    /** The chain a crypto pay asset comes from, as the router names it; null otherwise. */
+    sourceNetworkName: Nullable<string>
     handleTextChange: (text: string) => void
 }
 
@@ -121,6 +123,11 @@ export const useOnrampAmountSection = ({
 
     const isReceiveLoading = !isPay && isLoading
 
+    const sourceNetworkName =
+        isPay && token?.kind === 'deposit' && token.network.name !== ''
+            ? token.network.name
+            : null
+
     const logoUrl = token?.countryCode
         ? getCircleFlagUrl(token.countryCode)
         : (token?.logo ?? undefined)
@@ -164,6 +171,7 @@ export const useOnrampAmountSection = ({
         logoUrl,
         fiatBaseAmount,
         shouldUseUsdFallback,
+        sourceNetworkName,
         handleTextChange,
     }
 }

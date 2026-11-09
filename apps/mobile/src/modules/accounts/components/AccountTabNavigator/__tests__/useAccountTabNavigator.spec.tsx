@@ -52,12 +52,14 @@ vi.mock('@analytics', async importOriginal => ({
 
 const ALGORAND_ACCOUNT: WalletAccount = {
     id: 'algo',
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address: 'ALGO' } },
 }
 
 const ETHEREUM_ACCOUNT: WalletAccount = {
     id: 'eth',
+    name: '',
     custody: { kind: 'watch' },
     chains: { ethereum: { address: `0x${'f'.repeat(40)}` } },
 }

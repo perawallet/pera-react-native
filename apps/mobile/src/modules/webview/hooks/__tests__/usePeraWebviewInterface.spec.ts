@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { logger } from '@perawallet/wallet-core-shared'
 import { trackEvent } from '@analytics'
 import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
 import {
@@ -227,6 +228,76 @@ describe('usePeraWebviewInterface', () => {
         )
 
         expect(order).toEqual(['settings', 'addresses'])
+    })
+
+    describe('a handler that throws', () => {
+        const ADDRESS =
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+
+        it('answers that message with InternalError and reports the throw', () => {
+            const logError = vi.spyOn(logger, 'error')
+            const error = new Error(`no adapter for ${ADDRESS}`)
+            const { webview, handleMessage } = render(true, TRUSTED_URL)
+            handlers.getAddresses.mockImplementationOnce(() => {
+                throw error
+            })
+
+            expect(() =>
+                act(() => handleMessage(bridgeMessage('t-1', 'getAddresses'))),
+            ).not.toThrow()
+
+            const sent = injectedScript(webview)
+            expect(sent).toContain('"id":"t-1"')
+            expect(sent).toContain(
+                '"error":{"code":-32603,"message":"Internal error"}',
+            )
+            expect(sent).not.toContain(ADDRESS)
+            expect(logError).toHaveBeenCalledWith(
+                'WebView bridge handler threw',
+                { method: 'getAddresses', error },
+            )
+            logError.mockRestore()
+        })
+
+        it('still dispatches the rest of the batch', () => {
+            const { handleMessage } = render(true, TRUSTED_URL)
+            handlers.getAddresses.mockImplementationOnce(() => {
+                throw new Error('boom')
+            })
+
+            act(() =>
+                handleMessage([
+                    bridgeMessage('t-2', 'getAddresses'),
+                    bridgeMessage('t-3', 'getSettings'),
+                ]),
+            )
+
+            expect(handlers.getSettings).toHaveBeenCalledTimes(1)
+        })
+
+        it('answers a non-Error throw from an open method the same way', () => {
+            const { webview, handleMessage } = render(false, EVIL_URL)
+            handlers.getPublicSettings.mockImplementationOnce(() => {
+                throw 'x'
+            })
+
+            act(() => handleMessage(bridgeMessage('t-4', 'getPublicSettings')))
+
+            expect(injectedScript(webview)).toContain(
+                '"error":{"code":-32603,"message":"Internal error"}',
+            )
+        })
+
+        it('leaves an untrusted call to a guarded method with Unauthorized alone', () => {
+            const { webview, handleMessage } = render(false, EVIL_URL)
+
+            act(() => handleMessage(bridgeMessage('t-5', 'getAddresses')))
+
+            expect(handlers.getAddresses).not.toHaveBeenCalled()
+            const sent = injectedScript(webview)
+            expect(sent).toContain('"code":-32001')
+            expect(sent).not.toContain('-32603')
+        })
     })
 
     describe('per-message origin trust', () => {

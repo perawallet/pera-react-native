@@ -43,6 +43,8 @@ const TransactionListItemView = ({
         subtitle,
         amounts,
         amountsOverflowCount,
+        fee,
+        feeLabel,
         notice,
         handlePress,
         handleLongPress,
@@ -98,6 +100,22 @@ const TransactionListItemView = ({
                             })}
                         </PWText>
                     )}
+                    {fee && (
+                        <PWView style={styles.fee}>
+                            <PWText style={styles.feeText}>{feeLabel}</PWText>
+                            <CurrencyAmount
+                                chainId={fee.chainId}
+                                value={fee.value}
+                                currency={fee.currency}
+                                assetId={fee.assetId}
+                                precision='compact'
+                                assetDecimals={fee.decimals}
+                                showSymbol
+                                symbolPosition='end'
+                                style={styles.feeText}
+                            />
+                        </PWView>
+                    )}
                 </PWView>
             }
         >
@@ -145,7 +163,7 @@ const TransactionListItemView = ({
 }
 
 /**
- * Rows carry their own query observers (NFD reverse lookup, asset details), so
+ * Rows carry their own query observers (name reverse lookup, asset details), so
  * a parent re-render — pagination, a refetch, a store write — used to re-run
  * every mounted row's hooks. `transaction` / `record` come straight from the
  * query cache and `onPress` from a `useCallback`, so the default shallow

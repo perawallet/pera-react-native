@@ -69,6 +69,7 @@ export const HDWalletRow = ({ group, index, onPress }: HDWalletRowProps) => {
                         <PreferredAmount
                             value={fiatTotal}
                             density='compact'
+                            abbreviateFrom='million'
                             variant='h4'
                         />
                     )}

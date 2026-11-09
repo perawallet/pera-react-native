@@ -183,9 +183,8 @@ describe('readAlgorandAddressPoisoningRules', () => {
     )
 
     it('accepts a zero dust ceiling from remote config', () => {
-        getNumberValueMock.mockImplementation(
-            (key: string, fallback: number) =>
-                key === 'address_poisoning_dust_ceiling' ? 0 : fallback,
+        getNumberValueMock.mockImplementation((key: string, fallback: number) =>
+            key === 'address_poisoning_dust_ceiling' ? 0 : fallback,
         )
 
         expect(

@@ -70,6 +70,7 @@ const participant = accountForType('standalone', 'A')
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
+    name: '',
     custody: { kind: 'multisig' },
     chains: {
         algorand: {

@@ -18,6 +18,7 @@ import {
     getSignerFor,
     isMultisigAccount,
     useAccountsStore,
+    useAddIncomingTokenMutation,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -86,6 +87,7 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     // mutation-cache logging.
     const { mutateAsync: createOrderOnScope } = useCreateSwapOrderMutation()
     const { mutateAsync: reportOrderOnScope } = useReportSwapOrderMutation()
+    const { addIncomingToken } = useAddIncomingTokenMutation()
 
     const { mutateAsync, reset } = useMutation<
         ExecuteSwapResult,
@@ -134,6 +136,17 @@ export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
                     onOrderRejected: removeTrackedOrder,
                 },
             )
+            // Not awaited: the swap is done once broadcast, and a cross-chain
+            // payout may land an hour later.
+            if (result.kind === 'success') {
+                const { destinationAsset, destinationAddress } =
+                    variables.quote.request
+                void addIncomingToken({
+                    accountAddress: destinationAddress,
+                    scope: scopeOfSwapAsset(destinationAsset),
+                    assetId: destinationAsset.assetId,
+                })
+            }
             return result
         },
         // A retry would re-sign and re-broadcast a group the user approved once.

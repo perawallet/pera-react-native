@@ -55,7 +55,7 @@ export const AlgorandBackupKinds = {
 } as const
 
 const nameValue = (account: WalletAccount): Nullable<string> =>
-    account.name ?? null
+    account.name || null
 
 export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
     (account, { updatedAt, hd }): Nullable<AddressBackupPayload> => {

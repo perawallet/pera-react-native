@@ -11,13 +11,10 @@
  */
 
 import { PWText } from '@components/core'
+import { CheckboxRow } from '@components/CheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
-import {
-    WarningAcknowledgeRow,
-    WarningBanner,
-    WarningBannerBody,
-} from '../WarningBanner'
+import { WarningBanner, WarningBannerBody } from '../WarningBanner'
 import { useStyles } from './styles'
 
 export const RequestSiteWarning = () => {
@@ -47,7 +44,7 @@ export const RequestSiteWarning = () => {
                     ? t('site_safety.blocked.body_verify')
                     : t('site_safety.blocked.body')}
             </WarningBannerBody>
-            <WarningAcknowledgeRow
+            <CheckboxRow
                 label={t('site_safety.blocked.acknowledge')}
                 isChecked={isAcknowledged}
                 onToggle={toggleAcknowledged}

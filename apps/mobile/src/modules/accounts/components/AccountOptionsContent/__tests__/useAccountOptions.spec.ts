@@ -234,6 +234,7 @@ describe('useAccountOptions', () => {
 
     const watchAccount: WalletAccount = {
         id: 'acc-2',
+        name: '',
         chains: { algorand: { address: 'WATCHADDRESS' } },
         custody: { kind: 'watch' },
     }
@@ -247,18 +248,21 @@ describe('useAccountOptions', () => {
 
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
+        name: '',
         chains: { algorand: { address: 'REKEYEDADDRESS', keyPairId: 'key-3' } },
         custody: { kind: 'local', seed: null },
     }
 
     const rekeyedWatchAccount: WalletAccount = {
         id: 'acc-5',
+        name: '',
         chains: { algorand: { address: 'REKEYEDWATCHADDRESS' } },
         custody: { kind: 'watch' },
     }
 
     const hardwareAccount: WalletAccount = {
         id: 'acc-4',
+        name: '',
         chains: { algorand: { address: 'HARDWAREADDRESS' } },
         custody: {
             kind: 'hardware',
@@ -274,6 +278,7 @@ describe('useAccountOptions', () => {
 
     const multisigAccount: WalletAccount = {
         id: 'acc-6',
+        name: '',
         chains: {
             algorand: {
                 address: 'MULTISIGADDRESS',
@@ -336,7 +341,7 @@ describe('useAccountOptions', () => {
                 seed: 'bip39',
                 hd: { account: 0, keyIndex: 0 },
             },
-            name,
+            name: name ?? '',
         })
 
         const titlesOf = (account: WalletAccount) => {
@@ -349,12 +354,6 @@ describe('useAccountOptions', () => {
             )
             return result.current
         }
-
-        it('titles an unnamed Universal Wallet account by its number', () => {
-            expect(titlesOf(hdAccount()).sheetTitle).toBe(
-                'account_info.account_number',
-            )
-        })
 
         it('titles a named account by its name', () => {
             expect(titlesOf(hdAccount('Savings')).sheetTitle).toBe('Savings')
@@ -472,6 +471,7 @@ describe('useAccountOptions', () => {
     describe('an imported private-key account', () => {
         const privateKeyAccount: WalletAccount = {
             id: 'acc-pk',
+            name: '',
             chains: {
                 [ETHEREUM_CHAIN_ID]: {
                     address: '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed',
@@ -533,6 +533,7 @@ describe('useAccountOptions', () => {
         it('offers it for no HD, Algo25 or watch account', () => {
             const hdAccount: WalletAccount = {
                 id: 'acc-hd',
+                name: '',
                 chains: { algorand: { address: 'HDADDRESS', keyPairId: 'k' } },
                 custody: {
                     kind: 'local',
@@ -584,6 +585,7 @@ describe('useAccountOptions', () => {
         }
         const ethHdAccount: WalletAccount = {
             id: 'acc-eth-hd',
+            name: '',
             chains: {
                 [ETHEREUM_CHAIN_ID]: {
                     address: ETH_ADDRESS,
@@ -716,6 +718,7 @@ describe('useAccountOptions', () => {
     describe('network rows', () => {
         const hdAccount: WalletAccount = {
             id: 'acc-hd',
+            name: '',
             chains: { algorand: { address: 'HDADDRESS', keyPairId: 'k' } },
             custody: {
                 kind: 'local',
@@ -1529,6 +1532,7 @@ describe('useAccountOptions', () => {
         it('shows error toast and prevents removal when account has rekeyed dependents', async () => {
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
+                name: '',
                 chains: {
                     algorand: {
                         address: 'SOMEOTHERADDRESS',
@@ -1561,6 +1565,7 @@ describe('useAccountOptions', () => {
             mockIsBackedUp.mockReturnValue(true)
             const rekeyedToAlgo25: WalletAccount = {
                 id: 'acc-rekeyed',
+                name: '',
                 chains: {
                     algorand: {
                         address: 'SOMEOTHERADDRESS',
@@ -1607,6 +1612,7 @@ describe('useAccountOptions', () => {
         it('removes a Ledger (hardware) account by its id', async () => {
             const ledgerAccount: WalletAccount = {
                 id: 'acc-ledger',
+                name: '',
                 chains: { algorand: { address: 'LEDGERADDRESS' } },
                 custody: {
                     kind: 'hardware',

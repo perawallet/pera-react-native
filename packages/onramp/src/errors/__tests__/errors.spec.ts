@@ -27,6 +27,12 @@ const tooLow = (
     max: Decimal | null = null,
 ) => new RampAmountOutOfRangeError('min', { min, max }, 'Amount is too low.')
 
+describe('RampAmountOutOfRangeError', () => {
+    it('is an expected outcome, kept out of crash reporting', () => {
+        expect(tooLow().metadata.expected).toBe(true)
+    })
+})
+
 describe('toOnrampUserMessage', () => {
     it('maps a PeraException with fallback_message to that message', () => {
         const err = {

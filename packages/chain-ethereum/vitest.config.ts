@@ -58,9 +58,9 @@ export default defineConfig({
                 __dirname,
                 '../deeplinks/src/__tests__/adapter-contract.ts',
             ),
-            '@perawallet/wallet-core-nfd/testing': path.resolve(
+            '@perawallet/wallet-core-names/testing': path.resolve(
                 __dirname,
-                '../nfd/src/__tests__/adapter-contract.ts',
+                '../names/src/__tests__/adapter-contract.ts',
             ),
             '@perawallet/wallet-core-onramp/testing': path.resolve(
                 __dirname,

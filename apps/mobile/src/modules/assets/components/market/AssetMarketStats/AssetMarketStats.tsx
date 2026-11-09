@@ -11,7 +11,10 @@
  */
 
 import { useStyles } from './styles'
-import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
+import {
+    abbreviateLargeAmount,
+    formatNumber,
+} from '@perawallet/wallet-core-shared'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { PWText, PWView } from '@components/core'
@@ -43,7 +46,9 @@ export const AssetMarketStats = ({
         }
 
         const wholeUnits = toWholeUnits(supply.amount, assetDetails)
-        const { amount, unit } = formatWithUnits(wholeUnits)
+        const { amount, unit } = abbreviateLargeAmount(wholeUnits, 2, {
+            from: 'K',
+        })
         const { integer, fraction } = formatNumber(amount, 2)
         return `${integer}${fraction}${unit}`
     }, [supply.amount, assetDetails])

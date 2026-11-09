@@ -16,6 +16,7 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 const STORAGE_KEY = 'accounts-store'
 const ADDRESS = (letter: string) => letter.repeat(58)
@@ -216,6 +217,20 @@ const v3Records = v4Records.map(record =>
         : record,
 )
 
+// An account persisted without a name stores the name it showed: its HD or
+// device position, or its truncated address.
+const SHOWN_NAMES: Record<string, string> = {
+    hd: 'Account #1',
+    ledger: 'Ledger Account #1',
+}
+const migratedAccounts = expectedAccounts.map(account => ({
+    ...account,
+    name:
+        account.name ??
+        SHOWN_NAMES[account.id] ??
+        truncateAlgorandAddress(account.chains.algorand.address),
+}))
+
 const expectedAuthorities = {
     'algorand/mainnet': { [ADDRESS('A')]: ADDRESS('B') },
 }
@@ -262,7 +277,7 @@ describe('Accounts cold start', () => {
             await rehydrateAccountsStore()
 
             const state = useAccountsStore.getState()
-            expect(state.accounts).toEqual(expectedAccounts)
+            expect(state.accounts).toEqual(migratedAccounts)
             for (const account of state.accounts) {
                 for (const key of LEGACY_KEYS) {
                     expect(account).not.toHaveProperty(key)

@@ -76,6 +76,7 @@ describe('AccountPicker', () => {
     it('scopes every row to the chain the picker is for', () => {
         const account: WalletAccount = {
             id: 'account-1',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: `0x${'b'.repeat(40)}` } },
         }

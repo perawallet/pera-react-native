@@ -36,7 +36,12 @@ export const buildTestAccount = (
 ): WalletAccount => {
     const chainId = Object.keys(chains)[0] as ChainId
     return {
-        ...buildAccount({ custody, chainId, chains: createdEntries(chains) }),
+        ...buildAccount({
+            name: 'Test account',
+            custody,
+            chainId,
+            chains: createdEntries(chains),
+        }),
         ...overrides,
     }
 }

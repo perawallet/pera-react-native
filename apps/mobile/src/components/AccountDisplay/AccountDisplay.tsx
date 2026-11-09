@@ -53,10 +53,10 @@ export type AccountDisplayProps = {
     compact?: boolean
     /**
      * When set, accounts shown by their truncated address (no custom name or
-     * NFD) display the account type on the secondary line instead.
+     * name-service name) display the account type on the secondary line instead.
      */
     showAccountType?: boolean
-    /** Shows the account type on the secondary line even for a named account, in place of its address or NFD. */
+    /** Shows the account type on the secondary line even for a named account, in place of its address or name-service name. */
     alwaysShowAccountType?: boolean
     /** The chain whose name and address to show; defaults to the account's first registered chain. */
     chainId?: ChainId
@@ -66,7 +66,7 @@ export type AccountDisplayProps = {
     badges?: ReactNode
     /** Replaces the secondary label on the line under the name, e.g. with the network the account is on. */
     secondaryContent?: ReactNode
-    /** False drops the address, NFD or type under the name; `badges` and `secondaryContent` still show. */
+    /** False drops the address, name-service name or type under the name; `badges` and `secondaryContent` still show. */
     shouldShowSecondaryLabel?: boolean
     /** Takes the avatar's corner; the backup warning is not shown with it. */
     avatarBadge?: ReactNode
@@ -97,6 +97,7 @@ export const AccountDisplay = ({
     const {
         chainId: resolvedChainId,
         displayName,
+        isNameAddress,
         secondaryText,
         renderSecondary: hasSecondaryLabel,
         showTypeAsSecondary,
@@ -199,7 +200,8 @@ export const AccountDisplay = ({
                         variant={textProps?.variant ?? 'bodyLarge'}
                         weight={textProps?.variant ? undefined : 500}
                         numberOfLines={1}
-                        ellipsizeMode='middle'
+                        // An address keeps both ends; a name keeps its start.
+                        ellipsizeMode={isNameAddress ? 'middle' : 'tail'}
                     >
                         {displayName}
                     </PWText>

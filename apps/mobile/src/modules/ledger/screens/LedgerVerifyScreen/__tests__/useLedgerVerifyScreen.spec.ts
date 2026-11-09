@@ -709,6 +709,7 @@ describe('useLedgerVerifyScreen', () => {
         it('re-imports an unchanged hardware account as a pure no-op', async () => {
             const untouched = {
                 id: 'hw-1',
+                name: 'Ledger 1',
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -777,23 +778,17 @@ describe('useLedgerVerifyScreen', () => {
                 a.chains.algorand?.address,
                 a.name,
             ])
-            expect(names).toContainEqual([
-                'LEDGER0',
-                'ledger.default_account_name#1',
-            ])
-            expect(names).toContainEqual([
-                'LEDGER1',
-                'ledger.default_account_name#2',
-            ])
-            // Rekeyed watch entries are not Ledger accounts — no default name.
-            expect(names).toContainEqual(['REKEYED_A', undefined])
+            expect(names).toContainEqual(['LEDGER0', 'Ledger Account #1'])
+            expect(names).toContainEqual(['LEDGER1', 'Ledger Account #2'])
+            // Rekeyed watch entries are not Ledger accounts; the store numbers them.
+            expect(names).toContainEqual(['REKEYED_A', 'Account #1'])
         })
 
         it('continues numbering after the ledger accounts already in the wallet', async () => {
             useAccountsStore.getState().setAccounts([
                 {
                     id: 'hw-existing',
-                    name: 'ledger.default_account_name#1',
+                    name: 'Ledger Account #1',
                     custody: {
                         kind: 'hardware',
                         device: {
@@ -827,14 +822,14 @@ describe('useLedgerVerifyScreen', () => {
             const added = useAccountsStore
                 .getState()
                 .accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
-            expect(added?.name).toBe('ledger.default_account_name#2')
+            expect(added?.name).toBe('Ledger Account #2')
         })
 
         it('skips a number another account already shows, as when an earlier Ledger account was removed', async () => {
             useAccountsStore.getState().setAccounts([
                 {
                     id: 'hw-existing',
-                    name: 'ledger.default_account_name#2',
+                    name: 'Ledger Account #2',
                     custody: {
                         kind: 'hardware',
                         device: {
@@ -869,8 +864,8 @@ describe('useLedgerVerifyScreen', () => {
                     .getState()
                     .accounts.find(a => a.chains.algorand?.address === address)
                     ?.name
-            expect(nameOf('LEDGER0')).toBe('ledger.default_account_name#3')
-            expect(nameOf('LEDGER1')).toBe('ledger.default_account_name#4')
+            expect(nameOf('LEDGER0')).toBe('Ledger Account #3')
+            expect(nameOf('LEDGER1')).toBe('Ledger Account #4')
         })
     })
 
@@ -878,7 +873,7 @@ describe('useLedgerVerifyScreen', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'seed-a',
-                name: 'ledger.default_account_name#1',
+                name: 'Ledger Account #1',
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -912,7 +907,7 @@ describe('useLedgerVerifyScreen', () => {
         expect(accounts).toHaveLength(2)
         expect(accounts[0].chains.algorand?.address).toBe('SEED_A')
         expect(accounts[1]).toMatchObject({
-            name: 'ledger.default_account_name#2',
+            name: 'Ledger Account #2',
             chains: { algorand: { address: 'SEED_B' } },
         })
     })
@@ -923,7 +918,7 @@ describe('useLedgerVerifyScreen', () => {
         const ledgerOnAlgorand = (accountIndex: number): WalletAccount =>
             ({
                 id: `hw-${accountIndex}`,
-                name: 'ledger.default_account_name#1',
+                name: 'Ledger Account #1',
                 custody: {
                     kind: 'hardware',
                     device: {
@@ -1048,7 +1043,7 @@ describe('useLedgerVerifyScreen', () => {
             const accounts = useAccountsStore.getState().accounts
             expect(accounts).toHaveLength(1)
             expect(accounts[0].id).toBe('hw-0')
-            expect(accounts[0].name).toBe('ledger.default_account_name#1')
+            expect(accounts[0].name).toBe('Ledger Account #1')
             expect(accounts[0].chains.algorand?.address).toBe('LEDGER0')
             expect(accounts[0].chains.ethereum?.address).toBe(
                 ETH_LEDGER_0.toLowerCase(),
@@ -1066,7 +1061,7 @@ describe('useLedgerVerifyScreen', () => {
             const [held, created] = useAccountsStore.getState().accounts
             expect(held.chains.ethereum).toBeUndefined()
             expect(created).toMatchObject({
-                name: 'ledger.default_account_name#2',
+                name: 'Ledger Account #2',
                 custody: { kind: 'hardware', accountIndex: 0 },
                 chains: { ethereum: { address: ETH_LEDGER_0.toLowerCase() } },
             })
@@ -1223,7 +1218,7 @@ describe('useLedgerVerifyScreen', () => {
             const created = useAccountsStore
                 .getState()
                 .accounts.find(a => a.id !== 'hw-0')
-            expect(created?.name).toBe('ledger.default_account_name#2')
+            expect(created?.name).toBe('Ledger Account #2')
             expect(created?.chains.ethereum?.address).toBe(
                 ETH_LEDGER_1.toLowerCase(),
             )

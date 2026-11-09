@@ -17,6 +17,7 @@ import {
     buildPendingXoHistoryItem,
     getExcludedPaymentMethodIds,
     isMeldPair,
+    sourceNetworkLabelOf,
 } from '../onrampFormHelpers'
 
 const token = (kind: RampToken['kind'], id: string): RampToken => ({
@@ -98,5 +99,22 @@ describe('buildPendingXoHistoryItem', () => {
 
         expect(item.payInAddressTag).toBeUndefined()
         expect(item.destinationAmount).toBeNull()
+    })
+})
+
+describe('sourceNetworkLabelOf', () => {
+    it("names the source's chain as the router labels it", () => {
+        const source = {
+            ...token('deposit', 'USDC'),
+            network: { name: 'Solana', logo: null },
+        }
+
+        expect(sourceNetworkLabelOf(source)).toBe('Solana')
+    })
+
+    it("falls back to the token's name when the router gives no chain", () => {
+        expect(sourceNetworkLabelOf(token('deposit', 'Bitcoin'))).toBe(
+            'Bitcoin',
+        )
     })
 })

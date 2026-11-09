@@ -22,7 +22,10 @@ import {
 } from 'vitest'
 import { setupServer } from 'msw/node'
 import {
+    encodeFunctionData,
+    erc20Abi,
     getAddress,
+    maxUint256,
     parseGwei,
     parseTransaction,
     serializeTransaction,
@@ -31,6 +34,7 @@ import {
 } from 'viem'
 import type { ReviewContext } from '@perawallet/wallet-core-chain-contract'
 import { getOpenSubmissionAttempts } from '@perawallet/wallet-core-signing'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { EvmErrorCode, isEvmError } from '../../blockchain/errors'
 import {
     EvmRpcErrorFixture,
@@ -42,7 +46,12 @@ import {
     readEvmTransaction,
     type EthereumTransactionPayload,
 } from '../../signing/adapter'
-import { createEthereumReviewer, ethereumViewOf } from '../../signing/review'
+import { ETH_IN_V3_EXACT_IN } from '../../signing/__tests__/contract-action-fixtures'
+import {
+    createEthereumReviewer,
+    ethereumCallSummary,
+    ethereumViewOf,
+} from '../../signing/review'
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
@@ -63,6 +72,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 
 const FROM = getAddress('0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed')
 const TO = getAddress('0x2c7536E3605D9C16a7a3D7b1898e529396a65c23')
+const TOKEN = getAddress('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')
 const STORAGE_KEY = `0x${'11'.repeat(32)}` as const
 const session = { authorizedAccounts: [FROM], eip155ChainId: 1 }
 
@@ -338,7 +348,10 @@ const feeHistory = (): RpcFeeHistory => ({
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    vi.restoreAllMocks()
+})
 afterAll(() => server.close())
 
 const ctx = testChainContext()
@@ -724,6 +737,71 @@ describe('buildEthereumSendTransaction', () => {
         expect(warnings).toEqual([
             expect.objectContaining({ type: 'unknown-contract' }),
         ])
+    })
+
+    it("keeps the dApp's plain claim as the summary and names an unlimited approval only in its History summary", async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+        const data = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [TO, maxUint256],
+        })
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ to: TOKEN, value: 0n, data }),
+        )
+        const decoded = await ethereumReviewerAdapter.decoder.decode(
+            [built],
+            reviewContext,
+        )
+
+        expect(built.summary).toEqual(
+            ethereumCallSummary(
+                { from: FROM, to: TOKEN, value: 0n, data },
+                ETHEREUM,
+            ),
+        )
+        expect(built.historySummary).toMatchObject({
+            kind: 'approval',
+            counterparty: TO,
+            title: { key: 'transactions.list_item.approve_asset' },
+            titleAssets: { asset: { chainId: 'ethereum', assetId: TOKEN } },
+        })
+        expect(decoded.transactions[0].summary.kind).toBe('approval')
+    })
+
+    it("Given contract decoding is on, when a router swap that pays ETH is built, then only its History summary names the swap and the wallet's own review still asks", async () => {
+        useRpc({ eth_estimateGas: '0x30d40' })
+        vi.spyOn(getProvider().chains, 'capabilities').mockReturnValue({
+            ...ethereumCapabilityDefaults,
+            contractDecoding: true,
+        })
+        const { from, to, value, data } = ETH_IN_V3_EXACT_IN
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ from, to, value, data }),
+        )
+        const decoded = await ethereumReviewerAdapter.decoder.decode([built], {
+            ...reviewContext,
+            heldAddresses: [from],
+            isWalletBuilt: true,
+            capabilities: getProvider().chains.capabilities('ethereum'),
+        })
+
+        expect(built.summary).toEqual(
+            ethereumCallSummary({ from, to, value, data }, ETHEREUM),
+        )
+        expect(built.historySummary?.kind).toBe('swap')
+        expect(
+            ethereumReviewerAdapter.policy.autoApproveLocal({
+                ...decoded,
+                warnings: [],
+            }),
+        ).toBe(false)
     })
 
     it("refuses a call the node says would revert, even when the dApp gave its own gas, with the revert's reason", async () => {

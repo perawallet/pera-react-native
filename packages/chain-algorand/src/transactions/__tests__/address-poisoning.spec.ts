@@ -54,9 +54,8 @@ describe('getAlgorandAddressPoisoningRules', () => {
     })
 
     it('reads the current remote value on every call', () => {
-        getNumberValueMock.mockImplementation(
-            (key: string, fallback: number) =>
-                key === 'address_poisoning_lookalike_chars' ? 6 : fallback,
+        getNumberValueMock.mockImplementation((key: string, fallback: number) =>
+            key === 'address_poisoning_lookalike_chars' ? 6 : fallback,
         )
 
         expect(getAlgorandAddressPoisoningRules().lookalikeMatchedChars).toBe(6)

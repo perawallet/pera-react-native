@@ -32,7 +32,7 @@ import {
     useContacts,
     type Contact,
 } from '@perawallet/wallet-core-contacts'
-import { useNameForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-names'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useAddressReuseGuard } from '@components/AddressReuseGuard'
 import { useClipboard } from '@hooks/useClipboard'

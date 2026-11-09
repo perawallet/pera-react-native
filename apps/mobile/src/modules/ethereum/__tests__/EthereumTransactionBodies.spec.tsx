@@ -66,7 +66,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     useChainCapability: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameForAddressQuery: () => ({ data: undefined }),
 }))
 
@@ -340,6 +340,60 @@ describe('Ethereum transaction bodies', () => {
                 screen.queryByTestId('ethereum_contract_call_data'),
             ).toBeNull()
             expect(screen.getByTestId('ethereum_view_details')).toBeTruthy()
+        })
+
+        it('puts the fee after the signing account and ahead of the call it pays for, with View details after the call', () => {
+            vi.mocked(useFindAccountByAddress).mockImplementation(address =>
+                address === ETHEREUM_FIXTURE_SENDER
+                    ? ({
+                          id: 'signer',
+                          name: SIGNER_NAME,
+                          custody: { kind: 'watch' },
+                          chains: { ethereum: { address } },
+                      } as ReturnType<typeof useFindAccountByAddress>)
+                    : null,
+            )
+            render(
+                <TransactionReviewBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            const signingWith = screen.getByText(
+                'signing.transactions.signing_with',
+            )
+            const fee = screen.getByTestId('ethereum_review_fee')
+            const target = screen.getByTestId('ethereum_contract_call_to')
+            const viewDetails = screen.getByTestId('ethereum_view_details')
+            expect(
+                signingWith.compareDocumentPosition(fee) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy()
+            expect(
+                fee.compareDocumentPosition(target) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy()
+            expect(
+                target.compareDocumentPosition(viewDetails) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy()
+            expect(fee.contains(viewDetails)).toBe(false)
+        })
+
+        it("puts the fee ahead of a token transfer's asset row", () => {
+            render(
+                <TransactionReviewBody
+                    transaction={natives['token-transfer']}
+                />,
+            )
+
+            expect(
+                screen
+                    .getByTestId('ethereum_review_fee')
+                    .compareDocumentPosition(
+                        screen.getByTestId('ethereum_review_asset'),
+                    ) & Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy()
         })
 
         it("shows a held signer on Ethereum's chain, and no caption without one", () => {

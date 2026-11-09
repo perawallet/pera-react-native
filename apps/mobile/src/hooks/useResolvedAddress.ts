@@ -18,7 +18,7 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useNameForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-names'
 import { useMemo } from 'react'
 
 export type AddressFormat = 'short' | 'long' | 'full'

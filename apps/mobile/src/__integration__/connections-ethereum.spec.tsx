@@ -843,6 +843,21 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 expect(
                     screen.queryByTestId('ethereum_contract_call_data'),
                 ).toBeNull()
+                const fee = screen.getAllByTestId('ethereum_review_fee')[0]
+                const target = screen.getAllByTestId(
+                    'ethereum_contract_call_to',
+                )[0]
+                const viewDetails = screen.getAllByTestId(
+                    'ethereum_view_details',
+                )[0]
+                expect(
+                    fee.compareDocumentPosition(target) &
+                        Node.DOCUMENT_POSITION_FOLLOWING,
+                ).toBeTruthy()
+                expect(
+                    target.compareDocumentPosition(viewDetails) &
+                        Node.DOCUMENT_POSITION_FOLLOWING,
+                ).toBeTruthy()
 
                 fireEvent.click(
                     screen.getAllByTestId('ethereum_view_details')[0],

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useEffect, type PropsWithChildren } from 'react'
+import React, { useEffect, useMemo, type PropsWithChildren } from 'react'
 import { AppState } from 'react-native'
 import {
     PersistQueryClientProvider,
@@ -22,6 +22,7 @@ import { isActiveAppState } from '@utils/app-state'
 import {
     PERSISTED_CACHE_BUSTER,
     shouldDehydrateQuery,
+    withLegacyNameQueryKeys,
 } from './query-persistence'
 import { queryClient } from './queryClient'
 import { PeraServiceUnavailableToast } from './PeraServiceUnavailableToast'
@@ -45,11 +46,16 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
         return () => subscription.remove()
     }, [])
 
+    const legacyAwarePersister = useMemo(
+        () => withLegacyNameQueryKeys(persister),
+        [persister],
+    )
+
     return (
         <PersistQueryClientProvider
             client={queryClient}
             persistOptions={{
-                persister,
+                persister: legacyAwarePersister,
                 maxAge: config.reactQueryPersistenceAge,
                 buster: PERSISTED_CACHE_BUSTER,
                 dehydrateOptions: { shouldDehydrateQuery },

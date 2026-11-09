@@ -123,12 +123,14 @@ vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
 
 const hdAccount: LocalAccount = {
     id: 'hd-account',
+    name: 'Account #1',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     chains: { algorand: { address: 'HD_ADDR', keyPairId: 'key-1' } },
 }
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'ledger-account',
+    name: 'Ledger Account #1',
     custody: {
         kind: 'hardware',
         device: {
@@ -144,12 +146,14 @@ const ledgerAccount: HardwareWalletAccount = {
 
 const watchAccount: WalletAccount = {
     id: 'watch-account',
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address: 'WATCH_ADDR' } },
 }
 
 const multisigAccount: MultiSigAccount = {
     id: 'multisig-account',
+    name: '',
     custody: { kind: 'multisig' },
     chains: {
         algorand: {
@@ -168,6 +172,7 @@ const multisigAccount: MultiSigAccount = {
 
 const quantumAccount: WalletAccount = {
     id: 'quantum-account',
+    name: '',
     custody: { kind: 'local', seed: 'quantum' },
     chains: { algorand: { address: 'QUANTUM_ADDR', keyPairId: 'key-1' } },
 }
@@ -235,6 +240,7 @@ describe('useAccountInfoCard', () => {
 
     test("Ledger account with sub-addresses: the device's first account is the main one", () => {
         const subLedgerAccount: HardwareWalletAccount = {
+            name: 'Ledger Account #2',
             id: 'ledger-sub-account',
             custody: {
                 kind: 'hardware',
@@ -269,8 +275,8 @@ describe('useAccountInfoCard', () => {
         expect(
             result.current.structureRows.map(row => [row.account, row.name]),
         ).toEqual([
-            [ledgerAccount, 'account_info.account_number #1'],
-            [subLedgerAccount, 'account_info.account_number #2'],
+            [ledgerAccount, ledgerAccount.name],
+            [subLedgerAccount, 'Ledger Account #2'],
         ])
     })
 
@@ -296,7 +302,7 @@ describe('useAccountInfoCard', () => {
                 hd: { account, keyIndex: 0 },
             },
             chains,
-            name,
+            name: name ?? '',
         })
 
         const withHdGroup = (accounts: WalletAccount[]) =>
@@ -387,13 +393,7 @@ describe('useAccountInfoCard', () => {
             )
         })
 
-        test('numbers unnamed accounts by their place in the seed', () => {
-            const unnamedMain = { ...hdAccount, name: undefined }
-            const namedAfterTruncation = hdSibling(
-                'truncated-name',
-                { ethereum: { address: '0xabc', keyPairId: 'key-3' } },
-                '0x...c',
-            )
+        test('shows each account by its stored name, an address name included', () => {
             const namedAfterAddress = hdSibling(
                 'full-name',
                 { algorand: { address: 'FULL_ADDR', keyPairId: 'key-4' } },
@@ -406,57 +406,14 @@ describe('useAccountInfoCard', () => {
                 'Savings',
                 3,
             )
-            withHdGroup([
-                unnamedMain,
-                namedAfterTruncation,
-                namedAfterAddress,
-                named,
-            ])
+            withHdGroup([hdAccount, namedAfterAddress, named])
 
-            const { result } = render(unnamedMain)
+            const { result } = render()
 
             expect(result.current.structureRows.map(row => row.name)).toEqual([
-                'account_info.account_number #1',
-                'account_info.account_number #2',
-                'account_info.account_number #3',
+                hdAccount.name,
+                'FULL_ADDR',
                 'Savings',
-            ])
-        })
-
-        test('treats a legacy auto-name cut from its own address as unnamed', () => {
-            const legacyNamed = hdSibling(
-                'legacy-name',
-                {
-                    algorand: {
-                        address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                        keyPairId: 'key-7',
-                    },
-                },
-                'ABCDEF...UVWXYZ',
-            )
-            withHdGroup([hdAccount, legacyNamed])
-
-            const { result } = render()
-
-            expect(result.current.structureRows[1].name).toBe(
-                'account_info.account_number #2',
-            )
-        })
-
-        test('keeps the remaining numbers when a middle account is removed', () => {
-            const third = hdSibling(
-                'hd-third',
-                { algorand: { address: 'THIRD_ADDR', keyPairId: 'key-6' } },
-                undefined,
-                2,
-            )
-            withHdGroup([hdAccount, third])
-
-            const { result } = render()
-
-            expect(result.current.structureRows.map(row => row.name)).toEqual([
-                'account_info.account_number #1',
-                'account_info.account_number #3',
             ])
         })
 

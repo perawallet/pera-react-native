@@ -35,6 +35,7 @@ const jointAccount = (address: string): WalletAccount =>
     withMultisigParameters(
         {
             id: `joint-${address}`,
+            name: '',
             custody: { kind: 'multisig' },
             chains: { algorand: { address } },
         },
@@ -44,6 +45,7 @@ const jointAccount = (address: string): WalletAccount =>
 
 const localAccount = (chainId: string, address: string): WalletAccount => ({
     id: `local-${chainId}-${address}`,
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { [chainId]: { address, keyPairId: `kp-${address}` } },
 })

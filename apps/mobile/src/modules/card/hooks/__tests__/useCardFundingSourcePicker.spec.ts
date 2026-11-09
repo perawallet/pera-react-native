@@ -91,6 +91,7 @@ const account = (
     { keyPairId }: { keyPairId?: string } = {},
 ): WalletAccount => ({
     id: address,
+    name: '',
     custody: custodyForType(type),
     chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
 })
@@ -145,6 +146,7 @@ describe('isEligibleFundingSource', () => {
     it('rejects an account that holds no address on the card chain', () => {
         const elsewhere: WalletAccount = {
             id: 'G',
+            name: '',
             custody: custodyForType('standalone'),
             chains: { ethereum: { address: '0xG' } },
         }

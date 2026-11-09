@@ -12,6 +12,7 @@
 
 import { vi } from 'vitest'
 import { createChainRegistry } from '@perawallet/wallet-core-chain-contract'
+import { evmCapabilityDefaults } from './src/capability-defaults'
 
 // The accounts package reaches the platform provider, whose storage is a
 // native module the test runtime cannot load.
@@ -23,7 +24,25 @@ const keyValueStorage = {
         store.delete(key)
     },
 }
-const chains = createChainRegistry()
+const registry = createChainRegistry()
+// Specs run EVM code without registering its chain; any other id still throws,
+// as in production. Listed, not read from the chain table: importing that here
+// loads modules before the specs' own config.
+const evmChainIds = new Set<string>([
+    'ethereum',
+    'base',
+    'bsc',
+    'arbitrum',
+    'avalanche',
+    'polygon',
+])
+const chains = {
+    ...registry,
+    capabilities: (chainId: Parameters<typeof registry.capabilities>[0]) =>
+        !registry.has(chainId) && evmChainIds.has(chainId)
+            ? evmCapabilityDefaults
+            : registry.capabilities(chainId),
+}
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: { keys: [] } }),

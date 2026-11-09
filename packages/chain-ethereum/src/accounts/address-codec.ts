@@ -49,7 +49,7 @@ export const evmAddressFromPublicKey: AddressCodec['fromPublicKey'] = (
 export const areEvmAddressesEqual = (a: string, b: string): boolean =>
     a.toLowerCase() === b.toLowerCase()
 
-const truncateEvmAddress = (address: string): string =>
+export const truncateEvmAddress = (address: string): string =>
     address.length <= TRUNCATED_HEAD + TRUNCATED_TAIL
         ? address
         : `${address.slice(0, TRUNCATED_HEAD)}...${address.slice(-TRUNCATED_TAIL)}`

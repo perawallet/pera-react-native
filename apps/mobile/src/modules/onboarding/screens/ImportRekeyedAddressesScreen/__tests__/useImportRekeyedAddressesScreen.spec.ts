@@ -26,11 +26,13 @@ import { useExitAccountFlow } from '@modules/onboarding/hooks'
 const MOCK_ACCOUNTS = [
     {
         id: '1',
+        name: '',
         custody: { kind: 'watch' } as const,
         chains: { algorand: { address: 'ACC1' } },
     },
     {
         id: '2',
+        name: '',
         custody: { kind: 'watch' } as const,
         chains: { algorand: { address: 'ACC2' } },
     },

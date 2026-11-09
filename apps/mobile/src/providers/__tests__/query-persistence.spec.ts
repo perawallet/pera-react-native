@@ -34,6 +34,7 @@ import {
 import {
     PERSISTED_CACHE_BUSTER,
     shouldDehydrateQuery,
+    withLegacyNameQueryKeys,
 } from '../query-persistence'
 
 const asQuery = (
@@ -166,7 +167,7 @@ describe('shouldDehydrateQuery', () => {
 
     it('persists chain-derived modules and keeps DB-backed and PII ones off disk', () => {
         for (const key of [
-            ['nfd', 'address', { address: 'ADDR1' }],
+            ['names', 'address', { address: 'ADDR1' }],
             ['notifications', 'list', { address: 'ADDR1' }],
             ['asa-inbox', 'summary', { address: 'ADDR1' }],
             ['balance-impact-simulation', 'req-1', MAINNET],
@@ -174,6 +175,7 @@ describe('shouldDehydrateQuery', () => {
             expect(shouldDehydrateQuery(asQuery(key, 'success'))).toBe(true)
         }
         for (const key of [
+            ['nfd', 'address', { address: 'ADDR1' }],
             ['passkeys', 'list'],
             ['onramp', 'history', { accountAddress: 'ADDR1' }],
             ['swaps', 'history-infinite', { address: 'ADDR1' }],
@@ -292,5 +294,80 @@ describe('PERSISTED_CACHE_BUSTER', () => {
 
         expect(restored.getQueryData(scopedKey)).toEqual(['cached'])
         expect(persister.removeClient).not.toHaveBeenCalled()
+    })
+})
+
+describe('withLegacyNameQueryKeys', () => {
+    const MAX_AGE = 1000 * 60 * 60
+    const addressScope = { address: 'ADDR1', scope: MAINNET }
+    const names = [{ name: 'pera.algo', image: '', source: 'nfd' }]
+
+    const restoreFrom = async (stored: PersistedClient | undefined) => {
+        const queryClient = new QueryClient()
+        await persistQueryClientRestore({
+            queryClient,
+            persister: withLegacyNameQueryKeys({
+                persistClient: vi.fn(),
+                restoreClient: vi.fn(async () => stored),
+                removeClient: vi.fn(),
+            }),
+            maxAge: MAX_AGE,
+            buster: PERSISTED_CACHE_BUSTER,
+        })
+        return queryClient
+    }
+
+    const storedWith = (queryKey: QueryKey, data: unknown) => {
+        const source = new QueryClient()
+        source.setQueryData(queryKey, data, { updatedAt: 1234 })
+        return {
+            timestamp: Date.now(),
+            buster: PERSISTED_CACHE_BUSTER,
+            clientState: dehydrate(source),
+        } satisfies PersistedClient
+    }
+
+    it('restores an entry persisted under the old name prefix as a fresh-keyed success', async () => {
+        const restored = await restoreFrom(
+            storedWith(['nfd', 'address', addressScope], names),
+        )
+
+        const query = restored
+            .getQueryCache()
+            .find({ queryKey: ['names', 'address', addressScope] })
+        expect(
+            restored.getQueryData(['names', 'address', addressScope]),
+        ).toEqual(names)
+        expect(query?.state.status).toBe('success')
+        expect(query?.state.dataUpdatedAt).toBe(1234)
+        expect(
+            restored.getQueryData(['nfd', 'address', addressScope]),
+        ).toBeUndefined()
+    })
+
+    it('leaves a query outside the name module with its key and hash', async () => {
+        const key: QueryKey = ['currencies', 'list']
+
+        const restored = await restoreFrom(storedWith(key, ['EUR']))
+
+        expect(restored.getQueryData(key)).toEqual(['EUR'])
+    })
+
+    it('leaves a client already under the new prefix unchanged', async () => {
+        const key: QueryKey = ['names', 'address', addressScope]
+
+        const restored = await restoreFrom(storedWith(key, names))
+
+        expect(restored.getQueryData(key)).toEqual(names)
+    })
+
+    it('keeps an empty restore empty', async () => {
+        const persister = withLegacyNameQueryKeys({
+            persistClient: vi.fn(),
+            restoreClient: vi.fn(async () => undefined),
+            removeClient: vi.fn(),
+        })
+
+        expect(await persister.restoreClient()).toBeUndefined()
     })
 })

@@ -35,14 +35,6 @@ export const useStyles = makeStyles(theme => ({
     label: {
         color: theme.colors.textGray,
     },
-    acknowledge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    acknowledgeLabel: {
-        flexShrink: 1,
-    },
     firstSend: {
         marginVertical: theme.spacing.lg,
     },

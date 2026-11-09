@@ -25,6 +25,7 @@ import {
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     logger,
     toError,
@@ -54,7 +55,7 @@ import {
     isAfterUnconfirmedAttempt,
 } from '../blockchain/utils/nodeVerdict'
 import type { EvmChain } from '../chains/types'
-import { ethereumCallSummary } from '../signing/review'
+import { decodedCallSummary } from '../history/decoded-call-summary'
 import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
@@ -308,11 +309,12 @@ const isNonceCollision = (
 export const historyEntryOfSigned = async (
     serializedTransaction: TransactionSerialized,
     chain: EvmChain,
+    scope: ChainScope,
 ): Promise<SubmissionHistoryEntry> => {
     const { to, value, data } = parseTransaction(serializedTransaction)
     const from = await recoverTransactionAddress({ serializedTransaction })
     return {
-        summary: ethereumCallSummary(
+        summary: decodedCallSummary(
             {
                 from,
                 to: to == null ? undefined : getAddress(to),
@@ -320,6 +322,8 @@ export const historyEntryOfSigned = async (
                 data: data ?? '0x',
             },
             chain,
+            scope,
+            getProvider().chains.capabilities(chain.row.id).contractDecoding,
         ),
         chainData: { family: 'evm' },
     }

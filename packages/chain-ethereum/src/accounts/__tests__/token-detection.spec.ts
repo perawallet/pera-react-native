@@ -193,6 +193,7 @@ describe('scanReceivedTokens', () => {
         expect(scan).toEqual({
             tokenIds: [getAddress(TSLAX)],
             scannedBlock: 30,
+            resume: undefined,
         })
     })
 
@@ -214,17 +215,18 @@ describe('scanReceivedTokens', () => {
         expect(scan.scannedBlock).toBe(30)
     })
 
-    it('reads at most the page cap', async () => {
-        const pages = Array.from(
-            { length: TOKEN_SCAN_MAX_PAGES + 2 },
-            (_, i) => [
-                received(
-                    100 - i,
-                    `0x${(i + 1).toString(16).padStart(40, '0')}`,
-                ),
-            ],
+    // One token per page, each page a block lower than the last.
+    const tokenOf = (page: number) =>
+        getAddress(`0x${(page + 1).toString(16).padStart(40, '0')}`)
+    const pagedHistory = (length: number) =>
+        history(
+            Array.from({ length }, (_, page) => [
+                received(100 - page, tokenOf(page)),
+            ]),
         )
-        history(pages)
+
+    it("ends a first scan at the page cap on the account's newest block", async () => {
+        pagedHistory(TOKEN_SCAN_MAX_PAGES + 2)
 
         const scan = await scanReceivedTokens(
             SCOPE,
@@ -236,6 +238,39 @@ describe('scanReceivedTokens', () => {
 
         expect(scan.tokenIds).toHaveLength(TOKEN_SCAN_MAX_PAGES)
         expect(scan.scannedBlock).toBe(100)
+        expect(scan.resume).toBeUndefined()
+    })
+
+    it('leaves the end where it was when the cap comes before it, and carries on from there next scan', async () => {
+        pagedHistory(TOKEN_SCAN_MAX_PAGES + 3)
+        const previousEnd = 100 - (TOKEN_SCAN_MAX_PAGES + 1)
+
+        const first = await scanReceivedTokens(
+            SCOPE,
+            ETHEREUM,
+            ME,
+            previousEnd,
+            openBudget(),
+        )
+        const second = await scanReceivedTokens(
+            SCOPE,
+            ETHEREUM,
+            ME,
+            previousEnd,
+            openBudget(),
+            first.resume,
+        )
+
+        expect(first.scannedBlock).toBeUndefined()
+        expect(first.resume?.ceiling).toBe(100)
+        expect(second).toEqual({
+            tokenIds: [
+                tokenOf(TOKEN_SCAN_MAX_PAGES),
+                tokenOf(TOKEN_SCAN_MAX_PAGES + 1),
+            ],
+            scannedBlock: 100,
+            resume: undefined,
+        })
     })
 
     it('leaves the end of the scan unset when the budget runs out first', async () => {
@@ -252,6 +287,38 @@ describe('scanReceivedTokens', () => {
         expect(scan).toEqual({
             tokenIds: [getAddress(TSLAX)],
             scannedBlock: undefined,
+            resume: undefined,
+        })
+    })
+
+    it('carries on from where the budget ran out above the previous end', async () => {
+        history([
+            [received(30, TSLAX)],
+            [received(20, USDC)],
+            [received(5, ME)],
+        ])
+
+        const scan = await scanReceivedTokens(
+            SCOPE,
+            ETHEREUM,
+            ME,
+            10,
+            createHistoryScanBudget(1, 60_000, () => 0),
+        )
+        const next = await scanReceivedTokens(
+            SCOPE,
+            ETHEREUM,
+            ME,
+            10,
+            openBudget(),
+            scan.resume,
+        )
+
+        expect(scan.scannedBlock).toBeUndefined()
+        expect(next).toEqual({
+            tokenIds: [getAddress(USDC)],
+            scannedBlock: 30,
+            resume: undefined,
         })
     })
 

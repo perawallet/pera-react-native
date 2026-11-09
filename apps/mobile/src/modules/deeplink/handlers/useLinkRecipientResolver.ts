@@ -16,7 +16,7 @@ import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     nameServiceOf,
     resolveVerifiedNameAddress,
-} from '@perawallet/wallet-core-nfd'
+} from '@perawallet/wallet-core-names'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 

@@ -33,6 +33,7 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for an HD account', async () => {
         const account: WalletAccount = {
             id: 'hd-account-match',
+            name: '',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -58,6 +59,7 @@ describe('useMnemonicForAddress', () => {
     test('reads the key on whichever chain holds the address', async () => {
         const account: WalletAccount = {
             id: 'hd-evm-account',
+            name: '',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -86,6 +88,7 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for an algo25 account', async () => {
         const account: WalletAccount = {
             id: 'algo25-account',
+            name: '',
             custody: { kind: 'local', seed: null },
             chains: {
                 algorand: { address: 'A25_ADDR', keyPairId: 'wallet-2' },
@@ -109,6 +112,7 @@ describe('useMnemonicForAddress', () => {
     test('forwards keyPairId to KMS for a quantum account', async () => {
         const account: WalletAccount = {
             id: 'quantum-account',
+            name: '',
             custody: { kind: 'local', seed: 'quantum' },
             chains: { algorand: { address: 'Q_ADDR', keyPairId: 'wallet-q' } },
         }
@@ -140,6 +144,7 @@ describe('useMnemonicForAddress', () => {
     test('throws when account address does not match the requested address', async () => {
         const account: WalletAccount = {
             id: 'hd-account-mismatch',
+            name: '',
             custody: {
                 kind: 'local',
                 seed: 'bip39',
@@ -162,6 +167,7 @@ describe('useMnemonicForAddress', () => {
     test('throws for unsupported account types', async () => {
         const account: WalletAccount = {
             id: 'watch-account',
+            name: '',
             custody: { kind: 'watch' },
             chains: { algorand: { address: 'WATCH_ADDR' } },
         }

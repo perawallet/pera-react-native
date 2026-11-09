@@ -12,14 +12,16 @@
 
 import { useCallback } from 'react'
 import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    getAccountDisplayName,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAccountName } from '@hooks/useAccountName'
 
 export type UseAuthorizeCardDelegationResult = {
     /**
@@ -37,7 +39,6 @@ export type UseAuthorizeCardDelegationResult = {
 export const useAuthorizeCardDelegation =
     (): UseAuthorizeCardDelegationResult => {
         const { t } = useLanguage()
-        const { getAccountName } = useAccountName()
         const { requirePinVerification } = useRequirePinVerification()
         const { request: requestBottomSheet } = useBottomSheet()
 
@@ -61,7 +62,7 @@ export const useAuthorizeCardDelegation =
                                         0,
                                         'USD',
                                     ),
-                                    account: getAccountName(
+                                    account: getAccountDisplayName(
                                         account,
                                         ALGORAND_CHAIN_ID,
                                     ),
@@ -93,7 +94,7 @@ export const useAuthorizeCardDelegation =
                 await delegate(account)
                 return true
             },
-            [t, getAccountName, requirePinVerification, requestBottomSheet],
+            [t, requirePinVerification, requestBottomSheet],
         )
 
         return { authorizeDelegation }

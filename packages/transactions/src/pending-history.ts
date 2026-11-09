@@ -22,7 +22,10 @@ import {
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionStatus,
 } from '@perawallet/wallet-core-signing'
-import { getChainCapabilities } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainCapabilities,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import { historyChainAdapters } from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
 import {
@@ -96,6 +99,9 @@ export const getPendingTransactionRecords = async ({
     listedIds,
 }: GetPendingTransactionRecordsParams): Promise<TransactionRecord[]> => {
     const attempts = await getSubmissionAttemptsWithHistoryEntry({ scope })
+    // A gas chain records the fee it signed for, the most the send can be charged.
+    const isFeeMaximum =
+        getChainDescriptor(scope.chainId).protocol.feeModel === 'gas'
     const byId = new Map(attempts.map(attempt => [attempt.id, attempt]))
     const records: TransactionRecord[] = []
     // A transport retry records the same hash twice; newest-first, so the newest status wins.
@@ -121,6 +127,7 @@ export const getPendingTransactionRecords = async ({
             status,
             timestamp: attempt.createdAt,
             fee: historyEntry.fee,
+            ...(isFeeMaximum && historyEntry.fee && { isFeeMaximum }),
             summary: { ...historyEntry.summary, ...(notice && { notice }) },
             chainData: historyEntry.chainData,
         })

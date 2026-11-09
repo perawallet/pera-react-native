@@ -19,7 +19,6 @@ import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapChainAdapter } from '../../chain-adapter'
-import type { SwapQuote } from '../../models'
 import {
     swapChainAdapters,
     SwapAccountUnsupportedError,
@@ -41,7 +40,9 @@ const {
     mockRemoveOrder,
     mockSelectedAccount,
     mockSwapScope,
+    mockAddIncomingToken,
 } = vi.hoisted(() => ({
+    mockAddIncomingToken: vi.fn(),
     mockTrackOrder: vi.fn(),
     mockRemoveOrder: vi.fn(),
     mockAddSignRequest: vi.fn(),
@@ -66,6 +67,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useSelectedAccount: () => mockSelectedAccount.current,
+    useAddIncomingTokenMutation: () => ({
+        addIncomingToken: mockAddIncomingToken,
+    }),
     getSignerFor: (address: string, _accounts: unknown, chainId: string) => ({
         address: `signer-of-${address}-on-${chainId}`,
     }),
@@ -116,7 +120,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 }
 
 const variables = {
-    quote: { quoteId: 'q' } as SwapQuote,
+    quote: makeSwapQuote({ quoteId: 'q' }),
     signingSource: { name: 'n', description: 'd' },
     onProgress: vi.fn(),
     isCancelled: () => false,
@@ -134,6 +138,7 @@ describe('useExecuteSwapMutation', () => {
         mockCreateSwapOrder.mockReset()
         mockReportSwapOrder.mockReset()
         mockTrackOrder.mockReset()
+        mockAddIncomingToken.mockReset()
         executeSwap = vi.fn()
         registerFakeSwapAdapter({ executeSwap })
     })
@@ -171,6 +176,33 @@ describe('useExecuteSwapMutation', () => {
                 onOrderRejected: mockRemoveOrder,
             },
         )
+    })
+
+    test('adds the token the swap delivers to the receiving account, only once it went out', async () => {
+        vi.mocked(executeSwap)
+            .mockResolvedValueOnce({ kind: 'user-rejected' })
+            .mockResolvedValueOnce({ kind: 'success', orderId: 'O', txIds: [] })
+        const { result } = renderHook(() => useExecuteSwapMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.mutateAsync(variables)
+        })
+        expect(mockAddIncomingToken).not.toHaveBeenCalled()
+        await act(async () => {
+            await result.current.mutateAsync(variables)
+        })
+
+        const { destinationAsset, destinationAddress } = variables.quote.request
+        expect(mockAddIncomingToken).toHaveBeenCalledWith({
+            accountAddress: destinationAddress,
+            scope: {
+                chainId: destinationAsset.chainId,
+                networkId: destinationAsset.networkId,
+            },
+            assetId: destinationAsset.assetId,
+        })
     })
 
     test("sends the backend calls to the account's swap scope", async () => {

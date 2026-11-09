@@ -152,8 +152,6 @@ vi.mock('react-i18next', async () => {
         ...actual,
         useTranslation: () => ({
             t: (key: string, opts?: Record<string, unknown>) => {
-                if (key === 'multisig.name.default_name')
-                    return 'Shared Account'
                 if (opts) return `${key}:${JSON.stringify(opts)}`
                 return key
             },
@@ -192,7 +190,7 @@ describe('useNameMultisigScreen', () => {
         expect(result.current.isCreating).toBe(false)
     })
 
-    it('increments default name based on existing multisig account count', () => {
+    it('numbers one past the highest shared account number, leaving gaps', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 chains: {
@@ -208,14 +206,14 @@ describe('useNameMultisigScreen', () => {
                         },
                     },
                 },
-                name: 'Coffee fund',
+                name: 'Shared Account #3',
                 custody: { kind: 'multisig' },
             } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useNameMultisigScreen())
 
-        expect(result.current.accountName).toBe('Shared Account #2')
+        expect(result.current.accountName).toBe('Shared Account #4')
     })
 
     it('skips taken "#N" slots regardless of account type', () => {

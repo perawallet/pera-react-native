@@ -125,7 +125,7 @@ export const AddressSearchRow = ({
                     onPress={() =>
                         onSelected(item.result.address, item.result.name)
                     }
-                    style={showAddIcon ? styles.foreignRow : styles.nfdItem}
+                    style={showAddIcon ? styles.foreignRow : styles.nameRow}
                 >
                     <AddressDisplay
                         scope={scope}

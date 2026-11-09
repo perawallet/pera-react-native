@@ -55,6 +55,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
         typeof import('@perawallet/wallet-core-assets')
     >()),
     useAssetsQuery: vi.fn(),
+    useNativeAsset: () => ({ assetId: '0', decimals: 6, unitName: 'ALGO' }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({

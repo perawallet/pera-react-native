@@ -38,7 +38,7 @@ describe('backfillAccountRecords', () => {
 
         expect(
             useAccountsStore.getState().accounts.map(({ name }) => name),
-        ).toEqual(['backfilled', undefined])
+        ).toEqual(['backfilled', 'Test account'])
     })
 
     it('leaves the store untouched when no chain changes anything', () => {

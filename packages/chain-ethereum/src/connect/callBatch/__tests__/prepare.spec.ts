@@ -31,7 +31,11 @@ import {
     createEvmPlannerAdapter,
     readEvmTransaction,
 } from '../../../signing/adapter'
-import { createEthereumReviewer, ethereumViewOf } from '../../../signing/review'
+import {
+    createEthereumReviewer,
+    ethereumCallSummary,
+    ethereumViewOf,
+} from '../../../signing/review'
 import { prepareEthereumCallBatch, previewEthereumCall } from '../prepare'
 import {
     APPROVE,
@@ -97,6 +101,23 @@ describe('prepareEthereumCallBatch', () => {
         })
         expect(prepared.request).toMatchObject({
             maxFeePerGasCeiling: maxFeePerGas! * 2n,
+        })
+    })
+
+    it("Given an approval after the first call, when prepared, then its preview keeps the dApp's plain claim and names the approval only in its History summary", async () => {
+        const prepared = await prepareEthereumCallBatch(ctx, ETHEREUM, {
+            from: SENDER,
+            calls: [SWAP, APPROVE],
+        })
+
+        expect(prepared.following[0].summary).toEqual(
+            ethereumCallSummary(APPROVE, ETHEREUM),
+        )
+        expect(prepared.following[0].historySummary).toMatchObject({
+            kind: 'approval',
+            counterparty: ROUTER,
+            title: { key: 'transactions.list_item.approve_asset' },
+            titleAssets: { asset: { assetId: TOKEN } },
         })
     })
 

@@ -237,6 +237,19 @@ describe('the Ethereum transaction view', () => {
         expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
     })
 
+    it.each([
+        ['uniswap-v3-position-manager', 'Uniswap V3 Positions'],
+        ['uniswap-v4-position-manager', 'Uniswap V4 Positions'],
+    ] as const)('round-trips a call to a %s', (kind, name) => {
+        const view = {
+            ...ACTION_VIEW,
+            action: undefined,
+            knownContract: { kind, name, projectDomain: 'uniswap.org' },
+        }
+
+        expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+    })
+
     it.each(STANDARD_CALLS.map(call => [call.kind, call] as const))(
         'round-trips a contract call read as %s',
         (_, call) => {

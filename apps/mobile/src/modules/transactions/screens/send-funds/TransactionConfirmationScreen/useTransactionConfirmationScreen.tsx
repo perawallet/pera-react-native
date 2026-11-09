@@ -361,7 +361,6 @@ export const useTransactionConfirmationScreen =
                 unitName,
                 currentLanguage,
                 false,
-                false,
                 minPrecision,
             )} ${unitName}`
             return {

@@ -32,7 +32,12 @@ const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const account = (
     id: string,
     chains: WalletAccount['chains'],
-): WalletAccount => ({ id, custody: { kind: 'local', seed: null }, chains })
+): WalletAccount => ({
+    id,
+    name: '',
+    custody: { kind: 'local', seed: null },
+    chains,
+})
 
 const SELECTED = account('selected', {
     algorand: { address: 'ALGO_SELECTED', keyPairId: 'k1' },

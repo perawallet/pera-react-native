@@ -21,6 +21,8 @@ export type KnownEvmContractKind =
     | 'uniswap-permit2'
     | 'wrapped-native'
     | 'aave-v3-pool'
+    | 'uniswap-v3-position-manager'
+    | 'uniswap-v4-position-manager'
 
 export type KnownEvmContract = {
     /** Checksummed. */
@@ -39,6 +41,8 @@ const AAVE_DOMAIN = 'aave.com'
 
 const UNISWAP_DEPLOYMENTS =
     'https://developers.uniswap.org/docs/protocols/v3/deployments'
+const UNISWAP_V4_DEPLOYMENTS =
+    'https://developers.uniswap.org/docs/protocols/v4/deployments'
 const ROUTER_DEPLOYMENTS =
     'https://github.com/Uniswap/universal-router/blob/edf19bfde87e6cf5b29046f6ca2f483a4ffd6ae6/deploy-addresses'
 const AAVE_ADDRESS_BOOK =
@@ -85,6 +89,22 @@ const aavePool = (address: Address, file: string): KnownEvmContract => ({
     source: `${AAVE_ADDRESS_BOOK}/${file}.ts`,
 })
 
+const v3Positions = (address: Address, page: string): KnownEvmContract => ({
+    address,
+    kind: 'uniswap-v3-position-manager',
+    name: 'Uniswap V3 Positions',
+    projectDomain: UNISWAP_DOMAIN,
+    source: `${UNISWAP_DEPLOYMENTS}/${page}`,
+})
+
+const v4Positions = (address: Address): KnownEvmContract => ({
+    address,
+    kind: 'uniswap-v4-position-manager',
+    name: 'Uniswap V4 Positions',
+    projectDomain: UNISWAP_DOMAIN,
+    source: UNISWAP_V4_DEPLOYMENTS,
+})
+
 /**
  * Well-known contracts by EIP-155 chain id, mainnets only. Routers are every
  * version in Uniswap's `deploy-addresses` (V1, V1.2, V2, V2.1.1, V2.1.2 where
@@ -109,6 +129,11 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
             'AaveV3Ethereum',
         ),
+        v3Positions(
+            '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+            'v3-ethereum-deployments',
+        ),
+        v4Positions('0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e'),
     ],
     8453: [
         routerListed('0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4', 'base'),
@@ -123,6 +148,11 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-base-deployments',
         ),
         aavePool('0xA238Dd80C259a72e81d7e4664a9801593F98d1c5', 'AaveV3Base'),
+        v3Positions(
+            '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1',
+            'v3-base-deployments',
+        ),
+        v4Positions('0x7C5f5A4bBd8fD63184577525326123B519429bDc'),
     ],
     56: [
         routerListed('0x5Dc88340E1c5c6366864Ee415d6034cadd1A9897', 'bsc'),
@@ -138,6 +168,11 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-bnb-deployments',
         ),
         aavePool('0x6807dc923806fE8Fd134338EABCA509979a7e0cB', 'AaveV3BNB'),
+        v3Positions(
+            '0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613',
+            'v3-bnb-deployments',
+        ),
+        v4Positions('0x7A4a5c919aE2541AeD11041A1AEeE68f1287f95b'),
     ],
     42_161: [
         routerListed('0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5', 'arbitrum'),
@@ -156,6 +191,11 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
             'AaveV3Arbitrum',
         ),
+        v3Positions(
+            '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+            'v3-arbitrum-deployments',
+        ),
+        v4Positions('0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869'),
     ],
     43_114: [
         routerListed('0x82635AF6146972cD6601161c4472ffe97237D292', 'avalanche'),
@@ -177,6 +217,11 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
             'AaveV3Avalanche',
         ),
+        v3Positions(
+            '0x655C406EBFa14EE2006250925e54ec43AD184f8B',
+            'v3-avalanche-deployments',
+        ),
+        v4Positions('0xB74b1F14d2754AcfcbBe1a221023a5cf50Ab8ACD'),
     ],
     137: [
         routerListed('0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5', 'polygon'),
@@ -192,6 +237,11 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-polygon-deployments',
         ),
         aavePool('0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'AaveV3Polygon'),
+        v3Positions(
+            '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+            'v3-polygon-deployments',
+        ),
+        v4Positions('0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9'),
     ],
 }
 
@@ -204,7 +254,13 @@ export const findKnownEvmContract = (
         areEvmAddressesEqual(contract.address, address),
     )
 
-/** A spend approval's `knownSpender`, when `spender` is in the registry. */
+// Known for naming, never trusted as a spender: an approval to one keeps the unknown-spender warning.
+const NON_SPENDER_KINDS: readonly KnownEvmContractKind[] = [
+    'uniswap-v3-position-manager',
+    'uniswap-v4-position-manager',
+]
+
+/** A spend approval's `knownSpender`, when `spender` is in the registry as a spender. */
 export const knownSpenderOf = (
     eip155ChainId: Optional<number>,
     spender: string,
@@ -213,12 +269,11 @@ export const knownSpenderOf = (
         eip155ChainId === undefined || !isAddress(spender)
             ? undefined
             : findKnownEvmContract(eip155ChainId, spender)
-    return (
-        known && {
-            name: known.name,
-            ...(known.projectDomain && { projectDomain: known.projectDomain }),
-        }
-    )
+    if (!known || NON_SPENDER_KINDS.includes(known.kind)) return undefined
+    return {
+        name: known.name,
+        ...(known.projectDomain && { projectDomain: known.projectDomain }),
+    }
 }
 
 export const wrappedNativeOf = (eip155ChainId: number): Optional<Address> =>

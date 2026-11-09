@@ -20,6 +20,7 @@ type TestAccount = WalletAccount
 
 const watchAccount = (address: string): TestAccount => ({
     id: address,
+    name: address,
     custody: { kind: 'watch' },
     chains: { algorand: { address } },
 })

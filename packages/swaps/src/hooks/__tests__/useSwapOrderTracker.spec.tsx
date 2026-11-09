@@ -20,6 +20,7 @@ import {
 } from '@tanstack/react-query'
 import React from 'react'
 import {
+    fetchAndPersistAccount,
     invalidateAccountQueriesForAddresses,
     useAccountsStore,
     type WalletAccount,
@@ -44,6 +45,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     invalidateAccountQueriesForAddresses: vi.fn(),
+    fetchAndPersistAccount: vi.fn(),
 }))
 
 const NOW = 1_700_000_000_000
@@ -110,6 +112,11 @@ describe('swaps/useSwapOrderTracker', () => {
         vi.useFakeTimers({ now: NOW })
         vi.mocked(fetchSwapOrder).mockReset()
         vi.mocked(invalidateAccountQueriesForAddresses).mockReset()
+        vi.mocked(fetchAndPersistAccount).mockReset().mockResolvedValue({
+            changed: true,
+            holdingsChanged: true,
+            observedRound: 1,
+        })
         useSwapTrackingStore.getState().resetState()
         useAccountsStore.setState({ accounts: [PAYING_ACCOUNT] })
         onlineManager.setOnline(true)
@@ -131,6 +138,10 @@ describe('swaps/useSwapOrderTracker', () => {
 
         expect(statusOf()).toBe('completed')
         expect(fetchSwapOrder).toHaveBeenCalledWith('order-1', SOURCE_SCOPE)
+        expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+            '0xETH',
+            DESTINATION_SCOPE,
+        )
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledTimes(1)
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             expect.anything(),
@@ -147,9 +158,30 @@ describe('swaps/useSwapOrderTracker', () => {
         await flush()
 
         expect(statusOf()).toBe('refunded')
+        expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+            'ALGO_ADDR',
+            SOURCE_SCOPE,
+        )
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             expect.anything(),
             ['ALGO_ADDR'],
+            { includeMultiAccountKeys: true },
+        )
+    })
+
+    test('still refreshes the receiving account when reading it from the chain fails', async () => {
+        vi.mocked(fetchAndPersistAccount).mockRejectedValue(
+            new Error('node down'),
+        )
+        useSwapTrackingStore.getState().trackOrder(trackedOrder())
+        routerSays('completed')
+
+        render()
+        await flush()
+
+        expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
+            expect.anything(),
+            ['0xETH'],
             { includeMultiAccountKeys: true },
         )
     })

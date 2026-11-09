@@ -534,6 +534,8 @@
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
         "account_number": "Account #{{number}}",
+        "shared_account_number": "Shared Account #{{number}}",
+        "ledger_account_number": "Ledger Account #{{number}}",
         "name_taken": "You already have an account with this name. Choose a different name so you can tell them apart.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
@@ -1122,7 +1124,13 @@
         "copy": "Copy",
         "send": "Send",
         "show_more": "Show more",
-        "show_less": "Show less"
+        "show_less": "Show less",
+        "amount_abbreviation": {
+            "thousand": "{{amount}}K",
+            "million": "{{amount}}M",
+            "billion": "{{amount}}B",
+            "trillion": "{{amount}}T"
+        }
     },
     "contacts": {
         "edit_contact": {
@@ -2150,7 +2158,6 @@
         "name": {
             "title": "Name Your Account",
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
-            "default_name": "Shared Account",
             "finish_button": "Finish Account Creation",
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
@@ -2207,7 +2214,6 @@
                 "screen_title": "Shared Account",
                 "title": "Name your shared account",
                 "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
-                "default_name": "Shared Account",
                 "finish_button": "Finish",
                 "saving": "Saving shared account..."
             }
@@ -2398,7 +2404,6 @@
         "name_account": {
             "title": "Name your account",
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
-            "wallet_label": "Wallet #{{count}}",
             "finish_button": "Finish Account Creation"
         },
         "import_select_addresses": {
@@ -3676,6 +3681,11 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "contract_call": "Contract Call",
+            "approve_asset": "Approve {{asset}}",
+            "swap_pair": "Swap {{from}} → {{to}}",
+            "add_liquidity": "Add liquidity",
+            "remove_liquidity": "Remove liquidity",
+            "contract_interaction": "Contract interaction",
             "approval": "Approval",
             "revoke_approval": "Revoke Approval",
             "key_registration": "Key Registration",
@@ -3691,6 +3701,7 @@
         },
         "record_detail": {
             "read_failed": "Couldn't read this transaction's call details from the network.",
+            "inferred_notice": "Named from the balance changes. Pera couldn't read the call itself.",
             "transaction_id": "Transaction ID",
             "quantity": "Quantity",
             "nft_collection": "{{collection}} · {{standard}}",
@@ -4144,6 +4155,7 @@
             "you_receive": "You receive",
             "sender_address_optional": "Sender Address (Optional)",
             "enter_sender_address": "Enter your {{name}} address",
+            "network_line": "{{network}} network",
             "provider": "Provider",
             "payment_method": "Payment Method",
             "choose_asset": "Choose an asset",
@@ -4156,7 +4168,6 @@
         },
         "pair_selection": {
             "title_to": "To",
-            "title_from": "From",
             "search": "Search",
             "empty": "No tokens available"
         },
@@ -4166,6 +4177,7 @@
             "filter_all": "All",
             "filter_fiat": "Fiat",
             "filter_crypto": "Crypto",
+            "chain_all": "All",
             "fiat_section": "Fiat",
             "crypto_section": "Crypto",
             "see_all_fiat": "See all fiat currencies",
@@ -4183,7 +4195,7 @@
         "sender_address": {
             "title": "Sender address",
             "body": "This is the address that will be used to send the funds to the recipient. It is optional but may accelerate the flow and can help in the case of support queries relating to this purchase.",
-            "placeholder": "Enter your sender address",
+            "invalid": "This isn't a valid {{network}} address",
             "confirm": "Confirm"
         },
         "order_review": {
@@ -4452,7 +4464,6 @@
         "scan_header": {
             "having_issues": "Having issues?"
         },
-        "default_account_name": "Ledger {{number}}",
         "handoff_added": {
             "title": "Ledger account added",
             "body": "You can now use it in the Pera extension."

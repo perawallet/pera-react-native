@@ -64,6 +64,10 @@ const AAVE_POOL_FUNCTIONS = parseAbi([
     'function repayWithPermit(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf, uint256 deadline, uint8 permitV, bytes32 permitR, bytes32 permitS)',
 ])
 
+const PERMIT2_FUNCTIONS = parseAbi([
+    'function approve(address token, address spender, uint160 amount, uint48 expiration)',
+])
+
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
 // A lenient decoder would accept dirty padding or trailing bytes the contract
@@ -176,9 +180,35 @@ export const decodeEvmContractAction = (
             case 'aave-v3-pool': {
                 return decodeAavePoolAction(call)
             }
-            case 'uniswap-permit2': {
+            case 'uniswap-permit2':
+            case 'uniswap-v3-position-manager':
+            case 'uniswap-v4-position-manager': {
                 return undefined
             }
+        }
+    } catch {
+        return undefined
+    }
+}
+
+/**
+ * A Permit2 `approve`, or undefined unless the calldata re-encodes to exactly
+ * it and the call sends no ether. `amount` is in base units of `token`. Never
+ * throws. Review doesn't read it: Permit2 stays a plain contract call there.
+ */
+export const decodePermit2Approval = (call: {
+    data: Hex
+    value: bigint
+}): Optional<{ token: Address; spender: Address; amount: bigint }> => {
+    if (call.value !== 0n) return undefined
+    try {
+        const read = readFunction(PERMIT2_FUNCTIONS, call.data)
+        if (!read) return undefined
+        const [token, spender, amount] = read.args as [Address, Address, bigint]
+        return {
+            token: getAddress(token),
+            spender: getAddress(spender),
+            amount,
         }
     } catch {
         return undefined

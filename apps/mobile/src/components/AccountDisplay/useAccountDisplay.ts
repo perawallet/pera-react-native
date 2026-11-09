@@ -16,6 +16,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
+    getAccountDisplayName,
     addressOn,
     useAccountChainId,
     type WalletAccount,
@@ -25,10 +26,9 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useNameForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useNameForAddressQuery } from '@perawallet/wallet-core-names'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
-import { useAccountName } from '@hooks/useAccountName'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 import type { AccountIconSize } from '@components/AccountIcon'
@@ -46,6 +46,8 @@ type UseAccountDisplayResult = {
     /** The chain whose name and address the labels show. */
     chainId: ChainId
     displayName: string
+    /** The account has no name, so `displayName` is its shortened address. */
+    isNameAddress: boolean
     secondaryText: Optional<string>
     renderSecondary: boolean
     showTypeAsSecondary: boolean
@@ -67,10 +69,9 @@ export const useAccountDisplay = ({
     )
     const scope = useSelectedScope(chainId ?? accountChainId)
     const fullAddress = account ? addressOn(account, scope) : undefined
-    const { getAccountName } = useAccountName()
     const displayName = useMemo(
-        () => getAccountName(account ?? null, scope.chainId),
-        [getAccountName, account, scope.chainId],
+        () => getAccountDisplayName(account ?? null, scope.chainId),
+        [account, scope.chainId],
     )
     // Truncate with the same codec as the name's address fallback, so an account shown by its address has displayName equal to `address`.
     const address = useMemo(() => {
@@ -93,7 +94,8 @@ export const useAccountDisplay = ({
 
     const { label: accountTypeLabel } = useAccountTypeLabel(account)
 
-    const hasName = Boolean(addressName) || displayName !== address
+    const isNameAddress = displayName === address
+    const hasName = Boolean(addressName) || !isNameAddress
     const showTypeAsSecondary =
         (alwaysShowAccountType || (showAccountType && !hasName)) &&
         Boolean(accountTypeLabel)
@@ -117,6 +119,7 @@ export const useAccountDisplay = ({
     return {
         chainId: scope.chainId,
         displayName,
+        isNameAddress,
         secondaryText,
         renderSecondary,
         showTypeAsSecondary,

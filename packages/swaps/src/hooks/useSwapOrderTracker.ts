@@ -14,10 +14,12 @@ import { useEffect } from 'react'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import {
     addressOn,
+    fetchAndPersistAccount,
     invalidateAccountQueriesForAddresses,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { fetchSwapOrder } from '../api'
 import type { SwapStatus, SwapTrackedOrder } from '../models'
 import { useSwapTrackingStore } from '../store'
@@ -26,12 +28,19 @@ import { getInvalidateSwapHistoryPredicate, swapQueryKeys } from './querykeys'
 
 const POLL_INTERVAL_MS = 30_000
 
-const addressRefreshedOn = (
+const accountRefreshedOn = (
     order: SwapTrackedOrder,
     status: SwapStatus,
-): Nullable<string> => {
-    if (status === 'completed') return order.destinationAddress
-    if (status === 'refunded') return order.sourceAddress
+): Nullable<{ address: string; scope: ChainScope }> => {
+    if (status === 'completed') {
+        return {
+            address: order.destinationAddress,
+            scope: order.destinationScope,
+        }
+    }
+    if (status === 'refunded') {
+        return { address: order.sourceAddress, scope: order.sourceScope }
+    }
     return null
 }
 
@@ -78,11 +87,25 @@ export const useSwapOrderTracker = (): void => {
             const status = statuses[index]
             if (!status || status === order.status) return
             updateOrderStatus(order.orderId, status, Date.now())
-            const address = addressRefreshedOn(order, status)
-            if (!address) return
-            invalidateAccountQueriesForAddresses(queryClient, [address], {
-                includeMultiAccountKeys: true,
-            })
+            const account = accountRefreshedOn(order, status)
+            if (!account) return
+            const { address, scope } = account
+            // The payout is someone else's transfer, which the change signal
+            // doesn't flag, so the account is read now rather than at the next scan.
+            void fetchAndPersistAccount(address, scope)
+                .catch((error: unknown) => {
+                    logger.warn('Account read after a settled swap failed', {
+                        scope,
+                        error,
+                    })
+                })
+                .then(() => {
+                    invalidateAccountQueriesForAddresses(
+                        queryClient,
+                        [address],
+                        { includeMultiAccountKeys: true },
+                    )
+                })
             void queryClient.invalidateQueries({
                 predicate: getInvalidateSwapHistoryPredicate,
             })

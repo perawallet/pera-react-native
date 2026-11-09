@@ -18,6 +18,10 @@ import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { transactionIconName } from '@components/TransactionIcon'
+import {
+    CONTRACT_CALL_TITLE_KEY,
+    REVOKE_APPROVAL_TITLE_KEY,
+} from '../utils/recordTitleKeys'
 import type { EthereumContractActionPresentation } from './useEthereumContractAction'
 import type { EthereumStandardCallPresentation } from './useEthereumStandardCall'
 
@@ -42,14 +46,14 @@ export const titleKeyOf = (
 ): I18nKey => {
     if (standardCall && isApproval(standardCall)) {
         return isRevocation(standardCall)
-            ? i18nKey('transactions.list_item.revoke_approval')
+            ? REVOKE_APPROVAL_TITLE_KEY
             : i18nKey('transactions.list_item.approval')
     }
     if (!standardCall && contractAction && view.action) {
         return contractActionTitleKeyOf(view.action)
     }
     return view.kind === 'contract-call' && !standardCall
-        ? i18nKey('transactions.list_item.contract_call')
+        ? CONTRACT_CALL_TITLE_KEY
         : i18nKey('transactions.list_item.send')
 }
 

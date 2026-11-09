@@ -18,16 +18,18 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestValidation } from '@perawallet/wallet-core-connections'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
-import { ethereumCallSummary } from '../signing/review'
+import { decodedCallSummary } from '../history/decoded-call-summary'
 import type {
     EthereumRevertedEstimate,
     EthereumTransactionPayload,
 } from '../signing/adapter'
+import { ethereumCallSummary } from '../signing/review'
 import {
     evmFeePresetOf,
     readEvmFeePresets,
@@ -349,10 +351,17 @@ export const buildEthereumSendTransaction = async (
                 estimate.gas * paidPerGas(maxFeePerGas, maxPriorityFeePerGas),
         },
     }
+    const call = { from, to, value, data }
     return {
         scope,
         payload,
-        summary: ethereumCallSummary({ from, to, value, data }, chain),
+        summary: ethereumCallSummary(call, chain),
+        historySummary: decodedCallSummary(
+            call,
+            chain,
+            scope,
+            getProvider().chains.capabilities(chain.row.id).contractDecoding,
+        ),
         chainData: { family: 'evm' },
     }
 }

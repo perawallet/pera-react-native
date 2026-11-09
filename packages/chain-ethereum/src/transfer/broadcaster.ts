@@ -175,6 +175,7 @@ export const createEvmBroadcasterAdapter = (
                         historyEntryOfSigned(
                             bytesToHex(serialized) as TransactionSerialized,
                             chain,
+                            scope,
                         ),
                     ),
                 )

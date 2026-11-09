@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     diffAddressCharacters,
     type AddressPoisoningRisk,
@@ -25,7 +25,7 @@ type UseAddressPoisoningWarningContentParams = {
 
 type UseAddressPoisoningWarningContentResult = {
     isAcknowledged: boolean
-    setIsAcknowledged: (value: boolean) => void
+    toggleAcknowledged: () => void
     recipientSegments: AddressSegment[]
     similarToSegments: Optional<AddressSegment[]>
 }
@@ -35,6 +35,10 @@ export const useAddressPoisoningWarningContent = ({
     risk,
 }: UseAddressPoisoningWarningContentParams): UseAddressPoisoningWarningContentResult => {
     const [isAcknowledged, setIsAcknowledged] = useState(false)
+    const toggleAcknowledged = useCallback(
+        () => setIsAcknowledged(current => !current),
+        [],
+    )
 
     const similarTo = risk.kind === 'lookalike' ? risk.similarTo : undefined
     const recipientSegments = useMemo(
@@ -52,7 +56,7 @@ export const useAddressPoisoningWarningContent = ({
 
     return {
         isAcknowledged,
-        setIsAcknowledged,
+        toggleAcknowledged,
         recipientSegments,
         similarToSegments,
     }

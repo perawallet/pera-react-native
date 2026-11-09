@@ -80,6 +80,7 @@ vi.mock('@components/PreferredAmount', () => ({
 
 const ACCOUNT: WalletAccount = {
     id: 'account-1',
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address: 'A'.repeat(58) } },
 }
@@ -205,6 +206,17 @@ describe('AccountWithBalance', () => {
         expect(props).not.toHaveProperty('value')
     })
 
+    it('abbreviates every balance it shows, so a large one leaves the name room', () => {
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAssetAmount).toHaveBeenCalledWith(
+            expect.objectContaining({ abbreviateFrom: 'million' }),
+        )
+        expect(mockPreferredAmount).toHaveBeenCalledWith(
+            expect.objectContaining({ abbreviateFrom: 'million' }),
+        )
+    })
+
     describe('chain-agnostic row', () => {
         beforeEach(() => {
             mockHookResult.isMultiChain = true
@@ -225,7 +237,10 @@ describe('AccountWithBalance', () => {
             )
             expect(mockAssetAmount).not.toHaveBeenCalled()
             expect(mockPreferredAmount).toHaveBeenCalledWith(
-                expect.objectContaining({ value: total }),
+                expect.objectContaining({
+                    value: total,
+                    abbreviateFrom: 'million',
+                }),
             )
         })
 

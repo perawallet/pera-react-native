@@ -21,8 +21,10 @@ import {
 } from '@perawallet/wallet-core-connections'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { findTransactionBatch } from '@perawallet/wallet-core-signing'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
+import { decodedCallSummary } from '../../history/decoded-call-summary'
 import type { EthereumTransactionPayload } from '../../signing/adapter'
 import {
     BATCH_FEE_CEILING_MULTIPLIER,
@@ -69,6 +71,12 @@ export const previewEthereumCall = (
         scope,
         payload,
         summary: ethereumCallSummary(call, chain),
+        historySummary: decodedCallSummary(
+            call,
+            chain,
+            scope,
+            getProvider().chains.capabilities(chain.row.id).contractDecoding,
+        ),
         chainData: { family: 'evm' },
     }
 }

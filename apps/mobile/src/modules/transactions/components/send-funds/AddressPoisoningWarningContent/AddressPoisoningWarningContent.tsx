@@ -12,8 +12,9 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { AddressPoisoningRisk } from '@perawallet/wallet-core-transactions'
-import { PWCheckbox, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { CheckboxRow } from '@components/CheckboxRow'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { HighlightedAddress } from './HighlightedAddress'
@@ -37,7 +38,7 @@ export const AddressPoisoningWarningContent = ({
     const { t } = useLanguage()
     const {
         isAcknowledged,
-        setIsAcknowledged,
+        toggleAcknowledged,
         recipientSegments,
         similarToSegments,
     } = useAddressPoisoningWarningContent({ recipient, risk })
@@ -87,10 +88,10 @@ export const AddressPoisoningWarningContent = ({
                         />
                     </PWView>
                 )}
-                <PWCheckbox
-                    checked={isAcknowledged}
-                    onPress={() => setIsAcknowledged(!isAcknowledged)}
-                    title={t('send_funds.address_poisoning.acknowledge')}
+                <CheckboxRow
+                    label={t('send_funds.address_poisoning.acknowledge')}
+                    isChecked={isAcknowledged}
+                    onToggle={toggleAcknowledged}
                     testID='address_poisoning_acknowledge'
                 />
             </PWView>

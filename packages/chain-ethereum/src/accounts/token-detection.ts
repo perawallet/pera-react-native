@@ -127,16 +127,21 @@ export const sharedHistoryScanBudget = (): HistoryScanBudget => {
     return sharedBudget
 }
 
+/** A scan cut short above the previous end: every row from `ceiling` down to `cursor` is read. */
+export type ScanResume = { cursor: string; ceiling: number }
+
 export type TokenScan = {
     tokenIds: string[]
-    /** Undefined when nothing was read or the budget ran out first, so the next scan reads that range again. */
+    /** Every row down to the previous end is read and this is the new end; undefined while rows above it are unread. */
     scannedBlock: Optional<number>
+    /** Where the next scan carries on reading, before it reads the head again. */
+    resume: Optional<ScanResume>
 }
 
 /**
- * Tokens `address` received, read from its history newest first down to
- * `sinceBlock`, the end of the previous scan, or to the page cap. Rejects on a
- * failed page.
+ * Tokens `address` received, read from its history newest first (or from
+ * `resume`) down to `sinceBlock`, the end of the previous scan, or to the page
+ * cap. Rejects on a failed page.
  */
 export const scanReceivedTokens = async (
     scope: ChainScope,
@@ -144,14 +149,25 @@ export const scanReceivedTokens = async (
     address: string,
     sinceBlock: Optional<number>,
     budget: HistoryScanBudget,
+    resume?: ScanResume,
 ): Promise<TokenScan> => {
     const found = new Set<string>()
-    let newest: Optional<number>
-    let cursor: Optional<string>
+    let newest = resume?.ceiling
+    let cursor = resume?.cursor
+    // A first scan has no end to reach: what it reads within the cap is the
+    // backfill, and the account's end starts at its newest row.
+    const cutShort = (isCapped: boolean): TokenScan => ({
+        tokenIds: [...found],
+        scannedBlock: sinceBlock === undefined && isCapped ? newest : undefined,
+        resume:
+            sinceBlock !== undefined &&
+            cursor !== undefined &&
+            newest !== undefined
+                ? { cursor, ceiling: newest }
+                : undefined,
+    })
     for (let page = 0; page < TOKEN_SCAN_MAX_PAGES; page++) {
-        if (!budget.take()) {
-            return { tokenIds: [...found], scannedBlock: undefined }
-        }
+        if (!budget.take()) return cutShort(false)
         const { items, next } = await fetchHistoryPage(
             scope,
             chain,
@@ -177,8 +193,14 @@ export const scanReceivedTokens = async (
                 }
             }
         }
-        if (isReachedMarker || next === null) break
+        if (isReachedMarker || next === null) {
+            return {
+                tokenIds: [...found],
+                scannedBlock: newest,
+                resume: undefined,
+            }
+        }
         cursor = next
     }
-    return { tokenIds: [...found], scannedBlock: newest }
+    return cutShort(true)
 }

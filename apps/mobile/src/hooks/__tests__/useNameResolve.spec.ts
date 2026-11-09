@@ -13,14 +13,14 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
-import { useNameResolutionQuery } from '@perawallet/wallet-core-nfd'
+import { useNameResolutionQuery } from '@perawallet/wallet-core-names'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { useNameResolve } from '../useNameResolve'
 
 const { network } = vi.hoisted(() => ({ network: { id: 'mainnet' } }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameResolutionQuery: vi.fn(),
     nameServiceOf: vi.fn((scope: { chainId: string }) =>
         scope.chainId === 'algorand' ? 'nfd' : 'ens',

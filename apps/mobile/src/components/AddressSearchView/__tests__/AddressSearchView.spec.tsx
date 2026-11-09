@@ -16,7 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNameSearchQuery } from '@perawallet/wallet-core-nfd'
+import { useNameSearchQuery } from '@perawallet/wallet-core-names'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
@@ -70,7 +70,7 @@ vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
     useChainNameWhenMultiChain: () => mockChainName.value,
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
     nameServiceOf: vi.fn(() => 'nfd'),
 }))

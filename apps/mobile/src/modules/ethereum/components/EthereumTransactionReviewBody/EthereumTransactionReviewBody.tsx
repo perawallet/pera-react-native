@@ -57,11 +57,11 @@ export const EthereumTransactionReviewBody = ({
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
 
-    let details = null
+    let callDetails = null
     if (standardCall && !isTransfer) {
-        details = <EthereumApprovalDetails presentation={presentation} />
+        callDetails = <EthereumApprovalDetails presentation={presentation} />
     } else if (contractAction) {
-        details = (
+        callDetails = (
             <EthereumContractActionDetails
                 presentation={presentation}
                 variant='review'
@@ -70,7 +70,7 @@ export const EthereumTransactionReviewBody = ({
             />
         )
     } else if (!isTransfer) {
-        details = (
+        callDetails = (
             <EthereumContractCallDetails
                 presentation={presentation}
                 variant='review'
@@ -79,7 +79,7 @@ export const EthereumTransactionReviewBody = ({
             />
         )
     } else {
-        details = (
+        callDetails = (
             <EthereumTransferAssetRows
                 presentation={presentation}
                 testIDPrefix='ethereum_review'
@@ -114,7 +114,20 @@ export const EthereumTransactionReviewBody = ({
                     </PWView>
                 ) : null
             }
-            details={details}
+            details={
+                <PWView style={styles.details}>
+                    {callDetails}
+                    <PWButton
+                        testID='ethereum_view_details'
+                        variant='linkPositive'
+                        style={styles.transactionDetails}
+                        paddingStyle='none'
+                        title={t('signing.view_details')}
+                        iconRight='chevron-right'
+                        onPress={handleViewDetails}
+                    />
+                </PWView>
+            }
             fee={
                 <PWView>
                     {highFeeText && (
@@ -146,15 +159,6 @@ export const EthereumTransactionReviewBody = ({
                             </PWText>
                         </PWView>
                     )}
-                    <PWButton
-                        testID='ethereum_view_details'
-                        variant='linkPositive'
-                        style={styles.transactionDetails}
-                        paddingStyle='none'
-                        title={t('signing.view_details')}
-                        iconRight='chevron-right'
-                        onPress={handleViewDetails}
-                    />
                 </PWView>
             }
         />

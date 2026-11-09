@@ -18,7 +18,7 @@ const RECIPIENT = 'ABCDXXXXWXYZ'
 const KNOWN = 'ABCDYYYYWXYQ'
 
 describe('useAddressPoisoningWarningContent', () => {
-    it('starts unacknowledged and acknowledges on request', () => {
+    it('starts unacknowledged and toggles the acknowledgement', () => {
         const { result } = renderHook(() =>
             useAddressPoisoningWarningContent({
                 recipient: RECIPIENT,
@@ -28,9 +28,13 @@ describe('useAddressPoisoningWarningContent', () => {
 
         expect(result.current.isAcknowledged).toBe(false)
 
-        act(() => result.current.setIsAcknowledged(true))
+        act(() => result.current.toggleAcknowledged())
 
         expect(result.current.isAcknowledged).toBe(true)
+
+        act(() => result.current.toggleAcknowledged())
+
+        expect(result.current.isAcknowledged).toBe(false)
     })
 
     it('highlights where a look-alike differs from the known address', () => {

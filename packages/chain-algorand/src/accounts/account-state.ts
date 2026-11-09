@@ -182,7 +182,5 @@ type ParticipationStatus = Extract<
 >['status']
 
 // algod types status as a bare string; anything unrecognised reads as Offline.
-const toParticipationStatus = (
-    status: Optional<string>,
-): ParticipationStatus =>
+const toParticipationStatus = (status: Optional<string>): ParticipationStatus =>
     status === 'Online' || status === 'NotParticipating' ? status : 'Offline'

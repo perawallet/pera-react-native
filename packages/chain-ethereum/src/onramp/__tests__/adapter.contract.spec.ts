@@ -47,10 +47,6 @@ describe.each(EVM_TEST_CHAINS)('the $row.id ramp adapter', chain => {
         ],
     })
 
-    it('has no receive step to prepare', () => {
-        expect(createEvmRampAdapter(chain).useEnsureCanReceive).toBeUndefined()
-    })
-
     it('limits Buy to the router destinations', () => {
         expect(createEvmRampAdapter(chain).isBuyLimitedToDestinations).toBe(
             true,

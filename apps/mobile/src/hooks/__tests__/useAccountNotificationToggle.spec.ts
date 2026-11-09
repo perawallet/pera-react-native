@@ -104,6 +104,7 @@ const toWalletAccount = ({
     ...account
 }: SeedAccount): WalletAccount => ({
     ...account,
+    name: '',
     chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
 })
 
@@ -639,6 +640,7 @@ describe('useAccountNotificationToggle', () => {
             mocks.accounts = [
                 {
                     id: 'eth-only',
+                    name: '',
                     custody: { kind: 'watch' },
                     chains: { ethereum: { address: '0xabc' } },
                 },
@@ -668,6 +670,7 @@ describe('useAccountNotificationToggle', () => {
             mocks.accounts = [
                 {
                     id: 'both',
+                    name: '',
                     custody: { kind: 'watch' },
                     chains: {
                         algorand: { address: 'ALGO_ADDR' },
@@ -714,11 +717,13 @@ describe('useAccountNotificationToggle', () => {
             mocks.accounts = [
                 {
                     id: 'watch',
+                    name: '',
                     custody: { kind: 'watch' },
                     chains: { algorand: { address: 'SHARED' } },
                 },
                 {
                     id: 'hd',
+                    name: '',
                     custody: { kind: 'watch' },
                     chains: {
                         algorand: { address: 'SHARED' },
@@ -751,6 +756,7 @@ describe('useAccountNotificationToggle', () => {
             mocks.accounts = [
                 {
                     id: 'both',
+                    name: '',
                     custody: { kind: 'watch' },
                     chains: {
                         algorand: { address: 'ALGO_ADDR' },

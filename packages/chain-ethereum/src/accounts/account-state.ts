@@ -66,6 +66,7 @@ import {
     sharedHistoryScanBudget,
     TOKEN_SCAN_INTERVAL_MS,
     type HistoryScanBudget,
+    type ScanResume,
     type TokenSightings,
 } from './token-detection'
 
@@ -266,6 +267,8 @@ type Detection = {
     lastScanAt: Map<string, number>
     /** End of each account's latest finished scan, by `backfillKey`; a read persists it. */
     scannedBlocks: Map<string, number>
+    /** Where each account's unfinished scan carries on, by `backfillKey`; lost on restart, which only re-reads rows. */
+    scanResumes: Map<string, ScanResume>
     /** Accounts a finished scan found tokens for that no read has taken up yet. */
     unreadFindings: Set<string>
     sightings: TokenSightings
@@ -305,10 +308,7 @@ const isListedPassDue = (detection: Detection, key: string): boolean => {
 const isListedPassOwed = (detection: Detection, key: string): boolean =>
     detection.owedListedPasses.has(key) && isListedPassDue(detection, key)
 
-const latestOf = (
-    a: Optional<number>,
-    b: Optional<number>,
-): Optional<number> =>
+const latestOf = (a: Optional<number>, b: Optional<number>): Optional<number> =>
     a === undefined || b === undefined ? (a ?? b) : Math.max(a, b)
 
 // Not awaited: a slow history backend must never hold the balance read. What
@@ -328,8 +328,11 @@ const startScan = (
         read.address,
         latestOf(detection.scannedBlocks.get(key), read.tokenScanBlock),
         detection.budget,
+        detection.scanResumes.get(key),
     ).then(
         scan => {
+            if (scan.resume) detection.scanResumes.set(key, scan.resume)
+            else detection.scanResumes.delete(key)
             if (scan.scannedBlock !== undefined) {
                 detection.scannedBlocks.set(
                     key,
@@ -347,6 +350,9 @@ const startScan = (
             }
         },
         (error: unknown) => {
+            // A cursor the backend no longer takes would fail every retry;
+            // reading again from the head re-reads rows but skips none.
+            detection.scanResumes.delete(key)
             logger.warn('Received-token scan failed; keeping stored tokens', {
                 scope,
                 error,
@@ -462,6 +468,7 @@ const readBatch = async (
             // with no stored state, and must not restart the scan every tick.
             if (read.isPersisted && read.isFirstSync) {
                 detection.scannedBlocks.delete(key)
+                detection.scanResumes.delete(key)
             }
             if (read.isPersisted && isScanDue(detection, key)) {
                 startScan(chain, scope, read, detection)
@@ -860,6 +867,7 @@ export const createEthereumAccountStateOps = (
         now,
         lastScanAt: new Map(),
         scannedBlocks: new Map(),
+        scanResumes: new Map(),
         unreadFindings: new Set(),
         sightings: tokenSightings,
         budget: scanBudget,

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import {
     PWButton,
@@ -19,12 +18,16 @@ import {
     PWTouchableIcon,
     PWView,
 } from '@components/core'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
+import { useOnrampSenderAddressContent } from './useOnrampSenderAddressContent'
 
 export type OnrampSenderAddressContentProps = {
     initialAddress?: string
+    /** The pay asset; the address is checked against its chain. */
+    sourceToken: RampToken
 }
 
 // Rendered inline (no PWSheetLayout) so it sizes correctly in an `auto` sheet:
@@ -32,15 +35,19 @@ export type OnrampSenderAddressContentProps = {
 // button lives in the body rather than a fixed footer.
 export const OnrampSenderAddressContent = ({
     initialAddress = '',
+    sourceToken,
 }: OnrampSenderAddressContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
-    const [address, setAddress] = useState(initialAddress)
-
-    const handleConfirm = useCallback(() => {
-        resolve(address.trim())
-    }, [address, resolve])
+    const {
+        address,
+        setAddress,
+        clearAddress,
+        networkLabel,
+        isValid,
+        hasError,
+        handleConfirm,
+    } = useOnrampSenderAddressContent({ initialAddress, sourceToken })
 
     return (
         <SafeAreaView edges={['bottom']}>
@@ -53,7 +60,9 @@ export const OnrampSenderAddressContent = ({
                 <PWInput
                     value={address}
                     onChangeText={setAddress}
-                    placeholder={t('onramp.sender_address.placeholder')}
+                    placeholder={t('onramp.form.enter_sender_address', {
+                        name: networkLabel,
+                    })}
                     autoCapitalize='none'
                     autoCorrect={false}
                     renderErrorMessage={false}
@@ -64,17 +73,29 @@ export const OnrampSenderAddressContent = ({
                                 name='cross'
                                 variant='secondary'
                                 size='md'
-                                onPress={() => setAddress('')}
+                                onPress={clearAddress}
                                 testID='onramp-sender-address-clear'
                             />
                         ) : undefined
                     }
                     testID='onramp-sender-address-input'
                 />
+                {hasError && (
+                    <PWText
+                        variant='footnoteMedium'
+                        style={styles.errorText}
+                        testID='onramp-sender-address-error'
+                    >
+                        {t('onramp.sender_address.invalid', {
+                            network: networkLabel,
+                        })}
+                    </PWText>
+                )}
                 <PWButton
                     variant='primary'
                     title={t('onramp.sender_address.confirm')}
                     onPress={handleConfirm}
+                    isDisabled={!isValid}
                     testID='onramp-sender-address-confirm'
                 />
             </PWView>

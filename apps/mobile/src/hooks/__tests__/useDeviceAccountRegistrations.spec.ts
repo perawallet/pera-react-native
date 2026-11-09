@@ -53,6 +53,7 @@ const toWalletAccount = ({
     ...account
 }: SeedAccount): WalletAccount => ({
     ...account,
+    name: '',
     chains: { algorand: { address, ...(keyPairId ? { keyPairId } : {}) } },
 })
 
@@ -192,6 +193,7 @@ describe('useDeviceAccountRegistrations', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     id: '1',
+                    name: '',
                     custody: { kind: 'watch' },
                     chains: {
                         algorand: { address: 'ADDR_A' },

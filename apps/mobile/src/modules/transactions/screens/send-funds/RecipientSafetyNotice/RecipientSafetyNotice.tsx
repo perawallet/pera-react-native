@@ -17,13 +17,12 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { RecipientAssessment } from '@perawallet/wallet-core-transactions'
 import {
-    PWCheckbox,
     PWLoadingIndicator,
     PWRoundIcon,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { CheckboxRow } from '@components/CheckboxRow'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -124,19 +123,12 @@ export const RecipientSafetyNotice = ({
                 segments={diff.b}
                 testID='recipient_look_alike_known_address'
             />
-            <PWTouchableOpacity
-                style={styles.acknowledge}
-                onPress={onToggleAcknowledged}
+            <CheckboxRow
+                label={t('send_funds.recipient_safety.look_alike_acknowledge')}
+                isChecked={isAcknowledged}
+                onToggle={onToggleAcknowledged}
                 testID='recipient_look_alike_acknowledge'
-            >
-                <PWCheckbox
-                    checked={isAcknowledged}
-                    onPress={onToggleAcknowledged}
-                />
-                <PWText style={styles.acknowledgeLabel}>
-                    {t('send_funds.recipient_safety.look_alike_acknowledge')}
-                </PWText>
-            </PWTouchableOpacity>
+            />
         </PWView>
     )
 }

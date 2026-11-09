@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-    accountNumberOf,
+    accountNameKindOf,
     clearPendingAccountRollback,
     consumePendingAccountRollback,
     chainAccountOf,
     findAccountByAddressOn,
-    getAccountDisplayName,
+    isUnnamed,
+    nextAccountName,
     preferDefaultChain,
-    hdIndexOf,
     isHardwareWalletAccount,
     isWatchAccount,
-    signingKeyOn,
     getAllAccounts,
     useAllAccounts,
     useCreateAccount,
@@ -30,10 +29,8 @@ import {
     useUpdateAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAccountName } from '@hooks/useAccountName'
 import {
     normalizeAccountName,
     useUniqueAccountName,
@@ -86,12 +83,10 @@ export const useNameAccountScreen = () => {
     const home = useHomeChainScope()
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
-    const { getAccountName } = useAccountName()
-    const { isAccountNameTaken, nextFreeAccountName } = useUniqueAccountName()
+    const { isAccountNameTaken } = useUniqueAccountName()
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
-    const { seedIdOf } = useKMS()
 
     const routeAccount = route.params?.account
     const requestedChainId = route.params?.chainId ?? home.chainId
@@ -120,44 +115,14 @@ export const useNameAccountScreen = () => {
         normalizeAccountName(name) !== ownStoredName &&
         isAccountNameTaken(name, ownRecordId)
 
-    const numWallets = useMemo(() => {
-        // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
-        // HD accounts now reference their derived child via `keyPairId`;
-        // collapse siblings into one wallet by walking up to the seed.
-        const hdSeedIds = new Set<string>()
-        let otherAccountsCount = 0
-
-        accounts.forEach(acc => {
-            if (hdIndexOf(acc) !== undefined) {
-                const seedId = seedIdOf(signingKeyOn(acc, scope.chainId))
-                if (seedId) hdSeedIds.add(seedId)
-            } else {
-                otherAccountsCount++
-            }
-        })
-
-        // TODO: otherAccountsCount might not be necessary here. Come back at this once integrating multiple wallets.
-        return hdSeedIds.size + otherAccountsCount
-    }, [accounts, seedIdOf, scope.chainId])
-
-    const baseTitle = account
-        ? getAccountName(account, chainId)
-        : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
-    const accountTitle = isTakenByAnother(baseTitle)
-        ? nextFreeAccountName(
-              account ? (accountNumberOf(account) ?? 1) : 1,
-              ownRecordId,
-          )
-        : baseTitle
-    // A generated "Account #N" is left unstored, so it follows the language
-    // and isn't backed up as a name the user chose. A bumped number can't be
-    // rebuilt from the account, so it is stored like a typed name.
-    const generatedTitle =
-        account &&
-        accountTitle === baseTitle &&
-        baseTitle !== getAccountDisplayName(account, chainId)
-            ? baseTitle
-            : undefined
+    // An account not stored yet can be unnamed; offer the name the store would give it.
+    const named = storedAccount ?? account
+    const suggestedName = nextAccountName(
+        accounts,
+        named ? accountNameKindOf(named) : 'account',
+    )
+    const baseTitle = named && !isUnnamed(named) ? named.name : suggestedName
+    const accountTitle = isTakenByAnother(baseTitle) ? suggestedName : baseTitle
 
     const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
@@ -204,12 +169,10 @@ export const useNameAccountScreen = () => {
                 chainId,
             )
 
-            const name =
-                trimmedName === generatedTitle ? undefined : trimmedName
             if (stored) {
-                updateAccount({ ...stored, name })
+                updateAccount({ ...stored, name: trimmedName })
             } else {
-                await saveAccount({ ...targetAccount, name })
+                await saveAccount({ ...targetAccount, name: trimmedName })
             }
 
             trackEvent(OnboardingEvent.RegisterAccount, {

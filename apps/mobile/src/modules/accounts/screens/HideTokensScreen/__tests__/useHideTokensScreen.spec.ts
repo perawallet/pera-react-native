@@ -65,6 +65,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 
 const account: WalletAccount = {
     id: 'two-chains',
+    name: '',
     custody: { kind: 'watch' },
     chains: {
         algorand: { address: 'ALGO_ADDRESS' },

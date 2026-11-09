@@ -26,6 +26,8 @@ const MAINNET_WETH: Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
 const BASE_WETH: Address = '0x4200000000000000000000000000000000000006'
 // The router the Uniswap app sent a swap to in QA.
 const ROUTER_2_1_2: Address = '0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85'
+const V3_POSITIONS: Address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+const V4_POSITIONS: Address = '0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e'
 
 const MAINNET_IDS = Object.values(EVM_CHAIN_NETWORKS).flatMap(row =>
     row.networks
@@ -34,7 +36,7 @@ const MAINNET_IDS = Object.values(EVM_CHAIN_NETWORKS).flatMap(row =>
 )
 
 describe('KNOWN_EVM_CONTRACTS', () => {
-    it('covers every mainnet chain with its routers, Permit2, wrapped native token and Aave V3 pool', () => {
+    it('covers every mainnet chain with its routers, Permit2, wrapped native token, Aave V3 pool and Uniswap position managers', () => {
         expect(Object.keys(KNOWN_EVM_CONTRACTS).map(Number).sort()).toEqual(
             [...MAINNET_IDS].sort(),
         )
@@ -49,6 +51,8 @@ describe('KNOWN_EVM_CONTRACTS', () => {
                     'uniswap-permit2',
                     'wrapped-native',
                     'aave-v3-pool',
+                    'uniswap-v3-position-manager',
+                    'uniswap-v4-position-manager',
                 ]),
             )
         }
@@ -100,6 +104,24 @@ describe('findKnownEvmContract', () => {
         expect(findKnownEvmContract(1, ROUTER_2_1_2)).toMatchObject({
             kind: 'uniswap-universal-router',
             name: 'Uniswap Universal Router',
+            projectDomain: 'uniswap.org',
+        })
+    })
+
+    it('finds the V3 position manager from the QA add-liquidity on Ethereum', () => {
+        expect(findKnownEvmContract(1, V3_POSITIONS)).toEqual({
+            address: V3_POSITIONS,
+            kind: 'uniswap-v3-position-manager',
+            name: 'Uniswap V3 Positions',
+            projectDomain: 'uniswap.org',
+            source: 'https://developers.uniswap.org/docs/protocols/v3/deployments/v3-ethereum-deployments',
+        })
+    })
+
+    it('finds the V4 position manager on Ethereum', () => {
+        expect(findKnownEvmContract(1, V4_POSITIONS)).toMatchObject({
+            kind: 'uniswap-v4-position-manager',
+            name: 'Uniswap V4 Positions',
             projectDomain: 'uniswap.org',
         })
     })
@@ -161,6 +183,18 @@ describe('knownSpenderOf', () => {
     it('leaves wrapped native without a project domain', () => {
         expect(knownSpenderOf(1, MAINNET_WETH)).toEqual({
             name: 'Wrapped Ether',
+        })
+    })
+
+    it('leaves the Uniswap position managers unlabelled, so an approval to one keeps its warning', () => {
+        expect(knownSpenderOf(1, V3_POSITIONS)).toBeUndefined()
+        expect(knownSpenderOf(1, V4_POSITIONS)).toBeUndefined()
+    })
+
+    it('still labels the Universal Router', () => {
+        expect(knownSpenderOf(1, ROUTER_2_1_2)).toEqual({
+            name: 'Uniswap Universal Router',
+            projectDomain: 'uniswap.org',
         })
     })
 

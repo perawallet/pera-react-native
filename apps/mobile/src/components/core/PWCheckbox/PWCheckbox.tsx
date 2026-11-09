@@ -22,14 +22,16 @@ import {
 } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
-export type PWCheckboxProps = {
-    children?: React.ReactNode
-} & CheckBoxProps
+// The theme pins the CheckBox container to a fixed square, so a title rendered
+// inside it collapses the box. A labelled checkbox is CheckboxRow.
+export type PWCheckboxProps = Omit<
+    CheckBoxProps,
+    'title' | 'checkedTitle' | 'titleProps' | 'textStyle' | 'children'
+>
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
 
 export const PWCheckbox = ({
-    children,
     testID,
     checked,
     disabled,
@@ -61,9 +63,7 @@ export const PWCheckbox = ({
                         />
                     }
                     uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
-                >
-                    {children}
-                </CheckBox>
+                />
             </PWView>
         </TouchableOpacity>
     )

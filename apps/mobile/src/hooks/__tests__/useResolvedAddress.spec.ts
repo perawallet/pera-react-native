@@ -24,7 +24,7 @@ vi.mock('@perawallet/wallet-core-chain-contract', () => ({
     addressCodecs: mockCodecs,
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameForAddressQuery: mockUseNameForAddress,
 }))
 

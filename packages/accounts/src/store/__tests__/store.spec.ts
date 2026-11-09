@@ -308,6 +308,40 @@ describe('useAccountsStore', () => {
         expect(useAccountsStore.getState().selectedAccountId).toBeNull()
     })
 
+    describe('setAccounts naming', () => {
+        test('names unnamed accounts in order, one past the highest number any account shows', () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([
+                    account('watch', 'A', { name: 'Account #4' }),
+                    account('watch', 'B', { name: '' }),
+                    account('watch', 'C', { name: 'Savings' }),
+                    account('watch', 'D', { name: '   ' }),
+                ])
+
+            expect(
+                useAccountsStore.getState().accounts.map(({ name }) => name),
+            ).toEqual(['Account #4', 'Account #5', 'Savings', 'Account #6'])
+        })
+
+        test("never reuses a removed account's number", () => {
+            const kept = account('watch', 'A', { name: 'Account #1' })
+            useAccountsStore
+                .getState()
+                .setAccounts([
+                    kept,
+                    account('watch', 'B', { name: 'Account #2' }),
+                ])
+            useAccountsStore.getState().setAccounts([kept])
+
+            const stored = useAccountsStore
+                .getState()
+                .addAccount(account('watch', 'C', { name: '' }))
+
+            expect(stored.name).toBe('Account #2')
+        })
+    })
+
     describe('addAccount', () => {
         test('appends an account whose addresses are free', () => {
             const existing = account('watch', 'A')
@@ -320,6 +354,19 @@ describe('useAccountsStore', () => {
                 existing,
                 added,
             ])
+        })
+
+        test('returns the stored account, named when it arrived without one', () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([account('watch', 'A', { name: 'Account #2' })])
+
+            const stored = useAccountsStore
+                .getState()
+                .addAccount(account('watch', 'B', { name: '' }))
+
+            expect(stored.name).toBe('Account #3')
+            expect(useAccountsStore.getState().accounts[1]).toBe(stored)
         })
 
         test('throws naming the existing account by id when an address is taken on the same chain', async () => {
@@ -688,11 +735,13 @@ describe('useAccountsStore', () => {
             },
             {
                 id: 'h',
+                name: 'Ledger Account #1',
                 custody: TEST_CUSTODY.hardware,
                 chains: { algorand: { address: 'H-ADDR', ...PRE_RECORD } },
             },
             {
                 id: 'w',
+                name: 'W-ADDR',
                 custody: { kind: 'watch' },
                 chains: { algorand: { address: 'W-ADDR', ...PRE_RECORD } },
             },
@@ -803,6 +852,7 @@ describe('useAccountsStore', () => {
             expect(accounts).toStrictEqual([
                 {
                     ...current,
+                    name: '0xabc',
                     chains: {
                         ethereum: {
                             address: '0xabc',
@@ -974,10 +1024,10 @@ describe('useAccountsStore', () => {
             expect(migrated.launchAccountId).toBeNull()
         })
 
-        test('persisted v6 state is not migrated again', async () => {
+        test('persisted v7 state is not migrated again', async () => {
             const { migrateAccountsState } = await import('../store')
 
-            expect(migrateAccountsState(migratedState, 6)).toBe(migratedState)
+            expect(migrateAccountsState(migratedState, 7)).toBe(migratedState)
         })
 
         test('stays at its defaults, and writes nothing back, until rehydrateAccountsStore runs', async () => {
@@ -1024,7 +1074,7 @@ describe('useAccountsStore', () => {
             const written = JSON.parse(
                 getProvider().keyValueStorage.getItem(STORE_KEY) as string,
             )
-            expect(written).toMatchObject({ version: 6, state: migratedState })
+            expect(written).toMatchObject({ version: 7, state: migratedState })
 
             const added = account('watch', 'NEW-ADDR')
             module.useAccountsStore
@@ -1118,6 +1168,7 @@ describe('useAccountsStore', () => {
         const stampedAccounts = [
             {
                 id: 'hd',
+                name: 'Account #1',
                 custody: TEST_CUSTODY.hd,
                 chains: {
                     algorand: {
@@ -1136,6 +1187,7 @@ describe('useAccountsStore', () => {
             },
             {
                 id: 'w',
+                name: 'W-ADDR',
                 custody: { kind: 'watch' },
                 chains: {
                     algorand: {
@@ -1187,9 +1239,89 @@ describe('useAccountsStore', () => {
                     getProvider().keyValueStorage.getItem(STORE_KEY) as string,
                 ),
             ).toMatchObject({
-                version: 6,
+                version: 7,
                 state: { accounts: stampedAccounts },
             })
+        })
+    })
+    describe('v7 migration', () => {
+        const v6State = () => ({
+            accounts: [
+                {
+                    id: 'named',
+                    name: 'Account #3',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'N-ADDR' } },
+                },
+                {
+                    id: 'hd',
+                    custody: TEST_CUSTODY.hd,
+                    chains: {
+                        algorand: { address: 'HD-ALGO', keyPairId: 'k-hd' },
+                    },
+                },
+                {
+                    id: 'ledger',
+                    custody: TEST_CUSTODY.hardware,
+                    chains: { algorand: { address: 'L-ADDR' } },
+                },
+                {
+                    id: 'address-named-hd',
+                    name: 'HD2-ALGO',
+                    custody: TEST_CUSTODY.hd,
+                    chains: {
+                        algorand: { address: 'HD2-ALGO', keyPairId: 'k-hd2' },
+                    },
+                },
+                {
+                    id: 'blank',
+                    name: '',
+                    custody: { kind: 'watch' },
+                    chains: {
+                        ethereum: { address: '0xblank' },
+                        algorand: { address: 'B-ADDR' },
+                    },
+                },
+                {
+                    id: 'shared',
+                    custody: { kind: 'multisig' },
+                    chains: { algorand: { address: 'S-ADDR' } },
+                },
+            ],
+            selectedAccountId: 'named',
+            sortMode: 'manual',
+            manualAccountOrder: ['named', 'hd', 'ledger'],
+            launchAccountMode: 'lastUsed',
+            launchAccountId: null,
+            authorities: {},
+            unscopedAuthorities: {},
+        })
+
+        test('stores the name each unnamed account showed, keeps every given name and the rest of the state', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            const migrated = migrateAccountsState(v6State(), 6)
+
+            const before = v6State().accounts
+            expect(migrated).toStrictEqual({
+                ...v6State(),
+                accounts: [
+                    before[0],
+                    { ...before[1], name: 'Account #4' },
+                    { ...before[2], name: 'Ledger Account #1' },
+                    before[3],
+                    { ...before[4], name: 'B-ADDR' },
+                    { ...before[5], name: 'S-ADDR' },
+                ],
+            })
+        })
+
+        test('writes the same names on every run', async () => {
+            const { migrateAccountsState } = await import('../store')
+
+            expect(migrateAccountsState(v6State(), 6)).toStrictEqual(
+                migrateAccountsState(v6State(), 6),
+            )
         })
     })
 })

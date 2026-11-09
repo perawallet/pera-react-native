@@ -54,9 +54,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         },
         // History is keyed by the deployment's device id; the backend mock
         // only answers the deployment of a scope through `peraDeploymentOf`.
-        deploymentOf: (
-            scope: Parameters<typeof withBackend.deploymentOf>[0],
-        ) =>
+        deploymentOf: (scope: Parameters<typeof withBackend.deploymentOf>[0]) =>
             scope === null
                 ? null
                 : (withBackend.peraDeploymentOf(scope) ?? null),
@@ -652,7 +650,9 @@ describe('Flow: Fund an Ethereum account', () => {
                 FORM_TIMEOUT,
             )
             expect(
-                within(usdcRow).getByTestId('chain_label_ethereum'),
+                within(usdcRow).getByTestId(
+                    `onramp-asset-network-${USDC_ETH_ID}`,
+                ),
             ).toBeTruthy()
             expect(
                 screen.queryByTestId(`onramp-asset-row-${ALGO_ID}`),

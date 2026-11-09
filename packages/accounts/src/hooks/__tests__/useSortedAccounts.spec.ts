@@ -52,7 +52,7 @@ const valueKey = (address: string, chainId: ChainId = FAKE_CHAIN_ID) =>
 const makeAccount = (address: string, name?: string): WalletAccount =>
     testAccount('local', address, {
         id: address,
-        ...(name === undefined ? {} : { name }),
+        name: name ?? '',
     })
 
 const makeBalance = (nativeValue: number): AccountBalance => ({

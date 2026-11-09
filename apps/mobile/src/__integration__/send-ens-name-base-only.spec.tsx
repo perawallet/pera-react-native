@@ -85,7 +85,7 @@ const { addressCodecs } = await import('@perawallet/wallet-core-chain-contract')
 const { ensResolverCallResponder, evmRpcHandlers } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { mockNameSearch } =
-    await import('@perawallet/wallet-core-nfd/test-handlers')
+    await import('@perawallet/wallet-core-names/test-handlers')
 const { getProvider } = await import('@perawallet/wallet-extension-provider')
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')

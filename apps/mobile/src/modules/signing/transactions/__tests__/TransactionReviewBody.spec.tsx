@@ -48,7 +48,7 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
     >('@packages/chain-algorand/src/blockchain/utils/addresses')),
 }))
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@perawallet/wallet-core-names', () => ({
     useNameForAddressQuery: () => ({ data: undefined }),
 }))
 
@@ -264,6 +264,18 @@ describe('TransactionReviewBody', () => {
         expect(
             warnings.compareDocumentPosition(account) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+    })
+
+    it("puts the fee ahead of a key registration's summary", () => {
+        renderReview(buildAlgorandDisplayFixture('key-registration'))
+
+        expect(
+            screen
+                .getByText('transactions.common.tx_fee')
+                .compareDocumentPosition(
+                    screen.getByText('transactions.key_reg.status'),
+                ) & Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy()
     })
 
