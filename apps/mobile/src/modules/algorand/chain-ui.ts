@@ -101,6 +101,9 @@ export const algorandChainUi: ChainUi = {
         invalidAddressKey: i18nKey('onboarding.watch_account.invalid_address'),
     },
     addressSearchPlaceholder: i18nKey('address_entry.search_placeholder'),
+    swapAssetSearchPlaceholder: i18nKey(
+        'swap.asset_selection.search_placeholder',
+    ),
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.algorand'),
         bodyKey: i18nKey('address_entry.wrong_network.body.algorand'),

@@ -44,6 +44,8 @@ export type ChainUi = {
     passphraseCompatibilityKey?: I18nKey
     /** Unset, the address search uses neutral copy that names no address format. */
     addressSearchPlaceholder?: I18nKey
+    /** Unset, the swap asset search uses copy that names every ID format. */
+    swapAssetSearchPlaceholder?: I18nKey
 }
 
 /** The slots whose every reader holds a chain id, so one chain may replace its family's. */

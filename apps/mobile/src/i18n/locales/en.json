@@ -4015,9 +4015,15 @@
             "swap_from_title": "Swap From",
             "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
+            "search_placeholder_evm": "Search by name, symbol or contract address",
+            "search_placeholder_all": "Search by name, symbol, ID or contract address",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term",
-            "no_chain_results_body": "No assets available on this network"
+            "no_chain_results_body": "No assets available on this network",
+            "cross_network_empty_title": "Can't swap {{asset}} to {{network}}",
+            "cross_network_empty_body": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, pay with an asset on {{network}} instead.",
+            "cross_network_empty_body_other_account": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, switch to an account on {{network}} and pay with one of its assets.",
+            "cross_network_empty_action": "Swap on {{network}}"
         },
         "configuration": {
             "title": "Swap settings",

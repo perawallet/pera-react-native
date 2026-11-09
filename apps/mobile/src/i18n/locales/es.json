@@ -4015,9 +4015,15 @@
             "swap_from_title": "Intercambiar desde",
             "swap_to_title": "Intercambiar a",
             "search_placeholder": "Buscar por nombre o ID",
+            "search_placeholder_evm": "Buscar por nombre, símbolo o dirección del contrato",
+            "search_placeholder_all": "Buscar por nombre, símbolo, ID o dirección del contrato",
             "no_results_title": "No hay activos coincidentes",
             "no_results_body": "Ningún activo coincide con tu búsqueda",
-            "no_chain_results_body": "No hay activos disponibles en esta red"
+            "no_chain_results_body": "No hay activos disponibles en esta red",
+            "cross_network_empty_title": "No se puede intercambiar {{asset}} a {{network}}",
+            "cross_network_empty_body": "{{asset}} en {{payNetwork}} aún no se puede intercambiar por activos en {{network}}. Para obtenerlos, paga con un activo en {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} en {{payNetwork}} aún no se puede intercambiar por activos en {{network}}. Para obtenerlos, cambia a una cuenta en {{network}} y paga con uno de sus activos.",
+            "cross_network_empty_action": "Intercambiar en {{network}}"
         },
         "configuration": {
             "title": "Ajustes del swap",

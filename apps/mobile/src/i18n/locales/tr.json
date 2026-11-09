@@ -4015,9 +4015,15 @@
             "swap_from_title": "Kaynak varlık",
             "swap_to_title": "Hedef varlık",
             "search_placeholder": "Ada veya ID’ye göre ara",
+            "search_placeholder_evm": "Ada, sembole veya sözleşme adresine göre ara",
+            "search_placeholder_all": "Ada, sembole, ID’ye veya sözleşme adresine göre ara",
             "no_results_title": "Eşleşen varlık yok",
             "no_results_body": "Arama terimine uyan varlık bulunamadı",
-            "no_chain_results_body": "Bu ağda kullanılabilir varlık yok"
+            "no_chain_results_body": "Bu ağda kullanılabilir varlık yok",
+            "cross_network_empty_title": "{{network}} ağına {{asset}} swap edilemiyor",
+            "cross_network_empty_body": "{{payNetwork}} ağındaki {{asset}}, {{network}} ağındaki varlıklarla henüz swap edilemiyor. Bunlara ulaşmak için bunun yerine {{network}} ağındaki bir varlıkla öde.",
+            "cross_network_empty_body_other_account": "{{payNetwork}} ağındaki {{asset}}, {{network}} ağındaki varlıklarla henüz swap edilemiyor. Bunlara ulaşmak için {{network}} ağındaki bir hesaba geç ve onun varlıklarından biriyle öde.",
+            "cross_network_empty_action": "{{network}} ağında swap yap"
         },
         "configuration": {
             "title": "Swap ayarları",

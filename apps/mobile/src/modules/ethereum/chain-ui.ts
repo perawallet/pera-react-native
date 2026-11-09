@@ -95,6 +95,9 @@ export const ethereumChainUi: Optional<ChainUi> = {
         resolveSupply: resolveEthereumAssetSupply,
     },
     addressSearchPlaceholder: i18nKey('address_entry.search_placeholder_evm'),
+    swapAssetSearchPlaceholder: i18nKey(
+        'swap.asset_selection.search_placeholder_evm',
+    ),
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.evm'),
         bodyKey: i18nKey('address_entry.wrong_network.body.evm'),

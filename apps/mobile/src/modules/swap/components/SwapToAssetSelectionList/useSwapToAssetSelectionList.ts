@@ -39,8 +39,14 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { FilterOption } from '@components/FilterSelection'
+import { useLanguage } from '@hooks/useLanguage'
 import { useSwapChainFilter } from '../../hooks/useSwapChainFilter'
 import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
+import { swapAssetSearchPlaceholderKey } from '../../utils/swapAssetSearchPlaceholderKey'
+import {
+    useSwapCrossNetworkEmptyState,
+    type UseSwapCrossNetworkEmptyStateResult,
+} from './useSwapCrossNetworkEmptyState'
 
 export type AvailableAssetWithBalance = {
     swapAsset: SwapAsset
@@ -53,9 +59,10 @@ type UseSwapToAssetSelectionListParams = {
     isVisible?: boolean
     excludeAssetId?: string
     onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
+    onSwitchPayAsset: (assetId: string, scope: ChainScope) => void
 }
 
-type UseSwapToAssetSelectionListResult = {
+type UseSwapToAssetSelectionListResult = UseSwapCrossNetworkEmptyStateResult & {
     items: AvailableAssetWithBalance[]
     searchFilter: string
     setSearchFilter: (value: string) => void
@@ -68,6 +75,7 @@ type UseSwapToAssetSelectionListResult = {
     isLoading: boolean
     handleEndReached: () => void
     handleAssetSelected: (item: AvailableAssetWithBalance) => void
+    searchPlaceholder: string
 }
 
 export const useSwapToAssetSelectionList = ({
@@ -76,8 +84,10 @@ export const useSwapToAssetSelectionList = ({
     isVisible,
     excludeAssetId,
     onAssetSelected,
+    onSwitchPayAsset,
 }: UseSwapToAssetSelectionListParams): UseSwapToAssetSelectionListResult => {
     const queryClient = useQueryClient()
+    const { t } = useLanguage()
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
 
@@ -124,6 +134,7 @@ export const useSwapToAssetSelectionList = ({
     const {
         assets: availableAssets,
         isLoading,
+        isSuccess: isPairsSuccess,
         hasNextPage,
         fetchNextPage,
     } = useSwapPairsInfiniteQuery({
@@ -233,6 +244,19 @@ export const useSwapToAssetSelectionList = ({
         [onAssetSelected, queryClient],
     )
 
+    const { crossNetworkEmptyState, handleSwapOnSelectedNetwork } =
+        useSwapCrossNetworkEmptyState({
+            scope,
+            fromAssetId,
+            destinationScopes,
+            selectedChainId,
+            isPairsSuccess,
+            hasNextPage,
+            isSearching: Boolean(searchFilter || debouncedSearchFilter),
+            hasItems: items.length > 0,
+            onSwitchPayAsset,
+        })
+
     return {
         items,
         searchFilter,
@@ -245,5 +269,8 @@ export const useSwapToAssetSelectionList = ({
         isLoading,
         handleEndReached,
         handleAssetSelected,
+        searchPlaceholder: t(swapAssetSearchPlaceholderKey(visibleChainIds)),
+        crossNetworkEmptyState,
+        handleSwapOnSelectedNetwork,
     }
 }
