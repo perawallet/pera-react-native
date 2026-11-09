@@ -19,7 +19,6 @@ import type {
     AccountHoldingsLiteRow,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { findNativeAsset } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
@@ -66,6 +65,7 @@ export const AccountAssetList = ({
         convertFiat,
         isReadOnly,
         canManageAssets,
+        canOpenManage,
         listRef,
         headerState,
         setSearchFilter,
@@ -83,15 +83,12 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={row}
                     chainId={chainId}
-                    isNativeAsset={
-                        findNativeAsset(chainId)?.assetId === row.assetId
-                    }
-                    isSwipeEnabled={renderItemProps.isSwipeable(row)}
+                    swipeAction={renderItemProps.swipeActionOf(row)}
                     isGroupMember={isGroupMember}
-                    shouldShowNetwork={renderItemProps.shouldShowNetwork}
+                    shouldShowChainBadge={renderItemProps.shouldShowChainBadge}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
-                    onOptOut={renderItemProps.handleOptOut}
+                    onSwipeAction={renderItemProps.handleSwipeAction}
                 />
             )
         },
@@ -157,7 +154,7 @@ export const AccountAssetList = ({
                             </PWText>
                         </PWView>
                         <PWView style={styles.titleBarButtonContainer}>
-                            {canManageAssets && (
+                            {canOpenManage && (
                                 <PWButton
                                     testID='manage_assets_button'
                                     icon='sliders'

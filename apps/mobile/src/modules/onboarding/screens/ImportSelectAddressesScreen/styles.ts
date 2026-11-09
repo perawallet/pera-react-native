@@ -39,6 +39,10 @@ export const useStyles = makeStyles(theme => ({
     uncheckedNetworks: {
         marginBottom: theme.spacing.md,
     },
+    retryNetworks: {
+        alignSelf: 'flex-start',
+        marginTop: theme.spacing.sm,
+    },
     emptyState: {
         flex: 1,
         justifyContent: 'center',

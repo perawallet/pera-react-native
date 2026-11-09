@@ -48,6 +48,7 @@ const CHAIN_SCOPED_EVENTS = [
     OnboardingEvent.WatchAccountComplete,
     OnboardingEvent.RecoverAlgo25,
     OnboardingEvent.RecoverOneKey,
+    OnboardingEvent.RecoverTwelveWord,
     OnboardingEvent.CreateAccountQuantum,
     OnboardingEvent.RekeyAccount,
     HomeEvent.Send,

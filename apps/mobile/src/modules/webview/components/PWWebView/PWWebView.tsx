@@ -11,11 +11,11 @@
  */
 
 import React from 'react'
-import { PWView, PWButton, PWScrollView } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
+import { PWView, PWScrollView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
+import { WebViewErrorOverlay } from './WebViewErrorOverlay'
 import { useStyles } from './styles'
 import { usePWWebView, type PWWebViewProps } from './usePWWebView'
 
@@ -27,7 +27,6 @@ export const PWWebView = (props: PWWebViewProps) => {
         title,
         committedUrl,
         onCloseRequested,
-        reload,
         loadState,
         renderWebView,
         showControls,
@@ -45,7 +44,7 @@ export const PWWebView = (props: PWWebViewProps) => {
             {showControls && (
                 <WebViewTitleBar
                     onCloseRequested={onCloseRequested}
-                    onReload={reload}
+                    onReload={loadState.handleRetry}
                     title={title}
                     url={committedUrl}
                 />
@@ -57,40 +56,28 @@ export const PWWebView = (props: PWWebViewProps) => {
             >
                 {renderWebView()}
                 {loadState.showOfflineView && (
-                    <PWView
-                        style={styles.absoluteFill}
+                    <WebViewErrorOverlay
+                        title={t('common.webview.offline_title')}
+                        body={t('common.webview.offline_body')}
+                        onRetry={loadState.handleRetry}
                         testID='pw-webview-offline'
-                    >
-                        <EmptyView
-                            title={t('common.webview.offline_title')}
-                            body={t('common.webview.offline_body')}
-                            button={
-                                <PWButton
-                                    title={t('common.webview.reload')}
-                                    onPress={loadState.handleRetry}
-                                    variant='primary'
-                                />
-                            }
-                        />
-                    </PWView>
+                    />
+                )}
+                {loadState.showUnavailableView && (
+                    <WebViewErrorOverlay
+                        title={t('common.webview.unavailable_title')}
+                        body={t('common.webview.unavailable_body')}
+                        onRetry={loadState.handleRetry}
+                        testID='pw-webview-unavailable'
+                    />
                 )}
                 {loadState.showTimeoutView && (
-                    <PWView
-                        style={styles.absoluteFill}
+                    <WebViewErrorOverlay
+                        title={t('common.webview.failed_title')}
+                        body={t('common.webview.failed_body')}
+                        onRetry={loadState.handleRetry}
                         testID='pw-webview-timeout'
-                    >
-                        <EmptyView
-                            title={t('common.webview.failed_title')}
-                            body={t('common.webview.failed_body')}
-                            button={
-                                <PWButton
-                                    title={t('common.webview.reload')}
-                                    onPress={loadState.handleRetry}
-                                    variant='primary'
-                                />
-                            }
-                        />
-                    </PWView>
+                    />
                 )}
             </PWScrollView>
 

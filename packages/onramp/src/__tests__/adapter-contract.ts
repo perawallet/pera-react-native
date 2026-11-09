@@ -13,13 +13,23 @@
 import { describe, expect, it } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { RampChainAdapter } from '../chain-adapter'
-import type { RampTokenIdentity } from '../models'
 
-export interface RampContractFixtures {
-    /** A network the adapter's destination tokens exist on. */
+export type RampContractAsset = {
+    /** CAIP-19. */
+    routerAssetId: string
+    /** In the chain's own encoding. */
+    assetId: string
+}
+
+export type RampContractFixtures = {
+    /** The network the fixture ids belong to. */
     scope: ChainScope
-    native: RampTokenIdentity
-    nonNative: { token: RampTokenIdentity; assetId: string }
+    native: RampContractAsset
+    nonNative: RampContractAsset
+    /** A CAIP-19 id of another chain. */
+    foreignRouterAssetId: string
+    /** Ids the adapter can't read. */
+    malformedRouterAssetIds: string[]
 }
 
 /** Every chain package runs this against its own ramp adapter. */
@@ -28,35 +38,41 @@ export const rampContractTests = (
     fixtures: RampContractFixtures,
 ): void => {
     describe(`RampChainAdapter contract: ${makeAdapter().chainId}`, () => {
-        it('requests a non-empty list of distinct destination tokens', () => {
-            const { destinationTokenIds } = makeAdapter()
-
-            expect(destinationTokenIds.length).toBeGreaterThan(0)
-            expect(new Set(destinationTokenIds).size).toBe(
-                destinationTokenIds.length,
-            )
-        })
-
-        it('names the ramp networks its tokens live on', () => {
-            expect(makeAdapter().rampNetworkIds.length).toBeGreaterThan(0)
-        })
-
-        it('tells the native token from any other', () => {
-            const adapter = makeAdapter()
-
-            expect(adapter.isNativeToken(fixtures.native)).toBe(true)
-            expect(adapter.isNativeToken(fixtures.nonNative.token)).toBe(false)
-        })
-
-        it('maps each token to its asset on the network', () => {
-            const adapter = makeAdapter()
-            const nativeId = adapter.toAssetId(fixtures.native, fixtures.scope)
-
-            expect(nativeId).toEqual(expect.any(String))
-            expect(nativeId).not.toBe('')
+        it("maps the native asset's router id to the chain's own id", () => {
             expect(
-                adapter.toAssetId(fixtures.nonNative.token, fixtures.scope),
+                makeAdapter().fromRouterAssetId(
+                    fixtures.native.routerAssetId,
+                    fixtures.scope,
+                ),
+            ).toBe(fixtures.native.assetId)
+        })
+
+        it("maps another asset's router id to the chain's own id", () => {
+            expect(
+                makeAdapter().fromRouterAssetId(
+                    fixtures.nonNative.routerAssetId,
+                    fixtures.scope,
+                ),
             ).toBe(fixtures.nonNative.assetId)
+        })
+
+        it("reads no other chain's asset", () => {
+            expect(
+                makeAdapter().fromRouterAssetId(
+                    fixtures.foreignRouterAssetId,
+                    fixtures.scope,
+                ),
+            ).toBeNull()
+        })
+
+        it('reads no malformed id', () => {
+            const adapter = makeAdapter()
+
+            for (const routerAssetId of fixtures.malformedRouterAssetIds) {
+                expect(
+                    adapter.fromRouterAssetId(routerAssetId, fixtures.scope),
+                ).toBeNull()
+            }
         })
     })
 }

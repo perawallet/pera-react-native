@@ -107,6 +107,31 @@ describe('useRecoverAddressDeeplink', () => {
         expect(mockShowError).not.toHaveBeenCalled()
     })
 
+    it('opens the 12-word entry for a 12-word wallet phrase', async () => {
+        const mnemonic = new Array(12).fill('word').join(' ')
+        vi.mocked(detectImportKind).mockReturnValue({
+            success: true,
+            seed: 'bip39',
+            wordCount: 12,
+        })
+
+        const { result } = renderHook(() => useRecoverAddressDeeplink())
+
+        await act(async () => {
+            await result.current({
+                mnemonic,
+                source: 'qr',
+                replaceCurrentScreen: false,
+            })
+        })
+
+        expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
+        expect(mockNavigate).toHaveBeenCalledWith(false, 'AddAccount', {
+            screen: 'ImportAccount',
+            params: { accountType: 'bip39', wordCount: 12 },
+        })
+    })
+
     it('normalizes a comma-separated mnemonic before forwarding it', async () => {
         vi.mocked(detectImportKind).mockReturnValue({
             success: true,

@@ -52,7 +52,8 @@
         "title": "Gestionar activos",
         "sort": "Ordenar",
         "filter": "Filtrar",
-        "remove_assets": "Eliminar activos"
+        "hide_tokens": "Ocultar tokens",
+        "remove_assets": "Eliminar activos de Algorand"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Eliminar"
     },
     "remove_assets": {
-        "title": "Eliminar activos",
+        "title": "Eliminar activos de Algorand",
         "select_all": "Seleccionar todo",
         "deselect_all": "Deseleccionar todo",
         "empty_title": "No hay activos eliminables",
-        "empty_body": "Solo se pueden eliminar los activos con saldo cero que no hayas creado."
+        "empty_body": "Solo se pueden eliminar los activos de Algorand con saldo cero que no hayas creado. Al eliminar uno, tu cuenta se da de baja de ese activo mediante una transacción."
+    },
+    "hide_tokens": {
+        "title": "Ocultar tokens",
+        "tokens_section": "Tokens",
+        "hidden_section": "Tokens ocultos",
+        "empty_title": "No hay tokens para ocultar",
+        "empty_body": "Esta cuenta no tiene tokens que se puedan ocultar."
+    },
+    "token_visibility": {
+        "hide": "Ocultar token",
+        "unhide": "Mostrar token",
+        "hide_action": "Ocultar",
+        "unhide_action": "Mostrar",
+        "hidden_toast_title": "Se ocultó {{assetName}}",
+        "hidden_toast_body": "Ya no aparecerá en tus activos ni se contará en tu saldo. Vuelve a mostrarlo desde Gestionar activos > Ocultar tokens.",
+        "hidden_swipe_toast_body": "Toca para deshacer. Ya no aparecerá en tus activos ni se contará en tu saldo.",
+        "shown_toast_title": "Se mostró {{assetName}}",
+        "filtered_note": "Pera marcó este token como sospechoso, por eso no aparece en tus activos. Puedes mostrarlo con «Mostrar activos sospechosos» en los filtros de activos."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "ASA sospechoso",
             "suspicious_description": "Este ASA se ha marcado como sospechoso en el programa de verificación de ASA de Pera.",
             "learn_more": "Más información sobre la verificación de ASA"
+        },
+        "token_warning": {
+            "unverified_title": "Token sin verificar",
+            "suspicious_title": "Token sospechoso",
+            "body": "Pera no ha verificado este token. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
         },
         "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo"
     },
@@ -1086,6 +1110,8 @@
             "failed_title": "No se pudo cargar la página",
             "reload": "Recargar",
             "failed_body": "Se produjo un error al cargar esta página. Comprueba tu conexión a internet y vuelve a intentarlo.",
+            "unavailable_title": "Esta página no está disponible en este momento",
+            "unavailable_body": "Vuelve a intentarlo en unos instantes.",
             "offline_title": "Estás sin conexión",
             "offline_body": "Esta página no puede cargarse sin conexión a internet. Se recargará automáticamente cuando vuelvas a estar en línea.",
             "unknown_host": "Sitio desconocido"
@@ -2280,6 +2306,10 @@
             "quantum": {
                 "title": "Cuenta Quantum",
                 "description": "Firmas Falcon-1024, protegidas de forma nativa en Algorand"
+            },
+            "twelve_word": {
+                "title": "Passphrase de 12 palabras",
+                "description": "Importa desde otra wallet que usa una passphrase de recuperación de 12 palabras"
             }
         },
         "import_info": {
@@ -2291,6 +2321,7 @@
             "title": "Introduce tu passphrase de recuperación",
             "quantum_title": "Introduce tu passphrase Quantum",
             "quantum_info_note": "Una passphrase de 25 palabras de una cuenta normal de Algorand no es una cuenta Quantum y no se puede importar aquí.",
+            "twelve_word_info_note": "Una clave de recuperación de Algorand Secure Backup no es una passphrase de recuperación y no recupera cuentas aquí. Para restaurar una copia de seguridad, usa «Recuperar desde Algorand Secure Backup».",
             "importing": "Importando la wallet...",
             "button": "Recuperar",
             "failed_title": "Error al importar",
@@ -2324,6 +2355,7 @@
             "cancel": "Cancelar",
             "network_checking": "Comprobando",
             "network_failed": "No se pudo comprobar",
+            "network_unavailable": "No disponible",
             "checked_accounts_one": "{{count}} cuenta comprobada",
             "checked_accounts_other": "{{count}} cuentas comprobadas",
             "new_found_one": "{{count}} cuenta nueva encontrada",
@@ -2391,12 +2423,16 @@
             "all_imported_title": "Ya están en tu wallet",
             "all_imported_body": "Todas las cuentas de esta wallet ya están en Pera. Si alguna está añadida como cuenta de observación, elimínala primero y vuelve a importarla para añadirla con acceso completo.",
             "unchecked_networks_title": "No se pudo comprobar: {{networks}}",
-            "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde."
+            "unchecked_networks_body": "Se muestran las cuentas de las demás redes. Puedes volver a buscar cuentas nuevas más tarde.",
+            "retry_networks": "Volver a comprobar: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} cuentas con rekey encontradas",
-            "description_line_1": "Tienes {{count}} cuentas con rekey. Esto significa que puedes firmar las transacciones de esas cuentas con la cuenta que acabas de añadir",
-            "description_line_2": "Selecciona las cuentas con rekey que quieres añadir a tu wallet:",
+            "title_one": "{{count}} cuenta con rekey encontrada",
+            "title_other": "{{count}} cuentas con rekey encontradas",
+            "description_line_1_one": "Tienes {{count}} cuenta con rekey. Esto significa que puedes firmar las transacciones de esa cuenta con la cuenta que acabas de añadir",
+            "description_line_1_other": "Tienes {{count}} cuentas con rekey. Esto significa que puedes firmar las transacciones de esas cuentas con la cuenta que acabas de añadir",
+            "description_line_2_one": "Selecciona la cuenta con rekey que quieres añadir a tu wallet:",
+            "description_line_2_other": "Selecciona las cuentas con rekey que quieres añadir a tu wallet:",
             "already_imported": "ya importada",
             "continue": "Elegir cuentas que añadir",
             "skip": "Omitir por ahora",
@@ -3565,6 +3601,12 @@
                 "spender": "Dirección autorizada",
                 "operator": "Operador"
             }
+        },
+        "predicted_failure": {
+            "title": "Es probable que esta transacción falle",
+            "body": "Pera la ejecutó con el último bloque y falló. Si firmas de todos modos, es posible que aun así pagues la comisión de red.",
+            "reason": "Motivo del contrato: «{{reason}}»",
+            "acknowledge": "Entiendo que probablemente falle y quiero firmar de todos modos"
         }
     },
     "site_safety": {
@@ -4171,7 +4213,6 @@
             "source_amount": "Cantidad de origen",
             "destination_amount": "Cantidad de destino",
             "network": "Red",
-            "payment_method": "Método de pago",
             "created_at": "Creada el",
             "exchange_rate": "Tipo de cambio efectivo",
             "to_address": "Dirección de destino"
@@ -4188,7 +4229,9 @@
             "in_progress": "En curso",
             "completed": "Completada",
             "failed": "Fallida",
-            "cancelled": "Cancelada"
+            "cancelled": "Cancelada",
+            "expired": "Caducada",
+            "refunded": "Reembolsada"
         },
         "history": {
             "filter_all": "Todas",
@@ -4873,6 +4916,15 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Coincide con {{domain}}"
+        },
+        "simulation": {
+            "title": "Cambios estimados",
+            "estimate_note": "Estimado con el último bloque. El resultado puede cambiar antes de que se incluya tu transacción.",
+            "approvals_title": "Aprobaciones",
+            "revoke_title": "Quitar el permiso para usar tu {{asset}}",
+            "revoke_title_assets": "Quitar el permiso para usar tus activos",
+            "no_changes": "No se esperan cambios en tus saldos ni en tus aprobaciones.",
+            "unavailable": "No se pudo simular esta transacción. Revísala con atención antes de firmar."
         }
     }
 }

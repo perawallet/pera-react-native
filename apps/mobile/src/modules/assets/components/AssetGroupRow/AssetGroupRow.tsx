@@ -100,15 +100,14 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                     </PWText>
                 </PWView>
                 <PWView style={styles.amountContainer}>
-                    {/* The group's symbol is the unit; the figure carries none, as
-                        on a single asset's row. */}
                     <CurrencyAmount
-                        currency=''
+                        currency={item.group.symbol}
                         assetId=''
                         chainId={null}
                         value={amount}
                         precision='compact'
                         assetDecimals={decimals}
+                        isUnitShrinkable
                         style={styles.primaryAmount}
                         numberOfLines={1}
                     />

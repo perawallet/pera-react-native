@@ -35,6 +35,7 @@ export const RemoteConfigKeys = {
     network_reachability_url: 'network_reachability_url',
     enable_device_registration_v4: 'enable_device_registration_v4',
     enable_listed_address_hard_block: 'enable_listed_address_hard_block',
+    account_list_first_read_wait_ms: 'account_list_first_read_wait_ms',
 } as const
 
 export type RemoteConfigKey =
@@ -116,6 +117,9 @@ export const RemoteConfigDefaults: Readonly<
     // The lists come from external sources, so turning it off falls back to
     // acknowledge-to-continue when a source wrongly lists a popular contract.
     enable_listed_address_hard_block: true,
+    // Milliseconds an account's asset or NFT list waits on a chain's first
+    // read before showing what is stored; a later read fills the list in.
+    account_list_first_read_wait_ms: 3000,
 }
 
 export interface RemoteConfigService {

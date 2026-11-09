@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { getRampPairs } from './endpoints'
+export { getRampDestinations, getRampSources } from './endpoints'

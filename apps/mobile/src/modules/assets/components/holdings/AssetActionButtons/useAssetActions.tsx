@@ -44,6 +44,7 @@ export type UseAssetActionsProps = {
 export type UseAssetActionsResult = {
     openReceiveFunds: () => void
     handleSwap: () => void
+    handleBuy: () => void
     handleSend: () => void
     handleCopyAddress: () => void
 }
@@ -117,6 +118,13 @@ export const useAssetActions = ({
         })
     }, [asset.assetId, chainId, navigation, swapChainId])
 
+    const handleBuy = useCallback(() => {
+        navigation.replace('TabBar', {
+            screen: 'Fund',
+            params: { chainId, destinationAssetId: asset.assetId },
+        })
+    }, [asset.assetId, chainId, navigation])
+
     const handleSend = useCallback(() => {
         trackEvent(AssetDetailsEvent.Send, {
             [AnalyticsMetadataKey.ChainId]: chainId,
@@ -164,6 +172,7 @@ export const useAssetActions = ({
     return {
         openReceiveFunds,
         handleSwap,
+        handleBuy,
         handleSend,
         handleCopyAddress,
     }

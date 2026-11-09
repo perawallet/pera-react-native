@@ -17,7 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useOnrampScope } from '@perawallet/wallet-core-onramp'
+import { useOnrampDestinationScope } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseOnrampAccountResult = {
@@ -31,7 +31,7 @@ export type UseOnrampAccountResult = {
 /** The selected account as Fund sees it. */
 export const useOnrampAccount = (): UseOnrampAccountResult => {
     const account = useSelectedAccount() ?? null
-    const scope = useOnrampScope(account?.chains ?? null)
+    const scope = useOnrampDestinationScope(account)
     const address =
         account !== null && scope !== null
             ? (addressOn(account, scope) ?? null)

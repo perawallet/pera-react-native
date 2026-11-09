@@ -144,6 +144,50 @@ describe('useAssetGroupRow', () => {
         expect(result.current.icon).toBeNull()
     })
 
+    it('draws the icon from the first member that has a logo', () => {
+        const withLogo = {
+            ...USDC,
+            peraMetadata: { logo: 'https://cdn/usdc.png' },
+        } as PeraAsset
+
+        const { result } = renderHook(() =>
+            useAssetGroupRow({
+                item: groupOf(
+                    [member('algorand'), member('ethereum', withLogo)],
+                    null,
+                ),
+                convertFiat: toEur,
+            }),
+        )
+
+        expect(result.current.icon).toBe(withLogo)
+        expect(result.current.iconChainId).toBe('ethereum')
+    })
+
+    it('keeps a native member as the icon over a token with a logo that sorts first', () => {
+        const ether = { assetId: 'native', name: 'Ether' } as PeraAsset
+        const weth = {
+            assetId: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+            peraMetadata: { logo: 'https://cdn/weth.png' },
+        } as PeraAsset
+
+        const { result } = renderHook(() =>
+            useAssetGroupRow({
+                item: groupOf(
+                    [
+                        member('algorand', weth),
+                        member('ethereum', ether, 'native'),
+                    ],
+                    null,
+                ),
+                convertFiat: toEur,
+            }),
+        )
+
+        expect(result.current.icon).toBe(ether)
+        expect(result.current.iconChainId).toBe('ethereum')
+    })
+
     it('has no icon chain with no members', () => {
         const { result } = renderHook(() =>
             useAssetGroupRow({
@@ -278,6 +322,24 @@ describe('useAssetGroupRow', () => {
                         [
                             member('ethereum', ether, 'native'),
                             member('ethereum', ether, 'native'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC')
+        })
+
+        it('names the symbol alone when the shared id is a contract address', () => {
+            const dai = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('ethereum', USDC, dai),
+                            member('ethereum', USDC, dai),
                         ],
                         null,
                     ),

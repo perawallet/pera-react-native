@@ -23,7 +23,19 @@ export {
     SpendApprovalWarning,
     type SpendApprovalWarningProps,
 } from './components/SpendApprovalWarning'
-export { useSpendApprovalTitle } from './components/SpendApprovalTitle'
+export {
+    spendApprovalTitleOf,
+    useSpendApprovalTitle,
+} from './components/SpendApprovalTitle'
+export {
+    PredictedFailureWarning,
+    type PredictedFailureWarningProps,
+} from './components/PredictedFailureWarning'
+export {
+    BalanceImpactSection,
+    balanceImpactItemOf,
+    type BalanceImpactItem,
+} from './components/BalanceImpactSummary'
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
 export { TransactionDetailLayout } from './transactions/TransactionDetailLayout'
 export type { TransactionDetailLayoutProps } from './transactions/TransactionDetailLayout'

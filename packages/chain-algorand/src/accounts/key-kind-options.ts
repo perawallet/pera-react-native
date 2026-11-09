@@ -20,28 +20,47 @@ import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 const HD_OPTIONS: LocalKeyKindOptions = {
-    recover: {
-        id: 'hd_wallet',
-        titleKey: i18nKey('onboarding.import_options.hd_wallet.title'),
-        descriptionKey: i18nKey(
-            'onboarding.import_options.hd_wallet.description',
-        ),
-        isSuggested: true,
-        order: 0,
-        analyticsEvent: 'onb_createacc_recover_24',
-    },
+    recover: [
+        {
+            id: 'hd_wallet',
+            wordCount: 24,
+            titleKey: i18nKey('onboarding.import_options.hd_wallet.title'),
+            descriptionKey: i18nKey(
+                'onboarding.import_options.hd_wallet.description',
+            ),
+            isSuggested: true,
+            order: 0,
+            analyticsEvent: 'onb_createacc_recover_24',
+        },
+        {
+            id: 'twelve_word',
+            wordCount: 12,
+            titleKey: i18nKey('onboarding.import_options.twelve_word.title'),
+            descriptionKey: i18nKey(
+                'onboarding.import_options.twelve_word.description',
+            ),
+            isSuggested: false,
+            order: 3,
+            analyticsEvent: 'onb_createacc_recover_12',
+        },
+    ],
 }
 
 const STANDALONE_OPTIONS: LocalKeyKindOptions = {
-    recover: {
-        id: 'algo25',
-        titleKey: i18nKey('onboarding.import_options.algo25.title'),
-        chipKey: i18nKey('onboarding.import_options.algo25.chip'),
-        descriptionKey: i18nKey('onboarding.import_options.algo25.description'),
-        isSuggested: false,
-        order: 2,
-        analyticsEvent: 'onb_createacc_recover_25',
-    },
+    recover: [
+        {
+            id: 'algo25',
+            wordCount: 25,
+            titleKey: i18nKey('onboarding.import_options.algo25.title'),
+            chipKey: i18nKey('onboarding.import_options.algo25.chip'),
+            descriptionKey: i18nKey(
+                'onboarding.import_options.algo25.description',
+            ),
+            isSuggested: false,
+            order: 2,
+            analyticsEvent: 'onb_createacc_recover_25',
+        },
+    ],
     create: {
         id: 'algo25',
         titleKey: i18nKey('onboarding.add_account.create_algo25_option_title'),
@@ -79,15 +98,18 @@ const QUANTUM_OPTIONS: LocalKeyKindOptions = {
         },
         analyticsEvent: 'createacc_quantumAccount_press',
     },
-    recover: {
-        id: 'quantum',
-        titleKey: i18nKey('onboarding.import_options.quantum.title'),
-        descriptionKey: i18nKey(
-            'onboarding.import_options.quantum.description',
-        ),
-        isSuggested: false,
-        order: 1,
-    },
+    recover: [
+        {
+            id: 'quantum',
+            wordCount: 25,
+            titleKey: i18nKey('onboarding.import_options.quantum.title'),
+            descriptionKey: i18nKey(
+                'onboarding.import_options.quantum.description',
+            ),
+            isSuggested: false,
+            order: 1,
+        },
+    ],
 }
 
 const OPTIONS_BY_SEED: readonly [LocalKeySeed, LocalKeyKindOptions][] = [

@@ -18,10 +18,10 @@ import {
     type AccountHoldingSource,
     type CollectibleSqlSortMode,
 } from '../db'
-import { ensureAccountFetched } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 import { useHoldingsRefreshStore } from '../store/holdingsRefresh'
 import { getAccountCollectiblesQueryKey } from './querykeys'
+import { useAwaitFirstReads } from './useAwaitFirstReads'
 
 export type UseAccountCollectiblesQueryParams = {
     /** Omit to order by asset id descending, for callers that re-sort. */
@@ -79,6 +79,7 @@ export const useAccountCollectiblesQuery = (
     })
     const signature = sourcesSignature(sourcesOfKey(queryKey))
     const isEnabled = sources.length > 0 && enabled
+    const awaitFirstReads = useAwaitFirstReads('collectibles')
 
     const query = useQuery({
         queryKey,
@@ -100,13 +101,7 @@ export const useAccountCollectiblesQuery = (
         // which would strand consumers in `pending`.
         networkMode: 'always',
         queryFn: async () => {
-            // Self-heal a freshly imported/selected account the background sync
-            // hasn't populated yet (deduped with the summary query's fetch).
-            await Promise.all(
-                sources.map(({ address, scope }) =>
-                    ensureAccountFetched(address, scope),
-                ),
-            )
+            await awaitFirstReads(sources)
             return getAccountCollectiblesLite({
                 sources,
                 sortMode,

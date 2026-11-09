@@ -15,31 +15,35 @@ import {
     validateMockRequest,
     validateMockResponse,
 } from '@perawallet/wallet-core-shared/test-utils'
+import { SWAP_ROUTER_PATH } from '@perawallet/wallet-core-swaps'
 
+import type { RouterErrorBody } from '../router-error'
+import {
+    rampHistoryItemSchema,
+    type RampHistoryItemInput,
+} from '../history/schema'
 import {
     cancelRampOrderRequestSchema,
-    cancelRampOrderResponseSchema,
     createRampOrderRequestSchema,
     createRampOrderResponseSchema,
-    type CancelRampOrderApiResponse,
-    type RampOrderApiResponse,
+    type RampOrderApiInput,
 } from './schema'
 
 export type MockCreateRampOrderParams = {
-    response: RampOrderApiResponse
+    response: RampOrderApiInput
     status?: number
 }
 
 export const mockCreateRampOrder = ({
     response,
-    status = 200,
+    status = 201,
 }: MockCreateRampOrderParams): HttpHandler => {
     validateMockResponse(
         createRampOrderResponseSchema,
         response,
         'mockCreateRampOrder',
     )
-    return http.post('*/v1/ramp/orders/', async ({ request }) => {
+    return http.post(`*${SWAP_ROUTER_PATH}orders/`, async ({ request }) => {
         const validated = await validateMockRequest(
             createRampOrderRequestSchema,
             request,
@@ -49,26 +53,30 @@ export const mockCreateRampOrder = ({
     })
 }
 
-export type MockCancelRampOrderParams = {
-    response: CancelRampOrderApiResponse
-    status?: number
-}
+export type MockCancelRampOrderParams =
+    | { response: RampHistoryItemInput; status?: 200 }
+    | { response: RouterErrorBody; status: number }
 
-export const mockCancelRampOrder = ({
-    response,
-    status = 200,
-}: MockCancelRampOrderParams): HttpHandler => {
-    validateMockResponse(
-        cancelRampOrderResponseSchema,
-        response,
-        'mockCancelRampOrder',
-    )
-    return http.post('*/v1/ramp/orders/cancel/', async ({ request }) => {
-        const validated = await validateMockRequest(
-            cancelRampOrderRequestSchema,
-            request,
+export const mockCancelRampOrder = (
+    params: MockCancelRampOrderParams,
+): HttpHandler => {
+    const status = params.status ?? 200
+    if (status === 200) {
+        validateMockResponse(
+            rampHistoryItemSchema,
+            params.response,
+            'mockCancelRampOrder',
         )
-        if (!validated.ok) return validated.response
-        return HttpResponse.json(response, { status })
-    })
+    }
+    return http.patch(
+        `*${SWAP_ROUTER_PATH}orders/:orderId/`,
+        async ({ request }) => {
+            const validated = await validateMockRequest(
+                cancelRampOrderRequestSchema,
+                request,
+            )
+            if (!validated.ok) return validated.response
+            return HttpResponse.json(params.response, { status })
+        },
+    )
 }

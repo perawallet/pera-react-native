@@ -16,8 +16,7 @@ import {
     PeraAssetVerificationTier,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -26,7 +25,10 @@ import {
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import {
+    getVerificationIcon,
+    unvettedTierOf,
+} from '@modules/assets/utils/verification'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean
@@ -63,14 +65,8 @@ export const useAssetItemView = (
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'
     const isDeleted = meta?.isDeleted === true
-    // On an opt-in chain the user chose the asset, so only the unasked kind is
-    // flagged. A chain this build doesn't register has no descriptor to ask.
     const isUnverified =
-        tier === PeraAssetVerificationTier.unverified &&
-        !isNativeAsset &&
-        !isCollectible &&
-        getProvider().chains.has(chainId) &&
-        !getChainDescriptor(chainId).protocol.requiresAssetOptIn
+        unvettedTierOf(asset, chainId) === PeraAssetVerificationTier.unverified
 
     const verificationIconOf = (): Nullable<IconName> => {
         if (isNativeAsset) return 'assets/trusted'
@@ -78,11 +74,12 @@ export const useAssetItemView = (
     }
     const verificationIcon = verificationIconOf()
 
-    const shownAssetId =
+    const isAddressId =
         addressCodecs.has(chainId) &&
         addressCodecs.get(chainId).isValid(asset.assetId)
-            ? addressCodecs.get(chainId).truncate(asset.assetId)
-            : asset.assetId
+    const shownAssetId = isAddressId
+        ? addressCodecs.get(chainId).truncate(asset.assetId)
+        : asset.assetId
 
     const collectibleTitle = meta?.collectible?.title
     const collectionName = meta?.collectible?.collection?.name
@@ -102,8 +99,22 @@ export const useAssetItemView = (
         ? (collectionName ?? asset.unitName)
         : asset.unitName
 
+    // A contract address says nothing to the user about a token Pera vouches
+    // for; its network does. An unvetted token keeps its address visible.
+    const networkName =
+        isAddressId &&
+        !isCollectible &&
+        tier === PeraAssetVerificationTier.verified
+            ? chainDisplayNameOf(chainId)
+            : undefined
+
     const secondaryTextOf = () => {
         if (isNativeAsset) return asset.unitName ?? ''
+        if (networkName) {
+            return subtitleLeading
+                ? `${subtitleLeading} · ${networkName}`
+                : networkName
+        }
         return subtitleLeading
             ? `${subtitleLeading} · ${shownAssetId}`
             : shownAssetId

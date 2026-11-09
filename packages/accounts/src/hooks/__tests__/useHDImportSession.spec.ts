@@ -411,7 +411,11 @@ describe('useHDImportSession', () => {
         })
 
         expect(adapter.checkActivity).not.toHaveBeenCalled()
-        expect(walked!).toEqual({ accounts: [], failedChainIds: [] })
+        expect(walked!).toEqual({
+            accounts: [],
+            failedChainIds: [],
+            isOriginFallback: false,
+        })
     })
 
     test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {
@@ -605,6 +609,51 @@ describe('useHDImportSession', () => {
                 useHDImportSessionStore.getState().pending?.isSeedPersisted,
             ).toBe(true)
             expect(found.map(hdIndexOf)).toEqual([{ account: 2, keyIndex: 0 }])
+        })
+
+        test("a retry adds to the earlier search: both walks' accounts are offered and recorded, and no chain either heard from is unchecked", async () => {
+            const families = setUpChains({
+                [ALGORAND]: [familyHdAddress('algorand', 1, 0)],
+                [ETHEREUM]: [familyHdAddress('evm', 2, 0)],
+            })
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValueOnce(new Error('rpc down'))
+                .mockRejectedValueOnce(new Error('rpc down'))
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            let first: Awaited<
+                ReturnType<typeof result.current.discoverImportAccounts>
+            > = { accounts: [], failedChainIds: [] }
+            await act(async () => {
+                first = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            expect(first.failedChainIds).toEqual([ETHEREUM])
+
+            // Ethereum answers now; Algorand doesn't.
+            families.checkActivity
+                .get(ALGORAND)!
+                .mockRejectedValue(new Error('indexer down'))
+            let retried: typeof first = { accounts: [], failedChainIds: [] }
+            await act(async () => {
+                retried = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    previous: first,
+                })
+            })
+
+            expect(
+                retried.accounts.map(account => hdIndexOf(account)?.account),
+            ).toEqual([1, 2])
+            expect(retried.failedChainIds).toEqual([])
+            expect(
+                useHDImportSessionStore.getState().pending?.discoveredIndexes,
+            ).toEqual([
+                { account: 1, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
         })
 
         test('records only the indexes whose candidate the wallet can still take', async () => {

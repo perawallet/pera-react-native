@@ -22,6 +22,7 @@ import {
     useAccountValueTotalsQuery,
     useAllAccounts,
     useCanSignOnAnyChain,
+    useFailedFirstReadChainIds,
     type WalletAccount,
     useAccountScope,
 } from '@perawallet/wallet-core-accounts'
@@ -93,6 +94,7 @@ export const useAccountOverviewHeader = (
             ),
         [sources],
     )
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(countedSources)
     const hasFiatTotal = countedSources.length > 0
     // An all-test-network account has no fiat total, but still charts its holdings.
     const chartSources = hasFiatTotal ? countedSources : sources
@@ -112,19 +114,25 @@ export const useAccountOverviewHeader = (
         availability.isAvailable,
     )
     // Summed over the chains the list reads, not every chain the account has
-    // an entry on. One unknown value makes the total unknown.
+    // an entry on. One unknown value, a failed read's placeholder zero
+    // included, makes the total unknown.
     const portfolioFiatValue = useMemo(
         () =>
             countedSources.reduce<Nullable<Decimal>>((total, source) => {
-                const fiatValue =
+                const read =
                     accountValueTotals.get(
                         accountValueKey(source.scope.chainId, source.address),
                     )?.fiatValue ?? null
+                const fiatValue =
+                    read?.isZero() &&
+                    failedFirstReadChainIds.has(source.scope.chainId)
+                        ? null
+                        : read
                 return total === null || fiatValue === null
                     ? null
                     : total.plus(fiatValue)
             }, new Decimal(0)),
-        [countedSources, accountValueTotals],
+        [countedSources, accountValueTotals, failedFirstReadChainIds],
     )
     const allAccounts = useAllAccounts()
     // The account's first chain is the first source (registry order), and keeps

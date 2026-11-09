@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
 import { PWSheetLayout, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
@@ -23,21 +22,18 @@ import { useOnrampProviderContent } from './useOnrampProviderContent'
 
 export type OnrampProviderContentProps = {
     quotes: RampQuote[]
-    /** Display units; XO destination amounts are computed from it. */
-    sourceAmount: Nullable<Decimal>
     selectedQuoteId: Nullable<string>
     /** Narrows the list to one row per provider; null lists every quote. */
     selectedPaymentMethodId: Nullable<string>
-    /** Destination token price in USD, for each row's fiat value line. */
-    destinationPriceInUsd: Nullable<Decimal>
+    /** The receive asset's symbol, which each row shows its amount in. */
+    destinationSymbol: string
 }
 
 export const OnrampProviderContent = ({
     quotes,
-    sourceAmount,
     selectedQuoteId,
     selectedPaymentMethodId,
-    destinationPriceInUsd,
+    destinationSymbol,
 }: OnrampProviderContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -45,7 +41,6 @@ export const OnrampProviderContent = ({
     const { sortedQuotes, bestQuoteId, handleSelect } =
         useOnrampProviderContent({
             quotes,
-            sourceAmount,
             selectedPaymentMethodId,
         })
 
@@ -59,8 +54,7 @@ export const OnrampProviderContent = ({
                         key={quote.quoteId}
                         label={getOnrampProviderName(quote)}
                         quote={quote}
-                        sourceAmount={sourceAmount}
-                        destinationPriceInUsd={destinationPriceInUsd}
+                        destinationSymbol={destinationSymbol}
                         isBest={quote.quoteId === bestQuoteId}
                         isSelected={quote.quoteId === selectedQuoteId}
                         onPress={() => handleSelect(quote.quoteId)}

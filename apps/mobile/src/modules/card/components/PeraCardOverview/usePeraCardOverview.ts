@@ -31,7 +31,6 @@ import { useSwapScope } from '@perawallet/wallet-core-swaps'
 import { useCanFundAccount } from '@modules/onramp'
 import { useCardScope } from '../../hooks/useCardScope'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
-import { USDC_RAMP_TOKEN_ID } from '../../utils/usdc'
 import {
     useCardEscrowBalance,
     useCardFundingAccount,
@@ -108,7 +107,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // does not serve wallet balances to.
     const fundingAccount = useCardFundingAccount()
     const canSwap = useSwapScope(fundingAccount) !== null
-    const canBuy = useCanFundAccount(fundingAccount)
+    const canBuy = useCanFundAccount(fundingAccount, scope.chainId)
     const usdcAssetId = useMemo(() => getCardSettlementAssetId(scope), [scope])
     const { data: linkedUsdc, isPending: isLinkedBalancePending } =
         useAccountAssetBalanceQuery(
@@ -198,7 +197,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         }
         navigation.navigate('TabBar', {
             screen: 'Fund',
-            params: { destinationTokenId: USDC_RAMP_TOKEN_ID },
+            params: {
+                chainId: scope.chainId,
+                destinationAssetId: usdcAssetId ?? undefined,
+            },
         })
     }, [
         fundingAccount,

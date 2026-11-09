@@ -18,9 +18,9 @@ import {
     type AccountHoldingsFilters,
     type AccountHoldingsLiteRow,
 } from '../db'
-import { ensureAccountFetched } from '../sync/account-syncer'
 import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 import { getAccountHoldingsPageQueryKey } from './querykeys'
+import { useAwaitFirstReads } from './useAwaitFirstReads'
 
 export type UseAccountAssetsQueryParams = {
     filters?: AccountHoldingsFilters
@@ -73,6 +73,7 @@ export const useAccountAssetsQuery = (
     })
     const signature = sourcesSignature(sourcesOfKey(queryKey))
     const isEnabled = sources.length > 0 && enabled
+    const awaitFirstReads = useAwaitFirstReads('holdings-page')
 
     const query = useQuery({
         queryKey,
@@ -94,13 +95,7 @@ export const useAccountAssetsQuery = (
         // already caught in the syncer.
         networkMode: 'always',
         queryFn: async () => {
-            // Self-heal a freshly imported/selected account the background sync
-            // hasn't populated yet (deduped with the summary query's fetch).
-            await Promise.all(
-                sources.map(({ address, scope }) =>
-                    ensureAccountFetched(address, scope),
-                ),
-            )
+            await awaitFirstReads(sources)
             return getAccountHoldingsLite({
                 sources,
                 ...filters,

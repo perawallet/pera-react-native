@@ -17,6 +17,7 @@ import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain
 import {
     MODULE_PREFIX,
     invalidateAccountChartsForAddresses,
+    invalidateAccountListQueriesForAddresses,
     invalidateAccountQueriesForAddresses,
     invalidateAccountQueriesForScope,
     removeAccountQueriesForAddresses,
@@ -292,6 +293,41 @@ describe('invalidateAccountQueriesForAddresses', () => {
 
         expect(queryClient.getQueryState(targetKey)?.isInvalidated).toBe(true)
         expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(false)
+    })
+})
+
+describe('invalidateAccountListQueriesForAddresses', () => {
+    const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+    const BASE = { chainId: 'base', networkId: 'mainnet' } as const
+
+    test("re-reads only that kind of list for the address, leaving the address's other queries and other addresses alone", () => {
+        const queryClient = new QueryClient()
+        const list = getAccountHoldingsPageQueryKey(
+            [
+                { address: '0xADDR', scope: ETHEREUM },
+                { address: '0xADDR', scope: BASE },
+            ],
+            { sortMode: 'balanceDesc' },
+        )
+        const gallery = getAccountCollectiblesQueryKey([
+            { address: '0xADDR', scope: BASE },
+        ])
+        const summary = getAccountSummaryQueryKey('0xADDR', BASE)
+        const otherList = getAccountHoldingsPageQueryKey([
+            { address: 'ADDR1', scope: MAINNET },
+        ])
+        for (const key of [list, gallery, summary, otherList]) {
+            queryClient.setQueryData(key, [])
+        }
+
+        invalidateAccountListQueriesForAddresses(queryClient, 'holdings-page', [
+            '0xADDR',
+        ])
+
+        expect(queryClient.getQueryState(list)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(gallery)?.isInvalidated).toBe(false)
+        expect(queryClient.getQueryState(summary)?.isInvalidated).toBe(false)
+        expect(queryClient.getQueryState(otherList)?.isInvalidated).toBe(false)
     })
 })
 

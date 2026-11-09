@@ -21,11 +21,7 @@ import { useEnsureRampDestination } from '../useEnsureRampDestination'
 const PARAMS: EnsureCanReceiveParams = {
     address: 'ADDR',
     scope: { chainId: 'algorand', networkId: 'mainnet' },
-    destinationToken: {
-        id: 'STABLE',
-        symbol: 'STB',
-        network: { id: 'FAKE', name: 'Fake', logo: null },
-    },
+    assetId: '42',
 }
 
 describe('useEnsureRampDestination', () => {

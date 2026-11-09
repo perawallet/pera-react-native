@@ -219,7 +219,7 @@ describe('getAssetMetadata', () => {
                 assets: { [USDC_CAIP19]: usdcFromPera },
             }),
         )
-        const { node } = memoryPersistence()
+        const { node, full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
             ETHEREUM,
@@ -237,7 +237,17 @@ describe('getAssetMetadata', () => {
             },
         })
         expect(asset.totalSupply.toFixed()).toBe('1000000000000')
-        expect(node.map(a => a.assetId)).toEqual([USDC])
+        // Both halves: a node row alone reads as fresh for the TTL and would
+        // keep the backend's logo and tier out of the store.
+        expect(node).toEqual([])
+        expect(full).toHaveLength(1)
+        expect(full[0]).toMatchObject({
+            assetId: USDC,
+            peraMetadata: {
+                verificationTier: 'verified',
+                logo: 'https://pera.test/usdc.png',
+            },
+        })
     })
 
     it('falls back to the backend record when the chain read fails', async () => {
@@ -400,7 +410,10 @@ describe('syncAssets', () => {
         await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
-            expect.objectContaining({ assetIds: [USDC, DAI] }),
+            expect.objectContaining({
+                assetIds: [USDC, DAI],
+                recheckMissingLogo: true,
+            }),
         )
         expect(requested).toEqual([{ ids: [USDC_CAIP19] }])
         expect(full.map(a => a.assetId)).toEqual([USDC])

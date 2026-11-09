@@ -25,6 +25,7 @@ import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { usePreferredAmount } from '@components/PreferredAmount'
 import { useCapability } from '@hooks/useCapability'
 import { UserPreferences } from '@constants/user-preferences'
+import { unvettedTierOf } from '@modules/assets/utils/verification'
 import { useAssetHoldings } from '../useAssetHoldings'
 
 const { mockCopyToClipboard, preferences } = vi.hoisted(() => ({
@@ -43,6 +44,10 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountAssetBalanceQuery: vi.fn(),
+}))
+
+vi.mock('@modules/assets/utils/verification', () => ({
+    unvettedTierOf: vi.fn(),
 }))
 
 vi.mock('@components/PreferredAmount', () => ({
@@ -90,8 +95,28 @@ describe('useAssetHoldings', () => {
                 preferences.set(key, value),
         } as unknown as ReturnType<typeof usePreferences>)
         vi.mocked(useCapability).mockReturnValue(true)
+        vi.mocked(unvettedTierOf).mockReturnValue(null)
         holding('1.5')
         price(new Decimal('3000'))
+    })
+
+    it.each([
+        ['unverified', 'asset_details.token_warning.unverified_title'],
+        ['suspicious', 'asset_details.token_warning.suspicious_title'],
+    ] as const)(
+        'warns about a %s token with the matching title',
+        (tier, title) => {
+            vi.mocked(unvettedTierOf).mockReturnValue(tier)
+
+            expect(render().result.current.tokenWarning).toEqual({
+                title,
+                body: 'asset_details.token_warning.body',
+            })
+        },
+    )
+
+    it('has no warning for a token Pera vetted or one the user opted in to', () => {
+        expect(render().result.current.tokenWarning).toBeNull()
     })
 
     it('leads with the fiat value of a priced holding and keeps the token amount', () => {

@@ -1982,6 +1982,9 @@ importers:
       '@perawallet/wallet-core-multisig':
         specifier: workspace:*
         version: link:../multisig
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2745,6 +2748,9 @@ importers:
       '@perawallet/wallet-core-nfd':
         specifier: workspace:*
         version: link:../nfd
+      '@perawallet/wallet-core-onramp':
+        specifier: workspace:*
+        version: link:../onramp
       '@perawallet/wallet-core-security':
         specifier: workspace:*
         version: link:../security
@@ -3742,6 +3748,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
       '@perawallet/wallet-core-chain-contract':
         specifier: workspace:*
         version: link:../chain-contract
@@ -3751,6 +3760,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-core-swaps':
+        specifier: workspace:*
+        version: link:../swaps
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider

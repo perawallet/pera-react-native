@@ -196,6 +196,29 @@ const queryKeyTargetsAccount = (
         })
     })
 
+/** The account lists that read SQLite whole, each keyed by its sources. */
+export type AccountListQueryKind = 'holdings-page' | 'collectibles'
+
+/**
+ * Re-reads one kind of account list for the given addresses and nothing else:
+ * a list filling in after a chain's late read must not reload the summary,
+ * totals and charts that share the address (an EVM address spans chains).
+ */
+export function invalidateAccountListQueriesForAddresses(
+    queryClient: QueryClient,
+    kind: AccountListQueryKind,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    void queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+            queryKey[0] === MODULE_PREFIX &&
+            queryKey[1] === kind &&
+            queryKeyTargetsAccount(queryKey, targets),
+    })
+}
+
 export function invalidateAccountQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,

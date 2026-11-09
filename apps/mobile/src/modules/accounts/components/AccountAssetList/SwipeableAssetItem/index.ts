@@ -12,3 +12,4 @@
 
 export { SwipeableAssetItem } from './SwipeableAssetItem'
 export type { SwipeableAssetItemProps } from './SwipeableAssetItem'
+export type { AssetRowSwipeAction } from './useSwipeableAssetItem'

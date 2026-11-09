@@ -52,7 +52,8 @@
         "title": "Manage Assets",
         "sort": "Sort",
         "filter": "Filter",
-        "remove_assets": "Remove Assets"
+        "hide_tokens": "Hide Tokens",
+        "remove_assets": "Remove Algorand Assets"
     },
     "age_gate": {
         "loading": {
@@ -173,11 +174,29 @@
         "opt_out_cta": "Opt-out"
     },
     "remove_assets": {
-        "title": "Remove Assets",
+        "title": "Remove Algorand Assets",
         "select_all": "Select All",
         "deselect_all": "Deselect All",
         "empty_title": "No Removable Assets",
-        "empty_body": "Only assets with a zero balance that you didn't create can be removed."
+        "empty_body": "Only Algorand assets with a zero balance that you didn't create can be removed. Removing one opts your account out of it in a transaction."
+    },
+    "hide_tokens": {
+        "title": "Hide Tokens",
+        "tokens_section": "Tokens",
+        "hidden_section": "Hidden Tokens",
+        "empty_title": "No Tokens to Hide",
+        "empty_body": "This account holds no tokens that can be hidden."
+    },
+    "token_visibility": {
+        "hide": "Hide token",
+        "unhide": "Unhide token",
+        "hide_action": "Hide",
+        "unhide_action": "Unhide",
+        "hidden_toast_title": "{{assetName}} hidden",
+        "hidden_toast_body": "It won't show in your assets or count toward your balance. Unhide it from Manage Assets > Hide Tokens.",
+        "hidden_swipe_toast_body": "Tap to undo. It won't show in your assets or count toward your balance.",
+        "shown_toast_title": "{{assetName}} shown",
+        "filtered_note": "Pera flagged this token as suspicious, so it stays out of your assets. List it with Show suspicious assets in the asset filters."
     },
     "deeplink": {
         "error": {
@@ -364,6 +383,11 @@
             "suspicious_title": "Suspicious ASA",
             "suspicious_description": "This ASA has been flagged as suspicious by the Pera ASA Verification program.",
             "learn_more": "Learn more about ASA verification"
+        },
+        "token_warning": {
+            "unverified_title": "Unverified token",
+            "suspicious_title": "Suspicious token",
+            "body": "Pera hasn't verified this token. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
         },
         "copy_full_amount_hint": "Long press to copy the full amount"
     },
@@ -1086,6 +1110,8 @@
             "failed_title": "Failed to load page",
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
+            "unavailable_title": "This page isn't available right now",
+            "unavailable_body": "Please try again in a moment.",
             "offline_title": "You're offline",
             "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online.",
             "unknown_host": "Unknown site"
@@ -2270,7 +2296,7 @@
             "title": "Recover from Passphrase",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet that lets you create multiple accounts across chains from a single 24-word recovery phrase"
+                "description": "Wallet that lets you create multiple accounts across chains from a single 24-word recovery passphrase"
             },
             "algo25": {
                 "title": "Algo25",
@@ -2280,6 +2306,10 @@
             "quantum": {
                 "title": "Quantum Account",
                 "description": "Falcon-1024 signatures, natively secured on Algorand"
+            },
+            "twelve_word": {
+                "title": "12-word passphrase",
+                "description": "Import from another wallet that uses a 12-word recovery passphrase"
             }
         },
         "import_info": {
@@ -2291,6 +2321,7 @@
             "title": "Enter your Recovery Passphrase",
             "quantum_title": "Enter your Quantum Passphrase",
             "quantum_info_note": "A 25-word passphrase from a regular Algorand account is not a Quantum account and cannot be imported here.",
+            "twelve_word_info_note": "An Algorand Secure Backup recovery key is not a recovery passphrase and won’t recover accounts here. To restore a backup, use “Recover from Algorand Secure Backup”.",
             "importing": "Importing wallet...",
             "button": "Recover",
             "failed_title": "Import failed",
@@ -2324,6 +2355,7 @@
             "cancel": "Cancel",
             "network_checking": "Checking",
             "network_failed": "Couldn't check",
+            "network_unavailable": "Not available",
             "checked_accounts_one": "Checked {{count}} account",
             "checked_accounts_other": "Checked {{count}} accounts",
             "new_found_one": "{{count}} new account found",
@@ -2391,12 +2423,16 @@
             "all_imported_title": "Already in your wallet",
             "all_imported_body": "All accounts from this wallet are already in Pera. If one is added as a watch account, remove it first, then import again to add it with full access.",
             "unchecked_networks_title": "Couldn't check {{networks}}",
-            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later."
+            "unchecked_networks_body": "Accounts on the other networks are listed. You can scan for new accounts again later.",
+            "retry_networks": "Check {{networks}} again"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekeyed accounts found",
-            "description_line_1": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
-            "description_line_2": "Select the rekeyed accounts you want to add to your wallet:",
+            "title_one": "{{count}} rekeyed account found",
+            "title_other": "{{count}} rekeyed accounts found",
+            "description_line_1_one": "You have {{count}} rekeyed account. This means that you can sign the transactions of the rekeyed account with the account you just added",
+            "description_line_1_other": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
+            "description_line_2_one": "Select the rekeyed account you want to add to your wallet:",
+            "description_line_2_other": "Select the rekeyed accounts you want to add to your wallet:",
             "already_imported": "already imported",
             "continue": "Choose accounts to add",
             "skip": "Skip for now",
@@ -3565,6 +3601,12 @@
                 "spender": "Spender",
                 "operator": "Operator"
             }
+        },
+        "predicted_failure": {
+            "title": "This transaction will likely fail",
+            "body": "Pera ran it against the latest block and it failed. If you sign anyway, you may still pay the network fee.",
+            "reason": "The contract's reason: \"{{reason}}\"",
+            "acknowledge": "I understand it will likely fail and want to sign anyway"
         }
     },
     "site_safety": {
@@ -4171,7 +4213,6 @@
             "source_amount": "Source Amount",
             "destination_amount": "Destination Amount",
             "network": "Network",
-            "payment_method": "Payment Method",
             "created_at": "Created At",
             "exchange_rate": "Effective Exchange Rate",
             "to_address": "To Address"
@@ -4188,7 +4229,9 @@
             "in_progress": "In progress",
             "completed": "Completed",
             "failed": "Failed",
-            "cancelled": "Cancelled"
+            "cancelled": "Cancelled",
+            "expired": "Expired",
+            "refunded": "Refunded"
         },
         "history": {
             "filter_all": "All",
@@ -4873,6 +4916,15 @@
             "title": "Contract",
             "verified": "Verified contract",
             "matches_site": "Matches {{domain}}"
+        },
+        "simulation": {
+            "title": "Estimated changes",
+            "estimate_note": "Estimated against the latest block. The result can change before your transaction is included.",
+            "approvals_title": "Approvals",
+            "revoke_title": "Remove permission to use your {{asset}}",
+            "revoke_title_assets": "Remove permission to use your assets",
+            "no_changes": "No changes to your balances or approvals are expected.",
+            "unavailable": "Couldn't simulate this transaction. Review it carefully before you sign."
         }
     }
 }

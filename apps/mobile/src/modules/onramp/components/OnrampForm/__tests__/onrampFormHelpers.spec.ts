@@ -12,43 +12,91 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
-import type { XoQuote } from '@perawallet/wallet-core-onramp'
-import { getXoLimitViolation } from '../onrampFormHelpers'
+import type { RampPair, RampToken } from '@perawallet/wallet-core-onramp'
+import {
+    buildPendingXoHistoryItem,
+    getExcludedPaymentMethodIds,
+    isMeldPair,
+} from '../onrampFormHelpers'
 
-const xoQuote: XoQuote = {
-    kind: 'xo',
-    quoteId: 'xo-1',
-    paymentMethod: { id: 'CARD', logo: null, name: 'Card' },
-    amount: { assetId: 'ALGO', value: new Decimal(5) },
-    min: { assetId: 'USD', value: new Decimal('10.00') },
-    max: { assetId: 'USD', value: new Decimal(5000) },
-    minerFee: { assetId: 'ALGO', value: new Decimal(1) },
-    expiry: Date.now() + 60_000,
-    pairId: 'pair-xo',
-    providerQuoteId: 'provider-quote-1',
-}
+const token = (kind: RampToken['kind'], id: string): RampToken => ({
+    id,
+    kind,
+    symbol: id,
+    name: id,
+    fractionDecimals: 6,
+    logo: null,
+    network: { name: '', logo: null },
+})
 
-describe('getXoLimitViolation', () => {
-    it('reports an amount below the minimum with the minimum as text', () => {
-        expect(getXoLimitViolation(xoQuote, new Decimal('9.99'))).toEqual({
-            type: 'below',
-            min: '10',
+const pairOf = (kind: RampToken['kind']): RampPair => ({
+    id: `${kind}|dest`,
+    sourceToken: token(kind, kind),
+    destinationToken: token('token', 'dest'),
+})
+
+describe('isMeldPair', () => {
+    it('is true for a fiat source and false for a deposit source', () => {
+        expect(isMeldPair(pairOf('fiat'))).toBe(true)
+        expect(isMeldPair(pairOf('deposit'))).toBe(false)
+    })
+
+    it('is false without a pair', () => {
+        expect(isMeldPair(null)).toBe(false)
+    })
+})
+
+describe('getExcludedPaymentMethodIds', () => {
+    it('excludes the other platform wallet on each platform', () => {
+        expect(getExcludedPaymentMethodIds('ios')).toEqual(['GOOGLE_PAY'])
+        expect(getExcludedPaymentMethodIds('android')).toEqual(['APPLE_PAY'])
+        expect(getExcludedPaymentMethodIds('web')).toEqual([])
+    })
+})
+
+describe('buildPendingXoHistoryItem', () => {
+    it('shapes a placed deposit order as a pending XO history item with its pay-in details', () => {
+        const pair = pairOf('deposit')
+
+        const item = buildPendingXoHistoryItem(
+            {
+                kind: 'xo',
+                orderId: 'order-1',
+                deposit: { address: 'PAYIN', memo: '42' },
+            },
+            pair,
+            new Decimal('0.5'),
+            new Decimal(950),
+            'RECEIVER',
+            '2026-01-01T00:00:00.000Z',
+        )
+
+        expect(item).toMatchObject({
+            id: 'order-1',
+            kind: 'xo',
+            status: 'pending',
+            pair,
+            toAddress: 'RECEIVER',
+            payInAddress: 'PAYIN',
+            payInAddressTag: '42',
         })
     })
 
-    it('reports an amount above the maximum with the maximum as text', () => {
-        expect(getXoLimitViolation(xoQuote, new Decimal(5001))).toEqual({
-            type: 'above',
-            max: '5000',
-        })
-    })
+    it('leaves the tag out when the deposit has no memo', () => {
+        const item = buildPendingXoHistoryItem(
+            {
+                kind: 'xo',
+                orderId: 'order-1',
+                deposit: { address: 'PAYIN', memo: null },
+            },
+            pairOf('deposit'),
+            new Decimal(1),
+            null,
+            'RECEIVER',
+            '2026-01-01T00:00:00.000Z',
+        )
 
-    it('returns null for an amount within the limits, bounds included', () => {
-        expect(getXoLimitViolation(xoQuote, new Decimal(10))).toBeNull()
-        expect(getXoLimitViolation(xoQuote, new Decimal(5000))).toBeNull()
-    })
-
-    it('returns null when no amount is entered', () => {
-        expect(getXoLimitViolation(xoQuote, null)).toBeNull()
+        expect(item.payInAddressTag).toBeUndefined()
+        expect(item.destinationAmount).toBeNull()
     })
 })

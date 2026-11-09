@@ -20,9 +20,10 @@ const testnet = { chainId: 'algorand', networkId: 'testnet' } as const
 describe('onramp/hooks/querykeys', () => {
     test('every scoped builder carries the scope object in its key', () => {
         const keys = [
-            onrampQueryKeys.pairs(['algo'], mainnet),
+            onrampQueryKeys.destinations(mainnet),
+            onrampQueryKeys.sources('dest-1', mainnet),
             onrampQueryKeys.region(mainnet),
-            onrampQueryKeys.history('device-1', 'ADDR', undefined, mainnet),
+            onrampQueryKeys.history('device-1', 'ADDR', mainnet),
         ]
 
         for (const key of keys) {
@@ -37,20 +38,15 @@ describe('onramp/hooks/querykeys', () => {
             'region',
             { scope: mainnet },
         ])
-        expect(onrampQueryKeys.pairs(['algo'], mainnet)).toEqual([
+        expect(onrampQueryKeys.sources('dest-1', mainnet)).toEqual([
             'onramp',
-            'pairs',
-            { destinationTokenIds: ['algo'], scope: mainnet },
+            'sources',
+            { destinationId: 'dest-1', scope: mainnet },
         ])
     })
 
     test('history keys extend the history root prefix', () => {
-        const key = onrampQueryKeys.history(
-            'device-1',
-            'ADDR',
-            undefined,
-            mainnet,
-        )
+        const key = onrampQueryKeys.history('device-1', 'ADDR', mainnet)
 
         expect(key.slice(0, 2)).toEqual(onrampQueryKeys.historyRoot())
     })

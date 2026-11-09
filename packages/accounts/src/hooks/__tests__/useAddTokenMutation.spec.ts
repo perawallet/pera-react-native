@@ -44,6 +44,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 import { TokenMetadataUnavailableError } from '../../errors'
 import { useAddTokenMutation } from '../useAddTokenMutation'
+import {
+    hiddenAssetIdsOf,
+    useHiddenTokensStore,
+} from '../../store/hiddenTokens'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -64,6 +68,7 @@ const setup = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    useHiddenTokensStore.getState().resetState()
     mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
     mocks.getAssetById.mockResolvedValue({ assetId: USDC })
     mocks.fetchAndPersistAccount.mockResolvedValue({
@@ -74,6 +79,29 @@ beforeEach(() => {
 })
 
 describe('useAddTokenMutation', () => {
+    it('shows a token the user hid once they add it again', async () => {
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: VARIABLES.accountAddress,
+            scope: SCOPE,
+            assetId: USDC,
+            isHidden: true,
+        })
+        const { wrapper } = setup()
+        const { result } = renderHook(() => useAddTokenMutation(), { wrapper })
+
+        await act(async () => {
+            await result.current.addToken(VARIABLES)
+        })
+
+        expect(
+            hiddenAssetIdsOf(
+                useHiddenTokensStore.getState().hiddenTokens,
+                VARIABLES.accountAddress,
+                SCOPE,
+            ),
+        ).toEqual([])
+    })
+
     it('stores the metadata through the bulk sync before recording the token and its holding', async () => {
         const order: string[] = []
         mocks.fetchAndPersistAssets.mockImplementation(async () => {

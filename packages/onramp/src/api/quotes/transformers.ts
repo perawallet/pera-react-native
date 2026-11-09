@@ -11,78 +11,59 @@
  */
 
 import { Decimal } from 'decimal.js'
+import {
+    baseUnitsToDisplayUnits,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
-import type { RampPaymentMethod, RampQuote } from '../../models'
-import type {
-    QuoteAmountApiResponse,
-    RampQuoteApiResponse,
-    RampQuotePaymentMethodApiResponse,
-    XoProviderQuoteApiResponse,
-} from './schema'
+import { formatMeldPaymentMethodName } from '../../constants'
+import type { RampPaymentMethod, RampQuote, RampQuoteKind } from '../../models'
+import { QUOTE_KIND_BY_FUNDING_METHOD } from '../router-asset'
+import type { RampOfferApiResponse } from './schema'
 
-const transformQuoteAmount = (
-    amount: QuoteAmountApiResponse,
-): { assetId: string; value: Decimal } => ({
-    assetId: amount.assetId,
-    value: new Decimal(amount.value),
-})
+export type QuoteDecimals = { source: number; destination: number }
 
-export const transformPaymentMethod = (
-    pm: RampQuotePaymentMethodApiResponse,
-): RampPaymentMethod => ({
-    id: pm.id,
-    logo: pm.logo,
-    name: pm.name,
-})
+// Rendered as the single "payment method" of a crypto deposit.
+const DEPOSIT_PAYMENT_METHOD: RampPaymentMethod = {
+    id: 'CRYPTO',
+    name: '',
+    logo: null,
+}
 
-// XO provider responses always carry `minerFee` and `pairId`; Meld responses
-// never do (they carry `serviceProvider`/`sourceCurrencyCode` instead). The
-// web client distinguishes the two structurally the same way (see
-// onramp-mobile-web useSwapForm: `'amount'/'min'/'max' in provider_response`
-// for XO vs `'destinationAmount' in provider_response` for Meld) — `minerFee`
-// is the most XO-specific marker, so we key on it.
-const isXoProviderResponse = (
-    response: RampQuoteApiResponse['provider_response'],
-): response is XoProviderQuoteApiResponse =>
-    'minerFee' in response && 'pairId' in response
+const toUsd = (value: Maybe<string>): Nullable<Decimal> =>
+    value === null || value === undefined ? null : new Decimal(value)
 
-export const transformRampQuote = (item: RampQuoteApiResponse): RampQuote => {
-    const paymentMethod = transformPaymentMethod(item.payment_method)
-    const response = item.provider_response
+const paymentMethodOf = (
+    kind: RampQuoteKind,
+    offer: RampOfferApiResponse,
+): RampPaymentMethod => {
+    if (kind === 'xo') return DEPOSIT_PAYMENT_METHOD
+    const id = offer.extras?.payment_method ?? ''
+    return { id, name: formatMeldPaymentMethodName(id), logo: null }
+}
 
-    if (isXoProviderResponse(response)) {
-        return {
-            kind: 'xo',
-            quoteId: item.quote_id,
-            paymentMethod,
-            amount: transformQuoteAmount(response.amount),
-            min: transformQuoteAmount(response.min),
-            max: transformQuoteAmount(response.max),
-            minerFee: transformQuoteAmount(response.minerFee),
-            expiry: response.expiry,
-            pairId: response.pairId,
-            providerQuoteId: response.id,
-        }
-    }
-
+/** Null for an offer the app can't act on. */
+export const transformRampOffer = (
+    offer: RampOfferApiResponse,
+    decimals: QuoteDecimals,
+): Nullable<RampQuote> => {
+    const kind = QUOTE_KIND_BY_FUNDING_METHOD[offer.funding_method]
+    if (kind === undefined) return null
     return {
-        kind: 'meld',
-        quoteId: item.quote_id,
-        paymentMethod,
-        sourceAmount: new Decimal(response.sourceAmount),
-        destinationAmount: new Decimal(response.destinationAmount),
-        sourceCurrencyCode: response.sourceCurrencyCode,
-        destinationCurrencyCode: response.destinationCurrencyCode,
-        totalFee: new Decimal(response.totalFee),
-        networkFee:
-            response.networkFee == null
-                ? null
-                : new Decimal(response.networkFee),
-        transactionFee: new Decimal(response.transactionFee),
-        exchangeRate: new Decimal(response.exchangeRate),
-        paymentMethodType: response.paymentMethodType,
-        serviceProvider: response.serviceProvider,
-        institutionName: response.institutionName,
-        lowKyc: response.lowKyc ?? null,
+        kind,
+        quoteId: offer.quote_id,
+        provider: offer.provider,
+        paymentMethod: paymentMethodOf(kind, offer),
+        sourceAmount: baseUnitsToDisplayUnits(
+            offer.source_amount,
+            decimals.source,
+        ),
+        destinationAmount: baseUnitsToDisplayUnits(
+            offer.destination_amount_expected,
+            decimals.destination,
+        ),
+        sourceValueInUsd: toUsd(offer.source_amount_usd_value),
+        destinationValueInUsd: toUsd(offer.destination_amount_usd_value),
     }
 }

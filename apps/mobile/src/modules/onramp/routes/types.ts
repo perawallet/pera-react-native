@@ -10,7 +10,11 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+
 export type OnrampScreenParams = {
-    sourceTokenId?: string
-    destinationTokenId?: string
+    /** The chain Fund runs on. */
+    chainId: ChainId
+    /** The destination's asset id in `chainId`'s own encoding. */
+    destinationAssetId?: string
 }

@@ -11,214 +11,86 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { Decimal } from 'decimal.js'
 
-import { transformPaymentMethod, transformRampQuote } from '../transformers'
-import type { RampQuoteApiResponse } from '../schema'
+import { depositOffer, meldOffer } from '../../../__tests__/routerFixtures'
+import { transformRampOffer } from '../transformers'
 
-const buildXoQuote = (
-    overrides?: Partial<RampQuoteApiResponse>,
-): RampQuoteApiResponse => ({
-    quote_id: 'quote-xo-1',
-    payment_method: {
-        id: 'crypto',
-        logo: 'https://example.com/crypto.png',
-        name: 'Crypto',
-    },
-    provider_response: {
-        amount: { assetId: 'algo', value: 1.25 },
-        expiry: 1718000000,
-        id: 'xo-provider-1',
-        max: { assetId: 'algo', value: 1000 },
-        min: { assetId: 'algo', value: 10 },
-        minerFee: { assetId: 'algo', value: 0.001 },
-        pairId: 'pair-xo-1',
-    },
-    ...overrides,
-})
+const DECIMALS = { source: 2, destination: 6 }
 
-const buildMeldQuote = (
-    overrides?: Partial<RampQuoteApiResponse>,
-): RampQuoteApiResponse => ({
-    quote_id: 'quote-meld-1',
-    payment_method: {
-        id: 'card',
-        logo: null,
-        name: 'Credit Card',
-    },
-    provider_response: {
-        transactionType: 'BUY',
-        sourceAmount: 100,
-        sourceAmountWithoutFees: 95,
-        fiatAmountWithoutFees: 95,
-        destinationAmountWithoutFees: 480,
-        sourceCurrencyCode: 'USD',
-        countryCode: 'US',
-        totalFee: 5,
-        networkFee: 1.5,
-        transactionFee: 3.5,
-        destinationAmount: 475,
-        destinationCurrencyCode: 'ALGO',
-        exchangeRate: 4.75,
-        paymentMethodType: 'CARD',
-        customerScore: { assetId: 'usd', value: 0 },
-        serviceProvider: 'TRANSAK',
-        institutionName: 'Transak Inc',
-        lowKyc: true,
-        partnerFee: null,
-    },
-    ...overrides,
-})
+describe('transformRampOffer', () => {
+    it('maps a Meld offer with its provider and a named payment method', () => {
+        const quote = transformRampOffer(meldOffer(), DECIMALS)
 
-describe('quotes transformers', () => {
-    describe('transformPaymentMethod', () => {
-        it('maps id, name and preserves null logo', () => {
-            const result = transformPaymentMethod({
-                id: 'card',
+        expect(quote).toMatchObject({
+            kind: 'meld',
+            quoteId: 'quote-1',
+            provider: 'BANXA',
+            paymentMethod: {
+                id: 'CREDIT_DEBIT_CARD',
+                name: 'Credit/Debit Card',
                 logo: null,
-                name: 'Credit Card',
-            })
-
-            expect(result).toEqual({
-                id: 'card',
-                logo: null,
-                name: 'Credit Card',
-            })
+            },
         })
     })
 
-    describe('transformRampQuote (XO)', () => {
-        it('detects the XO shape via minerFee/pairId', () => {
-            const result = transformRampQuote(buildXoQuote())
+    it('humanises a payment method it has no name for', () => {
+        const quote = transformRampOffer(
+            meldOffer({ extras: { payment_method: 'ONLINE_BANKING' } }),
+            DECIMALS,
+        )
 
-            expect(result.kind).toBe('xo')
-        })
-
-        it('maps amount.value to a Decimal equal to the API number', () => {
-            const result = transformRampQuote(buildXoQuote())
-
-            if (result.kind !== 'xo') throw new Error('expected xo quote')
-            expect(result.amount.value).toBeInstanceOf(Decimal)
-            expect(result.amount.value.equals(new Decimal(1.25))).toBe(true)
-            expect(result.amount.assetId).toBe('algo')
-        })
-
-        it('maps minerFee.value to a Decimal', () => {
-            const result = transformRampQuote(buildXoQuote())
-
-            if (result.kind !== 'xo') throw new Error('expected xo quote')
-            expect(result.minerFee.value).toBeInstanceOf(Decimal)
-            expect(result.minerFee.value.equals(new Decimal(0.001))).toBe(true)
-        })
-
-        it('maps pairId, expiry, quoteId and providerQuoteId', () => {
-            const result = transformRampQuote(buildXoQuote())
-
-            if (result.kind !== 'xo') throw new Error('expected xo quote')
-            expect(result.pairId).toBe('pair-xo-1')
-            expect(result.expiry).toBe(1718000000)
-            expect(result.quoteId).toBe('quote-xo-1')
-            expect(result.providerQuoteId).toBe('xo-provider-1')
-        })
-
-        it('maps min and max amounts to Decimal', () => {
-            const result = transformRampQuote(buildXoQuote())
-
-            if (result.kind !== 'xo') throw new Error('expected xo quote')
-            expect(result.min.value.equals(new Decimal(10))).toBe(true)
-            expect(result.max.value.equals(new Decimal(1000))).toBe(true)
-        })
-
-        it('maps the payment method', () => {
-            const result = transformRampQuote(buildXoQuote())
-
-            expect(result.paymentMethod).toEqual({
-                id: 'crypto',
-                logo: 'https://example.com/crypto.png',
-                name: 'Crypto',
-            })
+        expect(quote?.paymentMethod).toEqual({
+            id: 'ONLINE_BANKING',
+            name: 'Online Banking',
+            logo: null,
         })
     })
 
-    describe('transformRampQuote (Meld)', () => {
-        it('detects the Meld shape via serviceProvider/sourceCurrencyCode', () => {
-            const result = transformRampQuote(buildMeldQuote())
+    it('converts base units to display units on each side', () => {
+        const quote = transformRampOffer(meldOffer(), DECIMALS)
 
-            expect(result.kind).toBe('meld')
+        expect(quote?.sourceAmount.toString()).toBe('600')
+        expect(quote?.destinationAmount.toString()).toBe('999.5')
+    })
+
+    it('reads the USD values, null when the router sends none', () => {
+        const priced = transformRampOffer(meldOffer(), DECIMALS)
+        const unpriced = transformRampOffer(
+            meldOffer({
+                source_amount_usd_value: null,
+                destination_amount_usd_value: null,
+            }),
+            DECIMALS,
+        )
+
+        expect(priced?.sourceValueInUsd?.toString()).toBe('600')
+        expect(priced?.destinationValueInUsd?.toString()).toBe('480')
+        expect(unpriced?.sourceValueInUsd).toBeNull()
+        expect(unpriced?.destinationValueInUsd).toBeNull()
+    })
+
+    it('maps an external deposit offer to XO with the CRYPTO payment method', () => {
+        const quote = transformRampOffer(depositOffer(), {
+            source: 8,
+            destination: 6,
         })
 
-        it('maps numeric fields to Decimal instances equal to API numbers', () => {
-            const result = transformRampQuote(buildMeldQuote())
-
-            if (result.kind !== 'meld') throw new Error('expected meld quote')
-            expect(result.sourceAmount).toBeInstanceOf(Decimal)
-            expect(result.sourceAmount.equals(new Decimal(100))).toBe(true)
-            expect(result.destinationAmount.equals(new Decimal(475))).toBe(true)
-            expect(result.exchangeRate.equals(new Decimal(4.75))).toBe(true)
-            expect(result.totalFee.equals(new Decimal(5))).toBe(true)
-            expect(result.transactionFee.equals(new Decimal(3.5))).toBe(true)
+        expect(quote).toMatchObject({
+            kind: 'xo',
+            quoteId: 'quote-xo',
+            provider: 'XO',
+            paymentMethod: { id: 'CRYPTO', name: '', logo: null },
         })
+        expect(quote?.sourceAmount.toString()).toBe('0.5')
+        expect(quote?.destinationAmount.toString()).toBe('950.5')
+    })
 
-        it('maps a non-null networkFee to a Decimal', () => {
-            const result = transformRampQuote(buildMeldQuote())
-
-            if (result.kind !== 'meld') throw new Error('expected meld quote')
-            expect(result.networkFee).toBeInstanceOf(Decimal)
-            expect(result.networkFee?.equals(new Decimal(1.5))).toBe(true)
-        })
-
-        it('maps a null networkFee to null', () => {
-            const result = transformRampQuote(
-                buildMeldQuote({
-                    provider_response: {
-                        ...buildMeldQuote().provider_response,
-                        networkFee: null,
-                    } as RampQuoteApiResponse['provider_response'],
-                }),
-            )
-
-            if (result.kind !== 'meld') throw new Error('expected meld quote')
-            expect(result.networkFee).toBeNull()
-        })
-
-        it('preserves currency codes, provider, institution and lowKyc', () => {
-            const result = transformRampQuote(buildMeldQuote())
-
-            if (result.kind !== 'meld') throw new Error('expected meld quote')
-            expect(result.sourceCurrencyCode).toBe('USD')
-            expect(result.destinationCurrencyCode).toBe('ALGO')
-            expect(result.serviceProvider).toBe('TRANSAK')
-            expect(result.institutionName).toBe('Transak Inc')
-            expect(result.paymentMethodType).toBe('CARD')
-            expect(result.lowKyc).toBe(true)
-        })
-
-        it('preserves a false lowKyc', () => {
-            const result = transformRampQuote(
-                buildMeldQuote({
-                    provider_response: {
-                        ...buildMeldQuote().provider_response,
-                        lowKyc: false,
-                    } as RampQuoteApiResponse['provider_response'],
-                }),
-            )
-
-            if (result.kind !== 'meld') throw new Error('expected meld quote')
-            expect(result.lowKyc).toBe(false)
-        })
-
-        it('maps a null lowKyc to null', () => {
-            const result = transformRampQuote(
-                buildMeldQuote({
-                    provider_response: {
-                        ...buildMeldQuote().provider_response,
-                        lowKyc: null,
-                    } as RampQuoteApiResponse['provider_response'],
-                }),
-            )
-
-            if (result.kind !== 'meld') throw new Error('expected meld quote')
-            expect(result.lowKyc).toBeNull()
-        })
+    it('drops an offer the wallet would have to sign', () => {
+        expect(
+            transformRampOffer(
+                meldOffer({ funding_method: 'wallet_transaction' }),
+                DECIMALS,
+            ),
+        ).toBeNull()
     })
 })

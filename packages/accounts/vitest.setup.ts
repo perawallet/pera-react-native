@@ -31,6 +31,17 @@ const chains = createChainRegistry()
 // Tests read it back through `getProvider().key.store.remove`.
 const removeKey = vi.fn()
 
+// Answers every key with the caller's fallback, as an unfetched service does;
+// a test retunes a value through `getNumberValue`.
+const remoteConfig = {
+    initializeRemoteConfig: vi.fn(() => Promise.resolve()),
+    getStringValue: vi.fn((_key: string, fallback?: string) => fallback ?? ''),
+    getBooleanValue: vi.fn(
+        (_key: string, fallback?: boolean) => fallback ?? false,
+    ),
+    getNumberValue: vi.fn((_key: string, fallback?: number) => fallback ?? 0),
+}
+
 // `seedOf` and `canDerive` read the keystore snapshot when not handed one.
 const keystore = { state: { keys: [] as unknown[] } }
 
@@ -44,6 +55,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         keyValueStorage,
         chains,
         key: { store: { remove: removeKey } },
+        remoteConfig,
+        // Read before applying saved remote-config overrides.
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            isStoreBuild: () => false,
+        },
     }),
     getKeystoreStore: () => keystore,
 }))

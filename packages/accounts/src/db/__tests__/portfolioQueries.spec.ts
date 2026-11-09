@@ -33,6 +33,7 @@ import {
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 import { refreshAccountHoldings } from '../holdingsRepository'
+import { useHiddenTokensStore } from '../../store/hiddenTokens'
 import {
     getAccountPortfolioTotals,
     getAccountFundedNetworks,
@@ -178,6 +179,29 @@ describe('account portfolio queries', () => {
             // Only '200' counts now: 1 * $3.
             expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(3, 6)
             expect(totals.holdingsCount).toBe(4)
+        })
+
+        it('leaves a token the user hid out of the USD value', async () => {
+            useHiddenTokensStore.getState().setTokenHidden({
+                address: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                assetId: '200',
+                isHidden: true,
+            })
+
+            try {
+                const totals = await getAccountPortfolioTotals({
+                    db,
+                    accountAddress: 'ADDR1',
+                    scope: MAINNET_SCOPE,
+                })
+
+                // Only '100' counts now: 2 * $1.
+                expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(2, 6)
+                expect(totals.holdingsCount).toBe(4)
+            } finally {
+                useHiddenTokensStore.getState().resetState()
+            }
         })
 
         it('counts a suspicious token on a chain where the user opts in to each asset', async () => {

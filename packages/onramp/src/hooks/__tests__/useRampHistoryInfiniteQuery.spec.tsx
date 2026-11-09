@@ -11,7 +11,15 @@
  */
 
 // @vitest-environment jsdom
-import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    test,
+} from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
@@ -19,10 +27,12 @@ import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
 import { mockRampHistory } from '../../test-handlers'
-import type {
-    RampHistoryItemApiResponse,
-    RampHistoryPageApiResponse,
-} from '../../api/history/schema'
+import {
+    ACCOUNT,
+    SCOPE,
+    historyItem,
+    registerRouterChain,
+} from '../../__tests__/routerFixtures'
 import {
     useRampHistoryInfiniteQuery,
     getRampHistoryRefetchIntervalMs,
@@ -31,66 +41,20 @@ import {
 const server = setupServer()
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeEach(() => registerRouterChain())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const buildItem = (id: string): RampHistoryItemApiResponse => ({
-    id,
-    creation_datetime: '2025-06-01T10:00:00Z',
-    status: 'completed',
-    ramp_quote: {
-        id: `quote-${id}`,
-        provider: 'meld',
-        payment_method: { id: 'card', logo: null, name: 'Credit Card' },
-        pair: {
-            id: 'pair-1',
-            source_token: {
-                id: 'usd',
-                symbol: 'USD',
-                name: 'US Dollar',
-                fraction_decimals: 2,
-                logo: null,
-                network: { id: 'fiat', name: 'Fiat', logo: null },
-                price_in_usd: '1',
-                extra: {},
-            },
-            destination_token: {
-                id: '0',
-                symbol: 'ALGO',
-                name: 'Algorand',
-                fraction_decimals: 6,
-                logo: null,
-                network: { id: 'algorand', name: 'Algorand', logo: null },
-                price_in_usd: '0.25',
-                extra: {},
-            },
-            provider: { id: 'meld', payment_types: ['card'], limits: null },
-        },
-        provider_responses: {
-            quotes_response: {
-                sourceAmount: 100,
-                destinationAmount: 475.5,
-                sourceCurrencyCode: 'USD',
-                destinationCurrencyCode: 'ALGO',
-                serviceProvider: 'TRANSAK',
-            },
-            order_response: { id: `meld-order-${id}` },
-        },
-    },
-})
-
-const firstPage: RampHistoryPageApiResponse = {
-    count: 2,
-    next: 'https://mainnet.staging.api.perawallet.app/v1/ramp/history/device-1/ADDRESS/?offset=1',
+const firstPage = {
+    next: 'https://api.example/api/v4/swap/history/?cursor=c2',
     previous: null,
-    results: [buildItem('1')],
+    results: [historyItem({ order_id: '1' })],
 }
 
-const secondPage: RampHistoryPageApiResponse = {
-    count: 2,
+const secondPage = {
     next: null,
     previous: null,
-    results: [buildItem('2')],
+    results: [historyItem({ order_id: '2' })],
 }
 
 function createWrapper() {
@@ -107,16 +71,14 @@ function createWrapper() {
 
 describe('onramp/useRampHistoryInfiniteQuery', () => {
     test('paginates across two pages and flips hasNextPage', async () => {
-        // Both pages hit `*/v1/ramp/history/*`; swap the handler between fetches
-        // so each call resolves the next page.
         server.use(mockRampHistory({ response: firstPage }))
 
         const { result } = renderHook(
             () =>
                 useRampHistoryInfiniteQuery({
-                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    scope: SCOPE,
                     deviceId: 'device-1',
-                    accountAddress: 'ADDRESS',
+                    accountAddress: ACCOUNT,
                 }),
             { wrapper: createWrapper() },
         )
@@ -143,7 +105,7 @@ describe('onramp/useRampHistoryInfiniteQuery', () => {
         const { result } = renderHook(
             () =>
                 useRampHistoryInfiniteQuery({
-                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                    scope: SCOPE,
                     deviceId: '',
                     accountAddress: '',
                 }),

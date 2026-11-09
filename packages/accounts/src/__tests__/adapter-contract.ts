@@ -288,7 +288,7 @@ export const accountsContractTests = (
                 )
                 expect(detected).toEqual(
                     expected
-                        ? { success: true, seed: expected.seed }
+                        ? { success: true, seed: expected.seed, wordCount }
                         : { success: false, wordCount },
                 )
                 if (detected.success) {
@@ -780,7 +780,13 @@ export const accountPresentationContractTests = (
 
             for (const kind of makeAdapter().localKeyKinds) {
                 const options = presentation.keyKindOptions(kind.seed)
-                for (const row of [options?.recover, options?.create]) {
+                const recoverRows = options?.recover ?? []
+                const counts = recoverRows.map(row => row.wordCount)
+                expect(new Set(counts).size).toBe(counts.length)
+                for (const count of counts) {
+                    expect(kind.mnemonicWordCounts).toContain(count)
+                }
+                for (const row of [...recoverRows, options?.create]) {
                     if (!row) continue
                     expect(isNonEmptyString(row.id)).toBe(true)
                     expect(isNonEmptyString(row.titleKey)).toBe(true)

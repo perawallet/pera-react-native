@@ -93,9 +93,8 @@ const redirections: AliasEntry[] = [
         replacement: testUtil('walletkit-stub.ts'),
     },
     {
-        // Replace the throwing production stub with an in-memory test
-        // implementation so flow tests can exercise real platform-aware
-        // code paths (key-value storage, biometrics opt-in, etc.).
+        // Alias target for specs that vi.unmock the driver; by default
+        // mocks/platform.ts (loaded in vitest.setup.ts) shadows it.
         find: '@perawallet/wallet-extension-platform-driver',
         replacement: testUtil('platform-driver-test.ts'),
     },

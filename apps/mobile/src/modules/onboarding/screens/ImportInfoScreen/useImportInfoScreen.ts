@@ -21,7 +21,7 @@ export const useImportInfoScreen = () => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
     const {
-        params: { accountType },
+        params: { accountType, wordCount },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportInfo'>>()
 
     const handleBackPress = useCallback(() => {
@@ -29,8 +29,8 @@ export const useImportInfoScreen = () => {
     }, [navigation])
 
     const handleRecoverPress = useCallback(() => {
-        navigation.push('ImportAccount', { accountType })
-    }, [navigation, accountType])
+        navigation.push('ImportAccount', { accountType, wordCount })
+    }, [navigation, accountType, wordCount])
 
     const handleInfoPress = useCallback(() => {
         pushWebView({ url: config.recoveryPassphraseSupportUrl })

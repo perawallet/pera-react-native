@@ -120,7 +120,10 @@ describe('useNetworkFundingState', () => {
         expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Fund, {
             [AnalyticsMetadataKey.ChainId]: 'base',
         })
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+            params: { chainId: 'base' },
+        })
     })
 
     it('opens Swap and tracks it on the network', () => {

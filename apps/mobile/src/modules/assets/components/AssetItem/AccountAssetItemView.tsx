@@ -18,7 +18,6 @@ import {
     type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
@@ -42,6 +41,8 @@ export type AccountAssetItemViewProps = {
     scope: ChainScope
     /** Replaces the secondary line under the name, such as the holding's network. */
     subtitle?: ReactNode
+    /** A further line under the secondary one, such as the holding's chain. */
+    footer?: ReactNode
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -54,11 +55,11 @@ export const AccountAssetItemView = ({
     showFrozenBadge = false,
     scope,
     subtitle,
+    footer,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId(scope)
 
     const { asset, item } = useAccountAssetItemView({
         accountBalance,
@@ -88,15 +89,12 @@ export const AccountAssetItemView = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
-            {/* No unit next to the figure: the row already carries it under the
-                asset name, and a long one squeezed the amount out.
-                ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 asset={asset}
                 chainId={scope.chainId}
                 value={accountBalance.amount}
                 density='compact'
-                showSymbol={isNativeAssetId(accountBalance.assetId)}
+                isUnitShrinkable
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
@@ -117,6 +115,7 @@ export const AccountAssetItemView = ({
             asset={asset}
             chainId={scope.chainId}
             right={showBalance ? balance : undefined}
+            shouldCapRightSlot
             logoUrl={logoUrl}
             iconSize={iconSize}
             showFavorite
@@ -124,6 +123,7 @@ export const AccountAssetItemView = ({
             showFrozenBadge={showFrozenBadge}
             copyableAssetId
             subtitle={subtitle}
+            footer={footer}
             onPress={onPress}
             {...rest}
         />

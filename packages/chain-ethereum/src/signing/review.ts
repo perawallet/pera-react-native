@@ -66,7 +66,10 @@ import {
     knownSpenderOf,
     wrappedNativeOf,
 } from './known-contracts'
-import type { EthereumPayloadFeeEstimate } from './adapter'
+import type {
+    EthereumPayloadFeeEstimate,
+    EthereumRevertedEstimate,
+} from './adapter'
 import type { EvmStandardCall } from './standard-call-types'
 import {
     approvalWarningOf,
@@ -171,11 +174,13 @@ const viewOfNative = (
 // recognition never lets it sign without review; a view that can't be read
 // never does either.
 const isAutoApproved = (transaction: ReviewedTransaction): boolean => {
-    const kind = viewOfNative(transaction)?.kind
+    const view = viewOfNative(transaction)
     return (
         AUTO_APPROVED_KINDS.has(transaction.summary.kind) &&
-        kind !== undefined &&
-        kind !== 'contract-call'
+        view !== undefined &&
+        view.kind !== 'contract-call' &&
+        // A call the node says reverts is never signed unreviewed.
+        !('revertedEstimate' in view && view.revertedEstimate)
     )
 }
 
@@ -206,6 +211,7 @@ type Pricing = {
     maxPriorityFeePerGas: bigint
     hasHighFee?: true
     feeEstimate?: EthereumPayloadFeeEstimate
+    revertedEstimate?: EthereumRevertedEstimate
 }
 
 type Call = {
@@ -229,8 +235,14 @@ const readCall = (
     chain: EvmChain,
     context?: ReviewContext,
 ): Call => {
-    const { from, transaction, isPreview, hasHighFee, feeEstimate } =
-        readEvmReviewTransaction(unsigned, chain)
+    const {
+        from,
+        transaction,
+        isPreview,
+        hasHighFee,
+        feeEstimate,
+        revertedEstimate,
+    } = readEvmReviewTransaction(unsigned, chain)
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
@@ -278,6 +290,7 @@ const readCall = (
                 maxPriorityFeePerGas,
                 ...(hasHighFee && { hasHighFee }),
                 ...(feeEstimate && { feeEstimate }),
+                ...(revertedEstimate && { revertedEstimate }),
             },
         }),
     }
@@ -286,7 +299,10 @@ const readCall = (
 const pricingOf = (
     call: Call,
 ):
-    | Pick<EthereumPricedView, 'nonce' | 'gas' | 'fee' | 'feeEstimate'>
+    | Pick<
+          EthereumPricedView,
+          'nonce' | 'gas' | 'fee' | 'feeEstimate' | 'revertedEstimate'
+      >
     | EthereumPreviewView
     | EthereumMinedView => {
     if (call.pricing) {
@@ -294,6 +310,9 @@ const pricingOf = (
             nonce: call.pricing.nonce,
             gas: call.pricing.gas,
             ...(call.pricing.hasHighFee && { hasHighFee: true as const }),
+            ...(call.pricing.revertedEstimate && {
+                revertedEstimate: call.pricing.revertedEstimate,
+            }),
             ...(call.pricing.feeEstimate && {
                 feeEstimate: {
                     preset: call.pricing.feeEstimate.preset,

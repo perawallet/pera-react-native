@@ -17,6 +17,7 @@ import {
     DEFAULT_MAX_FRACTION_DIGITS,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
+import { makeFiatToken } from '@test-utils/rampFixtures'
 import {
     getFiatBaseAmount,
     sanitizeAmountInput,
@@ -38,15 +39,7 @@ vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
     useRemoteConfig: () => ({ getStringValue: () => '' }),
 }))
 
-const usdToken: RampToken = {
-    id: 'USD',
-    symbol: 'USD',
-    name: 'US Dollar',
-    fractionDecimals: 2,
-    logo: null,
-    network: { id: 'fiat', name: 'Fiat', logo: null },
-    priceInUsd: null,
-}
+const usdToken: RampToken = makeFiatToken('USD')
 
 describe('sanitizeAmountInput', () => {
     it('normalizes a comma decimal separator', () => {

@@ -28,6 +28,7 @@ import { useCapability } from '@hooks/useCapability'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
+import { unvettedTierOf } from '@modules/assets/utils/verification'
 
 export type UseAssetHoldingsParams = {
     account: WalletAccount
@@ -55,6 +56,8 @@ export type UseAssetHoldingsResult = {
     canCopyAmount: boolean
     copyAmountHint: string
     handleCopyAmount: () => void
+    /** Set for a token Pera hasn't vetted, on a chain where anyone can send one unasked. */
+    tokenWarning: Nullable<{ title: string; body: string }>
 }
 
 export const useAssetHoldings = ({
@@ -104,6 +107,19 @@ export const useAssetHoldings = ({
         void copyToClipboard(fullAmount, { body: label })
     }, [tokenAmount, asset.unitName, copyToClipboard, privacyMode])
 
+    const unvettedTier = unvettedTierOf(asset, scope.chainId)
+    const tokenWarning = useMemo(() => {
+        if (unvettedTier === null) return null
+        return {
+            title: t(
+                unvettedTier === 'suspicious'
+                    ? 'asset_details.token_warning.suspicious_title'
+                    : 'asset_details.token_warning.unverified_title',
+            ),
+            body: t('asset_details.token_warning.body'),
+        }
+    }, [unvettedTier, t])
+
     return {
         assetHolding,
         holdingAmount,
@@ -119,5 +135,6 @@ export const useAssetHoldings = ({
         canCopyAmount: !privacyMode,
         copyAmountHint: t('asset_details.copy_full_amount_hint'),
         handleCopyAmount,
+        tokenWarning,
     }
 }

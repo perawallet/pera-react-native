@@ -241,3 +241,23 @@ export const MELD_PROVIDERS = {
         link: 'https://www.yodlee.com/company/contact',
     },
 } as const
+
+/** The router names a Meld payment method by id only; these are the names the sheets show. */
+export const MELD_PAYMENT_METHOD_NAMES: Readonly<Record<string, string>> = {
+    CREDIT_DEBIT_CARD: 'Credit/Debit Card',
+    APPLE_PAY: 'Apple Pay',
+    GOOGLE_PAY: 'Google Pay',
+    SEPA: 'SEPA',
+    ACH: 'ACH',
+    PIX: 'PIX',
+    BANK_TRANSFER: 'Bank Transfer',
+}
+
+/** The mapped name, else the id in title case (`ONLINE_BANKING` -> `Online Banking`). */
+export const formatMeldPaymentMethodName = (id: string): string =>
+    MELD_PAYMENT_METHOD_NAMES[id] ??
+    id
+        .split('_')
+        .filter(word => word !== '')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')

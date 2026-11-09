@@ -257,7 +257,10 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <ManageAssetsContent isReadOnly={false} />
+                                <ManageAssetsContent
+                                    canRemoveAssets
+                                    canHideTokens
+                                />
                             </GallerySheetBoundary>
                         ),
                         options: { enablePanDownToClose: true },

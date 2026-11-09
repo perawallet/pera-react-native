@@ -44,7 +44,16 @@ import {
 } from '../../hooks'
 import { useHdWalletRescan } from './useHdWalletRescan'
 
-export type ScanNetworkStatus = 'checking' | 'failed'
+export type ScanNetworkStatus = 'checking' | 'failed' | 'unavailable'
+
+const scanNetworkStatusOf = (
+    progress: Optional<WalletDiscoveryProgress>,
+    chainId: ChainId,
+): ScanNetworkStatus => {
+    if (progress?.refusedChainIds.includes(chainId)) return 'unavailable'
+    if (progress?.failedChainIds.includes(chainId)) return 'failed'
+    return 'checking'
+}
 
 export type ScanNetwork = {
     chainId: ChainId
@@ -159,12 +168,16 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             // picks the account(s) to import.
             if ('mode' in params && params.mode === 'import') {
                 isSearchingImportRef.current = true
-                const { accounts: discovered, failedChainIds } =
-                    await discoverImportAccounts({
-                        walletKeyId: params.walletKeyId,
-                        signal: searchAbort.signal,
-                        onProgress: setProgress,
-                    })
+                const {
+                    accounts: discovered,
+                    failedChainIds,
+                    isOriginFallback,
+                } = await discoverImportAccounts({
+                    walletKeyId: params.walletKeyId,
+                    signal: searchAbort.signal,
+                    onProgress: setProgress,
+                    previous: params.previous,
+                })
                 isSearchingImportRef.current = false
                 if (hasLeftRef.current) return
                 uncheckedChainIdsRef.current = failedChainIds
@@ -176,6 +189,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     walletKeyId: params.walletKeyId,
                     accounts: discovered,
                     failedChainIds,
+                    isOriginFallback,
                 })
                 return
             }
@@ -270,9 +284,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             (progress?.chainIds ?? []).map(chainId => ({
                 chainId,
                 name: chainDisplayNameOf(chainId) ?? chainId,
-                status: progress?.failedChainIds.includes(chainId)
-                    ? 'failed'
-                    : 'checking',
+                status: scanNetworkStatusOf(progress, chainId),
             })),
         [progress],
     )

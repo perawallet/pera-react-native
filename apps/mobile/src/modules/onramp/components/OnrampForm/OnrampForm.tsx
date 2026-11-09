@@ -41,6 +41,8 @@ export const OnrampForm = ({
         sourceAmountText,
         setSourceAmountText,
         destinationAmount,
+        sourceUsdPrice,
+        destinationUsdPrice,
         selectedQuote,
         isQuoting,
         errorMessage,
@@ -49,6 +51,7 @@ export const OnrampForm = ({
         isMeld,
         senderAddress,
         isConfirming,
+        canConfirm,
         handleOpenSourceSelection,
         handleOpenDestinationSelection,
         handleOpenProvider,
@@ -56,13 +59,6 @@ export const OnrampForm = ({
         handleOpenSenderAddress,
         handleConfirm,
     } = useOnrampForm(selectedPair, onNavigateToHistory)
-
-    const hasValidQuote = selectedQuote !== null && sourceAmountText !== ''
-    const canConfirm =
-        hasValidQuote &&
-        destinationAmount !== null &&
-        errorMessage === null &&
-        !isConfirming
 
     const trackOnrampEvent = useTrackOnrampEvent()
 
@@ -83,6 +79,8 @@ export const OnrampForm = ({
                 destinationToken={destinationToken}
                 sourceAmountText={sourceAmountText}
                 destinationAmount={destinationAmount}
+                sourceUsdPrice={sourceUsdPrice}
+                destinationUsdPrice={destinationUsdPrice}
                 limits={limits}
                 isReceiveLoading={isQuoting}
                 onSourceAmountTextChange={setSourceAmountText}

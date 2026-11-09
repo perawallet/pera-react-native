@@ -28,6 +28,7 @@ import {
 
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
+const mockFailedFirstReadChainIds = { current: new Set<string>() }
 const mockTotalsQuery = vi.fn()
 const mockMultisigParameters = vi.fn()
 const mockAuthority = vi.fn()
@@ -83,6 +84,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         multisigParametersOf: (account: WalletAccount, chainId: string) =>
             mockMultisigParameters(account, chainId),
         useAuthorityOf: () => mockAuthority(),
+        useFailedFirstReadChainIds: () => mockFailedFirstReadChainIds.current,
     }
 })
 
@@ -128,6 +130,7 @@ describe('useAccountWithBalance', () => {
     })
 
     beforeEach(() => {
+        mockFailedFirstReadChainIds.current = new Set()
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
         mockTotalsQuery.mockReset()
@@ -416,6 +419,27 @@ describe('useAccountWithBalance', () => {
             mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal(2),
                 fiatValue: null,
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: null,
+            })
+        })
+
+        it('is unknown, not the other chains alone, when a failed read left a zero', () => {
+            mockFailedFirstReadChainIds.current = new Set(['ethereum'])
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+                nativeValue: new Decimal(0),
+                fiatValue: new Decimal(0),
             })
 
             const { result } = renderHook(() =>

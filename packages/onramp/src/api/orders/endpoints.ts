@@ -10,71 +10,44 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import { routerRequest } from '@perawallet/wallet-core-swaps'
 
 import type { RampOrder } from '../../models'
-import {
-    cancelRampOrderResponseSchema,
-    createRampOrderResponseSchema,
-    type CancelRampOrderApiResponse,
-    type RampOrderApiResponse,
-} from './schema'
+import { createRampOrderResponseSchema } from './schema'
 import { transformRampOrder } from './transformers'
 
 export type CreateRampOrderParams = {
-    quote: string
-    /** Display units. */
-    sourceAmount: Decimal
-    sourceAddress: Nullable<string>
+    quoteId: string
 }
 
+/** The router reads accounts and amounts from the stored quote, never from this call. */
 export const createRampOrder = async (
     params: CreateRampOrderParams,
     scope: ChainScope,
-    signal?: AbortSignal,
 ): Promise<RampOrder> => {
-    const response = await queryClient<RampOrderApiResponse>({
-        backend: 'pera',
+    const data = await routerRequest({
         scope,
         method: 'POST',
-        url: `/v1/ramp/orders/`,
-        data: {
-            quote: params.quote,
-            source_amount: params.sourceAmount.toFixed(),
-            source_address: params.sourceAddress,
-        },
-        signal,
+        path: 'orders/',
+        data: { quote_id: params.quoteId },
     })
-
-    const parsed = createRampOrderResponseSchema.parse(response.data)
-    return transformRampOrder(parsed)
+    return transformRampOrder(createRampOrderResponseSchema.parse(data))
 }
 
 export type CancelRampOrderParams = {
-    swapOrderId: string
-    deviceId: string
-    accountAddress: string
+    orderId: string
 }
 
+/** Only a pending order cancels; the router answers 409 for any other status. */
 export const cancelRampOrder = async (
     params: CancelRampOrderParams,
     scope: ChainScope,
-    signal?: AbortSignal,
 ): Promise<void> => {
-    const response = await queryClient<CancelRampOrderApiResponse>({
-        backend: 'pera',
+    await routerRequest({
         scope,
-        method: 'POST',
-        url: `/v1/ramp/orders/cancel/`,
-        data: {
-            swap_order_id: params.swapOrderId,
-            device_id: params.deviceId,
-            account_address: params.accountAddress,
-        },
-        signal,
+        method: 'PATCH',
+        path: `orders/${encodeURIComponent(params.orderId)}/`,
+        data: { status: 'cancelled' },
     })
-
-    cancelRampOrderResponseSchema.parse(response.data)
 }

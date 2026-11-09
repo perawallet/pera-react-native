@@ -18,7 +18,6 @@ import {
     type EnsureCanReceiveParams,
 } from '@perawallet/wallet-core-onramp'
 import { useEnsureAssetOptIn } from '../swaps/useEnsureSwapAssetOptIn'
-import { algorandRampTokenAssetId } from './tokenAsset'
 
 export type UseEnsureDestinationOptInResult = {
     ensureOptIn: EnsureCanReceive
@@ -43,15 +42,9 @@ export const useEnsureDestinationOptIn =
             async ({
                 address,
                 scope,
-                destinationToken,
+                assetId,
                 confirm,
             }: EnsureCanReceiveParams): Promise<boolean> => {
-                // No ASA on this network: nothing to opt into or receive.
-                const assetId = algorandRampTokenAssetId(
-                    destinationToken,
-                    scope,
-                )
-                if (assetId === null) return false
                 try {
                     return await ensureAssetOptIn({
                         address,

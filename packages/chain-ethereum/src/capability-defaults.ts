@@ -14,6 +14,7 @@ import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type ChainCapability,
+    type ChainCapabilityRestrictions,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChainRow } from './chains/types'
 
@@ -44,6 +45,7 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
 const SWITCHABLE: readonly ChainCapability[] = [
     'contractDecoding',
     'discover',
+    'onramp',
     'swap',
 ]
 
@@ -72,3 +74,11 @@ export const evmSupportedCapabilitiesOf = (
     )
     return rowOnly.length > 0 ? [...SUPPORTED, ...rowOnly] : SUPPORTED
 }
+
+// onramp buys real tokens, so a test network never offers it, whatever remote config says.
+export const evmCapabilityRestrictionsOf = (
+    row: EvmChainRow,
+): ChainCapabilityRestrictions => ({
+    onramp: ['developer', 'developer-override'],
+    ...row.restrictions,
+})

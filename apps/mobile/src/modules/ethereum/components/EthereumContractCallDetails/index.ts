@@ -11,4 +11,4 @@
  */
 
 export { EthereumContractCallDetails } from './EthereumContractCallDetails'
-export { contractCallNoticeOf } from './contractCallNotice'
+export { contractCallNoticeOf, isCallUnexplained } from './contractCallNotice'

@@ -12,14 +12,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    type NavigationProp,
     type RouteProp,
     useIsFocused,
+    useNavigation,
     useRoute,
 } from '@react-navigation/native'
 import {
-    useRampPairsQuery,
+    buildRampPair,
+    useRampDestinationsQuery,
     useRampRegionQuery,
+    useRampSourcesQuery,
     useOnramp,
+    useOnrampDestinationChains,
     rampTokenAsset,
     type RampPair,
     type RampRegion,
@@ -48,7 +53,6 @@ type UseOnrampScreenResult = {
     isReady: boolean
     pairsState: 'ready' | 'loading' | 'offline' | 'error'
     isPairsIntegrityBlocked: boolean
-    pairs: RampPair[]
     sourceToken: Nullable<RampToken>
     destinationToken: Nullable<RampToken>
     selectedPair: Nullable<RampPair>
@@ -63,23 +67,17 @@ type UseOnrampScreenResult = {
     handleRetryPairs: () => void
 }
 
-// Resolve the destination token id to seed when none is selected: a matching
-// route param wins, else the chain's native coin, else the first available
-// destination token.
+// The destination to seed when none is selected: the chain's native coin, else
+// the first available destination token.
 const resolveSeedDestinationId = (
-    pairs: RampPair[],
-    destinationTokenId: Optional<string>,
+    destinations: RampToken[],
     scope: ChainScope,
 ): Nullable<string> => {
-    const destinationIds = pairs.map(pair => pair.destinationToken.id)
-    if (destinationTokenId && destinationIds.includes(destinationTokenId)) {
-        return destinationTokenId
-    }
-    const nativePair = pairs.find(
-        pair => rampTokenAsset(pair.destinationToken, scope)?.isNative,
+    const native = destinations.find(
+        token => rampTokenAsset(token, scope)?.isNative,
     )
-    if (nativePair) return nativePair.destinationToken.id
-    return destinationIds[0] ?? null
+    if (native) return native.id
+    return destinations[0]?.id ?? null
 }
 
 export const useOnrampScreen = (): UseOnrampScreenResult => {
@@ -87,69 +85,138 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     // its params arrive under the `Fund` route name (not `Onramp`).
     const route =
         useRoute<RouteProp<{ Fund: Optional<OnrampScreenParams> }, 'Fund'>>()
+    const navigation =
+        useNavigation<NavigationProp<{ Fund: Optional<OnrampScreenParams> }>>()
     const params = route.params
 
     const isFocused = useIsFocused()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { scope, address: selectedAccountAddress } = useOnrampAccount()
+    const {
+        account,
+        scope,
+        address: selectedAccountAddress,
+    } = useOnrampAccount()
+    const fundableChains = useOnrampDestinationChains(account)
     const trackOnrampEvent = useTrackOnrampEvent()
-    const pairsQuery = useRampPairsQuery({ scope })
-    const { data: pairs = [], isLoading: pairsLoading } = pairsQuery
+    const pairsQuery = useRampDestinationsQuery({ scope })
+    const { data: destinations, isLoading: pairsLoading } = pairsQuery
     const { hasInternet } = useNetworkStatus()
     const { data: region } = useRampRegionQuery({ scope })
     const {
         selectedSourceTokenId,
         selectedDestinationTokenId,
-        setSelectedSourceTokenId,
         setSelectedDestinationTokenId,
+        selectedChainId,
+        setSelectedChainId,
     } = useOnramp()
     const { isIntroductionSeen, markIntroductionSeen } = useOnrampIntroduction()
 
     const [activeTab, setActiveTab] = useState<OnrampTab>('fund')
 
-    const sourceTokenId = params?.sourceTokenId
-    const destinationTokenId = params?.destinationTokenId
+    const routeChainId = params?.chainId
+    const routeDestinationAssetId = params?.destinationAssetId
 
-    // Seed destination (defaults to the native coin) and source (only from a
-    // route param — otherwise the source stays unset so the pay selector shows
-    // "Choose an asset" on every fresh entry). A persisted destination another
-    // chain's pairs don't list is reseeded, or the form would wait on it.
+    // The chain chips live in the receive sheet, which only opens from the
+    // form, so a chosen chain with nothing to list would strand Fund on its
+    // retry state. A settled empty answer (not a failure) drops the choice.
+    const isListSettledEmpty =
+        !pairsLoading &&
+        pairsQuery.fetchStatus === 'idle' &&
+        !pairsQuery.isError &&
+        destinations.length === 0
+
+    // A route naming a chain the selected account can't be funded on is spent
+    // unapplied: it would otherwise linger and overwrite a later chip pick.
+    const isRouteReachable =
+        routeChainId !== undefined && fundableChains.includes(routeChainId)
+
+    const spendRoute = useCallback(() => {
+        navigation.setParams({
+            chainId: undefined,
+            destinationAssetId: undefined,
+        })
+    }, [navigation])
+
+    // A chain change reseeds the destination.
     useEffect(() => {
-        if (scope === null || pairsLoading || pairs.length === 0) return
+        if (routeChainId && isRouteReachable) setSelectedChainId(routeChainId)
+    }, [routeChainId, isRouteReachable, setSelectedChainId])
 
-        const isDestinationListed = pairs.some(
-            pair => pair.destinationToken.id === selectedDestinationTokenId,
+    useEffect(() => {
+        if (routeChainId && !isRouteReachable) spendRoute()
+    }, [routeChainId, isRouteReachable, spendRoute])
+
+    // Seed the destination (defaults to the native coin). The source stays
+    // unset so the pay selector shows "Choose an asset" on every fresh entry.
+    // A persisted destination the router no longer lists is reseeded, or the
+    // form would wait on it.
+    useEffect(() => {
+        if (scope === null || pairsLoading || destinations.length === 0) return
+
+        const isDestinationListed = destinations.some(
+            token => token.id === selectedDestinationTokenId,
         )
         if (selectedDestinationTokenId === null || !isDestinationListed) {
             const seedDestinationId = resolveSeedDestinationId(
-                pairs,
-                destinationTokenId,
+                destinations,
                 scope,
             )
             if (seedDestinationId !== null) {
                 setSelectedDestinationTokenId(seedDestinationId)
             }
         }
-
-        if (selectedSourceTokenId === null && sourceTokenId) {
-            const hasSource = pairs.some(
-                pair => pair.sourceToken.id === sourceTokenId,
-            )
-            if (hasSource) {
-                setSelectedSourceTokenId(sourceTokenId)
-            }
-        }
-        // selectedSource/Destination are intentionally omitted: re-seeding on
-        // each selection change would fight user-driven switches.
+        // selectedDestination is intentionally omitted: re-seeding on each
+        // selection change would fight user-driven switches.
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [destinations, pairsLoading, scope, setSelectedDestinationTokenId])
+
+    // After the seed effect, so the route's token wins over a seeded or
+    // remembered one. The route is spent once applied: left in place, a repeat
+    // visit with the same params would not re-apply and a later pick could be
+    // overwritten. Waits until the scope is the route's chain, since the
+    // destinations in hand belong to the previous one until then. A chain that
+    // lists nothing has no asset to apply, so the route is spent there too.
+    useEffect(() => {
+        if (!routeChainId || scope?.chainId !== routeChainId) return
+        if (routeDestinationAssetId && !isListSettledEmpty) {
+            if (pairsLoading || destinations.length === 0) return
+            const requested = destinations.find(
+                token =>
+                    rampTokenAsset(token, scope)?.assetId ===
+                    routeDestinationAssetId,
+            )
+            if (requested) setSelectedDestinationTokenId(requested.id)
+        }
+        spendRoute()
     }, [
-        pairs,
-        pairsLoading,
-        sourceTokenId,
-        destinationTokenId,
+        spendRoute,
+        routeChainId,
+        routeDestinationAssetId,
         scope,
-        setSelectedSourceTokenId,
+        isListSettledEmpty,
+        pairsLoading,
+        destinations,
         setSelectedDestinationTokenId,
+    ])
+
+    // Only a choice whose own list came back empty is dropped: while the scope
+    // is on another chain (the account isn't funded on the choice) the empty
+    // list is that chain's, and a pending route is about to replace the choice.
+    useEffect(() => {
+        if (routeChainId) return
+        if (
+            selectedChainId !== null &&
+            scope?.chainId === selectedChainId &&
+            isListSettledEmpty
+        ) {
+            setSelectedChainId(null)
+        }
+    }, [
+        routeChainId,
+        isListSettledEmpty,
+        scope,
+        selectedChainId,
+        setSelectedChainId,
     ])
 
     // Show the one-time welcome sheet. Marking it seen the moment it opens makes
@@ -212,27 +279,28 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
 
     const destinationToken = useMemo<Nullable<RampToken>>(
         () =>
-            pairs.find(
-                pair => pair.destinationToken.id === selectedDestinationTokenId,
-            )?.destinationToken ?? null,
-        [pairs, selectedDestinationTokenId],
+            destinations.find(
+                token => token.id === selectedDestinationTokenId,
+            ) ?? null,
+        [destinations, selectedDestinationTokenId],
     )
 
+    const { data: sources } = useRampSourcesQuery({
+        scope,
+        destinationId: destinationToken?.id ?? null,
+    })
+
     const sourceToken = useMemo<Nullable<RampToken>>(
-        () =>
-            pairs.find(pair => pair.sourceToken.id === selectedSourceTokenId)
-                ?.sourceToken ?? null,
-        [pairs, selectedSourceTokenId],
+        () => sources.find(token => token.id === selectedSourceTokenId) ?? null,
+        [sources, selectedSourceTokenId],
     )
 
     const selectedPair = useMemo<Nullable<RampPair>>(
         () =>
-            pairs.find(
-                pair =>
-                    pair.sourceToken.id === selectedSourceTokenId &&
-                    pair.destinationToken.id === selectedDestinationTokenId,
-            ) ?? null,
-        [pairs, selectedSourceTokenId, selectedDestinationTokenId],
+            sourceToken !== null && destinationToken !== null
+                ? buildRampPair(sourceToken, destinationToken)
+                : null,
+        [sourceToken, destinationToken],
     )
 
     const isReady = !pairsLoading && destinationToken !== null
@@ -249,8 +317,17 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         const isPaused = pairsQuery.fetchStatus === 'paused'
         if (isPaused || (pairsQuery.isError && !hasInternet)) return 'offline'
         if (pairsQuery.isError) return 'error'
+        // The list is filtered by region and route, so a settled empty answer is
+        // normal; it reuses the retry state rather than spinning forever.
+        if (
+            !pairsLoading &&
+            pairsQuery.fetchStatus === 'idle' &&
+            destinations.length === 0
+        ) {
+            return 'error'
+        }
         return 'loading'
-    }, [isReady, pairsQuery, hasInternet])
+    }, [isReady, pairsQuery, pairsLoading, destinations, hasInternet])
 
     const handleRetryPairs = useCallback(() => {
         void pairsQuery.refetch()
@@ -262,7 +339,6 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         isPairsIntegrityBlocked:
             pairsState === 'error' &&
             isIntegrityRequiredError(pairsQuery.error),
-        pairs,
         sourceToken,
         destinationToken,
         selectedPair,

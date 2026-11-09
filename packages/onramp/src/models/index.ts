@@ -19,45 +19,36 @@ export type OnrampStatus =
     | 'completed'
     | 'failed'
     | 'cancelled'
+    | 'expired'
+    | 'refunded'
 
-export type RampNetwork = { id: string; name: string; logo: Nullable<string> }
+export type RampTokenKind = 'token' | 'deposit' | 'fiat'
+
+export type RampNetwork = {
+    /** The router's chain label for a deposit coin; '' for everything else. */
+    name: string
+    logo: Nullable<string>
+}
 
 export type RampToken = {
+    /** The router's asset id. Opaque outside the api layer: compare it or pass it back. */
     id: string
+    kind: RampTokenKind
     symbol: string
     name: string
     fractionDecimals: number
     logo: Nullable<string>
     network: RampNetwork
-    priceInUsd: Nullable<Decimal>
     countryCode?: string
-    /**
-     * CAIP-19 asset id, when the backend sends one. Compare it exactly: only
-     * an `erc20` reference is lowercased upstream, base58 ids keep their case.
-     */
-    caip19?: string
 }
 
 /** What identifies a ramp token's chain and on-chain asset. */
-export type RampTokenIdentity = Pick<
-    RampToken,
-    'id' | 'symbol' | 'network' | 'caip19'
->
+export type RampTokenIdentity = Pick<RampToken, 'id'>
 
-export type RampProviderLimits = {
-    minSourceAmount: Decimal
-    maxSourceAmount: Decimal
-}
-export type RampProvider = {
-    id: string
-    paymentTypes: string[]
-    limits: Nullable<RampProviderLimits>
-}
 export type RampPair = {
     id: string
     sourceToken: RampToken
     destinationToken: RampToken
-    provider: RampProvider
 }
 
 export type RampPaymentMethod = {
@@ -66,77 +57,44 @@ export type RampPaymentMethod = {
     name: string
 }
 
-export type XoQuote = {
-    kind: 'xo'
-    quoteId: string
-    paymentMethod: RampPaymentMethod
-    amount: { assetId: string; value: Decimal }
-    min: { assetId: string; value: Decimal }
-    max: { assetId: string; value: Decimal }
-    minerFee: { assetId: string; value: Decimal }
-    expiry: number
-    pairId: string
-    providerQuoteId: string
-}
+export type RampQuoteKind = 'meld' | 'xo'
 
-export type MeldQuote = {
-    kind: 'meld'
+/** Amounts are display units; `destinationAmount` is expected and net of fees. */
+export type RampQuote = {
+    kind: RampQuoteKind
     quoteId: string
+    provider: string
     paymentMethod: RampPaymentMethod
     sourceAmount: Decimal
     destinationAmount: Decimal
-    sourceCurrencyCode: string
-    destinationCurrencyCode: string
-    totalFee: Decimal
-    networkFee: Nullable<Decimal>
-    transactionFee: Decimal
-    exchangeRate: Decimal
-    paymentMethodType: string
-    serviceProvider: string
-    institutionName: Nullable<string>
-    lowKyc: Nullable<boolean>
+    sourceValueInUsd: Nullable<Decimal>
+    destinationValueInUsd: Nullable<Decimal>
 }
 
-export type RampQuote = XoQuote | MeldQuote
-
-export type XoOrder = {
-    kind: 'xo'
-    swapOrderId: string
-    payInAddress: string
-    payInAddressTag?: string
-    sourceAmount: Decimal
-    toAddress: string
-    status: string
+export type RampDepositInstructions = {
+    address: string
+    memo: Nullable<string>
 }
 
-export type MeldOrder = {
-    kind: 'meld'
-    swapOrderId: string
-    widgetUrl: string
-}
-
-export type RampOrder = XoOrder | MeldOrder
+export type RampOrder =
+    | { kind: 'meld'; orderId: string; checkoutUrl: string }
+    | { kind: 'xo'; orderId: string; deposit: RampDepositInstructions }
 
 export type RampRegion = { countryCode: string; countryName: string }
 
 export type RampHistoryItem = {
     id: string
+    /** Null for an order whose route the router doesn't say (a legacy row). */
+    kind: Nullable<RampQuoteKind>
     status: OnrampStatus
     creationDatetime: string
     provider: string
     pair: RampPair
-    paymentMethod: RampPaymentMethod
+    /** Display units; null when the amount or its asset is unknown. */
     sourceAmount: Nullable<Decimal>
+    /** Display units; received, else expected. */
     destinationAmount: Nullable<Decimal>
-    sourceCurrencyCode: Nullable<string>
-    destinationCurrencyCode: Nullable<string>
-    /**
-     * XO-only order fields, mirrored from the embedded order response. Present
-     * for XO (crypto→crypto) items so the order-details sheet can show the
-     * pay-in QR/address and a working cancel/contact action; undefined for Meld.
-     */
-    swapOrderId?: string
+    toAddress?: string
     payInAddress?: string
     payInAddressTag?: string
-    toAddress?: string
 }

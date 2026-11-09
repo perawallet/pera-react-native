@@ -118,6 +118,23 @@ describe('useAssetActions', () => {
         })
     })
 
+    it("opens Fund on the asset's chain with the asset selected", () => {
+        const { result } = renderHook(() =>
+            useAssetActions({
+                asset: { assetId: '0xToken' },
+                chainId: 'ethereum',
+                account: null,
+            } as unknown as Parameters<typeof useAssetActions>[0]),
+        )
+
+        act(() => result.current.handleBuy())
+
+        expect(mocks.replace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+            params: { chainId: 'ethereum', destinationAssetId: '0xToken' },
+        })
+    })
+
     it("pins swap to the asset's chain for a native asset off the default", () => {
         vi.mocked(useSwapSourceScope).mockReturnValueOnce({
             chainId: 'algorand',

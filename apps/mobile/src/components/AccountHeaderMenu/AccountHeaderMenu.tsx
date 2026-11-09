@@ -10,20 +10,28 @@
  limitations under the License
  */
 
-import { PWDropdown, PWIcon, PWView } from '@components/core'
+import {
+    PWDropdown,
+    PWIcon,
+    PWView,
+    type PWDropdownItem,
+} from '@components/core'
 import { useAccountHeaderMenu } from './useAccountHeaderMenu'
 
 export type AccountHeaderMenuProps = {
     testID?: string
     /** The portfolio chart toggle only belongs where that chart renders. */
     showChartToggle?: boolean
+    /** Actions for the screen the menu sits on, listed before the shared ones. */
+    leadingItems?: PWDropdownItem[]
 }
 
 export const AccountHeaderMenu = ({
     testID = 'account_header_menu',
     showChartToggle = true,
+    leadingItems,
 }: AccountHeaderMenuProps) => {
-    const { items } = useAccountHeaderMenu({ showChartToggle })
+    const { items } = useAccountHeaderMenu({ showChartToggle, leadingItems })
 
     return (
         <PWView testID={testID}>

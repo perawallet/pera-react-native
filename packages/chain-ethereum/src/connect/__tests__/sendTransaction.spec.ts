@@ -760,6 +760,127 @@ describe('buildEthereumSendTransaction', () => {
         expect(isEvmError(error)).toBe(true)
     })
 
+    describe('allowRevertedEstimate', () => {
+        const allowRevert = { allowRevertedEstimate: true }
+
+        it('queues a call whose estimate reverts with a fallback gas limit', async () => {
+            useRpc({
+                eth_estimateGas: new EvmRpcErrorFixture(
+                    3,
+                    'execution reverted: UniswapV2Router: EXPIRED',
+                ),
+            })
+
+            const built = await buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request({ data: '0xa9059cbb' }),
+                allowRevert,
+            )
+
+            expect(payloadOf(built)).toMatchObject({ gas: 500_000n })
+            // The review warns from this, whatever the simulation says.
+            expect(built.payload).toMatchObject({
+                revertedEstimate: { reason: 'UniswapV2Router: EXPIRED' },
+            })
+        })
+
+        it('carries a revert with no reason as a bare flag', async () => {
+            useRpc({
+                eth_estimateGas: new EvmRpcErrorFixture(
+                    3,
+                    'execution reverted',
+                ),
+            })
+
+            const built = await buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request({ data: '0xa9059cbb' }),
+                allowRevert,
+            )
+
+            expect(
+                (built.payload as { revertedEstimate?: unknown })
+                    .revertedEstimate,
+            ).toEqual({})
+        })
+
+        it('flags nothing on a call whose estimate succeeds', async () => {
+            useRpc()
+
+            const built = await buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request({ data: '0xa9059cbb' }),
+                allowRevert,
+            )
+
+            expect(built.payload).not.toHaveProperty('revertedEstimate')
+        })
+
+        it("signs a larger gas limit from the dApp over the fallback's", async () => {
+            useRpc({
+                eth_estimateGas: new EvmRpcErrorFixture(
+                    3,
+                    'execution reverted',
+                ),
+            })
+
+            const built = await buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request({ data: '0xa9059cbb', gas: 900_000n }),
+                allowRevert,
+            )
+
+            expect(payloadOf(built)).toMatchObject({ gas: 900_000n })
+        })
+
+        it('still refuses a revert without the option', async () => {
+            useRpc({
+                eth_estimateGas: new EvmRpcErrorFixture(
+                    3,
+                    'execution reverted',
+                ),
+            })
+
+            const error = await buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request({ data: '0xa9059cbb' }),
+            ).catch((e: unknown) => e)
+
+            expect(error).toMatchObject({ code: EvmErrorCode.REVERTED })
+        })
+
+        it.each([
+            [
+                'a sender that cannot cover gas',
+                -32_000,
+                'insufficient funds for gas * price + value',
+                EvmErrorCode.INSUFFICIENT_FUNDS,
+            ],
+            [
+                'a call that runs out of gas',
+                3,
+                'execution reverted: gas required exceeds allowance (30000000)',
+                EvmErrorCode.OUT_OF_GAS,
+            ],
+        ])('still refuses %s', async (_name, code, message, expected) => {
+            useRpc({ eth_estimateGas: new EvmRpcErrorFixture(code, message) })
+
+            const error = await buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request(),
+                allowRevert,
+            ).catch((e: unknown) => e)
+
+            expect(error).toMatchObject({ code: expected })
+        })
+    })
+
     it('rejects with an insufficient-funds EvmError when the sender cannot cover gas', async () => {
         useRpc({
             eth_estimateGas: new EvmRpcErrorFixture(

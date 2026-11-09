@@ -17,6 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { spendApprovalTitleOf } from './spendApprovalTitleOf'
 
 /**
  * Names the one token a fungible approval covers; anything else reads as "your
@@ -34,19 +35,8 @@ export const useSpendApprovalTitle = (
     const { data: asset } = useSingleAssetDetailsQuery(singleTokenId, scope)
     if (!approval) return undefined
     const unitName = singleTokenId ? asset?.unitName : undefined
-    const name = approval.knownSpender?.name
-
-    if (name) {
-        return unitName
-            ? t('signing.spend_approval.allow_title', {
-                  spender: name,
-                  asset: unitName,
-              })
-            : t('signing.spend_approval.allow_title_assets', {
-                  spender: name,
-              })
-    }
-    return unitName
-        ? t('signing.spend_approval.allow_title_unknown', { asset: unitName })
-        : t('signing.spend_approval.allow_title_unknown_assets')
+    return spendApprovalTitleOf(t, {
+        spenderName: approval.knownSpender?.name,
+        unitName,
+    })
 }

@@ -16,9 +16,8 @@ import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,
     IOS_EXCLUDED_PAYMENT_METHODS,
     type RampHistoryItem,
+    type RampOrder,
     type RampPair,
-    type XoOrder,
-    type XoQuote,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -31,58 +30,32 @@ export const getExcludedPaymentMethodIds = (
     return []
 }
 
+/** Fiat sources go through the provider checkout (Meld); crypto ones through a deposit. */
 export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
-    pair?.provider.id.toLowerCase() === 'meld'
-
-/** An XO source amount that falls outside the quote's min/max window. */
-export type XoLimitViolation =
-    | { type: 'below'; min: string }
-    | { type: 'above'; max: string }
+    pair?.sourceToken.kind === 'fiat'
 
 /**
- * Whether the entered source amount (display units) violates the XO quote's
- * min/max limits. Returns null when no valid amount is entered or it is within
- * range.
- */
-export const getXoLimitViolation = (
-    quote: XoQuote,
-    sourceAmount: Nullable<Decimal>,
-): Nullable<XoLimitViolation> => {
-    if (sourceAmount === null) return null
-    if (sourceAmount.lessThan(quote.min.value)) {
-        return { type: 'below', min: quote.min.value.toString() }
-    }
-    if (sourceAmount.greaterThan(quote.max.value)) {
-        return { type: 'above', max: quote.max.value.toString() }
-    }
-    return null
-}
-
-/**
- * Shape a freshly-created XO order as a (pending) history item so the
+ * Shape a freshly-created deposit order as a (pending) history item so the
  * order-details sheet can render the post-order review — a just-placed order is
- * exactly a pending history entry, so the two share one component. `paymentMethod`
- * is left blank (XO is crypto-to-crypto, so the details sheet hides that row).
+ * exactly a pending history entry, so the two share one component.
  */
 export const buildPendingXoHistoryItem = (
-    order: XoOrder,
+    order: Extract<RampOrder, { kind: 'xo' }>,
     pair: RampPair,
     sourceAmount: Decimal,
     destinationAmount: Nullable<Decimal>,
+    toAddress: string,
     creationDatetime: string,
 ): RampHistoryItem => ({
-    id: order.swapOrderId,
+    id: order.orderId,
+    kind: 'xo',
     status: 'pending',
     creationDatetime,
     provider: 'xo',
     pair,
-    paymentMethod: { id: 'crypto', logo: null, name: '' },
     sourceAmount,
     destinationAmount,
-    sourceCurrencyCode: null,
-    destinationCurrencyCode: null,
-    swapOrderId: order.swapOrderId,
-    payInAddress: order.payInAddress,
-    payInAddressTag: order.payInAddressTag,
-    toAddress: order.toAddress,
+    toAddress,
+    payInAddress: order.deposit.address,
+    payInAddressTag: order.deposit.memo ?? undefined,
 })

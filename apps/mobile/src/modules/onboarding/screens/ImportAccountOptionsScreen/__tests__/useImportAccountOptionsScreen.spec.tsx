@@ -278,7 +278,10 @@ describe('useImportAccountOptionsScreen', () => {
     })
 
     it('navigates to ImportInfo when the import options sheet resolves with a result', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(null)
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            seed: null,
+            wordCount: 25,
+        })
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         const recoverOption = optionsOf(result.current).find(
@@ -291,16 +294,18 @@ describe('useImportAccountOptionsScreen', () => {
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
             accountType: null,
+            wordCount: 25,
         })
     })
 
     it.each([
-        ['bip39', OnboardingEvent.RecoverOneKey],
-        [null, OnboardingEvent.RecoverAlgo25],
+        ['bip39', 24, OnboardingEvent.RecoverOneKey],
+        ['bip39', 12, OnboardingEvent.RecoverTwelveWord],
+        [null, 25, OnboardingEvent.RecoverAlgo25],
     ] as const)(
-        "tracks the picked kind's recover event (%s)",
-        async (seed, event) => {
-            mockRequestBottomSheet.mockResolvedValueOnce(seed)
+        "tracks the picked kind's recover event (%s, %i words)",
+        async (seed, wordCount, event) => {
+            mockRequestBottomSheet.mockResolvedValueOnce({ seed, wordCount })
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
             await act(async () => {
@@ -320,7 +325,10 @@ describe('useImportAccountOptionsScreen', () => {
     )
 
     it('takes a quantum pick from the passphrase sheet to ImportInfo without a recover event', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce('quantum')
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            seed: 'quantum',
+            wordCount: 25,
+        })
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         await act(async () => {
@@ -336,6 +344,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(trackEvent).not.toHaveBeenCalled()
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
             accountType: 'quantum',
+            wordCount: 25,
         })
     })
 
@@ -621,6 +630,7 @@ describe('useImportAccountOptionsScreen', () => {
         vi.mocked(detectImportKind).mockReturnValue({
             success: true,
             seed: 'bip39',
+            wordCount: 24,
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -633,6 +643,34 @@ describe('useImportAccountOptionsScreen', () => {
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
             accountType: 'bip39',
+            wordCount: 24,
+        })
+    })
+
+    it('handleQRScannerSuccess opens the 12-word entry for a 12-word wallet phrase, never the Secure Backup import', () => {
+        const mnemonic = new Array(12).fill('word').join(' ')
+        mockParseDeeplink.mockReturnValue({
+            type: DeeplinkType.RECOVER_ADDRESS,
+            mnemonic,
+        })
+        vi.mocked(detectImportKind).mockReturnValue({
+            success: true,
+            seed: 'bip39',
+            wordCount: 12,
+        })
+        mockPush.mockClear()
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        act(() => {
+            result.current.handleQRScannerSuccess('perawallet://recover/...')
+        })
+
+        expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
+        expect(mockPush).toHaveBeenCalledTimes(1)
+        expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
+            accountType: 'bip39',
+            wordCount: 12,
         })
     })
 
@@ -645,6 +683,7 @@ describe('useImportAccountOptionsScreen', () => {
         vi.mocked(detectImportKind).mockReturnValue({
             success: true,
             seed: null,
+            wordCount: 25,
         })
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
@@ -656,6 +695,7 @@ describe('useImportAccountOptionsScreen', () => {
         expect(setPendingImportMnemonic).toHaveBeenCalledWith(mnemonic)
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
             accountType: null,
+            wordCount: 25,
         })
     })
 

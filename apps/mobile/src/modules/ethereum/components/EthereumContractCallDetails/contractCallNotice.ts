@@ -11,12 +11,14 @@
  */
 
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethereum'
 import {
     originOf,
     stripUrlScheme,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 
 export type ContractCallNotice = {
     titleKey: I18nKey
@@ -51,3 +53,18 @@ export const contractCallNoticeOf = (
               ),
           }
 }
+
+/**
+ * Pera read nothing of the call that explains it, so the review carries the
+ * unchecked-call notice. A simulation that can't answer adds nothing to it.
+ */
+export const isCallUnexplained = ({
+    view,
+    standardCall,
+    contractAction,
+}: Pick<
+    EthereumTransactionPresentation,
+    'view' | 'standardCall' | 'contractAction'
+>): boolean =>
+    !standardCall &&
+    !(!!contractAction && hidesUnknownContractNotice(view.action))

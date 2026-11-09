@@ -49,6 +49,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'cloud-backup': 'never',
     // Keyed by the contracts dApps asked the user to call.
     'contract-abis': 'never',
+    // Calldata and the signer's address, valid for one block.
+    'evm-simulations': 'never',
     onramp: 'never',
     passkeys: 'never',
     // Read fresh every launch: an old list would refuse a chain the backend
@@ -76,7 +78,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     // the same global content as the block above. A longer entry overrides the
     // module, so the catalog keeps persisting while the module stays closed by
     // default.
-    'onramp/pairs': 'persist',
+    'onramp/destinations': 'persist',
+    'onramp/sources': 'persist',
     'onramp/region': 'persist',
     // Chart snapshots live under otherwise-never modules. They are
     // network-only (no SQLite history table backs them) and carry no PII, so

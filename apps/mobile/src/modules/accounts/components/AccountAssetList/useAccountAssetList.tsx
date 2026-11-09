@@ -16,10 +16,14 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PWFlatListRef } from '@components/core'
 import {
     addressOn,
+    canHideHolding,
+    receivesUnaskedAssets,
     useAccountAssetsQuery,
     useAccountHoldingSources,
     useCanSignWith,
+    useHiddenTokensStore,
     useHasAccountChainState,
+    useFailedFirstReadChainIds,
     useIsHoldingsRefreshFailed,
     useUnreadHoldingChainIds,
     assetFromHoldingLiteRow,
@@ -69,6 +73,7 @@ import {
     type ManageAssetsAction,
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
+import type { AssetRowSwipeAction } from './SwipeableAssetItem'
 
 export type AccountAssetListItem =
     | GroupedHoldingItem<AccountHoldingsLiteRow>
@@ -90,13 +95,20 @@ type UseAccountAssetListResult = {
     convertFiat: AssetFiatConverter
     isReadOnly: boolean
     canManageAssets: boolean
+    /** Some chain the account holds receives tokens unasked, so it can hide them. */
+    canHideTokens: boolean
+    /** The Manage sheet has something to offer: asset management on the account's chain, or hiding. */
+    canOpenManage: boolean
     hideZeroBalance: boolean
     searchFilter: string
     headerState: ModalState
     isOptingOut: boolean
     setSearchFilter: (value: string) => void
     goToAssetScreen: (item: AccountHoldingsLiteRow) => void
-    handleOptOut: (item: AccountHoldingsLiteRow) => void
+    handleSwipeAction: (
+        item: AccountHoldingsLiteRow,
+        action: AssetRowSwipeAction,
+    ) => void
     handleOpenAddAsset: () => void
     handleOpenManage: () => void
     getEmptyTitle: () => string
@@ -105,11 +117,16 @@ type UseAccountAssetListResult = {
         isReadOnly: boolean
         canManageAssets: boolean
         goToAssetScreen: (item: AccountHoldingsLiteRow) => void
-        handleOptOut: (item: AccountHoldingsLiteRow) => void
-        /** Opt-out runs on the account's own chain only. */
-        isSwipeable: (item: AccountHoldingsLiteRow) => boolean
-        /** On All, for an account on two or more chains, while a search is typed: each plain row names its network. */
-        shouldShowNetwork: boolean
+        handleSwipeAction: (
+            item: AccountHoldingsLiteRow,
+            action: AssetRowSwipeAction,
+        ) => void
+        /** Hiding fits any token on a chain that receives unasked assets; opt-out runs on the account's own chain only. */
+        swipeActionOf: (
+            item: AccountHoldingsLiteRow,
+        ) => Nullable<AssetRowSwipeAction>
+        /** On All, for an account on two or more chains: each plain row's icon names its network. */
+        shouldShowChainBadge: boolean
     }
     listRef: React.MutableRefObject<Nullable<PWFlatListRef>>
 }
@@ -148,7 +165,7 @@ const homeHoldingAdapter: GroupableHoldingAdapter<AccountHoldingsLiteRow> = {
 
 type UseAccountAssetListParams = {
     account: WalletAccount
-    t: (key: string) => string
+    t: (key: string, params?: Record<string, string | number>) => string
 }
 
 export const useAccountAssetList = ({
@@ -167,6 +184,10 @@ export const useAccountAssetList = ({
     const { request: requestBottomSheet } = useBottomSheet()
 
     const sources = useAccountHoldingSources(account)
+    const canHideTokens = sources.some(({ scope: { chainId } }) =>
+        receivesUnaskedAssets(chainId),
+    )
+    const canOpenManage = canManageAssets || canHideTokens
     // A primitive, so the row press handler keeps its identity across renders.
     const nftChainIds = useNftHoldingSources(account)
         .map(({ scope: { chainId } }) => chainId)
@@ -225,6 +246,8 @@ export const useAccountAssetList = ({
             hideNfts: !displayNfts,
             hideZeroBalanceNfts: !effectiveDisplayOptedInNfts,
             hideSuspicious: !showSuspicious,
+            // A token the user hid stays out whatever the switch above says.
+            excludeHidden: true,
         }),
         [
             hideZeroBalance,
@@ -264,9 +287,14 @@ export const useAccountAssetList = ({
 
     // Exchange rates read once here; the visible rows convert themselves. Keeps
     // per-row render observer-free without precomputing all N holdings.
-    const convertFiat = useAssetListFiatConverter(unreadChainIds)
+    const placeholderChainIds = useFailedFirstReadChainIds(sources)
+    const convertFiat = useAssetListFiatConverter(
+        unreadChainIds,
+        placeholderChainIds,
+    )
 
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
+    const setTokenHidden = useHiddenTokensStore(state => state.setTokenHidden)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -386,6 +414,52 @@ export const useAccountAssetList = ({
         ],
     )
 
+    const handleHide = useCallback(
+        (item: AccountHoldingsLiteRow) => {
+            const address = addressOn(account, item.scope)
+            if (!address) return
+            setTokenHidden({
+                address,
+                scope: item.scope,
+                assetId: item.assetId,
+                isHidden: true,
+            })
+            const asset = assetFromHoldingLiteRow(item, item.scope.chainId)
+            // A left swipe on a row can be a reach for the next tab, so the
+            // toast is also the way back.
+            showToast(
+                {
+                    title: t('token_visibility.hidden_toast_title', {
+                        assetName: asset?.name || asset?.unitName || '',
+                    }),
+                    body: t('token_visibility.hidden_swipe_toast_body'),
+                    type: 'success',
+                },
+                {
+                    onPress: () =>
+                        setTokenHidden({
+                            address,
+                            scope: item.scope,
+                            assetId: item.assetId,
+                            isHidden: false,
+                        }),
+                },
+            )
+        },
+        [account, setTokenHidden, showToast, t],
+    )
+
+    const handleSwipeAction = useCallback(
+        (item: AccountHoldingsLiteRow, action: AssetRowSwipeAction) => {
+            if (action === 'hide') {
+                handleHide(item)
+                return
+            }
+            void handleOptOut(item)
+        },
+        [handleHide, handleOptOut],
+    )
+
     const handleOpenAddAsset = useCallback(() => {
         trackEvent(AssetDetailsEvent.AddAsset, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
@@ -405,7 +479,12 @@ export const useAccountAssetList = ({
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
         const action = await requestBottomSheet<ManageAssetsAction>({
-            contents: <ManageAssetsContent isReadOnly={isReadOnly} />,
+            contents: (
+                <ManageAssetsContent
+                    canRemoveAssets={canManageAssets && !isReadOnly}
+                    canHideTokens={canHideTokens}
+                />
+            ),
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
@@ -431,10 +510,19 @@ export const useAccountAssetList = ({
                     autoCreateContainer: false,
                 },
             })
+        } else if (action === 'hide') {
+            navigation.navigate('HideTokens')
         } else if (action === 'remove') {
             navigation.navigate('RemoveAssets')
         }
-    }, [requestBottomSheet, isReadOnly, navigation, scope.chainId])
+    }, [
+        requestBottomSheet,
+        canManageAssets,
+        canHideTokens,
+        isReadOnly,
+        navigation,
+        scope.chainId,
+    ])
 
     const isRefreshFailed = useIsHoldingsRefreshFailed(
         selectedSource?.scope ?? scope,
@@ -474,37 +562,42 @@ export const useAccountAssetList = ({
         return t('account_details.assets.empty_body')
     }, [searchFilter, t])
 
-    const isSwipeable = useCallback(
-        (item: AccountHoldingsLiteRow) =>
-            !isReadOnly &&
-            canManageAssets &&
-            item.scope.chainId === scope.chainId &&
-            findNativeAsset(item.scope.chainId)?.assetId !== item.assetId &&
-            item.amount.isZero(),
+    const swipeActionOf = useCallback(
+        (item: AccountHoldingsLiteRow): Nullable<AssetRowSwipeAction> => {
+            if (canHideHolding(item.scope.chainId, item.assetId)) {
+                // The collectibles gallery never reads the hidden set.
+                const asset = assetFromHoldingLiteRow(item, item.scope.chainId)
+                return asset && isCollectible(asset) ? null : 'hide'
+            }
+            const canOptOut =
+                !isReadOnly &&
+                canManageAssets &&
+                item.scope.chainId === scope.chainId &&
+                findNativeAsset(item.scope.chainId)?.assetId !== item.assetId &&
+                item.amount.isZero()
+            return canOptOut ? 'optOut' : null
+        },
         [isReadOnly, canManageAssets, scope.chainId],
     )
 
-    const shouldShowNetwork =
-        selectedChainId === null &&
-        sources.length > 1 &&
-        debouncedSearch.trim().length > 0
+    const shouldShowChainBadge = selectedChainId === null && sources.length > 1
 
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
             canManageAssets,
             goToAssetScreen,
-            handleOptOut,
-            isSwipeable,
-            shouldShowNetwork,
+            handleSwipeAction,
+            swipeActionOf,
+            shouldShowChainBadge,
         }),
         [
             isReadOnly,
             canManageAssets,
             goToAssetScreen,
-            handleOptOut,
-            isSwipeable,
-            shouldShowNetwork,
+            handleSwipeAction,
+            swipeActionOf,
+            shouldShowChainBadge,
         ],
     )
 
@@ -519,6 +612,8 @@ export const useAccountAssetList = ({
         convertFiat,
         isReadOnly,
         canManageAssets,
+        canHideTokens,
+        canOpenManage,
         listRef,
         hideZeroBalance,
         searchFilter,
@@ -526,7 +621,7 @@ export const useAccountAssetList = ({
         isOptingOut,
         setSearchFilter,
         goToAssetScreen,
-        handleOptOut: (item: AccountHoldingsLiteRow) => void handleOptOut(item),
+        handleSwipeAction,
         handleOpenAddAsset,
         handleOpenManage: () => void handleOpenManage(),
         getEmptyTitle,

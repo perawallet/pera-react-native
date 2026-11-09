@@ -12,32 +12,50 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { createRampOrderResponseSchema } from '../schema'
-
-const meldOrder = (widgetUrl: string) => ({
-    swap_order_id: 'order-meld-1',
-    xo: null,
-    meld: { provider_response: { widgetUrl, token: 'tok-1' } },
-})
+import {
+    createRampOrderResponseSchema,
+    openCheckoutStepSchema,
+} from '../schema'
 
 describe('createRampOrderResponseSchema', () => {
-    it('accepts an https Meld widget URL', () => {
-        const result = createRampOrderResponseSchema.safeParse(
-            meldOrder('https://widget.example.com/session'),
-        )
+    it('reads steps of a kind the app does not run', () => {
+        const parsed = createRampOrderResponseSchema.parse({
+            order_id: 'order-1',
+            status: 'pending',
+            expires_at: null,
+            steps: [{ kind: 'sign_transactions', transactions: ['x'] }],
+        })
 
-        expect(result.success).toBe(true)
+        expect(parsed.steps).toHaveLength(1)
     })
 
-    it.each([
-        'http://widget.example.com/session',
-        'javascript:alert(1)',
-        'expanded.html?deeplink=algorand://X',
-    ])('rejects a Meld widget URL of %s', widgetUrl => {
-        const result = createRampOrderResponseSchema.safeParse(
-            meldOrder(widgetUrl),
-        )
-
-        expect(result.success).toBe(false)
+    it('rejects a status the router does not define', () => {
+        expect(() =>
+            createRampOrderResponseSchema.parse({
+                order_id: 'order-1',
+                status: 'paused',
+                steps: [],
+            }),
+        ).toThrow()
     })
+})
+
+describe('openCheckoutStepSchema', () => {
+    it('accepts an https checkout URL', () => {
+        expect(
+            openCheckoutStepSchema.parse({
+                kind: 'open_checkout',
+                url: 'https://checkout.example/pay',
+            }).url,
+        ).toBe('https://checkout.example/pay')
+    })
+
+    it.each(['http://checkout.example/pay', 'javascript:alert(1)'])(
+        'rejects %s',
+        url => {
+            expect(() =>
+                openCheckoutStepSchema.parse({ kind: 'open_checkout', url }),
+            ).toThrow()
+        },
+    )
 })

@@ -13,61 +13,44 @@
 import { z } from 'zod'
 import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
-export const createRampOrderRequestSchema = z.object({
-    quote: z.string(),
-    source_amount: z.string(),
-    source_address: z.string().nullable(),
-})
+export const onrampStatusSchema = z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled',
+    'expired',
+    'refunded',
+])
 
-// XO (crypto -> crypto) order payload. The on-chain pay-in address lives at
-// the top level (`pay_in_address`); the provider response carries the
-// destination address and live status. `passthrough` tolerates the many extra
-// provider fields the app ignores (createdAt, fromAddress, rateId, ...).
-const xoProviderOrderResponseSchema = z
-    .object({
-        payInAddress: z.string(),
-        payInAddressTag: z.string().optional(),
-        toAddress: z.string(),
-        status: z.string(),
-    })
-    .passthrough()
-
-const rampOrderXoSchema = z.object({
-    pay_in_address: z.string(),
-    source_amount: z.string(),
-    provider_response: xoProviderOrderResponseSchema,
-})
-
-// Meld (fiat -> crypto) order payload. Only the hosted `widgetUrl` is consumed
-// by the app; the remaining provider fields are tolerated via `passthrough`.
-// https-only: it goes straight to the system browser.
-const rampOrderMeldSchema = z.object({
-    provider_response: z
-        .object({
-            widgetUrl: httpsUrlSchema,
-        })
-        .passthrough(),
-})
-
-export const createRampOrderResponseSchema = z.object({
-    swap_order_id: z.string(),
-    xo: rampOrderXoSchema.nullable(),
-    meld: rampOrderMeldSchema.nullable(),
-})
+export const createRampOrderRequestSchema = z.object({ quote_id: z.string() })
 
 export const cancelRampOrderRequestSchema = z.object({
-    swap_order_id: z.string(),
-    device_id: z.string(),
-    account_address: z.string(),
+    status: z.literal('cancelled'),
 })
 
-export const cancelRampOrderResponseSchema = z.object({
-    swap_order_id: z.string(),
-    device_id: z.string(),
-    account_address: z.string(),
+// Steps of kinds this client can't run (a signing step, say) still parse, so
+// the order is read as a whole and only refused when no step is usable.
+const rampOrderStepSchema = z.object({ kind: z.string() }).passthrough()
+
+export const createRampOrderResponseSchema = z.object({
+    order_id: z.string(),
+    status: onrampStatusSchema,
+    expires_at: z.string().nullish(),
+    steps: z.array(rampOrderStepSchema),
+})
+
+// https-only: the URL goes straight to the system browser.
+export const openCheckoutStepSchema = z.object({
+    kind: z.literal('open_checkout'),
+    url: httpsUrlSchema,
+})
+
+export const depositInstructionsStepSchema = z.object({
+    kind: z.literal('deposit_instructions'),
+    address: z.string(),
+    memo: z.string().nullish(),
 })
 
 export type RampOrderApiResponse = z.infer<typeof createRampOrderResponseSchema>
-export type CancelRampOrderApiResponse = z.infer<
-    typeof cancelRampOrderResponseSchema
->
+export type RampOrderApiInput = z.input<typeof createRampOrderResponseSchema>

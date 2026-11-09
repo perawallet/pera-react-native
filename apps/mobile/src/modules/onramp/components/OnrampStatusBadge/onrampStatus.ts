@@ -67,6 +67,18 @@ export const ONRAMP_STATUS_DESCRIPTORS: Record<
         iconVariant: 'secondary',
         labelKey: i18nKey('onramp.status.cancelled'),
     },
+    expired: {
+        icon: null,
+        color: 'neutral',
+        iconVariant: 'secondary',
+        labelKey: i18nKey('onramp.status.expired'),
+    },
+    refunded: {
+        icon: null,
+        color: 'neutral',
+        iconVariant: 'secondary',
+        labelKey: i18nKey('onramp.status.refunded'),
+    },
 }
 
 export const getOnrampStatusDescriptor = (

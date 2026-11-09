@@ -36,6 +36,7 @@ import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections/dappRequest'
 import { deeplinkAdapters } from '@perawallet/wallet-core-deeplinks'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
+import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
@@ -68,6 +69,7 @@ const resetRegistries = () => {
     ledgerAppDriverRegistry.reset()
     deviceChainAdapters.reset()
     swapChainAdapters.reset()
+    rampChainAdapters.reset()
     nameServiceChainAdapters.reset()
 }
 
@@ -108,6 +110,7 @@ describe('createEvmChainRegistration', () => {
             expect(ledgerAppDriverRegistry.resolve(id).chainId).toBe(id)
             expect(deviceChainAdapters.get(id).chainId).toBe(id)
             expect(swapChainAdapters.get(id).chainId).toBe(id)
+            expect(rampChainAdapters.get(id).chainId).toBe(id)
             expect(nameServiceChainAdapters.get(id).chainId).toBe(id)
             expect(nameServiceChainAdapters.get(id).service).toBe('ens')
         })

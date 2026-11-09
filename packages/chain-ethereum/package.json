@@ -32,6 +32,7 @@
     "@perawallet/wallet-core-device": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-nfd": "workspace:*",
+    "@perawallet/wallet-core-onramp": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",

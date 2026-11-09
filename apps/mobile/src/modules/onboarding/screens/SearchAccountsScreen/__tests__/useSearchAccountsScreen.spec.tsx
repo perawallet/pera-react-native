@@ -235,8 +235,9 @@ describe('useSearchAccountsScreen', () => {
 
         act(() =>
             rescanOptions().onProgress({
-                chainIds: ['algorand', 'base'],
+                chainIds: ['algorand', 'base', 'bsc'],
                 failedChainIds: ['base'],
+                refusedChainIds: ['bsc'],
                 checkedAccountCount: 3,
                 foundCount: 1,
             }),
@@ -249,6 +250,7 @@ describe('useSearchAccountsScreen', () => {
                 status: 'checking',
             }),
             expect.objectContaining({ chainId: 'base', status: 'failed' }),
+            expect.objectContaining({ chainId: 'bsc', status: 'unavailable' }),
         ])
         expect(result.current.progressLabel).toBe(
             'onboarding.searching_accounts.checked_accounts · onboarding.searching_accounts.new_found',
@@ -311,6 +313,49 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
+    it('in import mode, tells the selection when its one account is only the fallback for no activity', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+        } as SearchAccountsParams
+        const origin = { id: '0', chains: {}, custody: { kind: 'local' } }
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: [origin],
+            failedChainIds: ['ethereum'],
+            isOriginFallback: true,
+        })
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() =>
+            expect(mockReplace).toHaveBeenCalledWith(
+                'ImportSelectAddresses',
+                expect.objectContaining({ isOriginFallback: true }),
+            ),
+        )
+    })
+
+    it('in import mode, hands a retry the earlier search so the new one adds to it', async () => {
+        const previous = { accounts: [], failedChainIds: ['ethereum'] }
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            previous,
+        } as unknown as SearchAccountsParams
+        mockDiscoverImportAccounts.mockResolvedValue({
+            accounts: [{ id: '1', chains: {}, custody: { kind: 'local' } }],
+            failedChainIds: [],
+        })
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() =>
+            expect(mockDiscoverImportAccounts).toHaveBeenCalledWith(
+                expect.objectContaining({ walletKeyId: 'w-1', previous }),
+            ),
+        )
+    })
+
     it('in import mode, shows each network as the walk reports, with no Cancel button', async () => {
         mockRouteParams.current = {
             mode: 'import',
@@ -330,6 +375,7 @@ describe('useSearchAccountsScreen', () => {
             onProgress({
                 chainIds: ['algorand', 'base'],
                 failedChainIds: ['base'],
+                refusedChainIds: [],
                 checkedAccountCount: 5,
                 foundCount: 2,
             }),

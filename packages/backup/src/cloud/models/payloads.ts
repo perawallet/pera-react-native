@@ -441,6 +441,14 @@ export const settingsBackupPayloadSchema = z.object({
             addresses: z.array(z.string().min(1)),
         }),
     ),
+    /**
+     * Scope key → account address → hidden asset ids; named by address, as account ids are device-local.
+     * Last writer wins as a whole: tokens hidden on two devices before either syncs replace each other.
+     * A union on apply would keep both, but then an unhide on one device could never reach the others.
+     */
+    hiddenTokens: settingsField(
+        z.record(z.string(), z.record(z.string(), z.array(z.string()))),
+    ),
 })
 
 export type SettingsBackupPayload = z.infer<typeof settingsBackupPayloadSchema>
@@ -459,4 +467,5 @@ export const BACKUP_SETTINGS_FIELDS: readonly BackupSettingsField[] = [
     'confirmationMode',
     'launchAccount',
     'accountOrder',
+    'hiddenTokens',
 ]

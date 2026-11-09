@@ -18,6 +18,8 @@ import { setupServer } from 'msw/node'
 import React from 'react'
 
 import { mockCancelRampOrder } from '../../test-handlers'
+import { historyItem, SCOPE } from '../../__tests__/routerFixtures'
+import { onrampQueryKeys } from '../querykeys'
 import { useCancelRampOrderMutation } from '../useCancelRampOrderMutation'
 
 const server = setupServer()
@@ -26,41 +28,67 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-function createWrapper() {
-    const queryClient = new QueryClient({
+function createClient() {
+    return new QueryClient({
         defaultOptions: { queries: { retry: false } },
     })
-    return ({ children }: { children: React.ReactNode }) =>
+}
+
+const wrapperFor =
+    (queryClient: QueryClient) =>
+    ({ children }: { children: React.ReactNode }) =>
         React.createElement(
             QueryClientProvider,
             { client: queryClient },
             children,
         )
-}
 
 describe('onramp/useCancelRampOrderMutation', () => {
     test('resolves on a successful cancel', async () => {
         server.use(
             mockCancelRampOrder({
-                response: {
-                    swap_order_id: 'order-1',
-                    device_id: 'device-1',
-                    account_address: 'ACCOUNT_ADDRESS',
-                },
+                response: historyItem({ status: 'cancelled' }),
             }),
         )
 
         const { result } = renderHook(() => useCancelRampOrderMutation(), {
-            wrapper: createWrapper(),
+            wrapper: wrapperFor(createClient()),
         })
 
-        await result.current.mutateAsync({
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            swapOrderId: 'order-1',
-            deviceId: 'device-1',
-            accountAddress: 'ACCOUNT_ADDRESS',
-        })
+        await result.current.mutateAsync({ scope: SCOPE, orderId: 'order-1' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    })
+
+    test('refreshes the history when the cancel is refused', async () => {
+        server.use(
+            mockCancelRampOrder({
+                status: 409,
+                response: {
+                    error: 'Cannot cancel.',
+                    code: 'invalid_status_transition',
+                },
+            }),
+        )
+        const queryClient = createClient()
+        queryClient.setQueryData(
+            onrampQueryKeys.history('device-1', 'ADDR', SCOPE),
+            { pages: [], pageParams: [] },
+        )
+        const { result } = renderHook(() => useCancelRampOrderMutation(), {
+            wrapper: wrapperFor(queryClient),
+        })
+
+        await expect(
+            result.current.mutateAsync({ scope: SCOPE, orderId: 'order-1' }),
+        ).rejects.toBeDefined()
+
+        await waitFor(() =>
+            expect(
+                queryClient.getQueryState(
+                    onrampQueryKeys.history('device-1', 'ADDR', SCOPE),
+                )?.isInvalidated,
+            ).toBe(true),
+        )
     })
 })

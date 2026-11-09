@@ -25,7 +25,10 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from '@packages/chain-algorand/src/capability-defaults'
-import { evmCapabilityDefaultsOf } from '@packages/chain-ethereum/src/capability-defaults'
+import {
+    evmCapabilityDefaultsOf,
+    evmCapabilityRestrictionsOf,
+} from '@packages/chain-ethereum/src/capability-defaults'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -92,7 +95,7 @@ export const registerEvmChain = (chainId: EvmChainId): void => {
         chains.register(
             chain.descriptor,
             evmCapabilityDefaultsOf(chain.row),
-            chain.row.restrictions,
+            evmCapabilityRestrictionsOf(chain.row),
         )
     }
     if (!addressCodecs.has(chainId)) {

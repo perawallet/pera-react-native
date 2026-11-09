@@ -15,6 +15,7 @@ export * from './pairs'
 export * from './quotes'
 export * from './orders'
 export * from './history'
+export { cursorOf, routerRequest, SWAP_ROUTER_PATH } from './router-request'
 export {
     routerAccountId,
     routerAssetIdOf,

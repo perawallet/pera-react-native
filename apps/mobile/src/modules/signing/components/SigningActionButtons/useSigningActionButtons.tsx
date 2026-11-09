@@ -40,6 +40,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
+import { usePredictedFailureGate } from '../../hooks/usePredictedFailureGate'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 import {
     SecurityGuardContent,
@@ -62,7 +63,7 @@ export type UseSigningActionButtonsResult = {
      */
     cannotSignNotice: Optional<{ title: string; body: string }>
     cosignSignerAddress: string
-    /** A flagged address or site still waits on the user's acknowledgement. */
+    /** A flagged address or site, or a predicted failure, still waits on the user's acknowledgement. */
     isConfirmBlocked: boolean
 }
 
@@ -87,7 +88,12 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         isConfirmBlocked: isAddressConfirmBlocked,
     } = useRequestAddressSafety()
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
-    const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
+    const { isConfirmBlocked: isFailureConfirmBlocked } =
+        usePredictedFailureGate()
+    const isConfirmBlocked =
+        isAddressConfirmBlocked ||
+        isSiteConfirmBlocked ||
+        isFailureConfirmBlocked
 
     // Bumped to remount the slide-to-confirm slider so it resets as needed
     const [slideResetKey, setSlideResetKey] = useState(0)

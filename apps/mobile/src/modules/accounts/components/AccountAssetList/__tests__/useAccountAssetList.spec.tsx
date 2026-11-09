@@ -24,8 +24,10 @@ import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAda
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import {
+    hiddenAssetIdsOf,
     useAccountAssetsQuery,
     useAccountChainStateStore,
+    useHiddenTokensStore,
     useHoldingsRefreshStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -198,8 +200,9 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                 : chainId === 'ethereum'
                   ? { ...NATIVE_ASSET, assetId: 'native' }
                   : undefined,
-        isNativeAssetId: (_chainId: string, assetId: string) =>
-            assetId === NATIVE_ASSET.assetId,
+        isNativeAssetId: (chainId: string, assetId: string) =>
+            assetId ===
+            (chainId === 'ethereum' ? 'native' : NATIVE_ASSET.assetId),
         useAssetPreferencesStore: vi.fn(
             (selector: (state: unknown) => unknown) =>
                 selector({
@@ -251,6 +254,7 @@ describe('useAccountAssetList', () => {
         mockPreferences.displayNfts = true
         mockPreferences.showSuspicious = false
         mockCanSign.current = false
+        useHiddenTokensStore.getState().resetState()
         useHoldingsRefreshStore.getState().resetState()
         useAccountChainStateStore.getState().resetState()
         useAssetListViewStore.setState({
@@ -889,17 +893,175 @@ describe('useAccountAssetList', () => {
             )
 
             expect(
-                result.current.renderItemProps.isSwipeable(makeHolding('123')),
-            ).toBe(true)
-            expect(
-                result.current.renderItemProps.isSwipeable(
-                    makeHolding('0xabc', ETHEREUM_MAINNET),
+                result.current.renderItemProps.swipeActionOf(
+                    makeHolding('123'),
                 ),
-            ).toBe(false)
+            ).toBe('optOut')
             expect(
-                result.current.renderItemProps.isSwipeable(makeHolding('0')),
-            ).toBe(false)
+                result.current.renderItemProps.swipeActionOf(makeHolding('0')),
+            ).toBeNull()
         })
+    })
+
+    describe('hiding tokens', () => {
+        const ethAccount: WalletAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+        const TOKEN = '0xabc'
+
+        const hiddenOnEthereum = () =>
+            hiddenAssetIdsOf(
+                useHiddenTokensStore.getState().hiddenTokens,
+                ETH_ADDRESS,
+                ETHEREUM_MAINNET,
+            )
+
+        it('swipes a token on a chain that receives unasked assets to hide, even on a watch account', () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: ethAccount, t: mockT }),
+            )
+
+            expect(
+                result.current.renderItemProps.swipeActionOf(
+                    makeHolding(TOKEN, ETHEREUM_MAINNET),
+                ),
+            ).toBe('hide')
+        })
+
+        it('offers no hide on a collectible, which the gallery never filters by hidden state', () => {
+            registerEthereum()
+            vi.mocked(isCollectible).mockReturnValue(true)
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: ethAccount, t: mockT }),
+            )
+            const nft = {
+                ...makeHolding(TOKEN, ETHEREUM_MAINNET),
+                decimals: 0,
+                totalSupply: '1',
+                peraMetadataJson: JSON.stringify({
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                }),
+            }
+
+            const action = result.current.renderItemProps.swipeActionOf(nft)
+            vi.mocked(isCollectible).mockReturnValue(false)
+
+            expect(action).toBeNull()
+        })
+
+        it('has nothing to swipe on the native coin', () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: ethAccount, t: mockT }),
+            )
+
+            expect(
+                result.current.renderItemProps.swipeActionOf(
+                    makeHolding('native', ETHEREUM_MAINNET),
+                ),
+            ).toBeNull()
+        })
+
+        it('hides the token for the account and says so', () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: ethAccount, t: mockT }),
+            )
+
+            act(() =>
+                result.current.handleSwipeAction(
+                    makeHolding(TOKEN, ETHEREUM_MAINNET),
+                    'hide',
+                ),
+            )
+
+            expect(hiddenOnEthereum()).toEqual([TOKEN])
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'token_visibility.hidden_toast_title',
+                    type: 'success',
+                }),
+                expect.any(Object),
+            )
+        })
+
+        it('undoes a swipe-hide when its toast is tapped', () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: ethAccount, t: mockT }),
+            )
+            act(() =>
+                result.current.handleSwipeAction(
+                    makeHolding(TOKEN, ETHEREUM_MAINNET),
+                    'hide',
+                ),
+            )
+
+            act(() => mockShowToast.mock.lastCall?.[1].onPress())
+
+            expect(hiddenOnEthereum()).toEqual([])
+        })
+
+        it('always asks the read to leave hidden tokens out, whatever the suspicious switch says', () => {
+            mockPreferences.showSuspicious = true
+
+            renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(
+                vi.mocked(useAccountAssetsQuery).mock.lastCall?.[1]?.filters,
+            ).toEqual(
+                expect.objectContaining({
+                    hideSuspicious: false,
+                    excludeHidden: true,
+                }),
+            )
+        })
+
+        it('opens Manage for an Ethereum-only account, which can hide but not remove', () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: ethAccount, t: mockT }),
+            )
+
+            expect(result.current.canHideTokens).toBe(true)
+            expect(result.current.canManageAssets).toBe(false)
+            expect(result.current.canOpenManage).toBe(true)
+        })
+
+        it('has nothing to manage on an Algorand account once asset management is off', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+            act(() => setCapabilityOverrides({ manageAssets: false }))
+
+            expect(result.current.canHideTokens).toBe(false)
+            expect(result.current.canOpenManage).toBe(false)
+        })
+
+        it.each([
+            ['hide', 'HideTokens'],
+            ['remove', 'RemoveAssets'],
+        ] as const)(
+            'opens the %s screen from the Manage sheet',
+            async (action, screen) => {
+                mockRequestBottomSheet.mockResolvedValueOnce(action)
+                const { result } = renderHook(() =>
+                    useAccountAssetList({ account: mockAccount, t: mockT }),
+                )
+
+                await act(async () => {
+                    result.current.handleOpenManage()
+                })
+
+                expect(mockNavigate).toHaveBeenCalledWith(screen)
+            },
+        )
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
@@ -911,22 +1073,7 @@ describe('useAccountAssetList', () => {
         )
 
         await act(async () => {
-            await result.current.handleOptOut({
-                scope: ALGORAND_MAINNET,
-                assetId: '123',
-                amount: new Decimal(0),
-                decimals: null,
-                chainData: null,
-                totalSupply: null,
-                name: null,
-                unitName: null,
-                url: null,
-                metadata: null,
-                peraMetadataJson: null,
-                isFavorited: false,
-                usdPrice: null,
-                crossChainAssetGroupId: null,
-            })
+            result.current.handleSwipeAction(makeHolding('123'), 'optOut')
         })
 
         expect(mockShowError).not.toHaveBeenCalled()
@@ -942,22 +1089,7 @@ describe('useAccountAssetList', () => {
         )
 
         await act(async () => {
-            await result.current.handleOptOut({
-                scope: ALGORAND_MAINNET,
-                assetId: '123',
-                amount: new Decimal(0),
-                decimals: null,
-                chainData: null,
-                totalSupply: null,
-                name: null,
-                unitName: null,
-                url: null,
-                metadata: null,
-                peraMetadataJson: null,
-                isFavorited: false,
-                usdPrice: null,
-                crossChainAssetGroupId: null,
-            })
+            result.current.handleSwipeAction(makeHolding('123'), 'optOut')
         })
 
         expect(mockShowError).toHaveBeenCalledWith(
@@ -1100,7 +1232,7 @@ describe('useAccountAssetList', () => {
         })
     })
 
-    describe('network labels while searching', () => {
+    describe('network badges on the icons', () => {
         const renderTwoChains = () => {
             registerEthereum()
             return renderHook(() =>
@@ -1108,37 +1240,22 @@ describe('useAccountAssetList', () => {
             )
         }
 
-        it('shows none while nothing is searched', () => {
+        it('shows them on All for an account on two chains, search or not', () => {
             const { result } = renderTwoChains()
 
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
-        })
-
-        it('shows them on All once a search is typed', () => {
-            const { result } = renderTwoChains()
-
-            act(() => result.current.setSearchFilter('eth'))
-
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(true)
-        })
-
-        it('shows none for a whitespace-only search', () => {
-            const { result } = renderTwoChains()
-
-            act(() => result.current.setSearchFilter('   '))
-
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+            expect(result.current.renderItemProps.shouldShowChainBadge).toBe(
+                true,
+            )
         })
 
         it('shows none once a single network is selected', () => {
             const { result } = renderTwoChains()
 
-            act(() => {
-                result.current.setSelectedChainId('ethereum')
-                result.current.setSearchFilter('eth')
-            })
+            act(() => result.current.setSelectedChainId('ethereum'))
 
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+            expect(result.current.renderItemProps.shouldShowChainBadge).toBe(
+                false,
+            )
         })
 
         it('shows none for an account on one chain', () => {
@@ -1147,9 +1264,9 @@ describe('useAccountAssetList', () => {
                 useAccountAssetList({ account: mockAccount, t: mockT }),
             )
 
-            act(() => result.current.setSearchFilter('eth'))
-
-            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+            expect(result.current.renderItemProps.shouldShowChainBadge).toBe(
+                false,
+            )
         })
     })
 })

@@ -14,6 +14,8 @@ import { Decimal } from 'decimal.js'
 import { z } from 'zod'
 import {
     getAccountHoldings,
+    hiddenAssetIdsOf,
+    useHiddenTokensStore,
     type AccountsChainAdapter,
     type HoldingBalanceHistoryPoint,
     type PortfolioHistoryPoint,
@@ -178,6 +180,8 @@ export const fetchGridBalances = async (
     period: HistoryPeriod,
     signal?: AbortSignal,
     limit: ConcurrencyLimit = gatedChartRequest,
+    /** Drops one address's balance of a token (lowercase address and CAIP-19 id) from the sums. */
+    isExcluded?: (address: string, caip19: string) => boolean,
 ): Promise<Nullable<GridPoint[]>> => {
     const { points } = GRIDS[period]
     const calls = partition(
@@ -213,10 +217,11 @@ export const fetchGridBalances = async (
                 merged.set(timestamp, null)
                 continue
             }
-            for (const byAsset of Object.values(balances)) {
+            for (const [address, byAsset] of Object.entries(balances)) {
                 for (const [id, amount] of Object.entries(byAsset)) {
                     if (amount === null) continue
                     const key = id.toLowerCase()
+                    if (isExcluded?.(address.toLowerCase(), key)) continue
                     into.set(
                         key,
                         (into.get(key) ?? new Decimal(0)).plus(amount),
@@ -321,7 +326,11 @@ export const createEthereumBalanceHistoryOps = (
     // The backend never answers "now": the stored holdings the account screen
     // shows make that point, valued at the spot price ending a range that
     // reaches today.
-    const readHoldings = async (scope: ChainScope, addresses: string[]) =>
+    const readHoldings = async (
+        scope: ChainScope,
+        addresses: string[],
+        { isCounted }: { isCounted: boolean },
+    ) =>
         (
             await Promise.all(
                 addresses.map(accountAddress =>
@@ -329,14 +338,35 @@ export const createEthereumBalanceHistoryOps = (
                         accountAddress,
                         scope,
                         hideZeroBalance: true,
-                        // The total leaves suspicious tokens out, so the chart does too.
-                        hideSuspicious: true,
+                        // The total leaves suspicious and hidden tokens out, so
+                        // the portfolio does too; one token's own history is
+                        // read by someone looking at that token.
+                        hideSuspicious: isCounted,
+                        excludeHidden: isCounted,
                     }),
                 ),
             )
         )
             .flat()
             .filter(({ assetId }) => !isEvmNftAssetId(assetId))
+
+    // The grid answers per address, so a token one account hid is dropped from
+    // that account's balance and still counts for another that holds it.
+    const hiddenIn = (scope: ChainScope, addresses: string[]) => {
+        const { hiddenTokens } = useHiddenTokensStore.getState()
+        const byAddress = new Map(
+            addresses.map(address => [
+                address.toLowerCase(),
+                new Set(
+                    hiddenAssetIdsOf(hiddenTokens, address, scope).map(id =>
+                        caip19Of(scope, id),
+                    ),
+                ),
+            ]),
+        )
+        return (address: string, caip19: string) =>
+            byAddress.get(address)?.has(caip19) ?? false
+    }
 
     const sumBalances = (
         scope: ChainScope,
@@ -447,7 +477,7 @@ export const createEthereumBalanceHistoryOps = (
             if (addresses.length === 0) return []
             const [listed, holdings] = await Promise.all([
                 listedTokens(scope),
-                readHoldings(scope, addresses),
+                readHoldings(scope, addresses, { isCounted: true }),
             ])
             const nativeCaip19 = caip19Of(scope, chain.nativeAsset.assetId)
             const assetIdByCaip19 = new Map<string, string>([
@@ -467,6 +497,8 @@ export const createEthereumBalanceHistoryOps = (
                 [...assetIdByCaip19.keys()],
                 period,
                 signal,
+                gatedChartRequest,
+                hiddenIn(scope, addresses),
             )
             if (grid === null) return null
             if (grid.length === 0) return []
@@ -511,7 +543,7 @@ export const createEthereumBalanceHistoryOps = (
                     signal,
                     ungatedChartRequest,
                 ),
-                readHoldings(scope, [address]),
+                readHoldings(scope, [address], { isCounted: false }),
             ])
             const current = sumBalances(scope, holdings)
             if (!grid?.length) return []

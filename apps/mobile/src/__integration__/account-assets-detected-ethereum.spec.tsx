@@ -60,7 +60,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-const TSLAX = '0x8aD3c73F833d3F9A523aB01476625F269aEb7Cf0'
+const TSLAX = '0x8aD3c73F833d3F9A523aB01476625F269aEB7Cf0'
 const UNKNOWN = '0x2222222222222222222222222222222222222222'
 const SPAM = '0x3333333333333333333333333333333333333333'
 
@@ -174,22 +174,27 @@ describe('Flow: tokens an Ethereum account received', () => {
         useAssetPreferencesStore.getState().resetState()
     })
 
-    it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name and fiat value and no unverified label', async () => {
+    it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name, network and fiat value and no contract address or unverified label', async () => {
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${TSLAX}`)
 
         expect(row.textContent).toContain('Tesla xStock')
+        expect(row.textContent).toContain('TESLA · Ethereum')
+        expect(row.textContent).toContain('TESLA0.00551')
         expect(row.textContent).toContain('1.97')
+        expect(row.textContent).not.toContain('0x8aD3')
         expect(row.textContent).not.toContain('asset.unverified_label')
     })
 
-    it('Given a token Pera has not vetted, when the list renders, then it is listed with the unverified label and no fiat value', async () => {
+    it('Given a token Pera has not vetted, when the list renders, then it is listed with the unverified label, its contract address, its symbol on the amount and no fiat value', async () => {
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${UNKNOWN}`)
 
         expect(row.textContent).toContain('asset.unverified_label')
+        expect(row.textContent).toContain('MYSTE · 0x2222')
+        expect(row.textContent).toContain('MYSTE1.00')
         expect(row.textContent).toContain('---')
     })
 

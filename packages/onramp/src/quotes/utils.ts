@@ -28,24 +28,6 @@ export const parseRampAmount = (value: string): Nullable<Decimal> =>
     PLAIN_DECIMAL_PATTERN.test(value) ? new Decimal(value) : null
 
 /**
- * Destination (receive) amount for a quote, in display units. Meld carries it
- * directly on the quote; XO returns a fixed rate, so it is computed as
- * `sourceAmount * rate - minerFee` (ported from the web `useSwapForm.ts`).
- * `sourceAmount` is in display units; null (nothing valid entered) computes as 0.
- */
-export const quoteDestinationAmount = (
-    quote: RampQuote,
-    sourceAmount: Nullable<Decimal>,
-): Decimal => {
-    if (quote.kind === 'meld') {
-        return quote.destinationAmount
-    }
-    return (sourceAmount ?? new Decimal(0))
-        .mul(quote.amount.value)
-        .minus(quote.minerFee.value)
-}
-
-/**
  * Quotes offering a given payment method. Meld returns one quote per
  * (provider × payment method) pair, so a provider list that is not narrowed to
  * a single method repeats every provider once per method it supports.
@@ -58,42 +40,36 @@ export const filterQuotesByPaymentMethod = (
         ? quotes
         : quotes.filter(quote => quote.paymentMethod.id === paymentMethodId)
 
-/**
- * Fiat value of what a quote pays out, in USD. `priceInUsd` is the destination
- * token's price carried on the pair; null when that token has no known price,
- * in which case there is no value to show.
- */
-export const quoteDestinationValueInUsd = (
-    quote: RampQuote,
-    sourceAmount: Nullable<Decimal>,
-    priceInUsd: Nullable<Decimal>,
-): Nullable<Decimal> =>
-    priceInUsd === null
-        ? null
-        : quoteDestinationAmount(quote, sourceAmount).mul(priceInUsd)
-
 /** Quotes sorted by destination amount, highest (best offer) first. */
-export const sortQuotesByDestinationDesc = (
-    quotes: RampQuote[],
-    sourceAmount: Nullable<Decimal>,
-): RampQuote[] =>
+export const sortQuotesByDestinationDesc = (quotes: RampQuote[]): RampQuote[] =>
     [...quotes].sort((a, b) =>
-        quoteDestinationAmount(b, sourceAmount).comparedTo(
-            quoteDestinationAmount(a, sourceAmount),
-        ),
+        b.destinationAmount.comparedTo(a.destinationAmount),
     )
 
 /** The quote with the highest destination amount (the "best offer"). */
-export const pickBestQuote = (
-    quotes: RampQuote[],
-    sourceAmount: Nullable<Decimal>,
-): Nullable<RampQuote> => {
+export const pickBestQuote = (quotes: RampQuote[]): Nullable<RampQuote> => {
     if (quotes.length === 0) return null
     return quotes.reduce((best, candidate) =>
-        quoteDestinationAmount(candidate, sourceAmount).greaterThan(
-            quoteDestinationAmount(best, sourceAmount),
-        )
+        candidate.destinationAmount.greaterThan(best.destinationAmount)
             ? candidate
             : best,
     )
 }
+
+const pricePerUnit = (
+    value: Nullable<Decimal>,
+    amount: Decimal,
+): Nullable<Decimal> =>
+    value === null || amount.isZero() ? null : value.div(amount)
+
+/** USD per display unit of each side, from the quote's own USD values; null when a value is missing or its amount is zero. */
+export const quoteUsdPrices = (
+    quote: Nullable<RampQuote>,
+): { source: Nullable<Decimal>; destination: Nullable<Decimal> } => ({
+    source: quote
+        ? pricePerUnit(quote.sourceValueInUsd, quote.sourceAmount)
+        : null,
+    destination: quote
+        ? pricePerUnit(quote.destinationValueInUsd, quote.destinationAmount)
+        : null,
+})
