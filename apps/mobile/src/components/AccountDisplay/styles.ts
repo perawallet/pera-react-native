@@ -66,9 +66,9 @@ export const useStyles = makeStyles(
                 // to make the rounded corners actually show.
                 overflow: 'hidden',
             },
-            // Badge (a chain icon, or the backup-required warning) pinned to the icon's bottom-right corner.
-            // The disc's background shows through the glyph's inset stroke as
-            // the ring that separates it from the account icon underneath.
+            // Corner wrapper pinned to the icon's bottom-right. A caller's badge gets
+            // its ring from AvatarBadge; the backup-required warning gets it from
+            // the disc background showing through the glyph's inset stroke.
             avatarBadge: {
                 position: 'absolute',
                 bottom: -theme.spacing.xxs,

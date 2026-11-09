@@ -607,6 +607,7 @@
             "title": "Usar esta passphrase em outras wallets",
             "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como MetaMask, Uniswap ou Rabby, podem importar estas palavras, e o endereço da sua primeira conta será o mesmo. Depois da importação, talvez você veja apenas esse primeiro endereço. Algumas wallets mostram seus outros endereços assim que eles são usados; em outras, você precisará adicioná-los manualmente. Eles aparecem na ordem em que você os criou na Pera.",
             "algorand": "Algorand: funciona na Pera e em outras wallets compatíveis com wallets HD de Algorand de 24 palavras. Wallets de Algorand antigas, de 25 palavras, não conseguem importá-la.",
+            "algorand_twelve_word": "Algorand: funciona na Pera. Outras wallets de Algorand podem aceitar apenas passphrases de 24 palavras, então confirme que uma wallet aceita 12 palavras antes de depender dela. Wallets de Algorand antigas, de 25 palavras, não conseguem importá-la.",
             "warning": "Qualquer pessoa que tenha estas palavras controla seus fundos em todas as redes. Nunca as digite em um site nem as compartilhe com ninguém."
         }
     },
@@ -3132,7 +3133,8 @@
             "max_fee_for_preset": "Taxa máxima ({{preset}})",
             "max_fee_info": "O máximo que você vai pagar se as taxas da rede subirem. Normalmente você paga menos.",
             "wait_seconds": "~{{seconds}} s",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Mostra as opções de taxa"
         },
         "confirmation": {
             "add_to_contacts": "+ Adicionar aos contatos",
@@ -4038,10 +4040,14 @@
             "swap_to_title": "Converter para",
             "search_placeholder": "Buscar por nome ou ID",
             "search_placeholder_evm": "Buscar por nome, símbolo ou endereço do contrato",
-            "search_placeholder_all": "Buscar por nome, símbolo, ID do ativo ou endereço",
+            "search_placeholder_all": "Buscar por nome, símbolo, ID ou endereço do contrato",
             "no_results_title": "Nenhum ativo encontrado",
             "no_results_body": "Nenhum ativo corresponde à sua busca",
-            "no_chain_results_body": "Nenhum ativo disponível nesta rede"
+            "no_chain_results_body": "Nenhum ativo disponível nesta rede",
+            "cross_network_empty_title": "Não é possível converter {{asset}} para {{network}}",
+            "cross_network_empty_body": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, pague com um ativo em {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, troque para uma conta em {{network}} e pague com um dos ativos dela.",
+            "cross_network_empty_action": "Converter em {{network}}"
         },
         "configuration": {
             "title": "Configurações de conversão",

@@ -12,20 +12,24 @@
 
 import {
     i18nKey,
-    isEvmChainId,
     type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import { chainUiFor } from '@modules/chain-ui'
 
-// "Asset ID" is Algorand's word; an EVM token is found by its contract.
-export const swapSearchPlaceholderKey = (
+/** The family's own copy when every chain shown agrees on it, else copy that names every ID format. */
+export const swapAssetSearchPlaceholderKey = (
     chainIds: readonly ChainId[],
 ): I18nKey => {
-    const evmCount = chainIds.filter(isEvmChainId).length
-    if (evmCount === 0)
-        return i18nKey('swap.asset_selection.search_placeholder')
-    if (evmCount === chainIds.length) {
-        return i18nKey('swap.asset_selection.search_placeholder_evm')
-    }
-    return i18nKey('swap.asset_selection.search_placeholder_all')
+    const mixedKey = i18nKey('swap.asset_selection.search_placeholder_all')
+    const keys = new Set(
+        chainIds.map(
+            chainId =>
+                chainUiFor(getChainDescriptor(chainId).family)
+                    .swapAssetSearchPlaceholder ?? mixedKey,
+        ),
+    )
+    const [only] = keys
+    return keys.size === 1 && only ? only : mixedKey
 }

@@ -607,6 +607,7 @@
             "title": "Passphrase in anderen Wallets verwenden",
             "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask, Uniswap oder Rabby können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Nach dem Import siehst du eventuell nur diese erste Adresse. Manche Wallets zeigen deine weiteren Adressen an, sobald sie verwendet wurden; in anderen musst du sie manuell hinzufügen. Sie erscheinen in der Reihenfolge, in der du sie in Pera erstellt hast.",
             "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
+            "algorand_twelve_word": "Algorand: funktioniert in Pera. Andere Algorand-Wallets akzeptieren möglicherweise nur Passphrasen mit 24 Wörtern. Prüfe daher, ob ein Wallet 12 Wörter unterstützt, bevor du dich darauf verlässt. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
             "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
     },
@@ -3108,7 +3109,8 @@
             "max_fee_for_preset": "Maximale Gebühr ({{preset}})",
             "max_fee_info": "Das Maximum, das du zahlst, falls die Netzwerkgebühren steigen. Meist zahlst du weniger.",
             "wait_seconds": "~{{seconds}} Sek.",
-            "wait_minutes": "~{{minutes}} Min."
+            "wait_minutes": "~{{minutes}} Min.",
+            "show_options": "Zeigt die Gebührenoptionen an"
         },
         "confirmation": {
             "add_to_contacts": "+ Zu Kontakten hinzufügen",
@@ -4007,11 +4009,15 @@
             "swap_from_title": "Tauschen von",
             "swap_to_title": "Tauschen zu",
             "search_placeholder": "Nach Name oder ID suchen",
-            "search_placeholder_evm": "Nach Name, Symbol oder Vertragsadresse suchen",
-            "search_placeholder_all": "Nach Name, Symbol, Asset-ID oder Adresse suchen",
+            "search_placeholder_evm": "Nach Name, Symbol oder Contract-Adresse suchen",
+            "search_placeholder_all": "Nach Name, Symbol, ID oder Contract-Adresse suchen",
             "no_results_title": "Keine passenden Assets",
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
-            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar"
+            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar",
+            "cross_network_empty_title": "Tausch von {{asset}} zu {{network}} nicht möglich",
+            "cross_network_empty_body": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, zahle stattdessen mit einem Asset auf {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, wechsle zu einem Konto auf {{network}} und zahle mit einem seiner Assets.",
+            "cross_network_empty_action": "Auf {{network}} tauschen"
         },
         "configuration": {
             "title": "Tauscheinstellungen",

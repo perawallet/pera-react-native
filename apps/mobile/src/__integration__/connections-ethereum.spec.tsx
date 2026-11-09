@@ -26,7 +26,7 @@ import {
     vi,
     type Mock,
 } from 'vitest'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 import { Address, Transaction, TransactionType } from 'algosdk'
@@ -387,7 +387,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             expectFlowEvents(analytics, 'walletConnectApprove', 'ethereum')
         })
 
-        it('Given an eip155 proposal, when the sheet opens, then it names the network, shows the account by its 0x address and lists the permissions in plain terms', async () => {
+        it("Given an eip155 proposal, when the sheet opens, then it names the network, shows the account by its 0x address and lists the permissions in plain terms, and badges the account's avatar with the Ethereum logo", async () => {
             await mountProvider()
             await propose({
                 requiredNamespaces: {
@@ -400,6 +400,16 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             })
 
             await selectRows(ETHEREUM_ACCOUNT)
+
+            const row = screen.getByTestId(
+                `wc_account_row_${ETHEREUM_ACCOUNT.id}`,
+            )
+            const avatarBadge = within(
+                within(row).getByTestId('account_avatar_badge'),
+            ).getByTestId('avatar_badge')
+            expect(
+                within(avatarBadge).getByTestId('chain_icon_ethereum'),
+            ).toBeTruthy()
 
             expect(
                 screen.getByText('walletconnect.request.title_network'),

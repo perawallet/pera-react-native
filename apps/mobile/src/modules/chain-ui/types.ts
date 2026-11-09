@@ -42,8 +42,14 @@ export type ChainUi = {
     wrongNetworkAddress?: WrongNetworkAddressCopy
     /** How the family's wallets import a recovery passphrase; unset, the other-wallets explainer skips the family. */
     passphraseCompatibilityKey?: I18nKey
+    /** Replaces `passphraseCompatibilityKey` for a phrase of that many words. */
+    passphraseCompatibilityKeyByWordCount?: Readonly<
+        Partial<Record<number, I18nKey>>
+    >
     /** Unset, the address search uses neutral copy that names no address format. */
     addressSearchPlaceholder?: I18nKey
+    /** Unset, the swap asset search uses copy that names every ID format. */
+    swapAssetSearchPlaceholder?: I18nKey
 }
 
 /** The slots whose every reader holds a chain id, so one chain may replace its family's. */

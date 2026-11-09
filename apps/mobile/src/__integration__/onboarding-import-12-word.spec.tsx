@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import {
@@ -22,9 +22,20 @@ import {
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
+import {
+    deleteBackupKeys,
+    deriveBackupKeys,
+    useBackupSyncStateStore,
+    useCloudBackupStore,
+    useCloudBackupRestoreDraftStore,
+} from '@perawallet/wallet-core-backup'
+import { buildSyncHandlers } from '@perawallet/wallet-core-backup/test-handlers'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
+import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { isElementDisabled } from '@test-utils/rnw'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
@@ -46,6 +57,21 @@ import {
     INVALID_HD_MNEMONIC_12_WORDS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
+import {
+    BACKUP_MNEMONIC,
+    BACKUP_SALT,
+    DEVICE_ID,
+    configureBackup,
+    renderCloudBackupFlow,
+    runRestoreFlow,
+    startRealSyncManager,
+    wipeDevice,
+} from './__fixtures__/cloudBackup'
+import {
+    ViewPassphraseHost,
+    advanceToDisplayedWords,
+    readMnemonicWordsFromGrid,
+} from './__fixtures__/viewPassphrase'
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -327,5 +353,99 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    it('Given a 12-word seed imported on Algorand and Ethereum, when the user views it, backs up to cloud and restores on a wiped device, then the same 12 words and the same Algorand and Ethereum accounts come back', async () => {
+        useCloudBackupStore.getState().resetState()
+        useBackupSyncStateStore.getState().resetState()
+        useCloudBackupRestoreDraftStore.getState().resetState()
+        useDeviceStore
+            .getState()
+            .setDeviceID(useNetworkStore.getState().mode, DEVICE_ID)
+        await deleteBackupKeys().catch(() => undefined)
+        server.use(
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            ...evmRpcHandlers({
+                rpcUrl: ETHEREUM_RPC_URL,
+                responses: {
+                    eth_getTransactionCount: params =>
+                        [
+                            HD_12_ETHEREUM_ADDRESS_0,
+                            HD_12_ETHEREUM_ADDRESS_1,
+                        ].some(
+                            address =>
+                                address.toLowerCase() ===
+                                String(params[0]).toLowerCase(),
+                        )
+                            ? '0x2'
+                            : '0x0',
+                },
+            }),
+        )
+        await enterTwelveWordSeed(HD_TEST_MNEMONIC_12_WORDS)
+        fireEvent.click(screen.getByTestId('import_account_import_button'))
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_continue_button',
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_continue_button'),
+        )
+        await waitFor(
+            () => expect(useAccountsStore.getState().accounts).toHaveLength(2),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        const addressesByKeyIndex = () =>
+            useAccountsStore
+                .getState()
+                .accounts.toSorted(
+                    (a, b) => hdIndexOf(a)!.keyIndex - hdIndexOf(b)!.keyIndex,
+                )
+                .map(account => ({
+                    algorand: chainAccountOf(account, 'algorand')?.address,
+                    ethereum: chainAccountOf(account, 'ethereum')?.address,
+                }))
+        const imported = addressesByKeyIndex()
+        expect(imported[1].ethereum).toBe(HD_12_ETHEREUM_ADDRESS_1)
+        cleanup()
+
+        render(<ViewPassphraseHost address={imported[1].algorand!} />)
+        await advanceToDisplayedWords()
+        expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_12_WORDS)
+        cleanup()
+
+        const keys = await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+        await configureBackup(keys)
+        const { handlers } = buildSyncHandlers({ backupId: keys.backupId })
+        server.use(...handlers)
+        await startRealSyncManager().syncNow()
+
+        await wipeDevice()
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        renderCloudBackupFlow()
+        await runRestoreFlow()
+
+        await waitFor(
+            () => expect(useAccountsStore.getState().accounts).toHaveLength(2),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(addressesByKeyIndex()).toEqual(imported)
+        cleanup()
+
+        render(<ViewPassphraseHost address={imported[1].algorand!} />)
+        await advanceToDisplayedWords()
+        expect(readMnemonicWordsFromGrid()).toEqual(HD_TEST_MNEMONIC_12_WORDS)
     })
 })

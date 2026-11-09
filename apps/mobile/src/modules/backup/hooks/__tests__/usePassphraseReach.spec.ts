@@ -76,6 +76,10 @@ vi.mock('@modules/chain-ui', () => ({
     chainUiFor: (family: string) => ({
         passphraseCompatibilityKey:
             family === 'unknown' ? undefined : `compatibility.${family}`,
+        passphraseCompatibilityKeyByWordCount:
+            family === 'algorand'
+                ? { 12: 'compatibility.algorand_twelve_word' }
+                : undefined,
     }),
 }))
 
@@ -162,6 +166,24 @@ describe('usePassphraseReach', () => {
             ],
             compatibilityKeys: ['compatibility.algorand', 'compatibility.evm'],
         })
+    })
+
+    it("uses a family's paragraph for the phrase length where it has one, and its default otherwise", () => {
+        const twelve = renderHook(() =>
+            usePassphraseReach({ address: 'ALGO-ROOT', wordCount: 12 }),
+        )
+        const twentyFour = renderHook(() =>
+            usePassphraseReach({ address: 'ALGO-ROOT', wordCount: 24 }),
+        )
+
+        expect(twelve.result.current.compatibilityKeys).toEqual([
+            'compatibility.algorand_twelve_word',
+            'compatibility.evm',
+        ])
+        expect(twentyFour.result.current.compatibilityKeys).toEqual([
+            'compatibility.algorand',
+            'compatibility.evm',
+        ])
     })
 
     it('is multi-network for an HD account enabled on Algorand alone, listing only that address', () => {

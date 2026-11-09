@@ -153,6 +153,35 @@ describe('useAccountAssetSelectionList', () => {
         expect(result.current.filteredBalanceData[0].assetId).toBe('887406851')
     })
 
+    it('finds a checksummed contract address from a lowercased search', () => {
+        const checksummed = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map([
+                [
+                    'TEST_ADDRESS',
+                    {
+                        assetBalances: [
+                            ...mockAssetBalances,
+                            {
+                                assetId: checksummed,
+                                amount: '1',
+                                asset: { assetId: checksummed, name: 'Token' },
+                            },
+                        ],
+                    },
+                ],
+            ]),
+        })
+        const { result } = renderHook(() => useAccountAssetSelectionList({}))
+
+        act(() => {
+            result.current.setSearchFilter(checksummed)
+        })
+
+        expect(result.current.filteredBalanceData).toHaveLength(1)
+        expect(result.current.filteredBalanceData[0].assetId).toBe(checksummed)
+    })
+
     it('returns empty array when no account selected', () => {
         mockUseSelectedAccount.mockReturnValue(null)
         mockUseAccountBalancesQuery.mockReturnValue({
@@ -249,30 +278,6 @@ describe('useAccountAssetSelectionList', () => {
             act(() => result.current.setSearchFilter('native'))
 
             expect(result.current.filteredBalanceData).toHaveLength(2)
-        })
-
-        it('finds a token by a pasted contract address whatever its case', () => {
-            const usdc = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
-            mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue({
-                assetBalances: [
-                    held(ETH_SCOPE, 'native'),
-                    {
-                        ...held(ETH_SCOPE, usdc),
-                        asset: { name: 'USD Coin', unitName: 'USDC' },
-                    },
-                ],
-                isPending: false,
-                isError: false,
-            })
-            const { result } = renderHook(() =>
-                useAccountAssetSelectionList({ chainIds: ['ethereum'] }),
-            )
-
-            act(() => result.current.setSearchFilter(usdc))
-
-            expect(
-                result.current.filteredBalanceData.map(item => item.assetId),
-            ).toEqual([usdc])
         })
 
         it('reports a failed read across chains', () => {

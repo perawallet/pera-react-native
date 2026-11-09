@@ -40,7 +40,7 @@ export const ViewPassphraseContent = ({
         address,
     })
     const { isMultiNetwork, linkedAddresses, compatibilityKeys } =
-        usePassphraseReach({ address })
+        usePassphraseReach({ address, wordCount: wordIndices?.length })
     const hasWords = !isLoading && !error && (wordIndices?.length ?? 0) > 0
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)

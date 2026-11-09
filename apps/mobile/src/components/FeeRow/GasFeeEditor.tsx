@@ -15,13 +15,20 @@ import {
     type FeePreset,
     type FeePresetEstimate,
 } from '@perawallet/wallet-core-chain-contract'
-import { PWRadioButton, PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWRadioButton,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { FeeAmount } from './FeeAmount'
 import { FEE_PRESET_LABELS } from './feePresetLabels'
 import { describeFeeWait } from './feeWait'
 import { FEE_ROW_TEST_ID, type FeeRowProps } from './types'
+import { useGasFeeEditor } from './useGasFeeEditor'
 import { useStyles } from './styles'
 
 type GasFeeEditorProps = Pick<
@@ -40,49 +47,88 @@ export const GasFeeEditor = ({
 }: GasFeeEditorProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { isExpanded, toggleExpanded, selectPreset } = useGasFeeEditor({
+        onPresetChange,
+    })
 
     return (
         <PWView
             testID={FEE_ROW_TEST_ID}
             style={styles.section}
         >
-            <PWText
-                variant='bodyCompact'
-                style={styles.secondaryText}
+            <PWTouchableOpacity
+                testID='fee_preset_toggle'
+                accessibilityRole='button'
+                // react-native-web 0.21 drops accessibilityState; aria-* reaches both.
+                aria-expanded={isExpanded}
+                accessibilityHint={t('send_funds.fee.show_options')}
+                style={styles.maxFeeRow}
+                onPress={toggleExpanded}
             >
-                {t('send_funds.confirmation.fee')}
-            </PWText>
-            {FEE_PRESETS.map(preset => {
-                const wait = describeFeeWait(
-                    presets[preset].estimatedWaitSeconds,
-                )
-                return (
-                    <PWRadioButton
-                        key={preset}
-                        testID={`fee_preset_${preset}`}
-                        isSelected={preset === selectedPreset}
-                        onPress={() => onPresetChange(preset)}
+                <PWView style={styles.maxFeeLabel}>
+                    <PWText
+                        variant='bodyCompact'
+                        style={styles.secondaryText}
                     >
-                        <PWView style={styles.presetRow}>
-                            <PWView style={styles.presetLabel}>
-                                <PWText>{t(FEE_PRESET_LABELS[preset])}</PWText>
-                                <PWText
-                                    variant='caption'
-                                    style={styles.secondaryText}
-                                    testID={`fee_preset_${preset}_wait`}
-                                >
-                                    {t(wait.key, wait.params)}
-                                </PWText>
+                        {t('send_funds.confirmation.fee')}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.secondaryText}
+                        testID='fee_preset_selected_label'
+                    >
+                        {t(FEE_PRESET_LABELS[selectedPreset])}
+                    </PWText>
+                    <PWView
+                        style={isExpanded ? styles.chevronExpanded : undefined}
+                    >
+                        <PWIcon
+                            name='chevron-down'
+                            size='sm'
+                            variant='secondary'
+                        />
+                    </PWView>
+                </PWView>
+                <FeeAmount
+                    scope={scope}
+                    amount={presets[selectedPreset].amount}
+                    testID='fee_preset_selected_amount'
+                />
+            </PWTouchableOpacity>
+            {isExpanded &&
+                FEE_PRESETS.map(preset => {
+                    const wait = describeFeeWait(
+                        presets[preset].estimatedWaitSeconds,
+                    )
+                    return (
+                        <PWRadioButton
+                            key={preset}
+                            testID={`fee_preset_${preset}`}
+                            isSelected={preset === selectedPreset}
+                            onPress={() => selectPreset(preset)}
+                        >
+                            <PWView style={styles.presetRow}>
+                                <PWView style={styles.presetLabel}>
+                                    <PWText>
+                                        {t(FEE_PRESET_LABELS[preset])}
+                                    </PWText>
+                                    <PWText
+                                        variant='caption'
+                                        style={styles.secondaryText}
+                                        testID={`fee_preset_${preset}_wait`}
+                                    >
+                                        {t(wait.key, wait.params)}
+                                    </PWText>
+                                </PWView>
+                                <FeeAmount
+                                    scope={scope}
+                                    amount={presets[preset].amount}
+                                    testID={`fee_preset_${preset}_amount`}
+                                />
                             </PWView>
-                            <FeeAmount
-                                scope={scope}
-                                amount={presets[preset].amount}
-                                testID={`fee_preset_${preset}_amount`}
-                            />
-                        </PWView>
-                    </PWRadioButton>
-                )
-            })}
+                        </PWRadioButton>
+                    )
+                })}
             <PWView style={styles.maxFeeRow}>
                 <PWView style={styles.maxFeeLabel}>
                     <PWText

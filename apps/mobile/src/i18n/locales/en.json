@@ -607,6 +607,7 @@
             "title": "Using this passphrase in other wallets",
             "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask, Uniswap or Rabby can import these words, and your first account's address will match. After importing, you may only see that first address. Some wallets show your other addresses once they've been used; in others, you'll need to add them manually. They appear in the order you created them in Pera.",
             "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
+            "algorand_twelve_word": "Algorand: works in Pera. Other Algorand wallets may only accept 24-word passphrases, so check that a wallet supports 12 words before relying on it there. Legacy 25-word Algorand wallets can't import it.",
             "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
     },
@@ -3116,7 +3117,8 @@
             "max_fee_for_preset": "Max fee ({{preset}})",
             "max_fee_info": "The most you'll pay if network fees rise. You're usually charged less.",
             "wait_seconds": "~{{seconds}} sec",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Shows the fee options"
         },
         "confirmation": {
             "add_to_contacts": "+ Add to Contacts",
@@ -4016,10 +4018,14 @@
             "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
             "search_placeholder_evm": "Search by name, symbol or contract address",
-            "search_placeholder_all": "Search by name, symbol, asset ID or address",
+            "search_placeholder_all": "Search by name, symbol, ID or contract address",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term",
-            "no_chain_results_body": "No assets available on this network"
+            "no_chain_results_body": "No assets available on this network",
+            "cross_network_empty_title": "Can't swap {{asset}} to {{network}}",
+            "cross_network_empty_body": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, pay with an asset on {{network}} instead.",
+            "cross_network_empty_body_other_account": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, switch to an account on {{network}} and pay with one of its assets.",
+            "cross_network_empty_action": "Swap on {{network}}"
         },
         "configuration": {
             "title": "Swap settings",

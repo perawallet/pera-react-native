@@ -12,25 +12,24 @@
 
 import { useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useSwapChainFilter,
     type UseSwapChainFilterResult,
 } from '../../hooks/useSwapChainFilter'
 import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
-import { swapSearchPlaceholderKey } from '../../utils/swapSearchPlaceholderKey'
+import { swapAssetSearchPlaceholderKey } from '../../utils/swapAssetSearchPlaceholderKey'
 
 export type UseSwapFromAssetSelectionListResult = UseSwapChainFilterResult & {
     isChainShown: boolean
-    searchPlaceholderKey: I18nKey
+    searchPlaceholder: string
 }
 
 export const useSwapFromAssetSelectionList = (
     scope: ChainScope,
 ): UseSwapFromAssetSelectionListResult => {
+    const { t } = useLanguage()
     const sourceChainIds = useSwapSourceChains(useSelectedAccount())
     const chainIds = useMemo(
         () =>
@@ -45,6 +44,8 @@ export const useSwapFromAssetSelectionList = (
         ...filter,
         isChainShown:
             filter.selectedChainId === null && filter.chainOptions.length > 0,
-        searchPlaceholderKey: swapSearchPlaceholderKey(filter.visibleChainIds),
+        searchPlaceholder: t(
+            swapAssetSearchPlaceholderKey(filter.visibleChainIds),
+        ),
     }
 }

@@ -20,6 +20,22 @@ vi.mock('../../../hooks/useSwapSourceChains', () => ({
     useSwapSourceChains: () => mockSourceChainIds,
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    getChainDescriptor: (chainId: string) => ({
+        family: chainId === 'algorand' ? 'algorand' : 'evm',
+    }),
+}))
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: (family: string) => ({
+        swapAssetSearchPlaceholder:
+            family === 'algorand' ? 'placeholder.algorand' : 'placeholder.evm',
+    }),
+}))
+
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('useSwapFromAssetSelectionList', () => {
@@ -48,21 +64,6 @@ describe('useSwapFromAssetSelectionList', () => {
         expect(result.current.isChainShown).toBe(false)
     })
 
-    it('names the contract address once the search narrows to an EVM chain', () => {
-        const { result } = renderHook(() =>
-            useSwapFromAssetSelectionList(SCOPE),
-        )
-        expect(result.current.searchPlaceholderKey).toBe(
-            'swap.asset_selection.search_placeholder_all',
-        )
-
-        act(() => result.current.handleSelectChain('ethereum'))
-
-        expect(result.current.searchPlaceholderKey).toBe(
-            'swap.asset_selection.search_placeholder_evm',
-        )
-    })
-
     it('has no chips for an account on one chain', () => {
         mockSourceChainIds = ['algorand']
 
@@ -83,5 +84,20 @@ describe('useSwapFromAssetSelectionList', () => {
 
         expect(result.current.visibleChainIds).toEqual(['algorand'])
         expect(result.current.chainOptions).toEqual([])
+    })
+
+    it('follows the picked chip with the placeholder of its network', () => {
+        const { result } = renderHook(() =>
+            useSwapFromAssetSelectionList(SCOPE),
+        )
+        expect(result.current.searchPlaceholder).toBe(
+            'swap.asset_selection.search_placeholder_all',
+        )
+
+        act(() => result.current.handleSelectChain('ethereum'))
+        expect(result.current.searchPlaceholder).toBe('placeholder.evm')
+
+        act(() => result.current.handleSelectChain('algorand'))
+        expect(result.current.searchPlaceholder).toBe('placeholder.algorand')
     })
 })

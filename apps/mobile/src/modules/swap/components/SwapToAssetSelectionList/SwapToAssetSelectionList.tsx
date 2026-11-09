@@ -19,9 +19,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
+import { PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
-import { useLanguage } from '@hooks/useLanguage'
 import { AssetSelectionList } from '@modules/assets'
 import { scopedAssetKey } from '@utils/scopedAssetKey'
 import {
@@ -37,6 +37,7 @@ export type SwapToAssetSelectionListProps = {
     onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
     isVisible?: boolean
     excludeAssetId?: string
+    onSwitchPayAsset: (assetId: string, scope: ChainScope) => void
     emptyResultTitle: string
     emptyResultBody: string
     emptyChainResultBody: string
@@ -49,19 +50,18 @@ export const SwapToAssetSelectionList = ({
     onAssetSelected,
     isVisible,
     excludeAssetId,
+    onSwitchPayAsset,
     emptyResultTitle,
     emptyResultBody,
     emptyChainResultBody,
     inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         items,
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
-        searchPlaceholderKey,
         chainOptions,
         selectedChainId,
         handleSelectChain,
@@ -69,12 +69,16 @@ export const SwapToAssetSelectionList = ({
         isLoading,
         handleEndReached,
         handleAssetSelected,
+        searchPlaceholder,
+        crossNetworkEmptyState,
+        handleSwapOnSelectedNetwork,
     } = useSwapToAssetSelectionList({
         scope,
         fromAssetId,
         isVisible,
         excludeAssetId,
         onAssetSelected,
+        onSwitchPayAsset,
     })
 
     const renderItem = useCallback(
@@ -100,6 +104,42 @@ export const SwapToAssetSelectionList = ({
         [handleAssetSelected, isChainShown, scope, styles],
     )
 
+    const renderEmptyView = () => {
+        if (crossNetworkEmptyState) {
+            return (
+                <EmptyView
+                    title={crossNetworkEmptyState.title}
+                    body={crossNetworkEmptyState.body}
+                    shouldTruncateBody={false}
+                    testID='swap_to_cross_network_empty'
+                    button={
+                        crossNetworkEmptyState.actionLabel ? (
+                            <PWButton
+                                variant='primary'
+                                title={crossNetworkEmptyState.actionLabel}
+                                onPress={handleSwapOnSelectedNetwork}
+                                testID='swap_to_switch_network_button'
+                            />
+                        ) : undefined
+                    }
+                />
+            )
+        }
+        if (isLoading || (!debouncedSearchFilter && selectedChainId === null)) {
+            return undefined
+        }
+        return (
+            <EmptyView
+                title={emptyResultTitle}
+                body={
+                    debouncedSearchFilter
+                        ? emptyResultBody
+                        : emptyChainResultBody
+                }
+            />
+        )
+    }
+
     return (
         <AssetSelectionList
             data={items}
@@ -109,7 +149,7 @@ export const SwapToAssetSelectionList = ({
             }
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
-            searchPlaceholder={t(searchPlaceholderKey)}
+            searchPlaceholder={searchPlaceholder}
             searchAccessory={
                 chainOptions.length > 0 ? (
                     <FilterSelection<Nullable<ChainId>>
@@ -125,19 +165,7 @@ export const SwapToAssetSelectionList = ({
             skeletonCount={3}
             cardLayout
             inBottomSheet={inBottomSheet}
-            ListEmptyComponent={
-                !isLoading &&
-                (debouncedSearchFilter || selectedChainId !== null) ? (
-                    <EmptyView
-                        title={emptyResultTitle}
-                        body={
-                            debouncedSearchFilter
-                                ? emptyResultBody
-                                : emptyChainResultBody
-                        }
-                    />
-                ) : undefined
-            }
+            ListEmptyComponent={renderEmptyView()}
         />
     )
 }

@@ -12,6 +12,7 @@
 
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
+    buildAcceptLanguage,
     getActiveLocale,
     setActiveLocale,
     subscribeActiveLocale,
@@ -52,5 +53,23 @@ describe('utils/locale', () => {
         setActiveLocale('tr')
 
         expect(listener).not.toHaveBeenCalled()
+    })
+
+    describe('buildAcceptLanguage', () => {
+        it('sends English alone for English', () => {
+            expect(buildAcceptLanguage('en')).toBe('en')
+        })
+
+        it('offers English as a graded fallback after a plain language', () => {
+            expect(buildAcceptLanguage('de')).toBe('de,en;q=0.8')
+        })
+
+        it('offers the base language between a regional tag and English', () => {
+            expect(buildAcceptLanguage('pt-BR')).toBe('pt-BR,pt;q=0.9,en;q=0.8')
+        })
+
+        it('keeps a regional English tag ahead of plain English', () => {
+            expect(buildAcceptLanguage('en-XA')).toBe('en-XA,en;q=0.9')
+        })
     })
 })

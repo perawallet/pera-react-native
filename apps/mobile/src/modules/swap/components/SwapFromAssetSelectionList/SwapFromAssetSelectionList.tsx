@@ -23,7 +23,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
-import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetSelectionList } from '@modules/assets'
 import { useSwapFromAssetSelectionList } from './useSwapFromAssetSelectionList'
 
@@ -47,14 +46,13 @@ export const SwapFromAssetSelectionList = ({
     emptyResultBody,
     emptyChainResultBody,
 }: SwapFromAssetSelectionListProps) => {
-    const { t } = useLanguage()
     const {
         chainOptions,
         selectedChainId,
         visibleChainIds,
         isChainShown,
-        searchPlaceholderKey,
         handleSelectChain,
+        searchPlaceholder,
     } = useSwapFromAssetSelectionList(scope)
 
     return (
@@ -66,7 +64,7 @@ export const SwapFromAssetSelectionList = ({
             filterAsset={filterSwappable}
             inBottomSheet
             isChainShown={isChainShown}
-            searchPlaceholder={t(searchPlaceholderKey)}
+            searchPlaceholder={searchPlaceholder}
             emptyResultTitle={emptyResultTitle}
             emptyResultBody={emptyResultBody}
             emptyView={

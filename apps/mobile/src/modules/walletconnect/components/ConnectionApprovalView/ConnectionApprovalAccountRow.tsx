@@ -56,7 +56,7 @@ export const ConnectionApprovalAccountRow = ({
                 avatarBadge={
                     <ChainIcon
                         chainId={chainId}
-                        size={getIconPixelSize(theme, 'xs')}
+                        size={getIconPixelSize(theme, 'sm')}
                     />
                 }
                 showChevron={false}

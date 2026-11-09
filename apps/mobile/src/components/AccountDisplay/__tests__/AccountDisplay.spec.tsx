@@ -158,9 +158,11 @@ describe('AccountDisplay', () => {
         )
 
         expect(
-            within(screen.getByTestId('account_avatar_badge')).getByText(
-                'CHAIN',
-            ),
+            within(
+                within(screen.getByTestId('account_avatar_badge')).getByTestId(
+                    'avatar_badge',
+                ),
+            ).getByText('CHAIN'),
         ).toBeTruthy()
         expect(screen.queryByTestId('account_backup_badge')).toBeNull()
     })

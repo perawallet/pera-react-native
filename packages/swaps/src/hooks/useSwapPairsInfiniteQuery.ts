@@ -37,6 +37,8 @@ export type UseSwapPairsInfiniteQueryParams = {
 export type UseSwapPairsInfiniteQueryResult = {
     assets: SwapAsset[]
     isLoading: boolean
+    /** True once a fetch completed; false while loading, disabled or failed, when `assets` is `[]` without meaning "no pairs". */
+    isSuccess: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
 }
@@ -103,6 +105,7 @@ export const useSwapPairsInfiniteQuery = ({
     return {
         assets: query.data?.pages.flatMap(page => page.assets) ?? [],
         isLoading: query.isLoading,
+        isSuccess: query.isSuccess,
         hasNextPage: query.hasNextPage,
         // A list fires onEndReached repeatedly; without this a second call
         // would cancel the page already loading.

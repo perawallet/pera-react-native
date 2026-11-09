@@ -607,6 +607,7 @@
             "title": "Bu passphrase’i başka cüzdanlarda kullanmak",
             "evm": "Ethereum uyumlu ağlar: MetaMask, Uniswap veya Rabby gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. İçe aktardıktan sonra yalnızca bu ilk adresi görebilirsin. Bazı cüzdanlar diğer adreslerini kullanıldıktan sonra gösterir; bazılarında ise onları manuel olarak eklemen gerekir. Adresler, Pera’da oluşturduğun sırayla görünür.",
             "algorand": "Algorand: Pera’da ve 24 kelimelik Algorand HD cüzdanlarını destekleyen diğer cüzdanlarda çalışır. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
+            "algorand_twelve_word": "Algorand: Pera’da çalışır. Diğer Algorand cüzdanları yalnızca 24 kelimelik passphrase kabul ediyor olabilir; bu yüzden bir cüzdana güvenmeden önce 12 kelimeyi desteklediğini kontrol et. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
             "warning": "Bu kelimelere sahip olan herkes tüm ağlardaki fonlarını kontrol eder. Onları asla bir web sitesine girme ve kimseyle paylaşma."
         }
     },
@@ -3116,7 +3117,8 @@
             "max_fee_for_preset": "Maksimum ücret ({{preset}})",
             "max_fee_info": "Ağ ücretleri artarsa ödeyeceğin en yüksek tutar. Genellikle daha az ödersin.",
             "wait_seconds": "~{{seconds}} sn",
-            "wait_minutes": "~{{minutes}} dk"
+            "wait_minutes": "~{{minutes}} dk",
+            "show_options": "Ücret seçeneklerini gösterir"
         },
         "confirmation": {
             "add_to_contacts": "+ Kişilere ekle",
@@ -4015,11 +4017,15 @@
             "swap_from_title": "Kaynak varlık",
             "swap_to_title": "Hedef varlık",
             "search_placeholder": "Ada veya ID’ye göre ara",
-            "search_placeholder_evm": "Ad, sembol veya kontrat adresine göre ara",
-            "search_placeholder_all": "Ad, sembol, varlık ID’si veya adrese göre ara",
+            "search_placeholder_evm": "Ada, sembole veya sözleşme adresine göre ara",
+            "search_placeholder_all": "Ada, sembole, ID’ye veya sözleşme adresine göre ara",
             "no_results_title": "Eşleşen varlık yok",
             "no_results_body": "Arama terimine uyan varlık bulunamadı",
-            "no_chain_results_body": "Bu ağda kullanılabilir varlık yok"
+            "no_chain_results_body": "Bu ağda kullanılabilir varlık yok",
+            "cross_network_empty_title": "{{network}} ağına {{asset}} swap edilemiyor",
+            "cross_network_empty_body": "{{payNetwork}} ağındaki {{asset}}, {{network}} ağındaki varlıklarla henüz swap edilemiyor. Bunlara ulaşmak için bunun yerine {{network}} ağındaki bir varlıkla öde.",
+            "cross_network_empty_body_other_account": "{{payNetwork}} ağındaki {{asset}}, {{network}} ağındaki varlıklarla henüz swap edilemiyor. Bunlara ulaşmak için {{network}} ağındaki bir hesaba geç ve onun varlıklarından biriyle öde.",
+            "cross_network_empty_action": "{{network}} ağında swap yap"
         },
         "configuration": {
             "title": "Swap ayarları",
