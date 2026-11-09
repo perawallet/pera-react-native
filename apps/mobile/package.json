@@ -43,7 +43,7 @@
     "@expensify/react-native-wallet": "catalog:",
     "@expo/app-integrity": "catalog:",
     "@gorhom/bottom-sheet": "^5.2.8",
-    "@hookform/resolvers": "^6.0.0",
+    "@hookform/resolvers": "^7.0.1",
     "@joe-p/react-native-falcon": "catalog:",
     "@ledgerhq/react-native-hid": "catalog:",
     "@lottiefiles/dotlottie-react": "catalog:",
