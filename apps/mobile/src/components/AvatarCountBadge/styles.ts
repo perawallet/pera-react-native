@@ -12,24 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// The ring gets its own view because RN counts borders inside min sizes; min (not fixed)
-// sizes let the 16px disc widen for two digits and grow with OS font scaling.
 export const useStyles = makeStyles(theme => ({
-    ring: {
-        borderRadius: theme.borderRadius.full,
-        borderWidth: theme.borders.md,
-        borderColor: theme.colors.background,
-    },
-    disc: {
-        minWidth: theme.spacing.lg,
-        minHeight: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xxs,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
     text: {
         color: theme.colors.textMain,
+        // Keeps a two-digit count clear of the disc's curve.
+        paddingHorizontal: theme.spacing.xxs,
     },
 }))
