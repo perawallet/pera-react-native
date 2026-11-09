@@ -26,6 +26,7 @@ export type TitledExpandablePanelProps = {
     startExpanded?: boolean
     /** Down when collapsed and up when expanded, instead of right and down. */
     hasVerticalChevron?: boolean
+    testID?: string
 } & PropsWithChildren
 
 export const TitledExpandablePanel = ({
@@ -34,6 +35,7 @@ export const TitledExpandablePanel = ({
     contentStyle,
     startExpanded = false,
     hasVerticalChevron = false,
+    testID,
     children,
     iconPressed,
 }: TitledExpandablePanelProps) => {
@@ -69,6 +71,7 @@ export const TitledExpandablePanel = ({
             <PWTouchableOpacity
                 onPress={onPress}
                 style={styles.header}
+                testID={testID}
             >
                 {typeof title === 'string' ? (
                     <PWView style={styles.titleContainer}>

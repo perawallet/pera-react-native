@@ -39,6 +39,7 @@ export const ConnectionApprovalView = ({
     const {
         accountRows,
         title,
+        peerName,
         requestedNetworks,
         handleAddNetwork,
         permissions,
@@ -85,6 +86,7 @@ export const ConnectionApprovalView = ({
                     <ConnectionApprovalViewHeader
                         peer={proposal.peer}
                         title={title}
+                        peerName={peerName}
                         requestedNetworks={requestedNetworks}
                         onAddNetwork={handleAddNetwork}
                         permissions={permissions}

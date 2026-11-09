@@ -264,32 +264,10 @@ export const useConnectionApprovalView = (
             proposal.requested.networks,
         ],
     )
-    const title = useMemo(() => {
-        const { chains } = getProvider()
-        const families = new Set<string>()
-        const names: string[] = []
-        for (const chainId of chainIds) {
-            if (!chains.has(chainId)) continue
-            const { family, displayName } = chains.get(chainId).descriptor
-            if (families.has(family)) continue
-            families.add(family)
-            names.push(displayName)
-        }
-        const [network, otherNetwork] = names
-        if (network === undefined) {
-            return t('walletconnect.request.title', { name: peerName })
-        }
-        return otherNetwork === undefined
-            ? t('walletconnect.request.title_network', {
-                  name: peerName,
-                  network,
-              })
-            : t('walletconnect.request.title_networks', {
-                  name: peerName,
-                  network,
-                  otherNetwork,
-              })
-    }, [chainIds, peerName, t])
+    const title = useMemo(
+        () => t('walletconnect.request.title_connect', { name: peerName }),
+        [peerName, t],
+    )
     const permissions = useMemo(
         () => toConnectionPermissions(proposal.requested.methods),
         [proposal.requested.methods],

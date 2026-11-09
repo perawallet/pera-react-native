@@ -26,7 +26,14 @@ import {
     vi,
     type Mock,
 } from 'vitest'
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 import { Address, Transaction, TransactionType } from 'algosdk'
@@ -54,6 +61,7 @@ import {
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
+    chainAccountOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -84,7 +92,7 @@ import {
     evmRpcHandlers,
     evmTransactionReceipt,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import { kmsCore } from '@perawallet/wallet-core-kms'
+import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import {
@@ -105,7 +113,11 @@ import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { AnalyticsMetadataKey, WalletConnectEvent } from '@analytics'
 import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
-import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import {
+    ALGO25_TEST_ADDRESS,
+    HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_24_INDICES,
+} from './__fixtures__/onboarding'
 import {
     recordAnalyticsEvents,
     type AnalyticsRecorder,
@@ -412,14 +424,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             ).toBeTruthy()
 
             expect(
-                screen.getByText('walletconnect.request.title_network'),
+                screen.getByText('walletconnect.request.title_connect'),
             ).toBeTruthy()
             expect(
                 screen.getByTestId('wc_requested_network_ethereum'),
             ).toBeTruthy()
             expect(
-                screen.queryByText('walletconnect.request.network_not_added'),
-            ).toBeNull()
+                screen.getByTestId('wc_requested_network_added_ethereum'),
+            ).toBeTruthy()
             expect(
                 screen.getByText(
                     addressCodecs.get('ethereum').truncate(STORED_ETH_ADDRESS),
@@ -438,7 +450,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             }
         })
 
-        it('Given a wallet whose only account is an Algo25 account, when an eip155 proposal opens, then the network reads as not added with no way to add it', async () => {
+        it('Given a wallet whose only account is an Algo25 account, when an eip155 proposal opens, then the network is listed with no way to add it', async () => {
             useAccountsStore.getState().setAccounts([ALGORAND_ACCOUNT])
             await mountProvider()
             await propose(eip155Namespace('requiredNamespaces'))
@@ -449,13 +461,19 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeTruthy(),
             )
             expect(
-                screen.getByText('walletconnect.request.network_not_added'),
+                screen.getByTestId('wc_requested_network_item_ethereum'),
             ).toBeTruthy()
             expect(screen.queryByTestId('wc_add_network_ethereum')).toBeNull()
+            expect(
+                screen.queryByTestId('wc_requested_network_added_ethereum'),
+            ).toBeNull()
+            expect(
+                screen.queryByTestId('wc_requested_networks_optional_note'),
+            ).toBeNull()
             expect(screen.queryByText('Trading')).toBeNull()
         })
 
-        it('Given an HD account that has not added Ethereum, when an eip155 proposal opens, then the network reads as not added and offers adding it', async () => {
+        it('Given an HD account that has not added Ethereum, when an eip155 proposal opens, then the network offers adding it', async () => {
             useAccountsStore.getState().setAccounts([
                 {
                     ...ETHEREUM_ACCOUNT,
@@ -476,9 +494,6 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     screen.getByTestId('wc_add_network_ethereum'),
                 ).toBeTruthy(),
             )
-            expect(
-                screen.getByText('walletconnect.request.network_not_added'),
-            ).toBeTruthy()
         })
 
         it('Given an eip155-only proposal, when the user cancels, then the rejection is tracked on ethereum', async () => {
@@ -600,6 +615,68 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
 
         describe('a proposal naming several EVM chains', () => {
             const SWITCH_CONFIRM = 'walletconnect.switch_network.confirm'
+
+            it('Given an account holding Ethereum, whose custody can add Base, but not Base, when a proposal optionally naming Ethereum and Base opens, then the row shows both chips and the title names only the dApp; opening it shows Ethereum checked and Base under the optional note with Add, which adds Base to the account', async () => {
+                // Adding Base derives its key, so the seed must be a real one.
+                const { result: kms } = renderHook(() => useKMS())
+                await act(async () => {
+                    const rootKey = await kms.current.createHDWalletKey({
+                        mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+                    })
+                    useAccountsStore.getState().setAccounts([])
+                    await useAccountsStore
+                        .getState()
+                        .addChainAccount(
+                            rootKey!.seedKey.id,
+                            'ethereum',
+                            { account: 0, keyIndex: 0 },
+                            'HD',
+                        )
+                })
+                await mountProvider()
+                await propose({
+                    requiredNamespaces: {},
+                    optionalNamespaces: {
+                        eip155: {
+                            chains: [ETH_MAINNET, BASE_MAINNET],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                })
+
+                await waitFor(() =>
+                    expect(
+                        screen.getByTestId('wc_requested_network_base'),
+                    ).toBeTruthy(),
+                )
+                expect(
+                    screen.getByTestId('wc_requested_network_ethereum'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByText('walletconnect.request.title_connect'),
+                ).toBeTruthy()
+
+                fireEvent.click(
+                    screen.getByTestId('wc_requested_networks_toggle'),
+                )
+
+                expect(
+                    screen.getByTestId('wc_requested_network_added_ethereum'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId('wc_requested_networks_optional_note'),
+                ).toBeTruthy()
+                fireEvent.click(screen.getByTestId('wc_add_network_base'))
+
+                await waitFor(() =>
+                    expect(
+                        screen.getByTestId('wc_requested_network_added_base'),
+                    ).toBeTruthy(),
+                )
+                const [held] = useAccountsStore.getState().accounts
+                expect(chainAccountOf(held!, 'base')).toBeDefined()
+            })
 
             it('Given Ethereum, Base and a chain Pera lacks, when the user connects, then one eip155 namespace carries both served mainnets', async () => {
                 await mountProvider()

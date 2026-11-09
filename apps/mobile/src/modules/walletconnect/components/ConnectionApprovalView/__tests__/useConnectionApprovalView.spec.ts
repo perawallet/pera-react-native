@@ -344,35 +344,18 @@ describe('useConnectionApprovalView', () => {
             ])
         })
 
-        it('names the one requested chain in the title', () => {
-            const { result } = renderHook(() =>
-                useConnectionApprovalView(proposalOn(['ethereum']) as never),
-            )
+        it.each([[['ethereum']], [['algorand', 'ethereum', 'base']], [[]]])(
+            'names only the dApp in the title when the proposal asks for %j',
+            chains => {
+                const { result } = renderHook(() =>
+                    useConnectionApprovalView(proposalOn(chains) as never),
+                )
 
-            expect(result.current.title).toBe(
-                'walletconnect.request.title_network',
-            )
-        })
-
-        it('names both families when the proposal spans two, and counts a family once', () => {
-            const { result } = renderHook(() =>
-                useConnectionApprovalView(
-                    proposalOn(['algorand', 'ethereum', 'base']) as never,
-                ),
-            )
-
-            expect(result.current.title).toBe(
-                'walletconnect.request.title_networks',
-            )
-        })
-
-        it('keeps the generic title when the proposal names no chain', () => {
-            const { result } = renderHook(() =>
-                useConnectionApprovalView(proposalOn([]) as never),
-            )
-
-            expect(result.current.title).toBe('walletconnect.request.title')
-        })
+                expect(result.current.title).toBe(
+                    'walletconnect.request.title_connect',
+                )
+            },
+        )
 
         it('marks a requested chain no held account signs on as not added, and offers adding it to accounts that can reach it', () => {
             eligible.current = ['base']

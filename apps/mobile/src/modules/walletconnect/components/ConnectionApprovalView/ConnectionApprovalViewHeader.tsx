@@ -32,7 +32,7 @@ import { ProjectVerificationIcon } from '@modules/projects'
 import type { ConnectionPermission } from '../../utils/connectionPermissions'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
 import { ConnectionPermissionsPanel } from '../ConnectionPermissionsPanel'
-import { RequestedNetworkChip } from './RequestedNetworkChip'
+import { RequestedNetworksPanel } from './RequestedNetworksPanel'
 import {
     toOriginWarningMessage,
     type ConnectionOriginWarning,
@@ -41,8 +41,10 @@ import {
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
-    /** The headline, already naming the networks the dApp asked for. */
+    /** Names the dApp alone; the networks show in the row under it. */
     title: string
+    /** Cleaned dApp name; the networks panel's optional note names it. */
+    peerName: string
     requestedNetworks: RequestedNetwork[]
     onAddNetwork: (chainId: ChainId) => void
     permissions: ConnectionPermission[]
@@ -61,6 +63,7 @@ export type ConnectionApprovalViewHeaderProps = {
 export const ConnectionApprovalViewHeader = ({
     peer,
     title,
+    peerName,
     requestedNetworks,
     onAddNetwork,
     permissions,
@@ -105,15 +108,6 @@ export const ConnectionApprovalViewHeader = ({
 
     return (
         <PWView style={styles.headerContainer}>
-            <PWView style={styles.networksContainer}>
-                {requestedNetworks.map(network => (
-                    <RequestedNetworkChip
-                        key={network.chainId}
-                        network={network}
-                        onAdd={onAddNetwork}
-                    />
-                ))}
-            </PWView>
             {preferredIcon ? (
                 <PWImage
                     source={{ uri: preferredIcon }}
@@ -213,6 +207,14 @@ export const ConnectionApprovalViewHeader = ({
                     </>
                 )}
             </PWView>
+
+            {requestedNetworks.length > 0 && (
+                <RequestedNetworksPanel
+                    requestedNetworks={requestedNetworks}
+                    peerName={peerName}
+                    onAddNetwork={onAddNetwork}
+                />
+            )}
 
             <ConnectionPermissionsPanel permissions={permissions} />
 
