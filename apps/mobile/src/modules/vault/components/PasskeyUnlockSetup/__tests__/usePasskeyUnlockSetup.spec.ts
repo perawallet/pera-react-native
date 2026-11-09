@@ -61,7 +61,7 @@ const mocks = vi.hoisted(() => {
     }
 })
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     enablePasskeyUnlockWithSession: mocks.enablePasskeyUnlockWithSession,
     enablePasskeyUnlock: mocks.enablePasskeyUnlock,
     InvalidPasswordError: mocks.MockInvalidPasswordError,

@@ -16,7 +16,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderRow } from '../SwapProviderRow'
-import { SwapTopPairs } from '../SwapTopPairs'
+import { SwapReceivingAccountRow } from '../SwapReceivingAccountRow'
+import { SwapTrackedOrders } from '../SwapTrackedOrders'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm, type SwapFormInitialPayAmount } from './useSwapForm'
 import { useSwapLocalCurrency } from '../../hooks'
@@ -33,6 +34,11 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
     const {
         payAssetId,
         receiveAssetId,
+        receiveScope,
+        receivingAccount,
+        isDirectionDisabled,
+        isChainShown,
+        isReceivingAccountShown,
         payAmount,
         receiveAmount,
         payBalance,
@@ -50,6 +56,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         handleMaxPress,
         handleOpenPayAssetSelection,
         handleOpenReceiveAssetSelection,
+        handleOpenReceivingAccount,
         handleOpenConfig,
         handleOpenProvider,
         handleOpenConfirm,
@@ -60,9 +67,12 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
 
     return (
         <PWScrollView contentContainerStyle={styles.formContainer}>
+            <SwapTrackedOrders />
+
             <PWView style={styles.amountSections}>
                 <SwapAmountSection
                     scope={scope}
+                    isChainShown={isChainShown}
                     variant='pay'
                     assetId={payAssetId}
                     balance={payBalance}
@@ -80,10 +90,12 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                     onSwapPress={handleSwapDirection}
                     onMaxPress={handleMaxPress}
                     onConfigurePress={handleOpenConfig}
+                    isDirectionDisabled={isDirectionDisabled}
                 />
 
                 <SwapAmountSection
-                    scope={scope}
+                    scope={receiveScope}
+                    isChainShown={isChainShown}
                     variant='receive'
                     assetId={receiveAssetId}
                     balance={receiveBalance}
@@ -93,9 +105,16 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                 />
             </PWView>
 
+            {isReceivingAccountShown && receivingAccount && (
+                <SwapReceivingAccountRow
+                    account={receivingAccount}
+                    scope={receiveScope}
+                    onPress={handleOpenReceivingAccount}
+                />
+            )}
+
             {selectedQuote && (
                 <SwapProviderRow
-                    scope={scope}
                     quote={selectedQuote}
                     selectionMode={providerSelectionMode}
                     onPress={handleOpenProvider}
@@ -142,7 +161,6 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
             )}
 
             <SwapPairHistoryWidget scope={scope} />
-            <SwapTopPairs scope={scope} />
         </PWScrollView>
     )
 }

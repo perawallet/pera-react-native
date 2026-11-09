@@ -11,21 +11,14 @@
  */
 
 import type { RampChainAdapter } from '@perawallet/wallet-core-onramp'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import {
-    algorandRampTokenAssetId,
-    isAlgorandNativeRampToken,
-} from './tokenAsset'
+import { algorandAssetIdOfRouterId } from '../router-asset-id'
 import { useEnsureDestinationOptIn } from './useEnsureDestinationOptIn'
 
 const useEnsureCanReceive = () => useEnsureDestinationOptIn().ensureOptIn
 
 export const algorandRampAdapter: RampChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
-    rampNetworkIds: ['ALGORAND'],
-    destinationTokenIds: [ALGO_ASSET_NAME, 'USDC_ALGORAND'],
-    isNativeToken: isAlgorandNativeRampToken,
-    toAssetId: algorandRampTokenAssetId,
+    fromRouterAssetId: algorandAssetIdOfRouterId,
     useEnsureCanReceive,
 }

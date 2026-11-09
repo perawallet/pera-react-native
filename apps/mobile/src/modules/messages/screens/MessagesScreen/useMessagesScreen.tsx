@@ -13,9 +13,9 @@
 import type { MessagesStackParamList } from '@modules/messages/routes'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useCallback, useMemo, useState } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useInboxQuery, useInboxStatus } from '@perawallet/wallet-core-messages'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
@@ -25,7 +25,7 @@ export const useMessagesScreen = () => {
     const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
 
     const initialTab = route.params?.initialTab
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const {
         hasUnreadInboxItems,
         hasUnreadNotifications,

@@ -35,16 +35,17 @@ import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
 } from '../holdingsRepository'
+import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 import { addAccountToken } from '../addedTokensRepository'
+import { useHiddenTokensStore } from '../../store/hiddenTokens'
 import { getAccountHoldingsPage } from '../holdingsQueries'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'testnet',
 } as const
 
@@ -629,6 +630,72 @@ describe('account holdings repository', () => {
                 '100',
                 '300',
             ])
+        })
+
+        it('hideSuspicious excludes tokens Pera flags suspicious and keeps rows with no metadata', async () => {
+            await upsertAssets({
+                db,
+                items: [
+                    {
+                        ...makeAsset('200', PeraAssetType.standard_asset),
+                        peraMetadata: {
+                            ...makeAsset('200', PeraAssetType.standard_asset)
+                                .peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(await idsOf({ hideSuspicious: true })).toEqual([
+                '100',
+                '300',
+                '400',
+                '500',
+            ])
+            expect(await idsOf({})).toContain('200')
+        })
+
+        it('hideSuspicious keeps a suspicious row on a chain where the user opts in to each asset', async () => {
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+            await upsertAssets({
+                db,
+                items: [
+                    {
+                        ...makeAsset('200', PeraAssetType.standard_asset),
+                        peraMetadata: {
+                            ...makeAsset('200', PeraAssetType.standard_asset)
+                                .peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(await idsOf({ hideSuspicious: true })).toContain('200')
+        })
+
+        it('excludeHidden leaves out a token the user hid, whatever else is kept', async () => {
+            useHiddenTokensStore.getState().setTokenHidden({
+                address: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                assetId: '200',
+                isHidden: true,
+            })
+
+            try {
+                expect(await idsOf({ excludeHidden: true })).toEqual([
+                    '100',
+                    '300',
+                    '400',
+                    '500',
+                ])
+                expect(await idsOf({})).toContain('200')
+            } finally {
+                useHiddenTokensStore.getState().resetState()
+            }
         })
 
         it('hideNfts excludes all collectibles but keeps unknown asset types', async () => {

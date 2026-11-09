@@ -24,6 +24,7 @@ import {
     eligibleChainsInFamily,
 } from '../credentials/eligibility'
 import type { WalletAccount } from '../models'
+import { useCanSignWithCheck } from './useCanSignWith'
 
 export type AccountChainOption = {
     chainId: ChainId
@@ -85,18 +86,45 @@ export const accountChainOptions = (
     return [...enabled, ...options.filter(option => !option.isEnabled)]
 }
 
+export type AccountChainOptionsResolverOptions = {
+    reach?: AccountChainReach
+    /**
+     * Drops the enabled chains nothing held signs for the account on, such as
+     * one delegated to an account not held, for a flow that signs.
+     */
+    isSignerRequired?: boolean
+}
+
 export const useAccountChainOptionsResolver = (
     capability: ChainCapability,
-    reach: AccountChainReach = 'family',
+    {
+        reach = 'family',
+        isSignerRequired = false,
+    }: AccountChainOptionsResolverOptions = {},
 ): ((account: WalletAccount) => AccountChainOption[]) => {
     const check = useChainCapabilityCheck()
+    const canSignOn = useCanSignWithCheck()
+    // Joined so the resolver keeps its identity until the enabled set changes;
+    // the checker itself is a new closure every render.
+    const enabledKey = getProvider()
+        .chains.list()
+        .map(({ id }) => id)
+        .filter(chainId => check({ chain: { chainId, capability } }))
+        .join()
     return useCallback(
-        (account: WalletAccount) =>
-            accountChainOptions(
+        (account: WalletAccount) => {
+            const enabled = enabledKey ? enabledKey.split(',') : []
+            return accountChainOptions(
                 account,
-                chainId => check({ chain: { chainId, capability } }),
+                chainId => enabled.includes(chainId),
                 reach,
-            ),
-        [check, capability, reach],
+            ).filter(
+                option =>
+                    !isSignerRequired ||
+                    !option.isEnabled ||
+                    canSignOn(account, option.chainId),
+            )
+        },
+        [enabledKey, canSignOn, reach, isSignerRequired],
     )
 }

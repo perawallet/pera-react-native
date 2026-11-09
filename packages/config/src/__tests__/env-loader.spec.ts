@@ -17,14 +17,14 @@ import {
     EVM_CHAIN_NETWORKS,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { type Config, evmConfigKeys, overrideEnvironmentMap } from '../main'
+import { type Config, scopeConfigKeys, overrideEnvironmentMap } from '../main'
 
 const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
 const unconfiguredEvmScopes = Object.fromEntries(
     EVM_CHAIN_IDS.flatMap(chainId =>
         EVM_CHAIN_NETWORKS[chainId].networks.flatMap(network => {
-            const keys = evmConfigKeys(chainId, network.id)
+            const keys = scopeConfigKeys(chainId, network.id)
             return [
                 [keys.rpcUrl, []],
                 [keys.peraServices, []],
@@ -437,6 +437,28 @@ describe('env-loader', () => {
             expect(result.ethereumSepoliaPeraServices).toEqual([
                 'assets',
                 'blockFollowing',
+            ])
+        })
+
+        test('accepts the contracts service in an EVM Pera services list', () => {
+            process.env.ETHEREUM_MAINNET_PERA_SERVICES = 'history,contracts'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.ethereumMainnetPeraServices).toEqual([
+                'history',
+                'contracts',
+            ])
+        })
+
+        test('accepts the simulations service in an EVM Pera services list', () => {
+            process.env.ETHEREUM_MAINNET_PERA_SERVICES = 'history,simulations'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.ethereumMainnetPeraServices).toEqual([
+                'history',
+                'simulations',
             ])
         })
 

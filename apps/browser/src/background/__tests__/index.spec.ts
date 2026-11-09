@@ -36,7 +36,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     logger: loggerMock,
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
 }))
 

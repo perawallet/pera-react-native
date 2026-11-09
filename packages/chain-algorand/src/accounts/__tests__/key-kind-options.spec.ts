@@ -18,31 +18,48 @@ import { algorandLocalKeyKinds } from '../local-key-kinds'
 import { algorandAccountPresentation } from '../presentation'
 
 describe('algorandKeyKindOptions', () => {
-    it('offers the HD kind only from the recover chooser, as the suggested kind', () => {
+    it('offers the HD kind only from the recover chooser: as the suggested 24-word kind and as a 12-word seed', () => {
         expect(algorandKeyKindOptions(SeedScheme.Bip39)).toEqual({
-            recover: {
-                id: 'hd_wallet',
-                titleKey: 'onboarding.import_options.hd_wallet.title',
-                descriptionKey:
-                    'onboarding.import_options.hd_wallet.description',
-                isSuggested: true,
-                order: 0,
-                analyticsEvent: 'onb_createacc_recover_24',
-            },
+            recover: [
+                {
+                    id: 'hd_wallet',
+                    wordCount: 24,
+                    titleKey: 'onboarding.import_options.hd_wallet.title',
+                    descriptionKey:
+                        'onboarding.import_options.hd_wallet.description',
+                    isSuggested: true,
+                    order: 0,
+                    analyticsEvent: 'onb_createacc_recover_24',
+                },
+                {
+                    id: 'twelve_word',
+                    wordCount: 12,
+                    titleKey: 'onboarding.import_options.twelve_word.title',
+                    descriptionKey:
+                        'onboarding.import_options.twelve_word.description',
+                    isSuggested: false,
+                    order: 3,
+                    analyticsEvent: 'onb_createacc_recover_12',
+                },
+            ],
         })
     })
 
     it('offers the standalone kind from the recover chooser and as an other create option', () => {
         expect(algorandKeyKindOptions(null)).toEqual({
-            recover: {
-                id: 'algo25',
-                titleKey: 'onboarding.import_options.algo25.title',
-                chipKey: 'onboarding.import_options.algo25.chip',
-                descriptionKey: 'onboarding.import_options.algo25.description',
-                isSuggested: false,
-                order: 2,
-                analyticsEvent: 'onb_createacc_recover_25',
-            },
+            recover: [
+                {
+                    id: 'algo25',
+                    wordCount: 25,
+                    titleKey: 'onboarding.import_options.algo25.title',
+                    chipKey: 'onboarding.import_options.algo25.chip',
+                    descriptionKey:
+                        'onboarding.import_options.algo25.description',
+                    isSuggested: false,
+                    order: 2,
+                    analyticsEvent: 'onb_createacc_recover_25',
+                },
+            ],
             create: {
                 id: 'algo25',
                 titleKey: 'onboarding.add_account.create_algo25_option_title',
@@ -73,13 +90,17 @@ describe('algorandKeyKindOptions', () => {
                 },
                 analyticsEvent: 'createacc_quantumAccount_press',
             },
-            recover: {
-                id: 'quantum',
-                titleKey: 'onboarding.import_options.quantum.title',
-                descriptionKey: 'onboarding.import_options.quantum.description',
-                isSuggested: false,
-                order: 1,
-            },
+            recover: [
+                {
+                    id: 'quantum',
+                    wordCount: 25,
+                    titleKey: 'onboarding.import_options.quantum.title',
+                    descriptionKey:
+                        'onboarding.import_options.quantum.description',
+                    isSuggested: false,
+                    order: 1,
+                },
+            ],
         })
     })
 

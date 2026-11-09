@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     isMultisigAccount,
@@ -26,6 +25,7 @@ import {
     type SigningResult,
     type SigningStrategy,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 import { decodeSignedTransaction } from '../../blockchain/utils/transact'
 
@@ -67,7 +67,7 @@ export const createMultisigStrategy = (
             const multisigAccount = resolveAuthAccount(
                 account,
                 allAccounts,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )
             const localParticipants = getLocalParticipants(
                 multisigAccount,

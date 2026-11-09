@@ -55,6 +55,7 @@ export const AssetDetailsContent = ({
         supply,
         isNetworkLineVisible,
         isMarketsTabVisible,
+        headerMenuItems,
     } = useAssetDetailsScreen({
         assetId,
         chainId,
@@ -78,7 +79,10 @@ export const AssetDetailsContent = ({
             </PWView>
         ),
         right: account ? (
-            <AccountHeaderMenu testID='asset_details_screen_dropdown' />
+            <AccountHeaderMenu
+                testID='asset_details_screen_dropdown'
+                leadingItems={headerMenuItems}
+            />
         ) : null,
     })
 

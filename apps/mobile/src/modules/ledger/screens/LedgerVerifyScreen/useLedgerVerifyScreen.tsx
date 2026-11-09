@@ -62,6 +62,7 @@ import {
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { normalizeAccountName } from '@hooks/useUniqueAccountName'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     type AddAccountStackParamList,
@@ -123,27 +124,65 @@ type JoinTarget = {
     movingId?: string
 }
 
-const claimsFor = (
+/**
+ * The candidate the device already proved by verifying the target's address,
+ * or else the reads that could prove one.
+ */
+type JoinProof = {
+    metId?: string
+    claims: LedgerHolderClaim[]
+}
+
+const proofFor = (
     accounts: readonly WalletAccount[],
-    { details, chainIds, movingId }: JoinTarget,
-): LedgerHolderClaim[] =>
-    hardwareJoinCandidates(
+    { details, chainIds, verifiedAddress, movingId }: JoinTarget,
+): JoinProof => {
+    const holders = hardwareJoinCandidates(
         accounts.filter(account => account.id !== movingId),
         details,
         chainIds,
-    ).flatMap(holder => {
+    ).map(holder => {
         const addresses: Partial<Record<ChainId, string>> = {}
         for (const id of Object.keys(holder.chains) as ChainId[]) {
             const address = chainAccountOf(holder, id)?.address
             if (address !== undefined) addresses[id] = address
         }
-        const claim = ledgerHolderClaim({
+        return {
             id: holder.id,
             accountIndex: holder.custody.accountIndex,
             addresses,
-        })
-        return claim ? [claim] : []
+        }
     })
+    // Every held chain, not only the one a claim would read: a holder listing
+    // Algorand before Ethereum is proven by a Base verify all the same.
+    const metId = holders.find(holder =>
+        (Object.keys(holder.addresses) as ChainId[]).some(chainId => {
+            const address = holder.addresses[chainId]
+            return (
+                address !== undefined &&
+                addressCodecs.has(chainId) &&
+                isLedgerClaimMetBy(
+                    {
+                        holderId: holder.id,
+                        chainId,
+                        accountIndex: holder.accountIndex,
+                        address,
+                    },
+                    verifiedAddress,
+                )
+            )
+        }),
+    )?.id
+    // A proven target joins its holder, so the others at the position (every
+    // USB account at the index) need no read and no same-wallet prompt.
+    if (metId !== undefined) return { metId, claims: [] }
+    return {
+        claims: holders.flatMap(holder => {
+            const claim = ledgerHolderClaim(holder)
+            return claim ? [claim] : []
+        }),
+    }
+}
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
@@ -347,9 +386,25 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         }> = []
 
         // Default names number on from the ledger accounts already in the
-        // wallet ("Ledger 3" after two prior imports) — count-based, so
-        // renames/removals can repeat a number; names are not unique.
+        // wallet ("Ledger 3" after two prior imports); a number another
+        // account already shows is skipped, since removals and renames
+        // leave the count short of the highest number.
         let nextDefaultNameNumber = current.filter(isLedgerAccount).length + 1
+        const nextDefaultName = (): string => {
+            const taken = new Set(
+                getAllAccounts().map(a => normalizeAccountName(a.name ?? '')),
+            )
+            let name = t('ledger.default_account_name', {
+                number: nextDefaultNameNumber,
+            })
+            while (taken.has(normalizeAccountName(name))) {
+                nextDefaultNameNumber++
+                name = t('ledger.default_account_name', {
+                    number: nextDefaultNameNumber,
+                })
+            }
+            return name
+        }
 
         const detailsFor = (
             acc: HardwareWalletDerivedAccount,
@@ -485,32 +540,27 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 verifiedAddress: address,
             })),
         ]
-        const targetClaims = targets.map(target => claimsFor(current, target))
-        // An address just verified in the same device app proves its claim.
-        const met = targetClaims.flatMap((claims, i) =>
-            claims
-                .filter(claim =>
-                    isLedgerClaimMetBy(claim, targets[i].verifiedAddress),
-                )
-                .map(claim => claim.holderId),
+        const proofs = targets.map(target => proofFor(current, target))
+        const met = proofs.flatMap(({ metId }) =>
+            metId === undefined ? [] : [metId],
         )
-        const pending = targetClaims
-            .flat()
+        const pending = proofs
+            .flatMap(({ claims }) => claims)
             .filter(claim => !met.includes(claim.holderId))
         // Only an import with a claim left to read waits on the device.
         const read =
             pending.length > 0 ? await proveClaims(pending) : new Set<string>()
         if (!read) return
         const proven = new Set([...met, ...read])
-        const joinIdOf = (targetClaims: readonly LedgerHolderClaim[]) =>
-            targetClaims.find(claim => proven.has(claim.holderId))?.holderId
+        const joinIdOf = ({ metId, claims }: JoinProof) =>
+            metId ?? claims.find(claim => proven.has(claim.holderId))?.holderId
 
         upgrades.forEach((upgrade, i) => {
             upgradeWatchAccountToHardware(
                 upgrade.id,
                 upgrade.details,
                 chainId,
-                joinIdOf(targetClaims[i]),
+                joinIdOf(proofs[i]),
             )
         })
         rebinds.forEach((rebind, i) => {
@@ -518,7 +568,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 rebind.id,
                 rebind.details,
                 chainId,
-                joinIdOf(targetClaims[upgrades.length + i]),
+                joinIdOf(proofs[upgrades.length + i]),
             )
         })
         for (const [i, { address, details }] of hardwareEntries.entries()) {
@@ -527,11 +577,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 details,
                 chainId,
                 address,
-                t('ledger.default_account_name', {
-                    number: nextDefaultNameNumber,
-                }),
+                nextDefaultName(),
                 undefined,
-                joinIdOf(targetClaims[upgrades.length + rebinds.length + i]),
+                joinIdOf(proofs[upgrades.length + rebinds.length + i]),
             )
             // An entry joining the device's account keeps that account's
             // name, so only a created account uses up a number.

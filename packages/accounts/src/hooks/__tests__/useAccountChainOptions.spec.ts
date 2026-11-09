@@ -25,10 +25,12 @@ import {
     POLYGON,
     registerChainFamilies,
 } from '../../__tests__/chainFamilies'
+import { accountsChainAdapters } from '../../chain-adapter'
 import {
     accountChainOptions,
     useAccountChainOptionsResolver,
 } from '../useAccountChainOptions'
+import { useCanSignOnAnyChain } from '../useCanSignWith'
 
 const ledgerApps = vi.hoisted(() => new Set<string>())
 
@@ -140,5 +142,85 @@ describe('useAccountChainOptionsResolver', () => {
         expect(result.current(watched).map(option => option.chainId)).toEqual(
             EVM_CHAINS.filter(chainId => chainId !== BASE) as ChainId[],
         )
+    })
+
+    test('keeps its identity across renders while the enabled chains are unchanged', () => {
+        const { result, rerender } = renderHook(() =>
+            useAccountChainOptionsResolver('receive'),
+        )
+        const first = result.current
+
+        rerender()
+
+        expect(result.current).toBe(first)
+    })
+})
+
+describe('signability', () => {
+    const hd = buildTestAccount(TEST_CUSTODY.hd, {
+        [ETHEREUM]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+        [POLYGON]: { address: EVM_KEY_ADDRESS, keyPairId: 'k' },
+    })
+
+    const signsOn = (chainIds: readonly ChainId[]) => {
+        for (const chainId of [ALGORAND, ...EVM_CHAINS]) {
+            Object.assign(accountsChainAdapters.get(chainId), {
+                resolveSigner: (account: typeof hd) =>
+                    chainIds.includes(chainId)
+                        ? { kind: 'ok', signer: account }
+                        : {
+                              kind: 'authMissing',
+                              account,
+                              authorityAddress: 'AUTH',
+                          },
+            })
+        }
+    }
+
+    beforeEach(() => {
+        registerChainFamilies()
+    })
+
+    test('drops an enabled chain nothing held signs on when the flow signs, keeping the chains it could enable', () => {
+        signsOn([POLYGON])
+
+        const { result } = renderHook(() =>
+            useAccountChainOptionsResolver('send', { isSignerRequired: true }),
+        )
+
+        expect(result.current(hd).map(option => option.chainId)).toEqual([
+            POLYGON,
+            ...EVM_CHAINS.filter(
+                chainId => chainId !== ETHEREUM && chainId !== POLYGON,
+            ),
+        ])
+    })
+
+    test('keeps every enabled chain when the flow does not sign', () => {
+        signsOn([])
+
+        const { result } = renderHook(() =>
+            useAccountChainOptionsResolver('receive'),
+        )
+
+        expect(result.current(hd).map(option => option.chainId)).toContain(
+            ETHEREUM,
+        )
+    })
+
+    test('useCanSignOnAnyChain is true while one chain the account holds signs', () => {
+        signsOn([POLYGON])
+
+        const { result } = renderHook(() => useCanSignOnAnyChain(hd))
+
+        expect(result.current).toBe(true)
+    })
+
+    test('useCanSignOnAnyChain is false when no chain the account holds signs', () => {
+        signsOn([])
+
+        const { result } = renderHook(() => useCanSignOnAnyChain(hd))
+
+        expect(result.current).toBe(false)
     })
 })

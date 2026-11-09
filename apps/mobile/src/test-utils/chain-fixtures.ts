@@ -18,7 +18,6 @@ import {
     type ChainId,
     type ChainNetwork,
     type EvmChainId,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
@@ -26,10 +25,14 @@ import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
 } from '@packages/chain-algorand/src/capability-defaults'
-import { evmCapabilityDefaultsOf } from '@packages/chain-ethereum/src/capability-defaults'
+import {
+    evmCapabilityDefaultsOf,
+    evmCapabilityRestrictionsOf,
+} from '@packages/chain-ethereum/src/capability-defaults'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 export const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
 
@@ -92,7 +95,7 @@ export const registerEvmChain = (chainId: EvmChainId): void => {
         chains.register(
             chain.descriptor,
             evmCapabilityDefaultsOf(chain.row),
-            chain.row.restrictions,
+            evmCapabilityRestrictionsOf(chain.row),
         )
     }
     if (!addressCodecs.has(chainId)) {
@@ -129,7 +132,7 @@ export const registerLegacyAddressCodec = (
     addressCodecs.reset()
     addressCodecs.register({
         ...fixtureCodec,
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         isValid,
     })
 }

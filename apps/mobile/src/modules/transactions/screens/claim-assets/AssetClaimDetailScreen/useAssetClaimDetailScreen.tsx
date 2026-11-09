@@ -74,7 +74,7 @@ export const useAssetClaimDetailScreen =
         const account = accountAddress
             ? findAccountByAddressOn(accounts, scope.chainId, accountAddress)
             : undefined
-        const canBuy = useCanFundAccount(account)
+        const canBuy = useCanFundAccount(account, scope.chainId)
 
         // The opt-in this claim performs raises the account's minimum balance,
         // so a claim the backend says is unaffordable can only be unblocked by
@@ -90,8 +90,11 @@ export const useAssetClaimDetailScreen =
             !request.shouldUseFundsBeforeRejecting
 
         const handleAddFunds = useCallback(() => {
-            navigate('TabBar', { screen: 'Fund' })
-        }, [navigate])
+            navigate('TabBar', {
+                screen: 'Fund',
+                params: { chainId: scope.chainId },
+            })
+        }, [navigate, scope.chainId])
 
         const handleClaim = useCallback(() => {
             if (isClaimBlocked) {

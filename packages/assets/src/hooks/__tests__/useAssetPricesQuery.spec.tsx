@@ -26,10 +26,15 @@ const NATIVE_ASSET_ID = '0'
 
 const mocks = vi.hoisted(() => ({
     getAssetPricesByIds: vi.fn(),
+    fetchAndPersistPrices: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
     getAssetPricesByIds: mocks.getAssetPricesByIds,
+}))
+
+vi.mock('../../sync/price-syncer', () => ({
+    fetchAndPersistPrices: mocks.fetchAndPersistPrices,
 }))
 
 describe('useAssetPricesQuery', () => {
@@ -38,6 +43,7 @@ describe('useAssetPricesQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.getAssetPricesByIds.mockReturnValue([])
+        mocks.fetchAndPersistPrices.mockResolvedValue(undefined)
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -217,5 +223,82 @@ describe('useAssetPricesQuery', () => {
 
         expect(mocks.getAssetPricesByIds).not.toHaveBeenCalled()
         expect(result.current.isPending).toBe(false)
+    })
+
+    describe('fetchMissing', () => {
+        const options = { fetchMissing: true }
+
+        it('asks for every requested id, so a stored price is refreshed too, then reads them back', async () => {
+            const stale = { assetId: '1', usdPrice: new Decimal('2') }
+            const refreshed = { assetId: '1', usdPrice: new Decimal('2.5') }
+            const fetched = { assetId: '2', usdPrice: new Decimal('3') }
+            mocks.getAssetPricesByIds.mockResolvedValue([stale])
+            mocks.fetchAndPersistPrices.mockImplementation(async () => {
+                mocks.getAssetPricesByIds.mockResolvedValue([
+                    refreshed,
+                    fetched,
+                ])
+            })
+
+            const { result } = renderHook(
+                () =>
+                    useAssetPricesQuery(
+                        ETHEREUM_SEPOLIA,
+                        ['1', '2'],
+                        true,
+                        options,
+                    ),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() =>
+                expect(result.current.data.get('2')?.usdPrice).toEqual(
+                    new Decimal('3'),
+                ),
+            )
+            expect(result.current.data.get('1')?.usdPrice).toEqual(
+                new Decimal('2.5'),
+            )
+            expect(mocks.fetchAndPersistPrices).toHaveBeenCalledWith(
+                ['1', '2'],
+                ETHEREUM_SEPOLIA,
+            )
+        })
+
+        it('still returns the stored prices when the fetch fails', async () => {
+            const stored = { assetId: '1', usdPrice: new Decimal('2') }
+            mocks.getAssetPricesByIds.mockResolvedValue([stored])
+            mocks.fetchAndPersistPrices.mockRejectedValue(new Error('offline'))
+
+            const { result } = renderHook(
+                () =>
+                    useAssetPricesQuery(
+                        ETHEREUM_SEPOLIA,
+                        ['1', '2'],
+                        true,
+                        options,
+                    ),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            expect(result.current.isError).toBe(false)
+            expect(result.current.data.get('1')?.usdPrice).toEqual(
+                new Decimal('2'),
+            )
+            expect(result.current.data.has('2')).toBe(false)
+        })
+
+        it('never fetches without the option', async () => {
+            mocks.getAssetPricesByIds.mockResolvedValue([])
+
+            const { result } = renderHook(
+                () => useAssetPricesQuery(ETHEREUM_SEPOLIA, ['1']),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            expect(mocks.fetchAndPersistPrices).not.toHaveBeenCalled()
+        })
     })
 })

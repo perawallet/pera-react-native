@@ -62,7 +62,7 @@ export const fakeDeeplinkAdapter = (
                 intent: {
                     kind: 'payment',
                     target: { chainId },
-                    recipient: target,
+                    recipient: { address: target },
                     amount: new Decimal(amount),
                 },
             }

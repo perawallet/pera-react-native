@@ -26,17 +26,14 @@ import {
     useNativeAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    i18nKey,
-    LEGACY_CHAIN_ID,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     decodeBytesToText,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { algorandTransactionIconName } from '@modules/algorand/icons'
 import {
     useTransactionHeroTitle,
@@ -97,7 +94,7 @@ export const useAlgorandTransactionDetailLayout = (
     transaction: AlgorandTransactionView,
 ): TransactionDetailSummary => {
     const heroTitle = useTransactionHeroTitle()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const account = useSelectedAccount()
     const viewer = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
@@ -145,15 +142,18 @@ export const useAlgorandTransactionDetailLayout = (
             }
         }
 
+        // An inner transaction has a round but no id of its own.
+        const isOnChain = !!transaction.id || !!transaction.confirmedRound
+        // Only the sender pays the fee. One still to be signed, or seen with no
+        // account to compare, shows it.
+        const isFeeShown =
+            !isOnChain || !viewer || transaction.sender === viewer
+
         return {
             scope,
             iconName: algorandTransactionIconName(txType),
             title: heroTitle({ key: titleKeyOf(transaction, viewer) }),
-            // An inner transaction has a round but no id of its own.
-            status:
-                transaction.id || transaction.confirmedRound
-                    ? 'completed'
-                    : 'pending',
+            status: isOnChain ? 'completed' : 'pending',
             amount,
             isAmountLoading,
             transactionId: transaction.id || undefined,
@@ -166,13 +166,15 @@ export const useAlgorandTransactionDetailLayout = (
                 : undefined,
             from: transaction.sender,
             to,
-            fee: {
-                asset: nativeAsset,
-                value: baseUnitsToDisplayUnits(
-                    transaction.fee ?? 0n,
-                    nativeAsset.decimals,
-                ),
-            },
+            fee: isFeeShown
+                ? {
+                      asset: nativeAsset,
+                      value: baseUnitsToDisplayUnits(
+                          transaction.fee ?? 0n,
+                          nativeAsset.decimals,
+                      ),
+                  }
+                : undefined,
             note: decodeBytesToText(transaction.note) || undefined,
         }
     }, [

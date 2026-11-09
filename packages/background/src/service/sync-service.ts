@@ -13,8 +13,10 @@
 import { onlineManager } from '@tanstack/react-query'
 import {
     accountsChainAdapters,
+    invalidateAccountChartsForAddresses,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
+    invalidateAccountQueriesForScope,
 } from '@perawallet/wallet-core-accounts'
 import {
     assetsChainAdapters,
@@ -31,10 +33,14 @@ import {
 import {
     logger,
     calculateBackoff,
+    isBackoffDue,
     isPeraNetworkError,
+    nextBackoff,
+    type Backoff,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
+    parseScopeKey,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -42,6 +48,7 @@ import {
 import {
     broadcasterChainAdapters,
     reconcileOpenSubmissions,
+    resetSubmissionBackoff,
     subscribeToSubmissionLedger,
 } from '@perawallet/wallet-core-signing'
 import type { AssetSyncKind } from '../polling'
@@ -86,6 +93,11 @@ const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
 // Must stay above PRICE_CACHE_TTL_MS in packages/assets price-syncer, or the
 // TTL gate would classify every periodic pass as fresh and stop re-pricing.
 const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
+// A change signal can miss activity, and every "unchanged" answer would keep
+// the balance as it is indefinitely. A scope not read for this long is read anyway.
+export const MAX_UNREAD_SCOPE_MS = 5 * 60 * 1000
+const CHART_REFRESH_INTERVAL_MS = 5 * 60 * 1000
+const CHANGED_CHART_REFRESH_INTERVAL_MS = 60 * 1000
 
 type ScopeSyncOutcome = {
     hadTotalFailure: boolean
@@ -99,13 +111,13 @@ const CLEAN_OUTCOME: ScopeSyncOutcome = {
     isRateLimited: false,
 }
 
-/** `intervalMs` is a duration; `nextEligibleAt` is epoch ms from `Date.now()`. */
-type ScopeBackoff = { intervalMs: number; nextEligibleAt: number }
-
 const isFailedOutcome = (outcome: ScopeSyncOutcome): boolean =>
     outcome.hadTotalFailure ||
     outcome.hadAccountFailure ||
     outcome.isRateLimited
+
+/** Addresses on one network, refreshed together. */
+export type RefreshSource = { addresses: string[]; scope: ChainScope }
 
 type ChangeDecision = { changed: boolean; cursor: Nullable<number> }
 
@@ -115,17 +127,17 @@ const isRefusedCredential = (error: unknown): boolean =>
 export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
-    // A scope's first sync of the session skips its change signal: the
-    // persisted cursor may predate a relaunch, and the DB must be populated.
-    private forceSyncedScopes = new Set<ChainScopeKey>()
+    // When each scope's accounts were last read (epoch ms); a scope absent
+    // here is read without asking its change signal.
+    private scopeReadAt = new Map<ChainScopeKey, number>()
     // A scope whose change signal got a 401/403: the key is wrong/missing, a
     // config-level problem retrying every tick can't fix. Reset on
     // start()/restart() so a rebuilt or reconfigured session recovers.
     private authRefusedScopes = new Set<ChainScopeKey>()
     // Pacing for a scope that failed its last pass, so one unhealthy endpoint
     // costs only its own scope. Cleared on restart() and on reconnect, and an
-    // entry goes once its scope stops syncing (chain off, network switched).
-    private scopeBackoffs = new Map<ChainScopeKey, ScopeBackoff>()
+    // entry goes once its scope stops syncing (network switched).
+    private scopeBackoffs = new Map<ChainScopeKey, Backoff>()
     private currentInterval: number
     // Coalesce query invalidations. invalidateAccountQueries fans out to every
     // mounted balance/summary/list query (a wide read each), so firing it
@@ -155,6 +167,57 @@ export class SyncService {
     constructor(private readonly deps: SyncServiceDeps) {
         this.baseInterval = deps.pollIntervalMs ?? POLL_INTERVAL
         this.currentInterval = this.baseInterval
+    }
+
+    // A network's charts reload with its prices at most every
+    // CHART_REFRESH_INTERVAL_MS: on an EVM chain one chart is dozens of backend
+    // reads, and a price pass runs every minute per network. A chart still
+    // reloads on mount once stale, and on a pull to refresh.
+    private chartsRefreshedAt = new Map<ChainScopeKey, number>()
+
+    // True when this pass should reload the charts, recording that it did.
+    // The first pass after start only starts the clock: charts just loaded.
+    private claimChartRefresh(scopeKey: ChainScopeKey, nowMs: number): boolean {
+        const last = this.chartsRefreshedAt.get(scopeKey)
+        if (last !== undefined && nowMs - last < CHART_REFRESH_INTERVAL_MS) {
+            return false
+        }
+        this.chartsRefreshedAt.set(scopeKey, nowMs)
+        return last !== undefined
+    }
+
+    // A changed account's charts reload at most every
+    // CHANGED_CHART_REFRESH_INTERVAL_MS per network: an account that changes
+    // every block would otherwise reload them each tick. A change is held, not
+    // dropped, so its charts catch up within the interval.
+    private heldChartAddresses = new Map<ChainScopeKey, Set<string>>()
+    private changedChartsRefreshedAt = new Map<ChainScopeKey, number>()
+
+    private refreshChangedCharts(
+        scopeKey: ChainScopeKey,
+        changedAddresses: readonly string[],
+        nowMs: number,
+    ): void {
+        const held = this.heldChartAddresses.get(scopeKey) ?? new Set<string>()
+        changedAddresses.forEach(address => held.add(address))
+        this.heldChartAddresses.set(scopeKey, held)
+        const last = this.changedChartsRefreshedAt.get(scopeKey)
+        if (
+            held.size === 0 ||
+            (last !== undefined &&
+                nowMs - last < CHANGED_CHART_REFRESH_INTERVAL_MS)
+        ) {
+            return
+        }
+        const addresses = [...held]
+        held.clear()
+        this.changedChartsRefreshedAt.set(scopeKey, nowMs)
+        this.debouncedInvalidate(`account-charts:${scopeKey}`, () =>
+            invalidateAccountChartsForAddresses(
+                this.deps.queryClient,
+                addresses,
+            ),
+        )
     }
 
     private debouncedInvalidate(
@@ -231,19 +294,40 @@ export class SyncService {
      * offline-scheduled timer so the reconnect tick isn't duplicated.
      */
     private handleReconnect(): void {
-        if (!this.running || this.syncInProgress) return
+        if (!this.running) return
+        // Ahead of the in-progress guard, so a reconnect mid-tick still has
+        // the next tick read past the signal.
+        this.scopeReadAt.clear()
+        if (this.syncInProgress) return
         if (this.timer !== null) {
             clearTimeout(this.timer)
             this.timer = null
         }
-        this.scopeBackoffs.clear()
+        this.clearBackoffs()
         void this.tick()
+    }
+
+    // Pending sends too, or their rows would wait out a backoff from before
+    // the reconnect while balances refresh at once.
+    private clearBackoffs(): void {
+        this.scopeBackoffs.clear()
+        for (const { id } of this.deps.chains.list()) {
+            if (broadcasterChainAdapters.has(id)) resetSubmissionBackoff(id)
+        }
+    }
+
+    /**
+     * Has the next tick read every scope without asking its change signal, for
+     * a return from the background: balances may have moved while it was away.
+     */
+    markAllScopesStale(): void {
+        this.scopeReadAt.clear()
     }
 
     restart(): void {
         this.stop()
-        this.forceSyncedScopes.clear()
-        this.scopeBackoffs.clear()
+        this.scopeReadAt.clear()
+        this.clearBackoffs()
         this.currentInterval = this.baseInterval
         this.start()
     }
@@ -342,15 +426,11 @@ export class SyncService {
         try {
             await this.reconcileSubmissions()
 
-            const { chains, stores } = this.deps
+            const { stores } = this.deps
             const groups = groupAddressesByScope(
                 stores.getAccountChainAddresses(),
                 stores.getSelectedScope,
-            ).filter(
-                ({ scope }) =>
-                    !chains.isSwitchedOff(scope.chainId) &&
-                    accountsChainAdapters.has(scope.chainId),
-            )
+            ).filter(({ scope }) => accountsChainAdapters.has(scope.chainId))
 
             const groupKeys = new Set(
                 groups.map(({ scope }) => toScopeKey(scope)),
@@ -363,7 +443,7 @@ export class SyncService {
             // within this tick.
             const nowMs = Date.now()
             const due = groups.filter(({ scope }) =>
-                this.isScopeDue(toScopeKey(scope), nowMs),
+                isBackoffDue(this.scopeBackoffs.get(toScopeKey(scope)), nowMs),
             )
             const results = await Promise.allSettled(
                 due.map(group => this.syncScope(group)),
@@ -404,20 +484,7 @@ export class SyncService {
         }
     }
 
-    private isScopeDue(key: ChainScopeKey, nowMs: number): boolean {
-        const backoff = this.scopeBackoffs.get(key)
-        if (backoff === undefined) return true
-        // A wait longer than the interval itself means the device clock moved
-        // back; without this the scope would stall for the whole skew.
-        if (backoff.nextEligibleAt - nowMs > backoff.intervalMs) return true
-        return backoff.nextEligibleAt <= nowMs
-    }
-
-    /**
-     * Returns true when the scope failed. `tickStartedAtMs` anchors the wait:
-     * the loop timer is armed only after the tick settles, so the tick's own
-     * duration absorbs a timer firing a few ms early when the intervals match.
-     */
+    /** Returns true when the scope failed. */
     private recordScopeResult(
         scope: ChainScope,
         result: PromiseSettledResult<ScopeSyncOutcome>,
@@ -446,15 +513,18 @@ export class SyncService {
             this.scopeBackoffs.delete(key)
             return false
         }
-        const intervalMs = calculateBackoff(
-            this.scopeBackoffs.get(key)?.intervalMs ?? this.baseInterval,
-            BACKOFF_MULTIPLIER,
-            MAX_BACKOFF_INTERVAL,
+        this.scopeBackoffs.set(
+            key,
+            nextBackoff(this.scopeBackoffs.get(key), tickStartedAtMs, {
+                firstIntervalMs: calculateBackoff(
+                    this.baseInterval,
+                    BACKOFF_MULTIPLIER,
+                    MAX_BACKOFF_INTERVAL,
+                ),
+                multiplier: BACKOFF_MULTIPLIER,
+                maxIntervalMs: MAX_BACKOFF_INTERVAL,
+            }),
         )
-        this.scopeBackoffs.set(key, {
-            intervalMs,
-            nextEligibleAt: tickStartedAtMs + intervalMs,
-        })
         return true
     }
 
@@ -468,23 +538,27 @@ export class SyncService {
     }
 
     /**
-     * Settles open submission-attempt rows of every chain that is on and
-     * broadcasts. Per chain rather than per account group, so rows still
-     * settle once no account is left on the chain. Bounded, a no-op when
+     * Settles open submission-attempt rows of every chain that broadcasts.
+     * Per chain rather than per account group, so rows still settle once no
+     * account is left on the chain. Bounded, a no-op when
      * nothing is open, and never throws.
      */
     private async reconcileSubmissions(): Promise<void> {
         for (const { id } of this.deps.chains.list()) {
-            if (this.deps.chains.isSwitchedOff(id)) continue
             if (!broadcasterChainAdapters.has(id)) continue
             const summary = await reconcileOpenSubmissions(id)
-            if (summary.confirmed + summary.failed > 0) {
-                // A settled row changes the pending history row's status, and
+            if (summary.confirmed + summary.failed + summary.progressed > 0) {
+                // A settled or progressed row changes the pending history row's status, and
                 // history queries are DB-cached with staleTime: Infinity, so a
                 // settle on a no-work tick would otherwise leave a stale row.
                 // Only the settled chain's: another chain's backend-read
                 // History would refetch for nothing.
                 invalidateTransactionQueriesForChain(this.deps.queryClient, id)
+                for (const key of this.scopeReadAt.keys()) {
+                    if (parseScopeKey(key).chainId === id) {
+                        this.scopeReadAt.delete(key)
+                    }
+                }
             }
         }
     }
@@ -493,8 +567,13 @@ export class SyncService {
         const { scope, addresses } = group
         const key = toScopeKey(scope)
 
-        if (!this.forceSyncedScopes.has(key)) {
-            this.forceSyncedScopes.add(key)
+        const nowMs = Date.now()
+        const lastReadAt = this.scopeReadAt.get(key)
+        const unreadMs =
+            lastReadAt === undefined ? Infinity : nowMs - lastReadAt
+        // Negative when the device clock moved back; read rather than stall.
+        if (unreadMs < 0 || unreadMs >= MAX_UNREAD_SCOPE_MS) {
+            this.scopeReadAt.set(key, nowMs)
             return this.syncScopeState(scope, addresses, null)
         }
 
@@ -510,8 +589,11 @@ export class SyncService {
             ) {
                 this.deps.stores.setChangeCursor(scope, signal.cursor)
             }
+            // Nothing new to read, but a change held earlier may now be due.
+            this.refreshChangedCharts(key, [], nowMs)
             return CLEAN_OUTCOME
         }
+        this.scopeReadAt.set(key, nowMs)
         return this.syncScopeState(scope, addresses, signal.cursor ?? null)
     }
 
@@ -606,11 +688,13 @@ export class SyncService {
                 invalidateAccountQueriesForAddresses(
                     this.deps.queryClient,
                     changedAddresses,
+                    { includeCharts: false },
                 ),
             )
         }
 
         const nowMs = Date.now()
+        this.refreshChangedCharts(toScopeKey(scope), changedAddresses, nowMs)
         const dueKinds = this.dueAssetKinds(
             scope,
             nowMs,
@@ -629,15 +713,20 @@ export class SyncService {
                 this.deps.stores.setLastSyncAt(scope, kind, nowMs)
             }
             // Skipped when every batch was rejected. Account queries go too:
-            // the balance/holdings read joins in metadata + price, and any
-            // account may hold the new assets, so this one is necessarily
-            // broad.
+            // the balance/holdings read joins in metadata + price, but only
+            // this network's assets changed.
             if (assetPass.hasSuccess) {
                 this.debouncedInvalidate('assets', () =>
                     invalidateAssetQueries(this.deps.queryClient),
                 )
-                this.debouncedInvalidate('accounts-assets', () =>
-                    invalidateAccountQueries(this.deps.queryClient),
+                const scopeKey = toScopeKey(scope)
+                const includeCharts = this.claimChartRefresh(scopeKey, nowMs)
+                this.debouncedInvalidate(`accounts-assets:${scopeKey}`, () =>
+                    invalidateAccountQueriesForScope(
+                        this.deps.queryClient,
+                        scope,
+                        { includeCharts },
+                    ),
                 )
             }
         }
@@ -732,8 +821,65 @@ export class SyncService {
         addresses: string[],
         scope: ChainScope,
     ): Promise<void> {
-        if (addresses.length === 0) return
+        return this.refreshSources([{ addresses, scope }])
+    }
 
+    /**
+     * `refreshAccounts` over several networks at once, as one pull on an
+     * account holding several chains. Each network reads on its own, so a
+     * failing one never holds back the rest; the app-wide invalidations fire
+     * once for the lot. Rejects with the first failure after the others land.
+     */
+    async refreshSources(sources: readonly RefreshSource[]): Promise<void> {
+        const targets = sources.filter(({ addresses }) => addresses.length > 0)
+        if (targets.length === 0) return
+
+        const reads = await Promise.allSettled(
+            targets.map(({ addresses, scope }) =>
+                this.readRefreshSource(addresses, scope),
+            ),
+        )
+        const landed = targets.flatMap((target, index) => {
+            const read = reads[index]!
+            return read.status === 'fulfilled'
+                ? [{ ...target, ...read.value }]
+                : []
+        })
+
+        if (landed.some(read => read.hasAssetsRefreshed)) {
+            invalidateAssetQueries(this.deps.queryClient)
+        }
+        // A holdings change ripples beyond the refreshed addresses (any
+        // mounted account read joins in the just-fetched asset metadata and
+        // prices), so match the tick's broad accounts pass in that case.
+        // Otherwise scope to the refreshed addresses — including the
+        // multi-account wealth chart, which must reflect the send immediately.
+        if (landed.some(read => read.hasHoldingsChanged)) {
+            invalidateAccountQueries(this.deps.queryClient)
+        } else if (landed.length > 0) {
+            invalidateAccountQueriesForAddresses(
+                this.deps.queryClient,
+                landed.flatMap(({ addresses }) => addresses),
+                { includeMultiAccountKeys: true },
+            )
+        }
+        landed.forEach(({ addresses, scope }) =>
+            invalidateTransactionQueriesForAddresses(
+                this.deps.queryClient,
+                addresses,
+                scope,
+                { shouldRefetchAllPages: true },
+            ),
+        )
+
+        const failed = reads.find(read => read.status === 'rejected')
+        if (failed) throw failed.reason
+    }
+
+    private async readRefreshSource(
+        addresses: string[],
+        scope: ChainScope,
+    ): Promise<{ hasHoldingsChanged: boolean; hasAssetsRefreshed: boolean }> {
         const accountPass = await syncAccountsPhase(
             addresses,
             scope,
@@ -746,48 +892,29 @@ export class SyncService {
         // coarse tick, which by then sees the holding already persisted
         // (holdingsChanged === false) and won't fetch until the interval elapses.
         const { hasHoldingsChanged } = accountPass
-        if (hasHoldingsChanged) {
-            // Self-contained so a read failure here can't skip the invalidations
-            // below. refreshAccounts logs but never throws.
-            try {
-                const assetPass = await syncAssetsPhase(
-                    scope,
-                    ['assets', 'prices'],
-                    'refresh-asset-metadata-or-prices',
-                )
-                if (assetPass.hasSuccess) {
-                    invalidateAssetQueries(this.deps.queryClient)
-                }
-            } catch (error) {
-                logger.warn('Refresh asset enrichment failed', {
-                    scope,
-                    error:
-                        error instanceof Error
-                            ? { message: error.message, stack: error.stack }
-                            : error,
-                })
-            }
+        if (!hasHoldingsChanged) {
+            return { hasHoldingsChanged, hasAssetsRefreshed: false }
         }
-
-        // A holdings change ripples beyond the refreshed addresses (any
-        // mounted account read joins in the just-fetched asset metadata and
-        // prices), so match the tick's broad accounts pass in that case.
-        // Otherwise scope to the refreshed addresses — including the
-        // multi-account wealth chart, which must reflect the send immediately.
-        if (hasHoldingsChanged) {
-            invalidateAccountQueries(this.deps.queryClient)
-        } else {
-            invalidateAccountQueriesForAddresses(
-                this.deps.queryClient,
-                addresses,
-                { includeMultiAccountKeys: true },
+        // Self-contained so a read failure here can't skip the invalidations.
+        try {
+            const assetPass = await syncAssetsPhase(
+                scope,
+                ['assets', 'prices'],
+                'refresh-asset-metadata-or-prices',
             )
+            return {
+                hasHoldingsChanged,
+                hasAssetsRefreshed: assetPass.hasSuccess,
+            }
+        } catch (error) {
+            logger.warn('Refresh asset enrichment failed', {
+                scope,
+                error:
+                    error instanceof Error
+                        ? { message: error.message, stack: error.stack }
+                        : error,
+            })
+            return { hasHoldingsChanged, hasAssetsRefreshed: false }
         }
-        invalidateTransactionQueriesForAddresses(
-            this.deps.queryClient,
-            addresses,
-            scope,
-            { shouldRefetchAllPages: true },
-        )
     }
 }

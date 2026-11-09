@@ -70,6 +70,7 @@ export const fetchAssetItems = async (
     scope: ChainScope,
     chain: EvmChain,
     assetIds: string[],
+    signal?: AbortSignal,
 ): Promise<Nullable<AssetItemSchemaOutput>[]> => {
     if (assetIds.length === 0) return []
     const ids = assetIds.map(id => toCaip19(id, scope, chain))
@@ -81,6 +82,7 @@ export const fetchAssetItems = async (
         url: ASSETS_PATH,
         headers: buildIntegrityHeaders(),
         data: { ids },
+        signal,
     })
     const { results } = assetsResponseSchema.parse(data)
     // Items carry no key of their own beyond position, so a misaligned answer
@@ -171,6 +173,7 @@ export const fetchHasNftHoldings = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
+    signal?: AbortSignal,
 ): Promise<boolean> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
@@ -182,6 +185,7 @@ export const fetchHasNftHoldings = async (
             address.toLowerCase(),
         ),
         headers: buildIntegrityHeaders(),
+        signal,
         ...DISCOVERY_LOOKUP_BOUNDS,
     })
     const { results, next } = nftHoldingsPageSchema.parse(data)
@@ -248,6 +252,7 @@ export const fetchPriceChart = async (
     chain: EvmChain,
     assetId: string,
     query: ChartQuery,
+    signal?: AbortSignal,
 ): Promise<PriceHistoryPoint[]> => {
     try {
         const { data } = await queryClient<unknown>({
@@ -258,6 +263,7 @@ export const fetchPriceChart = async (
             url: CHART_PATH,
             params: { id: toCaip19(assetId, scope, chain), ...query },
             headers: buildIntegrityHeaders(),
+            signal,
             timeout: CHART_QUERY_TIMEOUT_MS,
         })
         return chartResponseSchema.parse(data).map(point => ({

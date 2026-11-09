@@ -14,11 +14,11 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     truncateAlgorandAddress,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { AccountIcon } from '@components/AccountIcon'
 import { useAccountName } from '@hooks/useAccountName'
@@ -44,9 +44,9 @@ export const RekeySummaryRow = ({
     if (!account) return null
 
     const truncated = truncateAlgorandAddress(
-        chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? '',
+        chainAccountOf(account, ALGORAND_CHAIN_ID)?.address ?? '',
     )
-    const name = getAccountName(account, LEGACY_CHAIN_ID)
+    const name = getAccountName(account, ALGORAND_CHAIN_ID)
 
     return (
         <PWListItemLayout

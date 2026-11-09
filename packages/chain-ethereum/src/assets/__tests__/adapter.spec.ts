@@ -219,7 +219,7 @@ describe('getAssetMetadata', () => {
                 assets: { [USDC_CAIP19]: usdcFromPera },
             }),
         )
-        const { node } = memoryPersistence()
+        const { node, full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
             ETHEREUM,
@@ -237,7 +237,17 @@ describe('getAssetMetadata', () => {
             },
         })
         expect(asset.totalSupply.toFixed()).toBe('1000000000000')
-        expect(node.map(a => a.assetId)).toEqual([USDC])
+        // Both halves: a node row alone reads as fresh for the TTL and would
+        // keep the backend's logo and tier out of the store.
+        expect(node).toEqual([])
+        expect(full).toHaveLength(1)
+        expect(full[0]).toMatchObject({
+            assetId: USDC,
+            peraMetadata: {
+                verificationTier: 'verified',
+                logo: 'https://pera.test/usdc.png',
+            },
+        })
     })
 
     it('falls back to the backend record when the chain read fails', async () => {
@@ -400,7 +410,10 @@ describe('syncAssets', () => {
         await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
-            expect.objectContaining({ assetIds: [USDC, DAI] }),
+            expect.objectContaining({
+                assetIds: [USDC, DAI],
+                recheckMissingLogo: true,
+            }),
         )
         expect(requested).toEqual([{ ids: [USDC_CAIP19] }])
         expect(full.map(a => a.assetId)).toEqual([USDC])
@@ -531,6 +544,31 @@ describe('syncAssets', () => {
             },
         })
         expect(node).toEqual([])
+    })
+
+    it("stores a backend-known token with the backend's total supply", async () => {
+        server.use(
+            ...rpc({ [USDC]: usdcOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: {
+                        ...usdcFromPera,
+                        total: '61234567890000000',
+                    },
+                },
+            }),
+        )
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([ref(USDC)], SCOPE)
+
+        expect(full).toHaveLength(1)
+        expect(full[0]!.totalSupply.toFixed()).toBe('61234567890000000')
     })
 
     it("stores a contract's 0 decimals over the backend's", async () => {
@@ -804,8 +842,8 @@ describe('syncAssets', () => {
         expect(full).toHaveLength(501)
         expect(full[0]?.decimals).toBe(6)
         expect(full[500]?.decimals).toBe(2)
-        // 501 reads are two aggregates in one request.
-        expect(ethCalls.filter(calls => calls.length > 0)).toHaveLength(1)
+        // 501 reads are two aggregates, each too big to share a request.
+        expect(ethCalls.filter(calls => calls.length > 0)).toHaveLength(2)
         expect(ethCalls.flat()).toHaveLength(2)
         expect(
             ethCalls
@@ -1597,6 +1635,62 @@ describe('NFTs', () => {
         await expect(ops.getAssetMetadata(ref(APE), SCOPE)).rejects.toThrow()
     })
 
+    describe('findCollectibleMetadata', () => {
+        it('resolves the NFT the backend knows, and stores it', async () => {
+            server.use(
+                ...peraEvmAssetHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    nfts: { [ERC721_ID]: evmNftItem() },
+                }),
+            )
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: nftServices }),
+                ETHEREUM,
+            )
+
+            const asset = await ops.findCollectibleMetadata!(ref(APE), SCOPE)
+
+            expect(asset?.assetId).toBe(APE)
+            expect(repository.full.map(a => a.assetId)).toEqual([APE])
+        })
+
+        it('settles on null for an NFT neither the backend nor the cache knows', async () => {
+            server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: nftServices }),
+                ETHEREUM,
+            )
+
+            await expect(
+                ops.findCollectibleMetadata!(ref(APE), SCOPE),
+            ).resolves.toBeNull()
+        })
+
+        it('settles on null without a request on a scope with no NFT service', async () => {
+            const urls = recordRequests()
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: ['assets', 'prices'] }),
+                ETHEREUM,
+            )
+
+            await expect(
+                ops.findCollectibleMetadata!(ref(APE), SCOPE),
+            ).resolves.toBeNull()
+            expect(urls).toEqual([])
+        })
+
+        it('settles on null for an id that is not an NFT', async () => {
+            const ops = createEthereumAssetsAdapter(
+                testChainContext({ services: nftServices }),
+                ETHEREUM,
+            )
+
+            await expect(
+                ops.findCollectibleMetadata!(ref(BAYC), SCOPE),
+            ).resolves.toBeNull()
+        })
+    })
+
     it('never reads an NFT as an ERC-20 or prices it', async () => {
         const urls = recordRequests()
         const ops = createEthereumAssetsAdapter(
@@ -1694,6 +1788,32 @@ describe('search on every EVM chain and network', () => {
 
             expect(isChainRefusedError(error)).toBe(true)
             expect(isAssetSearchUnavailableError(error)).toBe(true)
+        },
+    )
+
+    it.each(NETWORKS)(
+        '%s: a scope its deployment refuses asks nothing and rejects as a chain refusal',
+        async (_network, chain, tier) => {
+            const requested: string[] = []
+            server.use(
+                http.get(tokenListPath, ({ params }) => {
+                    requested.push(String(params.chainId))
+                    return HttpResponse.json({ results: [] })
+                }),
+            )
+            const adapter = createEthereumAssetsAdapter(
+                testChainContext({ chain, isChainRefused: true }),
+                chain,
+            )
+
+            const error = await adapter.search!(
+                { query: '', hasCollectible: false },
+                evmScopeOf(chain, tier),
+            ).catch((caught: unknown) => caught)
+
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(isAssetSearchUnavailableError(error)).toBe(true)
+            expect(requested).toEqual([])
         },
     )
 

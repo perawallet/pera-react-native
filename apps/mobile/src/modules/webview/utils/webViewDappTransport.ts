@@ -64,6 +64,11 @@ export type WebViewDappTransport = DappTransport & {
         message: Eip1193PageMessage,
         sourceUrl: string,
     ) => void
+    /**
+     * Injected rather than imported: the security store runs `guardedPersist`
+     * at import, which would load it into every importer of this module.
+     */
+    bindLockState: (isLocked: () => boolean) => void
 }
 
 type RequestListener = Parameters<DappTransport['onRequest']>[0]
@@ -89,6 +94,8 @@ const httpsOriginOf = (url: string): Nullable<string> => {
 export const createWebViewDappTransport = (): WebViewDappTransport => {
     const pages = new Set<WebViewDappPage>()
     let listener: Nullable<RequestListener> = null
+    // Locked until a source is bound, so an unwired transport reveals nothing.
+    let isLocked = (): boolean => true
 
     const attach = (page: WebViewDappPage): (() => void) => {
         pages.add(page)
@@ -143,6 +150,7 @@ export const createWebViewDappTransport = (): WebViewDappTransport => {
         const ctx: DappRequestContext = {
             origin,
             hasUserActivation: message.hasUserActivation,
+            isWalletLocked: isLocked(),
         }
         // The handler logs a rejection; an answer for a page that has
         // navigated away is dropped here rather than injected.
@@ -161,6 +169,9 @@ export const createWebViewDappTransport = (): WebViewDappTransport => {
     return {
         attach,
         receive,
+        bindLockState: source => {
+            isLocked = source
+        },
         onRequest: next => {
             listener = next
             return () => {

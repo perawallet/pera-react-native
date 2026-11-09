@@ -305,6 +305,10 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             { timeout: 5000 },
         )
 
+        expect(
+            screen.getByText('onboarding.import_select_addresses.go_to_wallet'),
+        ).toBeTruthy()
+
         // Already-imported addresses render a chip instead of a checkbox,
         // so the per-address checkbox is absent.
         expect(
@@ -317,7 +321,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
-    it('Given discovery finds three derived addresses, when the user keeps the default selection and continues, then only that one address is persisted', async () => {
+    it('Given discovery finds three derived addresses, when the user keeps the default selection and continues, then all three are persisted', async () => {
         // Pre-compute the addresses discovery would surface for keyIndex
         // 0–2 of account 0. We mock fast-lookup to return `account_exists`
         // for these three; the catch-all returns false so the scan stops
@@ -350,8 +354,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
 
         await startHDImportThroughMnemonic(HD_TEST_MNEMONIC_24_WORDS)
 
-        // All three checkboxes render — the first is auto-selected by the
-        // hook (`new Set([newAccounts[0].address])`).
+        // All three checkboxes render, every new account preselected.
         await waitFor(
             () => {
                 expect(
@@ -373,14 +376,11 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             ),
         ).toBeTruthy()
 
-        // Continue with only the auto-selected first address.
         fireEvent.click(
             screen.getByTestId('import_select_addresses_continue_button'),
         )
 
-        // Single committed account → name it before finishing.
-        await advanceThroughNameAccount()
-
+        // Several committed accounts keep their generated names.
         await waitFor(
             () => {
                 expect(useOnboardingStore.getState().isOnboarding).toBe(false)
@@ -388,14 +388,14 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             { timeout: 5000 },
         )
 
-        // Exactly the auto-selected (first) address is persisted; the other
-        // two discovered candidates are dropped.
         const accounts = useAccountsStore.getState().accounts
-        expect(accounts).toHaveLength(1)
-        expect(addressOf(accounts[0])).toBe(addr0)
+        expect(accounts.map(addressOf)).toEqual(
+            expect.arrayContaining([addr0, addr1, addr2]),
+        )
+        expect(accounts).toHaveLength(3)
     })
 
-    it('Given discovery finds three derived addresses, when the user toggles the selection so only the third is selected, then only that address is persisted', async () => {
+    it('Given discovery finds three derived addresses, when the user deselects the first two, then only that address is persisted', async () => {
         const addr0 = HD_TEST_ADDRESS
         const addr1 = await deriveTestHDAddress(0, 1)
         const addr2 = await deriveTestHDAddress(0, 2)
@@ -450,7 +450,7 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             return row
         }
         fireEvent.click(rowOf(addr0))
-        fireEvent.click(rowOf(addr2))
+        fireEvent.click(rowOf(addr1))
 
         fireEvent.click(
             screen.getByTestId('import_select_addresses_continue_button'),
@@ -581,9 +581,8 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             { timeout: 5000 },
         )
 
-        // The selected derived address (addr0 by default) is persisted.
+        // Every derived address is preselected, so all three are persisted.
         const accounts = useAccountsStore.getState().accounts
-        expect(accounts).toHaveLength(1)
-        expect(addressOf(accounts[0])).toBe(addr0)
+        expect(accounts).toHaveLength(3)
     })
 })

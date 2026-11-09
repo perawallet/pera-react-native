@@ -13,18 +13,34 @@
 import type { Decimal } from 'decimal.js'
 
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
-import type { MinimalAsset } from '@perawallet/wallet-core-assets'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { AssetGroup, MinimalAsset } from '@perawallet/wallet-core-assets'
+import type {
+    AssetRef,
+    ChainId,
+    ChainScope,
+    NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
 
 export type SwapsState = BaseStoreState & {
     /** null until the user picks one: the chain's native asset. */
     fromAsset: Nullable<string>
     /** null until the user picks one: the chain adapter's default receive asset. */
     toAsset: Nullable<string>
+    /** Where `toAsset` lives; null means the swap scope. */
+    toAssetScope: Nullable<ChainScope>
+    /** The account receiving a cross-chain swap; null picks the default. */
+    receivingAccountId: Nullable<string>
+    /** The chain the user chose to pay from; null picks the default. */
+    sourceChainId: Nullable<ChainId>
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
-    setToAsset: (toAsset: string) => void
+    setToAsset: (toAsset: string, toAssetScope?: Nullable<ChainScope>) => void
+    setReceivingAccountId: (id: Nullable<string>) => void
+    /** Clears the pair and the receiving account: they belong to the old chain. */
+    setSourceChainId: (chainId: Nullable<ChainId>) => void
+    /** Pays with `fromAsset` on `chainId`; clears the receive side and receiving account: they belong to the old chain. */
+    setSourceAsset: (chainId: ChainId, fromAsset: string) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
 }
@@ -35,6 +51,7 @@ export type SwapConfigurationResult = {
     useLocalCurrency: boolean
 }
 
+/** The router's id for whoever fills the offer, passed through unread. */
 export type SwapProvider = string
 
 export type SwapStatus =
@@ -43,134 +60,179 @@ export type SwapStatus =
     | 'completed'
     | 'failed'
     | 'cancelled'
+    | 'expired'
+    | 'refunded'
 
-export type SwapType = 'fixed-input' | 'fixed-output'
+/** An asset on one chain network; `assetId` is the chain's own id for it. */
+export interface SwapAssetRef extends AssetRef {
+    networkId: NetworkId
+}
 
-export type TransactionGroupPurpose = 'opt-in' | 'swap' | 'fee'
-
-export type SwapReason =
-    | 'other'
-    | 'user_cancelled'
-    | 'invalid_submission'
-    | 'blockchain_error'
-
-export type SwapVersion = 'v1' | 'v2'
-
-export interface DexSwapAsset extends MinimalAsset {
+/** `assetId` always equals `ref.assetId`. */
+export interface SwapAsset extends MinimalAsset {
+    ref: SwapAssetRef
     logo?: string
-    total?: string
     verificationTier: string
-    usdValue?: Nullable<string>
+    crossChainAssetGroup: Nullable<AssetGroup>
 }
 
-export interface SwapHistoryItem {
-    /** Decimal string — backend ids exceed 2^53 and must not live in a JS number. */
-    id: string
-    idStr?: Nullable<string>
-    provider: SwapProvider
-    status: SwapStatus
-    completedDatetime: Nullable<string>
-    transactionGroupId: Nullable<string>
-    assetIn: DexSwapAsset
-    assetOut: DexSwapAsset
-    /** Amount of input asset swapped, in base units */
-    amountIn: Decimal
-    /** Amount of output asset received, in base units */
-    amountOut: Decimal
-    amountInUsdValue?: Nullable<string>
-    amountOutUsdValue?: Nullable<string>
+export type SwapRouteKind = 'single-chain' | 'cross-chain'
+
+export type SwapFeeKind = 'pera' | 'network' | 'provider'
+
+export interface SwapFee {
+    kind: SwapFeeKind
+    asset: SwapAssetRef
+    /** Base units of `asset`. */
+    amount: Decimal
+    usdValue: Nullable<string>
 }
 
-export interface SwapDistinctPairItem {
-    assetIn: DexSwapAsset
-    assetOut: DexSwapAsset
-    swapDatetime: string
-    pairKey: string
+/** What the app asked the router for; the trust anchor for validating what comes back. */
+export interface SwapQuoteRequest {
+    sourceAsset: SwapAssetRef
+    destinationAsset: SwapAssetRef
+    /** Base units of `sourceAsset`. */
+    sourceAmount: Decimal
+    sourceAddress: string
+    destinationAddress: string
+    /** Percent, e.g. "0.5"; null leaves the router's default. */
+    slippage: Nullable<string>
 }
 
 export interface SwapQuote {
-    /** Decimal string — backend ids exceed 2^53; quoteIdStr is canonical. */
-    id?: string
-    quoteIdStr?: string
-    provider?: SwapProvider
-    providerDisplayName?: string
-    swapType?: SwapType
-    swapperAddress?: string
-    device?: Nullable<string>
-    assetIn: DexSwapAsset
-    assetOut: DexSwapAsset
-    /** Amount of input asset, in base units */
-    amountIn?: Decimal
-    /** Amount of input asset with slippage applied, in base units */
-    amountInWithSlippage?: Decimal
-    amountInUsdValue?: Nullable<string>
-    /** Amount of output asset, in base units */
-    amountOut?: Decimal
-    /** Amount of output asset with slippage applied, in base units */
-    amountOutWithSlippage?: Decimal
-    amountOutUsdValue?: Nullable<string>
-    slippage?: Decimal
-    price?: Decimal
-    priceImpact?: Decimal
-    peraFeeAmount?: Decimal
-    peraFeeAsset?: DexSwapAsset
-    transactionFees?: Nullable<Decimal>
+    quoteId: string
+    request: SwapQuoteRequest
+    provider: SwapProvider
+    routeKind: SwapRouteKind
+    assetIn: SwapAsset
+    assetOut: SwapAsset
+    /** Base units of `assetIn`. */
+    amountIn: Decimal
+    /** Base units of `assetOut`, already net of every fee. */
+    amountOut: Decimal
+    /** Base units of `assetOut`; null when the route sets no minimum. */
+    minimumAmountOut: Nullable<Decimal>
+    amountInUsdValue: Nullable<string>
+    amountOutUsdValue: Nullable<string>
+    fees: SwapFee[]
+    /** Percent. */
+    priceImpact: Nullable<Decimal>
+    /** Epoch ms; null when the router gives no expiry. */
+    expiresAt: Nullable<number>
+    /** Epoch ms, client-stamped: the reference point for `isQuoteFresh`. */
+    fetchedAt: number
+    /** The source-chain address the source leg must pay; null when the router names none. */
+    depositAddress: Nullable<string>
+}
+
+export type SwapSignTransactionsStep = {
+    kind: 'sign-transactions'
+    scope: ChainScope
+    /** The router's label for the step, echoed back when reporting it. */
+    purpose: string
+    /** In the chain's own wire encoding. */
+    transactions: string[]
     /**
-     * Epoch ms when the quote was received (client-stamped in the
-     * transformer). Quotes older than `SWAP_QUOTE_TTL_MS` are refused at
-     * confirm time — see `isQuoteFresh`.
+     * Positional with `transactions`: null where the wallet signs, the signed
+     * transaction where the provider already did. Null when nothing is.
      */
-    fetchedAt?: number
+    presignedTransactions: Nullable<Nullable<string>[]>
 }
 
-export interface TransactionGroup {
-    purpose?: TransactionGroupPurpose
-    transactionGroupId?: string
-    transactions?: Nullable<string>[]
-    signedTransactions?: Nullable<string>[]
-}
+export type SwapOrderStep =
+    | SwapSignTransactionsStep
+    | { kind: 'unsupported'; routerKind: string }
 
-export interface SwapProviderItem {
-    name: SwapProvider
-    displayName: string
-    iconUrl: string
-}
-
-export interface TopPairItem {
-    assetA: DexSwapAsset
-    assetB: DexSwapAsset
-    volume24hUsd: string
-}
-
-export interface CalculatePeraFeeResult {
-    peraFeeAmount?: Decimal
-    /** Asset id as a decimal string — uint64 ids must never live in a JS number. */
-    peraFeeAssetId?: string
-}
-
-export interface CalculateSwapAmountResult {
-    amount?: Decimal
-    peraFee?: Decimal
-    /** Asset id as a decimal string — uint64 ids must never live in a JS number. */
-    peraFeeAssetId?: string
-}
-
-export interface PrepareTransactionsResult {
-    transactionGroups?: TransactionGroup[]
-    /** Decimal string — backend ids exceed 2^53; swapIdStr is canonical. */
-    swapId?: string
-    swapIdStr?: string
-    swapVersion?: string
-}
-
-export interface SwapStatusUpdateResult {
+export interface SwapOrder {
+    orderId: string
     status: SwapStatus
-    submittedTransactionIds?: string[]
-    reason?: SwapReason
-    appVersion?: string
-    platform?: string
-    countryCode?: string
-    swapVersion?: SwapVersion
+    /** Epoch ms; null when the order never expires. */
+    expiresAt: Nullable<number>
+    steps: SwapOrderStep[]
+}
+
+export interface SwapReportedTransaction {
+    scope: ChainScope
+    txHash: string
+    /** The `purpose` of the step the transaction came from. */
+    purpose: string
+}
+
+export type SwapOrderReport =
+    | { status: 'sent'; transactions: SwapReportedTransaction[] }
+    | { status: 'cancelled' }
+
+export interface SwapOrderTransaction {
+    /** Null when the router names a chain this wallet doesn't run. */
+    scope: Nullable<ChainScope>
+    txHash: string
+    role: string
+}
+
+/** Rows written before the router carry nulls for whatever they lack. */
+export interface SwapHistoryItem {
+    orderId: string
+    provider: Nullable<SwapProvider>
+    status: SwapStatus
+    assetIn: Nullable<SwapAsset>
+    assetOut: Nullable<SwapAsset>
+    /** Base units of `assetIn`. */
+    amountIn: Nullable<Decimal>
+    /** Base units of `assetOut`. */
+    amountOut: Nullable<Decimal>
+    amountInUsdValue: Nullable<string>
+    amountOutUsdValue: Nullable<string>
+    transactions: SwapOrderTransaction[]
+    /** The router's `funding_method`, passed through unread. */
+    fundingMethod: Nullable<string>
+    createdAt: string
+    updatedAt: string
+}
+
+export interface SwapAccountAddress {
+    scope: ChainScope
+    address: string
+}
+
+export interface SwapTrackedAsset {
+    ref: SwapAssetRef
+    unitName: Nullable<string>
+}
+
+/** Holds no amounts: those come from the live order. */
+export interface SwapTrackedOrder {
+    orderId: string
+    sourceScope: ChainScope
+    destinationScope: ChainScope
+    sourceAddress: string
+    destinationAddress: string
+    assetIn: SwapTrackedAsset
+    assetOut: SwapTrackedAsset
+    status: SwapStatus
+    /** Epoch ms. */
+    createdAt: number
+    /** Epoch ms of the last status change. */
+    checkedAt: number
+}
+
+export type SwapTrackingState = BaseStoreState & {
+    orders: Record<string, SwapTrackedOrder>
+    trackOrder: (order: SwapTrackedOrder) => void
+    updateOrderStatus: (
+        orderId: string,
+        status: SwapStatus,
+        checkedAt: number,
+    ) => void
+    removeOrder: (orderId: string) => void
+    pruneSettledOrders: (now: number) => void
+}
+
+export interface SwapDistinctPairItem {
+    assetIn: SwapAsset
+    assetOut: SwapAsset
+    swapDatetime: string
+    pairKey: string
 }
 
 /**
@@ -185,6 +247,8 @@ export type SerializedGroupSlot =
 /** One atomic group's submission plan, serialized for persistence. */
 export interface SerializedGroupPlan {
     slots: SerializedGroupSlot[]
+    /** The router step's label, echoed back when reporting; absent on records from before the router. */
+    purpose?: string
 }
 
 /**
@@ -195,7 +259,7 @@ export interface SerializedGroupPlan {
  * reconstructs the algod client / encoders / API callbacks each session.
  */
 export interface SwapHandoffRecord {
-    /** Canonical swap id (decimal string — backend ids exceed 2^53). */
+    /** The router order id (older records hold a pre-router swap id). */
     swapIdStr: string
     /** Backend multisig sign-request id this swap is waiting on. */
     signRequestId: string

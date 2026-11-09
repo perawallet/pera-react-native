@@ -11,13 +11,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { isTransientNetworkError } from '../../api/query-client'
+import { isExpectedError } from '../../errors/expected'
 import {
     calculateBackoff,
     createConcurrencyLimit,
     deferToNextCycle,
+    isBackoffDue,
     isPromiseLike,
     mapWithConcurrency,
+    nextBackoff,
     settleBatch,
+    timeoutErrorOf,
+    withDeadline,
     withTimeout,
 } from '../async'
 
@@ -157,6 +163,45 @@ describe('calculateBackoff', () => {
 
     it('honors a custom maxInterval', () => {
         expect(calculateBackoff(4000, 2, 5000)).toBe(5000)
+    })
+})
+
+describe('nextBackoff', () => {
+    const options = { firstIntervalMs: 3000, maxIntervalMs: 10_000 }
+
+    it('waits firstIntervalMs after the first failure, from when the attempt began', () => {
+        expect(nextBackoff(undefined, 1000, options)).toEqual({
+            intervalMs: 3000,
+            nextEligibleAt: 4000,
+        })
+    })
+
+    it('doubles the last wait after each further failure, up to maxIntervalMs', () => {
+        let backoff = nextBackoff(undefined, 0, options)
+        const waits = [backoff.intervalMs]
+        for (let failure = 0; failure < 3; failure++) {
+            backoff = nextBackoff(backoff, 0, options)
+            waits.push(backoff.intervalMs)
+        }
+
+        expect(waits).toEqual([3000, 6000, 10_000, 10_000])
+    })
+})
+
+describe('isBackoffDue', () => {
+    const backoff = { intervalMs: 3000, nextEligibleAt: 10_000 }
+
+    it('is due with no backoff recorded', () => {
+        expect(isBackoffDue(undefined, 0)).toBe(true)
+    })
+
+    it('is not due before nextEligibleAt, and due from it on', () => {
+        expect(isBackoffDue(backoff, 9999)).toBe(false)
+        expect(isBackoffDue(backoff, 10_000)).toBe(true)
+    })
+
+    it('is due at once when the device clock moved back past the wait', () => {
+        expect(isBackoffDue(backoff, 5000)).toBe(true)
     })
 })
 
@@ -463,5 +508,94 @@ describe('settleBatch', () => {
         await expect(settleBatch([], async () => true, false)).resolves.toEqual(
             [],
         )
+    })
+})
+
+describe('timeoutErrorOf', () => {
+    it('names the error TimeoutError so the expected-error filter reads it as connectivity', () => {
+        const error = timeoutErrorOf('portfolio history', 30_000)
+
+        expect(error.name).toBe('TimeoutError')
+        expect(error.message).toBe('portfolio history timed out after 30000ms')
+        expect(isExpectedError(error)).toBe(true)
+        expect(isTransientNetworkError(error)).toBe(true)
+    })
+})
+
+describe('withDeadline', () => {
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('resolves with what run resolves, and stops its timer', async () => {
+        const result = await withDeadline(async () => 'ok', 1000, 'op')
+
+        expect(result).toBe('ok')
+        expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('rejects with a TimeoutError and aborts the signal run was given once the deadline passes', async () => {
+        let handed: AbortSignal | undefined
+        const outcome = withDeadline(
+            signal => {
+                handed = signal
+                return new Promise<never>((_, reject) =>
+                    signal.addEventListener('abort', () =>
+                        reject(new Error('aborted')),
+                    ),
+                )
+            },
+            500,
+            'op',
+        ).catch(error => error)
+
+        await vi.advanceTimersByTimeAsync(499)
+        expect(handed?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(handed?.aborted).toBe(true)
+        expect(await outcome).toMatchObject({
+            name: 'TimeoutError',
+            message: 'op timed out after 500ms',
+        })
+    })
+
+    it('aborts run when the outer signal aborts, and leaves run to say how it failed', async () => {
+        const outer = new AbortController()
+        const cancelled = new Error('cancelled')
+        const outcome = withDeadline(
+            signal =>
+                new Promise<never>((_, reject) =>
+                    signal.addEventListener('abort', () => reject(cancelled)),
+                ),
+            500,
+            'op',
+            outer.signal,
+        ).catch(error => error)
+
+        outer.abort()
+
+        expect(await outcome).toBe(cancelled)
+    })
+
+    it('hands run an already-aborted signal when the outer one is aborted before the call', async () => {
+        const outer = new AbortController()
+        outer.abort()
+        let wasAborted = false
+
+        await withDeadline(
+            async signal => {
+                wasAborted = signal.aborted
+            },
+            500,
+            'op',
+            outer.signal,
+        )
+
+        expect(wasAborted).toBe(true)
     })
 })

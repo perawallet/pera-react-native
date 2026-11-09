@@ -19,12 +19,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import {
-    LEGACY_CHAIN_ID,
     i18nKey,
     type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
@@ -133,7 +133,7 @@ export const useImportAccountOptionsScreen =
             const result = await requestBottomSheet<ImportOptionsContentResult>(
                 {
                     contents: (
-                        <ImportOptionsContent chainId={LEGACY_CHAIN_ID} />
+                        <ImportOptionsContent chainId={ALGORAND_CHAIN_ID} />
                     ),
                     options: {
                         size: 'auto',
@@ -144,11 +144,15 @@ export const useImportAccountOptionsScreen =
             )
             if (result === undefined) return
             trackChainOnboardingEvent(
-                keyKindOptionsOf(LEGACY_CHAIN_ID, result)?.recover
-                    ?.analyticsEvent,
-                LEGACY_CHAIN_ID,
+                keyKindOptionsOf(ALGORAND_CHAIN_ID, result.seed)?.recover?.find(
+                    row => row.wordCount === result.wordCount,
+                )?.analyticsEvent,
+                ALGORAND_CHAIN_ID,
             )
-            navigation.push('ImportInfo', { accountType: result })
+            navigation.push('ImportInfo', {
+                accountType: result.seed,
+                wordCount: result.wordCount,
+            })
         }, [requestBottomSheet, navigation])
 
         // Asked here because the add-account flow has no chain step; with a
@@ -234,7 +238,7 @@ export const useImportAccountOptionsScreen =
                 }
 
                 const resolved = detectImportKind(
-                    LEGACY_CHAIN_ID,
+                    ALGORAND_CHAIN_ID,
                     parsedDeeplink.mnemonic,
                 )
                 if (!resolved.success) {
@@ -258,6 +262,7 @@ export const useImportAccountOptionsScreen =
                 setPendingImportMnemonic(parsedDeeplink.mnemonic)
                 navigation.push('ImportAccount', {
                     accountType: resolved.seed,
+                    wordCount: resolved.wordCount,
                 })
             },
             [closeQRScanner, parseDeeplink, navigation, errorToast, t],

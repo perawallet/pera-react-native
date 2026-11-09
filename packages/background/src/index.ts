@@ -33,6 +33,7 @@ export {
     SyncService,
     createSyncStorePorts,
     releaseNetworkScopedQueries,
+    type RefreshSource,
 } from './service'
 
 let instance: Nullable<SyncService> = null

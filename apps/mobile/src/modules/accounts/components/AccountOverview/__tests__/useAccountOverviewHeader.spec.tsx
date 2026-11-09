@@ -25,6 +25,7 @@ import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import {
     registerEthereumChain,
     registerEvmChain,
+    restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
@@ -62,7 +63,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => [{ address: 'a' }]),
-        useCanSignWith: vi.fn(() => true),
+        useCanSignOnAnyChain: vi.fn(() => false),
     }
 })
 
@@ -276,7 +277,7 @@ describe('useAccountOverviewHeader', () => {
         vi.mocked(findNativeAsset).mockReset()
     })
 
-    it("swaps balances and actions for a notice when the chain's kill switch is off", () => {
+    it("keeps balances and actions while the chain's kill switch is on, as it only turns off the Pera backend", () => {
         act(() => setChainEnabled('algorand', false))
 
         const { result } = renderHook(
@@ -284,11 +285,17 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.availability).toEqual({ isAvailable: false })
+        expect(result.current.availability).toMatchObject({
+            isAvailable: true,
+        })
         expect(result.current.chainName).toBe('Algorand')
     })
 
-    it('returns canSign true when canSignWith returns true', () => {
+    it('returns canSign true when the account signs on any chain it holds', async () => {
+        const { useCanSignOnAnyChain } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useCanSignOnAnyChain).mockReturnValue(true)
+
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
@@ -297,10 +304,10 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.canSign).toBe(true)
     })
 
-    it('returns canSign false when canSignWith returns false', async () => {
-        const { useCanSignWith } =
+    it('returns canSign false when the account signs on no chain', async () => {
+        const { useCanSignOnAnyChain } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useCanSignWith).mockReturnValue(false)
+        vi.mocked(useCanSignOnAnyChain).mockReturnValue(false)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount, false),
@@ -344,7 +351,22 @@ describe('useAccountOverviewHeader', () => {
         ).toEqual(['algorand', 'ethereum'])
     })
 
-    it("leaves a switched-off chain's last-synced value out of the total", async () => {
+    it('has no fiat total for an Algorand-only build on a test network', () => {
+        restoreAlgorandOnlyChains()
+        act(() => useNetworkStore.getState().setMode('developer'))
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount, false),
+            { wrapper },
+        )
+
+        expect(result.current.hasFiatTotal).toBe(false)
+        expect(
+            result.current.chartSources.map(({ scope }) => scope.chainId),
+        ).toEqual(['algorand'])
+    })
+
+    it("counts a switched-off chain's synced value in the total, as its RPC balance keeps syncing", async () => {
         registerEthereumChain()
         await twoChainTotals(
             { nativeValue: new Decimal('1000'), fiatValue: new Decimal('300') },
@@ -357,10 +379,10 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.portfolioPreferredValue?.toString()).toBe('300')
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
         expect(
             result.current.chartSources.map(({ scope }) => scope.chainId),
-        ).toEqual(['algorand'])
+        ).toEqual(['algorand', 'ethereum'])
     })
 
     it('sums every listed chain into one fiat total', async () => {
@@ -376,6 +398,33 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
+    })
+
+    it("leaves the total unknown when a chain's failed read left a placeholder zero", async () => {
+        registerEthereumChain()
+        await twoChainTotals(
+            { nativeValue: new Decimal('1000'), fiatValue: new Decimal('300') },
+            { nativeValue: new Decimal('0'), fiatValue: new Decimal('0') },
+        )
+        const { useHoldingsRefreshStore } =
+            await import('@perawallet/wallet-core-accounts')
+        act(() =>
+            useHoldingsRefreshStore
+                .getState()
+                .setHoldingsRefreshFailed(
+                    { chainId: 'ethereum', networkId: 'mainnet' },
+                    ETH_ADDRESS,
+                    true,
+                ),
+        )
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount, false),
+            { wrapper },
+        )
+
+        expect(result.current.portfolioPreferredValue).toBeNull()
+        act(() => useHoldingsRefreshStore.getState().resetState())
     })
 
     describe('with the account on Ethereum and Base at one address', () => {

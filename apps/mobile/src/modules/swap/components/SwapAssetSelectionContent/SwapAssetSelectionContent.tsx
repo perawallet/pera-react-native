@@ -11,23 +11,31 @@
  */
 
 import { useCallback } from 'react'
-import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
+import type {
+    AssetWithAccountBalance,
+    ChainAssetBalance,
+} from '@perawallet/wallet-core-accounts'
+import type {
+    AssetRef,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountAssetSelectionList } from '@modules/assets'
+import { SwapFromAssetSelectionList } from '../SwapFromAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
 
-const filterSwappable = (item: AssetWithAccountBalance) =>
-    isSwappableAsset(item.asset)
+/** The picked asset, on the scope it lives on. */
+export type SwapAssetSelection = {
+    assetId: string
+    scope: ChainScope
+}
 
 type BaseProps = {
     scope: ChainScope
-    excludeAssetId?: string
+    excludeAsset?: AssetRef
 }
 
 export type SwapAssetSelectionContentProps = BaseProps &
@@ -36,13 +44,13 @@ export type SwapAssetSelectionContentProps = BaseProps &
 export const SwapAssetSelectionContent = (
     props: SwapAssetSelectionContentProps,
 ) => {
-    const { scope, variant, excludeAssetId } = props
+    const { scope, variant, excludeAsset } = props
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
+    const { resolve } = useBottomSheetResult<SwapAssetSelection>()
 
     const handleAssetSelected = useCallback(
-        (asset: AssetWithAccountBalance) => {
+        (asset: AssetWithAccountBalance, assetScope: ChainScope) => {
             const assetName =
                 asset.asset?.unitName ?? asset.asset?.name ?? asset.assetId
             trackEvent(
@@ -50,13 +58,18 @@ export const SwapAssetSelectionContent = (
                     ? SwapEvent.SelectTopAsset
                     : SwapEvent.SelectBottomAsset,
                 {
-                    [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    [AnalyticsMetadataKey.ChainId]: assetScope.chainId,
                     [AnalyticsMetadataKey.AssetName]: assetName,
                 },
             )
-            resolve(asset.assetId)
+            resolve({ assetId: asset.assetId, scope: assetScope })
         },
-        [resolve, scope.chainId, variant],
+        [resolve, variant],
+    )
+
+    const handleFromAssetSelected = useCallback(
+        (asset: ChainAssetBalance) => handleAssetSelected(asset, asset.scope),
+        [handleAssetSelected],
     )
 
     const title =
@@ -74,7 +87,7 @@ export const SwapAssetSelectionContent = (
                         fromAssetId={props.fromAssetId}
                         onAssetSelected={handleAssetSelected}
                         isVisible
-                        excludeAssetId={excludeAssetId}
+                        excludeAssetId={excludeAsset?.assetId}
                         inBottomSheet
                         searchPlaceholder={t(
                             'swap.asset_selection.search_placeholder',
@@ -84,15 +97,16 @@ export const SwapAssetSelectionContent = (
                         )}
                         emptyResultBody={t(
                             'swap.asset_selection.no_results_body',
+                        )}
+                        emptyChainResultBody={t(
+                            'swap.asset_selection.no_chain_results_body',
                         )}
                     />
                 ) : (
-                    <AccountAssetSelectionList
-                        onAssetSelected={handleAssetSelected}
-                        isVisible
-                        excludeAssetId={excludeAssetId}
-                        filterAsset={filterSwappable}
-                        inBottomSheet
+                    <SwapFromAssetSelectionList
+                        scope={scope}
+                        excludeAsset={excludeAsset}
+                        onAssetSelected={handleFromAssetSelected}
                         searchPlaceholder={t(
                             'swap.asset_selection.search_placeholder',
                         )}
@@ -101,6 +115,9 @@ export const SwapAssetSelectionContent = (
                         )}
                         emptyResultBody={t(
                             'swap.asset_selection.no_results_body',
+                        )}
+                        emptyChainResultBody={t(
+                            'swap.asset_selection.no_chain_results_body',
                         )}
                     />
                 )}

@@ -21,6 +21,7 @@ import {
     type DelegateTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     registerAlgorandAccountsAdapter,
     seedAuthority,
@@ -29,7 +30,6 @@ import {
     accountForType,
     type AlgorandAccountKind,
 } from '@test-utils/accountCustody'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -101,7 +101,7 @@ describe('useAccountTypeLabel', () => {
     it('turns rekeyed when the network moves to the scope that holds the authority', () => {
         useAccountChainStateStore.getState().resetState()
         seedAuthority('REKEYED_ADDR', 'AUTH_ADDR', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'testnet',
         } as const)
         useNetworkStore.getState().setMode('live')

@@ -13,19 +13,16 @@
 import { useCallback, useMemo } from 'react'
 import {
     CHAIN_FAMILIES,
-    LEGACY_CHAIN_ID,
     type ChainDescriptor,
     type ChainFamily,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { preferDefaultChain } from '@perawallet/wallet-core-accounts'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import {
     selectChainNetworkId,
     useNetworkStore,
-    useSelectedScope,
-    useSwitchedOffChainIds,
     useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -36,6 +33,7 @@ import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { useWebView } from '@modules/webview'
 import { shareText } from '@utils/shareText'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
 import { useClipboard } from '@hooks/useClipboard'
 
 export type ViewContactAddressRow = {
@@ -43,13 +41,14 @@ export type ViewContactAddressRow = {
     address: string
     /** False when no network of the family has an explorer, such as a custom one. */
     hasExplorer: boolean
+    /** The chain whose name service names this address; unset when no chain of the family has name lookups on. */
+    nameChainId: Optional<ChainId>
 }
 
 export type UseViewContactScreenResult = {
     selectedContact: Maybe<Contact>
     /** One per family the contact holds an address on, in family order. */
     addressRows: ViewContactAddressRow[]
-    nfdName: Optional<string>
     openQR: (family: ChainFamily) => void
     copyAddress: (address: string) => void
     openExplorer: (family: ChainFamily, address: string) => Promise<void>
@@ -70,8 +69,6 @@ const chainsOfFamily = (family: ChainFamily): ChainDescriptor[] => {
 }
 
 export const useViewContactScreen = (): UseViewContactScreenResult => {
-    // NFDs name Algorand addresses only.
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { selectedContact } = useContacts()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -84,26 +81,19 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const customNetworksByChain = useNetworkStore(
         state => state.customNetworksByChain,
     )
-    const switchedOff = useSwitchedOffChainIds()
     const networkSelection = useMemo(
         () => ({ mode, selectedNetworkByChain, customNetworksByChain }),
         [mode, selectedNetworkByChain, customNetworksByChain],
     )
 
-    const algorandAddress = selectedContact?.addresses.algorand ?? ''
-    const { data: nfdNames } = useNfdForAddressQuery(scope, algorandAddress, {
-        enabled: !!algorandAddress,
-    })
-    const nfdName = nfdNames?.at(0)?.name
+    const nameChainIds = useCapableChainIds('nameService')
 
     // An address is shared by every chain of its family, but each chain has its
-    // own explorer on the network the user has selected for it. A switched-off
-    // chain is left out, as every other chain picker does.
+    // own explorer on the network the user has selected for it.
     const explorerLinks = useCallback(
         (family: ChainFamily, address: string): Map<ChainId, string> =>
             new Map(
                 chainsOfFamily(family).flatMap(({ id, explorer }) => {
-                    if (switchedOff.includes(id)) return []
                     const url = explorer.accountUrl(
                         selectChainNetworkId(networkSelection, id),
                         address,
@@ -111,13 +101,18 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
                     return url ? [[id, url] as const] : []
                 }),
             ),
-        [networkSelection, switchedOff],
+        [networkSelection],
     )
 
     const addressRows = useMemo(
         (): ViewContactAddressRow[] =>
             CHAIN_FAMILIES.flatMap(family => {
                 const address = selectedContact?.addresses[family]
+                const nameChainId = preferDefaultChain(
+                    chainsOfFamily(family)
+                        .map(({ id }) => id)
+                        .filter(id => nameChainIds.includes(id)),
+                )
                 return address
                     ? [
                           {
@@ -125,11 +120,12 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
                               address,
                               hasExplorer:
                                   explorerLinks(family, address).size > 0,
+                              nameChainId,
                           },
                       ]
                     : []
             }),
-        [selectedContact, explorerLinks],
+        [selectedContact, explorerLinks, nameChainIds],
     )
 
     const openQR = useCallback(
@@ -197,7 +193,6 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     return {
         selectedContact,
         addressRows,
-        nfdName,
         openQR,
         copyAddress,
         openExplorer,

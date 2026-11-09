@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, or, isNull, ne, like, sql } from 'drizzle-orm'
+import { eq, and, like, not, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
@@ -22,7 +22,6 @@ import {
     AssetsNodeSchema,
     AssetsPeraSchema,
     AssetPricesSchema,
-    PeraAssetVerificationTier,
     nativeAssetFor,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -31,6 +30,9 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
+import { isOptInChain } from '../chainProtocol'
+import { isNotSuspiciousSql } from './holdingSuspicion'
+import { hiddenHoldingSql } from './holdingVisibility'
 
 export type AccountPortfolioTotals = {
     /**
@@ -40,7 +42,7 @@ export type AccountPortfolioTotals = {
     nativeAmount: Decimal
     /** USD per whole unit of the native asset; null until its price syncs. */
     nativeUsdPrice: Nullable<Decimal>
-    /** USD value of all non-native holdings; rows without a price contribute 0. */
+    /** USD value of all non-native holdings; rows without a price, or that Pera flags suspicious or the user hid on a chain without opt-in, contribute 0. */
     nonNativeUsdValue: Decimal
     /** Number of holdings rows (includes the native holding). */
     holdingsCount: number
@@ -69,6 +71,13 @@ export async function getAccountPortfolioTotals({
 }): Promise<AccountPortfolioTotals> {
     const scopeKey = toScopeKey(scope)
     const native = nativeAssetFor(scope.chainId)
+    // The user chose every asset on an opt-in chain, so its values all count.
+    const isCounted = isOptInChain(scope.chainId)
+        ? sql`1`
+        : and(
+              isNotSuspiciousSql(),
+              not(hiddenHoldingSql([{ address: accountAddress, scope }])),
+          )!
     const rows = await db
         .select({
             // The primary key leaves at most one native row, so MAX picks it.
@@ -83,6 +92,7 @@ export async function getAccountPortfolioTotals({
             nonNativeUsd: sql<Nullable<number>>`COALESCE(SUM(
                 CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> ${native.assetId}
                     AND ${AssetsNodeSchema.decimals} IS NOT NULL
+                    AND ${isCounted}
                     THEN CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
                         / CAST('1e' || ${AssetsNodeSchema.decimals} AS REAL)
                         * CAST(${AssetPricesSchema.usdPrice} AS REAL)
@@ -98,6 +108,7 @@ export async function getAccountPortfolioTotals({
         .from(AccountAssetHoldingsSchema)
         .leftJoin(AssetsNodeSchema, holdingJoin(AssetsNodeSchema))
         .leftJoin(AssetPricesSchema, holdingJoin(AssetPricesSchema))
+        .leftJoin(AssetsPeraSchema, holdingJoin(AssetsPeraSchema))
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
@@ -150,15 +161,7 @@ export async function getAccountFundedNetworks({
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                // No metadata yet still counts, so real funds aren't hidden
-                // until enrichment lands.
-                or(
-                    isNull(AssetsPeraSchema.verificationTier),
-                    ne(
-                        AssetsPeraSchema.verificationTier,
-                        PeraAssetVerificationTier.suspicious,
-                    ),
-                ),
+                isNotSuspiciousSql(),
                 // EVM chains share one address, so the chain must scope it.
                 like(AccountAssetHoldingsSchema.scope, `${chainId}/%`),
                 // Amounts are stored as TEXT; compare numerically so '0' and a

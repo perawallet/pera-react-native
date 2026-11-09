@@ -62,14 +62,14 @@ import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAcco
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getAlgorandChainConfig,
     getPeraServicesConfig,
 } from '@perawallet/wallet-core-config'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -128,7 +128,7 @@ const AccountViewHost = () => {
 }
 
 const PERA_BACKEND = getPeraServicesConfig({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const).backendUrl
 
@@ -195,7 +195,7 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
             // collectible.
             mockAssetItems({ items: { [NFT_TEST_ASSET_ID]: CLASSIFIED_ITEM } }),
             http.get(
-                `${getAlgorandChainConfig({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
+                `${getAlgorandChainConfig({ chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
                 () =>
                     HttpResponse.json({
                         'current-round': 30_000,

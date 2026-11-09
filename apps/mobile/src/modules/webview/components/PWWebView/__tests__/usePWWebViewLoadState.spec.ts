@@ -28,6 +28,8 @@ import {
     WEBVIEW_LOADING_TIMEOUT_MS,
 } from '../usePWWebViewLoadState'
 
+const PAGE_URL = 'https://discover.example/'
+
 describe('usePWWebViewLoadState', () => {
     beforeEach(() => {
         vi.useFakeTimers()
@@ -54,7 +56,7 @@ describe('usePWWebViewLoadState', () => {
             usePWWebViewLoadState({ onReload: vi.fn() }),
         )
 
-        act(() => result.current.markDocumentLoaded())
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
         act(() => useNetworkStatusStore.setState({ hasInternet: false }))
 
         expect(result.current.showOfflineView).toBe(false)
@@ -116,5 +118,103 @@ describe('usePWWebViewLoadState', () => {
 
         expect(result.current.showTimeoutView).toBe(false)
         expect(onReload).toHaveBeenCalledTimes(1)
+    })
+
+    it('covers the page when the main frame answers with a 5xx', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() => result.current.handleLoadStart())
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+
+        expect(result.current.showUnavailableView).toBe(true)
+    })
+
+    it('leaves a 4xx page to the site', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 404 }),
+        )
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+
+        expect(result.current.showUnavailableView).toBe(false)
+    })
+
+    it('does not treat the 5xx page as a loaded document', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+        act(() => useNetworkStatusStore.setState({ hasInternet: false }))
+
+        expect(result.current.showOfflineView).toBe(true)
+        expect(result.current.showUnavailableView).toBe(false)
+    })
+
+    it('handleRetry clears the unavailable surface and reloads', () => {
+        const onReload = vi.fn()
+        const { result } = renderHook(() => usePWWebViewLoadState({ onReload }))
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleRetry())
+
+        expect(result.current.showUnavailableView).toBe(false)
+        expect(onReload).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the unavailable surface when a page at another URL loads', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 502 }),
+        )
+        act(() =>
+            result.current.handleDocumentLoaded('https://discover.example/a'),
+        )
+
+        expect(result.current.showUnavailableView).toBe(false)
+    })
+
+    it('keeps the unavailable surface when the loaded URL differs only by fragment', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleDocumentLoaded(`${PAGE_URL}#section`))
+
+        expect(result.current.showUnavailableView).toBe(true)
+    })
+
+    it('clears the unavailable surface when the same URL later loads without a new error', () => {
+        const { result } = renderHook(() =>
+            usePWWebViewLoadState({ onReload: vi.fn() }),
+        )
+
+        act(() =>
+            result.current.handleHttpError({ url: PAGE_URL, statusCode: 503 }),
+        )
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+        act(() => result.current.handleLoadStart())
+        act(() => result.current.handleDocumentLoaded(PAGE_URL))
+
+        expect(result.current.showUnavailableView).toBe(false)
     })
 })

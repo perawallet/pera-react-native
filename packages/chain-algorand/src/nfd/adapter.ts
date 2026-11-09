@@ -17,6 +17,7 @@ import { verifyNfdAddress } from './verifyNfdAddress'
 
 export const algorandNameServiceAdapter: NameServiceChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
+    service: 'nfd',
     isValidAddress: isValidAlgorandAddress,
     verifyForwardResolution: verifyNfdAddress,
 }

@@ -11,6 +11,8 @@
  */
 
 export * from './endpoints'
+export * from './chainsEndpoints'
+export * from './usePeraServedChainsQuery'
 export * from './useRegisterDeviceMutation'
 export * from './useDeviceID'
 export * from './useDeviceIdLookup'

@@ -52,6 +52,15 @@ describe('useAssetPreferencesStore', () => {
         expect(state.hideZeroBalance).toBe(false)
         expect(state.displayNfts).toBe(false)
         expect(state.displayOptedInNfts).toBe(false)
+        expect(state.showSuspicious).toBe(false)
+    })
+
+    it('setShowSuspicious updates the value independently of other fields', () => {
+        useAssetPreferencesStore.getState().setShowSuspicious(true)
+        const state = useAssetPreferencesStore.getState()
+        expect(state.showSuspicious).toBe(true)
+        expect(state.hideZeroBalance).toBe(false)
+        expect(state.displayNfts).toBe(false)
     })
 
     it('setHideZeroBalance updates the value', () => {
@@ -89,6 +98,7 @@ describe('useAssetPreferencesStore', () => {
         store.setHideZeroBalance(true)
         store.setDisplayNfts(true)
         store.setDisplayOptedInNfts(true)
+        store.setShowSuspicious(true)
         store.setAssetSortMode('balanceAsc')
 
         useAssetPreferencesStore.getState().resetState()
@@ -98,5 +108,6 @@ describe('useAssetPreferencesStore', () => {
         expect(state.hideZeroBalance).toBe(false)
         expect(state.displayNfts).toBe(false)
         expect(state.displayOptedInNfts).toBe(false)
+        expect(state.showSuspicious).toBe(false)
     })
 })

@@ -47,4 +47,8 @@ export const useStyles = makeStyles(theme => ({
     fiatValue: {
         color: theme.colors.textGray,
     },
+    selector: {
+        alignItems: 'flex-end',
+        gap: theme.spacing.xs,
+    },
 }))

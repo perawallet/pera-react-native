@@ -18,22 +18,51 @@ import { useSwipeableAssetItem } from '../useSwipeableAssetItem'
 const item = { assetId: '31566704' } as AccountHoldingsLiteRow
 
 describe('useSwipeableAssetItem', () => {
-    it('opts the row out when the swipe opens', () => {
-        const onOptOut = vi.fn()
+    it.each(['optOut', 'hide'] as const)(
+        "runs the row's %s action when the swipe opens",
+        swipeAction => {
+            const onSwipeAction = vi.fn()
+            const { result } = renderHook(() =>
+                useSwipeableAssetItem({
+                    item,
+                    swipeAction,
+                    onPress: vi.fn(),
+                    onSwipeAction,
+                }),
+            )
+
+            act(() => result.current.handleSwipeOpen())
+
+            expect(onSwipeAction).toHaveBeenCalledWith(item, swipeAction)
+        },
+    )
+
+    it('runs nothing for a row with no swipe action', () => {
+        const onSwipeAction = vi.fn()
         const { result } = renderHook(() =>
-            useSwipeableAssetItem({ item, onPress: vi.fn(), onOptOut }),
+            useSwipeableAssetItem({
+                item,
+                swipeAction: null,
+                onPress: vi.fn(),
+                onSwipeAction,
+            }),
         )
 
         act(() => result.current.handleSwipeOpen())
 
-        expect(onOptOut).toHaveBeenCalledWith(item)
+        expect(onSwipeAction).not.toHaveBeenCalled()
     })
 
     it('presses the row without letting the press bubble up', () => {
         const onPress = vi.fn()
         const stopPropagation = vi.fn()
         const { result } = renderHook(() =>
-            useSwipeableAssetItem({ item, onPress, onOptOut: vi.fn() }),
+            useSwipeableAssetItem({
+                item,
+                swipeAction: 'optOut',
+                onPress,
+                onSwipeAction: vi.fn(),
+            }),
         )
 
         act(() =>

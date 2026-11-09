@@ -11,7 +11,10 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type SignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     mapToDisplayableTransaction,
     type getAlgorandClient,
@@ -23,6 +26,7 @@ import {
 import {
     getOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS,
+    SubmissionError,
     submitAndAutoRefresh,
 } from '@perawallet/wallet-core-signing'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
@@ -33,15 +37,17 @@ import {
     encodeToBase64,
     logger,
     type Nullable,
-    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     isQuoteFresh,
+    isSwapQuoteGoneError,
+    signableStepsOn,
     type ExecuteSwapParams,
     type ExecuteSwapResult,
-    type PrepareTransactionsResult,
     type SwapExecutionContext,
     type SwapExecutionFailure,
+    type SwapOrder,
+    type SwapReportedTransaction,
 } from '@perawallet/wallet-core-swaps'
 import { computeSwapAlgoShortfall } from './computeSwapAlgoShortfall'
 import { validateSwapGroupAgainstQuote } from './validateSwapGroupAgainstQuote'
@@ -53,7 +59,7 @@ import {
 import {
     isUserRejectionError,
     QuantumSwapBlockedError,
-    reportSwapFailure,
+    reportSwapCancelled,
     requestSwapProposal,
     requestSwapSignatures,
 } from './swapExecutionHelpers'
@@ -93,7 +99,7 @@ const signingFailure = (error: unknown): ExecuteSwapResult =>
         : failed({ phase: 'signing', reason: 'signing-failed' })
 
 /**
- * Runs a quote through preflight → prepare → sign → submit → status update.
+ * Runs a quote through preflight → order → sign → submit → order report.
  * Never throws for an expected failure — every user-visible outcome is a
  * result — but an unexpected decode error still escapes.
  */
@@ -116,17 +122,19 @@ export const executeAlgorandSwap = async (
         decodeTransaction,
         decodeSignedTransaction,
         encodeSignedTransactions,
-        prepareTransactions,
-        updateSwapStatus,
+        createOrder,
+        reportOrder,
         registerHandoff,
+        onOrderSubmitting,
+        onOrderRejected,
     }: AlgorandSwapExecutionContext,
 ): Promise<ExecuteSwapResult> => {
-    const quoteIdStr = quote.quoteIdStr
-    if (!quoteIdStr) {
-        return failed({ phase: 'prepare', reason: 'missing-quote-id' })
-    }
-
     const accountAddress = account ? algorandAddressOf(account) : undefined
+    // A cross-chain output lands on another chain: this account never holds
+    // it, so neither its freeze state nor its opt-in applies here.
+    const isAssetOutOnScope =
+        accountAddress !== undefined &&
+        toScopeKey(quote.assetOut.ref) === toScopeKey(scope)
 
     const [inRestriction, outRestriction] = accountAddress
         ? await Promise.all([
@@ -135,11 +143,13 @@ export const executeAlgorandSwap = async (
                   assetId: quote.assetIn.assetId,
                   scope,
               }),
-              getHoldingRestriction({
-                  accountAddress,
-                  assetId: quote.assetOut.assetId,
-                  scope,
-              }),
+              isAssetOutOnScope
+                  ? getHoldingRestriction({
+                        accountAddress,
+                        assetId: quote.assetOut.assetId,
+                        scope,
+                    })
+                  : null,
           ])
         : [null, null]
     const isInFrozen = inRestriction !== null
@@ -156,16 +166,16 @@ export const executeAlgorandSwap = async (
     }
 
     // A quote that outlived its TTL (e.g. the confirm sat behind an offline
-    // gap) must never reach prepare — the rate it shows is no longer the rate
+    // gap) must never reach an order — the rate it shows is no longer the rate
     // that would execute.
     if (!isQuoteFresh(quote)) {
         return { kind: 'stale-quote' }
     }
 
-    // Mirror of the backend's prepare-time balance validation, run here so a
+    // Mirror of the backend's order-time balance validation, run here so a
     // shortfall fails with actionable copy before anything is signed — the
     // backend's own 400 for it is not machine-readable. Fail open on lookup
-    // errors: the check is advisory, prepare and the node still validate.
+    // errors: the check is advisory, the order and the node still validate.
     // Reported as 'preparing' so the sheet's close gesture cancels instead of
     // dismissing over a still-running execution.
     if (accountAddress) {
@@ -176,6 +186,7 @@ export const executeAlgorandSwap = async (
                 .accountInformation(accountAddress)
                 .do()
             const holdsAssetOut =
+                !isAssetOutOnScope ||
                 isAlgorandNativeAssetId(quote.assetOut.assetId) ||
                 (info.assets ?? []).some(
                     holding =>
@@ -207,18 +218,26 @@ export const executeAlgorandSwap = async (
         }
     }
 
-    let prepareResult: Optional<PrepareTransactionsResult>
+    let order: SwapOrder
     try {
         onProgress('preparing')
-        prepareResult = await prepareTransactions({ quote: quoteIdStr })
+        order = await createOrder(quote.quoteId)
     } catch (e) {
+        // The router already spent or forgot the quote: re-quote, as for a
+        // quote past its client TTL.
+        if (isSwapQuoteGoneError(e)) return { kind: 'stale-quote' }
         return failed({ phase: 'prepare', reason: 'prepare-failed', error: e })
     }
+    const { orderId } = order
+    const cancelOrder = (): void => {
+        void reportSwapCancelled(reportOrder, orderId)
+    }
 
-    // The user backed out while prepare was in flight — nothing has been
+    // The user backed out while the order was in flight — nothing has been
     // signed or broadcast, so abandoning here is safe. Without this check a
-    // slow prepare would resume into the signing sheet with nobody watching.
+    // slow order would resume into the signing sheet with nobody watching.
     if (isCancelled()) {
+        cancelOrder()
         return { kind: 'cancelled' }
     }
 
@@ -227,13 +246,13 @@ export const executeAlgorandSwap = async (
     // must match the one the ledger row was recorded with, so when no sender
     // is known the guard is skipped rather than matched against a blank.
     //
-    // Deliberately sender-wide rather than keyed on the swapId: a refused
+    // Deliberately sender-wide rather than keyed on the order id: a refused
     // retry goes stale within SWAP_QUOTE_TTL_MS, the form re-quotes, and the
-    // backend hands back a NEW swap_id — an intent lookup would miss the very
+    // router hands back a NEW order id — an intent lookup would miss the very
     // row it was meant to catch. Both flows, because a shared-account swap
     // records its row under 'cosign' and a swap-only filter would miss a
     // re-proposed multisig retry.
-    const swapSender = accountAddress ?? quote.swapperAddress ?? undefined
+    const swapSender = accountAddress ?? quote.request.sourceAddress
     if (swapSender) {
         const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
         let blocked: boolean
@@ -255,27 +274,35 @@ export const executeAlgorandSwap = async (
             blocked = true
         }
         if (blocked) {
+            cancelOrder()
             return { kind: 'verifying-previous' }
         }
     }
 
-    const groups = prepareResult.transactionGroups ?? []
-    if (groups.length === 0) {
-        return failed({ phase: 'prepare', reason: 'no-transaction-groups' })
+    // Runs only a whole order on this chain: a step it can't run, or one on
+    // another chain, refuses the order before anything is signed.
+    const steps = signableStepsOn(order, scope.chainId)
+    if (!steps) {
+        cancelOrder()
+        return failed({ phase: 'prepare', reason: 'unsupported-steps' })
+    }
+    if (steps.length === 0) {
+        cancelOrder()
+        return failed({ phase: 'prepare', reason: 'no-signable-steps' })
     }
 
     // `groupContext` is the full ordered list (pre-signed + user-signable,
     // every group concatenated) — required by the signing-machine analyzer's
     // group-integrity check, which recomputes the group hash over the same
     // payload the backend signed.
-    const { plans, unsignedTxs, groupContext } = buildGroupPlans(groups, {
+    const { plans, unsignedTxs, groupContext } = buildGroupPlans(steps, {
         decodeTransaction,
         decodeSignedTransaction,
     })
 
     // Fail-closed: the prepared group is backend-built and these flows skip
     // the standard signing review sheet, so verify it only spends what the
-    // reviewed quote implies before signing it.
+    // app asked for before signing it.
     try {
         const signableDisplayable = unsignedTxs
             .map(mapToDisplayableTransaction)
@@ -284,7 +311,7 @@ export const executeAlgorandSwap = async (
     } catch (e) {
         // Raw text goes to the log only; it must never reach the toast body.
         logger.warn('[swap] validation failed', { error: `${e}` })
-        void reportSwapFailure(updateSwapStatus, prepareResult.swapIdStr)
+        cancelOrder()
         return failed({ phase: 'prepare', reason: 'quote-mismatch' })
     }
 
@@ -298,13 +325,7 @@ export const executeAlgorandSwap = async (
         account && isMultisigAccount(account)
             ? algorandMultisigOf(account)
             : undefined
-    if (
-        multisigParameters &&
-        accountAddress &&
-        unsignedTxs.length > 0 &&
-        prepareResult.swapIdStr
-    ) {
-        const swapIdStr = prepareResult.swapIdStr
+    if (multisigParameters && accountAddress && unsignedTxs.length > 0) {
         const { threshold, addresses } = multisigParameters
         const multisigAddress = accountAddress
         try {
@@ -322,7 +343,7 @@ export const executeAlgorandSwap = async (
                 toUnsignedAlgorandTransactions(groupContext, scope),
                 ({ signRequestId, rawTransactionsBase64 }) => {
                     registerHandoff({
-                        swapIdStr,
+                        swapIdStr: orderId,
                         signRequestId,
                         scope,
                         multisigAddress,
@@ -340,11 +361,11 @@ export const executeAlgorandSwap = async (
             )
             return { kind: 'pending-cosign' }
         } catch (e) {
+            cancelOrder()
             if (isUserRejectionError(e)) {
                 return { kind: 'user-rejected' }
             }
             logger.warn('[swap] propose failed', { error: `${e}` })
-            void reportSwapFailure(updateSwapStatus, swapIdStr)
             return signingFailure(e)
         }
     }
@@ -368,11 +389,11 @@ export const executeAlgorandSwap = async (
                   )
                 : []
     } catch (e) {
+        cancelOrder()
         if (isUserRejectionError(e)) {
             return { kind: 'user-rejected' }
         }
         logger.warn('[swap] signing failed', { error: `${e}` })
-        void reportSwapFailure(updateSwapStatus, prepareResult.swapIdStr)
         return signingFailure(e)
     }
 
@@ -383,24 +404,38 @@ export const executeAlgorandSwap = async (
         bytes: encodeSignedTransactions([signed])[0],
     }))
     const txIds: string[] = []
+    const reported: SwapReportedTransaction[] = []
+    onOrderSubmitting(orderId)
     try {
         onProgress('submitting')
-        for (const signedGroup of allSignedGroups) {
+        for (const [index, signedGroup] of allSignedGroups.entries()) {
             if (signedGroup.length === 0) continue
             const ids = await submitAndAutoRefresh(scope, signedGroup, {
                 flow: 'swap',
-                // No swapId means no stable identity — a blank key would
-                // collide unrelated swaps, and the rebuild guard skips
-                // them anyway.
-                intentKey: prepareResult.swapIdStr
-                    ? { kind: 'swap', swapId: prepareResult.swapIdStr }
-                    : undefined,
-                sender: accountAddress ?? quote.swapperAddress,
+                intentKey: { kind: 'swap', swapId: orderId },
+                sender: swapSender,
             })
             txIds.push(...ids)
+            reported.push(
+                ...ids.map(txHash => ({
+                    scope,
+                    txHash,
+                    purpose: plans[index].purpose,
+                })),
+            )
         }
     } catch (e) {
-        void reportSwapFailure(updateSwapStatus, prepareResult.swapIdStr)
+        // Only a node's refusal proves the funds stayed: a lost response can
+        // still land, and a later group's failure leaves earlier ones on chain.
+        if (
+            txIds.length === 0 &&
+            e instanceof SubmissionError &&
+            e.classification === 'rejected-by-node'
+        ) {
+            onOrderRejected(orderId)
+        }
+        // A group may already be on chain; the router settles the order from
+        // the chain, so nothing is reported.
         return failed({
             phase: 'submission',
             reason: 'submission-failed',
@@ -410,22 +445,19 @@ export const executeAlgorandSwap = async (
 
     try {
         onProgress('updating-status')
-        if (prepareResult.swapIdStr) {
-            await updateSwapStatus({
-                swapId: prepareResult.swapIdStr,
-                data: {
-                    status: 'in_progress',
-                    submitted_transaction_ids: txIds,
-                    swap_version: 'v2',
-                },
-            })
-        }
+        await reportOrder({
+            orderId,
+            report: {
+                status: 'sent',
+                transactions: reported,
+            },
+        })
     } catch {
         // Non-fatal: the transactions are already on chain.
         logger.warn(
-            'Failed to update swap status, transactions already submitted',
+            'Failed to report the swap order, transactions already submitted',
         )
     }
 
-    return { kind: 'success', txIds }
+    return { kind: 'success', orderId, txIds }
 }

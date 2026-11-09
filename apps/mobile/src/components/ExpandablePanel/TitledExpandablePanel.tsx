@@ -24,6 +24,8 @@ export type TitledExpandablePanelProps = {
     containerStyle?: StyleProp<ViewStyle>
     contentStyle?: StyleProp<ViewStyle>
     startExpanded?: boolean
+    /** Down when collapsed and up when expanded, instead of right and down. */
+    hasVerticalChevron?: boolean
 } & PropsWithChildren
 
 export const TitledExpandablePanel = ({
@@ -31,6 +33,7 @@ export const TitledExpandablePanel = ({
     containerStyle,
     contentStyle,
     startExpanded = false,
+    hasVerticalChevron = false,
     children,
     iconPressed,
 }: TitledExpandablePanelProps) => {
@@ -40,17 +43,20 @@ export const TitledExpandablePanel = ({
         setExpanded(!expanded)
     }
 
+    const collapsedRotation = hasVerticalChevron ? '90deg' : '0deg'
+    const expandedRotation = hasVerticalChevron ? '-90deg' : '90deg'
     const iconStyle = useAnimatedStyle(() => {
         return {
             transform: [
                 {
-                    rotate: withTiming(expanded ? '90deg' : '0deg', {
-                        duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-                    }),
+                    rotate: withTiming(
+                        expanded ? expandedRotation : collapsedRotation,
+                        { duration: EXPANDABLE_PANEL_ANIMATION_DURATION },
+                    ),
                 },
             ],
         }
-    }, [expanded])
+    }, [expanded, collapsedRotation, expandedRotation])
 
     const handleIconPress = (event: GestureResponderEvent) => {
         event.stopPropagation()

@@ -23,18 +23,12 @@ import {
     QuantumSwapBlockedError,
     isUserRejectionError,
 } from '../swaps/swapExecutionHelpers'
-import { SwapQuoteMismatchError } from '../swaps/validateSwapGroupAgainstQuote'
 import { SwapUserRejectedError } from '../swaps/swapGroupPlan'
 
 const rows: [string, () => AppError, ErrorCategory][] = [
     [
         'QuantumSwapBlockedError',
         () => new QuantumSwapBlockedError(QUANTUM_SWAP_PROPOSE_BLOCKED_KEY),
-        ErrorCategory.TRANSACTIONS,
-    ],
-    [
-        'SwapQuoteMismatchError',
-        () => new SwapQuoteMismatchError('spends too much'),
         ErrorCategory.TRANSACTIONS,
     ],
     [

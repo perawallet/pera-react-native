@@ -22,6 +22,7 @@ import { PERA_LINK_CHAIN_ID, peraLinkChainFailure } from '../pera-link-chain'
 import {
     EVM_LINK_CAIP2,
     EVM_LINK_CHAIN_ID,
+    EVM_LINK_TESTNET_CAIP2,
     PERA_LINK_TESTNET_CAIP2,
     registerPeraLinkChains,
 } from './peraLinkChain'
@@ -79,6 +80,47 @@ describe('Pera links with chain=', () => {
         }
     })
 
+    it('opens the native asset of the chain the link names when assetId is absent', () => {
+        const link = parseDeeplink(
+            `perawallet://app/asset-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}`,
+        )
+
+        expect(link).toEqual({
+            type: DeeplinkType.ASSET_DETAIL,
+            sourceUrl: expect.any(String),
+            target: { chainId: EVM_LINK_CHAIN_ID, networkId: 'mainnet' },
+            address: EVM_ADDRESS,
+            assetRef: undefined,
+        })
+    })
+
+    it('reads an encoded chain and a lowercase address on a native asset-detail link', () => {
+        const address = EVM_ADDRESS.toLowerCase()
+        const link = parseDeeplink(
+            `perawallet://app/asset-detail/?chain=${encodeURIComponent(EVM_LINK_CAIP2)}&address=${address}`,
+        )
+
+        expect(link).toEqual({
+            type: DeeplinkType.ASSET_DETAIL,
+            sourceUrl: expect.any(String),
+            target: { chainId: EVM_LINK_CHAIN_ID, networkId: 'mainnet' },
+            address,
+            assetRef: undefined,
+        })
+    })
+
+    it('targets the testnet a native asset-detail link names', () => {
+        const link = parseDeeplink(
+            `perawallet://app/asset-detail/?chain=${EVM_LINK_TESTNET_CAIP2}&address=${EVM_ADDRESS}`,
+        )
+
+        expect(link?.type).toBe(DeeplinkType.ASSET_DETAIL)
+        expect(link && linkTargetOf(link)).toEqual({
+            chainId: EVM_LINK_CHAIN_ID,
+            networkId: 'sepolia',
+        })
+    })
+
     it("doesn't open an asset the target chain can't spell", () => {
         expect(
             parseDeeplink(
@@ -107,14 +149,16 @@ describe('Pera links with chain=', () => {
         expect(peraLinkChainFailure(url)).toBe('unsupported-network')
     })
 
-    it('reports a switched-off chain as chain-unavailable', () => {
+    it('reads a switched-off chain like any other, as only its Pera backend is off', () => {
+        const url = `perawallet://app/account-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}`
+        const switchedOn = parseDeeplink(url)
+        expect(switchedOn).not.toBeNull()
         getProvider().chains.setCapabilityOverrides(() => ({
             chainEnabled: { [EVM_LINK_CHAIN_ID]: false },
         }))
-        const url = `perawallet://app/account-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}`
 
-        expect(parseDeeplink(url)).toBeNull()
-        expect(peraLinkChainFailure(url)).toBe('chain-unavailable')
+        expect(parseDeeplink(url)).toEqual(switchedOn)
+        expect(peraLinkChainFailure(url)).toBeUndefined()
     })
 
     it.each([

@@ -95,6 +95,9 @@ type NodeOptions = {
     isMining?: boolean
     /** The base fee per gas once a first call has been sent, as a spike. */
     baseFeeAfterFirstSend?: Hex
+    balance?: Hex
+    /** Answers `eth_call`, such as an allowance read. */
+    callResult?: Hex
 }
 
 /**
@@ -107,6 +110,8 @@ export const fakeNode = ({
     unestimable,
     isMining = true,
     baseFeeAfterFirstSend,
+    balance = '0x0',
+    callResult = '0x',
 }: NodeOptions = {}) => {
     const events: string[] = []
     const sent = new Map<Hex, Hex>()
@@ -115,6 +120,8 @@ export const fakeNode = ({
         ...evmRpcHandlers({
             rpcUrl: TEST_RPC_URL,
             responses: {
+                eth_getBalance: balance,
+                eth_call: callResult,
                 eth_getTransactionCount: () => `0x${sent.size.toString(16)}`,
                 eth_feeHistory: () => {
                     const base =

@@ -45,12 +45,14 @@ export type EvmChainRow = {
     explorerName: string
     explorerBase: Readonly<Record<NetworkId, string>>
     fee: EvmFeeStrategy
-    /** Milliseconds between blocks; prices a preset's expected wait. */
+    /** Milliseconds between blocks; prices a preset's expected wait and paces the head-following change signal. */
     blockTimeMs: number
     finality: ChainFinality
     enabledByDefault: boolean
     /** Layered over the EVM defaults for this chain alone. */
     capabilities?: Partial<ChainCapabilities>
+    /** Checksummed contract of the token a fresh swap receives here; the native asset when absent. */
+    defaultSwapReceiveAssetId?: string
     /** The developer modes a capability is off in, on this chain alone. */
     restrictions?: ChainCapabilityRestrictions
 }

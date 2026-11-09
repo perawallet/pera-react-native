@@ -33,7 +33,6 @@ import {
 } from '@tanstack/react-query'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { toUnsignedAlgorandTransaction } from '@perawallet/wallet-core-chain-algorand/signing'
 import {
@@ -56,6 +55,7 @@ import {
     useLocalKeyTransactionSigner,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { TransactionListItem } from '@modules/transactions'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -96,7 +96,7 @@ const renderHistoryQuery = (accountAddress: string) => {
             useTransactionHistoryQuery({
                 accountAddress,
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: NETWORK,
                 } as const,
             }),
@@ -164,7 +164,10 @@ describe('Flow: offline submission reconnect', () => {
         // lookup makes the fire-and-forget confirmation wait fail and leave
         // the ledger row open.
         const account = await seedAlgo25Signer()
-        const scope = { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const
+        const scope = {
+            chainId: ALGORAND_CHAIN_ID,
+            networkId: NETWORK,
+        } as const
         const unsignedTxn = toUnsignedAlgorandTransaction(
             buildPaymentTransaction(),
             scope,
@@ -187,7 +190,7 @@ describe('Flow: offline submission reconnect', () => {
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: NETWORK,
                 } as const,
             })
@@ -217,9 +220,13 @@ describe('Flow: offline submission reconnect', () => {
                 mutations: { retry: false },
             },
         })
-        render(<TransactionListItem transaction={firstHistoryItem} />, {
-            queryClient: offlineClient,
-        })
+        render(
+            <TransactionListItem
+                transaction={firstHistoryItem}
+                scope={{ chainId: ALGORAND_CHAIN_ID, networkId: NETWORK }}
+            />,
+            { queryClient: offlineClient },
+        )
         await waitFor(() => {
             // The integration harness leaves i18n uninitialised, so `t`
             // returns the key rather than the English translation.
@@ -272,13 +279,18 @@ describe('Flow: offline submission reconnect', () => {
             }),
         )
 
-        const summary = await reconcileOpenSubmissions(LEGACY_CHAIN_ID)
-        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        const summary = await reconcileOpenSubmissions(ALGORAND_CHAIN_ID)
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 1,
+            progressed: 0,
+            failed: 0,
+        })
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: NETWORK,
                 } as const,
             })
@@ -305,7 +317,7 @@ describe('Flow: offline submission reconnect', () => {
         )
 
         await fetchAndPersistTransactions(addressOf(account), {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: NETWORK,
         } as const)
 

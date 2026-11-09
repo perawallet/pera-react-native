@@ -23,13 +23,13 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useGroupTransactionsQuery } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { summarizeHistoryItem } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { transactionIconName } from '@components/TransactionIcon'
 import {
     useTransactionHeroTitle,
@@ -62,7 +62,7 @@ export const useGroupTransactionListScreen =
         const navigation = useNavigation<NavigationProp>()
         const route = useRoute<ScreenRouteProp>()
         const { groupId, historyTransaction } = route.params
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
         const heroTitle = useTransactionHeroTitle()
         const account = useSelectedAccount()
         const address = account

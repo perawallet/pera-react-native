@@ -17,8 +17,9 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
+const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
-const mockUseAvailableAssetsQuery = vi.hoisted(() => vi.fn())
+const mockUseSwapPairsInfiniteQuery = vi.hoisted(() => vi.fn())
 const mockGetQueryData = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 const mockUseQueryClient = vi.hoisted(() =>
@@ -43,12 +44,34 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     PeraAssetVerificationTier: {},
 }))
 
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mockTrackEvent,
+}))
+
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: mockUseQueryClient,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useAvailableAssetsQuery: mockUseAvailableAssetsQuery,
+    useSwapPairsInfiniteQuery: mockUseSwapPairsInfiniteQuery,
+    scopeOfSwapAsset: ({
+        chainId,
+        networkId,
+    }: {
+        chainId: string
+        networkId: string
+    }) => ({ chainId, networkId }),
+}))
+
+const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+const mockDestinationScopes = vi.hoisted(() => ({
+    current: [] as { chainId: string; networkId: string }[],
+}))
+vi.mock('../../../hooks/useSwapDestinationScopes', () => ({
+    useSwapDestinationScopes: () => mockDestinationScopes.current,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -61,8 +84,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+const mockFetchNextPage = vi.fn()
+
 const mockAvailableAssets = [
     {
+        ref: { ...ALGO_SCOPE, assetId: '31566704' },
         assetId: '31566704',
         name: 'USD Coin',
         unitName: 'USDC',
@@ -71,6 +97,7 @@ const mockAvailableAssets = [
         logo: 'https://example.com/usdc.png',
     },
     {
+        ref: { ...ALGO_SCOPE, assetId: '887406851' },
         assetId: '887406851',
         name: 'Wrapped SOL',
         unitName: 'wSOL',
@@ -79,6 +106,7 @@ const mockAvailableAssets = [
         logo: null,
     },
     {
+        ref: { ...ALGO_SCOPE, assetId: '0' },
         assetId: '0',
         name: 'Algo',
         unitName: 'ALGO',
@@ -88,6 +116,16 @@ const mockAvailableAssets = [
     },
 ]
 
+const ETH_NATIVE = {
+    ref: { ...ETH_SCOPE, assetId: '0' },
+    assetId: '0',
+    name: 'Ether',
+    unitName: 'ETH',
+    decimals: 18,
+    verificationTier: 'verified',
+    logo: null,
+}
+
 const mockAssetBalances = [
     { assetId: '31566704', amount: new Decimal('500') },
     { assetId: '0', amount: new Decimal('1000000') },
@@ -96,7 +134,7 @@ const mockAssetBalances = [
 const mockOnAssetSelected = vi.fn()
 
 const defaultParams = {
-    scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
+    scope: ALGO_SCOPE,
     fromAssetId: '31566704',
     onAssetSelected: mockOnAssetSelected,
 }
@@ -104,6 +142,7 @@ const defaultParams = {
 describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockDestinationScopes.current = [ALGO_SCOPE]
         mockGetQueryData.mockReturnValue(undefined)
         mockUseSelectedAccount.mockReturnValue({
             chains: { algorand: { address: 'TEST_ADDRESS' } },
@@ -113,9 +152,71 @@ describe('useSwapToAssetSelectionList', () => {
                 ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
             ]),
         })
-        mockUseAvailableAssetsQuery.mockReturnValue({
-            data: mockAvailableAssets,
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: mockAvailableAssets,
             isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+    })
+
+    describe('chain filter', () => {
+        beforeEach(() => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+        })
+
+        const lastScopes = () =>
+            mockUseSwapPairsInfiniteQuery.mock.lastCall?.[0].destinationScopes
+
+        it('has no chips and names no chain for one destination', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE]
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.isChainShown).toBe(false)
+        })
+
+        it('searches every destination on All, naming each row', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.chainOptions.map(o => o.value)).toEqual([
+                null,
+                'algorand',
+                'ethereum',
+            ])
+            expect(lastScopes()).toEqual([ALGO_SCOPE, ETH_SCOPE])
+            expect(result.current.isChainShown).toBe(true)
+        })
+
+        it('narrows the search to the picked chain', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.selectedChainId).toBe('ethereum')
+            expect(lastScopes()).toEqual([ETH_SCOPE])
+            expect(result.current.isChainShown).toBe(false)
+            expect(mockTrackEvent).toHaveBeenCalledTimes(1)
+        })
+
+        it('returns to All when the picked chain stops being a destination', () => {
+            const { result, rerender } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            mockDestinationScopes.current = [ALGO_SCOPE]
+            rerender()
+
+            expect(result.current.selectedChainId).toBeNull()
+            expect(lastScopes()).toEqual([ALGO_SCOPE])
         })
     })
 
@@ -127,12 +228,12 @@ describe('useSwapToAssetSelectionList', () => {
         expect(result.current.items).toHaveLength(3)
 
         const usdc = result.current.items.find(
-            i => i.dexAsset.assetId === '31566704',
+            i => i.swapAsset.assetId === '31566704',
         )
         const wsol = result.current.items.find(
-            i => i.dexAsset.assetId === '887406851',
+            i => i.swapAsset.assetId === '887406851',
         )
-        const algo = result.current.items.find(i => i.dexAsset.assetId === '0')
+        const algo = result.current.items.find(i => i.swapAsset.assetId === '0')
 
         expect(usdc?.balance?.toString()).toBe('500')
         expect(wsol?.balance).toBeNull()
@@ -149,12 +250,12 @@ describe('useSwapToAssetSelectionList', () => {
         )
 
         expect(
-            result.current.items.every(i => i.dexAsset.assetId !== '31566704'),
+            result.current.items.every(i => i.swapAsset.assetId !== '31566704'),
         ).toBe(true)
         expect(result.current.items).toHaveLength(2)
     })
 
-    it('passes search query to useAvailableAssetsQuery', () => {
+    it('asks what the pay asset swaps into, on the scope, with the search text', () => {
         const { result } = renderHook(() =>
             useSwapToAssetSelectionList(defaultParams),
         )
@@ -163,23 +264,60 @@ describe('useSwapToAssetSelectionList', () => {
             result.current.setSearchFilter('USDC')
         })
 
-        expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31_566_704,
-            expect.objectContaining({ chainId: 'algorand' }),
-            'USDC',
-            true,
+        expect(mockUseSwapPairsInfiniteQuery).toHaveBeenLastCalledWith({
+            anchor: {
+                chainId: 'algorand',
+                networkId: 'mainnet',
+                assetId: '31566704',
+            },
+            scope: defaultParams.scope,
+            destinationScopes: [ALGO_SCOPE],
+            q: 'USDC',
+        })
+    })
+
+    it('sends no search text when the search is empty', () => {
+        renderHook(() => useSwapToAssetSelectionList(defaultParams))
+
+        expect(mockUseSwapPairsInfiniteQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ q: undefined }),
         )
     })
 
-    it('passes undefined as query when search is empty', () => {
-        renderHook(() => useSwapToAssetSelectionList(defaultParams))
-
-        expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31_566_704,
-            expect.objectContaining({ chainId: 'algorand' }),
-            undefined,
-            true,
+    it('has no anchor to ask about before a pay asset is picked', () => {
+        renderHook(() =>
+            useSwapToAssetSelectionList({ ...defaultParams, fromAssetId: '' }),
         )
+
+        expect(mockUseSwapPairsInfiniteQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({ anchor: null }),
+        )
+    })
+
+    it('loads the next page at the end of the list while there is one', () => {
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: mockAvailableAssets,
+            isLoading: false,
+            hasNextPage: true,
+            fetchNextPage: mockFetchNextPage,
+        })
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+
+        act(() => result.current.handleEndReached())
+
+        expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops paging after the last page', () => {
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+
+        act(() => result.current.handleEndReached())
+
+        expect(mockFetchNextPage).not.toHaveBeenCalled()
     })
 
     it('returns empty items when no account is selected', () => {
@@ -199,9 +337,11 @@ describe('useSwapToAssetSelectionList', () => {
     })
 
     it('returns empty items when available assets API returns nothing', () => {
-        mockUseAvailableAssetsQuery.mockReturnValue({
-            data: [],
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [],
             isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
         })
 
         const { result } = renderHook(() =>
@@ -230,9 +370,11 @@ describe('useSwapToAssetSelectionList', () => {
     })
 
     it('exposes isLoading from the query', () => {
-        mockUseAvailableAssetsQuery.mockReturnValue({
-            data: undefined,
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [],
             isLoading: true,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
         })
 
         const { result } = renderHook(() =>
@@ -248,20 +390,55 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
                 result.current.handleAssetSelected(usdc)
             })
 
-            expect(mockOnAssetSelected).toHaveBeenCalledWith({
-                assetId: '31566704',
-                amount: new Decimal('500'),
-                nativeValue: null,
-                fiatValue: null,
-                restriction: null,
+            expect(mockOnAssetSelected).toHaveBeenCalledWith(
+                {
+                    assetId: '31566704',
+                    amount: new Decimal('500'),
+                    nativeValue: null,
+                    fiatValue: null,
+                    restriction: null,
+                },
+                ALGO_SCOPE,
+            )
+        })
+
+        it('passes the scope of an asset on another chain, unbalanced and cached there', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [...mockAvailableAssets, ETH_NATIVE],
+                isLoading: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
             })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            const eth = result.current.items.find(
+                i => i.swapAsset.unitName === 'ETH',
+            )!
+
+            act(() => {
+                result.current.handleAssetSelected(eth)
+            })
+
+            // ALGO shares the id '0' and has a balance; it isn't this asset's.
+            expect(eth.balance).toBeNull()
+            expect(mockGetAssetsQueryKey).toHaveBeenCalledWith(
+                ['0'],
+                ETH_SCOPE,
+                { fetchMissing: true },
+            )
+            expect(mockOnAssetSelected).toHaveBeenCalledWith(
+                expect.objectContaining({ assetId: '0' }),
+                ETH_SCOPE,
+            )
         })
 
         it('seeds the query cache when the asset is not already cached', () => {
@@ -271,7 +448,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -295,7 +472,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -305,14 +482,60 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockSetQueryData).toHaveBeenCalledOnce()
         })
 
-        it('does not seed the query cache when the asset is already cached', () => {
-            mockGetQueryData.mockReturnValue([{ assetId: '31566704' }])
+        it("adds the router's logo to a cached asset that has none", () => {
+            mockGetQueryData.mockReturnValue([
+                {
+                    assetId: '31566704',
+                    decimals: 6,
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'verified',
+                        logo: null,
+                    },
+                },
+            ])
 
             const { result } = renderHook(() =>
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === '31566704',
+                i => i.swapAsset.assetId === '31566704',
+            )!
+
+            act(() => {
+                result.current.handleAssetSelected(usdc)
+            })
+
+            expect(mockSetQueryData).toHaveBeenCalledWith(
+                ['assets-query-key'],
+                [
+                    expect.objectContaining({
+                        decimals: 6,
+                        peraMetadata: expect.objectContaining({
+                            logo: 'https://example.com/usdc.png',
+                        }),
+                    }),
+                ],
+            )
+        })
+
+        it('does not seed the query cache when the asset is already cached with a logo', () => {
+            mockGetQueryData.mockReturnValue([
+                {
+                    assetId: '31566704',
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'verified',
+                        logo: 'https://cached/usdc.png',
+                    },
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            const usdc = result.current.items.find(
+                i => i.swapAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -327,7 +550,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const wsol = result.current.items.find(
-                i => i.dexAsset.assetId === '887406851',
+                i => i.swapAsset.assetId === '887406851',
             )!
 
             act(() => {
@@ -336,6 +559,7 @@ describe('useSwapToAssetSelectionList', () => {
 
             expect(mockOnAssetSelected).toHaveBeenCalledWith(
                 expect.objectContaining({ amount: new Decimal(0) }),
+                ALGO_SCOPE,
             )
         })
     })

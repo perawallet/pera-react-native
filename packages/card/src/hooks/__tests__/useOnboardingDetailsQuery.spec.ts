@@ -21,15 +21,12 @@ const { fetchOnboardingDetails } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/onboarding', () => ({ fetchOnboardingDetails }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useOnboardingDetailsQuery } from '../useOnboardingDetailsQuery'
 import { VerificationState } from '../../models'
 
 const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    { chainId: 'algorand', networkId: 'mainnet' } as const,
     { chainId: 'ethereum', networkId: 'sepolia' },
 ]
 

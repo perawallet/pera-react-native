@@ -15,10 +15,7 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-    type ChainId,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     sendFlowChainAdapters,
@@ -26,7 +23,7 @@ import {
 } from '../../chain-adapter'
 import { useAssetInboxRequestsQuery } from '../useAssetInboxRequestsQuery'
 
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const scope = { chainId: 'algorand', networkId: 'testnet' } as const
 const chainId: ChainId = scope.chainId
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({

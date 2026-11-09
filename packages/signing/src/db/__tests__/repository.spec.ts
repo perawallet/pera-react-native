@@ -22,6 +22,7 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
+    setOpenSubmissionStatus,
     markSubmissionUnknown,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
@@ -36,7 +37,6 @@ import {
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
 import type { SubmissionHistoryEntry } from '../types'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
@@ -90,7 +90,7 @@ describe('submission ledger repository', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: ['TXID-REKEY-1'],
             flow: 'rekey',
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
@@ -123,7 +123,7 @@ describe('submission ledger repository', () => {
         // Terminal rows are not open — the txid query only surfaces open ones.
         const byTxId = await getSubmissionAttemptsByTxIds({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: ['TXID-REKEY-1'],
         })
         expect(byTxId).toHaveLength(0)
@@ -154,13 +154,13 @@ describe('submission ledger repository', () => {
     it('filters open rows by network', async () => {
         await recordRekey()
         await recordRekey({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             txIds: ['TXID-TESTNET'],
         })
 
         const mainnet = await getOpenSubmissionAttempts({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
         })
         expect(mainnet).toHaveLength(1)
         expect(mainnet[0]!.network).toBe('algorand/mainnet')
@@ -169,7 +169,7 @@ describe('submission ledger repository', () => {
     it('returns every network when no scope is given', async () => {
         await recordRekey()
         await recordRekey({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             txIds: ['TXID-TESTNET'],
         })
 
@@ -178,7 +178,7 @@ describe('submission ledger repository', () => {
 
     it('stores the scope key the backfill migration wrote', async () => {
         await recordRekey({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
         })
 
         const rows = (await db.all(
@@ -320,14 +320,14 @@ describe('submission ledger repository', () => {
         await recordRekey()
         await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: ['TXID-GROUP-2'],
             flow: 'generic',
         })
 
         const matches = await getSubmissionAttemptsByTxIds({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: ['TXID-GROUP-2', 'UNRELATED'],
         })
         expect(matches).toHaveLength(1)
@@ -337,20 +337,20 @@ describe('submission ledger repository', () => {
     it('finds only the attempts recorded under the queried scope', async () => {
         await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: ['TXID-SHARED'],
             flow: 'generic',
         })
         const testnetId = await recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             txIds: ['TXID-SHARED'],
             flow: 'generic',
         })
 
         const matches = await getSubmissionAttemptsByTxIds({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             txIds: ['TXID-SHARED'],
         })
         expect(matches.map(match => match.id)).toEqual([testnetId])
@@ -360,7 +360,7 @@ describe('submission ledger repository', () => {
         await recordRekey()
         const matches = await getSubmissionAttemptsByTxIds({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: [],
         })
         expect(matches).toHaveLength(0)
@@ -383,7 +383,7 @@ describe('submission ledger repository', () => {
         expect(await getOpenSubmissionAttempts({ db })).toHaveLength(0)
         const byTxId = await getSubmissionAttemptsByTxIds({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'mainnet' } as const,
             txIds: ['TXID-REKEY-1'],
             statuses: LANDABLE_SUBMISSION_STATUSES,
         })
@@ -758,6 +758,87 @@ describe('submission ledger repository', () => {
                     txId: '0xnew',
                 }),
             ).resolves.not.toBeNull()
+        })
+    })
+
+    describe('a confirming attempt', () => {
+        const record = () =>
+            recordSubmissionAttempt({
+                db,
+                scope: ETHEREUM,
+                txIds: ['0xaaa'],
+                flow: 'pipeline',
+                sender: '0xSENDER',
+                nonce: 7,
+                rawTransaction: '0x02aaa',
+            })
+
+        it('moves an open row to confirming and back to submitted, still open and unresolved', async () => {
+            const id = await record()
+
+            await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+            const [confirming] = await getOpenSubmissionAttempts({ db })
+            await setOpenSubmissionStatus({ db, id, status: 'submitted' })
+            const [submitted] = await getOpenSubmissionAttempts({ db })
+
+            expect(confirming).toMatchObject({
+                id,
+                status: 'confirming',
+                resolvedAt: null,
+            })
+            expect(submitted).toMatchObject({ status: 'submitted' })
+        })
+
+        it('notifies ledger subscribers', async () => {
+            const id = await record()
+            const listener = vi.fn()
+            const unsubscribe = subscribeToSubmissionLedger(listener)
+
+            await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+            unsubscribe()
+
+            expect(listener).toHaveBeenCalledTimes(1)
+        })
+
+        it.each(['confirmed', 'failed', 'replaced'] as const)(
+            'leaves a %s row as it is',
+            async status => {
+                const id = await record()
+                await resolveSubmissionAttempt({ db, id, status })
+
+                await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+
+                const [row] = await db.select().from(SubmissionAttemptsSchema)
+                expect(row).toMatchObject({ status })
+            },
+        )
+
+        it('stays open: held by the nonce reads, unprunable and not re-priceable', async () => {
+            const id = await record()
+            await setOpenSubmissionStatus({ db, id, status: 'confirming' })
+            await backdate(id, 0)
+
+            expect(
+                (
+                    await getSubmissionAttemptsAtNonce({
+                        db,
+                        scope: ETHEREUM,
+                        sender: '0xSENDER',
+                        nonce: 7,
+                        statuses: ['submitted', 'unknown', 'confirming'],
+                    })
+                ).map(a => a.id),
+            ).toEqual([id])
+            await expect(
+                pruneResolvedSubmissionAttempts({ db, olderThanMs: 1 }),
+            ).resolves.toBe(0)
+            await expect(
+                getReplaceableSubmissionAttempt({
+                    db,
+                    scope: ETHEREUM,
+                    txId: '0xaaa',
+                }),
+            ).resolves.toBeNull()
         })
     })
 })

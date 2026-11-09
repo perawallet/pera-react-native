@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     getAccountAddedTokens: vi.fn(),
     fetchAndPersistAssets: vi.fn(),
     getAssetById: vi.fn(),
+    fetchAndPersistAccount: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
@@ -32,6 +33,10 @@ vi.mock('../../db', () => ({
     getAccountAddedTokens: mocks.getAccountAddedTokens,
 }))
 
+vi.mock('../../sync/account-syncer', () => ({
+    fetchAndPersistAccount: mocks.fetchAndPersistAccount,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchAndPersistAssets: mocks.fetchAndPersistAssets,
     getAssetById: mocks.getAssetById,
@@ -39,6 +44,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 import { TokenMetadataUnavailableError } from '../../errors'
 import { useAddTokenMutation } from '../useAddTokenMutation'
+import {
+    hiddenAssetIdsOf,
+    useHiddenTokensStore,
+} from '../../store/hiddenTokens'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -59,11 +68,40 @@ const setup = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    useHiddenTokensStore.getState().resetState()
     mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
     mocks.getAssetById.mockResolvedValue({ assetId: USDC })
+    mocks.fetchAndPersistAccount.mockResolvedValue({
+        changed: true,
+        holdingsChanged: true,
+        observedRound: 1,
+    })
 })
 
 describe('useAddTokenMutation', () => {
+    it('shows a token the user hid once they add it again', async () => {
+        useHiddenTokensStore.getState().setTokenHidden({
+            address: VARIABLES.accountAddress,
+            scope: SCOPE,
+            assetId: USDC,
+            isHidden: true,
+        })
+        const { wrapper } = setup()
+        const { result } = renderHook(() => useAddTokenMutation(), { wrapper })
+
+        await act(async () => {
+            await result.current.addToken(VARIABLES)
+        })
+
+        expect(
+            hiddenAssetIdsOf(
+                useHiddenTokensStore.getState().hiddenTokens,
+                VARIABLES.accountAddress,
+                SCOPE,
+            ),
+        ).toEqual([])
+    })
+
     it('stores the metadata through the bulk sync before recording the token and its holding', async () => {
         const order: string[] = []
         mocks.fetchAndPersistAssets.mockImplementation(async () => {
@@ -117,5 +155,45 @@ describe('useAddTokenMutation', () => {
         ).rejects.toBeInstanceOf(TokenMetadataUnavailableError)
         expect(mocks.addAccountToken).not.toHaveBeenCalled()
         expect(mocks.insertAssetHolding).not.toHaveBeenCalled()
+        expect(mocks.fetchAndPersistAccount).not.toHaveBeenCalled()
+    })
+
+    it('reads the account once after recording the token, so a balance it already holds shows', async () => {
+        const { wrapper } = setup()
+        const { result } = renderHook(() => useAddTokenMutation(), {
+            wrapper,
+        })
+
+        await act(() => result.current.addToken(VARIABLES))
+
+        expect(mocks.fetchAndPersistAccount).toHaveBeenCalledTimes(1)
+        expect(mocks.fetchAndPersistAccount).toHaveBeenCalledWith('0xAA', SCOPE)
+        const [readOrder] =
+            mocks.fetchAndPersistAccount.mock.invocationCallOrder
+        expect(readOrder).toBeGreaterThan(
+            mocks.addAccountToken.mock.invocationCallOrder[0]!,
+        )
+        expect(readOrder).toBeGreaterThan(
+            mocks.insertAssetHolding.mock.invocationCallOrder[0]!,
+        )
+    })
+
+    it('still adds the token when the account read fails, leaving the balance to the next sync', async () => {
+        mocks.fetchAndPersistAccount.mockRejectedValue(new Error('rpc down'))
+        const { queryClient, wrapper } = setup()
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(() => useAddTokenMutation(), {
+            wrapper,
+        })
+
+        await act(() => result.current.addToken(VARIABLES))
+
+        expect(mocks.addAccountToken).toHaveBeenCalledWith({
+            accountAddress: '0xAA',
+            scope: SCOPE,
+            assetId: USDC,
+        })
+        expect(mocks.insertAssetHolding).toHaveBeenCalled()
+        expect(invalidate).toHaveBeenCalled()
     })
 })

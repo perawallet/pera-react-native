@@ -14,6 +14,7 @@ import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type ChainCapability,
+    type ChainCapabilityRestrictions,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChainRow } from './chains/types'
 
@@ -33,13 +34,20 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'messageSigning',
     'ledger',
     'nft',
+    'nameService',
     // Still behind the app-wide enable_cloud_backup flag, as for Algorand.
     'cloudBackup',
 ])
 
 // Off by default but safe for remote config to switch on: no Algorand-only code,
-// and no Pera endpoint outside config's EVM_PERA_SERVICES. Anything else stays off.
-const SWITCHABLE: readonly ChainCapability[] = ['contractDecoding', 'discover']
+// and no Pera endpoint a scope without a deployment could reach. Anything else
+// stays off.
+const SWITCHABLE: readonly ChainCapability[] = [
+    'contractDecoding',
+    'discover',
+    'onramp',
+    'swap',
+]
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 
@@ -66,3 +74,11 @@ export const evmSupportedCapabilitiesOf = (
     )
     return rowOnly.length > 0 ? [...SUPPORTED, ...rowOnly] : SUPPORTED
 }
+
+// onramp buys real tokens, so a test network never offers it, whatever remote config says.
+export const evmCapabilityRestrictionsOf = (
+    row: EvmChainRow,
+): ChainCapabilityRestrictions => ({
+    onramp: ['developer', 'developer-override'],
+    ...row.restrictions,
+})

@@ -11,24 +11,84 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { cursorOf, routerRequest } from '@perawallet/wallet-core-swaps'
 
-import type { RampPair } from '../../models'
-import { rampPairsResponseSchema, type RampPairsApiResponse } from './schema'
-import { transformRampPair } from './transformers'
+import type { RampToken } from '../../models'
+import { caip2OfRouterAsset } from '../router-asset'
+import {
+    rampPairRowSchema,
+    rampPairsPageSchema,
+    type RampPairRowApiResponse,
+} from './schema'
+import { dedupeRampTokens, transformRampPairRow } from './transformers'
 
-export const getRampPairs = async (
-    destinationTokenIds: string[],
+const PAGE_LIMIT = 50
+const MAX_PAGES = 20
+
+// `signable=false` keeps out every pair Swap signs for: Fund lists only
+// provider checkout and external deposit routes.
+const fetchRows = async (
     scope: ChainScope,
-): Promise<RampPair[]> => {
-    const response = await queryClient<RampPairsApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'GET',
-        url: `/v1/ramp/pairs/`,
-        params: { destination_tokens: destinationTokenIds.join(',') },
-    })
-
-    const parsed = rampPairsResponseSchema.parse(response.data)
-    return parsed.map(transformRampPair)
+    destinationId: Nullable<string>,
+): Promise<RampPairRowApiResponse[]> => {
+    const rows: RampPairRowApiResponse[] = []
+    let cursor: Nullable<string> = null
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const data = await routerRequest({
+            scope,
+            method: 'GET',
+            path: 'pairs/',
+            params: {
+                signable: 'false',
+                limit: PAGE_LIMIT,
+                ...(destinationId === null
+                    ? {}
+                    : { destination: destinationId }),
+                ...(cursor === null ? {} : { cursor }),
+            },
+        })
+        const parsed = rampPairsPageSchema.parse(data)
+        for (const raw of parsed.results) {
+            const row = rampPairRowSchema.safeParse(raw)
+            if (row.success) rows.push(row.data)
+        }
+        cursor = cursorOf(parsed.next)
+        if (cursor === null) break
+    }
+    return rows
 }
+
+// A source on a chain the wallet runs is left out even when the router lists
+// it as a deposit route: the user swaps from that chain in Swap.
+const isOfferedSource = (token: RampToken): boolean => {
+    const { chains } = getProvider()
+    const resolved = chains.byCaip2(caip2OfRouterAsset(token.id))
+    return resolved === undefined || chains.isSwitchedOff(resolved.chainId)
+}
+
+const toTokens = (token: Nullable<RampToken>): RampToken[] =>
+    token === null ? [] : [token]
+
+/** Everything Fund can deliver, with no anchor. */
+export const getRampDestinations = async (
+    scope: ChainScope,
+): Promise<RampToken[]> =>
+    dedupeRampTokens(
+        (await fetchRows(scope, null)).flatMap(row =>
+            toTokens(transformRampPairRow(row)),
+        ),
+    )
+
+/** What can fund `destinationId`: its fiat currencies and deposit coins. */
+export const getRampSources = async (
+    destinationId: string,
+    scope: ChainScope,
+): Promise<RampToken[]> =>
+    dedupeRampTokens(
+        (await fetchRows(scope, destinationId))
+            .flatMap(row => toTokens(transformRampPairRow(row)))
+            .filter(token => token.kind !== 'token')
+            .filter(isOfferedSource),
+    )

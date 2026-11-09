@@ -297,6 +297,106 @@ describe('services/currencies/hooks', () => {
             expect(result.current.isRatePending).toBe(false)
         })
 
+        describe('isRateUnavailable', () => {
+            const preferring = (currency: string) =>
+                mockUseAppStore.mockImplementation((selector: any) =>
+                    selector({ preferredCurrency: currency }),
+                )
+
+            it.each([
+                ['the rate request failed', undefined],
+                ['the backend has no rate', { usdPrice: new Decimal(0) }],
+            ])('is true once settled when %s', (_, data) => {
+                preferring('ARS')
+                mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                    data,
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCurrency(ALGORAND_TESTNET),
+                )
+
+                expect(result.current.isRateUnavailable).toBe(true)
+                expect(result.current.isRatePending).toBe(true)
+                expect(result.current.usdToPreferred(new Decimal(1))).toBeNull()
+            })
+
+            it('is false while the request is pending or paused offline', () => {
+                preferring('ARS')
+                mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                    data: undefined,
+                    isPending: true,
+                })
+
+                const { result } = renderHook(() =>
+                    useCurrency(ALGORAND_TESTNET),
+                )
+
+                expect(result.current.isRateUnavailable).toBe(false)
+            })
+
+            it('is false for USD and for the native symbol, which need no fiat rate', () => {
+                mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                    data: undefined,
+                    isPending: false,
+                })
+
+                preferring('USD')
+                const usd = renderHook(() => useCurrency(ALGORAND_TESTNET))
+                preferring('ETH')
+                const native = renderHook(() => useCurrency(ETHEREUM_SEPOLIA))
+
+                expect(usd.result.current.isRateUnavailable).toBe(false)
+                expect(native.result.current.isRateUnavailable).toBe(false)
+            })
+
+            it('clears once a retry finds a usable rate', () => {
+                preferring('ARS')
+                const refetch = vi.fn()
+                mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                    data: undefined,
+                    isPending: false,
+                    refetch,
+                })
+                const { result, rerender } = renderHook(() =>
+                    useCurrency(ALGORAND_TESTNET),
+                )
+                expect(result.current.isRateUnavailable).toBe(true)
+
+                act(() => result.current.refetchRate())
+                mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                    data: { usdPrice: new Decimal(1000) },
+                    isPending: false,
+                    refetch,
+                })
+                rerender()
+
+                expect(refetch).toHaveBeenCalledTimes(1)
+                expect(result.current.isRateUnavailable).toBe(false)
+                expect(result.current.usdToPreferred(new Decimal(2))).toEqual(
+                    new Decimal(2000),
+                )
+            })
+
+            it('refetchRate does nothing for USD', () => {
+                preferring('USD')
+                const refetch = vi.fn()
+                mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                    data: undefined,
+                    isPending: false,
+                    refetch,
+                })
+                const { result } = renderHook(() =>
+                    useCurrency(ALGORAND_TESTNET),
+                )
+
+                act(() => result.current.refetchRate())
+
+                expect(refetch).not.toHaveBeenCalled()
+            })
+        })
+
         it('never reports isRatePending when the preferred currency is USD', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({ preferredCurrency: 'USD' }),

@@ -11,11 +11,15 @@
  */
 
 export {
-    useNfdForAddressQuery,
-    type UseNfdForAddressQueryResult,
-} from './useNfdForAddressQuery'
+    useNameForAddressQuery,
+    type UseNameForAddressQueryResult,
+} from './useNameForAddressQuery'
 export {
-    useNfdSearchQuery,
-    type UseNfdSearchQueryResult,
-} from './useNfdSearchQuery'
+    useNameSearchQuery,
+    type UseNameSearchQueryResult,
+} from './useNameSearchQuery'
+export {
+    useNameResolutionQuery,
+    type UseNameResolutionQueryResult,
+} from './useNameResolutionQuery'
 export { nfdQueryKeys, invalidateNfdQueries } from './querykeys'

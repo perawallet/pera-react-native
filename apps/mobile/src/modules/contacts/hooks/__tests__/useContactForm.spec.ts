@@ -61,16 +61,31 @@ vi.mock('@hooks/useImagePicker', () => ({
     }),
 }))
 
-vi.mock('@hooks/useNfdResolve', () => ({
-    useNfdResolve: () => ({
-        resolvedAddress: '',
-        isNfdResolved: false,
-        isNfdResolving: false,
-        nfdName: undefined,
-    }),
+const mockNameResolve = vi.hoisted(() => vi.fn())
+
+vi.mock('@hooks/useNameResolve', () => ({
+    useNameResolve: mockNameResolve,
 }))
 
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainIds: () => ['algorand', 'ethereum'],
+}))
+
+const resolveTo = (name: string, address: string) =>
+    mockNameResolve.mockReturnValue({
+        resolvedAddress: address,
+        isNameResolved: true,
+        isNameResolving: false,
+        resolvedName: name,
+    })
+
 beforeEach(() => {
+    mockNameResolve.mockReturnValue({
+        resolvedAddress: '',
+        isNameResolved: false,
+        isNameResolving: false,
+        resolvedName: undefined,
+    })
     mocks.contacts = [ALICE]
     registerAlgorandAddressCodec()
     registerEthereumChain()
@@ -124,6 +139,47 @@ describe('useContactForm', () => {
         expect(result.current.addresses).toEqual({
             algorand: ALGORAND_ADDRESS,
         })
+    })
+
+    it('files an ENS name under the EVM family at the address it resolves to', () => {
+        resolveTo('alice.eth', EVM_ADDRESS)
+        const { result } = renderHook(() => useContactForm(null))
+
+        act(() => result.current.onAddressInputChange('alice.eth'))
+
+        expect(result.current.addresses).toEqual({
+            evm: CHECKSUMMED_EVM_ADDRESS,
+        })
+        expect(result.current.nameResolution.resolvedName).toBe('alice.eth')
+    })
+
+    it('files an NFD name under the Algorand family', () => {
+        resolveTo('alice.algo', ALGORAND_ADDRESS)
+        const { result } = renderHook(() => useContactForm(null))
+
+        act(() => result.current.onAddressInputChange('alice.algo'))
+
+        expect(result.current.addresses).toEqual({
+            algorand: ALGORAND_ADDRESS,
+        })
+    })
+
+    it('adds nothing for a name that resolves to nothing, and flags the input', () => {
+        const { result } = renderHook(() => useContactForm(null))
+
+        act(() => result.current.onAddressInputChange('nobody.eth'))
+
+        expect(result.current.addresses).toEqual({})
+        expect(result.current.isAddressInputInvalid).toBe(true)
+    })
+
+    it('resolves names on the chains that have a name service', () => {
+        renderHook(() => useContactForm(null))
+
+        expect(mockNameResolve).toHaveBeenCalledWith('', [
+            'algorand',
+            'ethereum',
+        ])
     })
 
     it('marks input no family accepts as invalid and adds nothing', () => {

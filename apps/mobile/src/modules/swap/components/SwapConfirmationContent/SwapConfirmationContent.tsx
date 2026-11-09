@@ -55,6 +55,7 @@ export const SwapConfirmationContent = ({
 
     const {
         selectedAccount,
+        receiveTarget,
         inAsset,
         outAsset,
         isProcessing,
@@ -67,10 +68,15 @@ export const SwapConfirmationContent = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        providerFeeDisplay,
+        networkFeeDisplay,
+        needsSpendApproval,
+        insufficientFeeMessage,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
+        crossChainNote,
     } = useSwapConfirmation({ scope, quote, swapStatus })
 
     const onClosePress = useCallback(
@@ -107,11 +113,10 @@ export const SwapConfirmationContent = ({
             <PWView style={styles.assetsGroup}>
                 <SwapAssetSection
                     asset={inAsset}
+                    swapAsset={quote.assetIn}
                     chainId={scope.chainId}
                     amountDisplay={payDisplay}
                     fiatValue={payFiatValue}
-                    unitName={quote.assetIn.unitName}
-                    verificationTier={quote.assetIn.verificationTier}
                 />
 
                 <PWView style={styles.toDivider}>
@@ -127,22 +132,24 @@ export const SwapConfirmationContent = ({
 
                 <SwapAssetSection
                     asset={outAsset}
-                    chainId={scope.chainId}
+                    swapAsset={quote.assetOut}
+                    chainId={quote.assetOut.ref.chainId}
                     amountDisplay={receiveDisplay}
                     fiatValue={receiveFiatValue}
-                    unitName={quote.assetOut.unitName}
-                    verificationTier={quote.assetOut.verificationTier}
                 />
             </PWView>
 
             <PWDivider style={styles.detailsDivider} />
 
             <SwapDetailsSection
-                scope={scope}
                 quote={quote}
+                sourceChainId={scope.chainId}
+                receiveTarget={receiveTarget}
                 rateDisplay={rateDisplay}
                 minimumReceivedDisplay={minimumReceivedDisplay}
                 peraFeeDisplay={peraFeeDisplay}
+                providerFeeDisplay={providerFeeDisplay}
+                networkFeeDisplay={networkFeeDisplay}
                 slippageDisplay={slippageDisplay}
                 priceImpactDisplay={priceImpactDisplay}
                 priceImpactStyle={priceImpactStyle}
@@ -159,11 +166,43 @@ export const SwapConfirmationContent = ({
                 </PWView>
             )}
 
+            {crossChainNote && (
+                <PWView
+                    style={styles.noteBanner}
+                    testID='swap-confirm-cross-chain-note'
+                >
+                    <PWText variant='caption'>{crossChainNote}</PWText>
+                </PWView>
+            )}
+
+            {needsSpendApproval && (
+                <PWView
+                    style={styles.noteBanner}
+                    testID='swap-confirm-spend-approval-note'
+                >
+                    <PWText variant='caption'>
+                        {t('swap.quote.spend_approval_note')}
+                    </PWText>
+                </PWView>
+            )}
+
+            {insufficientFeeMessage && (
+                <PWView
+                    style={styles.warningBanner}
+                    testID='swap-confirm-insufficient-fee'
+                >
+                    <PWText style={styles.warningText}>
+                        {insufficientFeeMessage}
+                    </PWText>
+                </PWView>
+            )}
+
             <PWView style={styles.confirmButton}>
                 <ConfirmAction
                     title={t('swap.quote.slide_to_confirm')}
                     onConfirm={() => void handleSlideConfirm()}
                     isLoading={isProcessing}
+                    isDisabled={insufficientFeeMessage !== null}
                     isConfirmed={swapStatus === 'success'}
                     style={CONFIRM_ACTION_LAYOUT}
                     testID='swap-confirm-slide'

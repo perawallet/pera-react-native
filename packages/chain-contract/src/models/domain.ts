@@ -122,6 +122,8 @@ export type AccountChainState =
           family: 'evm'
           /** Transaction count; `pending` includes transactions still in the mempool. */
           nonce: { latest: number; pending: number }
+          /** Newest block a received-token history scan has read up to; absent until a scan finishes. */
+          tokenScanBlock?: number
       }
 
 export interface AccountState {
@@ -229,7 +231,14 @@ export type ChainTransactionData =
           rekeyTo?: string
           closeRemainderTo?: string
       }
-    | { family: 'evm' }
+    | {
+          family: 'evm'
+          /** Set on a history record that moves a single NFT; its contract and token id are in the asset id. */
+          nft?: {
+              standard: 'erc721' | 'erc1155'
+              collectionName?: string
+          }
+      }
 
 /** Payment-link fields only the parsing chain reads; each family adds a member discriminated by `family`. */
 export type ChainPaymentData = {
@@ -431,9 +440,16 @@ export interface SpendAllowance {
     nft?: { collection: string; tokenId: string }
 }
 
+/** A spender in the chain's well-known contract registry; `name` is a proper noun, never translated. */
+export interface KnownSpender {
+    name: string
+    projectDomain?: string
+}
+
 export interface SpendApproval {
     /** Requester-supplied, in the chain's address format. */
     spender: string
+    knownSpender?: KnownSpender
     /** One per asset, in message order; never empty. */
     allowances: SpendAllowance[]
     /** Unix ms after which the approval can't be used; absent when it never lapses. */

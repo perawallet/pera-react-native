@@ -30,15 +30,20 @@ let mockRouteParams: Optional<{
     chainId?: string
 }>
 const mockStoredAccounts = vi.hoisted(() => ({ accounts: [] as unknown[] }))
-const mockRegisteredChainIds = vi.hoisted(() => ({
-    chainIds: ['algorand'] as string[],
-}))
+const mockHomeChain = vi.hoisted(() => ({ chainId: 'algorand' }))
 const mockGetAccountDisplayName = vi.hoisted(() =>
     vi.fn(
         (account: { name?: string }, _chainId: string) =>
             account?.name ?? 'Account 1',
     ),
 )
+
+vi.mock('@hooks/useHomeChainScope', () => ({
+    useHomeChainScope: () => ({
+        chainId: mockHomeChain.chainId,
+        networkId: 'mainnet',
+    }),
+}))
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -55,7 +60,6 @@ vi.mock('@analytics', async () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockStoredAccounts.accounts,
-    useRegisteredChainIds: () => mockRegisteredChainIds.chainIds,
     useCreateAccount: () => ({
         buildHdWalletAccount: mockBuildHdWalletAccount,
         saveAccount: mockSaveAccount,
@@ -92,7 +96,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account: { chains: Record<string, unknown> },
         chainId: string,
     ) => account.chains[chainId],
-    findAccountByAddressOn: () => undefined,
+    findAccountByAddressOn: (
+        accounts: { chains: Record<string, { address?: string }> }[],
+        chainId: string,
+        address: string,
+    ) => accounts.find(a => a.chains[chainId]?.address === address),
     preferDefaultChain: (chainIds: string[]) => chainIds[0],
     isWatchAccount: (account: { custody?: { kind: string } }) =>
         account?.custody?.kind === 'watch',
@@ -130,6 +138,9 @@ vi.mock('react-i18next', async () => {
                 ) {
                     return `Wallet ${opts.count}`
                 }
+                if (key === 'account_info.account_number' && opts?.number) {
+                    return `${key} ${opts.number}`
+                }
                 return key
             },
             i18n: { changeLanguage: vi.fn(), language: 'en' },
@@ -142,10 +153,10 @@ describe('useNameAccountScreen', () => {
         vi.clearAllMocks()
         mockRouteParams = undefined
         mockStoredAccounts.accounts = []
-        mockRegisteredChainIds.chainIds = ['algorand']
+        mockHomeChain.chainId = 'algorand'
     })
 
-    describe('with several chains registered', () => {
+    describe('with chains added after the hand-over', () => {
         const routeAccount = {
             id: 'imported',
             chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
@@ -162,30 +173,6 @@ describe('useNameAccountScreen', () => {
                 ethereum: { address: '0xabc', keyPairId: 'kp-evm' },
             },
         }
-
-        beforeEach(() => {
-            mockRegisteredChainIds.chainIds = ['algorand', 'ethereum', 'base']
-        })
-
-        it("lists the stored account's chains, including one added after it was handed over", () => {
-            mockStoredAccounts.accounts = [storedAccount]
-            mockRouteParams = { account: routeAccount }
-
-            const { result } = renderHook(() => useNameAccountScreen())
-
-            expect(result.current.enabledChainIds).toEqual([
-                'algorand',
-                'ethereum',
-            ])
-        })
-
-        it("lists the handed-over account's chains before it is stored", () => {
-            mockRouteParams = { account: routeAccount }
-
-            const { result } = renderHook(() => useNameAccountScreen())
-
-            expect(result.current.enabledChainIds).toEqual(['algorand'])
-        })
 
         it('renames the stored account, keeping chains the handed-over copy lacks', async () => {
             mockStoredAccounts.accounts = [storedAccount]
@@ -207,18 +194,12 @@ describe('useNameAccountScreen', () => {
         })
     })
 
-    it('lists no chains with a single chain registered', () => {
-        mockRouteParams = {
-            account: {
-                id: '1',
-                chains: { algorand: { address: 'ADDR', keyPairId: 'kp1' } },
-                custody: { kind: 'watch' },
-            },
-        }
+    it("names and creates on the wallet's home chain when the route names none", () => {
+        mockHomeChain.chainId = 'ethereum'
 
         const { result } = renderHook(() => useNameAccountScreen())
 
-        expect(result.current.enabledChainIds).toEqual([])
+        expect(result.current.chainId).toBe('ethereum')
     })
 
     describe('on another chain', () => {
@@ -336,10 +317,10 @@ describe('useNameAccountScreen', () => {
             const { result } = renderHook(() => useNameAccountScreen())
 
             expect(result.current.walletDisplay).toBe(
-                'account_info.account_number',
+                'account_info.account_number 1',
             )
             expect(result.current.accountTitle).toBe(
-                'account_info.account_number',
+                'account_info.account_number 1',
             )
         })
 
@@ -412,6 +393,148 @@ describe('useNameAccountScreen', () => {
             )
         })
 
+        describe('uniqueness', () => {
+            const hdRouteAccount = (
+                id: string,
+                address: string,
+                name?: string,
+            ) => ({
+                id,
+                name,
+                chains: { algorand: { address, keyPairId: 'kp' } },
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            })
+            const stored = (id: string, address: string, name: string) => ({
+                id,
+                name,
+                chains: { algorand: { address } },
+                custody: { kind: 'watch' },
+            })
+
+            it('suggests the next free number when another account already shows the generated one', async () => {
+                mockStoredAccounts.accounts = [
+                    stored('other', 'OTHER', 'account_info.account_number 1'),
+                    stored('third', 'THIRD', 'account_info.account_number 2'),
+                ]
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.walletDisplay).toBe(
+                    'account_info.account_number 3',
+                )
+                expect(result.current.accountTitle).toBe(
+                    'account_info.account_number 3',
+                )
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockSaveAccount).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        id: 'new',
+                        name: 'account_info.account_number 3',
+                    }),
+                )
+            })
+
+            it('flags a typed name another account shows, ignoring case and spaces, and blocks Finish', async () => {
+                mockStoredAccounts.accounts = [
+                    stored('other', 'OTHER', 'Savings'),
+                ]
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                act(() => {
+                    result.current.handleNameChange('  sAVINGS ')
+                })
+
+                expect(result.current.nameError).toBe('account_info.name_taken')
+                expect(result.current.isFinishDisabled).toBe(true)
+
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockSaveAccount).not.toHaveBeenCalled()
+                expect(mockUpdateAccount).not.toHaveBeenCalled()
+            })
+
+            it('does not count the stored record being named, found by id', () => {
+                mockStoredAccounts.accounts = [stored('new', 'ADDR', 'Savings')]
+                mockRouteParams = {
+                    account: hdRouteAccount('new', 'ADDR', 'Savings'),
+                }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.walletDisplay).toBe('Savings')
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+            })
+
+            it('does not count the stored record being named, found by address', () => {
+                mockStoredAccounts.accounts = [
+                    stored('stored', 'ADDR', 'Savings'),
+                ]
+                mockRouteParams = {
+                    account: hdRouteAccount('route-copy', 'ADDR', 'Savings'),
+                }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+            })
+
+            it('keeps the name an already-stored record has, even when another account shares it', () => {
+                mockStoredAccounts.accounts = [
+                    stored('watched', 'WATCHED', 'Alice'),
+                    stored('other', 'OTHER', 'Alice'),
+                ]
+                mockRouteParams = {
+                    account: stored('watched', 'WATCHED', 'Alice'),
+                }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                expect(result.current.walletDisplay).toBe('Alice')
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(false)
+            })
+
+            it('blocks Finish on an empty or blank name', () => {
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                act(() => {
+                    result.current.handleNameChange('   ')
+                })
+
+                expect(result.current.nameError).toBeUndefined()
+                expect(result.current.isFinishDisabled).toBe(true)
+            })
+
+            it('saves the name trimmed', async () => {
+                mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                act(() => {
+                    result.current.handleNameChange('  Savings  ')
+                })
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockSaveAccount).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: 'Savings' }),
+                )
+            })
+        })
+
         it('offers a wallet name when no account is handed over', () => {
             const { result } = renderHook(() => useNameAccountScreen())
 
@@ -427,6 +550,39 @@ describe('useNameAccountScreen', () => {
         })
 
         expect(result.current.walletDisplay).toBe('New Name')
+    })
+
+    it('previews the typed name on the account card', () => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange('New Name')
+        })
+
+        expect(result.current.previewName).toBe('New Name')
+    })
+
+    it.each([
+        ['empty', ''],
+        ['blank', '   '],
+    ])('previews the offered name while the field is %s', (_, typed) => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange(typed)
+        })
+
+        expect(result.current.previewName).toBe('Wallet 1')
+    })
+
+    it('previews the typed name without surrounding spaces', () => {
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        act(() => {
+            result.current.handleNameChange('  New Name  ')
+        })
+
+        expect(result.current.previewName).toBe('New Name')
     })
 
     it('handleFinish updates account name and exits when account is provided', async () => {

@@ -37,14 +37,12 @@ import {
     useNetworkStore,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type LegacyNetwork,
-} from '@perawallet/wallet-core-chain-contract'
+import { type LegacyNetwork } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { addressOf } from './__fixtures__/accounts'
 
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'testnet',
 } as const
 
@@ -74,14 +72,14 @@ const seedUnfunded = async (
 ) => {
     await seedAlgorandAccountState({
         accountAddress: address,
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: network } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: network } as const,
         nativeBalance: new Decimal(0),
         minBalance: new Decimal(100_000),
     })
     await insertAssetHolding({
         accountAddress: address,
         assetId: '0',
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: network } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: network } as const,
         amount: new Decimal(0),
     })
 }
@@ -114,7 +112,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
             () =>
                 useShouldPromptMnemonicBackup(
                     ACCOUNT_B,
-                    useSelectedScope(LEGACY_CHAIN_ID),
+                    useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             { wrapper },
         )
@@ -127,7 +125,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
             await refreshAccountHoldings({
                 accountAddress: addressOf(ACCOUNT_B),
                 scope: {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: NETWORK,
                 } as const,
                 holdings: [
@@ -171,7 +169,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
             () =>
                 useShouldPromptMnemonicBackup(
                     ACCOUNT_B,
-                    useSelectedScope(LEGACY_CHAIN_ID),
+                    useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             { wrapper },
         )
@@ -193,7 +191,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
             () =>
                 useShouldPromptMnemonicBackup(
                     ACCOUNT_B,
-                    useSelectedScope(LEGACY_CHAIN_ID),
+                    useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             { wrapper },
         )
@@ -203,7 +201,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         // What fetchAndPersistAccount does when it sees the new auth-addr.
         act(() => {
             seedAuthority(addressOf(ACCOUNT_A), addressOf(ACCOUNT_B), {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: NETWORK,
             } as const)
         })

@@ -238,7 +238,9 @@ describe('useAddAccountOptionsScreen', () => {
             multichainOption(result.current.options)!.onPress()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
+        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet', {
+            chainId: 'algorand',
+        })
         expect(mockBuildNextHDAccount).not.toHaveBeenCalled()
     })
 

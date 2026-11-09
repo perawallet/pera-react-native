@@ -55,6 +55,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 const handlers = () => ({
+    rows: [],
     onAddressInputChange: vi.fn(),
     confirmReplacement: vi.fn(),
     cancelReplacement: vi.fn(),
@@ -74,6 +75,35 @@ describe('useContactAddressFields', () => {
         )
 
         expect(result.current.scanChainIds).toEqual(['algorand', 'ethereum'])
+    })
+
+    it('offers another address while a registered family has none', () => {
+        const { result } = renderHook(() =>
+            useContactAddressFields({
+                pendingReplacement: undefined,
+                ...handlers(),
+                rows: [
+                    { family: 'algorand', address: 'A', isDuplicate: false },
+                ],
+            }),
+        )
+
+        expect(result.current.canAddAddress).toBe(true)
+    })
+
+    it('stops offering another address once every registered family has one', () => {
+        const { result } = renderHook(() =>
+            useContactAddressFields({
+                pendingReplacement: undefined,
+                ...handlers(),
+                rows: [
+                    { family: 'algorand', address: 'A', isDuplicate: false },
+                    { family: 'evm', address: '0xA', isDuplicate: false },
+                ],
+            }),
+        )
+
+        expect(result.current.canAddAddress).toBe(false)
     })
 
     it('pastes the clipboard into the address field', async () => {

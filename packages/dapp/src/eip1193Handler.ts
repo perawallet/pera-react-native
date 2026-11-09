@@ -22,6 +22,7 @@ import {
     MAX_PENDING_REQUESTS_PER_PEER,
     type ConnectionHandler,
     type ConnectionProposal,
+    type DappNodeReads,
     type WalletNotice,
     type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
@@ -113,6 +114,13 @@ type QueuedRequest = {
 
 type ServedChain = { scope: ChainScope; hexChainId: Eip155HexChainId }
 
+// Reads share the wallet's RPC endpoints and quota with its own sync, so one
+// page is bounded in how many it holds open and in how many it sends per
+// window. viem retries -32005.
+const MAX_CONCURRENT_NODE_READS_PER_ORIGIN = 8
+const MAX_NODE_READS_PER_ORIGIN_PER_WINDOW = 600
+const NODE_READ_WINDOW_MS = 60_000
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
@@ -151,6 +159,48 @@ const requestedChainOf = (params: unknown): Nullable<Eip155HexChainId> => {
     return isRecord(first) ? parseEip155HexChainId(first.chainId) : null
 }
 
+// EIP-2255: what a site holds is one `eth_accounts` permission whose caveat
+// names the accounts it may see.
+type Eip2255Permission = {
+    invoker: string
+    parentCapability: typeof EIP1193_METHOD.accounts
+    caveats: Array<{ type: 'restrictReturnedAccounts'; value: string[] }>
+    date: number
+}
+
+const grantOf = (
+    connection: Eip1193Connection,
+    accounts: readonly string[],
+): Eip2255Permission[] =>
+    accounts.length === 0
+        ? []
+        : [
+              {
+                  invoker: connection.origin.requesterOrigin,
+                  parentCapability: EIP1193_METHOD.accounts,
+                  caveats: [
+                      {
+                          type: 'restrictReturnedAccounts',
+                          value: [...accounts],
+                      },
+                  ],
+                  date: connection.createdAt,
+              },
+          ]
+
+// EIP-2255 carries the requested permissions as `[{ <method>: {} }]`; Pera
+// grants nothing but `eth_accounts`, so anything beyond that one is refused
+// rather than quietly narrowed.
+const isAccountsPermissionRequest = (params: unknown): boolean => {
+    if (!Array.isArray(params) || params.length !== 1) return false
+    const requested: unknown = params[0]
+    return (
+        isRecord(requested) &&
+        Object.keys(requested).join() === EIP1193_METHOD.accounts &&
+        isRecord(requested[EIP1193_METHOD.accounts])
+    )
+}
+
 export const createEip1193ConnectionHandler = (
     deps: Eip1193HandlerDeps,
 ): ConnectionHandler<Eip1193Connection> => {
@@ -171,6 +221,11 @@ export const createEip1193ConnectionHandler = (
     // Index 0 is the request on screen; per origin, so every tab of a site
     // shares one.
     const siteQueues = new Map<string, QueuedRequest[]>()
+    const nodeReadsInFlight = new Map<string, number>()
+    const nodeReadWindows = new Map<
+        string,
+        { startedAt: number; count: number }
+    >()
 
     const getConnectionById = async (
         id: ConnectionId,
@@ -222,6 +277,18 @@ export const createEip1193ConnectionHandler = (
         )
         return connection.accounts.filter(address => held.has(address))
     }
+
+    // A locked wallet and a site flagged since its approval both see nothing,
+    // wherever the accounts would have been reported from.
+    const visibleAccounts = async (
+        connection: Optional<Eip1193Connection>,
+        ctx: DappRequestContext,
+    ): Promise<string[]> =>
+        connection &&
+        !ctx.isWalletLocked &&
+        !(await hasNewSiteWarning(connection, ctx.origin))
+            ? reportedAccounts(connection)
+            : []
 
     const deliver = (
         respond: DappRespond,
@@ -305,6 +372,11 @@ export const createEip1193ConnectionHandler = (
         ctx: DappRequestContext,
         request: JsonRpcRequest,
         respond: DappRespond,
+        answerWith: (
+            connection: Eip1193Connection,
+            accounts: string[],
+        ) => unknown,
+        shouldAlwaysPrompt = false,
     ): Promise<void> => {
         const { origin } = ctx
         // Claimed before the first `await`: two calls in one task would both
@@ -333,11 +405,21 @@ export const createEip1193ConnectionHandler = (
         const isFlaggedReconnect =
             existing !== undefined &&
             isWorseSiteWarning(siteWarning, acknowledgedSiteWarningOf(existing))
-        if (existing && !isFlaggedReconnect) {
+        // A locked wallet answers no account, so it goes through the approval,
+        // which unlocks first. `wallet_requestPermissions` is a request to the
+        // user (dApps use it to switch accounts), so it never skips the prompt.
+        if (
+            existing &&
+            !isFlaggedReconnect &&
+            !ctx.isWalletLocked &&
+            !shouldAlwaysPrompt
+        ) {
             const accounts = reportedAccounts(existing)
             if (accounts.length > 0) {
                 kit.recordActivity(existing.id)
-                return release(jsonRpcResult(request.id, accounts))
+                return release(
+                    jsonRpcResult(request.id, answerWith(existing, accounts)),
+                )
             }
         }
         // Unlike a reconnect, every path from here opens the approval window.
@@ -346,7 +428,7 @@ export const createEip1193ConnectionHandler = (
                 jsonRpcError(
                     request.id,
                     EIP1193_ERROR_CODE.unauthorized,
-                    'eth_requestAccounts must be called from a user gesture',
+                    `${request.method} must be called from a user gesture`,
                 ),
             )
         }
@@ -453,7 +535,10 @@ export const createEip1193ConnectionHandler = (
                     EIP1193_EVENT.accountsChanged,
                     reported,
                 )
-                await deliver(respond, jsonRpcResult(request.id, reported))
+                await deliver(
+                    respond,
+                    jsonRpcResult(request.id, answerWith(connection, reported)),
+                )
                 return connection
             },
             reject: async reason => {
@@ -885,6 +970,87 @@ export const createEip1193ConnectionHandler = (
         return raiseHead(ctx.origin)
     }
 
+    const nodeReadsFor = (
+        chain: ServedChain,
+        method: string,
+    ): Optional<DappNodeReads> => {
+        const reads = dappRequestChainAdapters.get(
+            chain.scope.chainId,
+        ).nodeReads
+        return reads?.methods.includes(method) ? reads : undefined
+    }
+
+    const relayNodeRead = async (
+        origin: string,
+        request: JsonRpcRequest,
+        chain: ServedChain,
+        reads: DappNodeReads,
+        respond: DappRespond,
+    ): Promise<void> => {
+        const inFlight = nodeReadsInFlight.get(origin) ?? 0
+        const nowMs = now()
+        const recorded = nodeReadWindows.get(origin)
+        const window =
+            recorded && nowMs - recorded.startedAt < NODE_READ_WINDOW_MS
+                ? recorded
+                : { startedAt: nowMs, count: 0 }
+        if (
+            inFlight >= MAX_CONCURRENT_NODE_READS_PER_ORIGIN ||
+            window.count >= MAX_NODE_READS_PER_ORIGIN_PER_WINDOW
+        ) {
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    EIP1193_ERROR_CODE.limitExceeded,
+                    'Too many reads from this site',
+                ),
+            )
+        }
+        nodeReadsInFlight.set(origin, inFlight + 1)
+        nodeReadWindows.set(origin, {
+            startedAt: window.startedAt,
+            count: window.count + 1,
+        })
+        try {
+            const answer = await reads.request(
+                chain.scope.networkId,
+                request.method,
+                request.params,
+            )
+            return deliver(
+                respond,
+                answer.ok
+                    ? jsonRpcResult(request.id, answer.result)
+                    : jsonRpcError(
+                          request.id,
+                          answer.error.code,
+                          answer.error.message,
+                          answer.error.data,
+                      ),
+            )
+        } catch (error) {
+            // The failure names the node's URL and the request, so the page
+            // gets a fixed message.
+            logger.warn('[eip1193] node read failed', {
+                method: request.method,
+                error,
+            })
+            return deliver(
+                respond,
+                jsonRpcError(
+                    request.id,
+                    EIP1193_ERROR_CODE.internal,
+                    'The network did not answer',
+                ),
+            )
+        } finally {
+            const left = (nodeReadsInFlight.get(origin) ?? 1) - 1
+            if (left > 0) nodeReadsInFlight.set(origin, left)
+            else nodeReadsInFlight.delete(origin)
+        }
+    }
+
     const handleChainRequest = async (
         ctx: DappRequestContext,
         request: JsonRpcRequest,
@@ -894,9 +1060,24 @@ export const createEip1193ConnectionHandler = (
             return enqueueRequest(ctx, request, respond)
         }
         const connection = await getConnection(ctx.origin)
-        if (!connection) return deliver(respond, unsupportedMethod(request))
+        if (!connection) {
+            // Reads spend the wallet's keyed node quota, so only a site the
+            // user connected may make them; any page is not a free RPC proxy.
+            const [chain] = servedChains()
+            return deliver(
+                respond,
+                chain && nodeReadsFor(chain, request.method)
+                    ? jsonRpcError(
+                          request.id,
+                          EIP1193_ERROR_CODE.unauthorized,
+                          'Not connected: call eth_requestAccounts first',
+                      )
+                    : unsupportedMethod(request),
+            )
+        }
         const { chainId } = connection.metadata
-        if (!chainOn(chainId)) {
+        const chain = chainOn(chainId)
+        if (!chain) {
             return deliver(
                 respond,
                 jsonRpcError(
@@ -905,6 +1086,10 @@ export const createEip1193ConnectionHandler = (
                     'The connected chain is not available',
                 ),
             )
+        }
+        const reads = nodeReadsFor(chain, request.method)
+        if (reads) {
+            return relayNodeRead(ctx.origin, request, chain, reads, respond)
         }
         const route = dappRequestChainAdapters
             .get(chainId)
@@ -977,23 +1162,55 @@ export const createEip1193ConnectionHandler = (
             }
             case EIP1193_METHOD.accounts: {
                 const connection = await getConnection(ctx.origin)
-                // A site flagged since its approval sees no accounts until it
-                // is approved again.
-                const isVisible =
-                    connection !== undefined &&
-                    !(await hasNewSiteWarning(connection, ctx.origin))
                 return deliver(
                     respond,
                     jsonRpcResult(
                         request.id,
-                        connection && isVisible
-                            ? reportedAccounts(connection)
-                            : [],
+                        await visibleAccounts(connection, ctx),
                     ),
                 )
             }
             case EIP1193_METHOD.requestAccounts: {
-                return handleRequestAccounts(ctx, request, respond)
+                return handleRequestAccounts(
+                    ctx,
+                    request,
+                    respond,
+                    (_connection, accounts) => accounts,
+                )
+            }
+            case EIP1193_METHOD.getPermissions: {
+                const connection = await getConnection(ctx.origin)
+                return deliver(
+                    respond,
+                    jsonRpcResult(
+                        request.id,
+                        connection
+                            ? grantOf(
+                                  connection,
+                                  await visibleAccounts(connection, ctx),
+                              )
+                            : [],
+                    ),
+                )
+            }
+            case EIP1193_METHOD.requestPermissions: {
+                if (!isAccountsPermissionRequest(request.params)) {
+                    return deliver(
+                        respond,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.invalidParams,
+                            'Pera grants only eth_accounts',
+                        ),
+                    )
+                }
+                return handleRequestAccounts(
+                    ctx,
+                    request,
+                    respond,
+                    grantOf,
+                    true,
+                )
             }
             case EIP1193_METHOD.switchChain: {
                 return handleSwitchChain(ctx, request, respond)
@@ -1037,7 +1254,10 @@ export const createEip1193ConnectionHandler = (
         void dispatch(ctx, request, respond).catch((error: unknown) => {
             // A request that threw between claiming the site's slot and handing
             // over the proposal would otherwise hold it forever.
-            if (request.method === EIP1193_METHOD.requestAccounts) {
+            if (
+                request.method === EIP1193_METHOD.requestAccounts ||
+                request.method === EIP1193_METHOD.requestPermissions
+            ) {
                 openProposals.delete(ctx.origin)
             }
             logger.error('[eip1193] request failed', {

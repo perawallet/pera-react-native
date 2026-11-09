@@ -65,7 +65,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 import { useSubmitDelegationMutation } from '../useSubmitDelegationMutation'
 import { DelegationError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const SIGNING_METADATA = {
     name: 'Source account',
@@ -135,7 +134,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -174,7 +173,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -192,7 +191,7 @@ describe('useSubmitDelegationMutation', () => {
             reason: 'submission_pending',
         })
         expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: { chainId: 'algorand', networkId: 'testnet' } as const,
             sender: 'SRC',
             intentKey: { kind: 'rekey', address: 'SRC' },
             // Bounded like the swap guard: a row with no decodable validity
@@ -217,7 +216,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -254,7 +253,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -306,7 +305,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -333,7 +332,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -369,7 +368,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -434,7 +433,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -479,7 +478,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,
@@ -521,7 +520,7 @@ describe('useSubmitDelegationMutation', () => {
             () =>
                 useSubmitDelegationMutation({
                     scope: {
-                        chainId: LEGACY_CHAIN_ID,
+                        chainId: 'algorand',
                         networkId: 'testnet',
                     } as const,
                     signingMetadata: SIGNING_METADATA,

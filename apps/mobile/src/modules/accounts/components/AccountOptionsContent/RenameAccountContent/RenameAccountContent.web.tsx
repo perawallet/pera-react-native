@@ -19,12 +19,11 @@
 // root boundary, which blanks the whole web app. Omitting `InputComponent`
 // falls back to PWInput's default (a plain RN TextInput), which is all the
 // web Modal-based sheet needs.
-import { useState } from 'react'
 import { PWButton, PWInput, PWSheetLayout, PWView } from '@components/core'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { useRenameAccountContent } from './useRenameAccountContent'
 
 export type RenameAccountContentProps = {
     accountId: string
@@ -34,21 +33,9 @@ export const RenameAccountContent = ({
     accountId,
 }: RenameAccountContentProps) => {
     const { t } = useLanguage()
-    const account = useAccountsStore(s =>
-        s.accounts.find(a => a.id === accountId),
-    )
-    const initialName = account?.name ?? ''
-    const [name, setName] = useState(initialName)
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
-
-    const trimmed = name.trim()
-    const isSaveDisabled = trimmed.length === 0
-
-    const handleSave = () => {
-        if (isSaveDisabled) return
-        resolve(trimmed)
-    }
+    const { name, nameError, isSaveDisabled, handleNameChange, handleSave } =
+        useRenameAccountContent(accountId)
 
     return (
         <PWSheetLayout
@@ -58,7 +45,8 @@ export const RenameAccountContent = ({
             <PWView style={styles.inputContainer}>
                 <PWInput
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={handleNameChange}
+                    errorMessage={nameError}
                     placeholder={t('account_options.rename_label')}
                     autoFocus
                     inputStyle={styles.input}

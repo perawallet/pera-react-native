@@ -31,9 +31,8 @@ An app link names its chain with an optional `chain=<CAIP-2>` param:
   default can never change. Leave `chain` off Algorand links rather than spelling out MainNet: a link
   that names a network is refused while the app is on another one (TestNet link, MainNet app), and
   one that names none runs on whichever network the user has selected.
-- **Unknown values fail loudly.** A CAIP-2 the build has no chain for, an empty `chain=`, or a chain
-  switched off by remote config shows the network-unavailable error. The link never falls back to
-  Algorand.
+- **Unknown values fail loudly.** A CAIP-2 the build has no chain for, or an empty `chain=`, shows the
+  network-unavailable error. The link never falls back to Algorand.
 - **Addresses and asset ids are read in the target chain's terms.** An address is validated with
   that chain's codec, so `add-contact?address=0x…` without `chain` is rejected as an invalid Algorand
   address. An asset id is the chain's own spelling: a numeric ASA id on Algorand, a token contract
@@ -56,7 +55,7 @@ so a `chain=` on them changes nothing.
 | `account-detail`                                                                                | `address`                                                                                                                                | ✓        |
 | `asset-transfer`                                                                                | `receiverAddress`, `assetId?` (absent: native asset), `amount?`, `note?`, `label?`, `xnote?` (Algorand)                                  | ✓        |
 | `asset-opt-in`                                                                                  | `assetId`, `address?`                                                                                                                    | ✓        |
-| `asset-detail`                                                                                  | `address`, `assetId`                                                                                                                     | ✓        |
+| `asset-detail`                                                                                  | `address`, `assetId?` (absent: native asset)                                                                                             | ✓        |
 | `swap`                                                                                          | `address?`, `assetInId?`, `assetOutId?`                                                                                                  | ✓        |
 | `buy`, `sell`                                                                                   | `address?`                                                                                                                               | ✓        |
 | `keyreg`                                                                                        | `senderAddress`, `type?` (`online`/`offline`), `votekey`, `selkey`, `sprfkey`, `votefst`, `votelst`, `votekd`, `fee?`, `note?`, `xnote?` | Algorand |
@@ -108,8 +107,7 @@ A chain URI is resolved in the same terms as a Pera link with `chain=`:
   network. An `ethereum:` link that names no chain id is Ethereum's (EIP-681 reads it as chain 1), and is
   refused when Ethereum isn't registered rather than paid on another EVM chain. For the same reason a
   payment URI the wallet writes for any other EVM chain always names its chain id, mainnet included.
-- **Refusals.** A chain switched off by remote config shows the network-unavailable error. A link the
-  chain reads but won't act on shows "Link not supported": an EIP-681 `approve` or any function
+- **Refusals.** A link the chain reads but won't act on shows "Link not supported": an EIP-681 `approve` or any function
   other than `transfer` (an approval from a link is a drain vector, and the wallet decodes no
   calldata), or a capability the chain lacks. Unreadable text is not a link at all.
 
@@ -129,6 +127,9 @@ chain capability is off, whatever its source.
 - **`ethereum:` from the OS is shared.** On iOS any installed wallet can claim it and the OS picks
   one; Android shows a chooser. Pera's own surfaces issue `perawallet://` with `chain=`, which only
   Pera opens.
+- **EVM transfer notifications** (`evm-transfer-received`, `-sent`, `-failed`) open `asset-detail`
+  with `chain` = the transfer's CAIP-2, `address` = the account (the receiver for a received
+  transfer, the sender otherwise) and `assetId` = the token contract, left off for the native coin.
 - **A page has two ways in.** A navigation goes through `useWebViewNavigationGuard`, which applies the
   page policy per link type. The `openNativeURI` bridge method dispatches any parseable link without
   it, so the bridge's trusted-origin gate (`usePeraWebviewInterface`) is what keeps other origins out.

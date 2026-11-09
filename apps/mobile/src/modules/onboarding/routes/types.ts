@@ -14,6 +14,7 @@ import type {
     LocalAccount,
     LocalKeySeed,
     WalletAccount,
+    WalletCandidates,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
@@ -44,6 +45,8 @@ export type SearchAccountsParams =
     | {
           mode: 'import'
           walletKeyId: string
+          /** What an earlier search of this import found, which a retry adds to. */
+          previous?: WalletCandidates
       }
 
 export type ImportSelectAddressesParams =
@@ -55,6 +58,10 @@ export type ImportSelectAddressesParams =
           mode: 'import'
           walletKeyId: string
           accounts: LocalAccount[]
+          /** Networks the search couldn't check, named on the selection. */
+          failedChainIds?: ChainId[]
+          /** `accounts` is the first account alone, offered because no activity was found. */
+          isOriginFallback?: boolean
       }
 
 /**
@@ -70,7 +77,7 @@ export type ImportFlowParamList = {
         account?: WalletAccount
         /** Override the post-naming destination (defaults to exit-to-Home). */
         returnTo?: PostCreateReturnTarget
-        /** The chain whose address names the account; defaults to the legacy chain. */
+        /** The chain whose address names the account; defaults to the home chain. */
         chainId?: ChainId
     }>
     ImportSelectAddresses: ImportSelectAddressesParams
@@ -78,11 +85,14 @@ export type ImportFlowParamList = {
         accounts: WalletAccount[]
     }
     // `null` is the chain's standalone kind.
+    // `wordCount` absent: the kind's first word count.
     ImportInfo: {
         accountType: LocalKeySeed
+        wordCount?: number
     }
     ImportAccount: {
         accountType: LocalKeySeed
+        wordCount?: number
     }
     ImportPrivateKey: { chainId: ChainId }
     SearchAccounts: SearchAccountsParams
@@ -158,10 +168,12 @@ export type OnboardingStackParamList = ImportFlowParamList & {
 export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
     AddAccountOptions: { chainId: ChainId }
-    SelectHDWallet: Optional<{
+    SelectHDWallet: {
+        /** The chain the new account is created on. */
+        chainId: ChainId
         /** Forwarded to NameAccount so the caller's flow can resume after naming. */
         returnTo?: PostCreateReturnTarget
-    }>
+    }
     WatchInfo: undefined
     WatchAccount: Optional<{
         // Set by the watch-account / register-watch-account deeplinks so the

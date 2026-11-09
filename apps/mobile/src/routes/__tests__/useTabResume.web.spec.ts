@@ -21,9 +21,13 @@ const {
     mockOpenSendFunds,
     mockSuccessToast,
     surfaceState,
-    swapChainState,
+    swapOptionsState,
+    signerState,
 } = vi.hoisted(() => ({
-    swapChainState: { hasSwapChain: true },
+    swapOptionsState: {
+        current: [] as { chainId: string; isEnabled: boolean }[],
+    },
+    signerState: { canSign: true },
     mockTakeTabResumeIntent: vi.fn(),
     mockTakeTabResumeResult: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
@@ -60,6 +64,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 id: 'ledger-id',
                 chains: { algorand: { address: 'LEDGER_ADDR' } },
             },
+            {
+                id: 'eth-id',
+                chains: {
+                    ethereum: { address: '0xETH_ADDR' },
+                    base: { address: '0xETH_ADDR' },
+                },
+            },
         ],
         findAccountByAddressOn: (
             accounts: TestAccount[],
@@ -69,13 +80,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useSelectedAccountId: () => ({
             setSelectedAccountId: mockSetSelectedAccountId,
         }),
+        useAccountChainOptionsResolver: () => () => swapOptionsState.current,
+        useCanSignWithCheck: () => () => signerState.canSign,
     }
 })
-
-vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwapChainResolver: () => () =>
-        swapChainState.hasSwapChain ? 'algorand' : undefined,
-}))
 
 vi.mock('@modules/deeplink', () => ({
     useSendFundsDeeplink: () => mockOpenSendFunds,
@@ -95,13 +103,15 @@ describe('useTabResume (web)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         capabilityState.reset()
-        swapChainState.hasSwapChain = true
+        swapOptionsState.current = [{ chainId: 'algorand', isEnabled: true }]
+        signerState.canSign = true
     })
 
     it('does not reopen a swap for an account with no swap chain', async () => {
-        swapChainState.hasSwapChain = false
+        swapOptionsState.current = []
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'swap',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetInId: '0',
             assetOutId: '31566704',
@@ -122,6 +132,7 @@ describe('useTabResume (web)', () => {
         capabilityState.turnOff('swap')
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'swap',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetInId: '0',
             assetOutId: '31566704',
@@ -141,6 +152,7 @@ describe('useTabResume (web)', () => {
     it('reopens the swap on the same account with its pair and amount', async () => {
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'swap',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetInId: '0',
             assetOutId: '31566704',
@@ -156,8 +168,8 @@ describe('useTabResume (web)', () => {
             expect(navigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Swap',
                 params: {
-                    assetInId: '0',
-                    assetOutId: '31566704',
+                    assetIn: { chainId: 'algorand', assetId: '0' },
+                    assetOut: { chainId: 'algorand', assetId: '31566704' },
                     payAmount: '2.5',
                 },
             }),
@@ -168,9 +180,134 @@ describe('useTabResume (web)', () => {
         ).toBeLessThan(navigate.mock.invocationCallOrder[0])
     })
 
+    it('reopens a swap moved to another source chain on that chain', async () => {
+        swapOptionsState.current = [
+            { chainId: 'ethereum', isEnabled: true },
+            { chainId: 'base', isEnabled: true },
+        ]
+        mockTakeTabResumeIntent.mockResolvedValue({
+            flow: 'swap',
+            chainId: 'base',
+            accountAddress: '0xETH_ADDR',
+            assetInId: 'native',
+            assetOutId: '0xUSDC',
+            payAmount: '0.5',
+            createdAt: Date.now(),
+        })
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useTabResume(navigate))
+
+        result.current()
+
+        await waitFor(() =>
+            expect(navigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Swap',
+                params: {
+                    assetIn: { chainId: 'base', assetId: 'native' },
+                    assetOut: { chainId: 'base', assetId: '0xUSDC' },
+                    payAmount: '0.5',
+                },
+            }),
+        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('eth-id')
+    })
+
+    it('does not reopen a swap on a chain the account can no longer pay from', async () => {
+        swapOptionsState.current = [
+            { chainId: 'ethereum', isEnabled: true },
+            { chainId: 'base', isEnabled: false },
+        ]
+        mockTakeTabResumeIntent.mockResolvedValue({
+            flow: 'swap',
+            chainId: 'base',
+            accountAddress: '0xETH_ADDR',
+            assetInId: 'native',
+            assetOutId: '0xUSDC',
+            payAmount: '0.5',
+            createdAt: Date.now(),
+        })
+        const navigate = vi.fn()
+
+        const { result } = renderHook(() => useTabResume(navigate))
+        result.current()
+        await flush()
+
+        expect(navigate).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+    })
+
+    describe('a cross-chain swap', () => {
+        const RECEIVE_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' }
+        const crossChainIntent = (receivingAddress = '0xETH_ADDR') => ({
+            flow: 'swap',
+            chainId: 'algorand',
+            accountAddress: 'LEDGER_ADDR',
+            assetInId: '0',
+            assetOutId: 'native',
+            receive: {
+                scope: RECEIVE_SCOPE,
+                accountAddress: receivingAddress,
+            },
+            payAmount: '2.5',
+            createdAt: Date.now(),
+        })
+
+        it('reopens on both chains with the chosen receiving account', async () => {
+            mockTakeTabResumeIntent.mockResolvedValue(crossChainIntent())
+            const navigate = vi.fn()
+            const { result } = renderHook(() => useTabResume(navigate))
+
+            result.current()
+
+            await waitFor(() =>
+                expect(navigate).toHaveBeenCalledWith('TabBar', {
+                    screen: 'Swap',
+                    params: {
+                        assetIn: { chainId: 'algorand', assetId: '0' },
+                        receive: {
+                            scope: RECEIVE_SCOPE,
+                            assetId: 'native',
+                            accountId: 'eth-id',
+                        },
+                        payAmount: '2.5',
+                    },
+                }),
+            )
+            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('ledger-id')
+        })
+
+        it('does not reopen once the receiving account can no longer sign', async () => {
+            signerState.canSign = false
+            mockTakeTabResumeIntent.mockResolvedValue(crossChainIntent())
+            const navigate = vi.fn()
+
+            const { result } = renderHook(() => useTabResume(navigate))
+            result.current()
+            await flush()
+
+            expect(navigate).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+        })
+
+        it('does not reopen once the receiving account has left the wallet', async () => {
+            mockTakeTabResumeIntent.mockResolvedValue(
+                crossChainIntent('0xREMOVED_ADDR'),
+            )
+            const navigate = vi.fn()
+
+            const { result } = renderHook(() => useTabResume(navigate))
+            result.current()
+            await flush()
+
+            expect(navigate).not.toHaveBeenCalled()
+            expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+        })
+    })
+
     it('reopens the send sheet prefilled with asset, amount, recipient and note', async () => {
         mockTakeTabResumeIntent.mockResolvedValue({
             flow: 'send',
+            chainId: 'algorand',
             accountAddress: 'LEDGER_ADDR',
             assetId: '0',
             destination: 'RECEIVER',
@@ -194,11 +331,36 @@ describe('useTabResume (web)', () => {
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('ledger-id')
     })
 
+    it('reopens a send on the chain it ran on', async () => {
+        mockTakeTabResumeIntent.mockResolvedValue({
+            flow: 'send',
+            chainId: 'ethereum',
+            accountAddress: '0xETH_ADDR',
+            assetId: '0xTOKEN',
+            destination: '0xRECEIVER',
+            amount: '3',
+            createdAt: Date.now(),
+        })
+        const { result } = renderHook(() => useTabResume(vi.fn()))
+
+        result.current()
+
+        await waitFor(() =>
+            expect(mockOpenSendFunds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    asset: { chainId: 'ethereum', assetId: '0xTOKEN' },
+                }),
+            ),
+        )
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('eth-id')
+    })
+
     it.each([
         [
             'an expired hand-over',
             {
                 flow: 'send',
+                chainId: 'algorand',
                 accountAddress: 'LEDGER_ADDR',
                 assetId: '0',
                 destination: 'RECEIVER',
@@ -210,6 +372,7 @@ describe('useTabResume (web)', () => {
             'an account no longer in the wallet',
             {
                 flow: 'send',
+                chainId: 'algorand',
                 accountAddress: 'REMOVED_ADDR',
                 assetId: '0',
                 destination: 'RECEIVER',
@@ -218,10 +381,36 @@ describe('useTabResume (web)', () => {
             },
         ],
         [
+            'a record stored before it named a chain',
+            {
+                flow: 'send',
+                accountAddress: 'LEDGER_ADDR',
+                assetId: '0',
+                destination: 'RECEIVER',
+                amount: '1',
+                createdAt: Date.now(),
+                chainId: undefined,
+            },
+        ],
+        [
             'a malformed record',
             {
                 flow: 'swap',
+                chainId: 'algorand',
                 accountAddress: 'LEDGER_ADDR',
+                createdAt: Date.now(),
+            },
+        ],
+        [
+            'a cross-chain record with a malformed receive target',
+            {
+                flow: 'swap',
+                chainId: 'algorand',
+                accountAddress: 'LEDGER_ADDR',
+                assetInId: '0',
+                assetOutId: 'native',
+                receive: { scope: { chainId: 'ethereum' } },
+                payAmount: '2.5',
                 createdAt: Date.now(),
             },
         ],

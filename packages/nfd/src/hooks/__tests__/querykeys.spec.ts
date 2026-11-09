@@ -18,7 +18,7 @@ import { describe, test, expect, vi } from 'vitest'
 // otherwise reach the real platform/provider plumbing and fail resolving
 // react-native-mmkv (a native module vitest can't load). Scoped to this file:
 // every other test in this package mocks '@perawallet/wallet-core-chain-shared'
-// wholesale instead (see e.g. useNfdForAddressQuery.spec.ts), so nothing else
+// wholesale instead (see e.g. useNameForAddressQuery.spec.ts), so nothing else
 // needs this.
 const keyValueStorage = {
     getItem: () => null,
@@ -36,13 +36,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-chain-shared'
-import {
-    queryKeyReferencesScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { MODULE_PREFIX, nfdQueryKeys } from '../querykeys'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('NETWORK_PARTITIONED_QUERY_MODULES (chain-shared)', () => {
     test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
@@ -78,7 +75,7 @@ describe('nfdQueryKeys', () => {
             expect(queryKeyReferencesScope(key, MAINNET)).toBe(true)
             expect(
                 queryKeyReferencesScope(key, {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: 'algorand',
                     networkId: 'testnet',
                 } as const),
             ).toBe(false)

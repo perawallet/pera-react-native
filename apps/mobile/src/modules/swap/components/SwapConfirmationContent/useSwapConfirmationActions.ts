@@ -27,6 +27,9 @@ import {
 } from '@analytics'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
+    scopeOfSwapAsset,
+    swapFeeOf,
+    useEnsureSwapDestination,
     useSwapHistoryInvalidator,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
@@ -53,7 +56,7 @@ const buildSwapStatusPayload = (
         [AnalyticsMetadataKey.OutputAmountAsUsd]: usd(quote.amountOutUsdValue),
         [AnalyticsMetadataKey.SwapDate]: new Date().toISOString(),
         [AnalyticsMetadataKey.SwapDateTimestamp]: Date.now(),
-        [AnalyticsMetadataKey.SwapAddress]: quote.swapperAddress ?? '',
+        [AnalyticsMetadataKey.SwapAddress]: quote.request.sourceAddress,
     }
 }
 
@@ -81,18 +84,29 @@ export const useSwapConfirmationActions = ({
     const inFlightRef = useRef(false)
     const { t } = useLanguage()
     const { infoToast } = useToast()
+    const destinationScope = scopeOfSwapAsset(quote.request.destinationAsset)
+    const { ensureReceivable } = useEnsureSwapDestination(destinationScope)
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
-    const quoteIdStr = quote.quoteIdStr
-
     const handleSlideConfirm = useCallback(async () => {
-        if (!quoteIdStr || inFlightRef.current) return
+        if (inFlightRef.current) return
         trackEvent(SwapEvent.Confirm, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
         inFlightRef.current = true
         try {
-            const outcome = await execute(quote)
+            // A same-chain payout is readied by the source chain's own order
+            // steps; only another chain needs it done here.
+            const outcome =
+                quote.routeKind === 'cross-chain'
+                    ? await execute(quote, () =>
+                          ensureReceivable({
+                              address: quote.request.destinationAddress,
+                              scope: destinationScope,
+                              assetId: quote.assetOut.assetId,
+                          }),
+                      )
+                    : await execute(quote)
             if (outcome.kind === 'success') {
                 // The pair chips and the "see all" list are both derived from
                 // the account's swap record, which this swap just changed.
@@ -103,10 +117,14 @@ export const useSwapConfirmationActions = ({
                 invalidateSwapHistory()
                 trackEvent(SwapEvent.Completed, {
                     ...buildSwapStatusPayload(quote, scope),
-                    [AnalyticsMetadataKey.PeraFeeAsAlgo]:
-                        quote.peraFeeAmount?.toNumber(),
-                    [AnalyticsMetadataKey.NetworkFeeAsAlgo]:
-                        quote.transactionFees?.toNumber(),
+                    [AnalyticsMetadataKey.PeraFeeAsAlgo]: swapFeeOf(
+                        quote,
+                        'pera',
+                    )?.amount.toNumber(),
+                    [AnalyticsMetadataKey.NetworkFeeAsAlgo]: swapFeeOf(
+                        quote,
+                        'network',
+                    )?.amount.toNumber(),
                 })
                 successCloseTimer.schedule(() => {
                     resolve({ kind: 'confirm' })
@@ -153,8 +171,9 @@ export const useSwapConfirmationActions = ({
     }, [
         scope,
         quote,
-        quoteIdStr,
         execute,
+        ensureReceivable,
+        destinationScope,
         successCloseTimer,
         resolve,
         t,

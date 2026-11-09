@@ -10,15 +10,20 @@
  limitations under the License
  */
 
-import { useCallback, type ReactElement } from 'react'
+import { useCallback, type ReactElement, type ReactNode } from 'react'
 import {
     HoldingRestrictions,
     type AssetWithAccountBalance,
     type ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type AssetRef,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -28,30 +33,41 @@ export type AccountAssetSelectionListProps = {
     isVisible?: boolean
     inBottomSheet?: boolean
     hasPadding?: boolean
-    excludeAssetId?: string
+    excludeAsset?: AssetRef
     filterAsset?: (asset: AssetWithAccountBalance) => boolean
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
     /** See `useAccountAssetSelectionList`'s `chainId`. */
     chainId?: ChainId
+    /** See `useAccountAssetSelectionList`'s `chainIds`. */
+    chainIds?: readonly ChainId[]
+    /** Pinned under the search input, such as filter chips. */
+    searchAccessory?: ReactNode
+    /** Rows name their network in place of the secondary line. */
+    isChainShown?: boolean
     /** Shown when the list has nothing to offer, no search term is active and the read didn't fail. */
     emptyView?: ReactElement
 }
 
-const keyOf = (item: ChainAssetBalance) => item.assetId
+// Ids repeat across chains: every EVM chain's native asset is 'native'.
+const keyOf = (item: ChainAssetBalance) =>
+    `${toScopeKey(item.scope)}/${item.assetId}`
 
 export const AccountAssetSelectionList = ({
     onAssetSelected,
     isVisible,
     inBottomSheet,
     hasPadding = true,
-    excludeAssetId,
+    excludeAsset,
     filterAsset,
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
     chainId,
+    chainIds,
+    searchAccessory,
+    isChainShown = false,
     emptyView,
 }: AccountAssetSelectionListProps) => {
     const styles = useStyles({ hasPadding })
@@ -64,9 +80,10 @@ export const AccountAssetSelectionList = ({
         isError,
     } = useAccountAssetSelectionList({
         isVisible,
-        excludeAssetId,
+        excludeAsset,
         filterAsset,
         chainId,
+        chainIds,
     })
 
     const renderItem = useCallback(
@@ -85,11 +102,20 @@ export const AccountAssetSelectionList = ({
                     // selectable.
                     disabled={isTransferBlocked}
                     showFrozenBadge={isTransferBlocked}
-                    testID={`asset-list-item-${item.assetId}`}
+                    subtitle={
+                        isChainShown ? (
+                            <ChainLabel chainId={item.scope.chainId} />
+                        ) : undefined
+                    }
+                    testID={
+                        isChainShown
+                            ? `asset-list-item-${item.scope.chainId}-${item.assetId}`
+                            : `asset-list-item-${item.assetId}`
+                    }
                 />
             )
         },
-        [onAssetSelected, styles],
+        [isChainShown, onAssetSelected, styles],
     )
 
     const renderListEmpty = () => {
@@ -112,6 +138,7 @@ export const AccountAssetSelectionList = ({
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}
+            searchAccessory={searchAccessory}
             isLoading={isLoading}
             skeletonCount={3}
             inBottomSheet={inBottomSheet}

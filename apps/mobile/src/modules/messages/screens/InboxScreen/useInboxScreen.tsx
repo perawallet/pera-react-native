@@ -11,7 +11,6 @@
  */
 
 import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useSelectedScope,
@@ -26,6 +25,7 @@ import {
     isIntegrityRequiredError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useHandleInboxItemPress } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
 
@@ -60,7 +60,7 @@ const getItemKey = (item: InboxItem, index: number): string => {
 }
 
 export const useInboxScreen = (): UseInboxScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const {
         data: inboxItems,
         isPending,

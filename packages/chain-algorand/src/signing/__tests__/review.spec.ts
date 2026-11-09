@@ -30,6 +30,7 @@ import {
     type SignableAnalysis,
     type SignableGroup,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 // The genesis check runs unmocked in the contract spec; these fixtures share
 // one test genesis.
@@ -57,7 +58,6 @@ import {
     makeTestPaymentTx,
     payloadTransactionOf,
 } from './transactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const WALLET = makeTestAddress(1)
 const SECOND = makeTestAddress(3)
@@ -65,7 +65,7 @@ const OTHER = makeTestAddress(2)
 const TARGET = makeTestAddress(9)
 
 const context: AnalysisContext = {
-    scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+    scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const,
     accounts: [WALLET, SECOND].map(address =>
         standaloneAccount(address.toString()),
     ),

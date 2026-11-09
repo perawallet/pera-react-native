@@ -19,12 +19,15 @@ import type {
 import type { DappRequestValidation } from '@perawallet/wallet-core-connections'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
-import { toEvmError } from '../blockchain/errors'
+import { EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { ethereumCallSummary } from '../signing/review'
-import type { EthereumTransactionPayload } from '../signing/adapter'
+import type {
+    EthereumRevertedEstimate,
+    EthereumTransactionPayload,
+} from '../signing/adapter'
 import {
     evmFeePresetOf,
     readEvmFeePresets,
@@ -48,6 +51,11 @@ export type EthereumSendTransactionRequest = {
     maxPriorityFeePerGas?: bigint
     accessList?: AccessList
 }
+
+// Gas to sign for a call whose estimate reverted: a typical swap or claim
+// fits, and a call that does revert burns at most this much. A larger gas
+// limit from the dApp wins.
+const REVERTED_ESTIMATE_GAS = 500_000n
 
 // A dApp's request is flagged for review when what its gas and fees authorise,
 // or would cost at the current base fee, is more than this many times what the
@@ -229,23 +237,66 @@ export const validateEthereumSendTransaction = (
     }
 }
 
+export type EthereumSendTransactionOptions = {
+    /**
+     * Queues a call whose gas estimate reverts, with a fallback gas limit,
+     * instead of refusing it. Only for a caller whose review tells the user
+     * the call will likely fail.
+     */
+    allowRevertedEstimate?: boolean
+}
+
+const isRevert = (error: { code: EvmErrorCode }): boolean =>
+    error.code === EvmErrorCode.REVERTED ||
+    error.code === EvmErrorCode.REVERTED_WITH_REASON
+
 /**
  * Builds the transaction the wallet will sign on the context's network: its
  * own nonce, and the larger of the dApp's gas and fees and the wallet's own
  * estimate and normal preset. A call the node says would revert is refused
- * here, before anything reaches review.
+ * here, before anything reaches review, unless `allowRevertedEstimate`.
  */
 export const buildEthereumSendTransaction = async (
     ctx: ChainContext,
     chain: EvmChain,
     request: EthereumSendTransactionRequest,
+    { allowRevertedEstimate = false }: EthereumSendTransactionOptions = {},
 ): Promise<UnsignedTransaction> => {
     const scope = ctx.getScope()
     const client = createEvmClient(scope, ctx, chain)
     const { from, to, value, data, accessList } = request
+    const estimateGas = readEvmGas(client, {
+        from,
+        to,
+        value,
+        data,
+        accessList,
+    }).catch(
+        (
+            error: unknown,
+        ): Awaited<ReturnType<typeof readEvmGas>> & {
+            revertedEstimate?: EthereumRevertedEstimate
+        } => {
+            const failure = toEvmError(error, chain.row.nativeAsset.symbol)
+            // A node that runs out of gas is not a revert: that call is refused too.
+            if (allowRevertedEstimate && isRevert(failure)) {
+                return {
+                    gas: REVERTED_ESTIMATE_GAS,
+                    gasLimit: REVERTED_ESTIMATE_GAS,
+                    // The review warns from this, whatever the simulation says.
+                    revertedEstimate: {
+                        ...(failure.params.reason !== undefined && {
+                            reason: failure.params.reason,
+                        }),
+                    },
+                }
+            }
+            throw failure
+        },
+    )
     const [nonce, estimate, fees] = await Promise.all([
         allocateEthereumNonce({ client, scope, sender: from }),
-        readEvmGas(client, { from, to, value, data, accessList }),
+        estimateGas,
         readEvmFeePresets(client, chain, scope.networkId),
     ]).catch((error: unknown) => {
         throw toEvmError(error, chain.row.nativeAsset.symbol)
@@ -288,6 +339,10 @@ export const buildEthereumSendTransaction = async (
             ...(accessList && { accessList }),
         },
         ...(hasHighFee && { hasHighFee: true as const }),
+        ...('revertedEstimate' in estimate &&
+            estimate.revertedEstimate && {
+                revertedEstimate: estimate.revertedEstimate,
+            }),
         feeEstimate: {
             preset: evmFeePresetOf(maxPriorityFeePerGas, fees.presets),
             amount:

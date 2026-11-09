@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     type SignRequestSource,
@@ -20,6 +19,7 @@ import {
     useEnqueueDappSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -34,7 +34,7 @@ export const useTransactionSigningHandler = (
     webview: Nullable<WebView>,
     sourceUrl: Nullable<string>,
 ): BridgeHandler => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { t } = useLanguage()
     const { showError } = useErrorToast()
     const resolveSignRequest = useDappSignRequestResolver(scope)

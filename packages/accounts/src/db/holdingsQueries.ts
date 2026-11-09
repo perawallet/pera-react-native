@@ -16,6 +16,7 @@ import {
     inArray,
     notInArray,
     ne,
+    not,
     or,
     isNull,
     like,
@@ -48,6 +49,9 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
+import { isOptInChain } from '../chainProtocol'
+import { isNotSuspiciousSql } from './holdingSuspicion'
+import { hiddenHoldingSql } from './holdingVisibility'
 import type { AccountHoldingsFilters } from './holdingsRepository'
 
 export type AccountHoldingsPageRow = {
@@ -61,6 +65,8 @@ export type AccountHoldingsPageRow = {
     /** Joined USD price, or null until the price syncs. */
     usdPrice: Nullable<Decimal>
     isFavorited: boolean
+    /** The user hid it; the list and totals leave it out. */
+    isHidden: boolean
 }
 
 /** One address on one scope: an account's holdings there. */
@@ -163,6 +169,8 @@ async function queryHoldingRows({
     hideNfts,
     hideZeroBalanceNfts,
     excludeAssetTypes,
+    hideSuspicious,
+    excludeHidden,
     limit,
     offset,
 }: GetAccountHoldingsLiteParams) {
@@ -210,6 +218,23 @@ async function queryHoldingRows({
                 notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
             )!,
         )
+    }
+    if (hideSuspicious) {
+        // The user chose every asset on an opt-in chain, so its rows stay.
+        const optInScopes = sources
+            .filter(({ scope }) => isOptInChain(scope.chainId))
+            .map(({ scope }) => toScopeKey(scope))
+        conditions.push(
+            optInScopes.length > 0
+                ? or(
+                      isNotSuspiciousSql(),
+                      inArray(AccountAssetHoldingsSchema.scope, optInScopes),
+                  )!
+                : isNotSuspiciousSql(),
+        )
+    }
+    if (excludeHidden) {
+        conditions.push(not(hiddenHoldingSql(sources)))
     }
     const term = search?.trim()
     if (term) {
@@ -266,6 +291,7 @@ async function queryHoldingRows({
             native: AccountAssetHoldingsSchema.native,
             ...peraAssetJoinColumns(),
             isFavorited: AssetsPeraSchema.isFavorited,
+            isHidden: sql<number>`CASE WHEN ${hiddenHoldingSql(sources)} THEN 1 ELSE 0 END`,
             usdPrice: sql<Nullable<string>>`${AssetPricesSchema.usdPrice}`,
             crossChainAssetGroupId: sql<
                 Nullable<string>
@@ -306,6 +332,7 @@ export async function getAccountHoldingsPage({
         asset: peraAssetFromJoinRow(r, scope.chainId),
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
         isFavorited: !!r.isFavorited,
+        isHidden: !!r.isHidden,
     }))
 }
 
@@ -336,12 +363,14 @@ export async function getAccountHoldingsLite(
 ): Promise<AccountHoldingsLiteRow[]> {
     if (params.sources.length === 0) return []
     const rows = await queryHoldingRows(params)
-    return rows.map(({ native: _native, scope, ...r }) => ({
-        ...r,
-        scope: parseScopeKey(scope),
-        isFavorited: !!r.isFavorited,
-        usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
-    }))
+    return rows.map(
+        ({ native: _native, isHidden: _isHidden, scope, ...r }) => ({
+            ...r,
+            scope: parseScopeKey(scope),
+            isFavorited: !!r.isFavorited,
+            usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
+        }),
+    )
 }
 
 /** An asset an account has a holding row for, on one scope. */
@@ -407,6 +436,8 @@ export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
     /** Pera collectible title; null when metadata hasn't synced. */
     title: Nullable<string>
     collectionName: Nullable<string>
+    /** Raw `verification_tier` text; compare against `PeraAssetVerificationTier`. */
+    verificationTier: string
 }
 
 export type GetAccountCollectiblesLiteParams = {
@@ -515,6 +546,7 @@ export async function getAccountCollectiblesLite({
             ...peraAssetJoinColumns(),
             title: collectibleTitleExpr,
             collectionName: collectionNameExpr,
+            verificationTier: AssetsPeraSchema.verificationTier,
         })
         .from(AccountAssetHoldingsSchema)
         // Inner: a collectible is defined by its Pera metadata row.

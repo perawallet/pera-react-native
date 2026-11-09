@@ -30,6 +30,7 @@ const initialState = {
     galleryLayout: 'grid' as GalleryLayout,
     showOptedIn: true,
     showWatchAccounts: false,
+    showSuspicious: false,
 }
 
 export const useCollectiblePreferencesStore: UseBoundStore<
@@ -50,6 +51,9 @@ export const useCollectiblePreferencesStore: UseBoundStore<
             setShowWatchAccounts: (show: boolean) => {
                 set({ showWatchAccounts: show })
             },
+            setShowSuspicious: (show: boolean) => {
+                set({ showSuspicious: show })
+            },
             resetState: () => set(initialState),
         }),
         {
@@ -60,6 +64,7 @@ export const useCollectiblePreferencesStore: UseBoundStore<
                 collectibleSortMode: state.collectibleSortMode,
                 galleryLayout: state.galleryLayout,
                 showOptedIn: state.showOptedIn,
+                showSuspicious: state.showSuspicious,
             }),
         },
     ),

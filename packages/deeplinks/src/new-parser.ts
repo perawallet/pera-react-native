@@ -250,10 +250,11 @@ export function parsePerawalletAppUri(
     }
 
     if (cleanPath === 'asset-detail') {
+        if (!params.address) return null
         const assetRef = params.assetId
             ? toLinkAssetRef(target, params.assetId)
             : undefined
-        if (!params.address || !assetRef) return null
+        if (params.assetId && !assetRef) return null
         return {
             type: DeeplinkType.ASSET_DETAIL,
             sourceUrl: url,

@@ -83,7 +83,14 @@ export type SwapExecutionOutcome =
       }
 
 type UseSwapExecutionResult = {
-    execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
+    /**
+     * `prepareDestination` runs before the order exists; false, or a cancel
+     * while it runs, abandons the swap with nothing created.
+     */
+    execute: (
+        quote: SwapQuote,
+        prepareDestination?: () => Promise<boolean>,
+    ) => Promise<SwapExecutionOutcome>
     /**
      * Abandons an execution that has not committed yet: effective while
      * `preparing` (checked after the balance preflight and after the prepare
@@ -131,12 +138,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const describeFailure = useCallback(
         (failure: SwapExecutionFailure): DisplayedFailure => {
             switch (failure.reason) {
-                case 'missing-quote-id': {
-                    return { message: 'Swap quote is missing its id' }
-                }
-                case 'no-transaction-groups': {
-                    return { message: 'No transaction groups returned' }
-                }
                 case 'asset-frozen': {
                     const copy = resolveErrorCopy(
                         new AssetFrozenError(failure.assetId),
@@ -196,6 +197,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                     return { message: copy.body, title: copy.title }
                 }
+                case 'no-signable-steps':
+                case 'unsupported-steps':
                 case 'quote-mismatch':
                 case 'signing-failed': {
                     return { message: t('swap.execution.error_body') }
@@ -209,10 +212,36 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     )
 
     const execute = useCallback(
-        async (quote: SwapQuote): Promise<SwapExecutionOutcome> => {
+        async (
+            quote: SwapQuote,
+            prepareDestination?: () => Promise<boolean>,
+        ): Promise<SwapExecutionOutcome> => {
             setError(null)
             setTxIds([])
             cancelRequestedRef.current = false
+
+            if (prepareDestination) {
+                setStatus('preparing')
+                let isPrepared: boolean
+                try {
+                    isPrepared = await prepareDestination()
+                } catch (error) {
+                    const { message, title } = describeFailure({
+                        phase: 'prepare',
+                        reason: 'prepare-failed',
+                        error,
+                    })
+                    setStatus('error')
+                    setError({ phase: 'prepare', message })
+                    return title === undefined
+                        ? { kind: 'error', phase: 'prepare', message }
+                        : { kind: 'error', phase: 'prepare', message, title }
+                }
+                if (!isPrepared || cancelRequestedRef.current) {
+                    setStatus('idle')
+                    return { kind: 'cancelled' }
+                }
+            }
 
             let result: ExecuteSwapResult
             try {

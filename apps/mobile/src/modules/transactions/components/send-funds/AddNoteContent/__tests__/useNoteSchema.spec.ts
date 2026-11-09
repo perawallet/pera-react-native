@@ -11,8 +11,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { renderHook } from '@testing-library/react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     ETHEREUM_CHAIN_ID,
     registerEthereumChain,
@@ -28,7 +28,7 @@ vi.mock('@hooks/useLanguage', () => ({
 
 describe('useNoteSchema', () => {
     it('accepts a note of exactly the descriptor limit, counted in UTF-8 bytes', () => {
-        const { result } = renderHook(() => useNoteSchema(LEGACY_CHAIN_ID))
+        const { result } = renderHook(() => useNoteSchema(ALGORAND_CHAIN_ID))
 
         // 512 two-byte characters fill the 1024-byte limit exactly.
         expect(
@@ -37,7 +37,7 @@ describe('useNoteSchema', () => {
     })
 
     it('rejects a note one byte over the limit with the chain limit in the message', () => {
-        const { result } = renderHook(() => useNoteSchema(LEGACY_CHAIN_ID))
+        const { result } = renderHook(() => useNoteSchema(ALGORAND_CHAIN_ID))
 
         const parsed = result.current.safeParse({ note: 'a'.repeat(1025) })
 
@@ -48,7 +48,7 @@ describe('useNoteSchema', () => {
     })
 
     it('treats the note as optional', () => {
-        const { result } = renderHook(() => useNoteSchema(LEGACY_CHAIN_ID))
+        const { result } = renderHook(() => useNoteSchema(ALGORAND_CHAIN_ID))
 
         expect(result.current.safeParse({}).success).toBe(true)
     })

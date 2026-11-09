@@ -16,6 +16,7 @@ export type {
     ChainLinkTarget,
     DeeplinkParseFailure,
     DeeplinkParseResult,
+    PaymentRecipient,
 } from './models'
 export {
     ChainActionBuildError,

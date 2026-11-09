@@ -10,9 +10,20 @@
  limitations under the License
  */
 
+import type {
+    AssetRef,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+
 export type SwapScreenParams = {
-    assetInId?: string
-    assetOutId?: string
+    assetIn?: AssetRef
+    assetOut?: AssetRef
+    /**
+     * The output of a cross-chain swap a browser tab resumes. Apart from
+     * `assetOut` because a deeplink's `assetOut` on another chain must stay
+     * ignored.
+     */
+    receive?: { scope: ChainScope; assetId: string; accountId: string }
     /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
     // lanekeep-ignore-next-line pera/amount-types reason: React Navigation params must be serializable, so the amount travels as a string
     payAmount?: string

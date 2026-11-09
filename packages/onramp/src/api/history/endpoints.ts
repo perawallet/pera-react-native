@@ -11,62 +11,57 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { queryClient } from '@perawallet/wallet-core-shared'
-
-import type { OnrampStatus } from '../../models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
-    rampHistoryPageSchema,
-    type RampHistoryPageApiResponse,
-} from './schema'
-import { transformRampHistoryPage, type RampHistoryPage } from './transformers'
+    cursorOf,
+    routerAccountId,
+    routerRequest,
+} from '@perawallet/wallet-core-swaps'
+
+import type { RampHistoryItem } from '../../models'
+import { rampHistoryPageSchema } from './schema'
+import { isFundHistoryItem, transformRampHistoryItem } from './transformers'
+
+const PAGE_LIMIT = 50
+// The router mixes Swap orders in, so a page can be emptied by the filter
+// while older Fund orders wait behind `next`.
+const MAX_REQUESTS_PER_PAGE = 5
 
 export type GetRampHistoryParams = {
     deviceId: string
     accountAddress: string
-    status?: OnrampStatus
+    cursor?: string
+}
+
+export type RampHistoryPage = {
+    results: RampHistoryItem[]
+    cursor: Nullable<string>
 }
 
 export const getRampHistory = async (
     params: GetRampHistoryParams,
     scope: ChainScope,
-    signal?: AbortSignal,
 ): Promise<RampHistoryPage> => {
-    const response = await queryClient<RampHistoryPageApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'GET',
-        url: `/v1/ramp/history/${params.deviceId}/${params.accountAddress}/`,
-        params: params.status ? { status: params.status } : undefined,
-        signal,
-    })
-
-    const parsed = rampHistoryPageSchema.parse(response.data)
-    return transformRampHistoryPage(parsed)
-}
-
-// Follows an absolute `next`/`previous` URL from a prior page.
-//
-// ky unconditionally concatenates `prefix + input`, even when input is already
-// absolute, so the URL is stripped to `pathname + search` and the prefix
-// re-applied — that keeps the instrumented client (API keys, retry, logging,
-// MSW). `scope` is required because the host alone doesn't distinguish
-// environments; the caller already holds it.
-export const getRampHistoryByUrl = async (
-    url: string,
-    scope: ChainScope,
-    signal?: AbortSignal,
-): Promise<RampHistoryPage> => {
-    const parsedUrl = new URL(url)
-    const relativeUrl = `${parsedUrl.pathname}${parsedUrl.search}`
-
-    const response = await queryClient<RampHistoryPageApiResponse>({
-        backend: 'pera',
-        scope,
-        method: 'GET',
-        url: relativeUrl,
-        signal,
-    })
-
-    const parsed = rampHistoryPageSchema.parse(response.data)
-    return transformRampHistoryPage(parsed)
+    let cursor: Nullable<string> = params.cursor ?? null
+    let results: RampHistoryItem[] = []
+    for (let request = 0; request < MAX_REQUESTS_PER_PAGE; request++) {
+        const data = await routerRequest({
+            scope,
+            method: 'GET',
+            path: 'history/',
+            params: {
+                device_id: params.deviceId,
+                accounts: routerAccountId(scope, params.accountAddress),
+                limit: PAGE_LIMIT,
+                ...(cursor === null ? {} : { cursor }),
+            },
+        })
+        const parsed = rampHistoryPageSchema.parse(data)
+        results = parsed.results
+            .filter(isFundHistoryItem)
+            .map(transformRampHistoryItem)
+        cursor = cursorOf(parsed.next)
+        if (results.length > 0 || cursor === null) break
+    }
+    return { results, cursor }
 }

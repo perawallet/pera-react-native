@@ -11,10 +11,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    hiddenAssetIdsOf,
+    useHiddenTokensStore,
+    type AssetWithAccountBalance,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     useAssetOnChainSupplyQuery,
     useSingleAssetDetailsQuery,
@@ -33,7 +38,9 @@ const ethereumDescriptor = evmChainOf('ethereum').descriptor
 
 const mocks = vi.hoisted(() => ({
     account: null as WalletAccount | null,
+    holding: {} as AssetWithAccountBalance | null,
     trackEvent: vi.fn(),
+    showToast: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -41,6 +48,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useSelectedAccount: () => mocks.account,
+    useAccountAssetBalanceQuery: () => ({ data: mocks.holding }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mocks.showToast }),
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -87,6 +99,8 @@ describe('useAssetDetailsScreen', () => {
         registerEthereumChain()
         useRemoteConfigStore.getState().resetState()
         mocks.account = ethereumAccount()
+        mocks.holding = {} as AssetWithAccountBalance
+        useHiddenTokensStore.getState().resetState()
     })
 
     it('renders an ERC-20 from its own chain with the descriptor explorer link and no chain sections', () => {
@@ -449,6 +463,85 @@ describe('useAssetDetailsScreen', () => {
             )
 
             expect(result.current.isMarketsTabVisible).toBe(false)
+        })
+    })
+    describe('header menu', () => {
+        const render = (
+            assetId: string,
+            chainId: 'ethereum' | 'algorand' = 'ethereum',
+            isCollectible = false,
+        ) => {
+            mockAsset({ data: assetFixture(assetId) })
+            return renderHook(() =>
+                useAssetDetailsScreen({ assetId, chainId, isCollectible }),
+            )
+        }
+
+        it('offers to hide a held token and hides it without any signing', () => {
+            const { result } = render(ERC20_ID)
+
+            expect(result.current.headerMenuItems.map(i => i.label)).toEqual([
+                'token_visibility.hide',
+            ])
+            act(() => result.current.headerMenuItems[0]!.onPress())
+
+            expect(
+                hiddenAssetIdsOf(
+                    useHiddenTokensStore.getState().hiddenTokens,
+                    ETH_ADDRESS,
+                    result.current.scope,
+                ),
+            ).toEqual([ERC20_ID])
+            expect(mocks.showToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'token_visibility.hidden_toast_title',
+                }),
+            )
+        })
+
+        it('offers to unhide a hidden token and shows it again', () => {
+            const { result } = render(ERC20_ID)
+            act(() => result.current.headerMenuItems[0]!.onPress())
+
+            expect(result.current.headerMenuItems.map(i => i.label)).toEqual([
+                'token_visibility.unhide',
+            ])
+            act(() => result.current.headerMenuItems[0]!.onPress())
+
+            expect(useHiddenTokensStore.getState().hiddenTokens).toEqual({})
+        })
+
+        it.each([
+            ['the native coin', () => render('native')],
+            ['an Algorand asset', () => render(ASA_ID, 'algorand')],
+            ['a collectible', () => render(ERC20_ID, 'ethereum', true)],
+        ])('has nothing to hide on %s', (_label, run) => {
+            expect(run().result.current.headerMenuItems).toEqual([])
+        })
+
+        it('has nothing to hide for an NFT whose route carries no collectible flag', () => {
+            mockAsset({
+                data: {
+                    ...assetFixture(ERC20_ID),
+                    peraMetadata: { type: 'collectible' },
+                } as PeraAsset,
+            })
+
+            const { result } = renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId: ERC20_ID,
+                    chainId: 'ethereum',
+                    isCollectible: false,
+                }),
+            )
+
+            expect(result.current.headerMenuItems).toEqual([])
+        })
+
+        it('has nothing to hide for a token the account does not hold', () => {
+            mocks.holding = null
+
+            expect(render(ERC20_ID).result.current.headerMenuItems).toEqual([])
         })
     })
 })

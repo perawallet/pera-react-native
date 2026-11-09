@@ -19,9 +19,11 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { AccountAssetItemView } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 
-import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
+import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { PWTouchableOpacityProps } from '@components/core'
 
 const VERIFICATION_TIERS = new Set<string>(
@@ -34,48 +36,58 @@ const isVerificationTier = (
     typeof value === 'string' && VERIFICATION_TIERS.has(value)
 
 export type SwapToAssetItemViewProps = {
-    dexAsset: DexSwapAsset
+    swapAsset: SwapAsset
     balance: Nullable<Decimal>
+    /** The scope the asset lives on, which may differ from the swap scope. */
+    scope: ChainScope
+    isChainShown?: boolean
 } & PWTouchableOpacityProps
 
 export const SwapToAssetItemView = ({
-    dexAsset,
+    swapAsset,
     balance,
+    scope,
+    isChainShown,
     ...rest
 }: SwapToAssetItemViewProps) => {
     const accountBalance = useMemo<AssetWithAccountBalance>(() => {
         const asset: PeraAsset = {
-            assetId: dexAsset.assetId,
-            name: dexAsset.name,
-            unitName: dexAsset.unitName,
-            decimals: dexAsset.decimals ?? 0,
+            assetId: swapAsset.assetId,
+            name: swapAsset.name,
+            unitName: swapAsset.unitName,
+            decimals: swapAsset.decimals ?? 0,
             creator: { address: '' },
-            totalSupply: dexAsset.total
-                ? new Decimal(dexAsset.total)
-                : new Decimal(0),
+            // The router gives no supply, and the row never shows one.
+            totalSupply: new Decimal(0),
             peraMetadata: {
                 ...DEFAULT_ASSET_METADATA,
-                verificationTier: isVerificationTier(dexAsset.verificationTier)
-                    ? dexAsset.verificationTier
+                verificationTier: isVerificationTier(swapAsset.verificationTier)
+                    ? swapAsset.verificationTier
                     : DEFAULT_ASSET_METADATA.verificationTier,
             },
         }
 
         return {
-            assetId: dexAsset.assetId,
+            assetId: swapAsset.assetId,
             asset,
             amount: balance ?? new Decimal(0),
             nativeValue: null,
             fiatValue: null,
             restriction: null,
         }
-    }, [dexAsset, balance])
+    }, [swapAsset, balance])
 
     return (
         <AccountAssetItemView
             accountBalance={accountBalance}
-            logoUrl={dexAsset.logo}
+            scope={scope}
+            logoUrl={swapAsset.logo}
             showBalance={balance !== null}
+            subtitle={
+                isChainShown ? (
+                    <ChainLabel chainId={scope.chainId} />
+                ) : undefined
+            }
             {...rest}
         />
     )

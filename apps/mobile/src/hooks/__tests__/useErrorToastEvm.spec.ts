@@ -86,6 +86,8 @@ describe('useErrorToast with EVM errors', () => {
         EvmErrorCode.REPLACEMENT_UNDERPRICED,
         EvmErrorCode.INSUFFICIENT_FUNDS,
         EvmErrorCode.RATE_LIMITED,
+        EvmErrorCode.TIMEOUT,
+        EvmErrorCode.NETWORK_UNREACHABLE,
     ] as const)('renders the translated %s toast', code => {
         showError(new EvmError(code))
 

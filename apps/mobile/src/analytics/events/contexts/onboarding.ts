@@ -20,6 +20,7 @@ export enum OnboardingEvent {
     NameAccount = 'new_onb_welcome_name_wallet', // Named the wallet during onboarding
     RecoverAlgo25 = 'onb_createacc_recover_25', // Chose recover with a 25-word (Algo25) passphrase
     RecoverOneKey = 'onb_createacc_recover_24', // Chose recover with a 24-word (OneKey) passphrase
+    RecoverTwelveWord = 'onb_createacc_recover_12', // Chose recover with a 12-word seed from another wallet
     CreateAccountWatch = 'onb_createacc_watch', // Chose to add a watch account
     CreateAccountQuantum = 'createacc_quantumAccount_press', // Chose to create a quantum account
     WatchAccountComplete = 'onb_welcome_watch_complete', // Completed adding a watch account
@@ -47,6 +48,7 @@ export interface OnboardingRequiredPayloads {
     [OnboardingEvent.WatchAccountComplete]: ChainPayload
     [OnboardingEvent.RecoverAlgo25]: ChainPayload
     [OnboardingEvent.RecoverOneKey]: ChainPayload
+    [OnboardingEvent.RecoverTwelveWord]: ChainPayload
     [OnboardingEvent.CreateAccountQuantum]: ChainPayload
     [OnboardingEvent.RekeyAccount]: ChainPayload
 }

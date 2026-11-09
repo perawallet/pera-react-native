@@ -51,7 +51,10 @@ import {
     type ReviewedAddressRole,
 } from '@perawallet/wallet-core-signing'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
-import { eip155ChainIdOf } from '../blockchain/utils/caip19'
+import {
+    eip155ChainIdOf,
+    eip155ChainIdOfNetwork,
+} from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { ETHEREUM_WC_V2_METHOD } from '../connect/walletConnect'
 import {
@@ -61,10 +64,9 @@ import {
 } from '../ledger/messagePayload'
 import { isRecord } from './adapter'
 import {
-    openTaggedDigest,
     personalMessageDigest,
     typedDataDigest,
-    type TaggedDigest,
+    type EvmDigestKind,
 } from './digests'
 import { spendApprovalOf } from './permits'
 import { toViemSignature } from './sign'
@@ -336,6 +338,7 @@ const describePersonalSign = (payload: unknown): MessageSummary => {
 const describeTypedData = (
     payload: unknown,
     chain: EvmChain,
+    eip155ChainId?: number,
 ): MessageSummary => {
     const title = { key: TITLE_KEY }
     let typedData: TypedDataDefinition
@@ -346,7 +349,12 @@ const describeTypedData = (
     } catch {
         return { kind: 'raw', title }
     }
-    const spendApproval = spendApprovalOf(typedData, Date.now(), chain)
+    const spendApproval = spendApprovalOf(
+        typedData,
+        Date.now(),
+        chain,
+        eip155ChainId,
+    )
     return {
         kind: 'typed-data',
         title,
@@ -363,13 +371,18 @@ const describeWith =
             return describePersonalSign(request.payload)
         }
         if (request.method === SIGN_TYPED_DATA_V4) {
-            return describeTypedData(request.payload, chain)
+            return describeTypedData(
+                request.payload,
+                chain,
+                eip155ChainIdOfNetwork(chain, request.scope.networkId),
+            )
         }
         throw new Error(`Unsupported message method ${request.method}`)
     }
 
 type PlannedMessage = {
-    digest: TaggedDigest
+    digest: Uint8Array
+    kind: EvmDigestKind
     /** Only for a Ledger, which takes the message rather than its digest. */
     device?: EthereumLedgerMessageBody
 }
@@ -393,6 +406,7 @@ const planTypedData = (
     try {
         return {
             digest: typedDataDigest(typedData),
+            kind: 'eip712',
             ...(forDevice && { device: typedDataLedgerMessage(typedData) }),
         }
     } catch (error) {
@@ -411,6 +425,7 @@ const planMessage = (
     const { message } = readPersonalSign(request.payload)
     return {
         digest: personalMessageDigest({ raw: message }),
+        kind: 'eip191-message',
         ...(forDevice && { device: { kind: 'personal', message } }),
     }
 }
@@ -448,7 +463,7 @@ const planWith =
                 requestIndex: 0,
                 signer: ownAddress,
                 scheme: 'secp256k1',
-                payload: digest.digest,
+                payload: digest,
                 ...(device && {
                     devicePayload: encodeEthereumLedgerMessage({
                         ...device,
@@ -477,10 +492,8 @@ const assembleWith =
                 'An EVM message takes exactly one secp256k1 signature, from its signer',
             )
         }
-        const { tag, digest } = openTaggedDigest(
-            planMessage(request, chain, false).digest,
-        )
-        const viemSignature = toViemSignature(signature.bytes, tag)
+        const { digest, kind } = planMessage(request, chain, false)
+        const viemSignature = toViemSignature(signature.bytes, kind)
         // Signers label signatures with the address they were asked for, not
         // the key that signed, so only recovery proves whose signature this is.
         const recovered = await recoverAddress({

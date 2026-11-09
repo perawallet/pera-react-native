@@ -69,8 +69,10 @@ vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
 }))
 
 const mockVerifyNameAddress = vi.hoisted(() => vi.fn())
+const mockNameServiceOf = vi.hoisted(() => vi.fn(() => 'nfd'))
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     verifyNameAddress: mockVerifyNameAddress,
+    nameServiceOf: mockNameServiceOf,
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -632,6 +634,68 @@ describe('useSelectDestinationScreen', () => {
             expect(mockErrorToast).toHaveBeenCalledWith(
                 'send_funds.destination.nfd_unavailable_title',
                 expect.any(String),
+            )
+        })
+    })
+
+    describe('ENS destinations', () => {
+        const ENS_NAME = 'alice.eth'
+        const ENS_ADDR = '0x1111111111111111111111111111111111111111'
+
+        beforeEach(() => {
+            mockNameServiceOf.mockReturnValue('ens')
+            ;(useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: '0',
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+        })
+        afterEach(() => {
+            mockNameServiceOf.mockReturnValue('nfd')
+        })
+
+        it('routes an ENS name only after ENS vouches for its address', async () => {
+            mockVerifyNameAddress.mockResolvedValue('verified')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(ENS_ADDR, ENS_NAME)
+            })
+
+            expect(mockVerifyNameAddress).toHaveBeenCalledWith(
+                expect.objectContaining({ name: ENS_NAME, address: ENS_ADDR }),
+            )
+            expect(mockSetDestination).toHaveBeenCalledWith(ENS_ADDR)
+        })
+
+        it('blocks an ENS name its chain record does not confirm, and says so in ENS terms', async () => {
+            mockVerifyNameAddress.mockResolvedValue('mismatch')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(ENS_ADDR, ENS_NAME)
+            })
+
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.destination.ens_mismatch_title',
+                'send_funds.destination.ens_mismatch_body',
+            )
+        })
+
+        it('blocks, rather than trusts, an ENS name when ENS cannot be read', async () => {
+            mockVerifyNameAddress.mockResolvedValue('unavailable')
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(ENS_ADDR, ENS_NAME)
+            })
+
+            expect(mockSetDestination).not.toHaveBeenCalled()
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.destination.ens_unavailable_title',
+                'send_funds.destination.ens_unavailable_body',
             )
         })
     })

@@ -13,12 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    nfdStatus: {
+    nameStatus: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
     },
-    nfdStatusText: {
+    nameStatusText: {
         color: theme.colors.textGray,
     },
 }))

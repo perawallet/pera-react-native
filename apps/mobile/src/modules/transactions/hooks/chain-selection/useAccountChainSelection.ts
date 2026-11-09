@@ -35,6 +35,8 @@ export type AccountChainRow = DisplayedChainOption<AccountChainOption>
 export type UseAccountChainSelectionParams = {
     account: Optional<WalletAccount>
     capability: ChainCapability
+    /** Offers only the enabled chains something held signs for the account on. */
+    isSignerRequired?: boolean
     onSelectChain: (chainId: ChainId) => void
     /** Gets the account once it holds the added chain. */
     onChainEnabled?: (account: WalletAccount) => void
@@ -51,10 +53,13 @@ export type UseAccountChainSelectionResult = {
 export const useAccountChainSelection = ({
     account,
     capability,
+    isSignerRequired,
     onSelectChain,
     onChainEnabled,
 }: UseAccountChainSelectionParams): UseAccountChainSelectionResult => {
-    const optionsOf = useAccountChainOptionsResolver(capability)
+    const optionsOf = useAccountChainOptionsResolver(capability, {
+        isSignerRequired,
+    })
     const { t } = useLanguage()
     const { enablingChainId, enableChain } = useEnableChainAction(
         t('errors.general.title'),

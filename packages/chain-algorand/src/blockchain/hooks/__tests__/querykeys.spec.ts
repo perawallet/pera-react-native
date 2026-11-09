@@ -11,16 +11,16 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import {
     getSuggestedParametersQueryKey,
     getTransactionDetailQueryKey,
     getGroupTransactionsQueryKey,
     isBlockchainQuery,
 } from '../querykeys'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const MAINNET = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
-const TESTNET = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const MAINNET = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
+const TESTNET = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 
 describe('querykeys', () => {
     describe('getSuggestedParametersQueryKey', () => {

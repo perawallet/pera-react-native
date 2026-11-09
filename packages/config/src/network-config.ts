@@ -21,7 +21,7 @@ import {
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import { UnconfiguredScopeError } from './errors'
-import { config, evmConfigKeys } from './main'
+import { config, scopeConfigKeys } from './main'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
 export type AlgorandChainConfig = {
@@ -67,6 +67,8 @@ export const PERA_SERVICES = [
     'notifications',
     'blockFollowing',
     'nfts',
+    'contracts',
+    'simulations',
 ] as const
 
 export type PeraService = (typeof PERA_SERVICES)[number]
@@ -281,7 +283,7 @@ const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 const EVM_SCOPE_CONFIGS: readonly ScopeConfigOf<EvmChainId>[] =
     EVM_CHAIN_IDS.flatMap(chainId =>
         EVM_CHAIN_NETWORKS[chainId].networks.map(network => {
-            const keys = evmConfigKeys(chainId, network.id)
+            const keys = scopeConfigKeys(chainId, network.id)
             return evmScopeConfig(
                 chainId,
                 network.id,
@@ -353,6 +355,65 @@ export const registerCustomNetworkSource = (
     }
 }
 
+let peraBackendSwitch: ((chainId: ChainId) => boolean) | undefined
+
+/**
+ * The per-chain remote kill switch lives in the chain registry, which `config`
+ * cannot import. It turns off only the chain's Pera services; RPC and indexer
+ * paths never read it.
+ */
+export const setPeraBackendSwitch = (
+    isSwitchedOff: (chainId: ChainId) => boolean,
+): void => {
+    peraBackendSwitch = isSwitchedOff
+}
+
+export const isPeraBackendSwitchedOff = (chainId: ChainId): boolean =>
+    peraBackendSwitch?.(chainId) ?? false
+
+// Plain interpolation, not toScopeKey: that validates the chain id, and a
+// request path must not throw on one.
+const refusalKeyOf = ({ chainId, networkId }: ChainScope): string =>
+    `${chainId}/${networkId}`
+
+const servedScopesByDeployment = new Map<WalletMode, ReadonlySet<string>>()
+// Until relaunch: the backend switches a chain on without an app release, and
+// asking again on every sync only repeats the refusal.
+const refusedScopes = new Set<string>()
+
+/** Records the deployment's chain list, replacing any earlier one for it. */
+export const setPeraServedScopes = (
+    deployment: WalletMode,
+    served: readonly ChainScope[],
+): void => {
+    servedScopesByDeployment.set(deployment, new Set(served.map(refusalKeyOf)))
+}
+
+/** Records a request for the scope that the backend refused as a chain it doesn't serve. */
+export const markPeraScopeRefused = (scope: ChainScope): void => {
+    refusedScopes.add(refusalKeyOf(scope))
+}
+
+/**
+ * True when the scope's deployment doesn't serve its chain: a request for it
+ * was refused, or the deployment's chain list left it out. A scope no
+ * deployment holds (betanet, a custom node) is never refused.
+ */
+export const isPeraScopeRefused = (scope: ChainScope): boolean => {
+    const deployment = peraDeploymentOf(scope)
+    if (deployment === undefined) return false
+    const key = refusalKeyOf(scope)
+    if (refusedScopes.has(key)) return true
+    const served = servedScopesByDeployment.get(deployment)
+    return served !== undefined && !served.has(key)
+}
+
+/** Test-only: forgets every chain list and refusal. */
+export const resetPeraScopeRefusals = (): void => {
+    servedScopesByDeployment.clear()
+    refusedScopes.clear()
+}
+
 export const configuredScopes = (): readonly ChainScope[] =>
     SCOPE_CONFIGS.map(row => row.scope)
 
@@ -404,7 +465,9 @@ export const deploymentOf = (scope: ChainScope | null): WalletMode | null =>
 const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
 
 const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
-    findScopeConfig(scope)?.services ?? NO_PERA_SERVICES
+    isPeraBackendSwitchedOff(scope.chainId) || isPeraScopeRefused(scope)
+        ? NO_PERA_SERVICES
+        : (findScopeConfig(scope)?.services ?? NO_PERA_SERVICES)
 
 export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
     new Set(servicesOf(scope))

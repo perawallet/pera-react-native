@@ -84,6 +84,7 @@ export const fetchHasHistory = async (
     scope: ChainScope,
     chain: EvmChain,
     address: string,
+    signal?: AbortSignal,
 ): Promise<boolean> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
@@ -93,6 +94,7 @@ export const fetchHasHistory = async (
         url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
         params: { limit: 1 },
         headers: buildIntegrityHeaders(),
+        signal,
         ...DISCOVERY_LOOKUP_BOUNDS,
     })
     const { next, results } = evmHistoryPageSchema.parse(data)

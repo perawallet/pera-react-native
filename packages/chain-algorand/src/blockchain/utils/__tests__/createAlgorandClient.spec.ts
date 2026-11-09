@@ -31,12 +31,15 @@ import {
     getChainConfig,
 } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { setCustomNetwork, clearCustomNetwork } from '../../store'
 import { getAlgorandClient } from '../algorandClient'
 import { createTimeoutBoundedAlgorandClient } from '../createAlgorandClient'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const CUSTOM_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const
+const CUSTOM_SCOPE = {
+    chainId: ALGORAND_CHAIN_ID,
+    networkId: 'custom',
+} as const
 
 describe('getChainConfig for the custom network (real store, end-to-end)', () => {
     beforeEach(() => {
@@ -120,7 +123,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
         const bakedNetworks = ['mainnet', 'testnet', 'betanet'] as const
         const before = bakedNetworks.map(network =>
             getChainConfig({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: network,
             } as const),
         )
@@ -135,7 +138,7 @@ describe('getChainConfig for the custom network (real store, end-to-end)', () =>
         expect(
             bakedNetworks.map(network =>
                 getChainConfig({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: network,
                 } as const),
             ),

@@ -17,6 +17,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetItemView } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import type { PWTouchableOpacityProps } from '@components/core'
 import { buildAccountBalanceFromRampToken } from './buildAccountBalanceFromRampToken'
 
@@ -42,8 +43,10 @@ export const OnrampAssetItemView = ({
     return (
         <AccountAssetItemView
             accountBalance={accountBalance}
+            scope={scope}
             logoUrl={token.logo ?? undefined}
             showBalance={balance !== null}
+            footer={<ChainLabel chainId={scope.chainId} />}
             {...rest}
         />
     )

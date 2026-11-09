@@ -33,7 +33,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { PeraAssetType } from '../models'
+import { PeraAssetType, PeraAssetVerificationTier } from '../models'
 import {
     AssetsNodeSchema,
     AssetsPeraSchema,
@@ -283,6 +283,52 @@ async function getUnreadGroupAssetIds({
     return rows.map(row => row.assetId).filter(id => candidates.has(id))
 }
 
+// A verified token the backend has no logo for is asked about again after
+// this, so a logo it backfills reaches the device within a day rather than the
+// metadata TTL.
+const LOGO_RETRY_TTL_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Verified tokens whose stored Pera row carries no logo. Only verified ones:
+ * the unvetted and node-only majority of an airdrop-heavy account would
+ * otherwise be re-asked daily, and a quarantined token never gets metadata.
+ * Collectibles are skipped, as their media is the image.
+ */
+async function getLogolessVerifiedAssetIds({
+    db,
+    assetIds,
+    scopeKey,
+}: {
+    db: Database
+    assetIds: string[]
+    scopeKey: ChainScopeKey
+}): Promise<string[]> {
+    const rows = await db
+        .select({ assetId: AssetsPeraSchema.assetId })
+        .from(AssetsPeraSchema)
+        .where(
+            and(
+                eq(AssetsPeraSchema.scope, scopeKey),
+                eq(
+                    AssetsPeraSchema.verificationTier,
+                    PeraAssetVerificationTier.verified,
+                ),
+                isNotNull(AssetsPeraSchema.peraMetadataJson),
+                sql`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.logo') IS NULL`,
+                lt(AssetsPeraSchema.updatedAt, Date.now() - LOGO_RETRY_TTL_MS),
+                or(
+                    isNull(AssetsPeraSchema.assetType),
+                    ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                ),
+                idPredicate(AssetsPeraSchema.assetId, assetIds),
+            ),
+        )
+        .all()
+
+    const candidates = new Set(assetIds)
+    return rows.map(row => row.assetId).filter(id => candidates.has(id))
+}
+
 /**
  * Held collectibles whose `assets_node.url` was never resolved.
  *
@@ -341,7 +387,9 @@ export async function getCollectibleIdsMissingUrl({
  * returns ARC19 collectibles due a media re-fetch — see
  * `getStaleArc19CollectibleIds`. `recheckUnreadGroup` additionally returns
  * tokens no sync has read the cross-chain group of — see
- * `getUnreadGroupAssetIds`.
+ * `getUnreadGroupAssetIds`. `recheckMissingLogo` additionally returns verified
+ * tokens stored without a logo once a day old — see
+ * `getLogolessVerifiedAssetIds`.
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
@@ -351,10 +399,12 @@ export async function getStaleOrMissingAssetIds({
     recheckUnclassified,
     recheckArc19,
     recheckUnreadGroup = false,
+    recheckMissingLogo = false,
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
     recheckUnreadGroup?: boolean
+    recheckMissingLogo?: boolean
 }): Promise<string[]> {
     const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
@@ -387,9 +437,14 @@ export async function getStaleOrMissingAssetIds({
         ? await getUnreadGroupAssetIds({ db, assetIds, scopeKey })
         : []
 
+    const missingLogo = recheckMissingLogo
+        ? await getLogolessVerifiedAssetIds({ db, assetIds, scopeKey })
+        : []
+
     return unclassified.length === 0 &&
         arc19.length === 0 &&
-        unreadGroup.length === 0
+        unreadGroup.length === 0 &&
+        missingLogo.length === 0
         ? staleOrMissing
         : [
               ...new Set([
@@ -397,6 +452,7 @@ export async function getStaleOrMissingAssetIds({
                   ...unclassified,
                   ...arc19,
                   ...unreadGroup,
+                  ...missingLogo,
               ]),
           ]
 }

@@ -11,6 +11,7 @@
  */
 
 import { BaseError, RpcRequestError } from 'viem'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { EvmErrorCode, evmErrorCodeOf } from '../errors'
 
 const afterUnconfirmedAttempt = new WeakSet<object>()
@@ -27,7 +28,7 @@ export const markAfterUnconfirmedAttempt = (error: unknown): void => {
     }
 }
 
-const isAfterUnconfirmedAttempt = (error: unknown): boolean =>
+export const isAfterUnconfirmedAttempt = (error: unknown): boolean =>
     error instanceof BaseError &&
     error.walk(
         link =>
@@ -40,16 +41,24 @@ const isAfterUnconfirmedAttempt = (error: unknown): boolean =>
 // down answers with these, having said nothing about the transaction.
 const UPSTREAM_FAILURE_CODES: readonly number[] = [-32_603, -32_002]
 
+/** The JSON-RPC reply an error was caused by; `undefined` for a transport failure. */
+export const nodeReplyOf = (error: unknown): Optional<RpcRequestError> => {
+    const reply =
+        error instanceof BaseError
+            ? error.walk(link => link instanceof RpcRequestError)
+            : null
+    return reply instanceof RpcRequestError ? reply : undefined
+}
+
 /**
  * Only a JSON-RPC reply that judges the transaction is a verdict; a transport
  * failure, timeout, rate limit or a node reporting its own backend failure says
  * nothing about whether the node took it.
  */
 export const isNodeReply = (error: unknown): boolean => {
-    if (!(error instanceof BaseError)) return false
-    const reply = error.walk(link => link instanceof RpcRequestError)
+    const reply = nodeReplyOf(error)
     return (
-        reply instanceof RpcRequestError &&
+        reply !== undefined &&
         !UPSTREAM_FAILURE_CODES.includes(reply.code) &&
         evmErrorCodeOf(error) !== EvmErrorCode.RATE_LIMITED
     )

@@ -11,11 +11,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { renderHook } from '@testing-library/react'
 import { useAssetSecurityTags } from '../useAssetSecurityTags'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
 
 const mockAuthorities = vi.fn()
 const mockRequest = vi.fn()

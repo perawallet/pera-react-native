@@ -16,10 +16,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { assertOnline, NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     registerAlgorandAccountsAdapter,
     registerAlgorandDeviceAdapter,
@@ -117,7 +117,7 @@ describe('useAccountNotificationToggle', () => {
         registerAlgorandAccountsAdapter()
         registerAlgorandDeviceAdapter()
         const { chains } = getProvider()
-        if (!chains.has(LEGACY_CHAIN_ID)) {
+        if (!chains.has(ALGORAND_CHAIN_ID)) {
             chains.register(algorandDescriptor, allCapabilities(true))
         }
         mocks.registerDevice.mockResolvedValue({ createdNew: false })

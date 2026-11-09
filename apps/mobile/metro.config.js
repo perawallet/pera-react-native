@@ -22,15 +22,17 @@ const buildGates = require('./metro-build-gates');
 const {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
-    EVM_CHAIN_MODULES,
+    isChainPackageIncluded,
     isDeveloperGalleryIncluded,
     isBenchBuild,
     isE2eFixturesIncluded,
-    listsEvmChain,
     readBakedAppEnvironment,
     readBakedChainIds,
+    stubbedChainModules,
     toStubMap,
 } = buildGates;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { CHAIN_PACKAGES } = require('../../tools/dev/chain-packages.cjs');
 
 // Find the monorepo root (2 levels up from apps/mobile)
 const projectRoot = __dirname;
@@ -228,18 +230,19 @@ console.log(
     `[metro] developer gallery: ${developerGalleryIncluded ? 'included' : 'stubbed'} (appEnvironment=${bakedAppEnvironment ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
 );
 
-// viem ships only in a build whose baked CHAINS lists an EVM chain. The baked file
-// is the same source config.chains reads at runtime; a bundle started before
-// generate-config.sh rewrote it fails loudly in buildChainSetup instead of
-// silently running Algorand-only.
+// A chain package ships only in a build whose baked CHAINS lists one of its
+// chains. The baked file is the same source config.chains reads at runtime; a
+// bundle started before generate-config.sh rewrote it fails loudly in
+// buildChainSetup instead of silently running without the chain.
 const bakedChainIds = readBakedChainIds(
     path.resolve(monorepoRoot, 'packages/config/src/generated-env.ts'),
 );
-const evmIncluded = listsEvmChain(bakedChainIds ?? []);
 
-console.log(
-    `[metro] EVM chains: ${evmIncluded ? 'included' : 'stubbed'} (chainIds=${bakedChainIds?.join(',') ?? 'unset'})`,
-);
+for (const chainPackage of CHAIN_PACKAGES) {
+    console.log(
+        `[metro] ${chainPackage.package}: ${isChainPackageIncluded(chainPackage, bakedChainIds ?? []) ? 'included' : 'stubbed'} (chainIds=${bakedChainIds?.join(',') ?? 'unset'})`,
+    );
+}
 
 // Keyed on its own opt-in flag rather than the channel: staging builds go to
 // testers, and a deeplink that rewrites wallet state must not ride along.
@@ -279,7 +282,7 @@ const buildStubs = {
     ...(developerGalleryIncluded
         ? {}
         : toStubMap(projectRoot, DEVELOPER_GALLERY_MODULES)),
-    ...(evmIncluded ? {} : toStubMap(projectRoot, EVM_CHAIN_MODULES)),
+    ...toStubMap(projectRoot, stubbedChainModules(bakedChainIds ?? [])),
     ...(e2eFixturesIncluded ? {} : toStubMap(projectRoot, E2E_FIXTURE_MODULES)),
 };
 
@@ -424,7 +427,7 @@ const customResolveRequest = (context, moduleName, platform) => {
         const sourcePath = path.resolve(
             monorepoRoot,
             'extensions',
-            'keystore-chrome',
+            'vault-chrome',
             'src',
             'index.ts',
         );

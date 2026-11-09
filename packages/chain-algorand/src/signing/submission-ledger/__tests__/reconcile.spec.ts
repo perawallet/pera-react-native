@@ -15,7 +15,6 @@ import { eq, sql } from 'drizzle-orm'
 import {
     toScopeKey,
     type ChainScopeKey,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     runMigrations,
@@ -36,6 +35,7 @@ import {
     SubmissionAttemptsSchema,
     type SubmissionAttempt,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import type { SubmissionProbeClient } from '../reconcile'
 
 type PendingResponse = Record<string, unknown>
@@ -111,7 +111,10 @@ describe('submission reconciler', () => {
     ) =>
         recordSubmissionAttempt({
             db,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             txIds: ['TXID-1'],
             flow: 'cosign',
             chainData: { family: 'algorand', lastValid: 100 },
@@ -324,7 +327,12 @@ describe('submission reconciler', () => {
             getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
         })
 
-        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 1,
+            progressed: 0,
+            failed: 0,
+        })
         expect(settled).toEqual([{ txIds: ['TXID-1'], status: 'confirmed' }])
 
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
@@ -338,7 +346,7 @@ describe('submission reconciler', () => {
             .update(SubmissionAttemptsSchema)
             .set({
                 scope: toScopeKey({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const),
             })
@@ -359,7 +367,12 @@ describe('submission reconciler', () => {
             chainId: 'algorand',
             networkId: 'mainnet',
         })
-        expect(summary).toEqual({ probed: 2, confirmed: 2, failed: 0 })
+        expect(summary).toEqual({
+            probed: 2,
+            confirmed: 2,
+            progressed: 0,
+            failed: 0,
+        })
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows.map(row => row.status)).toEqual(['confirmed', 'confirmed'])
         expect(handled).toEqual(['mainnet', 'mainnet'])
@@ -377,7 +390,12 @@ describe('submission reconciler', () => {
         const summary = await reconcileOpenSubmissions({ db, getClient })
 
         expect(getClient).not.toHaveBeenCalled()
-        expect(summary).toEqual({ probed: 0, confirmed: 0, failed: 0 })
+        expect(summary).toEqual({
+            probed: 0,
+            confirmed: 0,
+            progressed: 0,
+            failed: 0,
+        })
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ status: 'submitted' })
     })
@@ -398,7 +416,12 @@ describe('submission reconciler', () => {
                 }),
         })
 
-        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 1 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 0,
+            failed: 1,
+        })
     })
 
     it('prunes stale resolved rows on each pass, even with nothing open', async () => {
@@ -436,7 +459,12 @@ describe('submission reconciler', () => {
         })
 
         // limit 1 with the Ethereum row recorded first: it would have taken the slot.
-        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 1,
+            progressed: 0,
+            failed: 0,
+        })
         expect(getClient).toHaveBeenCalledTimes(1)
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows.find(row => row.id === ethereumId)?.status).toBe(
@@ -449,7 +477,12 @@ describe('submission reconciler', () => {
 
     it('is a no-op when no open rows exist', async () => {
         const summary = await reconcileOpenSubmissions({ db })
-        expect(summary).toEqual({ probed: 0, confirmed: 0, failed: 0 })
+        expect(summary).toEqual({
+            probed: 0,
+            confirmed: 0,
+            progressed: 0,
+            failed: 0,
+        })
     })
 
     it('leaves rows open when the chain is unreachable', async () => {
@@ -466,7 +499,12 @@ describe('submission reconciler', () => {
 
         // Examined, but nothing settled: an unreachable node is not evidence
         // that the group failed.
-        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 0,
+            failed: 0,
+        })
 
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ status: 'submitted' })
@@ -480,7 +518,12 @@ describe('submission reconciler', () => {
 
         // Resolving here would make the row terminal with nobody having
         // replayed the handoff — the settle event would be lost for good.
-        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 0,
+            failed: 0,
+        })
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ id, status: 'submitted' })
     })
@@ -496,7 +539,12 @@ describe('submission reconciler', () => {
             getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
         })
 
-        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 0,
+            failed: 0,
+        })
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ id, status: 'submitted' })
     })
@@ -516,7 +564,12 @@ describe('submission reconciler', () => {
             getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
         })
 
-        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 1,
+            progressed: 0,
+            failed: 0,
+        })
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ id, status: 'confirmed' })
     })
@@ -528,7 +581,12 @@ describe('submission reconciler', () => {
             getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
         })
 
-        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 1,
+            progressed: 0,
+            failed: 0,
+        })
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ id, status: 'confirmed' })
     })

@@ -24,6 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetIcon } from '@components/AssetIcon'
+import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 import { useAssetItemView } from './useAssetItemView'
 import { useStyles } from './styles'
 
@@ -40,6 +41,10 @@ export type AssetItemViewProps = {
     /** A further line under the secondary one, such as the asset's network. */
     footer?: ReactNode
     iconSize?: PWIconSize
+    /** Draws the asset's network on its icon. */
+    showChainBadge?: boolean
+    /** Limits the right-hand content to part of the row, for amounts whose unit has no length cap. */
+    shouldCapRightSlot?: boolean
     /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
     /** Account-only decorations. Default off so search rows stay clean. */
@@ -58,6 +63,8 @@ export const AssetItemView = ({
     subtitle: subtitleOverride,
     footer,
     iconSize = 'xl',
+    showChainBadge = false,
+    shouldCapRightSlot = false,
     logoUrl,
     showFavorite = false,
     showDeletedLabel = false,
@@ -71,6 +78,7 @@ export const AssetItemView = ({
     const { t } = useLanguage()
     const {
         isSuspicious,
+        isUnverified,
         isDeleted,
         displayName,
         secondaryText,
@@ -120,13 +128,17 @@ export const AssetItemView = ({
             {...rest}
             style={[styles.itemContainer, style]}
         >
-            <AssetIcon
-                asset={asset}
-                chainId={chainId}
-                logoUrl={logoUrl}
-                size={iconSize}
-                shape={iconShape}
-            />
+            {/* AssetIcon clips its own overflow, so the badge sits on a wrapper. */}
+            <PWView>
+                <AssetIcon
+                    asset={asset}
+                    chainId={chainId}
+                    logoUrl={logoUrl}
+                    size={iconSize}
+                    shape={iconShape}
+                />
+                {showChainBadge ? <ChainAvatarBadge chainId={chainId} /> : null}
+            </PWView>
             <PWView style={styles.infoContainer}>
                 <PWView style={styles.titleRow}>
                     <PWText
@@ -136,7 +148,7 @@ export const AssetItemView = ({
                                 ? styles.suspiciousTitle
                                 : styles.titleText
                         }
-                        ellipsizeMode='middle'
+                        ellipsizeMode='tail'
                         numberOfLines={1}
                     >
                         {displayName}
@@ -156,6 +168,12 @@ export const AssetItemView = ({
                         />
                     ) : null}
                     {titleAccessory}
+                    {isUnverified ? (
+                        <PWBadge
+                            variant='secondary'
+                            value={t('asset.unverified_label')}
+                        />
+                    ) : null}
                     {showFrozenBadge ? (
                         <PWBadge
                             variant='secondary'
@@ -166,7 +184,16 @@ export const AssetItemView = ({
                 {subtitle}
                 {footer}
             </PWView>
-            {right ? <PWView style={styles.rightSlot}>{right}</PWView> : null}
+            {right ? (
+                <PWView
+                    style={[
+                        styles.rightSlot,
+                        shouldCapRightSlot && styles.rightSlotCapped,
+                    ]}
+                >
+                    {right}
+                </PWView>
+            ) : null}
         </PWTouchableOpacity>
     )
 }

@@ -270,7 +270,7 @@ describe('useMultisigInvitationNameScreen', () => {
         })
 
         expect(result.current.isNameTaken).toBe(true)
-        expect(result.current.nameError).toBe('multisig.name.error_name_taken')
+        expect(result.current.nameError).toBe('account_info.name_taken')
         expect(result.current.isFinishDisabled).toBe(true)
     })
 
@@ -290,6 +290,7 @@ describe('useMultisigInvitationNameScreen', () => {
                         },
                     },
                 },
+                id: 'invitation-account',
                 name: 'Shared Account #1',
                 custody: { kind: 'multisig' },
             } as WalletAccount,

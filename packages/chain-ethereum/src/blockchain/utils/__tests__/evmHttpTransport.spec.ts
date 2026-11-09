@@ -11,7 +11,12 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createPublicClient, TimeoutError } from 'viem'
+import {
+    createPublicClient,
+    HttpRequestError,
+    InvalidParamsRpcError,
+    TimeoutError,
+} from 'viem'
 import { evmHttpTransport, fetchWithAbortError } from '../evmHttpTransport'
 
 // expo/fetch rejects an aborted request with a FetchError, not an AbortError.
@@ -103,5 +108,80 @@ describe('fetchWithAbortError', () => {
         const error = await client.getChainId().catch(e => e)
 
         expect(error).toBeInstanceOf(TimeoutError)
+    })
+})
+
+describe('evmHttpTransport errors', () => {
+    const HOLDER = '0x00000000000000000000000000000000000000aa'
+    const OTHER = '0x00000000000000000000000000000000000000bb'
+
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    it('names the method but leaves every batched request out of an HTTP failure', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(() => Promise.resolve(new Response('busy', { status: 503 }))),
+        )
+        const client = createPublicClient({
+            transport: evmHttpTransport('https://rpc.test', {
+                retryCount: 0,
+                batch: true,
+            }),
+        })
+
+        const [error] = await Promise.all([
+            client.getBalance({ address: HOLDER }).catch(e => e),
+            client.getBalance({ address: OTHER }).catch(e => e),
+        ])
+
+        expect(error).toBeInstanceOf(HttpRequestError)
+        expect(error).toMatchObject({ status: 503 })
+        expect(error.message).toContain('eth_getBalance')
+        expect(error.message).not.toContain(HOLDER.slice(2))
+        expect(error.message).not.toContain(OTHER.slice(2))
+    })
+
+    it('leaves the request out of an error the node answered with, keeping its code', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(() =>
+                Promise.resolve(
+                    Response.json({
+                        jsonrpc: '2.0',
+                        id: 0,
+                        error: { code: -32602, message: 'Archive requests' },
+                    }),
+                ),
+            ),
+        )
+        const client = createPublicClient({
+            transport: evmHttpTransport('https://rpc.test', { retryCount: 0 }),
+        })
+
+        const error = await client.getBalance({ address: HOLDER }).catch(e => e)
+
+        expect(error).toBeInstanceOf(InvalidParamsRpcError)
+        expect(error).toMatchObject({ code: -32602 })
+        expect(error.message).toContain('eth_getBalance')
+        expect(error.message).toContain('Archive requests')
+        expect(error.message).not.toContain(HOLDER.slice(2))
+    })
+
+    it('leaves the request out of a timeout', async () => {
+        vi.stubGlobal('fetch', fetchThatRejectsOnAbort())
+        const client = createPublicClient({
+            transport: evmHttpTransport('https://rpc.test', {
+                timeout: 50,
+                retryCount: 0,
+            }),
+        })
+
+        const error = await client.getBalance({ address: HOLDER }).catch(e => e)
+
+        expect(error).toBeInstanceOf(TimeoutError)
+        expect(error.message).toContain('eth_getBalance')
+        expect(error.message).not.toContain(HOLDER.slice(2))
     })
 })

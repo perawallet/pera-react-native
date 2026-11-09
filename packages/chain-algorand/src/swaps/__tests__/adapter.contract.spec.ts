@@ -13,12 +13,19 @@
 import { vi } from 'vitest'
 import type { ExecuteSwapParams } from '@perawallet/wallet-core-swaps'
 import { swapContractTests } from '@perawallet/wallet-core-swaps/testing'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { algorandSwapAdapter } from '../adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The adapter resolves these from remote config, which this suite doesn't set up.
 vi.mock('../quantumSwapGate', () => ({
     isAlgorandQuantumSwapEnabled: () => false,
+}))
+// No ledger storage here: no earlier attempt is open.
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    getOpenSubmissionAttempts: async () => [],
 }))
 vi.mock('../../blockchain', async importOriginal => ({
     ...(await importOriginal<typeof import('../../blockchain')>()),
@@ -28,19 +35,25 @@ vi.mock('../../blockchain', async importOriginal => ({
 swapContractTests(() => algorandSwapAdapter, {
     params: {
         quote: {
-            quoteIdStr: 'quote-1',
+            quoteId: 'quote-1',
             fetchedAt: Date.now(),
+            expiresAt: null,
+            request: { sourceAddress: 'SENDER' },
             assetIn: { assetId: '0' },
             assetOut: { assetId: '31566704' },
+            fees: [],
         },
+        onProgress: vi.fn(),
         isCancelled: () => false,
     } as unknown as ExecuteSwapParams,
     makeContext: () => ({
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const,
         deviceId: null,
         addSignRequest: vi.fn(),
-        prepareTransactions: vi.fn(),
-        updateSwapStatus: vi.fn(),
+        createOrder: vi.fn(),
+        reportOrder: vi.fn(),
         registerHandoff: vi.fn(),
+        onOrderSubmitting: vi.fn(),
+        onOrderRejected: vi.fn(),
     }),
 })

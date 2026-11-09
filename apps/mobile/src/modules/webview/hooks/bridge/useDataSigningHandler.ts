@@ -12,10 +12,7 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     canSignArbitraryData,
     findAccountByAddressOn,
@@ -36,6 +33,7 @@ import {
     parseAuthDataWireRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -112,26 +110,26 @@ export const useDataSigningHandler = (
             // when none is registered, so it sits inside the try that answers
             // the page.
             try {
-                if (isAuthDataWirePayload(LEGACY_CHAIN_ID, message.params)) {
+                if (isAuthDataWirePayload(ALGORAND_CHAIN_ID, message.params)) {
                     const { authData, metadata } = parseAuthDataWireRequest(
-                        LEGACY_CHAIN_ID,
+                        ALGORAND_CHAIN_ID,
                         message.params,
                     )
                     const account = findAccountByAddressOn(
                         allAccounts,
-                        LEGACY_CHAIN_ID,
+                        ALGORAND_CHAIN_ID,
                         authData.signer,
                     )
                     if (
                         !account ||
-                        !canSignMessage(LEGACY_CHAIN_ID, account, 'authData')
+                        !canSignMessage(ALGORAND_CHAIN_ID, account, 'authData')
                     ) {
                         sendInvalidSigner(message.id)
                         return
                     }
                     addSignRequest({
                         ...webviewDataSignRequestBase(
-                            LEGACY_CHAIN_ID,
+                            ALGORAND_CHAIN_ID,
                             message.id,
                             webview,
                         ),
@@ -175,7 +173,7 @@ export const useDataSigningHandler = (
             // sheet, not after the user slides.
             const signerAccount = findAccountByAddressOn(
                 allAccounts,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
                 signer,
             )
             if (!signerAccount || !canSignArbitraryData(signerAccount)) {
@@ -201,7 +199,7 @@ export const useDataSigningHandler = (
             try {
                 addSignRequest({
                     ...webviewDataSignRequestBase(
-                        LEGACY_CHAIN_ID,
+                        ALGORAND_CHAIN_ID,
                         message.id,
                         webview,
                     ),

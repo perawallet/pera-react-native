@@ -65,6 +65,7 @@ export const SwapScreen = () => {
                 {scope && (
                     <PWView style={styles.formWrapper}>
                         <SwapForm
+                            key={scope.chainId}
                             scope={scope}
                             initialPayAmount={initialPayAmount}
                         />

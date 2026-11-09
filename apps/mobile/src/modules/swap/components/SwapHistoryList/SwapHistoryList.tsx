@@ -15,9 +15,11 @@ import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import { SwapHistoryListItem } from './SwapHistoryListItem'
-import { useSwapHistoryList } from './useSwapHistoryList'
+import {
+    useSwapHistoryList,
+    type ListedSwapHistoryItem,
+} from './useSwapHistoryList'
 import { useStyles } from './styles'
 
 export type SwapHistoryListProps = {
@@ -48,14 +50,13 @@ export const SwapHistoryList = ({
     } = useSwapHistoryList({ scope, address, onClose })
 
     const renderItem = useCallback(
-        ({ item }: { item: SwapHistoryItem }) => (
+        ({ item }: { item: ListedSwapHistoryItem }) => (
             <SwapHistoryListItem
                 item={item}
-                chainId={scope.chainId}
                 onPress={handleItemPress}
             />
         ),
-        [handleItemPress, scope.chainId],
+        [handleItemPress],
     )
 
     const ItemSeparator = useCallback(

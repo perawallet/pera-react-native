@@ -12,26 +12,21 @@
 
 import { useMemo, useState } from 'react'
 import {
-    useRampPairsQuery,
+    useOnramp,
     useRampRegionQuery,
+    useRampSourcesQuery,
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type OnrampSourceFilter = 'all' | 'fiat' | 'crypto'
 
 // Collapse the fiat list to this many rows when no search/filter narrows it.
 const DEFAULT_FIAT_LIMIT = 3
 
-// A source token is FIAT when it carries a (non-empty) ISO country code — the
-// ramp API exposes this via `extra.country_code` for fiat currencies (USD, EUR…)
-// and never for crypto. Crypto tokens carry a blockchain `network` and no
-// country code. Anything ambiguous (no country code) is treated as crypto.
-const isFiatToken = (token: RampToken): boolean =>
-    typeof token.countryCode === 'string' && token.countryCode.length > 0
+const isFiatToken = (token: RampToken): boolean => token.kind === 'fiat'
 
 type UseOnrampSourceSelectionResult = {
     isLoading: boolean
@@ -54,35 +49,25 @@ type UseOnrampSourceSelectionResult = {
 }
 
 /**
- * Drives the "From" source-selection sheet: collects the distinct source tokens
- * across all ramp pairs, splits them into fiat/crypto groups, and applies the
- * search query + filter chip + collapsed-fiat state.
+ * Drives the "From" source-selection sheet: reads the selected destination's
+ * sources, splits them into fiat/crypto groups, and applies the search query +
+ * filter chip + collapsed-fiat state.
  */
 export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
     const { scope } = useOnrampAccount()
-    const { data: pairs, isLoading } = useRampPairsQuery({ scope })
+    const { selectedDestinationTokenId } = useOnramp()
+    const { data: sourceTokens, isLoading } = useRampSourcesQuery({
+        scope,
+        destinationId: selectedDestinationTokenId,
+    })
     const { data: region } = useRampRegionQuery({ scope })
     // The preferred currency doesn't depend on the ramp's chain; a null ramp
     // scope just means Fund can't buy onto this account.
-    const selectedScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const selectedScope = useHomeChainScope()
     const { preferredCurrency } = useCurrency(selectedScope)
     const [filter, setFilter] = useState<OnrampSourceFilter>('all')
     const [search, setSearch] = useState('')
     const [isFiatExpanded, setIsFiatExpanded] = useState(false)
-
-    // Distinct source tokens (dedupe by id).
-    const sourceTokens = useMemo(() => {
-        const seen = new Set<string>()
-        const result: RampToken[] = []
-        for (const pair of pairs ?? []) {
-            const token = pair.sourceToken
-            if (!seen.has(token.id)) {
-                seen.add(token.id)
-                result.push(token)
-            }
-        }
-        return result
-    }, [pairs])
 
     // Symbols carried by more than one source token (same ticker, different
     // network) — those rows get a network sub-badge to tell them apart.

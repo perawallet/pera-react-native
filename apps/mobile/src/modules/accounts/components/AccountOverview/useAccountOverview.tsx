@@ -15,14 +15,13 @@ import {
     addressOn,
     useAccountSummaryQuery,
     useEnsureAccountEnriched,
-    useAccountScope,
+    useAccountHoldingSources,
     useSelectedAccount,
     type WalletAccount,
+    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useReceiveFunds } from '@modules/transactions'
 import {
@@ -30,7 +29,7 @@ import {
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
 } from '@modules/transactions/routes'
-import { useSyncRefresh } from '@hooks/useSyncRefresh'
+import { useSyncRefreshAll } from '@hooks/useSyncRefresh'
 import {
     trackEvent,
     HomeEvent,
@@ -60,7 +59,7 @@ export const useAccountOverview = ({
     account,
 }: UseAccountOverviewParams): UseAccountOverviewResult => {
     const selectedAccount = useSelectedAccount()
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, useHomeChainScope().chainId)
     const address = addressOn(account, scope)
     const { setSelectedAccount, setCanSelectAccount, setChainId } =
         useReceiveFunds()
@@ -182,14 +181,18 @@ export const useAccountOverview = ({
     }, [hasCompletedInitialLoad, isBalancesPending, isBalancesPaused])
     const isLoading = !hasCompletedInitialLoad
 
-    const refreshAddresses = useMemo(
-        () => (address ? [address] : []),
-        [address],
+    // Every network the account holds, as the overview shows them all.
+    const sources = useAccountHoldingSources(account)
+    const refreshTargets = useMemo(
+        () =>
+            sources.map(({ address, scope }) => ({
+                addresses: [address],
+                scope,
+            })),
+        [sources],
     )
-    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
-        addresses: refreshAddresses,
-        scope,
-    })
+    const { isRefreshing, refresh: handleRefresh } =
+        useSyncRefreshAll(refreshTargets)
 
     const contextValue = useMemo<UseAccountOverviewModalResult>(
         () => ({

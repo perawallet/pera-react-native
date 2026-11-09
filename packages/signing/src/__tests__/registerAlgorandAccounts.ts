@@ -21,7 +21,6 @@ import {
     type ChainDescriptor,
     type ChainId,
     type ChainScope,
-    LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
@@ -70,7 +69,7 @@ export const seedAuthority = (
     address: string,
     authorityAddress: string | null,
     scope: ChainScope = {
-        chainId: LEGACY_CHAIN_ID,
+        chainId: 'algorand',
         networkId: 'mainnet',
     } as const,
 ): void =>

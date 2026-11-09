@@ -21,8 +21,10 @@ type UseNftFilterContentResult = {
     canShowOptedIn: boolean
     showOptedIn: boolean
     showWatchAccounts: boolean
+    showSuspicious: boolean
     handleToggleOptedIn: () => void
     handleToggleWatchAccounts: () => void
+    handleToggleSuspicious: () => void
     commitChanges: () => void
 }
 
@@ -38,16 +40,24 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
     const showWatchAccounts = useCollectiblePreferencesStore(
         state => state.showWatchAccounts,
     )
+    const showSuspicious = useCollectiblePreferencesStore(
+        state => state.showSuspicious,
+    )
     const setShowOptedIn = useCollectiblePreferencesStore(
         state => state.setShowOptedIn,
     )
     const setShowWatchAccounts = useCollectiblePreferencesStore(
         state => state.setShowWatchAccounts,
     )
+    const setShowSuspicious = useCollectiblePreferencesStore(
+        state => state.setShowSuspicious,
+    )
 
     const [draftShowOptedIn, setDraftShowOptedIn] = useState(showOptedIn)
     const [draftShowWatchAccounts, setDraftShowWatchAccounts] =
         useState(showWatchAccounts)
+    const [draftShowSuspicious, setDraftShowSuspicious] =
+        useState(showSuspicious)
 
     const handleToggleOptedIn = useCallback(() => {
         setDraftShowOptedIn(prev => !prev)
@@ -57,22 +67,31 @@ export const useNftFilterContent = (): UseNftFilterContentResult => {
         setDraftShowWatchAccounts(prev => !prev)
     }, [])
 
+    const handleToggleSuspicious = useCallback(() => {
+        setDraftShowSuspicious(prev => !prev)
+    }, [])
+
     const commitChanges = useCallback(() => {
         setShowOptedIn(draftShowOptedIn)
         setShowWatchAccounts(draftShowWatchAccounts)
+        setShowSuspicious(draftShowSuspicious)
     }, [
         draftShowOptedIn,
         draftShowWatchAccounts,
+        draftShowSuspicious,
         setShowOptedIn,
         setShowWatchAccounts,
+        setShowSuspicious,
     ])
 
     return {
         canShowOptedIn,
         showOptedIn: draftShowOptedIn,
         showWatchAccounts: draftShowWatchAccounts,
+        showSuspicious: draftShowSuspicious,
         handleToggleOptedIn,
         handleToggleWatchAccounts,
+        handleToggleSuspicious,
         commitChanges,
     }
 }

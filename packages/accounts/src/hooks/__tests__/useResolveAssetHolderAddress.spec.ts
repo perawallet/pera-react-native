@@ -33,6 +33,7 @@ import {
 } from '../useResolveAssetHolderAddress'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 const createWrapper = () => {
     const queryClient = new QueryClient({
@@ -47,7 +48,7 @@ const createWrapper = () => {
 }
 
 const renderResolver = () =>
-    renderHook(() => useResolveAssetHolderAddress(SCOPE), {
+    renderHook(() => useResolveAssetHolderAddress(), {
         wrapper: createWrapper(),
     })
 
@@ -70,7 +71,7 @@ describe('useResolveAssetHolderAddress', () => {
 
         const { result } = renderResolver()
 
-        await expect(result.current('123')).resolves.toBe('HOLDER_A')
+        await expect(result.current('123', SCOPE)).resolves.toBe('HOLDER_A')
     })
 
     it('keeps the selected account when it is one of the holders', async () => {
@@ -81,7 +82,7 @@ describe('useResolveAssetHolderAddress', () => {
 
         const { result } = renderResolver()
 
-        await expect(result.current('123')).resolves.toBe('SELECTED')
+        await expect(result.current('123', SCOPE)).resolves.toBe('SELECTED')
     })
 
     it('resolves null when no account holds the asset', async () => {
@@ -89,7 +90,7 @@ describe('useResolveAssetHolderAddress', () => {
 
         const { result } = renderResolver()
 
-        await expect(result.current('123')).resolves.toBeNull()
+        await expect(result.current('123', SCOPE)).resolves.toBeNull()
     })
 
     it('ignores holdings rows left behind by a removed account', async () => {
@@ -100,7 +101,7 @@ describe('useResolveAssetHolderAddress', () => {
 
         const { result } = renderResolver()
 
-        await expect(result.current('123')).resolves.toBe('HOLDER_B')
+        await expect(result.current('123', SCOPE)).resolves.toBe('HOLDER_B')
     })
 
     it('reads the holders table once per asset', async () => {
@@ -108,8 +109,8 @@ describe('useResolveAssetHolderAddress', () => {
 
         const { result } = renderResolver()
 
-        await result.current('123')
-        await result.current('123')
+        await result.current('123', SCOPE)
+        await result.current('123', SCOPE)
 
         expect(mocks.getAssetHolderAddresses).toHaveBeenCalledTimes(1)
     })
@@ -127,5 +128,30 @@ describe('useResolveAssetHolderAddress', () => {
         await expect(
             resolveAssetHolderAddress(queryClient, '123', SCOPE),
         ).resolves.toBe('HOLDER_B')
+    })
+
+    it("matches a holder by its address on the scope's chain", async () => {
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'universal',
+                custody: { kind: 'local', seed: null },
+                chains: {
+                    algorand: { address: 'ALGO_ADDRESS' },
+                    ethereum: { address: '0xETH_ADDRESS' },
+                },
+            },
+        ])
+        useAccountsStore.getState().setSelectedAccountId('universal')
+        mocks.getAssetHolderAddresses.mockResolvedValue(['0xETH_ADDRESS'])
+
+        const { result } = renderResolver()
+
+        await expect(result.current('native', ETH_SCOPE)).resolves.toBe(
+            '0xETH_ADDRESS',
+        )
+        expect(mocks.getAssetHolderAddresses).toHaveBeenCalledWith({
+            assetId: 'native',
+            scope: ETH_SCOPE,
+        })
     })
 })

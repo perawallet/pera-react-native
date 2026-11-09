@@ -58,7 +58,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
@@ -135,14 +135,14 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // sync service writes after fetching from algod).
         await seedAlgorandAccountState({
             accountAddress: addressOf(ACCOUNT_A),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
             nativeBalance: new Decimal(10_000_000), // 10 ALGO
             totalAssetsOptedIn: 1,
             minBalance: new Decimal(100_000),
         })
         await seedAlgorandAccountState({
             accountAddress: addressOf(ACCOUNT_B),
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
             nativeBalance: new Decimal(4_000_000), // 4 ALGO
             totalAssetsOptedIn: 1,
             minBalance: new Decimal(100_000),
@@ -155,13 +155,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_A),
             assetId: '0',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
             amount: new Decimal('10000000'), // 10 ALGO
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_B),
             assetId: '0',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
             amount: new Decimal('4000000'), // 4 ALGO
         })
 
@@ -170,13 +170,13 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_A),
             assetId: USDC_ASSET.assetId,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
             amount: new Decimal('50000000'), // 50 USDC
         })
         await insertAssetHolding({
             accountAddress: addressOf(ACCOUNT_B),
             assetId: USDC_ASSET.assetId,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
             amount: new Decimal('20000000'), // 20 USDC
         })
 
@@ -192,7 +192,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                     usdPrice: new Decimal('1.00'),
                 },
             ],
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: NETWORK } as const,
+            scope: { chainId: ALGORAND_CHAIN_ID, networkId: NETWORK } as const,
         })
 
         // Wrap in a fresh QueryClient so the queries can settle —
@@ -207,7 +207,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
 
         const { result } = renderHook(
             () => {
-                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const scope = useSelectedScope(ALGORAND_CHAIN_ID)
                 const accounts = useSigningAccounts(scope.chainId)
                 const balances = useAccountBalancesQuery(accounts, scope, true)
                 const portfolio = useAccountValueTotalsQuery(accounts, scope)
@@ -286,7 +286,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         )
         const { result } = renderHook(
             () => {
-                const scope = useSelectedScope(LEGACY_CHAIN_ID)
+                const scope = useSelectedScope(ALGORAND_CHAIN_ID)
                 const accounts = useSigningAccounts(scope.chainId)
                 const balances = useAccountBalancesQuery(accounts, scope, true)
                 const portfolio = useAccountValueTotalsQuery(accounts, scope)
@@ -304,7 +304,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         expect(result.current.portfolio.accountValueTotals.size).toBe(0)
     })
 
-    describe('with a second chain registered', () => {
+    describe('in developer mode on a test network', () => {
         const TEST_NETWORK = 'testnet' as const
 
         afterEach(() => {
@@ -313,12 +313,11 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             useNetworkStore.getState().resetState()
         })
 
-        it('Given developer mode puts the accounts on a test network, when the portfolio hooks resolve, then each account keeps its value but none reaches the fiat total', async () => {
-            registerEthereumChain()
+        const expectValueKeptOutOfFiatTotal = async () => {
             useNetworkStore.getState().setMode('developer')
             useAccountsStore.getState().setAccounts([ACCOUNT_A])
             const scope = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: TEST_NETWORK,
             } as const
             await seedAlgoAsset(TEST_NETWORK)
@@ -348,7 +347,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             )
             const { result } = renderHook(
                 () => {
-                    const selected = useSelectedScope(LEGACY_CHAIN_ID)
+                    const selected = useSelectedScope(ALGORAND_CHAIN_ID)
                     const accounts = useSigningAccounts(selected.chainId)
                     return {
                         selected,
@@ -381,6 +380,18 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             expect(result.current.portfolio.portfolioUsdValue?.isZero()).toBe(
                 true,
             )
+        }
+
+        it('Given a second chain is registered, when the portfolio hooks resolve, then each account keeps its value but none reaches the fiat total', async () => {
+            registerEthereumChain()
+
+            await expectValueKeptOutOfFiatTotal()
+        })
+
+        it('Given Algorand is the only chain registered, when the portfolio hooks resolve, then the account keeps its value but none reaches the fiat total', async () => {
+            expect(getProvider().chains.list()).toHaveLength(1)
+
+            await expectValueKeptOutOfFiatTotal()
         })
     })
 })

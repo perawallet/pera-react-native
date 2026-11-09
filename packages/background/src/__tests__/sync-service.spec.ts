@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { SyncService } from '../service/sync-service'
+import { MAX_UNREAD_SCOPE_MS, SyncService } from '../service/sync-service'
 import { createSyncStorePorts } from '../service/store-ports'
 import type { SyncServiceDeps } from '../models'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
@@ -107,10 +107,8 @@ const algorandAdapter: FixtureAdapter = {
 let mockAdapters: Record<string, FixtureAdapter> = {}
 // Chains with an assets adapter; read separately from the accounts adapters.
 const mockAssetsChains = new Set<string>()
-let mockSwitchedOff = new Set<string>()
-const mockIsSwitchedOff = vi.fn((chainId: string) =>
-    mockSwitchedOff.has(chainId),
-)
+// What the kill switch reads; the service never consults it.
+const mockIsSwitchedOff = vi.fn((_chainId: string) => false)
 let mockChainList: { id: string }[] = []
 const mockBroadcasters = new Set<string>()
 let mockConcurrencyLimits: { items: unknown[]; limit: number }[] = []
@@ -146,6 +144,7 @@ function cursorState(rounds: Record<string, number | null>) {
     }
 }
 const mockReconcileOpenSubmissions = vi.fn()
+const mockResetSubmissionBackoff = vi.fn()
 const mockLedgerListeners = new Set<() => void>()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -154,6 +153,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
     reconcileOpenSubmissions: (...args: unknown[]) =>
         mockReconcileOpenSubmissions(...args),
+    resetSubmissionBackoff: (...args: unknown[]) =>
+        mockResetSubmissionBackoff(...args),
     subscribeToSubmissionLedger: (listener: () => void) => {
         mockLedgerListeners.add(listener)
         return () => {
@@ -174,6 +175,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getAllHeldAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
     invalidateAccountQueries: vi.fn(),
     invalidateAccountQueriesForAddresses: vi.fn(),
+    invalidateAccountQueriesForScope: vi.fn(),
+    invalidateAccountChartsForAddresses: vi.fn(),
     fetchAndPersistAccount: vi.fn(() =>
         Promise.resolve({ changed: true, holdingsChanged: true }),
     ),
@@ -251,6 +254,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         isPeraNetworkError: (error: unknown) =>
             error instanceof Error && error.name === 'PeraNetworkError',
         getHttpStatus: actualShared.getHttpStatus,
+        isChainRefusedError: () => false,
         partition: (arr: unknown[], size: number) => {
             const result = []
             for (let i = 0; i < arr.length; i += size) {
@@ -260,6 +264,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         },
         calculateBackoff: (current: number, multiplier: number, max: number) =>
             Math.min(current * multiplier, max),
+        isBackoffDue: actualShared.isBackoffDue,
+        nextBackoff: actualShared.nextBackoff,
         // Unbounded stand-in: these tests assert what gets fetched and how failures
         // are handled, not the concurrency cap. The real limiting behaviour is
         // covered in shared's async tests — do not read a passing suite here as
@@ -285,12 +291,13 @@ describe('SyncService', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         mockNetwork = 'mainnet'
-        mockSwitchedOff = new Set()
+        mockIsSwitchedOff.mockImplementation(() => false)
         mockSyncedAt = {}
         mockAdapters = { algorand: algorandAdapter }
         mockChainList = [{ id: 'algorand' }]
         mockBroadcasters.clear()
         mockBroadcasters.add('algorand')
+        mockResetSubmissionBackoff.mockClear()
         mockAssetsChains.clear()
         mockAssetsChains.add('algorand')
         mockConcurrencyLimits = []
@@ -331,6 +338,7 @@ describe('SyncService', () => {
         mockReconcileOpenSubmissions.mockResolvedValue({
             probed: 0,
             confirmed: 0,
+            progressed: 0,
             failed: 0,
         })
     })
@@ -400,6 +408,7 @@ describe('SyncService', () => {
         mockReconcileOpenSubmissions.mockResolvedValue({
             probed: 1,
             confirmed: 1,
+            progressed: 0,
             failed: 0,
         })
 
@@ -456,7 +465,7 @@ describe('SyncService', () => {
         })
         mockReconcileOpenSubmissions.mockImplementationOnce(async () => {
             await inFlight
-            return { probed: 0, confirmed: 0, failed: 0 }
+            return { probed: 0, confirmed: 0, progressed: 0, failed: 0 }
         })
 
         service.start()
@@ -500,6 +509,7 @@ describe('SyncService', () => {
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             queryClient,
             mockAccounts.map(a => a.chains.algorand.address),
+            { includeCharts: false },
         )
     })
 
@@ -615,31 +625,18 @@ describe('SyncService', () => {
         service.stop()
     })
 
-    it('does no network work for a switched-off chain, and force-syncs once it is back on', async () => {
+    it('syncs and reconciles a chain whose Pera backend is switched off, as its RPC reads still run', async () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
-        mockSendShouldRefreshRequest.mockResolvedValue({
-            refresh: false,
-            round: null,
-        })
-        mockSwitchedOff.add('algorand')
+        mockIsSwitchedOff.mockImplementation(() => true)
 
         service.start()
         await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-
-        expect(mockIsSwitchedOff).toHaveBeenCalledWith('algorand')
-        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
-        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
-        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
-
-        mockSwitchedOff.delete('algorand')
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-
-        // The first tick that runs is still the unconditional force-sync.
-        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
-        expect(fetchAndPersistAccount).toHaveBeenCalled()
-
         service.stop()
+
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+        expect(mockIsSwitchedOff).not.toHaveBeenCalled()
     })
 
     it('calls shouldRefresh for the active network on subsequent ticks', async () => {
@@ -664,6 +661,105 @@ describe('SyncService', () => {
             null,
         )
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+    })
+
+    describe('reading past an unchanged change signal', () => {
+        const startAfterFirstPass = async () => {
+            mockSendShouldRefreshRequest.mockResolvedValue({
+                refresh: false,
+                round: null,
+            })
+            // A synced scope, so the signal answers for itself rather than
+            // reading a never-synced one.
+            service = new SyncService({
+                queryClient,
+                stores: {
+                    ...createSyncStorePorts(),
+                    getChangeCursor: () => 42,
+                },
+                chains: chainsDep(),
+            })
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            service.start()
+            await vi.advanceTimersByTimeAsync(50)
+            vi.mocked(fetchAndPersistAccount).mockClear()
+            mockSendShouldRefreshRequest.mockClear()
+            return vi.mocked(fetchAndPersistAccount)
+        }
+
+        it('trusts the signal until the scope has gone unread for the ceiling', async () => {
+            const accountReads = await startAfterFirstPass()
+
+            await vi.advanceTimersByTimeAsync(MAX_UNREAD_SCOPE_MS - 100)
+
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+            expect(accountReads).not.toHaveBeenCalled()
+        })
+
+        it('reads a scope whose signal keeps answering unchanged once the ceiling elapses', async () => {
+            const accountReads = await startAfterFirstPass()
+
+            await vi.advanceTimersByTimeAsync(
+                MAX_UNREAD_SCOPE_MS + POLL_INTERVAL,
+            )
+
+            expect(accountReads).toHaveBeenCalled()
+        })
+
+        it('reads every scope on reconnect without asking the signal', async () => {
+            const accountReads = await startAfterFirstPass()
+            onlineManager.setOnline(false)
+            onlineManager.setOnline(true)
+            await flushMicrotasks()
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+
+        it('reads every scope on a reconnect that lands mid-tick', async () => {
+            const accountReads = await startAfterFirstPass()
+            let releaseSignal: () => void = () => {}
+            mockSendShouldRefreshRequest.mockImplementationOnce(
+                () =>
+                    new Promise(resolve => {
+                        releaseSignal = () =>
+                            resolve({ refresh: false, round: null })
+                    }),
+            )
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+            onlineManager.setOnline(false)
+            onlineManager.setOnline(true)
+            releaseSignal()
+            await flushMicrotasks()
+            mockSendShouldRefreshRequest.mockClear()
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+
+        it('reads every scope on the tick after markAllScopesStale', async () => {
+            const accountReads = await startAfterFirstPass()
+
+            service.markAllScopesStale()
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+            expect(accountReads).toHaveBeenCalled()
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        })
+
+        it('keeps trusting the signal when started again, as after an iOS inactive blip', async () => {
+            const accountReads = await startAfterFirstPass()
+            service.stop()
+
+            service.start()
+            await flushMicrotasks()
+
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+            expect(accountReads).not.toHaveBeenCalled()
+        })
     })
 
     it('updates last refreshed round when refresh is needed', async () => {
@@ -1139,6 +1235,28 @@ describe('SyncService', () => {
         )
     })
 
+    describe('refreshSources', () => {
+        it('reads every source and invalidates the account queries once', async () => {
+            const { fetchAndPersistAccount, invalidateAccountQueries } =
+                await import('@perawallet/wallet-core-accounts')
+
+            await service.refreshSources([
+                { addresses: ['ADDR1'], scope: MAINNET },
+                { addresses: ['ADDR2'], scope: TESTNET },
+            ])
+
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR1',
+                MAINNET,
+            )
+            expect(fetchAndPersistAccount).toHaveBeenCalledWith(
+                'ADDR2',
+                TESTNET,
+            )
+            expect(invalidateAccountQueries).toHaveBeenCalledTimes(1)
+        })
+    })
+
     describe('refreshAccounts', () => {
         it('returns early when given an empty address list', async () => {
             const { fetchAndPersistAccount } =
@@ -1394,8 +1512,8 @@ describe('SyncService', () => {
     it('does not invalidate account queries when all account fetches are rate-limited', async () => {
         const {
             fetchAndPersistAccount,
-            invalidateAccountQueries,
             invalidateAccountQueriesForAddresses,
+            invalidateAccountQueriesForScope,
         } = await import('@perawallet/wallet-core-accounts')
 
         vi.mocked(fetchAndPersistAccount).mockRejectedValue(
@@ -1409,10 +1527,51 @@ describe('SyncService', () => {
         // No account fetch succeeded, so no per-account invalidation: nothing
         // account-scoped changed in the DB, and eagerly invalidating would
         // force a wide re-read with no new data. The asset/price phase still
-        // ran and persisted, so its broad invalidation is owed — stop() flushes
-        // it rather than dropping it.
+        // ran and persisted, so its network's invalidation is owed — stop()
+        // flushes it rather than dropping it.
         expect(invalidateAccountQueriesForAddresses).not.toHaveBeenCalled()
-        expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
+        expect(invalidateAccountQueriesForScope).toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: false },
+        )
+    })
+
+    it("reloads only the synced network's account queries after its price pass, leaving its charts", async () => {
+        const { invalidateAccountQueries, invalidateAccountQueriesForScope } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(50)
+        service.stop()
+
+        expect(invalidateAccountQueriesForScope).toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: false },
+        )
+        expect(invalidateAccountQueries).not.toHaveBeenCalled()
+    })
+
+    it("reloads a network's charts with its prices once five minutes have passed", async () => {
+        const { invalidateAccountQueriesForScope } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(4 * 60_000)
+        expect(invalidateAccountQueriesForScope).not.toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: true },
+        )
+        await vi.advanceTimersByTimeAsync(60_000 + POLL_INTERVAL + 50)
+        service.stop()
+
+        expect(invalidateAccountQueriesForScope).toHaveBeenCalledWith(
+            queryClient,
+            MAINNET,
+            { includeCharts: true },
+        )
     })
 
     it('does not invalidate asset queries when every asset and price batch fails', async () => {
@@ -1466,7 +1625,65 @@ describe('SyncService', () => {
         expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
             queryClient,
             ['ADDR1'],
+            { includeCharts: false },
         )
+    })
+
+    it('reloads the charts of accounts that changed at most once a minute, holding a later change until then', async () => {
+        const { fetchAndPersistAccount, invalidateAccountChartsForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: true,
+            round: null,
+        })
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(400)
+        const afterFirstTick = vi.mocked(invalidateAccountChartsForAddresses)
+            .mock.calls.length
+        await vi.advanceTimersByTimeAsync(30_000)
+        const halfAMinuteLater = vi.mocked(invalidateAccountChartsForAddresses)
+            .mock.calls.length
+        await vi.advanceTimersByTimeAsync(31_000)
+        service.stop()
+
+        expect(afterFirstTick).toBe(1)
+        expect(halfAMinuteLater).toBe(1)
+        expect(invalidateAccountChartsForAddresses).toHaveBeenCalledTimes(2)
+        expect(invalidateAccountChartsForAddresses).toHaveBeenLastCalledWith(
+            queryClient,
+            ['ADDR1'],
+        )
+    })
+
+    it("reloads a held change's charts within the minute even when the ticks after it are quiet", async () => {
+        const { fetchAndPersistAccount, invalidateAccountChartsForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest
+            .mockResolvedValueOnce({ refresh: true, round: null })
+            .mockResolvedValue({ refresh: false, round: null })
+        // A synced scope, so a tick whose signal answers unchanged reads nothing.
+        service = new SyncService({
+            queryClient,
+            stores: { ...createSyncStorePorts(), getChangeCursor: () => 42 },
+            chains: chainsDep(),
+        })
+
+        service.start()
+        await vi.advanceTimersByTimeAsync(61_000)
+        service.stop()
+
+        expect(invalidateAccountChartsForAddresses).toHaveBeenCalledTimes(2)
     })
 
     describe('pollIntervalMs', () => {
@@ -2143,10 +2360,14 @@ describe('SyncService', () => {
                 )
                 expect(
                     invalidateAccountQueriesForAddresses,
-                ).toHaveBeenCalledWith(queryClient, algorandAddresses)
+                ).toHaveBeenCalledWith(queryClient, algorandAddresses, {
+                    includeCharts: false,
+                })
                 expect(
                     invalidateAccountQueriesForAddresses,
-                ).toHaveBeenCalledWith(queryClient, ['0xabc'])
+                ).toHaveBeenCalledWith(queryClient, ['0xabc'], {
+                    includeCharts: false,
+                })
             })
 
             it("refreshes a records chain's History for the accounts that changed", async () => {
@@ -2749,7 +2970,7 @@ describe('SyncService', () => {
                 }
             })
 
-            it('forgets a backed-off scope once it leaves the synced set, so switching it back on syncs at once and backs off from base', async () => {
+            it('forgets a backed-off scope once it leaves the synced set, so its return syncs at once and backs off from base', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
 
@@ -2758,9 +2979,10 @@ describe('SyncService', () => {
                 // Ethereum's interval is now 12 s, next due at 18 s.
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
 
-                mockSwitchedOff.add('ethereum')
+                const { ethereum } = mockAdapters
+                delete mockAdapters.ethereum
                 await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-                mockSwitchedOff.delete('ethereum')
+                mockAdapters.ethereum = ethereum
                 await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(3)
 
@@ -2772,7 +2994,7 @@ describe('SyncService', () => {
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(4)
             })
 
-            it('forgets per-scope backoff on reconnect, so the reconnect tick syncs every scope', async () => {
+            it('forgets per-scope and pending-send backoff on reconnect, so the reconnect tick syncs every scope', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
 
@@ -2786,13 +3008,16 @@ describe('SyncService', () => {
                     await vi.advanceTimersByTimeAsync(50)
 
                     expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                    expect(mockResetSubmissionBackoff).toHaveBeenCalledWith(
+                        'algorand',
+                    )
                 } finally {
                     onlineManager.setOnline(true)
                     service.stop()
                 }
             })
 
-            it('forgets per-scope backoff on restart', async () => {
+            it('forgets per-scope and pending-send backoff on restart', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
 
@@ -2805,6 +3030,9 @@ describe('SyncService', () => {
                 service.stop()
 
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                expect(mockResetSubmissionBackoff).toHaveBeenCalledWith(
+                    'algorand',
+                )
             })
         })
 
@@ -2835,21 +3063,18 @@ describe('SyncService', () => {
             }
         })
 
-        it('skips a switched-off chain while Algorand syncs, and force-syncs it once back on', async () => {
+        it('syncs a chain whose Pera backend is switched off alongside Algorand', async () => {
             addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
-            mockSwitchedOff.add('ethereum')
+            mockIsSwitchedOff.mockImplementation(
+                chainId => chainId === 'ethereum',
+            )
 
             service.start()
             await vi.advanceTimersByTimeAsync(50)
-            expect(await accountReadsOn(ETHEREUM)).toEqual([])
-            expect(await accountReadsOn(MAINNET)).toEqual(['ADDR1', 'ADDR2'])
-
-            mockSwitchedOff.delete('ethereum')
-            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
             service.stop()
 
             expect(await accountReadsOn(ETHEREUM)).toEqual(['0xabc'])
-            expect(ethereumSignal).not.toHaveBeenCalled()
+            expect(await accountReadsOn(MAINNET)).toEqual(['ADDR1', 'ADDR2'])
         })
 
         it('skips an account entry on a chain this build does not register', async () => {
@@ -2892,6 +3117,86 @@ describe('SyncService', () => {
             }
         })
 
+        describe('a submission settling', () => {
+            const settleOnEthereum = (status: 'confirmed' | 'failed') =>
+                mockReconcileOpenSubmissions.mockImplementation(
+                    async (chainId: string) => ({
+                        probed: 1,
+                        confirmed:
+                            chainId === 'ethereum' && status === 'confirmed'
+                                ? 1
+                                : 0,
+                        progressed: 0,
+                        failed:
+                            chainId === 'ethereum' && status === 'failed'
+                                ? 1
+                                : 0,
+                    }),
+                )
+            const settleNothing = () =>
+                mockReconcileOpenSubmissions.mockResolvedValue({
+                    probed: 0,
+                    confirmed: 0,
+                    progressed: 0,
+                    failed: 0,
+                })
+            const startAfterFirstPass = async () => {
+                mockBroadcasters.add('ethereum')
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                service = new SyncService({
+                    queryClient,
+                    stores: createSyncStorePorts(),
+                    chains: chainsDep(),
+                })
+                service.start()
+                // The never-synced scopes' forced pass.
+                await vi.advanceTimersByTimeAsync(50)
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                vi.mocked(fetchAndPersistAccount).mockClear()
+                ethereumSignal.mockClear()
+                mockSendShouldRefreshRequest.mockClear()
+            }
+
+            it.each(['confirmed', 'failed'] as const)(
+                're-reads the accounts of a chain that settled a %s submission, without asking its change signal',
+                async status => {
+                    await startAfterFirstPass()
+                    settleOnEthereum(status)
+
+                    await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+                    expect(await accountReadsOn(ETHEREUM)).toContain('0xabc')
+                    expect(ethereumSignal).not.toHaveBeenCalled()
+                },
+            )
+
+            it('asks the change signal again on the tick after the forced pass', async () => {
+                await startAfterFirstPass()
+                settleOnEthereum('confirmed')
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                vi.mocked(fetchAndPersistAccount).mockClear()
+                ethereumSignal.mockClear()
+                settleNothing()
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+                expect(ethereumSignal).toHaveBeenCalledTimes(1)
+                expect(await accountReadsOn(ETHEREUM)).toEqual([])
+            })
+
+            it("leaves another chain's change signal in charge", async () => {
+                await startAfterFirstPass()
+                settleOnEthereum('confirmed')
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+                expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+            })
+        })
+
         it('invalidates only the chain that settled', async () => {
             const {
                 invalidateTransactionQueries,
@@ -2903,6 +3208,7 @@ describe('SyncService', () => {
                 async (chainId: string) => ({
                     probed: 1,
                     confirmed: chainId === 'ethereum' ? 1 : 0,
+                    progressed: 0,
                     failed: 0,
                 }),
             )
@@ -2921,12 +3227,33 @@ describe('SyncService', () => {
             expect(invalidateTransactionQueries).not.toHaveBeenCalled()
         })
 
+        it('invalidates a row that only progressed, such as one moving to confirming', async () => {
+            const { invalidateTransactionQueriesForChain } =
+                await import('@perawallet/wallet-core-transactions')
+            mockReconcileOpenSubmissions.mockResolvedValue({
+                probed: 1,
+                confirmed: 0,
+                progressed: 1,
+                failed: 0,
+            })
+
+            service.start()
+            await flushMicrotasks()
+            service.stop()
+
+            expect(invalidateTransactionQueriesForChain).toHaveBeenCalledWith(
+                queryClient,
+                'algorand',
+            )
+        })
+
         it('invalidates a failed settle on its own chain too', async () => {
             const { invalidateTransactionQueriesForChain } =
                 await import('@perawallet/wallet-core-transactions')
             mockReconcileOpenSubmissions.mockResolvedValue({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 1,
             })
 

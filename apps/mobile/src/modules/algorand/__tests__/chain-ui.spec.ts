@@ -14,10 +14,12 @@
 
 import { describe, expect, it } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
+import {
+    ALGORAND_CHAIN_ID,
+    algorandDescriptor,
+} from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { Decimal } from 'decimal.js'
 import { algorandChainUi, resolveAlgorandAssetAbout } from '../chain-ui'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const about = (isNativeAsset: boolean, explorerUrl: string | undefined) =>
     resolveAlgorandAssetAbout({
@@ -25,7 +27,7 @@ const about = (isNativeAsset: boolean, explorerUrl: string | undefined) =>
             assetId: '31566704',
             peraMetadata: { explorerUrl },
         } as PeraAsset,
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+        scope: { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const,
         descriptor: algorandDescriptor,
         isNativeAsset,
     })
@@ -34,7 +36,7 @@ describe('resolveAlgorandAssetAbout', () => {
     it('labels an ASA with its ASA id and url and links it to Pera Explorer', () => {
         expect(
             about(false, 'https://explorer.perawallet.app/asset/31566704'),
-        ).toEqual({
+        ).toStrictEqual({
             idLabelKey: 'asset_details.about.asa_id',
             urlLabelKey: 'asset_details.about.asa_url',
             explorerLink: {
@@ -45,7 +47,7 @@ describe('resolveAlgorandAssetAbout', () => {
     })
 
     it('hides the id row for ALGO and links it to Algoscan', () => {
-        expect(about(true, 'https://algoscan.app/asset/0')).toEqual({
+        expect(about(true, 'https://algoscan.app/asset/0')).toStrictEqual({
             idLabelKey: null,
             urlLabelKey: 'asset_details.about.url',
             explorerLink: {
@@ -67,7 +69,10 @@ describe('algorandChainUi.assetDetails.resolveSupply', () => {
     const supplyOf = (totalSupply: Decimal) =>
         algorandChainUi.assetDetails!.resolveSupply({
             asset: { assetId: '31566704', totalSupply } as PeraAsset,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             descriptor: algorandDescriptor,
             isNativeAsset: false,
         })

@@ -40,12 +40,12 @@ import {
     type Algo25KeyResult,
     type HDWalletKeyResult,
 } from '@perawallet/wallet-core-kms'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import {
     useMnemonicBackupStore,
     useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { BackupInfoScreen } from '@modules/backup/screens/BackupInfoScreen'
 import { BackupReminderWriteDownScreen } from '@modules/backup/screens/BackupReminderWriteDownScreen'
@@ -351,7 +351,7 @@ describe('Flow: Account backup', () => {
         // marked backed up yet.
         const requires = renderHook(
             ({ account }: { account: WalletAccount }) =>
-                useRequiresMnemonicBackup(account, LEGACY_CHAIN_ID),
+                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
             { initialProps: { account: rootAccount } },
         )
         expect(requires.result.current).toBe(true)

@@ -16,13 +16,21 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { mapWithConcurrency } from '@perawallet/wallet-core-shared'
-import type { AccountChains, LocalAccount, WalletAccount } from './models'
+import type {
+    AccountChains,
+    LocalAccount,
+    WalletAccount,
+    WalletCandidates,
+    WalletDiscoveryProgress,
+} from './models'
 import {
     buildAccount,
+    hdIndexOf,
     isEnabledByDefault,
     preferDefaultChain,
     withEnablement,
 } from './credentials'
+import { createWalletDiscoveryTracker } from './discovery-progress'
 import { recordAuthority } from './store/recordAuthority'
 import {
     accountsChainAdapters,
@@ -44,6 +52,8 @@ type DiscoverAccountsParams = {
     walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
+    /** Once aborted, no further batch is probed. */
+    signal?: AbortSignal
 }
 
 export async function discoverAccounts({
@@ -52,6 +62,7 @@ export async function discoverAccounts({
     walletKeyId,
     accountGapLimit,
     keyIndexGapLimit,
+    signal,
 }: DiscoverAccountsParams): Promise<LocalAccount[]> {
     const adapter = accountsChainAdapters.get(scope.chainId)
     const codec = addressCodecs.get(scope.chainId)
@@ -84,6 +95,7 @@ export async function discoverAccounts({
         const activity = await adapter.checkActivity(
             accounts.map(addressOf),
             scope,
+            signal,
         )
         hasProbeResolved = true
         return accounts.map(
@@ -95,6 +107,7 @@ export async function discoverAccounts({
         probe,
         accountGapLimit,
         keyIndexGapLimit,
+        signal,
     })
 
     // With no probe answered, "no activity" is unknown, not empty: return
@@ -114,6 +127,11 @@ type DiscoverWalletCandidatesParams = {
     /** The in-memory XHD root; the caller keeps ownership. */
     rootKey?: Uint8Array
     onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
+    /** Once aborted, no further batch is probed; the walk resolves to what it found. */
+    signal?: AbortSignal
+    onProgress?: (progress: WalletDiscoveryProgress) => void
+    /** True for an active index the wallet already holds, which isn't counted as found. */
+    isHeld?: (found: ProbedHdIndex) => boolean
 }
 
 /**
@@ -121,36 +139,52 @@ type DiscoverWalletCandidatesParams = {
  * account per index active on any of them, by path: the 0/0 account alone when
  * none is. Each carries an entry on every default chain plus every chain it is
  * active on. `walletKeyId` must already be in the keystore when a chain in
- * `chainIds` has no in-memory public-key getter. Empty when no probe answered,
- * as "no activity" is unknown then.
+ * `chainIds` has no in-memory public-key getter. No accounts when no probe
+ * answered, as "no activity" is unknown then. `failedChainIds` names the
+ * chains that couldn't be checked, so a slow or down chain never blocks the
+ * rest.
  */
 export async function discoverWalletCandidates({
     walletKeyId,
     chainIds,
     rootKey,
     onUnusedKeys,
-}: DiscoverWalletCandidatesParams): Promise<LocalAccount[]> {
+    signal,
+    onProgress,
+    isHeld = () => false,
+}: DiscoverWalletCandidatesParams): Promise<WalletCandidates> {
     let hasProbeAnswered = false
+    const tracker = createWalletDiscoveryTracker({
+        chainIds,
+        onProgress,
+        isHeld,
+    })
     const probed = await discoverWalletActivity({
         walletId: walletKeyId,
         chainIds,
         rootKey,
         onUnusedKeys,
+        signal,
         onProbeAnswered: () => {
             hasProbeAnswered = true
         },
+        onProbeSettled: tracker.onProbeSettled,
+        onBatchProbed: tracker.onBatchProbed,
+        onFound: tracker.onFound,
     })
-    if (!hasProbeAnswered) return []
+    const failedChainIds = tracker.failedChainIds(signal?.aborted === true)
+    if (!hasProbeAnswered) return { accounts: [], failedChainIds }
 
     const isActive = ({ active }: ProbedHdIndex) =>
         Object.keys(active).length > 0
     const origin = (entry: ProbedHdIndex) =>
         entry.index.account === 0 && entry.index.keyIndex === 0
-    const selected = probed.some(isActive)
-        ? probed.filter(isActive)
-        : probed.filter(origin)
+    const isOriginFallback = !probed.some(isActive)
+    const selected = isOriginFallback
+        ? probed.filter(origin)
+        : probed.filter(isActive)
 
-    return selected.flatMap(({ index, derived, active }) => {
+    const accounts = selected.flatMap(({ index, derived, active }) => {
         const chains: AccountChains = {}
         for (const chainId of chainIds) {
             const activeEntry = active[chainId]
@@ -179,6 +213,63 @@ export async function discoverWalletCandidates({
             }),
         ]
     })
+    return { accounts, failedChainIds, isOriginFallback }
+}
+
+/**
+ * A retry adds to the walk before it, so one that hears from fewer chains drops
+ * no account found active: an index keeps every chain either walk read, and a
+ * chain counts as checked once either walk heard from it.
+ */
+export const mergeWalletCandidates = (
+    previous: WalletCandidates,
+    next: WalletCandidates,
+): WalletCandidates => {
+    const hasActivity = ({ accounts, isOriginFallback }: WalletCandidates) =>
+        accounts.length > 0 && !isOriginFallback
+    // The first account offered for want of activity goes once either walk
+    // finds some, as a single walk that found it would not offer it.
+    const kept = [
+        ...(previous.isOriginFallback && hasActivity(next)
+            ? []
+            : previous.accounts),
+        ...(next.isOriginFallback && hasActivity(previous)
+            ? []
+            : next.accounts),
+    ]
+    const byIndex = new Map<string, LocalAccount>()
+    const unindexed: LocalAccount[] = []
+    for (const account of kept) {
+        const index = hdIndexOf(account)
+        if (!index) {
+            unindexed.push(account)
+            continue
+        }
+        const key = hdPathKey(index)
+        const earlier = byIndex.get(key)
+        byIndex.set(
+            key,
+            earlier
+                ? {
+                      ...account,
+                      chains: { ...earlier.chains, ...account.chains },
+                  }
+                : account,
+        )
+    }
+    const accounts = [...byIndex.values()].sort((a, b) => {
+        const left = hdIndexOf(a)!
+        const right = hdIndexOf(b)!
+        return left.account - right.account || left.keyIndex - right.keyIndex
+    })
+    return {
+        accounts: [...accounts, ...unindexed],
+        failedChainIds: previous.failedChainIds.filter(chainId =>
+            next.failedChainIds.includes(chainId),
+        ),
+        isOriginFallback:
+            kept.length > 0 && !hasActivity(previous) && !hasActivity(next),
+    }
 }
 
 type DiscoverDelegatedAccountsParams = {

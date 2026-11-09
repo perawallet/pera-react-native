@@ -23,6 +23,7 @@ import {
 } from './chain-state'
 import { ethereumHdKeyId } from './hd-derivation'
 import { ethereumKindIdOf, ethereumLocalKeyKinds } from './local-key-kinds'
+import type { TokenSightings } from './token-detection'
 import {
     formatEthereumPrivateKey,
     parseEthereumPrivateKey,
@@ -39,9 +40,13 @@ export const createEthereumAccountsAdapter = (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokens?: ListedTokens,
+    tokenSightings?: TokenSightings,
 ): AccountsChainAdapter => ({
-    ...createEthereumAccountStateOps(ctx, chain, { listedTokens }),
-    ...createEthereumBalanceHistoryOps(ctx, chain),
+    ...createEthereumAccountStateOps(ctx, chain, {
+        listedTokens,
+        tokenSightings,
+    }),
+    ...createEthereumBalanceHistoryOps(ctx, chain, Date.now, listedTokens),
     toChainState: toEthereumChainState,
     summarizeChainState: summarizeEthereumChainState,
     hdKeyPairId: (seedKeyId, { account, keyIndex }) =>

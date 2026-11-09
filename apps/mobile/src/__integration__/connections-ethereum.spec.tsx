@@ -27,6 +27,7 @@ import {
     type Mock,
 } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import { http, HttpResponse } from 'msw'
@@ -813,7 +814,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeNull()
             })
 
-            it('Given a call to a contract Pera cannot read, when it is queued, then its selector and call data sit collapsed under Advanced until opened', async () => {
+            it('Given a call to a contract Pera cannot read, when it is queued, then its review leaves the raw call to View details, which shows it with its pricing and returns to the review', async () => {
                 const walletKit = await settle()
                 renderSignReview()
                 const data = `0x3593564c${'0'.repeat(63)}1${'0'.repeat(64)}`
@@ -830,37 +831,69 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     () => {
                         expect(
                             screen.getAllByTestId(
-                                'ethereum_contract_call_advanced',
+                                'ethereum_contract_call_warning',
                             ),
                         ).not.toHaveLength(0)
                     },
                     { timeout: 5000 },
                 )
-                const [advanced] = screen.getAllByTestId(
-                    'ethereum_contract_call_advanced',
-                )
-                // The panel's collapsed state is asserted in the unit specs;
-                // this flow's renderer drops the attribute that shows it.
-                expect(advanced.textContent).toContain(
-                    'transactions.contract_call.advanced',
-                )
-                expect(advanced.textContent).toContain('0x3593564c')
                 expect(
-                    screen.getAllByTestId('ethereum_contract_call_warning'),
-                ).not.toHaveLength(0)
+                    screen.queryByTestId('ethereum_contract_call_advanced'),
+                ).toBeNull()
+                expect(
+                    screen.queryByTestId('ethereum_contract_call_data'),
+                ).toBeNull()
 
                 fireEvent.click(
-                    screen.getAllByText(
-                        'transactions.contract_call.advanced',
-                    )[0],
+                    screen.getAllByTestId('ethereum_view_details')[0],
                 )
 
+                await waitFor(() => {
+                    expect(
+                        screen.getAllByTestId('transaction_details_screen'),
+                    ).not.toHaveLength(0)
+                })
+                expect(
+                    screen.getAllByTestId('ethereum_contract_call_selector')[0]
+                        .textContent,
+                ).toContain('0x3593564c')
                 fireEvent.click(screen.getAllByText('common.show_more')[0])
-
                 expect(
                     screen.getAllByTestId('ethereum_contract_call_data')[0]
                         .textContent,
                 ).toContain(data)
+
+                vi.mocked(Clipboard.setStringAsync).mockClear()
+                fireEvent.click(
+                    screen.getAllByTestId(
+                        'ethereum_contract_call_data_copy',
+                    )[0],
+                )
+                expect(Clipboard.setStringAsync).toHaveBeenCalledWith(data)
+                for (const testID of [
+                    'ethereum_nonce',
+                    'ethereum_gas_limit',
+                    'ethereum_max_fee_per_gas',
+                    'ethereum_max_priority_fee_per_gas',
+                ]) {
+                    expect(screen.getAllByTestId(testID)).not.toHaveLength(0)
+                }
+
+                fireEvent.click(
+                    screen.getAllByTestId('navigation_back_button')[0],
+                )
+
+                await waitFor(() => {
+                    expect(
+                        screen.queryByTestId('transaction_details_screen'),
+                    ).toBeNull()
+                })
+                expect(
+                    screen.getAllByTestId('ethereum_contract_call_warning'),
+                ).not.toHaveLength(0)
+                expect(
+                    screen.getAllByTestId('signing-confirm-slide'),
+                ).not.toHaveLength(0)
             })
 
             it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
@@ -1066,7 +1099,9 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText('transactions.list_item.approval'),
+                        screen.getAllByText(
+                            /^signing\.spend_approval\.allow_title/,
+                        ),
                     ).not.toHaveLength(0)
                     expect(
                         screen.getAllByText('signing.spend_approval.unlimited'),
@@ -2074,6 +2109,56 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ])
                     })
                     expect(walletKit.updateSession).not.toHaveBeenCalled()
+                })
+
+                it('Given the wallet in developer mode, when a dApp naming mainnet first connects, then it hears chainChanged for Sepolia and nothing tells the user', async () => {
+                    act(() => {
+                        useNetworkStore.getState().setMode('developer')
+                    })
+                    const walletKit = await settleEthereum([
+                        ETH_MAINNET,
+                        ETH_SEPOLIA,
+                    ])
+
+                    await waitFor(() => {
+                        expect(emitted(walletKit)).toEqual([
+                            {
+                                topic: V2_SESSION_TOPIC,
+                                event: {
+                                    name: 'chainChanged',
+                                    data: '0xaa36a7',
+                                },
+                                chainId: ETH_SEPOLIA,
+                            },
+                        ])
+                    })
+
+                    emitRequest(walletKit, {
+                        id: 35,
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x1' }],
+                        chainId: ETH_MAINNET,
+                    })
+                    emitRequest(walletKit, {
+                        id: 36,
+                        method: 'eth_chainId',
+                        params: [],
+                        chainId: ETH_MAINNET,
+                    })
+
+                    await waitFor(() => {
+                        expect(
+                            walletKit.respondSessionRequest,
+                        ).toHaveBeenCalledTimes(2)
+                    })
+                    const sent = answers(walletKit)
+                    expect(sent.get(35)).toMatchObject({
+                        error: { code: 4901 },
+                    })
+                    expect(sent.get(36)).toMatchObject({
+                        error: { code: 4901 },
+                    })
+                    expect(toastBodies()).toEqual([])
                 })
 
                 it('Given the session holds the only Ethereum account, when the wallet removes it, then the dApp hears accountsChanged with no accounts', async () => {

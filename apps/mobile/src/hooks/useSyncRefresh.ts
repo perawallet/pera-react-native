@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useState } from 'react'
-import { getSyncService } from '@perawallet/wallet-core-background'
+import {
+    getSyncService,
+    type RefreshSource,
+} from '@perawallet/wallet-core-background'
 import {
     toScopeKey,
     type ChainScope,
@@ -37,6 +40,44 @@ const inFlightRefreshes = new Map<string, Promise<void>>()
 const buildRefreshKey = (addresses: string[], scope: ChainScope) =>
     `${toScopeKey(scope)}:${[...addresses].sort().join(',')}`
 
+const refreshOnce = async (
+    key: string,
+    start: () => Promise<void>,
+): Promise<void> => {
+    const pending = inFlightRefreshes.get(key)
+    if (pending) return pending
+    // The sync service owns the invalidation fan-out; a second call here would
+    // re-fire it un-debounced for no new data.
+    const work = (async () => start())()
+    inFlightRefreshes.set(key, work)
+    try {
+        await work
+    } finally {
+        inFlightRefreshes.delete(key)
+    }
+}
+
+const useRefreshRunner = (run: () => Promise<void>): UseSyncRefreshResult => {
+    const isMounted = useIsMounted()
+    const [isRefreshing, setIsRefreshing] = useState(false)
+
+    const refresh = useCallback(() => {
+        setIsRefreshing(true)
+        void (async () => {
+            try {
+                await run()
+            } catch {
+                // Chiefly getSyncService() before init, but a pull gesture must
+                // never surface a crash — the periodic tick is the safety net.
+            } finally {
+                if (isMounted()) setIsRefreshing(false)
+            }
+        })()
+    }, [isMounted, run])
+
+    return { isRefreshing, refresh }
+}
+
 /**
  * Pull-to-refresh for DB-first screens. Their queries hold
  * `staleTime: Infinity` over SQLite, so `refetch()` only re-reads the same
@@ -49,39 +90,33 @@ const buildRefreshKey = (addresses: string[], scope: ChainScope) =>
 export const useSyncRefresh = ({
     addresses,
     scope,
-}: UseSyncRefreshParams): UseSyncRefreshResult => {
-    const isMounted = useIsMounted()
-    const [isRefreshing, setIsRefreshing] = useState(false)
+}: UseSyncRefreshParams): UseSyncRefreshResult =>
+    useRefreshRunner(
+        useCallback(
+            () =>
+                refreshOnce(buildRefreshKey(addresses, scope), () =>
+                    getSyncService().refreshAccounts(addresses, scope),
+                ),
+            [addresses, scope],
+        ),
+    )
 
-    const refresh = useCallback(() => {
-        const key = buildRefreshKey(addresses, scope)
-        setIsRefreshing(true)
-        void (async () => {
-            try {
-                const pending = inFlightRefreshes.get(key)
-                if (pending) {
-                    await pending
-                    return
-                }
-
-                // refreshAccounts owns the invalidation fan-out; a second call
-                // here would re-fire it un-debounced for no new data.
-                const work = (async () =>
-                    getSyncService().refreshAccounts(addresses, scope))()
-                inFlightRefreshes.set(key, work)
-                try {
-                    await work
-                } finally {
-                    inFlightRefreshes.delete(key)
-                }
-            } catch {
-                // Chiefly getSyncService() before init, but a pull gesture must
-                // never surface a crash — the periodic tick is the safety net.
-            } finally {
-                if (isMounted()) setIsRefreshing(false)
-            }
-        })()
-    }, [addresses, isMounted, scope])
-
-    return { isRefreshing, refresh }
-}
+/** `useSyncRefresh` over every network a screen shows, in one pull. */
+export const useSyncRefreshAll = (
+    sources: readonly RefreshSource[],
+): UseSyncRefreshResult =>
+    useRefreshRunner(
+        useCallback(
+            () =>
+                refreshOnce(
+                    sources
+                        .map(({ addresses, scope }) =>
+                            buildRefreshKey(addresses, scope),
+                        )
+                        .sort()
+                        .join('|'),
+                    () => getSyncService().refreshSources(sources),
+                ),
+            [sources],
+        ),
+    )

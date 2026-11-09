@@ -52,7 +52,7 @@ describe('no-restricted-properties', () => {
                     'packages/chain-algorand/src/signing/local-key/**',
                     'packages/passkeys/src/**',
                     'packages/backup/src/**',
-                    'extensions/keystore-chrome/src/**',
+                    'extensions/vault-chrome/src/**',
                     'extensions/provider/src/**',
                     'extensions/passkey-autofill/src/**',
                 ],

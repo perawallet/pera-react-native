@@ -19,6 +19,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type { Hex } from 'viem'
 import type {
@@ -27,13 +28,15 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
+import { SHOULD_REFRESH_PATH } from '../endpoints'
 import { peraEvmHandlers, type ShouldRefreshRequest } from '../msw-handlers'
 import {
     EvmRpcErrorFixture,
     evmRpcHandlers,
 } from '../../blockchain/msw-handlers'
 import { PERA_URL } from '../../__tests__/pera-backend'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { testChainContext } from '../../__tests__/context'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -210,6 +213,196 @@ describe('createEthereumAccountStateOps', () => {
         })
     })
 
+    describe('fetchChangeSignal when the token list comes back', () => {
+        const setup = () => {
+            let services: readonly string[] = []
+            const ctx: ChainContext = {
+                ...contextWith(),
+                getPeraBackend: () => ({
+                    baseUrl: PERA_URL,
+                    services: new Set(services),
+                }),
+            }
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x64' },
+                }),
+                ...peraEvmHandlers({
+                    baseUrl: PERA_URL,
+                    blockFollowing: { refresh: false },
+                }),
+            )
+            return {
+                ops: createEthereumAccountStateOps(ctx, ETHEREUM),
+                backOn: () => {
+                    services = ['blockFollowing', 'assets']
+                },
+            }
+        }
+
+        it('reports a change after even a single read made without the list, until a pass with it has caught up', async () => {
+            const { ops, backOn } = setup()
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            backOn()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 100 })
+
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        })
+
+        it('keeps reporting a change while the first pass with the list fails', async () => {
+            const { ops, backOn } = setup()
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            backOn()
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: PERA_URL,
+                    whitelist: 502,
+                }),
+            )
+            await expect(
+                ops.fetchAccountState(ADDRESS, SCOPE, {
+                    priorChainState: undefined,
+                }),
+            ).rejects.toBeDefined()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 100 })
+        })
+
+        it('keeps reporting a change for an account whose read failed in a later batch, though an earlier batch of the scope succeeded', async () => {
+            const OTHER: Hex = '0x00000000000000000000000000000000000000bb'
+            const { ops, backOn } = setup()
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            await ops.fetchAccountState(OTHER, SCOPE, {
+                priorChainState: undefined,
+            })
+            backOn()
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: {
+                        eth_blockNumber: '0x64',
+                        eth_getTransactionCount: params =>
+                            (params[0] as string).toLowerCase() === OTHER
+                                ? new EvmRpcErrorFixture(-32_000, 'node down')
+                                : '0x1',
+                    },
+                }),
+                ...peraEvmHandlers({ baseUrl: PERA_URL }),
+            )
+
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            await expect(
+                ops.fetchAccountState(OTHER, SCOPE, {
+                    priorChainState: undefined,
+                }),
+            ).rejects.toBeDefined()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS, OTHER], SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 100 })
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        })
+
+        it('answers from the backend for a scope that never read without the list', async () => {
+            const { ops, backOn } = setup()
+            backOn()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        })
+    })
+
+    describe('fetchChangeSignal pacing without block following', () => {
+        const BASE_SCOPE = evmScopeOf(BASE)
+        const headAt = (head: () => number) =>
+            evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_blockNumber: () => `0x${head().toString(16)}`,
+                },
+            })
+        const baseOps = () =>
+            createEthereumAccountStateOps(
+                testChainContext({ chain: BASE }),
+                BASE,
+            )
+
+        it('runs one account pass for two ticks 3 seconds apart on a 2-second chain', async () => {
+            let head = 115
+            server.use(...headAt(() => head))
+            const ops = baseOps()
+
+            const first = await ops.fetchChangeSignal(
+                [ADDRESS],
+                BASE_SCOPE,
+                100,
+            )
+            // 3 seconds later: one or two more blocks.
+            head = 117
+            const second = await ops.fetchChangeSignal(
+                [ADDRESS],
+                BASE_SCOPE,
+                first.cursor,
+            )
+
+            expect(first).toEqual({ changed: true, cursor: 115 })
+            expect(second).toEqual({ changed: false, cursor: 115 })
+        })
+
+        it('keeps the cursor on a 2-second chain until the head is 30 seconds of blocks past it', async () => {
+            let head = 114
+            server.use(...headAt(() => head))
+            const ops = baseOps()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], BASE_SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+
+            head = 115
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], BASE_SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 115 })
+        })
+
+        it('waits 30 seconds of blocks on a 12-second chain too, rounding up to 3 blocks', async () => {
+            let head = 12
+            server.use(...headAt(() => head))
+            const ops = createEthereumAccountStateOps(contextWith(), ETHEREUM)
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 10),
+            ).resolves.toEqual({ changed: false, cursor: 10 })
+
+            head = 13
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 10),
+            ).resolves.toEqual({ changed: true, cursor: 13 })
+        })
+    })
+
     describe('fetchChangeSignal over Pera block following', () => {
         const signalWith = (
             cursor: number | null,
@@ -280,14 +473,32 @@ describe('createEthereumAccountStateOps', () => {
             })
         })
 
-        it('keeps the cursor on a fail-open refresh without a round', async () => {
-            server.use(
-                ...peraEvmHandlers({ blockFollowing: { refresh: true } }),
-            )
+        describe('on a fail-open refresh without a round', () => {
+            const failOpenAtHead = (head: Hex) =>
+                server.use(
+                    ...peraEvmHandlers({ blockFollowing: { refresh: true } }),
+                    ...evmRpcHandlers({
+                        rpcUrl: RPC_URL,
+                        responses: { eth_blockNumber: head },
+                    }),
+                )
 
-            await expect(signalWith(40)).resolves.toEqual({
-                changed: true,
-                cursor: 40,
+            it('keeps the cursor until the head is far enough past it', async () => {
+                failOpenAtHead('0x2a')
+
+                await expect(signalWith(40)).resolves.toEqual({
+                    changed: false,
+                    cursor: 40,
+                })
+            })
+
+            it('reports a change and takes the head once it is far enough past the cursor', async () => {
+                failOpenAtHead('0x2b')
+
+                await expect(signalWith(40)).resolves.toEqual({
+                    changed: true,
+                    cursor: 43,
+                })
             })
         })
 
@@ -432,6 +643,48 @@ describe('createEthereumAccountStateOps', () => {
                 expect(shouldRefreshRequests).toBe(1)
             },
         )
+
+        it('follows the RPC head without logging a warning once the backend refuses the chain', async () => {
+            const { resetPeraScopeRefusals } =
+                await import('@perawallet/wallet-core-config')
+            const { logger } = await import('@perawallet/wallet-core-shared')
+            const warn = vi.spyOn(logger, 'warn')
+            let shouldRefreshRequests = 0
+            server.use(
+                http.post(`${PERA_URL}${SHOULD_REFRESH_PATH}`, () => {
+                    shouldRefreshRequests += 1
+                    return HttpResponse.json(
+                        {
+                            error: 'Chain is not enabled',
+                            code: 'chain_not_enabled',
+                        },
+                        { status: 422 },
+                    )
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x30' },
+                }),
+            )
+            const ops = createEthereumAccountStateOps(
+                contextWith(['blockFollowing']),
+                ETHEREUM,
+            )
+
+            try {
+                await expect(
+                    ops.fetchChangeSignal([ADDRESS], SCOPE, 40),
+                ).resolves.toEqual({ changed: true, cursor: 48 })
+                await expect(
+                    ops.fetchChangeSignal([ADDRESS], SCOPE, 48),
+                ).resolves.toEqual({ changed: false, cursor: 48 })
+                expect(shouldRefreshRequests).toBe(1)
+                expect(warn).not.toHaveBeenCalled()
+            } finally {
+                warn.mockRestore()
+                resetPeraScopeRefusals()
+            }
+        })
 
         it('rejects a response that does not match the schema', async () => {
             server.use(

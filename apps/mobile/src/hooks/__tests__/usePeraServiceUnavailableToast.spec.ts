@@ -12,6 +12,11 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    markPeraScopeRefused,
+    resetPeraScopeRefusals,
+    setPeraBackendSwitch,
+} from '@perawallet/wallet-core-config'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 
 const { mockShowError, mockSetOnPeraBackendUnavailable } = vi.hoisted(() => ({
@@ -96,6 +101,116 @@ describe('usePeraServiceUnavailableToast', () => {
             fixtureBetanet,
             'common.network_unavailable.title',
         )
+    })
+
+    it('stays silent for a refusal by the chain kill switch, whose scope is on a network with a backend', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+        capturedHandler?.(
+            new PeraServiceUnavailableError(scope, undefined, {
+                isSwitchedOff: true,
+            }),
+        )
+        expect(mockShowError).not.toHaveBeenCalled()
+
+        // The switch refusing a scope doesn't use up that scope's notice.
+        const betanet = new PeraServiceUnavailableError(scope)
+        capturedHandler?.(betanet)
+        expect(mockShowError).toHaveBeenCalledWith(
+            betanet,
+            'common.network_unavailable.title',
+        )
+    })
+
+    it('stays silent for a chain the backend refuses', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        capturedHandler?.(
+            new PeraServiceUnavailableError(scope, 'history', {
+                isChainRefused: true,
+            }),
+        )
+
+        expect(mockShowError).not.toHaveBeenCalled()
+    })
+
+    it('stays silent for an error an adapter raised itself for a chain the backend refuses', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+        markPeraScopeRefused(scope)
+
+        try {
+            capturedHandler?.(new PeraServiceUnavailableError(scope, 'assets'))
+
+            expect(mockShowError).not.toHaveBeenCalled()
+        } finally {
+            resetPeraScopeRefusals()
+        }
+    })
+
+    it('stays silent for an error an adapter raised itself while the chain kill switch is on', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        setPeraBackendSwitch(chainId => chainId === 'ethereum')
+
+        try {
+            capturedHandler?.(
+                new PeraServiceUnavailableError(
+                    { chainId: 'ethereum', networkId: 'mainnet' },
+                    'assets',
+                ),
+            )
+            expect(mockShowError).not.toHaveBeenCalled()
+
+            const algorand = new PeraServiceUnavailableError({
+                chainId: 'algorand',
+                networkId: 'betanet',
+            })
+            capturedHandler?.(algorand)
+            expect(mockShowError).toHaveBeenCalledWith(
+                algorand,
+                'common.network_unavailable.title',
+            )
+        } finally {
+            setPeraBackendSwitch(() => false)
+        }
     })
 
     it('unsubscribes the handler on unmount', () => {

@@ -11,19 +11,25 @@
  */
 
 import { existsSync, mkdtempSync, writeFileSync } from 'fs'
+import { createRequire } from 'module'
 import { tmpdir } from 'os'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
 import {
+    CHAIN_PACKAGES,
+    EVM_CHAIN_PACKAGE,
+    chainPackageNamed,
+} from '../../../tools/dev/chain-packages.cjs'
+import {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
-    EVM_CHAIN_MODULES,
+    isChainPackageIncluded,
     isDeveloperGalleryIncluded,
     isBenchBuild,
     isE2eFixturesIncluded,
-    listsEvmChain,
     readBakedAppEnvironment,
     readBakedChainIds,
+    stubbedChainModules,
     toStubMap,
 } from '../metro-build-gates'
 
@@ -104,29 +110,76 @@ describe('isDeveloperGalleryIncluded', () => {
     })
 })
 
-describe('listsEvmChain', () => {
+// The same test-only package generate-config.spec refuses without its URLs.
+const { CHAIN_PACKAGES: TEST_CHAIN_PACKAGES } = createRequire(import.meta.url)(
+    '../../../tools/dev/__tests__/fixtures/test-chain-packages.cjs',
+) as { CHAIN_PACKAGES: typeof CHAIN_PACKAGES }
+
+const EVM_PACKAGE = chainPackageNamed(EVM_CHAIN_PACKAGE)
+
+describe('stubbedChainModules', () => {
+    it.each([[['algorand']], [[]]])(
+        'stubs a chain package the chain list %j leaves out',
+        chainIds => {
+            expect(stubbedChainModules(chainIds, TEST_CHAIN_PACKAGES)).toEqual([
+                'src/testchain/entry',
+            ])
+        },
+    )
+
+    it('keeps a chain package the chain list ships', () => {
+        expect(
+            stubbedChainModules(['algorand', 'testchain'], TEST_CHAIN_PACKAGES),
+        ).toEqual([])
+    })
+
+    it('stubs the EVM entry modules of an Algorand-only build', () => {
+        expect(stubbedChainModules(['algorand'])).toEqual([
+            'src/bootstrap/evm-chain-modules',
+            'src/modules/ethereum/chain-ui',
+        ])
+    })
+
+    it('keeps the EVM entry modules when any EVM chain ships', () => {
+        expect(stubbedChainModules(['algorand', 'polygon'])).toEqual([])
+    })
+})
+
+describe('isChainPackageIncluded', () => {
     it.each([
         [['algorand', 'ethereum'], true],
         [['algorand', 'base'], true],
         [['polygon'], true],
         [['algorand'], false],
         [[], false],
-    ])('reads %j as %s', (chainIds, expected) => {
-        expect(listsEvmChain(chainIds)).toBe(expected)
+    ])('reads %j as %s for the EVM package', (chainIds, expected) => {
+        expect(isChainPackageIncluded(EVM_PACKAGE, chainIds)).toBe(expected)
     })
 })
 
-describe('EVM chain module stubs', () => {
-    it('maps the gated module to an existing stub beside it', () => {
-        const stubs = toStubMap(PROJECT_ROOT, EVM_CHAIN_MODULES)
+describe('chain package stubs', () => {
+    it.each(
+        CHAIN_PACKAGES.map(chainPackage => [
+            chainPackage.package,
+            chainPackage,
+        ]),
+    )(
+        'maps every %s entry module to an existing stub beside it',
+        (_name, chainPackage) => {
+            const stubs = toStubMap(PROJECT_ROOT, [
+                ...chainPackage.mobileStubbedModules,
+            ])
 
-        expect(Object.keys(stubs)).toHaveLength(EVM_CHAIN_MODULES.length)
-        for (const [real, stub] of Object.entries(stubs)) {
-            expect(existsSync(real)).toBe(true)
-            expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))
-            expect(existsSync(stub)).toBe(true)
-        }
-    })
+            expect(Object.keys(stubs)).toHaveLength(
+                chainPackage.mobileStubbedModules.length,
+            )
+            for (const [real, stub] of Object.entries(stubs)) {
+                expect(existsSync(real)).toBe(true)
+                expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))
+                expect(existsSync(stub)).toBe(true)
+            }
+        },
+    )
 })
 
 describe('developer gallery stubs', () => {

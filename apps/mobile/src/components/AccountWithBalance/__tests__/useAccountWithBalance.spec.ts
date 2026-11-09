@@ -17,17 +17,22 @@ import type {
     AccountValueBasis,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import {
     crossChainTotalOf,
     useAccountWithBalance,
 } from '../useAccountWithBalance'
 
-const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
+const mockFailedFirstReadChainIds = { current: new Set<string>() }
 const mockTotalsQuery = vi.fn()
 const mockMultisigParameters = vi.fn()
+const mockAuthority = vi.fn()
+const mockHasDuplicateName = vi.fn()
 const mockAccountValueTotals = new Map<
     string,
     {
@@ -36,6 +41,17 @@ const mockAccountValueTotals = new Map<
         isPending?: boolean
     }
 >()
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
+}))
+
+vi.mock('@hooks/useUniqueAccountName', () => ({
+    useUniqueAccountName: () => ({ hasDuplicateName: mockHasDuplicateName }),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
     const chainOf = (account: WalletAccount) =>
@@ -67,6 +83,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             account.custody.kind === 'watch',
         multisigParametersOf: (account: WalletAccount, chainId: string) =>
             mockMultisigParameters(account, chainId),
+        useAuthorityOf: () => mockAuthority(),
+        useFailedFirstReadChainIds: () => mockFailedFirstReadChainIds.current,
     }
 })
 
@@ -81,13 +99,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     findNativeAsset: (chainId: string) => ({
         assetId: chainId === 'ethereum' ? 'eth' : '0',
     }),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useIsChainSwitchedOff: (chainId: string) => mockIsSwitchedOff(chainId),
 }))
 
 const ALGO_ADDRESS = 'A'.repeat(58)
@@ -119,11 +130,13 @@ describe('useAccountWithBalance', () => {
     })
 
     beforeEach(() => {
-        mockIsSwitchedOff.mockReset().mockReturnValue(false)
+        mockFailedFirstReadChainIds.current = new Set()
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
         mockTotalsQuery.mockReset()
         mockMultisigParameters.mockReset().mockReturnValue(undefined)
+        mockAuthority.mockReset().mockReturnValue(null)
+        mockHasDuplicateName.mockReset().mockReturnValue(false)
         mockHoldingSources
             .mockReset()
             .mockImplementation((account: WalletAccount) =>
@@ -279,15 +292,6 @@ describe('useAccountWithBalance', () => {
         })
     })
 
-    it("flags an account whose chain's kill switch is off", () => {
-        mockIsSwitchedOff.mockReturnValue(true)
-
-        const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
-
-        expect(mockIsSwitchedOff).toHaveBeenCalledWith('ethereum')
-        expect(result.current.availability).toEqual({ isAvailable: false })
-    })
-
     describe('crossChainTotal', () => {
         beforeEach(() => {
             mockBasis.current = 'fiat'
@@ -311,6 +315,24 @@ describe('useAccountWithBalance', () => {
             expect(watchRow.shouldShowSecondaryLabel).toBe(true)
             expect(signingRow.shouldShowSecondaryLabel).toBe(false)
             expect(chainRow.shouldShowSecondaryLabel).toBe(true)
+        })
+
+        it('shows the secondary label on a whole-account row whose name another account shows', () => {
+            const signing: WalletAccount = {
+                ...BOTH_CHAINS,
+                custody: { kind: 'local', seed: 'bip39' },
+            } as WalletAccount
+            mockHasDuplicateName.mockReturnValue(true)
+
+            const wholeRow = renderHook(() => useAccountWithBalance(signing))
+                .result.current
+            const chainRow = renderHook(() =>
+                useAccountWithBalance(signing, 'ethereum'),
+            ).result.current
+
+            expect(wholeRow.hasDuplicateName).toBe(true)
+            expect(wholeRow.shouldShowSecondaryLabel).toBe(true)
+            expect(chainRow.hasDuplicateName).toBe(false)
         })
 
         it('is unset on a row scoped to one chain', () => {
@@ -409,6 +431,27 @@ describe('useAccountWithBalance', () => {
             })
         })
 
+        it('is unknown, not the other chains alone, when a failed read left a zero', () => {
+            mockFailedFirstReadChainIds.current = new Set(['ethereum'])
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+                nativeValue: new Decimal(0),
+                fiatValue: new Decimal(0),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: null,
+            })
+        })
+
         it("is still loading while any chain's totals are", () => {
             mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
                 nativeValue: new Decimal(1),
@@ -477,6 +520,28 @@ describe('useAccountWithBalance', () => {
             })
         })
 
+        it('shows no value for an Algorand-only build on a test network', () => {
+            restoreAlgorandOnlyChains()
+            mockHoldingSources.mockReturnValue([
+                {
+                    address: ALGO_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                },
+            ])
+
+            try {
+                const { result } = renderHook(() =>
+                    useAccountWithBalance(ALGO_ACCOUNT),
+                )
+
+                expect(result.current.crossChainTotal).toEqual({
+                    kind: 'testOnly',
+                })
+            } finally {
+                registerEthereumChain()
+            }
+        })
+
         it('shows no value for an Algorand-only wallet on a test network, as for any other wallet', () => {
             mockBasis.current = 'native'
             mockHoldingSources.mockReturnValue([
@@ -495,7 +560,7 @@ describe('useAccountWithBalance', () => {
             })
         })
 
-        it("is unavailable when every one of the account's chains is switched off", () => {
+        it('is unavailable when the account has no holding source on a registered chain', () => {
             mockHoldingSources.mockReturnValue([])
 
             const { result } = renderHook(() =>
@@ -505,20 +570,6 @@ describe('useAccountWithBalance', () => {
             expect(result.current.crossChainTotal).toEqual({
                 kind: 'unavailable',
             })
-        })
-
-        it("still values the account when only its own chain's kill switch is on", () => {
-            mockIsSwitchedOff.mockImplementation(
-                (chainId: string) => chainId === 'algorand',
-            )
-
-            renderHook(() => useAccountWithBalance(BOTH_CHAINS))
-
-            expect(mockTotalsQuery).toHaveBeenCalledWith(
-                [BOTH_CHAINS],
-                expect.anything(),
-                true,
-            )
         })
     })
 
@@ -566,7 +617,7 @@ describe('useAccountWithBalance', () => {
             expect(result.current.singleNetworkChainId).toBeUndefined()
         })
 
-        it("is unset when the account's only chain is switched off", () => {
+        it('is unset when the account has no holding source', () => {
             mockHoldingSources.mockReturnValue([])
 
             const { result } = renderHook(() =>
@@ -593,10 +644,27 @@ describe('useAccountWithBalance', () => {
             const { result } = renderHook(() => useAccountWithBalance(JOINT))
 
             expect(result.current.jointParticipantCount).toBe(3)
+            expect(result.current.jointSignersLabel).toBe(
+                'account_info.type_multisig_signers {"threshold":2,"total":3}',
+            )
             expect(mockMultisigParameters).toHaveBeenCalledWith(
                 JOINT,
                 'algorand',
             )
+        })
+
+        it('drops the signers line once the account is rekeyed, as its members no longer sign, but keeps the member count', () => {
+            mockMultisigParameters.mockReturnValue({
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B', 'C'],
+            })
+            mockAuthority.mockReturnValue('AUTH')
+
+            const { result } = renderHook(() => useAccountWithBalance(JOINT))
+
+            expect(result.current.jointSignersLabel).toBeUndefined()
+            expect(result.current.jointParticipantCount).toBe(3)
         })
 
         it('is unset on a row scoped to one chain', () => {
@@ -611,6 +679,7 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.jointParticipantCount).toBeUndefined()
+            expect(result.current.jointSignersLabel).toBeUndefined()
         })
 
         it('is unset for an account with no multisig parameters', () => {
@@ -619,6 +688,7 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.jointParticipantCount).toBeUndefined()
+            expect(result.current.jointSignersLabel).toBeUndefined()
         })
     })
 })

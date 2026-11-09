@@ -17,14 +17,21 @@ import {
     encodeSignedTransactions,
     getAlgorandClient,
 } from '../blockchain'
+import { Decimal } from 'decimal.js'
+
 import { toBigInt } from '@perawallet/wallet-core-shared'
 import type { SwapChainAdapter } from '@perawallet/wallet-core-swaps'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../network-id'
+import {
+    algorandAssetIdOfRouterId,
+    algorandRouterAssetId,
+} from '../router-asset-id'
 import { algorandHoldingReserve } from '../transactions/spendable-balance'
 import { executeAlgorandSwap } from './executeSwap'
 import { isAlgorandQuantumSwapEnabled } from './quantumSwapGate'
+import { useEnsureSwapAssetOptIn } from './useEnsureSwapAssetOptIn'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
@@ -34,18 +41,34 @@ import type {
 // defaulted to.
 const DEFAULT_RECEIVE_ASSET_ID = '31566704'
 
+// Held back from a percentage amount for the group's network fees, in
+// microAlgos: the same margin the group validator allows for them.
+const MAX_AMOUNT_FEE_RESERVE_MICRO_ALGO = 100_000
+
 // Swap groups arrive fully built from the backend, so the client only reads
 // account state and submits; it never builds or signs with its own defaults.
 export const algorandSwapAdapter: SwapChainAdapter = {
     chainId: ALGORAND_CHAIN_ID,
     nativeAssetId: algorandDescriptor.nativeAsset.ref.assetId,
     defaultReceiveAssetId: DEFAULT_RECEIVE_ASSET_ID,
+    toRouterAssetId: algorandRouterAssetId,
+    fromRouterAssetId: algorandAssetIdOfRouterId,
+    maxAmountFeeReserve: new Decimal(MAX_AMOUNT_FEE_RESERVE_MICRO_ALGO),
+    holdingReserve: algorandHoldingReserve,
+    // The router keeps no group id, so the link opens the swap transaction.
     swapExplorerUrl: (scope, item) => {
         const { explorerUrl } = getAlgorandChainConfig(scope)
-        return item.transactionGroupId && explorerUrl
-            ? `${explorerUrl}/tx-group/${item.transactionGroupId}/`
+        const swapTransaction = item.transactions.find(
+            transaction =>
+                transaction.role === 'swap' &&
+                transaction.scope?.chainId === ALGORAND_CHAIN_ID,
+        )
+        return swapTransaction && explorerUrl
+            ? `${explorerUrl}/tx/${swapTransaction.txHash}/`
             : undefined
     },
+    estimateSourceCost: async () => null,
+    useEnsureReceivable: useEnsureSwapAssetOptIn,
     executeSwap: (params, { scope, ...context }) =>
         executeAlgorandSwap(params, {
             ...context,

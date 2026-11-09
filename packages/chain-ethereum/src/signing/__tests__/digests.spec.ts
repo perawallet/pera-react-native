@@ -23,53 +23,43 @@ import {
     transactionDigest,
     typedDataDigest,
 } from '../digests'
-import type { TaggedDigest } from '../digests'
 import { MAIL_TYPED_DATA, TRANSFER } from './fixtures'
 
 describe('digests', () => {
     it('hashes a transaction as the unsigned EIP-1559 typed form', () => {
-        const result: TaggedDigest = transactionDigest(TRANSFER)
+        const result = transactionDigest(TRANSFER)
 
-        expect(result.tag).toBe('eip155-tx')
-        expect(result.digest).toEqual(
+        expect(result).toEqual(
             keccak256(serializeTransaction(TRANSFER), 'bytes'),
         )
-        expect(result.digest).toHaveLength(32)
+        expect(result).toHaveLength(32)
     })
 
     it('hashes a transaction without a type as the EIP-1559 form', () => {
         const { type: _type, ...untyped } = TRANSFER
 
-        expect(transactionDigest(untyped).digest).toEqual(
-            transactionDigest(TRANSFER).digest,
-        )
+        expect(transactionDigest(untyped)).toEqual(transactionDigest(TRANSFER))
     })
 
     it('applies the personal_sign prefix to a message', () => {
         const result = personalMessageDigest('hello world')
 
-        expect(result.tag).toBe('eip191-message')
-        expect(result.digest).toEqual(hashMessage('hello world', 'bytes'))
-        expect(result.digest).toHaveLength(32)
+        expect(result).toEqual(hashMessage('hello world', 'bytes'))
+        expect(result).toHaveLength(32)
     })
 
     it('hashes a raw payload as bytes rather than as text', () => {
         const raw = personalMessageDigest({ raw: '0xdeadbeef' })
 
-        expect(raw.digest).toEqual(hashMessage({ raw: '0xdeadbeef' }, 'bytes'))
-        expect(raw.digest).not.toEqual(
-            personalMessageDigest('0xdeadbeef').digest,
-        )
+        expect(raw).toEqual(hashMessage({ raw: '0xdeadbeef' }, 'bytes'))
+        expect(raw).not.toEqual(personalMessageDigest('0xdeadbeef'))
     })
 
     it('hashes typed data as the EIP-712 domain and struct hash', () => {
         const result = typedDataDigest(MAIL_TYPED_DATA)
 
-        expect(result.tag).toBe('eip712')
-        expect(result.digest).toEqual(
-            hexToBytes(hashTypedData(MAIL_TYPED_DATA)),
-        )
-        expect(result.digest).toHaveLength(32)
+        expect(result).toEqual(hexToBytes(hashTypedData(MAIL_TYPED_DATA)))
+        expect(result).toHaveLength(32)
     })
 
     it('throws on malformed typed data before anything can be signed', () => {

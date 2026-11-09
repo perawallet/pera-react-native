@@ -25,7 +25,7 @@ import {
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { partition } from '@perawallet/wallet-core-shared'
+import { isChainRefusedError, partition } from '@perawallet/wallet-core-shared'
 import { assetsAdapterFor } from '../chain-adapter'
 
 const PRICE_FETCH_CONCURRENCY = 5
@@ -168,6 +168,9 @@ async function runPricePass(
     // Re-throw if all batches failed
     const allFailed = results.every(r => r.status === 'rejected')
     if (allFailed && results.length > 0) {
+        const reasons = (results as PromiseRejectedResult[]).map(r => r.reason)
+        // Kept recognisable, so the sync logs a refused chain as expected.
+        if (reasons.every(isChainRefusedError)) throw reasons[0]
         throw new Error('All price sync batches failed')
     }
 }

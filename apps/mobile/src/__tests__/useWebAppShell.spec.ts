@@ -114,20 +114,17 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
     }
 })
 
-vi.mock(
-    '@perawallet/wallet-extension-keystore-chrome',
-    async importOriginal => {
-        const original =
-            await importOriginal<
-                typeof import('@perawallet/wallet-extension-keystore-chrome')
-            >()
-        return {
-            ...original,
-            armAutoLock: () => mocks.armAutoLock(),
-            requireSessionMasterKey: mocks.requireSessionMasterKey,
-        }
-    },
-)
+vi.mock('@perawallet/wallet-extension-vault-chrome', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-extension-vault-chrome')
+        >()
+    return {
+        ...original,
+        armAutoLock: () => mocks.armAutoLock(),
+        requireSessionMasterKey: mocks.requireSessionMasterKey,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-database', async importOriginal => {
     const original =

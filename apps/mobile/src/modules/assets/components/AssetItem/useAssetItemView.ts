@@ -13,8 +13,10 @@
 import { useCallback } from 'react'
 import {
     PeraAssetType,
+    PeraAssetVerificationTier,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -23,7 +25,10 @@ import {
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import {
+    getVerificationIcon,
+    unvettedTierOf,
+} from '@modules/assets/utils/verification'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean
@@ -35,6 +40,8 @@ type UseAssetItemViewResult = {
     isCollectible: boolean
     isNativeAsset: boolean
     isSuspicious: boolean
+    /** A token Pera hasn't vetted, on a chain where anyone can send one unasked. */
+    isUnverified: boolean
     isDeleted: boolean
     displayName: string
     secondaryText: string
@@ -58,6 +65,8 @@ export const useAssetItemView = (
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'
     const isDeleted = meta?.isDeleted === true
+    const isUnverified =
+        unvettedTierOf(asset, chainId) === PeraAssetVerificationTier.unverified
 
     const verificationIconOf = (): Nullable<IconName> => {
         if (isNativeAsset) return 'assets/trusted'
@@ -65,11 +74,12 @@ export const useAssetItemView = (
     }
     const verificationIcon = verificationIconOf()
 
-    const shownAssetId =
+    const isAddressId =
         addressCodecs.has(chainId) &&
         addressCodecs.get(chainId).isValid(asset.assetId)
-            ? addressCodecs.get(chainId).truncate(asset.assetId)
-            : asset.assetId
+    const shownAssetId = isAddressId
+        ? addressCodecs.get(chainId).truncate(asset.assetId)
+        : asset.assetId
 
     const collectibleTitle = meta?.collectible?.title
     const collectionName = meta?.collectible?.collection?.name
@@ -89,8 +99,22 @@ export const useAssetItemView = (
         ? (collectionName ?? asset.unitName)
         : asset.unitName
 
+    // A contract address says nothing to the user about a token Pera vouches
+    // for; its network does. An unvetted token keeps its address visible.
+    const networkName =
+        isAddressId &&
+        !isCollectible &&
+        tier === PeraAssetVerificationTier.verified
+            ? chainDisplayNameOf(chainId)
+            : undefined
+
     const secondaryTextOf = () => {
         if (isNativeAsset) return asset.unitName ?? ''
+        if (networkName) {
+            return subtitleLeading
+                ? `${subtitleLeading} · ${networkName}`
+                : networkName
+        }
         return subtitleLeading
             ? `${subtitleLeading} · ${shownAssetId}`
             : shownAssetId
@@ -106,6 +130,7 @@ export const useAssetItemView = (
         isCollectible,
         isNativeAsset,
         isSuspicious,
+        isUnverified,
         isDeleted,
         displayName,
         secondaryText,

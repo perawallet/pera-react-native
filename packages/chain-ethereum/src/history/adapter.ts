@@ -24,7 +24,7 @@ import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
 import { readEvmTransactionDetail } from './detail'
-import { summarizeEthereumHistoryItem } from './summarize'
+import { singleNftOf, summarizeEthereumHistoryItem } from './summarize'
 
 // A withdrawal row has no hash; its first EIP-4895 index is unique
 // chain-wide. Explorer links must special-case these ids.
@@ -42,6 +42,14 @@ const toRecords = (
 ): TransactionRecord[] => {
     const id = recordId(item)
     if (id === undefined) return []
+    const summary = summarizeEthereumHistoryItem(
+        item,
+        address,
+        scope,
+        chain,
+        isDecoding,
+    )
+    const nft = singleNftOf(item, address, summary)
     return [
         {
             id,
@@ -51,16 +59,15 @@ const toRecords = (
             ...(item.block_number !== undefined && {
                 blockNumber: item.block_number,
             }),
-            fee: item.fee === null ? undefined : new Decimal(item.fee),
+            // No `from` means the row is known only from a transfer log, so
+            // another address signed it and the gas was never this account's.
+            fee:
+                item.fee === null || item.from === null
+                    ? undefined
+                    : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
-            summary: summarizeEthereumHistoryItem(
-                item,
-                address,
-                scope,
-                chain,
-                isDecoding,
-            ),
-            chainData: { family: 'evm' },
+            summary,
+            chainData: { family: 'evm', ...(nft && { nft }) },
         },
     ]
 }

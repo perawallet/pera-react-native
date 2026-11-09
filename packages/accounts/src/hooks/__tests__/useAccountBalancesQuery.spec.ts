@@ -34,6 +34,7 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
 import { buildTestAccount, testAccount } from '../../__tests__/accountFactory'
+import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -87,9 +88,15 @@ type Row = {
     assetId: string
     amount: Decimal
     native?: { family: 'algorand'; isFrozen: boolean }
-    asset: { assetId: string; decimals: number; name?: string } | null
+    asset: {
+        assetId: string
+        decimals: number
+        name?: string
+        peraMetadata?: { verificationTier: string }
+    } | null
     usdPrice: Decimal | null
     isFavorited: boolean
+    isHidden: boolean
 }
 const algoRow = (microalgos: number, usd: number | null): Row => ({
     assetId: '0',
@@ -97,6 +104,7 @@ const algoRow = (microalgos: number, usd: number | null): Row => ({
     asset: { assetId: '0', decimals: 6, name: 'Algo' },
     usdPrice: usd === null ? null : new Decimal(usd),
     isFavorited: false,
+    isHidden: false,
 })
 const asaRow = (
     assetId: string,
@@ -110,6 +118,7 @@ const asaRow = (
     asset: decimals === null ? null : { assetId, decimals, name },
     usdPrice: usd === null ? null : new Decimal(usd),
     isFavorited: false,
+    isHidden: false,
 })
 
 const createWrapper = () => {
@@ -292,6 +301,77 @@ describe('useAccountBalances', () => {
         )
     })
 
+    it('lists a suspicious token but leaves it out of the totals', async () => {
+        const spam = asaRow('666', 1_000_000, 6, 100, 'Airdrop')
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2), // 1 ALGO @ $2
+            {
+                ...spam,
+                asset: {
+                    ...spam.asset!,
+                    peraMetadata: { verificationTier: 'suspicious' },
+                },
+            },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account], SCOPE),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const accountData = result.current.accountBalances.get('ADDR1')
+        expect(accountData?.assetBalances.map(b => b.assetId)).toContain('666')
+        expect(accountData?.usdValue).toEqual(new Decimal(2))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
+    })
+
+    it('lists a hidden holding but leaves it out of the totals', async () => {
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2), // 1 ALGO @ $2
+            { ...asaRow('777', 1_000_000, 6, 100, 'Hidden'), isHidden: true },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account], SCOPE),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const accountData = result.current.accountBalances.get('ADDR1')
+        expect(accountData?.assetBalances.map(b => b.assetId)).toContain('777')
+        expect(accountData?.usdValue).toEqual(new Decimal(2))
+        expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
+    })
+
+    it('counts a suspicious token on a chain where the user opts in to each asset', async () => {
+        registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+        const spam = asaRow('666', 1_000_000, 6, 100, 'Flagged')
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2),
+            {
+                ...spam,
+                asset: {
+                    ...spam.asset!,
+                    peraMetadata: { verificationTier: 'suspicious' },
+                },
+            },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account], SCOPE),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.accountBalances.get('ADDR1')?.usdValue).toEqual(
+            new Decimal(102),
+        )
+    })
+
     it('passes filters through to the holdings read', async () => {
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
@@ -391,7 +471,11 @@ describe('useAccountBalances', () => {
             ) as ChainCapabilities
             for (const id of ['algorand', 'ethereum']) {
                 getProvider().chains.register(
-                    { id, networks: [] } as unknown as ChainDescriptor,
+                    {
+                        id,
+                        networks: [],
+                        protocol: { requiresAssetOptIn: false },
+                    } as unknown as ChainDescriptor,
                     allOn,
                 )
             }
@@ -642,6 +726,7 @@ describe('useAccountHoldingsAcrossChainsQuery', () => {
                             isDefaultForTier: true,
                         },
                     ],
+                    protocol: { requiresAssetOptIn: false },
                 } as unknown as ChainDescriptor,
                 allOn,
             )
@@ -690,12 +775,43 @@ describe('useAccountHoldingsAcrossChainsQuery', () => {
         ])
     })
 
+    it("keeps the other chains' holdings when one chain's read fails", async () => {
+        mockGetAccountHoldingsPage.mockImplementation(
+            async ({ scope }: { scope: ChainScope }) => {
+                if (scope.chainId === 'ethereum') throw new Error('boom')
+                return [algoRow(3_000_000, 1)]
+            },
+        )
+        const twoChainAccount = buildTestAccount(
+            { kind: 'watch' },
+            {
+                algorand: { address: 'ALGO1' },
+                ethereum: { address: 'ETH1' },
+            },
+            { id: 'two-chain' },
+        )
+
+        const { result } = renderHook(
+            () => useAccountHoldingsAcrossChainsQuery(twoChainAccount),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.assetBalances.map(b => b.scope.chainId)).toEqual([
+            'algorand',
+        ])
+    })
+
     it('lists nothing without an account', () => {
         const { result } = renderHook(
             () => useAccountHoldingsAcrossChainsQuery(null),
             { wrapper: createWrapper() },
         )
 
-        expect(result.current).toEqual({ assetBalances: [], isPending: false })
+        expect(result.current).toEqual({
+            assetBalances: [],
+            isPending: false,
+            isError: false,
+        })
     })
 })

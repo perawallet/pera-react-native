@@ -60,6 +60,7 @@ import {
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { findEnabledByTestId } from '@test-utils/rnw'
 import {
@@ -69,10 +70,9 @@ import {
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -281,8 +281,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
         const rejectSpy = vi.fn(() =>
             HttpResponse.json(
                 {
-                    message:
-                        'TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from receiver',
+                    message: `TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from ${RECEIVER_ADDRESS}`,
                 },
                 { status: 400 },
             ),

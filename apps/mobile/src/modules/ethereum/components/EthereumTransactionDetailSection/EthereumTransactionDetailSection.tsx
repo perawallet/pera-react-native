@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { PWText } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -21,18 +22,27 @@ import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 
+const GWEI_DECIMALS = 9
+
 type EthereumTransactionDetailSectionProps = {
     presentation: EthereumTransactionPresentation
     /** Whether the hero already carries the amount; the presentation's own when unset. */
     isAmountInHero?: boolean
+    /** A transfer's asset and amount are shown in their own card, so only its holder is listed here. */
+    isAssetInCard?: boolean
 }
 
-/** What only an EVM transaction has: the token or NFT moved, the call and approval it made, and the most it can cost before it is mined. */
+/** What only an EVM transaction has: the token or NFT moved, the call and approval it made, its nonce, gas limit and per-gas fees, and the most it can cost before it is mined. */
 export const EthereumTransactionDetailSection = ({
     presentation,
     isAmountInHero = !!presentation.amount?.asset,
+    isAssetInCard = false,
 }: EthereumTransactionDetailSectionProps) => {
     const { t } = useLanguage()
+    const gwei = {
+        decimals: GWEI_DECIMALS,
+        unitName: t('ethereum.pricing.gwei'),
+    }
     const {
         view,
         scope,
@@ -42,12 +52,18 @@ export const EthereumTransactionDetailSection = ({
         amount,
         isAmountLoading,
         maxFee,
+        sender,
     } = presentation
     const isMined = 'isMined' in view
+    const isAssetElsewhere = isTransfer && isAssetInCard
     // The hero carries a resolved amount, so a row repeats it only when it can't.
-    const hasAmountRow = !isAmountInHero && (isAmountLoading || !!amount)
+    const hasAmountRow =
+        !isAmountInHero && !isAssetElsewhere && (isAmountLoading || !!amount)
 
     if (view.kind === 'transfer' && isMined && !hasAmountRow) {
+        return null
+    }
+    if (isAssetElsewhere && isMined && !sender) {
         return null
     }
 
@@ -78,6 +94,7 @@ export const EthereumTransactionDetailSection = ({
                 <EthereumTransferAssetRows
                     presentation={presentation}
                     testIDPrefix='ethereum_detail'
+                    isAssetShown={!isAssetElsewhere}
                 />
                 {hasAmountRow && (
                     <KeyValueRow
@@ -101,6 +118,42 @@ export const EthereumTransactionDetailSection = ({
     return (
         <TransactionDetailCard>
             {callDetails}
+
+            {'fee' in view && (
+                <>
+                    <KeyValueRow
+                        testID='ethereum_nonce'
+                        title={t('ethereum.pricing.nonce')}
+                    >
+                        <PWText>{String(view.nonce)}</PWText>
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_gas_limit'
+                        title={t('ethereum.pricing.gas_limit')}
+                    >
+                        <PWText>{view.gas.toString()}</PWText>
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_max_fee_per_gas'
+                        title={t('ethereum.pricing.max_fee_per_gas')}
+                    >
+                        <PWText>
+                            {formatAssetAmount(view.fee.maxFeePerGas, gwei)}
+                        </PWText>
+                    </KeyValueRow>
+                    <KeyValueRow
+                        testID='ethereum_max_priority_fee_per_gas'
+                        title={t('ethereum.pricing.max_priority_fee_per_gas')}
+                    >
+                        <PWText>
+                            {formatAssetAmount(
+                                view.fee.maxPriorityFeePerGas,
+                                gwei,
+                            )}
+                        </PWText>
+                    </KeyValueRow>
+                </>
+            )}
 
             {!isMined && (
                 <KeyValueRow

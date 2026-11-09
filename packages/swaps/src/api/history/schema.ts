@@ -11,55 +11,19 @@
  */
 
 import { z } from 'zod'
-import { uint64IdSchema } from '@perawallet/wallet-core-shared'
-import { dexSwapAssetSchema } from '../available-assets/schema'
+import { swapOrderItemSchema } from '../orders/schema'
 
-export const swapStatusEnum = z.enum([
-    'pending',
-    'in_progress',
-    'completed',
-    'failed',
-    'cancelled',
-])
-
-const swapHistoryItemSchema = z.object({
-    // Backend ids exceed 2^53; id_str is the canonical identity.
-    id: uint64IdSchema,
-    id_str: z.string().nullable().optional(),
-    provider: z.string(),
-    status: swapStatusEnum,
-    completed_datetime: z.string().nullable(),
-    transaction_group_id: z.string().nullable(),
-    asset_in: dexSwapAssetSchema,
-    asset_out: dexSwapAssetSchema,
-    amount_in: z.string(),
-    amount_out: z.string(),
-    amount_in_usd_value: z.string().nullable().optional(),
-    amount_out_usd_value: z.string().nullable().optional(),
+export const swapHistoryQuerySchema = z.object({
+    device_id: z.string(),
+    accounts: z.string().optional(),
+    cursor: z.string().optional(),
+    limit: z.coerce.number().int().min(1).max(50).optional(),
 })
 
 export const swapHistoryResponseSchema = z.object({
-    results: z.array(swapHistoryItemSchema),
-    next: z.string().nullable().optional(),
-    previous: z.string().nullable().optional(),
+    next: z.string().nullish(),
+    previous: z.string().nullish(),
+    results: z.array(swapOrderItemSchema),
 })
 
-const swapDistinctPairItemSchema = z.object({
-    asset_in: dexSwapAssetSchema,
-    asset_out: dexSwapAssetSchema,
-    swap_datetime: z.string(),
-    pair_key: z.string(),
-})
-
-export const swapDistinctPairsHistoryResponseSchema = z.object({
-    results: z.array(swapDistinctPairItemSchema),
-})
-
-export type SwapHistoryItemApiResponse = z.infer<typeof swapHistoryItemSchema>
 export type SwapHistoryApiResponse = z.infer<typeof swapHistoryResponseSchema>
-export type SwapDistinctPairItemApiResponse = z.infer<
-    typeof swapDistinctPairItemSchema
->
-export type SwapDistinctPairsHistoryApiResponse = z.infer<
-    typeof swapDistinctPairsHistoryResponseSchema
->

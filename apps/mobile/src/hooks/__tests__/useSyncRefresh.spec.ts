@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import { useSyncRefresh } from '../useSyncRefresh'
+import { useSyncRefresh, useSyncRefreshAll } from '../useSyncRefresh'
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: vi.fn(),
@@ -35,13 +35,16 @@ const createDeferred = () => {
 
 describe('useSyncRefresh', () => {
     const refreshAccounts = vi.fn()
+    const refreshSources = vi.fn()
     const invalidateQueries = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         refreshAccounts.mockResolvedValue(undefined)
+        refreshSources.mockResolvedValue(undefined)
         ;(getSyncService as Mock).mockReturnValue({
             refreshAccounts,
+            refreshSources,
             invalidateQueries,
         })
     })
@@ -282,5 +285,54 @@ describe('useSyncRefresh', () => {
         })
 
         expect(refreshAccounts).toHaveBeenCalledTimes(1)
+    })
+
+    describe('useSyncRefreshAll', () => {
+        const SOURCES = [
+            { addresses: ['ALGO1'], scope: ALGORAND },
+            { addresses: ['0xabc'], scope: ETHEREUM },
+        ]
+
+        it('refreshes every network in one sync service call', async () => {
+            const { result } = renderHook(() => useSyncRefreshAll(SOURCES))
+
+            await act(async () => {
+                result.current.refresh()
+            })
+
+            expect(refreshSources).toHaveBeenCalledWith(SOURCES)
+            expect(result.current.isRefreshing).toBe(false)
+        })
+
+        it('joins a pull already in flight for the same networks', async () => {
+            const deferred = createDeferred()
+            refreshSources.mockReturnValue(deferred.promise)
+            const first = renderHook(() => useSyncRefreshAll(SOURCES))
+            const second = renderHook(() =>
+                useSyncRefreshAll([...SOURCES].reverse()),
+            )
+
+            act(() => {
+                first.result.current.refresh()
+                second.result.current.refresh()
+            })
+            await act(async () => {
+                deferred.resolve()
+                await deferred.promise
+            })
+
+            expect(refreshSources).toHaveBeenCalledTimes(1)
+        })
+
+        it('ends the pull when a network fails', async () => {
+            refreshSources.mockRejectedValue(new Error('down'))
+            const { result } = renderHook(() => useSyncRefreshAll(SOURCES))
+
+            await act(async () => {
+                result.current.refresh()
+            })
+
+            expect(result.current.isRefreshing).toBe(false)
+        })
     })
 })

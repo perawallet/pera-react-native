@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     isSignRequestAwaitingPreflight,
     isSignRequestPastApproval,
@@ -37,6 +36,7 @@ import {
     resolveConnectionRequest,
     submitConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { showConfirmedThenClose } from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
@@ -69,7 +69,7 @@ export const useSignRequestApprovalScreen =
         const { requestId, approval, isLoading } = useDappRequest()
         const { t } = useLanguage()
         // The approval's own `chainId` still goes on the message below.
-        const transactionSigning = useChainTransactionSigning(LEGACY_CHAIN_ID)
+        const transactionSigning = useChainTransactionSigning(ALGORAND_CHAIN_ID)
         const { addSignRequest, removeSignRequest, currentRequest } =
             useSigningRequest()
         // The adapter matches a named signer against approved accounts' auth

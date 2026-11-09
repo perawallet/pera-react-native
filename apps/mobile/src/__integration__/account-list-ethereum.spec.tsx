@@ -34,15 +34,12 @@ import {
     upsertAssetPrices,
     upsertAssets,
 } from '@perawallet/wallet-core-assets'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { setChainEnabled } from '@test-utils/capability-overrides'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -70,7 +67,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
 const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
-const ALGO_SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const ALGO_SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const ALGORAND_ACCOUNT: WalletAccount = {
     id: 'algo-1',
@@ -282,35 +279,7 @@ describe('Flow: Account list with Ethereum registered', () => {
         ).toBeTruthy()
     })
 
-    it('Given the Ethereum kill switch is off, when the list renders, then its account stays listed with the unavailable notice and out of the total', async () => {
-        setChainEnabled('ethereum', false)
-        useAccountsStore
-            .getState()
-            .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
-
-        renderMenu()
-
-        await waitFor(() => {
-            expect(
-                within(rowOf(ETHEREUM_ACCOUNT)).getByTestId(
-                    'account_chain_unavailable',
-                ),
-            ).toBeTruthy()
-        })
-        expect(
-            within(rowOf(ALGORAND_ACCOUNT)).queryByTestId(
-                'account_chain_unavailable',
-            ),
-        ).toBeNull()
-        // Only the $3 of ALGO: the frozen ETH balance stays out of the total.
-        await waitFor(() => {
-            expect(
-                screen.getByTestId('portfolio_total_value').textContent,
-            ).toMatch(/^\$ ?3\.00$/)
-        })
-    })
-
-    it('Given an Ethereum account is opened, when its actions render, then it offers send and receive but no Algorand-only action', () => {
+    it('Given an Ethereum account is opened, when its actions render, then it offers send, receive and swap', () => {
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
@@ -334,6 +303,6 @@ describe('Flow: Account list with Ethereum registered', () => {
 
         expect(screen.getByTestId('receive_button')).toBeTruthy()
         expect(screen.getByTestId('send_button')).toBeTruthy()
-        expect(screen.queryByTestId('swap_button')).toBeNull()
+        expect(screen.getByTestId('swap_button')).toBeTruthy()
     })
 })

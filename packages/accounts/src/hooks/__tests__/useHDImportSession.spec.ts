@@ -360,18 +360,26 @@ describe('useHDImportSession', () => {
         })
 
         let found: LocalAccount[] = []
+        let failedChainIds: string[] = ['unset']
         await act(async () => {
-            found = await result.current.discoverImportAccounts({
+            const walked = await result.current.discoverImportAccounts({
                 walletKeyId: 'w-1',
             })
+            found = walked.accounts
+            failedChainIds = walked.failedChainIds
         })
 
+        // Discovery only asks whether an address has activity; balances and
+        // history load after the import.
+        expect(adapter.fetchAccountState).not.toHaveBeenCalled()
+        expect(failedChainIds).toEqual([])
         expect(adapter.createPublicKeyGetter).toHaveBeenCalledWith(
             new Uint8Array(96).fill(7),
         )
         expect(adapter.checkActivity).toHaveBeenCalledWith(
             expect.any(Array),
             TESTNET_SCOPE,
+            undefined,
         )
         // Nothing is active, so discovery falls back to the first account.
         expect(found.map(account => account.custody)).toEqual([
@@ -383,6 +391,33 @@ describe('useHDImportSession', () => {
         expect(kmsMock.persistHDMasterKey).not.toHaveBeenCalled()
     })
 
+    test('discoverImportAccounts stops a single-chain search once its signal aborts', async () => {
+        const { adapter } = fakeAccountsChain()
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const controller = new AbortController()
+        controller.abort()
+
+        let walked: Awaited<
+            ReturnType<typeof result.current.discoverImportAccounts>
+        >
+        await act(async () => {
+            walked = await result.current.discoverImportAccounts({
+                walletKeyId: 'w-1',
+                signal: controller.signal,
+            })
+        })
+
+        expect(adapter.checkActivity).not.toHaveBeenCalled()
+        expect(walked!).toEqual({
+            accounts: [],
+            failedChainIds: [],
+            isOriginFallback: false,
+        })
+    })
+
     test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {
         const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {
@@ -390,9 +425,11 @@ describe('useHDImportSession', () => {
         })
         let found: LocalAccount[] = []
         await act(async () => {
-            found = await result.current.discoverImportAccounts({
-                walletKeyId: 'w-1',
-            })
+            found = (
+                await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            ).accounts
         })
         useAccountsStore.setState({ accounts: [{ ...found[0], id: 'held' }] })
 
@@ -462,12 +499,95 @@ describe('useHDImportSession', () => {
         const discover = async (result: HookResult) => {
             let found: LocalAccount[] = []
             await act(async () => {
-                found = await result.current.discoverImportAccounts({
-                    walletKeyId: 'w-1',
-                })
+                found = (
+                    await result.current.discoverImportAccounts({
+                        walletKeyId: 'w-1',
+                    })
+                ).accounts
             })
             return found
         }
+
+        test('reports each network as the walk goes, and names the chain that could not be checked while still offering the others', async () => {
+            const families = setUpChains({
+                [ALGORAND]: [familyHdAddress('algorand', 1, 0)],
+            })
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(new Error('rpc down'))
+            const fetchAccountState = vi.fn()
+            for (const chainId of CHAIN_IDS) {
+                Object.assign(accountsChainAdapters.get(chainId), {
+                    fetchAccountState,
+                })
+            }
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const onProgress = vi.fn()
+            const signal = new AbortController().signal
+
+            let walked: Awaited<
+                ReturnType<typeof result.current.discoverImportAccounts>
+            >
+            await act(async () => {
+                walked = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    signal,
+                    onProgress,
+                })
+            })
+
+            expect(walked!.accounts.map(hdIndexOf)).toEqual([
+                { account: 1, keyIndex: 0 },
+            ])
+            expect(walked!.failedChainIds).toEqual([ETHEREUM])
+            // Balances and history wait until after the import.
+            expect(fetchAccountState).not.toHaveBeenCalled()
+            expect(onProgress).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chainIds: CHAIN_IDS,
+                    failedChainIds: [ETHEREUM],
+                    foundCount: 1,
+                }),
+            )
+            expect(
+                families.checkActivity.get(ALGORAND)!.mock.calls[0]![2],
+            ).toBeDefined()
+        })
+
+        test('does not count an index the wallet already holds as found', async () => {
+            setUpChains({ [ALGORAND]: [familyHdAddress('algorand', 1, 0)] })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            useAccountsStore.setState({
+                accounts: [
+                    buildAccount({
+                        custody: {
+                            kind: 'local',
+                            seed: 'bip39',
+                            hd: { account: 1, keyIndex: 0 },
+                        },
+                        chainId: ALGORAND,
+                        chains: {
+                            [ALGORAND]: {
+                                address: familyHdAddress('algorand', 1, 0),
+                                keyPairId: 'held-key',
+                            },
+                        },
+                    }),
+                ],
+            })
+            const onProgress = vi.fn()
+
+            await act(async () => {
+                await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    onProgress,
+                })
+            })
+
+            expect(onProgress.mock.calls.at(-1)![0].foundCount).toBe(0)
+        })
 
         test('persists the seed once from copies, marks the session persisted and finds an index active on one chain only', async () => {
             setUpChains({ [BASE]: [familyHdAddress('evm', 2, 0)] })
@@ -489,6 +609,51 @@ describe('useHDImportSession', () => {
                 useHDImportSessionStore.getState().pending?.isSeedPersisted,
             ).toBe(true)
             expect(found.map(hdIndexOf)).toEqual([{ account: 2, keyIndex: 0 }])
+        })
+
+        test("a retry adds to the earlier search: both walks' accounts are offered and recorded, and no chain either heard from is unchecked", async () => {
+            const families = setUpChains({
+                [ALGORAND]: [familyHdAddress('algorand', 1, 0)],
+                [ETHEREUM]: [familyHdAddress('evm', 2, 0)],
+            })
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValueOnce(new Error('rpc down'))
+                .mockRejectedValueOnce(new Error('rpc down'))
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            let first: Awaited<
+                ReturnType<typeof result.current.discoverImportAccounts>
+            > = { accounts: [], failedChainIds: [] }
+            await act(async () => {
+                first = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            expect(first.failedChainIds).toEqual([ETHEREUM])
+
+            // Ethereum answers now; Algorand doesn't.
+            families.checkActivity
+                .get(ALGORAND)!
+                .mockRejectedValue(new Error('indexer down'))
+            let retried: typeof first = { accounts: [], failedChainIds: [] }
+            await act(async () => {
+                retried = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                    previous: first,
+                })
+            })
+
+            expect(
+                retried.accounts.map(account => hdIndexOf(account)?.account),
+            ).toEqual([1, 2])
+            expect(retried.failedChainIds).toEqual([])
+            expect(
+                useHDImportSessionStore.getState().pending?.discoveredIndexes,
+            ).toEqual([
+                { account: 1, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
         })
 
         test('records only the indexes whose candidate the wallet can still take', async () => {
@@ -618,7 +783,7 @@ describe('useHDImportSession', () => {
             const { result } = renderHook(() => useHDImportSession(MAINNET))
             await prepare(result)
 
-            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            let discovery: Promise<unknown> = Promise.resolve([])
             act(() => {
                 discovery = result.current.discoverImportAccounts({
                     walletKeyId: 'w-1',
@@ -651,7 +816,7 @@ describe('useHDImportSession', () => {
             const { result } = renderHook(() => useHDImportSession(MAINNET))
             await prepare(result)
 
-            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            let discovery: Promise<unknown> = Promise.resolve([])
             act(() => {
                 discovery = result.current.discoverImportAccounts({
                     walletKeyId: 'w-1',

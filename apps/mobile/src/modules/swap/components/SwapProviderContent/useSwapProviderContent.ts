@@ -16,10 +16,9 @@ import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     sortQuotesByAmountOutDesc,
-    useProvidersQuery,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 
@@ -31,7 +30,6 @@ type UseSwapProviderContentParams = {
 
 type SwapProviderRow = {
     quote: SwapQuote
-    iconUrl: Optional<string>
     displayName: string
     amountDisplay: string
     /** In the preferred currency; null until a rate resolves. */
@@ -50,7 +48,6 @@ export const useSwapProviderContent = ({
     selectedProviderName,
 }: UseSwapProviderContentParams): UseSwapProviderContentResult => {
     const { usdToPreferred } = useCurrency(scope)
-    const { data: providers } = useProvidersQuery(scope)
 
     const [userSelection, setUserSelection] =
         useState<Nullable<string>>(selectedProviderName)
@@ -80,17 +77,10 @@ export const useSwapProviderContent = ({
     const rows = useMemo<SwapProviderRow[]>(
         () =>
             alternativeQuotes.map(quote => {
-                const providerItem = providers?.find(
-                    item => item.name === quote.provider,
+                const amountDisplay = formatAssetAmount(
+                    quote.amountOut,
+                    quote.assetOut,
                 )
-                const displayName =
-                    quote.providerDisplayName ??
-                    providerItem?.displayName ??
-                    quote.provider ??
-                    '-'
-                const amountDisplay = quote.amountOut
-                    ? formatAssetAmount(quote.amountOut, quote.assetOut)
-                    : '-'
                 // A null conversion means the rate hasn't resolved; omit the
                 // fiat line rather than showing every provider as worth 0.
                 const fiatValue = quote.amountOutUsdValue
@@ -98,13 +88,12 @@ export const useSwapProviderContent = ({
                     : null
                 return {
                     quote,
-                    iconUrl: providerItem?.iconUrl,
-                    displayName,
+                    displayName: quote.provider,
                     amountDisplay,
                     fiatValue,
                 }
             }),
-        [alternativeQuotes, providers, usdToPreferred],
+        [alternativeQuotes, usdToPreferred],
     )
 
     return { userSelection, rows, handleSelect }

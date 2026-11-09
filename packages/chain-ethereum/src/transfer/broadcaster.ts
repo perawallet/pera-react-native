@@ -31,8 +31,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
+import type { TokenSightings } from '../accounts/token-detection'
 import type { EvmChain } from '../chains/types'
 import {
+    makeProbeFailuresDue,
     reconcileEthereumSubmissions,
     type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
@@ -43,12 +45,14 @@ import {
     historyEntryOfSigned,
     submitAndRecordEthereumTransactions,
     submitEthereumTransactions,
+    waitForEvmReceipt,
 } from './submission'
 
 export { ETHEREUM_CONFIRMATION_TIMEOUT_MS }
 
 export type EthereumBroadcasterOptions = {
     confirmationTimeoutMs?: number
+    tokenSightings?: TokenSightings
 }
 
 export const createEvmBroadcasterAdapter = (
@@ -106,16 +110,9 @@ export const createEvmBroadcasterAdapter = (
         waitForConfirmation: async (scope, txIds) => {
             const client = clientFor(scope)
             await Promise.all(
-                txIds.map(async hash => {
-                    const receipt = await client.waitForTransactionReceipt({
-                        hash: hash as Hex,
-                        timeout,
-                        checkReplacement: false,
-                    })
-                    if (receipt.status === 'reverted') {
-                        throw new EvmError(EvmErrorCode.REVERTED)
-                    }
-                }),
+                txIds.map(hash =>
+                    waitForEvmReceipt(client, hash as Hex, timeout),
+                ),
             )
         },
         createSubmitTransport: (capturedScope): DataTransport => ({
@@ -205,12 +202,14 @@ export const createEvmBroadcasterAdapter = (
                 settleHandlers,
                 probeFailures,
                 getClient: clientFor,
+                tokenSightings: options.tokenSightings,
             })
             void resumeEthereumCallBatches(ctx, chain, {
                 confirmationTimeoutMs: timeout,
             })
             return summary
         },
+        resetSubmissionBackoff: () => makeProbeFailuresDue(probeFailures),
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
             chainData: { family: 'evm' },
@@ -228,12 +227,14 @@ export const createEvmBroadcasterAdapter = (
             new SubmissionError(
                 [],
                 'unknown-outcome',
-                toEvmError(
+                new EvmError(
+                    EvmErrorCode.TIMEOUT,
+                    {},
                     new Error(
                         `Transaction submit timed out after ${timeoutMs}ms`,
                     ),
-                    nativeSymbol,
                 ),
+                { isUnanswered: true },
             ),
     }
 }

@@ -20,11 +20,9 @@ import {
     MOCK_TX_ID,
     mockAsaInbox,
 } from '@perawallet/wallet-core-dev-fixtures'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import type {
     GalleryEntry,
@@ -171,7 +169,7 @@ export const getScreenSections = (): GallerySection[] => [
                                 screen: 'AssetDetails',
                                 params: {
                                     assetId: MOCK_ASSET_ID,
-                                    chainId: LEGACY_CHAIN_ID,
+                                    chainId: ALGORAND_CHAIN_ID,
                                 },
                             },
                         },
@@ -191,7 +189,7 @@ export const getScreenSections = (): GallerySection[] => [
                                 screen: 'CollectibleDetails',
                                 params: {
                                     assetId: MOCK_ASSET_ID,
-                                    chainId: LEGACY_CHAIN_ID,
+                                    chainId: ALGORAND_CHAIN_ID,
                                 },
                             },
                         },
@@ -208,6 +206,20 @@ export const getScreenSections = (): GallerySection[] => [
                         params: {
                             screen: 'Home',
                             params: { screen: 'RemoveAssets' },
+                        },
+                    },
+                },
+            },
+            {
+                id: 'scr-hide-tokens',
+                label: 'Hide tokens',
+                launch: {
+                    kind: 'navigate',
+                    target: {
+                        name: 'TabBar',
+                        params: {
+                            screen: 'Home',
+                            params: { screen: 'HideTokens' },
                         },
                     },
                 },
@@ -246,7 +258,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'AddAccount',
-                        params: { screen: 'SelectHDWallet' },
+                        params: {
+                            screen: 'SelectHDWallet',
+                            params: { chainId: firstChainId() },
+                        },
                     },
                 },
             },
@@ -767,7 +782,7 @@ export const getScreenSections = (): GallerySection[] => [
                             params: {
                                 assetIndex: Number(MOCK_ASSET_ID),
                                 scope: {
-                                    chainId: LEGACY_CHAIN_ID,
+                                    chainId: ALGORAND_CHAIN_ID,
                                     networkId: 'testnet',
                                 },
                             },
@@ -789,7 +804,7 @@ export const getScreenSections = (): GallerySection[] => [
                                 assetIndex: Number(MOCK_ASSET_ID),
                                 shouldClaimAlgo: false,
                                 scope: {
-                                    chainId: LEGACY_CHAIN_ID,
+                                    chainId: ALGORAND_CHAIN_ID,
                                     networkId: 'testnet',
                                 },
                             },
@@ -840,7 +855,7 @@ export const getScreenSections = (): GallerySection[] => [
                             params: {
                                 item: mockAsaInbox,
                                 scope: {
-                                    chainId: LEGACY_CHAIN_ID,
+                                    chainId: ALGORAND_CHAIN_ID,
                                     networkId: 'testnet',
                                 },
                             },
@@ -959,7 +974,7 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'TransactionDetails',
                         params: {
                             scope: {
-                                chainId: LEGACY_CHAIN_ID,
+                                chainId: ALGORAND_CHAIN_ID,
                                 networkId: 'testnet',
                             },
                             transactionId: MOCK_TX_ID,

@@ -18,11 +18,9 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -230,9 +228,10 @@ beforeEach(() => {
     vi.clearAllMocks()
     registerAlgorandAddressCodec()
     // A `!!` prefix marks the fixtures' invalid addresses.
-    vi.spyOn(addressCodecs.get(LEGACY_CHAIN_ID), 'isValid').mockImplementation(
-        address => !address.startsWith('!!'),
-    )
+    vi.spyOn(
+        addressCodecs.get(ALGORAND_CHAIN_ID),
+        'isValid',
+    ).mockImplementation(address => !address.startsWith('!!'))
     mockConnect.mockResolvedValue({
         getAddress: vi.fn(),
         signTransaction: vi.fn(),
@@ -322,7 +321,7 @@ describe('useLedgerVerifyScreen', () => {
         expect(watch?.custody.kind).toBe('watch')
         expect(
             authorityOf(watch!, {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: ALGORAND_CHAIN_ID,
                 networkId: 'mainnet',
             } as const),
         ).toBe('LEDGER0')
@@ -623,7 +622,7 @@ describe('useLedgerVerifyScreen', () => {
             expect(rekeyed?.custody.kind).toBe('watch')
             expect(
                 authorityOf(rekeyed!, {
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const),
             ).toBe('LEDGER0')
@@ -829,6 +828,49 @@ describe('useLedgerVerifyScreen', () => {
                 .getState()
                 .accounts.find(a => a.chains.algorand?.address === 'LEDGER0')
             expect(added?.name).toBe('ledger.default_account_name#2')
+        })
+
+        it('skips a number another account already shows, as when an earlier Ledger account was removed', async () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'hw-existing',
+                    name: 'ledger.default_account_name#2',
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'other-dev',
+                            deviceName: 'Nano S',
+                            transportType: 'ble',
+                        },
+                        accountIndex: 1,
+                    },
+                    chains: { algorand: { address: 'OLDLEDGER' } },
+                } as WalletAccount,
+            ])
+            routeParams.current = {
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'ble',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived('LEDGER0', 0) },
+                    { kind: 'derived', account: derived('LEDGER1', 1) },
+                ],
+            }
+
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+            await act(async () => {})
+            act(() => {
+                result.current.handleAdd()
+            })
+
+            const nameOf = (address: string) =>
+                useAccountsStore
+                    .getState()
+                    .accounts.find(a => a.chains.algorand?.address === address)
+                    ?.name
+            expect(nameOf('LEDGER0')).toBe('ledger.default_account_name#3')
+            expect(nameOf('LEDGER1')).toBe('ledger.default_account_name#4')
         })
     })
 
@@ -1185,6 +1227,163 @@ describe('useLedgerVerifyScreen', () => {
             expect(created?.chains.ethereum?.address).toBe(
                 ETH_LEDGER_1.toLowerCase(),
             )
+        })
+
+        describe('over USB', () => {
+            const onEthereum = (
+                address: string,
+                transportType: 'ble' | 'usb',
+            ): WalletAccount =>
+                ({
+                    ...ledgerOnAlgorand(0),
+                    custody: {
+                        kind: 'hardware',
+                        device: {
+                            manufacturer: 'ledger',
+                            deviceId: 'old-usb',
+                            deviceName: 'Nano',
+                            transportType,
+                        },
+                        accountIndex: 0,
+                    },
+                    chains: { ethereum: { address: address.toLowerCase() } },
+                }) as WalletAccount
+            const importOnBaseOverUsb = async () => {
+                routeParams.current = {
+                    chainId: 'base',
+                    deviceId: 'dev',
+                    deviceName: 'Nano',
+                    transportType: 'usb',
+                    selectedAccounts: [
+                        { kind: 'derived', account: derived(ETH_LEDGER_0, 0) },
+                    ],
+                }
+                const { result } = renderHook(() => useLedgerVerifyScreen())
+                await act(async () => {})
+                expect(result.current.areAllVerified).toBe(true)
+                act(() => {
+                    result.current.handleAdd()
+                })
+                await act(async () => {})
+            }
+
+            beforeEach(() => {
+                if (!addressCodecs.has('base')) {
+                    addressCodecs.register({
+                        ...addressCodecs.get('ethereum'),
+                        chainId: 'base',
+                    })
+                }
+            })
+
+            it('joins Base to the USB account holding the same Ethereum address, with no prompt or read', async () => {
+                useAccountsStore
+                    .getState()
+                    .setAccounts([onEthereum(ETH_LEDGER_0, 'usb')])
+
+                await importOnBaseOverUsb()
+
+                expect(mockSetConfetti).toHaveBeenCalledWith(true)
+                expect(mockSheetRequest).not.toHaveBeenCalled()
+                expect(mockProve).not.toHaveBeenCalled()
+                const [account, ...rest] = useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(account.id).toBe('hw-0')
+                expect(account.chains.base?.address).toBe(
+                    ETH_LEDGER_0.toLowerCase(),
+                )
+            })
+
+            it('joins with no prompt or read when the account holds Algorand before Ethereum', async () => {
+                const held = onEthereum(ETH_LEDGER_0, 'usb')
+                useAccountsStore.getState().setAccounts([
+                    {
+                        ...held,
+                        chains: {
+                            algorand: { address: 'LEDGER0' },
+                            ...held.chains,
+                        },
+                    } as WalletAccount,
+                ])
+
+                await importOnBaseOverUsb()
+
+                expect(mockSheetRequest).not.toHaveBeenCalled()
+                expect(mockProve).not.toHaveBeenCalled()
+                const [account, ...rest] = useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(account.chains.base?.address).toBe(
+                    ETH_LEDGER_0.toLowerCase(),
+                )
+            })
+
+            it('reads no other account at the index once the verify proves one', async () => {
+                const algorandOnly = {
+                    ...onEthereum(ETH_LEDGER_0, 'usb'),
+                    id: 'hw-algorand',
+                    chains: { algorand: { address: 'LEDGER0' } },
+                } as WalletAccount
+                useAccountsStore
+                    .getState()
+                    .setAccounts([
+                        algorandOnly,
+                        onEthereum(ETH_LEDGER_0, 'usb'),
+                    ])
+
+                await importOnBaseOverUsb()
+
+                expect(mockSheetRequest).not.toHaveBeenCalled()
+                expect(mockProve).not.toHaveBeenCalled()
+                const [algorand, ethereum, ...rest] =
+                    useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(algorand.chains.base).toBeUndefined()
+                expect(ethereum.id).toBe('hw-0')
+                expect(ethereum.chains.base?.address).toBe(
+                    ETH_LEDGER_0.toLowerCase(),
+                )
+            })
+
+            it('keeps another USB device at the same index a separate account', async () => {
+                useAccountsStore
+                    .getState()
+                    .setAccounts([onEthereum(ETH_LEDGER_1, 'usb')])
+                mockProve.mockResolvedValue(new Set())
+
+                await importOnBaseOverUsb()
+
+                const [held, created, ...rest] =
+                    useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(held.chains.base).toBeUndefined()
+                expect(created.custody).toMatchObject({
+                    kind: 'hardware',
+                    accountIndex: 0,
+                    device: { transportType: 'usb' },
+                })
+                expect(created.chains).toEqual({
+                    base: expect.objectContaining({
+                        address: ETH_LEDGER_0.toLowerCase(),
+                    }),
+                })
+            })
+
+            it('does not join a BLE account from a USB import', async () => {
+                useAccountsStore
+                    .getState()
+                    .setAccounts([onEthereum(ETH_LEDGER_0, 'ble')])
+
+                await importOnBaseOverUsb()
+
+                expect(mockSheetRequest).not.toHaveBeenCalled()
+                const [held, created, ...rest] =
+                    useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(held.chains.base).toBeUndefined()
+                expect(created.chains.base?.address).toBe(
+                    ETH_LEDGER_0.toLowerCase(),
+                )
+            })
         })
     })
 })

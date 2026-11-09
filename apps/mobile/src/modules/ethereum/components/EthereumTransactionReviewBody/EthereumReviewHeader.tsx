@@ -18,7 +18,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { SourceMetadataBadge } from '@modules/signing'
+import { SourceMetadataBadge, useSpendApprovalTitle } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useStyles } from './styles'
 
@@ -44,7 +44,14 @@ export const EthereumReviewHeader = ({
         amount,
         isAmountLoading,
         isTransfer,
+        standardCall,
     } = presentation
+    const approvalTitle = useSpendApprovalTitle(
+        standardCall?.kind === 'token-approval'
+            ? standardCall.spendApproval
+            : undefined,
+        presentation.scope,
+    )
 
     return (
         <PWView style={styles.header}>
@@ -66,7 +73,7 @@ export const EthereumReviewHeader = ({
                     variant='h3'
                     style={styles.title}
                 >
-                    {t(titleKey)}
+                    {approvalTitle ?? t(titleKey)}
                 </PWText>
                 {isTransfer && !!counterparty && (
                     <AddressDisplay

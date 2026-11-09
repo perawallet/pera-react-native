@@ -19,23 +19,23 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     buildAccount,
-    chainAccountOf,
     findAccountByAddressOn,
     useAccountsStore,
     useAllAccounts,
     useSelectedAccountId,
     withMultisigParameters,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { multisigAdapterFor } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
+import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 import { useShouldPlayConfetti } from '@modules/onboarding'
 import { getNextSharedAccountName } from '@modules/multisig'
 import type { MessagesStackParamList } from '../../routes/types'
@@ -67,7 +67,8 @@ export const useMultisigInvitationNameScreen =
 
         const { t } = useLanguage()
         const { errorToast, successToast } = useToast()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const { isAccountNameTaken } = useUniqueAccountName()
+        const scope = useSelectedScope(ALGORAND_CHAIN_ID)
         const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
 
         const accounts = useAllAccounts()
@@ -84,7 +85,7 @@ export const useMultisigInvitationNameScreen =
             getNextSharedAccountName(
                 accounts,
                 t('multisig.invitation.name.default_name'),
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
                 invitation.address,
             ),
         )
@@ -92,18 +93,15 @@ export const useMultisigInvitationNameScreen =
         const { allowProgrammaticNavigation } = useNavigationLock(isSaving)
 
         const trimmedName = accountName.trim()
-        const normalizedName = trimmedName.toLowerCase()
-        const isNameTaken =
-            trimmedName !== '' &&
-            accounts.some(
-                a =>
-                    chainAccountOf(a, LEGACY_CHAIN_ID)?.address !==
-                        invitation.address &&
-                    (a.name ?? '').trim().toLowerCase() === normalizedName,
-            )
-        const nameError = isNameTaken
-            ? t('multisig.name.error_name_taken')
-            : undefined
+        const isNameTaken = isAccountNameTaken(
+            trimmedName,
+            findAccountByAddressOn(
+                accounts,
+                ALGORAND_CHAIN_ID,
+                invitation.address,
+            )?.id,
+        )
+        const nameError = isNameTaken ? t('account_info.name_taken') : undefined
         const isFinishDisabled = isSaving || trimmedName === '' || isNameTaken
 
         const handleNameChange = useCallback((value: string) => {
@@ -123,7 +121,7 @@ export const useMultisigInvitationNameScreen =
 
             const alreadyExists = findAccountByAddressOn(
                 accounts,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
                 invitation.address,
             )
             if (alreadyExists) {

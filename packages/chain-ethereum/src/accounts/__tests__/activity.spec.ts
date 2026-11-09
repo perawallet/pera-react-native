@@ -259,6 +259,47 @@ describe('createEvmActivityCheck', () => {
             expect(peak).toBe(4)
         })
 
+        it('sends no history GET once the walk has abandoned the chain, though the node reads were made', async () => {
+            server.use(...rpc(), ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
+            const seen = recordPera()
+            const abandoned = new AbortController()
+            abandoned.abort()
+
+            await expect(
+                checkWith(['history'])([QUIET, OTHER], SCOPE, abandoned.signal),
+            ).rejects.toThrow('Activity lookup abandoned')
+
+            expect(seen).toEqual([])
+        })
+
+        it('cancels a history GET still in flight when the walk abandons the chain', async () => {
+            let hasFinished = false
+            server.use(
+                ...rpc(),
+                http.get(
+                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                    async () => {
+                        await new Promise(resolve => setTimeout(resolve, 400))
+                        hasFinished = true
+                        return HttpResponse.json({ results: [], next: null })
+                    },
+                ),
+            )
+            const abandoned = new AbortController()
+            const startedAt = performance.now()
+            const check = checkWith(['history'])(
+                [QUIET],
+                SCOPE,
+                abandoned.signal,
+            )
+            setTimeout(() => abandoned.abort(), 30)
+
+            await expect(check).rejects.toThrow()
+
+            expect(performance.now() - startedAt).toBeLessThan(300)
+            expect(hasFinished).toBe(false)
+        })
+
         it('counts an address whose only page is empty but carries a cursor', async () => {
             server.use(
                 ...rpc(),
@@ -328,6 +369,28 @@ describe('createEvmActivityCheck', () => {
 
             expect(isChainRefusedError(error)).toBe(true)
         })
+
+        it('rejects a scope its deployment refuses as refused, asking nothing', async () => {
+            const requested: string[] = []
+            server.events.on('request:start', ({ request }) => {
+                requested.push(request.url)
+            })
+
+            const error = await createEthereumAccountStateOps(
+                testChainContext({ isChainRefused: true }),
+                ETHEREUM,
+                { listedTokens: cachedWhitelist(ETHEREUM) },
+            )
+                .checkActivity([QUIET], {
+                    chainId: 'ethereum',
+                    networkId: 'mainnet',
+                })
+                .catch((rejected: unknown) => rejected)
+            server.events.removeAllListeners('request:start')
+
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(requested).toEqual([])
+        })
     })
 
     describe('without a history service', () => {
@@ -383,6 +446,19 @@ describe('createEvmActivityCheck', () => {
             expect(active.get(QUIET)).toBe(true)
             expect(seen).toHaveLength(1)
             expect(seen[0]!.url.searchParams.has('cursor')).toBe(false)
+        })
+
+        it('sends no NFT GET once the walk has abandoned the chain', async () => {
+            server.use(...rpc(), ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
+            const seen = recordPera()
+            const abandoned = new AbortController()
+            abandoned.abort()
+
+            await expect(
+                checkWith(['nfts'])([QUIET], SCOPE, abandoned.signal),
+            ).rejects.toThrow('Activity lookup abandoned')
+
+            expect(seen).toEqual([])
         })
 
         it('reads only the node when no Pera service is listed', async () => {

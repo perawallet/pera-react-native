@@ -10,7 +10,10 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
+
 import {
+    baseUnitsToDisplayUnits,
     DEFAULT_PRECISION,
     formatNumber,
     type Nullable,
@@ -37,12 +40,24 @@ export const sortQuotesByAmountOutDesc = (quotes: SwapQuote[]): SwapQuote[] =>
         return 0
     })
 
+/** Display units of `assetOut` per one display unit of `assetIn`; null without both decimals. */
+export const swapRate = (quote: SwapQuote): Nullable<Decimal> => {
+    const inDecimals = quote.assetIn.decimals
+    const outDecimals = quote.assetOut.decimals
+    if (inDecimals === undefined || outDecimals === undefined) return null
+    if (quote.amountIn.isZero()) return null
+    return baseUnitsToDisplayUnits(quote.amountOut, outDecimals).div(
+        baseUnitsToDisplayUnits(quote.amountIn, inDecimals),
+    )
+}
+
 export const formatSwapRate = (quote: SwapQuote): string => {
-    if (!quote.price) return '-'
+    const rate = swapRate(quote)
+    if (!rate) return '-'
     const outDecimals =
         quote.assetOut.decimals ?? UNKNOWN_DECIMALS_RATE_PRECISION
     const { sign, integer, fraction } = formatNumber(
-        quote.price,
+        rate,
         outDecimals,
         undefined,
         DEFAULT_PRECISION,

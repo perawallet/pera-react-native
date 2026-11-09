@@ -68,6 +68,17 @@ const RECIPIENT_KINDS: readonly TransactionRecord['summary']['kind'][] = [
     'nft-transfer',
 ]
 
+// A history row with a fee names its signer, who alone paid the gas; a
+// pending send the wallet built names none and is the account's own. Without
+// an own address the payer is unknown, so the fee stays.
+const isPaidByAnother = (
+    initiator: Optional<string>,
+    ownAddress: string,
+): boolean =>
+    !!ownAddress &&
+    initiator !== undefined &&
+    initiator.toLowerCase() !== ownAddress.toLowerCase()
+
 export const useEthereumRecordLayout = (
     record: TransactionRecord,
     presentation?: Nullable<EthereumTransactionPresentation>,
@@ -151,15 +162,16 @@ export const useEthereumRecordLayout = (
                 to: RECIPIENT_KINDS.includes(recordSummary.kind)
                     ? parties.to
                     : undefined,
-                fee: record.fee
-                    ? {
-                          asset: nativeAsset,
-                          value: baseUnitsToDisplayUnits(
-                              record.fee,
-                              nativeAsset.decimals,
-                          ),
-                      }
-                    : undefined,
+                fee:
+                    record.fee && !isPaidByAnother(record.initiator, ownAddress)
+                        ? {
+                              asset: nativeAsset,
+                              value: baseUnitsToDisplayUnits(
+                                  record.fee,
+                                  nativeAsset.decimals,
+                              ),
+                          }
+                        : undefined,
             },
             // Keyed off what the hero resolved, so a leg it couldn't name still shows.
             amountRows:

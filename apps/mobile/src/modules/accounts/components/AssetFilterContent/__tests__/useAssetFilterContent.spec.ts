@@ -19,6 +19,8 @@ const h = vi.hoisted(() => ({
         hideZeroBalance: false,
         displayNfts: true,
         displayOptedInNfts: false,
+        showSuspicious: false,
+        setShowSuspicious: vi.fn(),
         setHideZeroBalance: vi.fn(),
         setDisplayNfts: vi.fn(),
         setDisplayOptedInNfts: vi.fn(),
@@ -36,6 +38,7 @@ describe('useAssetFilterContent', () => {
         h.state.hideZeroBalance = false
         h.state.displayNfts = true
         h.state.displayOptedInNfts = false
+        h.state.showSuspicious = false
     })
 
     it('initialises the draft from the stored preferences', () => {
@@ -44,6 +47,20 @@ describe('useAssetFilterContent', () => {
         expect(result.current.hideZeroBalance).toBe(false)
         expect(result.current.displayNfts).toBe(true)
         expect(result.current.displayOptedInNfts).toBe(false)
+        expect(result.current.showSuspicious).toBe(false)
+    })
+
+    it('writes the suspicious toggle to the store only on commit', () => {
+        const { result } = renderHook(() => useAssetFilterContent())
+
+        act(() => result.current.handleToggleShowSuspicious())
+
+        expect(result.current.showSuspicious).toBe(true)
+        expect(h.state.setShowSuspicious).not.toHaveBeenCalled()
+
+        act(() => result.current.commitChanges())
+
+        expect(h.state.setShowSuspicious).toHaveBeenCalledWith(true)
     })
 
     it('toggles update the draft without writing to the store', () => {

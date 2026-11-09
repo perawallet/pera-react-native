@@ -29,17 +29,14 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import type { PWFlatList } from '@components/core'
 import { useFirstAccountRequest } from '@hooks/useAccountDrawerRequest'
 import { isAndroid } from '@utils/platform'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import type { AccountMenuProps } from './AccountMenu'
 
 export type AccountMenuListItem =
@@ -67,7 +64,7 @@ type UseAccountMenuResult = {
 export const useAccountMenu = (
     props: AccountMenuProps,
 ): UseAccountMenuResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const accounts = useAllAccounts()
     const { selectedAccountId, setSelectedAccountId } = useSelectedAccountId()
     const { accountValueTotals } = useAccountValueTotalsQuery(

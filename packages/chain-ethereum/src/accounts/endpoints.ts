@@ -29,7 +29,7 @@ export const SHOULD_REFRESH_PATH = '/api/v4/accounts/should-refresh/'
 const SHOULD_REFRESH_MAX_ADDRESSES = 1000
 
 /** `round` is the chain tip's block number; it is omitted when `refresh` is false. */
-const shouldRefreshResponseSchema = z.union([
+export const shouldRefreshResponseSchema = z.union([
     z.object({
         refresh: z.literal(true),
         round: z.number().int().nonnegative().optional(),

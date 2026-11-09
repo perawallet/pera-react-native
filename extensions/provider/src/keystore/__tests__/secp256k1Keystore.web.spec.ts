@@ -111,6 +111,41 @@ describe('secp256k1 through the patched engine and the provider shim', () => {
         expect(addressOf(entry.publicKey!)).toBe(FIRST_ADDRESS)
     })
 
+    it("derives MetaMask's first two addresses from a 12-word phrase's 16-byte entropy", async () => {
+        const { keystore, store } = await freshKeystore()
+        const entropy = mnemonicToEntropy(
+            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about',
+            wordlist,
+        )
+        expect(entropy.byteLength).toBe(16)
+        await keystore.secrets!.put(entropy, {
+            id: 'seed-12-entropy',
+            metadata: { parentKeyId: 'seed-12', entropyKey: true },
+        })
+
+        const addresses: string[] = []
+        for (const index of [0, 1]) {
+            const id = await keystore.deriveFromSeed!(
+                'seed-12-entropy',
+                `m/44'/60'/0'/0/${index}`,
+                {
+                    algorithm: SECP256K1_ALGORITHM,
+                    curve: 'secp256k1',
+                    id: `eth-12-${index}`,
+                    metadata: { parentKeyId: 'seed-12' },
+                },
+            )
+            addresses.push(
+                addressOf(store.state.keys.find(k => k.id === id)!.publicKey!),
+            )
+        }
+
+        expect(addresses).toEqual([
+            '9858effd232b4033e47d90003d41ec34ecaeda94',
+            '6fac4d18c912343bf86fa7049364dd4e424ab9c0',
+        ])
+    })
+
     it('leaves no copy of the child key outside the sealed store', async () => {
         const { keystore } = await freshKeystore()
         await storeEntropy(keystore)

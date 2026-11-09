@@ -10,34 +10,40 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 
 import type { RampOrder } from '../../models'
-import type { RampOrderApiResponse } from './schema'
+import {
+    depositInstructionsStepSchema,
+    openCheckoutStepSchema,
+    type RampOrderApiResponse,
+} from './schema'
 
-// The order response carries mutually exclusive `xo` / `meld` payloads. XO
-// orders return an on-chain pay-in address (rendered as a QR); Meld orders
-// return a hosted `widgetUrl` opened in a webview.
+// The order's steps say what the user does next: open the provider's
+// checkout, or pay into a deposit address. A malformed step throws rather than
+// degrading to "no usable step".
 export const transformRampOrder = (api: RampOrderApiResponse): RampOrder => {
-    if (api.xo) {
-        return {
-            kind: 'xo',
-            swapOrderId: api.swap_order_id,
-            payInAddress: api.xo.pay_in_address,
-            payInAddressTag: api.xo.provider_response.payInAddressTag,
-            sourceAmount: new Decimal(api.xo.source_amount),
-            toAddress: api.xo.provider_response.toAddress,
-            status: api.xo.provider_response.status,
-        }
-    }
-
-    if (api.meld) {
+    const checkout = api.steps.find(step => step.kind === 'open_checkout')
+    if (checkout) {
         return {
             kind: 'meld',
-            swapOrderId: api.swap_order_id,
-            widgetUrl: api.meld.provider_response.widgetUrl,
+            orderId: api.order_id,
+            checkoutUrl: openCheckoutStepSchema.parse(checkout).url,
         }
     }
 
-    throw new Error('Ramp order has neither xo nor meld payload')
+    const deposit = api.steps.find(step => step.kind === 'deposit_instructions')
+    if (deposit) {
+        const parsed = depositInstructionsStepSchema.parse(deposit)
+        return {
+            kind: 'xo',
+            orderId: api.order_id,
+            deposit: { address: parsed.address, memo: parsed.memo ?? null },
+        }
+    }
+
+    throw new AppError('The order has no checkout or deposit step.', {
+        category: ErrorCategory.UNKNOWN,
+        recoverable: false,
+    })
 }

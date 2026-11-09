@@ -31,6 +31,9 @@ const mockHookResult = {
     crossChainTotal: undefined as CrossChainTotal | undefined,
     singleNetworkChainId: undefined as string | undefined,
     jointParticipantCount: undefined as number | undefined,
+    jointSignersLabel: undefined as string | undefined,
+    shouldShowSecondaryLabel: false,
+    hasDuplicateName: false,
 }
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
 const mockAccountDisplay = vi.fn((_props: unknown) => null)
@@ -88,6 +91,9 @@ describe('AccountWithBalance', () => {
         mockHookResult.crossChainTotal = undefined
         mockHookResult.singleNetworkChainId = undefined
         mockHookResult.jointParticipantCount = undefined
+        mockHookResult.jointSignersLabel = undefined
+        mockHookResult.shouldShowSecondaryLabel = false
+        mockHookResult.hasDuplicateName = false
         mockPreferredAmount.mockClear()
         mockAssetAmount.mockClear()
         mockAccountDisplay.mockClear()
@@ -107,6 +113,34 @@ describe('AccountWithBalance', () => {
         ).toBeTruthy()
     })
 
+    it('lets a whole-account row with a shared name show its address instead of its type or network', () => {
+        mockHookResult.crossChainTotal = { kind: 'fiat', value: new Decimal(1) }
+        mockHookResult.singleNetworkChainId = 'algorand'
+        mockHookResult.hasDuplicateName = true
+        mockHookResult.shouldShowSecondaryLabel = true
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({
+                alwaysShowAccountType: false,
+                shouldShowSecondaryLabel: true,
+                secondaryContent: undefined,
+            }),
+        )
+        expect(screen.queryByTestId('chain_label_algorand')).toBeNull()
+    })
+
+    it('keeps the type label on a whole-account row with a unique name', () => {
+        mockHookResult.crossChainTotal = { kind: 'fiat', value: new Decimal(1) }
+
+        render(<AccountWithBalance account={ACCOUNT} />)
+
+        expect(mockAccountDisplay).toHaveBeenCalledWith(
+            expect.objectContaining({ alwaysShowAccountType: true }),
+        )
+    })
+
     it('passes no badges to a single-chain mainnet row', () => {
         render(<AccountWithBalance account={ACCOUNT} />)
 
@@ -115,7 +149,7 @@ describe('AccountWithBalance', () => {
         )
     })
 
-    it("replaces the balances with a notice when the chain's kill switch is off, keeping the chain badge under the name", () => {
+    it('replaces the balances with a notice when the chain is unavailable in this build, keeping the chain badge under the name', () => {
         mockHookResult.availability = { isAvailable: false }
         mockHookResult.isMultiChain = true
 
@@ -225,6 +259,19 @@ describe('AccountWithBalance', () => {
             ).toBeTruthy()
         })
 
+        it("shows a joint account's signers under its name", () => {
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
+            mockHookResult.jointSignersLabel = 'Shared · 2 of 3 signers'
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(
+                within(screen.getByTestId('account_display')).getByText(
+                    'Shared · 2 of 3 signers',
+                ),
+            ).toBeTruthy()
+        })
+
         it('shows no avatar badge for an account that is not joint', () => {
             mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
 
@@ -249,7 +296,7 @@ describe('AccountWithBalance', () => {
             expect(mockAssetAmount).not.toHaveBeenCalled()
         })
 
-        it("shows the unavailable notice when all of the account's chains are switched off", () => {
+        it('shows the unavailable notice when the account has no chain this build registers', () => {
             mockHookResult.crossChainTotal = { kind: 'unavailable' }
 
             render(<AccountWithBalance account={ACCOUNT} />)

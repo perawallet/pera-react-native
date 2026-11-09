@@ -18,22 +18,19 @@ import {
     type AccountHoldingSource,
     type PortfolioValueHistoryItem,
     useAccountHoldingSources,
-    useAccountScope,
     useAccountSummaryQuery,
     useAccountValueTotalsQuery,
     useAllAccounts,
-    useCanSignWith,
+    useCanSignOnAnyChain,
+    useFailedFirstReadChainIds,
     type WalletAccount,
+    useAccountScope,
 } from '@perawallet/wallet-core-accounts'
 import {
-    isTestTierScope,
-    LEGACY_CHAIN_ID,
+    countsTowardFiatTotals,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useChainAvailability,
@@ -42,6 +39,7 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import type {
     HistoryPeriod,
     Nullable,
@@ -58,9 +56,9 @@ export type UseAccountOverviewHeaderResult = {
     /** Converts the total and the chart alike. */
     currencyScope: ChainScope
     /**
-     * Across every chain the account is on, leaving out test-network holdings
-     * once a second chain is registered. `null` while any counted value or the
-     * preferred-currency rate is unknown — renders as a placeholder, not 0.
+     * Across every chain the account is on, leaving out holdings that don't
+     * count toward a fiat total (test networks). `null` while any counted value
+     * or the preferred-currency rate is unknown — renders as a placeholder, not 0.
      */
     portfolioPreferredValue: Nullable<Decimal>
     /** False when every chain the account is on is a test network: there's no fiat total to show. */
@@ -85,25 +83,25 @@ export const useAccountOverviewHeader = (
     account: WalletAccount,
     isChartShown: boolean,
 ): UseAccountOverviewHeaderResult => {
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const scope = useAccountScope(account, useHomeChainScope().chainId)
     const availability = useChainAvailability(scope.chainId)
     const sources = useAccountHoldingSources(account)
-    // Test-network holdings never count as money (once a second chain is
-    // registered), so they stay out of the total.
+    // Test-network holdings never count as money, so they stay out of the total.
     const countedSources = useMemo(
         () =>
-            sources.filter(
-                source => !isTestTierScope(getProvider().chains, source.scope),
+            sources.filter(source =>
+                countsTowardFiatTotals(getProvider().chains, source.scope),
             ),
         [sources],
     )
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(countedSources)
     const hasFiatTotal = countedSources.length > 0
     // An all-test-network account has no fiat total, but still charts its holdings.
     const chartSources = hasFiatTotal ? countedSources : sources
     const chainName = chainDisplayNameOf(scope.chainId)
-    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useHomeChainScope()
     const { usdToPreferred } = useCurrency(currencyScope)
-    const canSign = useCanSignWith(account, scope.chainId)
+    const canSign = useCanSignOnAnyChain(account)
     // Cheap SQL aggregates — no full-holdings materialization for the header.
     const { nativeAmount, isComplete } = useAccountSummaryQuery(
         addressOn(account, scope),
@@ -116,23 +114,28 @@ export const useAccountOverviewHeader = (
         availability.isAvailable,
     )
     // Summed over the chains the list reads, not every chain the account has
-    // an entry on: a switched-off chain's last-synced value would otherwise
-    // inflate the headline. One unknown value makes the total unknown.
+    // an entry on. One unknown value, a failed read's placeholder zero
+    // included, makes the total unknown.
     const portfolioFiatValue = useMemo(
         () =>
             countedSources.reduce<Nullable<Decimal>>((total, source) => {
-                const fiatValue =
+                const read =
                     accountValueTotals.get(
                         accountValueKey(source.scope.chainId, source.address),
                     )?.fiatValue ?? null
+                const fiatValue =
+                    read?.isZero() &&
+                    failedFirstReadChainIds.has(source.scope.chainId)
+                        ? null
+                        : read
                 return total === null || fiatValue === null
                     ? null
                     : total.plus(fiatValue)
             }, new Decimal(0)),
-        [countedSources, accountValueTotals],
+        [countedSources, accountValueTotals, failedFirstReadChainIds],
     )
     const allAccounts = useAllAccounts()
-    // The account's own chain is the first source (registry order), and keeps
+    // The account's first chain is the first source (registry order), and keeps
     // today's native-balance test; any other chain counts once it holds value.
     const isEmptyOnOtherChains = sources.slice(1).every(source => {
         const nativeValue = accountValueTotals.get(

@@ -13,13 +13,13 @@
 import { useCallback, useMemo } from 'react'
 import {
     addressOn,
+    useAccountCapabilityScope,
     useAccountHoldingSources,
     useAccountScope,
     useSelectedAccount,
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -33,6 +33,7 @@ import {
     type HistoryFeedProps,
     type UseTransactionHistoryRowsResult,
 } from '@modules/transactions'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
 import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
@@ -78,7 +79,12 @@ export const useAccountHistoryRows = ({
     beforeTime,
 }: UseAccountHistoryRowsParams): UseAccountHistoryRowsResult => {
     const account = useSelectedAccount()
-    const ownScope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const home = useHomeChainScope()
+    const accountScope = useAccountScope(account, home.chainId)
+    // Unnarrowed, the list reads a chain that serves history, which needn't be
+    // the account's first.
+    const ownScope =
+        useAccountCapabilityScope(account, 'history') ?? accountScope
     const sources = useAccountHoldingSources(account)
     const selectedSource = useSelectedNetworkSource(sources)
     const isMerged = selectedSource === null && sources.length > 1

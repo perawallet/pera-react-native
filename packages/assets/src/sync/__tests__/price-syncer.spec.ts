@@ -32,6 +32,7 @@ import {
     type AssetRef,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { assetsChainAdapters } from '../../chain-adapter'
 import {
     FAKE_NATIVE_ASSET,
@@ -215,6 +216,21 @@ describe('fetchAndPersistPrices', () => {
             fetchAndPersistPrices(['999'], mainnetScope),
         ).rejects.toThrow('All price sync batches failed')
         expect(getPricesMock).toHaveBeenCalledWith([ref('999')], mainnetScope)
+    })
+
+    test('rethrows the refusal when the backend refuses the chain for every batch', async () => {
+        const refusal = new PeraServiceUnavailableError(
+            mainnetScope,
+            'prices',
+            {
+                isChainRefused: true,
+            },
+        )
+        getPricesMock.mockRejectedValue(refusal)
+
+        await expect(fetchAndPersistPrices(['999'], mainnetScope)).rejects.toBe(
+            refusal,
+        )
     })
 
     test('records misses for every priceless id on a large portfolio (no cap)', async () => {

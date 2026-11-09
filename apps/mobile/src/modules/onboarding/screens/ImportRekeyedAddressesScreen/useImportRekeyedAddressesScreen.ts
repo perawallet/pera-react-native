@@ -20,12 +20,12 @@ import {
     useSetAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 type ImportRekeyedAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -52,7 +52,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         params: { accounts },
     } = useRoute<ImportRekeyedAddressesRouteProp>()
     const { t } = useLanguage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const allAccounts = useAllAccounts()
 
     const { exitAccountFlow } = useExitAccountFlow()

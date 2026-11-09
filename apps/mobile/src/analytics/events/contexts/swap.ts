@@ -20,7 +20,6 @@ export enum SwapEvent {
     HistorySeeAll = 'swapscr_swap_history_see_all', // Tapped "see all" on swap history (opt. pairing)
     SelectHistory = 'swapscr_swap_history_select', // Picked a swap from history (opt. pairing)
     SelectHistoryInSeeAll = 'swapscr_swap_history_see_all_asset_select', // Picked a swap from the full history list (opt. pairing)
-    SelectTopPair = 'swapscr_swap_top_select', // Selected a top trading pair (opt. pairing)
     SelectProviderOpen = 'swapscr_swap_select_provider', // Opened the provider selector (opt. router)
     SelectProviderRouter = 'swapscr_swap_select_provider_router', // Chose a specific router (opt. router)
     SettingsApply = 'swapscr_swap_settings_apply', // Applied swap settings
@@ -33,6 +32,8 @@ export enum SwapEvent {
     EnterNumbers = 'swapscr_enter_amount_tap', // Started entering an amount
     SelectFromToken = 'swapscr_select_top_asset_tap', // Opened the from-token selector (asset id)
     SelectToToken = 'swapscr_select_lower_asset_tap', // Opened the to-token selector (asset id)
+    SelectFromChainFilter = 'swapscr_asset_top_chain_filter_select', // Picked a chain chip in the from-token selector
+    SelectToChainFilter = 'swapscr_asset_bot_chain_filter_select', // Picked a chain chip in the to-token selector
 }
 
 /**
@@ -85,7 +86,6 @@ export interface SwapRequiredPayloads {
             [Key.NetworkFeeAsAlgo]?: number
         }
     [SwapEvent.Failed]: ChainPayload & SwapStatusPayload
-    [SwapEvent.SelectTopPair]: SwapPairingPayload
     [SwapEvent.HistorySeeAll]: SwapPairingPayload
     [SwapEvent.SelectHistory]: SwapPairingPayload
     [SwapEvent.SelectHistoryInSeeAll]: SwapPairingPayload
@@ -97,4 +97,6 @@ export interface SwapRequiredPayloads {
     [SwapEvent.Confirm]: ChainPayload
     [SwapEvent.ConfirmSwapButton]: ChainPayload
     [SwapEvent.EnterNumbers]: ChainPayload
+    [SwapEvent.SelectFromChainFilter]: ChainPayload
+    [SwapEvent.SelectToChainFilter]: ChainPayload
 }

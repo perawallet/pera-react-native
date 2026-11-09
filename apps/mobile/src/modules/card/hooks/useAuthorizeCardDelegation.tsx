@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -63,7 +63,7 @@ export const useAuthorizeCardDelegation =
                                     ),
                                     account: getAccountName(
                                         account,
-                                        LEGACY_CHAIN_ID,
+                                        ALGORAND_CHAIN_ID,
                                     ),
                                 },
                             )}

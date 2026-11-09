@@ -47,7 +47,7 @@ describe('linkFromIntent', () => {
             {
                 kind: 'payment',
                 target,
-                recipient: 'addr',
+                recipient: { address: 'addr' },
                 assetRef,
                 amount,
                 note: 'n',
@@ -62,6 +62,19 @@ describe('linkFromIntent', () => {
             note: 'n',
         })
         expect(link && 'amount' in link && link.amount).toBe(amount)
+    })
+
+    it('maps a name recipient to receiverName, with no receiverAddress', () => {
+        const link = linkFromIntent(
+            { kind: 'payment', target, recipient: { name: 'alice.eth' } },
+            URL,
+        )
+
+        expect(link).toMatchObject({
+            type: DeeplinkType.TRANSFER,
+            receiverName: 'alice.eth',
+        })
+        expect(link && 'receiverAddress' in link).toBe(false)
     })
 
     it('maps an asset-opt-in intent', () => {

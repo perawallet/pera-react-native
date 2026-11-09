@@ -12,19 +12,19 @@
 
 import { createRequire } from 'node:module'
 
-const evmTooling = createRequire(import.meta.url)(
-    '../../../tools/dev/evm-config-keys.cjs',
+const chainPackages = createRequire(import.meta.url)(
+    '../../../tools/dev/chain-packages.cjs',
 )
 
 const evmRpcUrlKeys = () =>
-    evmTooling.evmScopeConfigKeys().map(keys => keys.rpcUrlKey)
+    chainPackages
+        .chainPackageFieldConfigKeys(chainPackages.EVM_CHAIN_PACKAGE, 'rpcUrl')
+        .map(keys => keys.key)
 
-/** Every EVM config key generate-config.sh can bake, from the network table. */
-const evmConfigKeys = () => [
-    ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesKey),
-    ...evmTooling
-        .evmScopeConfigKeys()
-        .flatMap(keys => [keys.rpcUrlKey, keys.peraServicesKey]),
+/** Every chain package config key generate-config.sh can bake, from the table. */
+const chainPackageConfigKeys = () => [
+    ...chainPackages.chainPackageCapabilityConfigKeys().map(keys => keys.key),
+    ...chainPackages.chainPackageScopeConfigKeys().map(keys => keys.key),
 ]
 
 /**
@@ -104,9 +104,10 @@ export const WEB_CONFIG_ALLOWLIST = [
     // CHAINS lists an EVM chain ships it and every other build stays viem-free.
     'chainIds',
     'chainAlgorandCapabilities',
-    // Every EVM chain's capabilities, and per network its public RPC URL and
-    // Pera service list; generate-config.sh refuses a listed chain without them.
-    ...evmConfigKeys(),
+    // Every build-gated chain's capabilities, and per network each config field
+    // its package declares; generate-config.sh refuses a listed chain without
+    // a required one.
+    ...chainPackageConfigKeys(),
 ]
 
 const INTEGRITY_FLAGS = {

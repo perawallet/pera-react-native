@@ -25,14 +25,13 @@ import {
     clearPriceMisses,
 } from '../pricesRepository'
 import { getStaleOrMissingPriceAssetIds } from '../syncQueries'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'testnet',
 } as const
 

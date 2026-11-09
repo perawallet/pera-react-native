@@ -16,10 +16,7 @@ import {
     type WalletAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AccountPicker } from '@components/AccountPicker'
@@ -28,7 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 export type OptInAccountSelectionContentProps = {
     /** Pre-highlights an account in the list (e.g. the currently selected one). */
     highlightedAddress?: string
-    chainId?: ChainId
+    chainId: ChainId
 }
 
 /**
@@ -39,7 +36,7 @@ export type OptInAccountSelectionContentProps = {
  */
 export const OptInAccountSelectionContent = ({
     highlightedAddress,
-    chainId = LEGACY_CHAIN_ID,
+    chainId,
 }: OptInAccountSelectionContentProps) => {
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<string>()

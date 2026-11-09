@@ -56,6 +56,14 @@ import {
     type DeviceChainAdapter,
 } from '@perawallet/wallet-core-device'
 import {
+    rampChainAdapters,
+    type RampChainAdapter,
+} from '@perawallet/wallet-core-onramp'
+import {
+    swapChainAdapters,
+    type SwapChainAdapter,
+} from '@perawallet/wallet-core-swaps'
+import {
     historyChainAdapters,
     transferChainAdapters,
     type HistoryChainAdapter,
@@ -65,6 +73,10 @@ import {
     ledgerAppDriverRegistry,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import {
+    nameServiceChainAdapters,
+    type NameServiceChainAdapter,
+} from '@perawallet/wallet-core-nfd'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     createEthereumAccountsAdapter,
@@ -72,6 +84,7 @@ import {
     createEvmKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { createTokenSightings } from './accounts/token-detection'
 import { cachedWhitelist } from './assets/api/whitelist-cache'
 import { createEvmNodeEndpointAdapter } from './blockchain/node-endpoint'
 import type { EvmChain } from './chains/types'
@@ -80,12 +93,15 @@ import { createEvmDeeplinkAdapter } from './deeplinks/adapter'
 import { createEvmDeviceAdapter } from './device'
 import { createEvmHistoryAdapter } from './history'
 import { createEvmLedgerAppDriver } from './ledger/driver'
+import { createEvmNameServiceAdapter } from './names/adapter'
+import { createEvmRampAdapter } from './onramp'
 import { createEvmPlannerAdapter } from './signing/adapter'
 import { createEvmLocalKeySignerAdapter } from './signing/localKeySigner'
 import { withMessageSigningGate } from './signing/messageSigningGate'
 import { createEvmMessageSignerAdapter } from './signing/messages'
 import { createEthereumReviewer } from './signing/review'
 import { createEvmSigningReviewerAdapter } from './signing/signingReviewer'
+import { createEvmSwapAdapter } from './swaps'
 import {
     createEvmBroadcasterAdapter,
     createEvmTransferAdapter,
@@ -109,6 +125,9 @@ type EvmChainAdapters = {
     deeplink: DeeplinkChainAdapter
     device: DeviceChainAdapter
     ledgerDriver: LedgerAppDriver
+    swap: SwapChainAdapter
+    ramp: RampChainAdapter
+    nameService: NameServiceChainAdapter
 }
 
 const buildAdapters = (
@@ -118,8 +137,11 @@ const buildAdapters = (
     const reviewer = createEthereumReviewer({ chain })
     // Account sync and asset search read the same token list.
     const listedTokens = cachedWhitelist(chain)
+    // The broadcaster sees a swap's tokens arrive; the account read picks them up.
+    const tokenSightings = createTokenSightings()
+    const addressCodec = createEvmAddressCodec(chain)
     return {
-        addressCodec: createEvmAddressCodec(chain),
+        addressCodec,
         keyDerivation: createEvmKeyDerivation(chain),
         planner: createEvmPlannerAdapter(chain),
         reviewer,
@@ -129,16 +151,26 @@ const buildAdapters = (
             chain,
             createEvmMessageSignerAdapter(chain),
         ),
-        accounts: createEthereumAccountsAdapter(ctx, chain, listedTokens),
+        accounts: createEthereumAccountsAdapter(
+            ctx,
+            chain,
+            listedTokens,
+            tokenSightings,
+        ),
         assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),
-        broadcaster: createEvmBroadcasterAdapter(ctx, chain),
+        broadcaster: createEvmBroadcasterAdapter(ctx, chain, {
+            tokenSightings,
+        }),
         history: createEvmHistoryAdapter(chain, ctx),
         dappRequest: createEthereumDappRequestAdapter(ctx, chain),
         nodeEndpoint: createEvmNodeEndpointAdapter(ctx, chain),
         deeplink: createEvmDeeplinkAdapter(chain),
         device: createEvmDeviceAdapter(chain),
         ledgerDriver: createEvmLedgerAppDriver(chain),
+        swap: createEvmSwapAdapter(ctx, chain),
+        ramp: createEvmRampAdapter(chain),
+        nameService: createEvmNameServiceAdapter(chain, addressCodec),
     }
 }
 
@@ -177,6 +209,9 @@ export const createEvmChainRegistration = (
         nodeEndpointAdapters.register(adapters.nodeEndpoint)
         ledgerAppDriverRegistry.register(adapters.ledgerDriver)
         deviceChainAdapters.register(adapters.device)
+        swapChainAdapters.register(adapters.swap)
+        rampChainAdapters.register(adapters.ramp)
+        nameServiceChainAdapters.register(adapters.nameService)
         // The first EVM chain registered serves every EVM chain's links.
         if (!isSchemeClaimed(chain)) {
             deeplinkAdapters.register(adapters.deeplink)

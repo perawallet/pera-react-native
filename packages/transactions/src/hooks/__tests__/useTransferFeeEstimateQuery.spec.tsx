@@ -17,7 +17,6 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
-    LEGACY_CHAIN_ID,
     type FeeEstimate,
     type TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
@@ -30,7 +29,7 @@ import {
     type TransferFeeEstimateInput,
 } from '../useTransferFeeEstimateQuery'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const INTENT: TransferIntent = {
     kind: 'transfer',
     from: 'SENDER',
@@ -149,6 +148,18 @@ describe('useTransferFeeEstimateQuery', () => {
         expect(result.current.isPending).toBe(false)
     })
 
+    it('re-prices on refresh after a failed estimate', async () => {
+        getFeeEstimate.mockRejectedValueOnce(new Error('rpc down'))
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(result.current.data).toEqual(ESTIMATE))
+        expect(getFeeEstimate).toHaveBeenCalledTimes(2)
+    })
+
     it('reports a failed estimate', async () => {
         getFeeEstimate.mockRejectedValue(new Error('rpc down'))
 
@@ -156,5 +167,55 @@ describe('useTransferFeeEstimateQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.data).toBeUndefined()
+    })
+
+    it('carries the error behind a failed estimate, and none once it recovers', async () => {
+        const failure = new Error('insufficient funds')
+        getFeeEstimate.mockRejectedValueOnce(failure)
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(result.current.error).toBe(failure))
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(result.current.error).toBeNull())
+    })
+
+    it('keeps a failed estimate an error while it is read again', async () => {
+        const failure = new Error('rpc down')
+        getFeeEstimate.mockRejectedValueOnce(failure)
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        getFeeEstimate.mockReturnValue(new Promise(() => {}))
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(result.current.isRetrying).toBe(true))
+        expect(result.current.isError).toBe(true)
+        expect(result.current.error).toBe(failure)
+    })
+
+    it('carries no failure over to a new input', async () => {
+        getFeeEstimate.mockRejectedValueOnce(new Error('rpc down'))
+        const { result, rerender } = renderHook(
+            ({ input }: { input: TransferFeeEstimateInput }) =>
+                useTransferFeeEstimateQuery(input),
+            {
+                wrapper: wrapper(queryClient),
+                initialProps: { input: { intent: INTENT, scope: SCOPE } },
+            },
+        )
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        getFeeEstimate.mockReturnValue(new Promise(() => {}))
+
+        rerender({
+            input: {
+                intent: { ...INTENT, amount: INTENT.amount.plus(1) },
+                scope: SCOPE,
+            },
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(false))
+        expect(result.current.isRetrying).toBe(false)
     })
 })

@@ -24,7 +24,7 @@ import type { AddressSearchItem } from './useAddressSearchView'
 type AddressSearchRowProps = {
     item: AddressSearchItem
     scope: ChainScope
-    onSelected: (address: string, nfdName?: string) => void
+    onSelected: (address: string, name?: string) => void
     setValue: (value: string) => void
     /** Shown after selected addresses; the balance row badges itself. */
     chainBadge: ReactNode
@@ -119,15 +119,17 @@ export const AddressSearchRow = ({
                 </PWTouchableOpacity>
             )
         }
-        case 'nfd': {
+        case 'name': {
             return (
                 <PWTouchableOpacity
-                    onPress={() => onSelected(item.nfd.address, item.nfd.name)}
+                    onPress={() =>
+                        onSelected(item.result.address, item.result.name)
+                    }
                     style={showAddIcon ? styles.foreignRow : styles.nfdItem}
                 >
                     <AddressDisplay
                         scope={scope}
-                        address={item.nfd.address}
+                        address={item.result.address}
                         showCopy={false}
                         style={
                             showAddIcon

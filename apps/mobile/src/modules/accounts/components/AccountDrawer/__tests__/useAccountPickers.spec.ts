@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockNavigate = vi.fn()
 const mockSigningAccounts: { current: { id: string }[] } = { current: [] }
 const mockSwapSigningAccounts: { current: { id: string }[] } = { current: [] }
+const mockFundSigningAccounts: { current: { id: string }[] } = { current: [] }
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -35,7 +36,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => [],
-        useSigningAccounts: () => mockSigningAccounts.current,
+        useSigningAccountsOnAnyChain: () => mockSigningAccounts.current,
     }
 })
 
@@ -43,13 +44,9 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwapSigningAccounts: () => mockSwapSigningAccounts.current,
 }))
 
-import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { setCapabilityOverrides } from '@test-utils/capability-overrides'
-import {
-    algorandAccountAt,
-    registerAlgorandRampAdapter,
-} from '@test-utils/rampChainAdapter'
+vi.mock('@perawallet/wallet-core-onramp', () => ({
+    useOnrampSigningAccounts: () => mockFundSigningAccounts.current,
+}))
 
 import {
     useAccountPickers,
@@ -118,45 +115,19 @@ describe('useAccountPickers', () => {
 })
 
 describe('useFundPicker', () => {
-    const fundable = algorandAccountAt('ALGORAND_ADDRESS', 'fundable')
-    const elsewhere: WalletAccount = {
-        id: 'elsewhere',
-        custody: { kind: 'local', seed: null },
-        chains: { ethereum: { address: '0xADDRESS' } },
-    }
-
-    beforeEach(() => {
-        useRemoteConfigStore.getState().resetState()
-        registerAlgorandRampAdapter()
-        mockSigningAccounts.current = [fundable, elsewhere]
-    })
-
-    it('offers only signing accounts on a chain with onramp', () => {
-        const { result } = renderHook(() => useFundPicker())
-
-        expect(result.current.accountFilter?.(fundable)).toBe(true)
-        expect(result.current.accountFilter?.(elsewhere)).toBe(false)
-    })
-
-    it('leaves out an account whose chain has onramp off', () => {
-        setCapabilityOverrides({ onramp: false })
+    it('only lists the accounts that can be funded on a chain they sign on', () => {
+        mockSigningAccounts.current = [{ id: 'A' }, { id: 'B' }]
+        mockFundSigningAccounts.current = [{ id: 'B' }]
 
         const { result } = renderHook(() => useFundPicker())
 
-        expect(result.current.accountFilter?.(fundable)).toBe(false)
-    })
-
-    it('leaves out an account the wallet cannot sign for', () => {
-        mockSigningAccounts.current = []
-
-        const { result } = renderHook(() => useFundPicker())
-
-        expect(result.current.accountFilter?.(fundable)).toBe(false)
+        expect(result.current.accountFilter?.({ id: 'B' } as never)).toBe(true)
+        expect(result.current.accountFilter?.({ id: 'A' } as never)).toBe(false)
     })
 })
 
 describe('useSigningPicker', () => {
-    it('only lists the accounts useSigningAccounts returns', () => {
+    it('only lists the accounts useSigningAccountsOnAnyChain returns', () => {
         mockSigningAccounts.current = [{ id: 'A' }]
 
         const { result } = renderHook(() => useSigningPicker())

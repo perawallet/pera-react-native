@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal =>
 vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddressQuery: () => ({ data: mockNfdNames }),
+    useNameForAddressQuery: () => ({ data: mockNfdNames }),
 }))
 
 vi.mock('@hooks/useAccountTypeLabel', () => ({
@@ -157,6 +157,29 @@ describe('useAccountDisplay', () => {
 
         expect(result.current.displayName).toBe(truncated)
         expect(result.current.renderSecondary).toBe(false)
+    })
+
+    it("keeps a named Ethereum account's name and shows its primary name beneath", () => {
+        mockNfdNames = [{ name: 'alice.eth' }]
+        const account: WalletAccount = {
+            id: 'account-2',
+            name: 'Savings',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account,
+                compact: false,
+                showAccountType: false,
+                iconSize: 'xl',
+                chainId: 'ethereum',
+            }),
+        )
+
+        expect(result.current.displayName).toBe('Savings')
+        expect(result.current.secondaryText).toBe('alice.eth')
     })
 
     it('names an unnamed Universal Wallet account by its number and shows its address, not its type, below', () => {

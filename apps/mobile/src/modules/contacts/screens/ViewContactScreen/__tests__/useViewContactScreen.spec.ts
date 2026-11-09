@@ -26,7 +26,10 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { evmCapabilityDefaults } from '@packages/chain-ethereum/src/capability-defaults'
-import { setChainEnabled } from '@test-utils/capability-overrides'
+import {
+    setCapabilityOverrides,
+    setChainEnabled,
+} from '@test-utils/capability-overrides'
 import {
     ETHEREUM_CHAIN_ID,
     registerEthereumChain,
@@ -39,13 +42,8 @@ const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
     requestBottomSheet: vi.fn(),
     shareText: vi.fn(),
-    useNfdForAddressQuery: vi.fn(),
     copyToClipboard: vi.fn(),
     pushWebView: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddressQuery: mocks.useNfdForAddressQuery,
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -113,9 +111,6 @@ const selectContact = (contact: Contact | null): void => {
 describe('useViewContactScreen', () => {
     beforeEach(() => {
         selectContact(CONTACT)
-        mocks.useNfdForAddressQuery.mockReturnValue({
-            data: [{ name: 'alice.algo' }, { name: 'second.algo' }],
-        })
         mocks.shareText.mockResolvedValue(undefined)
         registerEthereumChain()
     })
@@ -126,19 +121,33 @@ describe('useViewContactScreen', () => {
         restoreAlgorandOnlyChains()
     })
 
-    it('lists one row per family, with whether it has an explorer, and the first NFD name of the Algorand address', () => {
+    it('lists one row per family, with whether it has an explorer and the chain that names it', () => {
         const { result } = renderHook(() => useViewContactScreen())
 
         expect(result.current.addressRows).toEqual([
-            { family: 'algorand', address: 'ALICE_ADDRESS', hasExplorer: true },
-            { family: 'evm', address: '0xA11CE', hasExplorer: true },
+            {
+                family: 'algorand',
+                address: 'ALICE_ADDRESS',
+                hasExplorer: true,
+                nameChainId: 'algorand',
+            },
+            {
+                family: 'evm',
+                address: '0xA11CE',
+                hasExplorer: true,
+                nameChainId: ETHEREUM_CHAIN_ID,
+            },
         ])
-        expect(result.current.nfdName).toBe('alice.algo')
-        expect(mocks.useNfdForAddressQuery).toHaveBeenCalledWith(
-            expect.anything(),
-            'ALICE_ADDRESS',
-            { enabled: true },
-        )
+    })
+
+    it('leaves nameChainId unset for a family with no chain that has name lookups on', () => {
+        setCapabilityOverrides({ nameService: false }, ETHEREUM_CHAIN_ID)
+        const { result } = renderHook(() => useViewContactScreen())
+
+        expect(result.current.addressRows.map(row => row.nameChainId)).toEqual([
+            'algorand',
+            undefined,
+        ])
     })
 
     it("opens the contact QR sheet on the row's family", () => {
@@ -166,22 +175,26 @@ describe('useViewContactScreen', () => {
         restoreAlgorandOnlyChains()
         const { result } = renderHook(() => useViewContactScreen())
 
-        expect(result.current.addressRows).toContainEqual({
-            family: 'evm',
-            address: '0xA11CE',
-            hasExplorer: false,
-        })
+        expect(result.current.addressRows).toContainEqual(
+            expect.objectContaining({
+                family: 'evm',
+                address: '0xA11CE',
+                hasExplorer: false,
+            }),
+        )
     })
 
     it("has no explorer when the family's only chain is on a custom network", () => {
         selectCustomNetwork(ETHEREUM_CHAIN_ID)
         const { result } = renderHook(() => useViewContactScreen())
 
-        expect(result.current.addressRows).toContainEqual({
-            family: 'evm',
-            address: '0xA11CE',
-            hasExplorer: false,
-        })
+        expect(result.current.addressRows).toContainEqual(
+            expect.objectContaining({
+                family: 'evm',
+                address: '0xA11CE',
+                hasExplorer: false,
+            }),
+        )
     })
 
     it("opens the explorer of a family's only chain without asking for a network", async () => {
@@ -233,28 +246,19 @@ describe('useViewContactScreen', () => {
             })
         })
 
-        it('leaves a switched-off chain out, opening the remaining one directly', async () => {
+        it('keeps a switched-off chain among the explorers, as it only turns off its Pera backend', async () => {
             setChainEnabled(BASE_CHAIN_ID, false)
             const { result } = renderHook(() => useViewContactScreen())
 
             await act(() => result.current.openExplorer('evm', '0xA11CE'))
 
-            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
-            expect(mocks.pushWebView).toHaveBeenCalledWith({
-                url: accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
-            })
-        })
-
-        it('hides the explorer when every chain of the family is switched off', () => {
-            setChainEnabled(ETHEREUM_CHAIN_ID, false)
-            setChainEnabled(BASE_CHAIN_ID, false)
-            const { result } = renderHook(() => useViewContactScreen())
-
-            expect(result.current.addressRows).toContainEqual({
-                family: 'evm',
-                address: '0xA11CE',
-                hasExplorer: false,
-            })
+            expect(mocks.requestBottomSheet).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    contents: expect.objectContaining({
+                        props: { chainIds: [ETHEREUM_CHAIN_ID, BASE_CHAIN_ID] },
+                    }),
+                }),
+            )
         })
 
         it('opens nothing when the network sheet is dismissed', async () => {
@@ -298,19 +302,12 @@ describe('useViewContactScreen', () => {
     describe('when the contact is missing or was deleted', () => {
         beforeEach(() => {
             selectContact(null)
-            mocks.useNfdForAddressQuery.mockReturnValue({ data: undefined })
         })
 
-        it('has no rows and skips the NFD lookup', () => {
+        it('has no rows', () => {
             const { result } = renderHook(() => useViewContactScreen())
 
             expect(result.current.addressRows).toEqual([])
-            expect(result.current.nfdName).toBeUndefined()
-            expect(mocks.useNfdForAddressQuery).toHaveBeenCalledWith(
-                expect.anything(),
-                '',
-                { enabled: false },
-            )
         })
 
         it('opens no QR sheet', () => {

@@ -20,7 +20,7 @@ import { useAddressSearchView } from './useAddressSearchView'
 import { useAddressSearchList } from './useAddressSearchList'
 
 export type AddressSearchViewProps = {
-    onSelected: (address: string, nfdName?: string) => void
+    onSelected: (address: string, name?: string) => void
     /** See {@link UseAddressSearchViewProps.scope}. */
     scope: ChainScope
     excludeAddress?: string
@@ -57,7 +57,7 @@ export const AddressSearchView = ({
         setValue,
         matchingItems,
         hasResults,
-        isNfdLoading,
+        isNameSearchLoading,
         wrongNetworkMessage,
         searchPlaceholder,
         chainBadgeName,
@@ -90,7 +90,7 @@ export const AddressSearchView = ({
     // An excluded address (the send's own account) can leave nothing to list
     // before any query, which isn't a miss to report; other pickers keep it.
     let listEmptyComponent: ReactNode = null
-    if (isNfdLoading) {
+    if (isNameSearchLoading) {
         listEmptyComponent = (
             <PWView style={styles.loadingContainer}>
                 <PWLoadingIndicator />

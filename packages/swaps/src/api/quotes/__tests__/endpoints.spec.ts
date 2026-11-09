@@ -10,230 +10,111 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
+import { Decimal } from 'decimal.js'
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
+import { SwapQuoteMismatchError } from '../../../errors'
+import type { SwapQuoteRequest } from '../../../models'
+import { createSwapQuotes } from '../endpoints'
 import {
-    createQuotes,
-    calculatePeraFee,
-    calculateSwapAmount,
-} from '../endpoints'
-import type { CreateQuotesRequest } from '../schema'
-import type { SwapProviderItem } from '../../../models'
+    routerAsset,
+    routerOffer,
+    SCOPE_A,
+} from '../../__tests__/routerFixtures'
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    return {
-        ...actual,
-        queryClient: vi.fn(),
-    }
-})
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    queryClient: vi.fn(),
+}))
 
-const request: CreateQuotesRequest = {
-    swapper_address: 'ALGO_ADDRESS',
-    swap_type: 'fixed-input',
-    asset_in_id: 0,
-    asset_out_id: 31566704,
-    amount: '1000000',
+const request: SwapQuoteRequest = {
+    sourceAsset: { ...SCOPE_A, assetId: 'native' },
+    destinationAsset: { ...SCOPE_A, assetId: '31566704' },
+    sourceAmount: new Decimal('5000000'),
+    sourceAddress: 'SENDER',
+    destinationAddress: 'RECEIVER',
+    slippage: '0.5',
 }
 
-const baseAsset = {
-    asset_id: 0,
-    verification_tier: 'verified' as const,
-}
+const respondWith = (results: unknown[]) =>
+    (queryClient as Mock).mockResolvedValue({ data: { results } })
 
-const providers: SwapProviderItem[] = [
-    { name: 'deflex', displayName: 'Deflex', iconUrl: 'https://x/deflex.png' },
-    {
-        name: 'tinyman',
-        displayName: 'Tinyman V2',
-        iconUrl: 'https://x/tinyman.png',
-    },
-]
-
-describe('createQuotes', () => {
+describe('createSwapQuotes', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    test('attaches providerDisplayName by matching raw provider name', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: {
-                results: [
-                    {
-                        id: 1,
-                        provider: 'deflex',
-                        asset_in: baseAsset,
-                        asset_out: baseAsset,
-                    },
-                    {
-                        id: 2,
-                        provider: 'tinyman',
-                        asset_in: baseAsset,
-                        asset_out: baseAsset,
-                    },
-                ],
-            },
-        })
+    test('sends router ids, router accounts, base units and percent slippage', async () => {
+        respondWith([])
 
-        const result = await createQuotes(
-            request,
-            { chainId: 'algorand', networkId: 'mainnet' },
-            providers,
-        )
-
-        expect(result[0].provider).toBe('deflex')
-        expect(result[0].providerDisplayName).toBe('Deflex')
-        expect(result[1].provider).toBe('tinyman')
-        expect(result[1].providerDisplayName).toBe('Tinyman V2')
-    })
-
-    test('leaves providerDisplayName undefined when provider is unknown', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: {
-                results: [
-                    {
-                        id: 3,
-                        provider: 'unknown-dex',
-                        asset_in: baseAsset,
-                        asset_out: baseAsset,
-                    },
-                ],
-            },
-        })
-
-        const result = await createQuotes(
-            request,
-            { chainId: 'algorand', networkId: 'mainnet' },
-            providers,
-        )
-
-        expect(result[0].provider).toBe('unknown-dex')
-        expect(result[0].providerDisplayName).toBeUndefined()
-    })
-
-    test('anchors swapperAddress to the request, not the response body', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: {
-                results: [
-                    {
-                        id: 4,
-                        provider: 'deflex',
-                        asset_in: baseAsset,
-                        asset_out: baseAsset,
-                    },
-                ],
-            },
-        })
-
-        const result = await createQuotes(
-            request,
-            { chainId: 'algorand', networkId: 'mainnet' },
-            providers,
-        )
-
-        expect(result[0].swapperAddress).toBe(request.swapper_address)
-    })
-
-    test('rejects a quote whose swapper_address differs from the requested address', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: {
-                results: [
-                    {
-                        id: 5,
-                        provider: 'deflex',
-                        swapper_address: 'ATTACKER_ADDRESS',
-                        asset_in: baseAsset,
-                        asset_out: baseAsset,
-                    },
-                ],
-            },
-        })
-
-        await expect(
-            createQuotes(
-                request,
-                { chainId: 'algorand', networkId: 'mainnet' },
-                providers,
-            ),
-        ).rejects.toThrow('Quote swapper address does not match')
-    })
-})
-
-describe('calculatePeraFee', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
-    test('POSTs /calculate-pera-fee/ and converts pera_fee_amount to Decimal', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: { pera_fee_amount: 5000, pera_fee_asset_id: 0 },
-        })
-
-        const result = await calculatePeraFee(
-            {
-                address: 'ADDR',
-                asset_in_id: 0,
-                asset_out_id: 31566704,
-                amount_input: '1000000',
-            } as never,
-            'mainnet',
-        )
+        await createSwapQuotes(request)
 
         expect(queryClient).toHaveBeenCalledWith(
             expect.objectContaining({
-                url: '/v1/dex-swap/calculate-pera-fee/',
+                backend: 'pera',
+                scope: SCOPE_A,
                 method: 'POST',
+                url: '/api/v4/swap/quotes/',
+                data: {
+                    source_asset_id: 'fake-a:main/token:native',
+                    destination_asset_id: 'fake-a:main/token:31566704',
+                    source_amount: '5000000',
+                    source_account: 'fake-a:main:SENDER',
+                    destination_account: 'fake-a:main:RECEIVER',
+                    slippage: '0.5',
+                },
             }),
         )
-        expect(result.peraFeeAmount?.toString()).toBe('5000')
-        expect(result.peraFeeAssetId).toBe('0')
     })
 
-    test('returns peraFeeAmount undefined when the API omits the field', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: { pera_fee_asset_id: 0 },
-        })
+    test('leaves slippage to the router when none is set', async () => {
+        respondWith([])
 
-        const result = await calculatePeraFee({} as never, 'mainnet')
+        await createSwapQuotes({ ...request, slippage: null })
 
-        expect(result.peraFeeAmount).toBeUndefined()
-    })
-})
-
-describe('calculateSwapAmount', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
+        const [{ data }] = (queryClient as Mock).mock.calls[0]
+        expect(data).not.toHaveProperty('slippage')
     })
 
-    test('POSTs /calculate-swap-amount/ and converts amount + pera_fee to Decimal', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: {
-                amount: '1000000',
-                pera_fee: '5000',
-                pera_fee_asset_id: 0,
-            },
-        })
+    test('returns no offers as an empty list', async () => {
+        respondWith([])
 
-        const result = await calculateSwapAmount({} as never, 'mainnet')
+        expect(await createSwapQuotes(request)).toEqual([])
+    })
 
-        expect(queryClient).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: '/v1/dex-swap/calculate-swap-amount/',
-            }),
+    test('returns each offer with the request it answers', async () => {
+        respondWith([routerOffer()])
+
+        const [quote] = await createSwapQuotes(request)
+
+        expect(quote.request).toBe(request)
+    })
+
+    test('refuses an offer for another amount', async () => {
+        respondWith([routerOffer({ source_amount: '500000000' })])
+
+        await expect(createSwapQuotes(request)).rejects.toBeInstanceOf(
+            SwapQuoteMismatchError,
         )
-        expect(result.amount?.toString()).toBe('1000000')
-        expect(result.peraFee?.toString()).toBe('5000')
     })
 
-    test('returns undefined amounts when the API omits them', async () => {
-        ;(queryClient as Mock).mockResolvedValue({
-            data: { pera_fee_asset_id: 0 },
-        })
+    test('refuses an offer for another source asset', async () => {
+        respondWith([routerOffer({ source_asset: routerAsset(SCOPE_A, '7') })])
 
-        const result = await calculateSwapAmount({} as never, 'mainnet')
+        await expect(createSwapQuotes(request)).rejects.toBeInstanceOf(
+            SwapQuoteMismatchError,
+        )
+    })
 
-        expect(result.amount).toBeUndefined()
-        expect(result.peraFee).toBeUndefined()
+    test('refuses an offer for another destination asset', async () => {
+        respondWith([
+            routerOffer({ destination_asset: routerAsset(SCOPE_A, '7') }),
+        ])
+
+        await expect(createSwapQuotes(request)).rejects.toBeInstanceOf(
+            SwapQuoteMismatchError,
+        )
     })
 })

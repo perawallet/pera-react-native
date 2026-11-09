@@ -29,6 +29,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    isChainRefusedError,
     logger,
     partition,
     PeraServiceUnavailableError,
@@ -193,13 +194,13 @@ const syncNativeAsset = async (
     const [item] = hasAssetsService
         ? await fetchAssetItems(scope, chain, [NATIVE_ASSET_ID]).catch(
               (error: unknown) => {
-                  logger.warn(
-                      'Native coin group unreadable; storing without it',
-                      {
-                          scope,
-                          error,
-                      },
-                  )
+                  const message =
+                      'Native coin group unreadable; storing without it'
+                  if (isChainRefusedError(error)) {
+                      logger.debug(message, { scope, error })
+                  } else {
+                      logger.warn(message, { scope, error })
+                  }
                   return []
               },
           )
@@ -249,6 +250,9 @@ const syncTokens = async (
         scope,
         ttlMs: ASSET_CACHE_TTL_MS,
         recheckUnreadGroup: true,
+        // A verified token the backend still lacks a logo for shouldn't wait
+        // out the metadata TTL once the backend adds one.
+        recheckMissingLogo: true,
     })
     if (stale.length === 0) return
 
@@ -392,7 +396,9 @@ const readToken = async (
         asset: fromPera
             ? withChainIntrinsics(fromPera, fromNode.value)
             : fromNode.value,
-        cache: 'node',
+        // Without Pera's half the row reads as fresh for the TTL, so the
+        // token's logo and tier would stay out of the store.
+        cache: fromPera ? 'both' : 'node',
     }
 }
 
@@ -518,7 +524,9 @@ const search =
         // An empty page would read as "No assets found" on a network that
         // can't be searched at all.
         if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
-            throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
+            throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE, {
+                isChainRefused: ctx.getPeraBackend(scope).isChainRefused,
+            })
         }
         // The list's native row carries the backend's name for it; every
         // other screen names it from the chain table.
@@ -557,6 +565,18 @@ export const createEthereumAssetsAdapter = (
         getNativeAsset: () => chain.nativeAsset,
         syncAssets: syncAssets(ctx, chain),
         getAssetMetadata: getAssetMetadata(ctx, chain),
+        findCollectibleMetadata: async (ref, scope) => {
+            eip155ChainIdOf(scope, chain)
+            const assetId = evmAssetIdOf(chain, ref)
+            if (!isEvmNftAssetId(assetId)) return null
+            try {
+                return await getNftMetadata(ctx, chain, assetId, scope)
+            } catch (error) {
+                // The lookup's own miss: no NFT service, or one that doesn't know the NFT.
+                if (error instanceof InvalidCaip19Error) return null
+                throw error
+            }
+        },
         fetchOnChainAsset: async (ref, scope) => {
             eip155ChainIdOf(scope, chain)
             const assetId = evmAssetIdOf(chain, ref)

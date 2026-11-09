@@ -17,9 +17,9 @@ import {
     decryptBackupPayload,
     secureBackupRecoveryWordCount,
 } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -53,7 +53,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     const setPayload = useAsbImportFlowStore(state => state.setPayload)
 
     const [isProcessing, setIsProcessing] = useState(false)
-    const wordCount = secureBackupRecoveryWordCount(LEGACY_CHAIN_ID)
+    const wordCount = secureBackupRecoveryWordCount(ALGORAND_CHAIN_ID)
 
     // The flow store is wiped after a successful import (and on backgrounding,
     // for the decrypted payload). If the user navigates back into this screen
@@ -123,7 +123,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
             const payload = decryptBackupPayload(
                 envelope,
                 mnemonicIndices,
-                LEGACY_CHAIN_ID,
+                ALGORAND_CHAIN_ID,
             )
             setPayload(payload)
             // `replace` (not `push`) so the Key screen unmounts on success: the

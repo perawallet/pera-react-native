@@ -49,7 +49,10 @@ import {
     evmErrorCodeOf,
     toEvmError,
 } from '../blockchain/errors'
-import { hasNodeVerdict } from '../blockchain/utils/nodeVerdict'
+import {
+    hasNodeVerdict,
+    isAfterUnconfirmedAttempt,
+} from '../blockchain/utils/nodeVerdict'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
 import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
@@ -60,10 +63,26 @@ import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 const ALREADY_KNOWN =
     /already known|\bknown transaction|alreadyknown|already imported/i
 
-/** Resolves false only when the node says it has no such transaction. */
 // How long a receipt is awaited before the reconciler is left to settle the send.
 export const ETHEREUM_CONFIRMATION_TIMEOUT_MS = 3 * 60_000
 
+/** Throws `EvmError(REVERTED)` for a transaction that failed on chain. */
+export const waitForEvmReceipt = async (
+    client: PublicClient,
+    hash: Hex,
+    timeout: number,
+): Promise<void> => {
+    const receipt = await client.waitForTransactionReceipt({
+        hash,
+        timeout,
+        checkReplacement: false,
+    })
+    if (receipt.status === 'reverted') {
+        throw new EvmError(EvmErrorCode.REVERTED)
+    }
+}
+
+/** Resolves false only when the node says it has no such transaction. */
 export const isTransactionKnownToNode = async (
     client: PublicClient,
     hash: Hex,
@@ -121,11 +140,18 @@ export const submitEthereumTransactions = async (
                 classification = 'unknown-outcome'
             }
             if (!accepted) {
-                throw new SubmissionError(
-                    [hash],
-                    classification,
-                    toEvmError(error, chain.row.nativeAsset.symbol),
+                const nodeError = toEvmError(
+                    error,
+                    chain.row.nativeAsset.symbol,
                 )
+                throw new SubmissionError([hash], classification, nodeError, {
+                    isUnanswered:
+                        classification === 'unknown-outcome' &&
+                        (isAfterUnconfirmedAttempt(error) ||
+                            nodeError.code === EvmErrorCode.TIMEOUT ||
+                            nodeError.code ===
+                                EvmErrorCode.NETWORK_UNREACHABLE),
+                })
             }
         }
         hashes.push(hash)

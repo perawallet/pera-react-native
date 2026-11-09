@@ -92,7 +92,7 @@
     "@perawallet/wallet-core-walletconnect": "workspace:*",
     "@perawallet/wallet-extension-connections": "workspace:*",
     "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
-    "@perawallet/wallet-extension-keystore-chrome": "workspace:*",
+    "@perawallet/wallet-extension-vault-chrome": "workspace:*",
     "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
     "@perawallet/wallet-extension-ledger-react-native-usb": "workspace:*",
     "@perawallet/wallet-extension-ledger-web-ble": "workspace:*",

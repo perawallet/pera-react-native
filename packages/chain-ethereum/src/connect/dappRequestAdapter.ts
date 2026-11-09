@@ -12,6 +12,7 @@
 
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestChainAdapter } from '@perawallet/wallet-core-connections'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { ethereumKindIdOf } from '../accounts/local-key-kinds'
 import type { EvmChain } from '../chains/types'
@@ -28,6 +29,7 @@ import {
 } from './callBatch/params'
 import { prepareEthereumCallBatch } from './callBatch/prepare'
 import { findEthereumCallBatch, reachedCallTxIdOf } from './callBatch/status'
+import { createEthereumNodeReads } from './nodeReads'
 import { createEvmWalletConnectSupport } from './walletConnect'
 
 const NO_TRANSACTION_GROUP =
@@ -36,6 +38,15 @@ const NO_TRANSACTION_GROUP =
 const refuseTransactionGroup = (): never => {
     throw new Error(NO_TRANSACTION_GROUP)
 }
+
+// A call the node says would revert reaches review only where the simulation
+// that warns the user of it can run: decoding on and the backend offering it.
+const isRevertPredictionAvailable = (
+    ctx: ChainContext,
+    chain: EvmChain,
+): boolean =>
+    getProvider().chains.capabilities(chain.row.id).contractDecoding &&
+    ctx.getPeraBackend(ctx.getScope()).services.has('simulations')
 
 export const createEthereumDappRequestAdapter = (
     ctx: ChainContext,
@@ -61,6 +72,8 @@ export const createEthereumDappRequestAdapter = (
     emptySignaturesFor: () => ({}),
 
     walletConnect: createEvmWalletConnectSupport(ctx, chain),
+
+    nodeReads: createEthereumNodeReads(ctx, chain),
 
     validateTransactionPayload: () => ({
         ok: false,
@@ -94,6 +107,12 @@ export const createEthereumDappRequestAdapter = (
                 ctx,
                 chain,
                 request as EthereumSendTransactionRequest,
+                {
+                    allowRevertedEstimate: isRevertPredictionAvailable(
+                        ctx,
+                        chain,
+                    ),
+                },
             ),
     },
 

@@ -17,13 +17,10 @@ import {
     useAccountHoldingSources,
     useAccountValueTotalsQuery,
     useRegisteredChainIds,
+    useFailedFirstReadChainIds,
     type LocalAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useDiscoveredAccountRow } from '../useDiscoveredAccountRow'
-
-const state = vi.hoisted(() => ({
-    switchedOff: [] as string[],
-}))
 
 vi.mock('@hooks/useLanguage')
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -31,13 +28,12 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useSwitchedOffChainIds: () => state.switchedOff,
 }))
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-contract')
     >()),
-    isTestTierScope: () => false,
+    countsTowardFiatTotals: () => true,
     addressCodecs: {
         has: () => true,
         get: () => ({
@@ -73,7 +69,6 @@ const linked = account({
 
 describe('useDiscoveredAccountRow', () => {
     beforeEach(() => {
-        state.switchedOff = []
         vi.mocked(useRegisteredChainIds).mockReturnValue([
             'algorand',
             'ethereum',
@@ -102,16 +97,6 @@ describe('useDiscoveredAccountRow', () => {
                 displayAddress: '0xEV…',
                 chainIds: ['ethereum', 'base'],
             },
-        ])
-    })
-
-    it('leaves out a switched-off chain', () => {
-        state.switchedOff = ['ethereum', 'base']
-
-        const { result } = renderHook(() => useDiscoveredAccountRow(linked))
-
-        expect(result.current.addressLines.map(line => line.address)).toEqual([
-            ALGO_ADDRESS,
         ])
     })
 
@@ -144,5 +129,31 @@ describe('useDiscoveredAccountRow', () => {
             kind: 'fiat',
             value: new Decimal(17),
         })
+    })
+
+    it('leaves the total unknown when a chain whose first read failed shows a zero', () => {
+        vi.mocked(useAccountHoldingSources).mockReturnValue([
+            { address: ALGO_ADDRESS, scope: scopeOf('algorand') },
+            { address: EVM_ADDRESS, scope: scopeOf('ethereum') },
+        ] as never)
+        vi.mocked(useFailedFirstReadChainIds).mockReturnValue(
+            new Set(['ethereum']),
+        )
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+            accountValueTotals: new Map([
+                [
+                    `algorand|${ALGO_ADDRESS}`,
+                    { nativeValue: new Decimal(1), fiatValue: new Decimal(10) },
+                ],
+                [
+                    `ethereum|${EVM_ADDRESS}`,
+                    { nativeValue: new Decimal(0), fiatValue: new Decimal(0) },
+                ],
+            ]),
+        } as never)
+
+        const { result } = renderHook(() => useDiscoveredAccountRow(linked))
+
+        expect(result.current.total).toEqual({ kind: 'fiat', value: null })
     })
 })

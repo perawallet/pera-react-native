@@ -53,6 +53,8 @@ const PRESETS = {
     },
 }
 
+const mockRefresh = vi.fn()
+
 describe('useSendFeeQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -67,6 +69,7 @@ describe('useSendFeeQuery', () => {
             data: undefined,
             isPending: false,
             isError: false,
+            refresh: mockRefresh,
         })
     })
 
@@ -95,8 +98,40 @@ describe('useSendFeeQuery', () => {
             presets: undefined,
             isPending: false,
             isError: false,
+            error: null,
+            isRetrying: false,
             refresh: expect.any(Function),
         })
+    })
+
+    it('re-runs the transfer estimate on refresh', () => {
+        const { result } = renderHook(() =>
+            useSendFeeQuery({
+                scope: ETHEREUM,
+                senderAddress: '0xSENDER',
+                assetId: 'native',
+                feePreset: 'normal',
+            }),
+        )
+
+        result.current.refresh()
+
+        expect(mockRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('does nothing on refresh with a send-flow adapter', () => {
+        const { result } = renderHook(() =>
+            useSendFeeQuery({
+                scope: ALGORAND,
+                senderAddress: 'SENDER',
+                assetId: '0',
+                feePreset: 'normal',
+            }),
+        )
+
+        result.current.refresh()
+
+        expect(mockRefresh).not.toHaveBeenCalled()
     })
 
     it('prices the transfer through the transfer adapter on a chain without a send-flow adapter', () => {
@@ -206,10 +241,13 @@ describe('useSendFeeQuery', () => {
     })
 
     it('reports a failed estimate as an error rather than a zero fee', () => {
+        const failure = new Error('insufficient funds')
         ;(useTransferFeeEstimateQuery as Mock).mockReturnValue({
             data: undefined,
             isPending: false,
             isError: true,
+            error: failure,
+            isRetrying: true,
         })
 
         const { result } = renderHook(() =>
@@ -222,6 +260,8 @@ describe('useSendFeeQuery', () => {
         )
 
         expect(result.current.isError).toBe(true)
+        expect(result.current.error).toBe(failure)
+        expect(result.current.isRetrying).toBe(true)
         expect(result.current.maxFeeAmount).toBeUndefined()
     })
 })

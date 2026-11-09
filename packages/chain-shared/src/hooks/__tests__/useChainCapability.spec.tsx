@@ -36,8 +36,6 @@ import {
     useChainCapabilityCheck,
     useChainCapabilityRequirement,
     useIsCapabilityRestricted,
-    useIsChainSwitchedOff,
-    useSwitchedOffChainIds,
 } from '../useChainCapability'
 
 // Overrides the shared setup's provider stub: this suite needs `chains` and
@@ -326,57 +324,6 @@ describe('useChainCapabilityRequirement', () => {
             expect(result.current).toBe(expected)
         },
     )
-})
-
-describe('useIsChainSwitchedOff', () => {
-    beforeEach(() => {
-        store.clear()
-        useRemoteConfigStore.getState().resetState()
-        provide(setUpChains())
-    })
-
-    it('follows the kill switch without a remount', () => {
-        const { result } = renderHook(() => useIsChainSwitchedOff('algorand'))
-        expect(result.current).toBe(false)
-
-        act(() => {
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride(
-                    chainOverridesKey('algorand'),
-                    JSON.stringify({ enabled: false }),
-                )
-        })
-
-        expect(result.current).toBe(true)
-    })
-})
-
-describe('useSwitchedOffChainIds', () => {
-    beforeEach(() => {
-        store.clear()
-        useRemoteConfigStore.getState().resetState()
-        provide(setUpChains())
-    })
-
-    it('lists the chains whose kill switch is on, keeping identity until that changes', () => {
-        const { result, rerender } = renderHook(() => useSwitchedOffChainIds())
-        const before = result.current
-        rerender()
-        expect(result.current).toBe(before)
-        expect(result.current).toEqual([])
-
-        act(() => {
-            useRemoteConfigStore
-                .getState()
-                .setConfigOverride(
-                    chainOverridesKey('algorand'),
-                    JSON.stringify({ enabled: false }),
-                )
-        })
-
-        expect(result.current).toEqual(['algorand'])
-    })
 })
 
 describe('useIsCapabilityRestricted', () => {

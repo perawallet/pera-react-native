@@ -19,6 +19,7 @@ import type { CardTransaction } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     useAccountAssetBalanceQuery,
+    useAccountCapabilityScope,
     useFindAccountByAddress,
     useSelectedAccountId,
     type WalletAccount,
@@ -249,8 +250,15 @@ beforeEach(() => {
 })
 
 describe('usePeraCardOverview', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
+        // The global mock has every capability on; these specs switch onramp off.
+        const actual = await vi.importActual<
+            typeof import('@perawallet/wallet-core-accounts')
+        >('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actual.useAccountCapabilityScope,
+        )
         useRemoteConfigStore.getState().resetState()
         mockWithdraw.pending = null
         mockWithdraw.isReady = false
@@ -443,7 +451,7 @@ describe('usePeraCardOverview', () => {
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith('linked-account')
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
-            params: { destinationTokenId: 'USDC_ALGORAND' },
+            params: { chainId: 'algorand', destinationAssetId: '31566704' },
         })
         expect(mockInfoToast).not.toHaveBeenCalled()
     })
@@ -461,7 +469,10 @@ describe('usePeraCardOverview', () => {
         // The spec runs on the default (mainnet) network, where USDC is 31566704.
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
-            params: { assetInId: '0', assetOutId: '31566704' },
+            params: {
+                assetIn: { chainId: 'algorand', assetId: '0' },
+                assetOut: { chainId: 'algorand', assetId: '31566704' },
+            },
         })
     })
 
@@ -476,7 +487,7 @@ describe('usePeraCardOverview', () => {
         expect(result.current.canFundLinkedAccount).toBe(true)
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
-            params: { destinationTokenId: 'USDC_ALGORAND' },
+            params: { chainId: 'algorand', destinationAssetId: '31566704' },
         })
     })
 

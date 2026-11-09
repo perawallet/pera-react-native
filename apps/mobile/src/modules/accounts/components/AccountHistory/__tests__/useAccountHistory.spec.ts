@@ -76,6 +76,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     )),
     useSelectedAccount: vi.fn(),
     useAccountHoldingSources: () => mockSources.current,
+    useAccountCapabilityScope: () => null,
     useAccountScope: (account: { chains: Record<string, unknown> } | null) => ({
         chainId: Object.keys(account?.chains ?? {})[0] ?? 'algorand',
         networkId: mockScopeNetwork.current,

@@ -1,0 +1,82 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY } from '../storage-keys'
+import { VaultLockedError } from '../errors'
+
+export { SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY }
+
+// JS strings are immutable heap copies until GC, so .fill(0) on the byte
+// arrays below is best-effort, not a complete guarantee — inherent to
+// chrome.storage.session's JSON-value design.
+const toHex = (bytes: Uint8Array): string =>
+    [...bytes].map(b => b.toString(16).padStart(2, '0')).join('')
+
+const fromHex = (hex: string): Uint8Array =>
+    new Uint8Array(hex.match(/.{2}/g)?.map(pair => parseInt(pair, 16)) ?? [])
+
+let accessLevelSet = false
+
+const ensureAccessLevel = async (): Promise<void> => {
+    if (accessLevelSet) return
+    try {
+        // Memory-only and readable ONLY from trusted extension contexts —
+        // never content scripts.
+        await chrome.storage.session.setAccessLevel({
+            accessLevel: 'TRUSTED_CONTEXTS',
+        })
+    } catch {
+        // Older Chromium without setAccessLevel: TRUSTED_CONTEXTS is already
+        // the default access level, so proceeding is safe.
+    }
+    accessLevelSet = true
+}
+
+export const putSessionMasterKey = async (key: Uint8Array): Promise<void> => {
+    await ensureAccessLevel()
+    await chrome.storage.session.set({
+        [SESSION_MASTER_KEY]: toHex(key),
+        [SESSION_UNLOCKED_KEY]: true,
+    })
+}
+
+export const getSessionMasterKey = async (): Promise<Nullable<Uint8Array>> => {
+    const stored = await chrome.storage.session.get(SESSION_MASTER_KEY)
+    const raw = stored[SESSION_MASTER_KEY]
+    return typeof raw === 'string' && raw.length === 64 ? fromHex(raw) : null
+}
+
+export const clearSessionMasterKey = async (): Promise<void> => {
+    await chrome.storage.session.remove([
+        SESSION_MASTER_KEY,
+        SESSION_UNLOCKED_KEY,
+    ])
+}
+
+// Reads the flag, never the key: the service worker asks on every dApp
+// request, and reading the key would copy it, as a string it can't wipe, into
+// a context that otherwise never holds it.
+export const isSessionUnlocked = async (): Promise<boolean> => {
+    const stored = await chrome.storage.session.get(SESSION_UNLOCKED_KEY)
+    return stored[SESSION_UNLOCKED_KEY] === true
+}
+
+export const requireSessionMasterKey = async (): Promise<Uint8Array> => {
+    const key = await getSessionMasterKey()
+    if (!key) {
+        throw new VaultLockedError(
+            'Vault is locked. Unlock it before using the keystore.',
+        )
+    }
+    return key
+}

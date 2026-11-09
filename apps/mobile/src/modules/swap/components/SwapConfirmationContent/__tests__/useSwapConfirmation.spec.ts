@@ -14,9 +14,17 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapSourceCostQuery,
+    type SwapQuote,
+    type SwapSourceCost,
+} from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../../hooks/useSwapExecution'
 import { useSwapConfirmation } from '../useSwapConfirmation'
 
@@ -42,19 +50,49 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ) => `${amount.toString()} ${options.unitName ?? `d${options.decimals}`}`,
 }))
 
-const ALGO = { assetId: '0', unitName: 'ALGO', decimals: 6 }
-const USDC = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
-const PERA = { assetId: '99', unitName: 'PERA', decimals: 6 }
+const refOf = (assetId: string) => ({
+    chainId: 'algorand' as const,
+    networkId: 'mainnet' as const,
+    assetId,
+})
+const ALGO = { assetId: '0', ref: refOf('0'), unitName: 'ALGO', decimals: 6 }
+const USDC = {
+    assetId: '31566704',
+    ref: refOf('31566704'),
+    unitName: 'USDC',
+    decimals: 6,
+}
 const ASSETS: Record<string, { assetId: string; name: string }> = {
     '0': { assetId: '0', name: 'Algo' },
     '31566704': { assetId: '31566704', name: 'USD Coin' },
 }
 
+const SOURCE_COST: SwapSourceCost = {
+    networkFee: new Decimal(10).pow(15),
+    shortfall: null,
+    needsSpendApproval: false,
+    nativeSymbol: 'ETH',
+    nativeDecimals: 18,
+}
+
+const mockSourceCost = (sourceCost: SwapSourceCost | null) =>
+    vi.mocked(useSwapSourceCostQuery).mockReturnValue({
+        sourceCost,
+        isLoading: false,
+    })
+
 const makeQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote =>
-    ({ assetIn: ALGO, assetOut: USDC, ...overrides }) as SwapQuote
+    ({
+        assetIn: ALGO,
+        assetOut: USDC,
+        amountIn: new Decimal(0),
+        request: { slippage: null },
+        fees: [],
+        ...overrides,
+    }) as unknown as SwapQuote
 
 const renderConfirmation = (
-    quote: SwapQuote | null,
+    quote: SwapQuote,
     swapStatus: SwapExecutionStatus = 'idle',
 ) => renderHook(() => useSwapConfirmation({ scope: SCOPE, quote, swapStatus }))
 
@@ -71,11 +109,137 @@ describe('useSwapConfirmation', () => {
             data: new Map(ids.map(id => [id, ASSETS[id]])),
         }))
         mockCurrency(usd => usd.mul(2))
+        mockSourceCost(null)
         vi.mocked(formatNumber).mockReturnValue({
             sign: '',
             integer: '0',
             fraction: '.25',
         } as unknown as ReturnType<typeof formatNumber>)
+    })
+
+    describe('source cost', () => {
+        it('shows no fee and blocks nothing with no estimate', () => {
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current).toMatchObject({
+                networkFeeDisplay: null,
+                needsSpendApproval: false,
+                insufficientFeeMessage: null,
+            })
+        })
+
+        it('shows the network fee in the native asset', () => {
+            mockSourceCost(SOURCE_COST)
+
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.networkFeeDisplay).toBe(
+                `${SOURCE_COST.networkFee.toString()} ETH`,
+            )
+            expect(result.current.insufficientFeeMessage).toBeNull()
+        })
+
+        it('passes the spend approval on', () => {
+            mockSourceCost({ ...SOURCE_COST, needsSpendApproval: true })
+
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.needsSpendApproval).toBe(true)
+        })
+
+        it('names the shortfall so confirmation can stay off', () => {
+            mockSourceCost({ ...SOURCE_COST, shortfall: new Decimal(1) })
+
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.insufficientFeeMessage).toBe(
+                'swap.quote.insufficient_network_fee',
+            )
+        })
+    })
+
+    describe('receiveTarget', () => {
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const RECEIVER = {
+            id: 'receiver',
+            chains: { ethereum: { address: '0xRECEIVER' } },
+        } as unknown as WalletAccount
+
+        const crossChainQuote = (destinationAddress: string) =>
+            makeQuote({
+                routeKind: 'cross-chain',
+                request: {
+                    slippage: null,
+                    destinationAddress,
+                    destinationAsset: { ...ETH_SCOPE, assetId: '0' },
+                },
+            } as unknown as Partial<SwapQuote>)
+
+        it('names the account the payout goes to, on the receive chain', () => {
+            vi.mocked(useAllAccounts).mockReturnValue([RECEIVER])
+
+            const { result } = renderConfirmation(crossChainQuote('0xRECEIVER'))
+
+            expect(result.current.receiveTarget).toEqual({
+                account: RECEIVER,
+                address: '0xRECEIVER',
+                scope: ETH_SCOPE,
+            })
+        })
+
+        it('still gives the address when no account holds it', () => {
+            vi.mocked(useAllAccounts).mockReturnValue([RECEIVER])
+
+            const { result } = renderConfirmation(crossChainQuote('0xOTHER'))
+
+            expect(result.current.receiveTarget).toEqual({
+                account: null,
+                address: '0xOTHER',
+                scope: ETH_SCOPE,
+            })
+        })
+
+        it('notes where the payout lands', () => {
+            const { result } = renderConfirmation(crossChainQuote('0xRECEIVER'))
+
+            expect(result.current.crossChainNote).toEqual(expect.any(String))
+        })
+
+        it('has no note on a same-chain swap', () => {
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.crossChainNote).toBeNull()
+        })
+
+        it('is null on a same-chain swap', () => {
+            const { result } = renderConfirmation(makeQuote())
+
+            expect(result.current.receiveTarget).toBeNull()
+        })
+    })
+
+    it('reads the receive asset on the chain it pays out on', () => {
+        const ethRef = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+            assetId: '0',
+        } as const
+
+        renderConfirmation(
+            makeQuote({
+                assetOut: {
+                    assetId: '0',
+                    ref: ethRef,
+                    unitName: 'ETH',
+                    decimals: 18,
+                } as unknown as SwapQuote['assetOut'],
+            }),
+        )
+
+        expect(mockUseAssetsQuery).toHaveBeenCalledWith(
+            { chainId: 'ethereum', networkId: 'mainnet' },
+            ['0'],
+        )
     })
 
     it('exposes the selected account', () => {
@@ -96,27 +260,6 @@ describe('useSwapConfirmation', () => {
         expect(result.current.outAsset).toBe(ASSETS['31566704'])
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(SCOPE, ['0'])
         expect(mockUseAssetsQuery).toHaveBeenCalledWith(SCOPE, ['31566704'])
-    })
-
-    it('shows placeholders and queries no assets without a quote', () => {
-        const { result } = renderConfirmation(null)
-
-        expect(mockUseAssetsQuery).toHaveBeenCalledWith(SCOPE, [])
-        expect(result.current).toMatchObject({
-            inAsset: undefined,
-            outAsset: undefined,
-            payDisplay: '-',
-            receiveDisplay: '-',
-            payFiatValue: null,
-            receiveFiatValue: null,
-            rateDisplay: '-',
-            minimumReceivedDisplay: '-',
-            peraFeeDisplay: '-',
-            slippageDisplay: '-',
-            hasHighPriceImpact: false,
-            priceImpactDisplay: '-',
-            priceImpactStyle: STYLES.detailValue,
-        })
     })
 
     it('leaves the assets unresolved while the asset query has no data', () => {
@@ -189,60 +332,178 @@ describe('useSwapConfirmation', () => {
         expect(result.current.receiveFiatValue).toBeNull()
     })
 
-    it('formats the rate at the out asset precision', () => {
-        const price = new Decimal('0.25')
-
-        const { result } = renderConfirmation(makeQuote({ price }))
-
-        expect(result.current.rateDisplay).toBe('1 ALGO ≈ 0.25 USDC')
-        expect(formatNumber).toHaveBeenCalledWith(price, 6, undefined, 2)
-    })
-
-    it('falls back to six decimals and blank units for an unknown out asset', () => {
-        const price = new Decimal('0.25')
+    it('formats the rate from the quote amounts', () => {
         const quote = makeQuote({
-            price,
-            assetIn: { assetId: '0' } as SwapQuote['assetIn'],
-            assetOut: { assetId: '31566704' } as SwapQuote['assetOut'],
+            amountIn: new Decimal('4000000'),
+            amountOut: new Decimal('1000000'),
         })
 
         const { result } = renderConfirmation(quote)
 
-        expect(result.current.rateDisplay).toBe('1  ≈ 0.25 ')
-        expect(formatNumber).toHaveBeenCalledWith(price, 6, undefined, 2)
+        expect(result.current.rateDisplay).toBe('1 ALGO ≈ 0.25 USDC')
+        expect(vi.mocked(formatNumber).mock.calls[0][0]).toEqual(
+            new Decimal('0.25'),
+        )
+    })
+
+    it('shows no rate when an asset has unknown decimals', () => {
+        const quote = makeQuote({
+            amountIn: new Decimal('4000000'),
+            amountOut: new Decimal('1000000'),
+            assetOut: {
+                ...USDC,
+                decimals: undefined,
+            } as unknown as SwapQuote['assetOut'],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.rateDisplay).toBeNull()
     })
 
     it('formats the minimum received in the out asset', () => {
-        const quote = makeQuote({
-            amountOutWithSlippage: new Decimal('240000'),
-        })
+        const quote = makeQuote({ minimumAmountOut: new Decimal('240000') })
 
         const { result } = renderConfirmation(quote)
 
         expect(result.current.minimumReceivedDisplay).toBe('240000 USDC')
     })
 
-    it('formats the Pera fee in the fee asset', () => {
+    it('leaves out every detail the route does not report', () => {
+        const { result } = renderConfirmation(makeQuote())
+
+        expect(result.current).toMatchObject({
+            minimumReceivedDisplay: null,
+            peraFeeDisplay: null,
+            providerFeeDisplay: null,
+            networkFeeDisplay: null,
+            priceImpactDisplay: null,
+        })
+    })
+
+    it('shows the provider fee a quote charges separately', () => {
         const quote = makeQuote({
-            peraFeeAmount: new Decimal('1500'),
-            peraFeeAsset: PERA as SwapQuote['assetIn'],
+            fees: [
+                {
+                    kind: 'provider',
+                    asset: refOf('0'),
+                    amount: new Decimal('2500'),
+                    usdValue: null,
+                },
+            ],
         })
 
         const { result } = renderConfirmation(quote)
 
-        expect(result.current.peraFeeDisplay).toBe('1500 PERA')
+        expect(result.current.providerFeeDisplay).toBe('2500 ALGO')
     })
 
-    it('formats the Pera fee in the input asset when no fee asset is given', () => {
-        const quote = makeQuote({ peraFeeAmount: new Decimal('1500') })
+    it('falls back to the network fee on the quote without a source estimate', () => {
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: refOf('0'),
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBe('1000 ALGO')
+    })
+
+    it('leaves out a network fee charged on the receive chain', () => {
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: {
+                        chainId: 'ethereum',
+                        networkId: 'mainnet',
+                        assetId: 'native',
+                    },
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBeNull()
+    })
+
+    it("holds the quote's network fee while the source estimate loads", () => {
+        vi.mocked(useSwapSourceCostQuery).mockReturnValue({
+            sourceCost: null,
+            isLoading: true,
+        })
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: refOf('0'),
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBeNull()
+    })
+
+    it('labels a slippage the router chose as Auto', () => {
+        const { result } = renderConfirmation(makeQuote())
+
+        expect(result.current.slippageDisplay).toBe('swap.provider.auto_label')
+    })
+
+    it("prefers the source chain's estimate over the quote's network fee", () => {
+        mockSourceCost(SOURCE_COST)
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'network',
+                    asset: refOf('0'),
+                    amount: new Decimal('1000'),
+                    usdValue: null,
+                },
+            ],
+        })
+
+        const { result } = renderConfirmation(quote)
+
+        expect(result.current.networkFeeDisplay).toBe(
+            `${SOURCE_COST.networkFee.toString()} ETH`,
+        )
+    })
+
+    it('formats the Pera fee in the asset it is charged in', () => {
+        const quote = makeQuote({
+            fees: [
+                {
+                    kind: 'pera',
+                    asset: refOf('0'),
+                    amount: new Decimal('1500'),
+                    usdValue: null,
+                },
+            ],
+        })
 
         const { result } = renderConfirmation(quote)
 
         expect(result.current.peraFeeDisplay).toBe('1500 ALGO')
     })
 
-    it('shows the slippage fraction as a percent', () => {
-        const quote = makeQuote({ slippage: new Decimal('0.01') })
+    it('shows the requested slippage as a percent', () => {
+        const quote = makeQuote({
+            request: { slippage: '1' } as SwapQuote['request'],
+        })
 
         const { result } = renderConfirmation(quote)
 

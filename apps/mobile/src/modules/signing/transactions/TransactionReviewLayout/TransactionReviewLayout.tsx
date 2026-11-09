@@ -20,6 +20,8 @@ import { useStyles } from './styles'
 
 export type TransactionReviewLayoutProps = {
     header: ReactNode
+    /** What the transaction will do, ahead of every other section. */
+    summary?: ReactNode
     participants: ReactNode
     details?: ReactNode
     fee: ReactNode
@@ -28,6 +30,7 @@ export type TransactionReviewLayoutProps = {
 // A Fragment, not a view: the screen's container spaces these children with its gap.
 export const TransactionReviewLayout = ({
     header,
+    summary,
     participants,
     details,
     fee,
@@ -38,6 +41,8 @@ export const TransactionReviewLayout = ({
     return (
         <>
             {header}
+
+            {summary}
 
             <SigningWarnings />
 

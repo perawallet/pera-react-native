@@ -31,12 +31,14 @@ import {
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import type {
+    AccountChains,
+    ChainAccount,
     HardwareWalletAccount,
     HardwareWalletDetails,
     HdIndex,
     WalletAccount,
 } from '../models'
-import { findAccountByAddressOn } from '../utils'
+import { findAccountByAddressOn, isSameAddress } from '../utils'
 import { chainAccountOf, hasCustody, hdIndexOf, seedOf } from './accessors'
 import type { KeystoreSnapshot } from './credentialScheme'
 
@@ -178,8 +180,7 @@ export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
 
 /**
  * The chains an HD wallet's discovery walk probes, in registry order: every
- * registered chain a BIP39 seed mints on that has an accounts adapter and is
- * not switched off.
+ * registered chain a BIP39 seed mints on that has an accounts adapter.
  */
 export const hdDiscoveryChains = (): ChainId[] => {
     const { chains } = getProvider()
@@ -189,8 +190,7 @@ export const hdDiscoveryChains = (): ChainId[] => {
         .filter(
             id =>
                 seedMintableScheme(id) !== undefined &&
-                accountsChainAdapters.has(id) &&
-                !chains.isSwitchedOff(id),
+                accountsChainAdapters.has(id),
         )
 }
 
@@ -238,28 +238,59 @@ export const findPathHolder = (
         )
     })
 
+/**
+ * The local HD account at `index`: the one `walletId` holds there, or, when the
+ * same seed was imported again under another id, the one at that index that
+ * holds an address derived there.
+ */
+export const hdHolderAt = (
+    accounts: readonly WalletAccount[],
+    walletId: string,
+    index: HdIndex,
+    derived: AccountChains,
+): Optional<WalletAccount> =>
+    findPathHolder(accounts, walletId, index) ??
+    accounts.find(account => {
+        const held = hdIndexOf(account)
+        return (
+            held?.account === index.account &&
+            held.keyIndex === index.keyIndex &&
+            (Object.entries(derived) as [ChainId, ChainAccount][]).some(
+                ([chainId, entry]) => {
+                    const address = chainAccountOf(account, chainId)?.address
+                    return (
+                        address !== undefined &&
+                        isSameAddress(chainId, address, entry.address)
+                    )
+                },
+            )
+        )
+    })
+
 type HardwarePosition = Pick<
     HardwareWalletDetails,
     'manufacturer' | 'deviceId' | 'accountIndex' | 'transportType'
 >
 
-// Only a Bluetooth id names one device: a USB id names a model, so two
-// devices on different seeds share it, and a USB position holds no account.
+// A USB id names a model (web) or a plug-in (Android), so a USB position spans
+// every device at the index and only an address read tells them apart.
 const isAtHardwarePosition = (
     account: WalletAccount,
     details: HardwarePosition,
 ): account is HardwareWalletAccount =>
-    details.transportType === 'ble' &&
     hasCustody(account, 'hardware') &&
     account.custody.accountIndex === details.accountIndex &&
-    account.custody.device.deviceId === details.deviceId &&
-    account.custody.device.transportType === 'ble' &&
-    account.custody.device.manufacturer === details.manufacturer
+    account.custody.device.manufacturer === details.manufacturer &&
+    account.custody.device.transportType === details.transportType &&
+    (details.transportType === 'usb' ||
+        account.custody.device.deviceId === details.deviceId)
 
 /**
- * The hardware account at this Bluetooth device position, whatever chains it
- * spans. Keyed on the stored device id, so a re-paired device that rotated its
- * id reads as another device until a re-import rebinds it.
+ * The hardware account at this device position, whatever chains it spans.
+ * Over Bluetooth it is keyed on the stored device id, so a re-paired device
+ * that rotated its id reads as another device until a re-import rebinds it.
+ * Over USB the position spans every device at the index, so narrow `accounts`
+ * by address first.
  */
 export const findHardwareHolder = (
     accounts: readonly WalletAccount[],
@@ -268,10 +299,11 @@ export const findHardwareHolder = (
     accounts.find(account => isAtHardwarePosition(account, details))
 
 /**
- * The hardware accounts at this Bluetooth device position holding none of
- * `chainIds`: those entries on `chainIds` could join. Passphrase seeds share a
- * device id, so join one only once the device reads that account's address on
- * a chain it already holds.
+ * The hardware accounts at this device position holding none of `chainIds`:
+ * those entries on `chainIds` could join. They share a position, not
+ * necessarily a seed (passphrase seeds share a Bluetooth id, and every USB
+ * device shares a USB position), so join one only once the device reads that
+ * account's address on a chain it already holds.
  */
 export const hardwareJoinCandidates = (
     accounts: readonly WalletAccount[],

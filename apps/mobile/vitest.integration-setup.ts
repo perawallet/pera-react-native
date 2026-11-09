@@ -50,6 +50,15 @@ beforeAll(async () => {
     registerChainAdapters()
 }, 60_000)
 
+// An account read a list didn't wait for (a chain that failed before) can
+// outlive its test. Registered after the MSW reset, so it runs first: the read
+// settles against this test's handlers and database, not the next one's.
+afterEach(async () => {
+    const { settleAccountFetches } =
+        await import('@perawallet/wallet-core-accounts')
+    await settleAccountFetches()
+})
+
 // The bottom-sheet store is a module-scoped singleton, so requests opened in one
 // test survive into the next unless reset.
 afterEach(() => {
@@ -122,10 +131,10 @@ beforeEach(async () => {
     useSettingsStore.getState().setPreference('acceptedTermsVersion', '1')
 })
 
-// The provider singleton + the KMS keystore now have working in-memory test
-// implementations (apps/mobile/src/test-utils/{platform-driver-test,
-// algorand-keystore-test}.ts), aliased in vitest.config.ts. Real provider /
-// kms / accounts code can now run end-to-end against in-memory storage.
+// Real provider / kms / accounts code runs end-to-end against in-memory storage:
+// the keystore is aliased to src/test-utils/algorand-keystore-test.ts, and platform
+// services come from the driver mock in src/test-utils/mocks/platform.ts unless a
+// spec unmocks it to reach src/test-utils/platform-driver-test.ts.
 vi.unmock('@perawallet/wallet-extension-provider')
 vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')

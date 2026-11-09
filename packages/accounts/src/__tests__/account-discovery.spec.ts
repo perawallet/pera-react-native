@@ -11,15 +11,17 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     discoverAccounts,
     discoverDelegatedAccounts,
     discoverWalletCandidates,
+    mergeWalletCandidates,
 } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
 import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
 import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
-import type { WalletAccount } from '../models'
+import type { LocalAccount, WalletAccount } from '../models'
 import {
     ALGORAND,
     BASE,
@@ -92,6 +94,21 @@ describe('discoverAccounts', () => {
         expect(addressOf(accounts[1])).toBe('ADDRESS_0_2')
         expect(hdIndexOf(accounts[1])?.account).toBe(0)
         expect(hdIndexOf(accounts[1])?.keyIndex).toBe(2)
+    })
+
+    it('probes no batch once aborted, and offers nothing as no probe answered', async () => {
+        const controller = new AbortController()
+        controller.abort()
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+            signal: controller.signal,
+        })
+
+        expect(mockFetchAccountFastLookup).not.toHaveBeenCalled()
+        expect(accounts).toEqual([])
     })
 
     it('finds every account of a seed holding more than fifty, with no cap on the search', async () => {
@@ -280,6 +297,7 @@ describe('discoverAccounts', () => {
         expect(fakeAccountsChain().adapter.checkActivity).toHaveBeenCalledWith(
             expect.any(Array),
             TESTNET_SCOPE,
+            undefined,
         )
         const calls = mockFetchAccountFastLookup.mock.calls
         expect(calls.length).toBeGreaterThan(0)
@@ -384,11 +402,13 @@ describe('discoverWalletCandidates', () => {
         activeOn(families, ETHEREUM, [])
         activeOn(families, BASE, [familyHdAddress('evm', 2, 0)])
 
-        const found = await discoverWalletCandidates({
-            walletKeyId: 'seed',
-            chainIds: CHAIN_IDS,
-        })
+        const { accounts: found, isOriginFallback } =
+            await discoverWalletCandidates({
+                walletKeyId: 'seed',
+                chainIds: CHAIN_IDS,
+            })
 
+        expect(isOriginFallback).toBe(false)
         expect(found).toHaveLength(1)
         expect(hdIndexOf(found[0])).toEqual({ account: 2, keyIndex: 0 })
         expect(found[0].chains).toEqual({
@@ -410,19 +430,21 @@ describe('discoverWalletCandidates', () => {
         })
     })
 
-    it('returns the first account alone when nothing is active', async () => {
+    it('returns the first account alone, marked as a fallback, when nothing is active', async () => {
         const families = registerChainFamilies(CHAIN_IDS)
         activeOn(families, ALGORAND, [])
         activeOn(families, ETHEREUM, [])
         activeOn(families, BASE, [])
 
-        const found = await discoverWalletCandidates({
-            walletKeyId: 'seed',
-            chainIds: CHAIN_IDS,
-        })
+        const { accounts: found, isOriginFallback } =
+            await discoverWalletCandidates({
+                walletKeyId: 'seed',
+                chainIds: CHAIN_IDS,
+            })
 
         expect(found.map(hdIndexOf)).toEqual([{ account: 0, keyIndex: 0 }])
         expect(Object.keys(found[0].chains)).toEqual([ALGORAND, ETHEREUM])
+        expect(isOriginFallback).toBe(true)
     })
 
     it('returns nothing when no activity probe answered', async () => {
@@ -436,7 +458,84 @@ describe('discoverWalletCandidates', () => {
                 walletKeyId: 'seed',
                 chainIds: CHAIN_IDS,
             }),
-        ).resolves.toEqual([])
+        ).resolves.toMatchObject({ accounts: [] })
+    })
+
+    it('names a chain whose probe rejects while still returning what the others found', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [familyHdAddress('algorand', 1, 0)])
+        activeOn(families, ETHEREUM, [])
+        families.checkActivity
+            .get(BASE)!
+            .mockRejectedValue(new Error('rpc down'))
+
+        const { accounts, failedChainIds } = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+
+        expect(accounts.map(hdIndexOf)).toEqual([{ account: 1, keyIndex: 0 }])
+        expect(failedChainIds).toEqual([BASE])
+    })
+
+    it('names every chain when none answered', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        for (const checkActivity of families.checkActivity.values()) {
+            checkActivity.mockRejectedValue(new Error('offline'))
+        }
+
+        await expect(
+            discoverWalletCandidates({
+                walletKeyId: 'seed',
+                chainIds: CHAIN_IDS,
+            }),
+        ).resolves.toEqual({ accounts: [], failedChainIds: CHAIN_IDS })
+    })
+
+    it('reports progress, leaving an index the wallet holds out of the found count', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [
+            familyHdAddress('algorand', 0, 0),
+            familyHdAddress('algorand', 1, 0),
+        ])
+        activeOn(families, ETHEREUM, [])
+        activeOn(families, BASE, [])
+        const onProgress = vi.fn()
+
+        await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+            onProgress,
+            isHeld: ({ index }) => index.account === 0,
+        })
+
+        expect(onProgress.mock.calls[0]![0]).toMatchObject({
+            chainIds: CHAIN_IDS,
+            checkedAccountCount: 0,
+            foundCount: 0,
+        })
+        expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+            // Indexes 0-4, then the two still needed to close the gap.
+            checkedAccountCount: 7,
+            foundCount: 1,
+        })
+    })
+
+    it('probes no batch once aborted', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        const controller = new AbortController()
+        controller.abort()
+
+        const { accounts } = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+            signal: controller.signal,
+        })
+
+        for (const checkActivity of families.checkActivity.values()) {
+            expect(checkActivity).not.toHaveBeenCalled()
+        }
+        expect(accounts).toEqual([])
     })
 
     it('orders accounts by path', async () => {
@@ -448,7 +547,7 @@ describe('discoverWalletCandidates', () => {
         activeOn(families, ETHEREUM, [familyHdAddress('evm', 0, 1)])
         activeOn(families, BASE, [])
 
-        const found = await discoverWalletCandidates({
+        const { accounts: found } = await discoverWalletCandidates({
             walletKeyId: 'seed',
             chainIds: CHAIN_IDS,
         })
@@ -458,5 +557,124 @@ describe('discoverWalletCandidates', () => {
             { account: 0, keyIndex: 1 },
             { account: 1, keyIndex: 0 },
         ])
+    })
+})
+
+describe('mergeWalletCandidates', () => {
+    const accountAt = (
+        account: number,
+        chains: Record<string, string>,
+    ): LocalAccount =>
+        ({
+            id: `id-${account}-${Object.keys(chains).join('-')}`,
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account, keyIndex: 0 },
+            },
+            chains: Object.fromEntries(
+                Object.entries(chains).map(([chainId, address]) => [
+                    chainId,
+                    { address, keyPairId: `key-${account}` },
+                ]),
+            ),
+        }) as unknown as LocalAccount
+
+    it('keeps what the first walk found when the retry finds less', () => {
+        const first = {
+            accounts: [accountAt(0, { algorand: 'ALGO0' })],
+            failedChainIds: ['ethereum' as ChainId],
+        }
+        const retry = {
+            accounts: [],
+            failedChainIds: ['algorand', 'ethereum'] as ChainId[],
+        }
+
+        expect(mergeWalletCandidates(first, retry)).toEqual({
+            ...first,
+            isOriginFallback: false,
+        })
+    })
+
+    it("adds the retry's accounts and joins the chains of an index both found, in index order", () => {
+        const first = {
+            accounts: [
+                accountAt(0, { algorand: 'ALGO0' }),
+                accountAt(3, { algorand: 'ALGO3' }),
+            ],
+            failedChainIds: ['ethereum' as ChainId],
+        }
+        const retry = {
+            accounts: [
+                accountAt(0, { ethereum: '0x0' }),
+                accountAt(2, { ethereum: '0x2' }),
+            ],
+            failedChainIds: [] as ChainId[],
+        }
+
+        const merged = mergeWalletCandidates(first, retry)
+
+        expect(
+            merged.accounts.map(account => hdIndexOf(account)?.account),
+        ).toEqual([0, 2, 3])
+        expect(Object.keys(merged.accounts[0]!.chains).sort()).toEqual([
+            'algorand',
+            'ethereum',
+        ])
+        expect(merged.failedChainIds).toEqual([])
+    })
+
+    it('drops the first account offered for want of activity once the other walk finds some', () => {
+        const fallback = {
+            accounts: [accountAt(0, { algorand: 'ALGO0' })],
+            failedChainIds: ['ethereum' as ChainId],
+            isOriginFallback: true,
+        }
+        const active = {
+            accounts: [accountAt(2, { ethereum: '0x2' })],
+            failedChainIds: [] as ChainId[],
+        }
+
+        for (const merged of [
+            mergeWalletCandidates(fallback, active),
+            mergeWalletCandidates(active, fallback),
+        ]) {
+            expect(
+                merged.accounts.map(account => hdIndexOf(account)?.account),
+            ).toEqual([2])
+            expect(merged.isOriginFallback).toBe(false)
+        }
+    })
+
+    it('keeps the fallback account when neither walk found activity, and keeps it a fallback', () => {
+        const fallback = {
+            accounts: [accountAt(0, { algorand: 'ALGO0' })],
+            failedChainIds: ['ethereum' as ChainId],
+            isOriginFallback: true,
+        }
+        const unanswered = {
+            accounts: [],
+            failedChainIds: ['algorand', 'ethereum'] as ChainId[],
+        }
+
+        const merged = mergeWalletCandidates(fallback, unanswered)
+
+        expect(merged.accounts).toEqual(fallback.accounts)
+        expect(merged.isOriginFallback).toBe(true)
+    })
+
+    it('counts a chain as unchecked only when neither walk heard from it', () => {
+        const merged = mergeWalletCandidates(
+            {
+                accounts: [],
+                failedChainIds: ['ethereum', 'base'] as ChainId[],
+            },
+            {
+                accounts: [],
+                failedChainIds: ['base', 'algorand'] as ChainId[],
+            },
+        )
+
+        expect(merged.failedChainIds).toEqual(['base'])
     })
 })

@@ -42,7 +42,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Chrome has no OS-level biometric API, so this stub always reports
- * biometrics as unavailable. Separately, keystore-chrome's WebAuthn passkey
+ * biometrics as unavailable. Separately, vault-chrome's WebAuthn passkey
  * vault-unlock (`vault/passkey.ts`) does real PRF work, but it implements a
  * different mechanism, not this interface.
  */

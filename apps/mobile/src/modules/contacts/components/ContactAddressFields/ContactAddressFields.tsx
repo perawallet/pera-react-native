@@ -32,7 +32,7 @@ export type ContactAddressFieldsProps = {
     isInputVisible: boolean
     rawInput: string
     isInputInvalid: boolean
-    isResolvingNfd: boolean
+    isResolvingName: boolean
     pendingReplacement: Optional<AddressFamilyMatch>
     onShowInput: () => void
     onInputChange: (text: string) => void
@@ -46,7 +46,7 @@ export const ContactAddressFields = ({
     isInputVisible,
     rawInput,
     isInputInvalid,
-    isResolvingNfd,
+    isResolvingName,
     pendingReplacement,
     onShowInput,
     onInputChange,
@@ -56,12 +56,14 @@ export const ContactAddressFields = ({
 }: ContactAddressFieldsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { scanChainIds, handlePaste } = useContactAddressFields({
-        pendingReplacement,
-        onAddressInputChange: onInputChange,
-        confirmReplacement: onConfirmReplacement,
-        cancelReplacement: onCancelReplacement,
-    })
+    const { scanChainIds, canAddAddress, handlePaste } =
+        useContactAddressFields({
+            rows,
+            pendingReplacement,
+            onAddressInputChange: onInputChange,
+            confirmReplacement: onConfirmReplacement,
+            cancelReplacement: onCancelReplacement,
+        })
 
     return (
         <PWView style={styles.container}>
@@ -118,14 +120,14 @@ export const ContactAddressFields = ({
                         }
                         testID='contact_address_input'
                     />
-                    {isResolvingNfd ? (
-                        <PWView style={styles.nfdStatus}>
+                    {isResolvingName ? (
+                        <PWView style={styles.nameStatus}>
                             <PWLoadingIndicator size='sm' />
                             <PWText
                                 variant='caption'
-                                style={styles.nfdStatusText}
+                                style={styles.nameStatusText}
                             >
-                                {t('address_entry.nfd_resolving')}
+                                {t('address_entry.name_resolving')}
                             </PWText>
                         </PWView>
                     ) : null}
@@ -139,7 +141,8 @@ export const ContactAddressFields = ({
                         testID='contact_address_paste_button'
                     />
                 </PWView>
-            ) : (
+            ) : null}
+            {!isInputVisible && canAddAddress ? (
                 <PWButton
                     variant='helper'
                     icon='plus'
@@ -149,7 +152,7 @@ export const ContactAddressFields = ({
                     style={styles.add}
                     testID='contact_add_address_button'
                 />
-            )}
+            ) : null}
         </PWView>
     )
 }

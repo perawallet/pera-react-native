@@ -55,7 +55,7 @@ import { generateMultisigAddress } from '@perawallet/wallet-core-chain-algorand/
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { buildMultisigCosignRequest } from '@modules/multisig/utils/buildMultisigCosignRequest'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 // The multisig account's address is the transaction sender; the seeded Algo25
 // signer is its (only) participant, so the wallet can sign for it.
@@ -259,7 +259,10 @@ describe('Flow: multisig signing review (propose)', () => {
                 ],
             },
             signerAddress: REVIEW_SIGNER_ADDRESS,
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             localAccounts: useAccountsStore.getState().accounts,
         })
 

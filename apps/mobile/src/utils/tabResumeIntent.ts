@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -21,14 +25,18 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 export type TabResumeIntent =
     | {
           flow: 'swap'
+          chainId: ChainId
           accountAddress: string
           assetInId: string
           assetOutId: string
+          /** Set for a cross-chain pair: `assetOutId` then lives on this scope. */
+          receive?: { scope: ChainScope; accountAddress: string }
           // lanekeep-ignore-next-line pera/amount-types reason: the intent is the record put in chrome.storage.session for the popup-to-tab hand-off, which can't carry a Decimal
           payAmount: string
       }
     | {
           flow: 'send'
+          chainId: ChainId
           accountAddress: string
           assetId: string
           destination: string

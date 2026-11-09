@@ -79,14 +79,15 @@ vi.mock('@components/AccountDisplay', () => ({
     ),
 }))
 
-const mockUseNfdForAddress = vi.fn(() => ({
+const mockUseNameForAddress = vi.fn(() => ({
     data: undefined as Optional<{ name: string }[]>,
     isPending: false,
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddressQuery: (...args: Parameters<typeof mockUseNfdForAddress>) =>
-        mockUseNfdForAddress(...args),
+    useNameForAddressQuery: (
+        ...args: Parameters<typeof mockUseNameForAddress>
+    ) => mockUseNameForAddress(...args),
 }))
 
 describe('AddressDisplay', () => {
@@ -94,7 +95,7 @@ describe('AddressDisplay', () => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockContacts = []
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
         })
@@ -112,7 +113,7 @@ describe('AddressDisplay', () => {
             />,
         )
 
-        expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+        expect(mockUseNameForAddress).toHaveBeenCalledWith(
             scope,
             '0xabc',
             expect.anything(),
@@ -131,6 +132,80 @@ describe('AddressDisplay', () => {
         )
 
         expect(screen.getByText('0xf39f...2266')).toBeTruthy()
+    })
+
+    describe('names on an Ethereum scope', () => {
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const ETH_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+
+        beforeEach(() => {
+            registerEthereumChain()
+            mockUseNameForAddress.mockReturnValue({
+                data: [{ name: 'alice.eth' }],
+                isPending: false,
+            })
+        })
+        afterEach(restoreAlgorandOnlyChains)
+
+        it('shows the primary name with the truncated address beneath it', () => {
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    showSecondaryAddress
+                />,
+            )
+
+            expect(screen.getByText('alice.eth')).toBeTruthy()
+            expect(screen.getByText('0xf39F...2266')).toBeTruthy()
+        })
+
+        it('shows a contact name instead, and stops the lookup', () => {
+            mockContacts = [
+                { name: 'Eth friend', addresses: { evm: ETH_ADDRESS } },
+            ]
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                />,
+            )
+
+            expect(screen.getByText('Eth friend')).toBeTruthy()
+            expect(screen.queryByText('alice.eth')).toBeNull()
+            expect(mockUseNameForAddress).toHaveBeenCalledWith(
+                ETH_SCOPE,
+                ETH_ADDRESS,
+                { enabled: false },
+            )
+        })
+
+        it("shows the user's own account instead, and stops the lookup", () => {
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    name: 'ETH Test',
+                    chains: { ethereum: { address: ETH_ADDRESS } },
+                    custody: { kind: 'watch' },
+                },
+            ])
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    displayType='full'
+                />,
+            )
+
+            expect(screen.getByTestId('account_display')).toBeTruthy()
+            expect(screen.queryByText('alice.eth')).toBeNull()
+            expect(mockUseNameForAddress).toHaveBeenCalledWith(
+                ETH_SCOPE,
+                ETH_ADDRESS,
+                { enabled: false },
+            )
+        })
     })
 
     describe('chain badge', () => {
@@ -273,7 +348,7 @@ describe('AddressDisplay', () => {
             />,
         )
 
-        expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+        expect(mockUseNameForAddress).toHaveBeenCalledWith(
             expect.anything(),
             expect.any(String),
             expect.objectContaining({ enabled: false }),
@@ -305,7 +380,7 @@ describe('AddressDisplay', () => {
     })
 
     it('renders the NFD name with a person icon and the truncated address as a secondary line', () => {
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: [{ name: 'alice.algo' }],
             isPending: false,
         })
@@ -318,7 +393,7 @@ describe('AddressDisplay', () => {
     })
 
     it('reads inline as the NFD name alone, with no icon or address line', () => {
-        mockUseNfdForAddress.mockReturnValue({
+        mockUseNameForAddress.mockReturnValue({
             data: [{ name: 'alice.algo' }],
             isPending: false,
         })
@@ -439,7 +514,7 @@ describe('AddressDisplay', () => {
         })
 
         it('renders NFD name as primary with truncated address as secondary', () => {
-            mockUseNfdForAddress.mockReturnValue({
+            mockUseNameForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
             })
@@ -502,7 +577,7 @@ describe('AddressDisplay', () => {
             mockContacts = [
                 { name: 'Joseph', addresses: { algorand: address } },
             ]
-            mockUseNfdForAddress.mockReturnValue({
+            mockUseNameForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
             })
@@ -528,7 +603,7 @@ describe('AddressDisplay', () => {
                     custody: { kind: 'watch' },
                 },
             ])
-            mockUseNfdForAddress.mockReturnValue({
+            mockUseNameForAddress.mockReturnValue({
                 data: [{ name: 'alice.algo' }],
                 isPending: false,
             })

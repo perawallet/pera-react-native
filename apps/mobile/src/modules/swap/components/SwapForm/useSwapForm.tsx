@@ -16,28 +16,36 @@ import { Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     addressOn,
+    ownAddressOf,
     useAccountBalancesInvalidator,
     useSelectedAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { nativeAssetFor, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
+import { useSpendableBalanceQuery } from '@perawallet/wallet-core-transactions'
 import {
+    peraFeeInSourceAsset,
     pickBestByAmountOut,
-    useCalculateSwapAmountMutation,
-    usePrefetchProviders,
+    swapAdapterFor,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import {
     isDecimalEqual,
-    uint64IdToNumber,
     type Nullable,
     baseUnitsToDisplayUnits,
+    displayUnitsToBaseUnits,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -46,7 +54,13 @@ import {
     registerTabResumeIntent,
 } from '@utils/tabResumeIntent'
 import { useSwapQuotes } from '../../hooks/useSwapQuotes'
-import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
+import { useSwapReceiveTarget } from '../../hooks/useSwapReceiveTarget'
+import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
+import {
+    SwapAssetSelectionContent,
+    type SwapAssetSelection,
+} from '../SwapAssetSelectionContent'
+import { SwapReceivingAccountContent } from '../SwapReceivingAccountContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'
 import {
     SwapConfirmationContent,
@@ -58,8 +72,15 @@ import {
 } from '../SwapProviderContent'
 
 type UseSwapFormResult = {
+    selectedAccount: Nullable<WalletAccount>
     payAssetId: string
     receiveAssetId: string
+    /** Where the receive asset lives: the swap scope, or another chain's. */
+    receiveScope: ChainScope
+    receivingAccount: Nullable<WalletAccount>
+    isDirectionDisabled: boolean
+    isChainShown: boolean
+    isReceivingAccountShown: boolean
     payAmount: Nullable<Decimal>
     receiveAmount: Nullable<Decimal>
     payBalance: Nullable<Decimal>
@@ -78,6 +99,7 @@ type UseSwapFormResult = {
     handleMaxPress: () => void
     handleOpenPayAssetSelection: () => void
     handleOpenReceiveAssetSelection: () => void
+    handleOpenReceivingAccount: () => void
     handleOpenConfig: () => void
     handleOpenProvider: () => void
     handleOpenConfirm: () => void
@@ -89,6 +111,7 @@ type UseSwapFormResult = {
  * asset settles, after which the form reopens the confirmation.
  */
 export type SwapFormInitialPayAmount = {
+    chainId: ChainId
     assetId: string
     amount: Decimal
 }
@@ -104,6 +127,7 @@ export const useSwapForm = (
         isLocalCurrencyInput,
         setFromAsset,
         setToAsset,
+        setSourceAsset,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
@@ -118,16 +142,9 @@ export const useSwapForm = (
         ? addressOn(selectedAccount, scope)
         : undefined
     const nativeAssetId = nativeAssetFor(scope.chainId).assetId
-    const prefetchProviders = usePrefetchProviders(scope)
-
-    useEffect(() => {
-        prefetchProviders()
-    }, [prefetchProviders])
-
-    const { mutateAsync: calculateSwapAmount } =
-        useCalculateSwapAmountMutation(scope)
-    const calculateSwapAmountRef = useRef(calculateSwapAmount)
-    calculateSwapAmountRef.current = calculateSwapAmount
+    // Only a MAX or percentage fill follows the balance and the quote's fee; a
+    // typed amount stays as typed and fails at the balance checks instead.
+    const isPercentageFillRef = useRef(false)
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
@@ -146,11 +163,42 @@ export const useSwapForm = (
         fromAsset,
         scope,
     )
+    const sourceChainIds = useSwapSourceChains(selectedAccount)
+    const {
+        receiveScope,
+        isCrossChain,
+        receivingAccount,
+        receivingAddress,
+        receivingAccounts,
+        selectReceivingAccount,
+    } = useSwapReceiveTarget(scope)
     const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
+        receivingAccount ?? undefined,
         toAsset,
-        scope,
+        receiveScope,
     )
+
+    // A percentage of what the account can spend, less the chain's fee reserve
+    // and, for a first holding of the receive asset, the reserve it locks. An
+    // unsettled receive balance reserves too: short of MAX beats failing at
+    // confirm. A holding on another chain locks nothing on this one.
+    const swapAdapter = swapAdapterFor(scope)
+    const { data: spendable, isPending: isSpendablePending } =
+        useSpendableBalanceQuery(
+            selectedAccount
+                ? {
+                      account: selectedAccount,
+                      asset: { chainId: scope.chainId, assetId: fromAsset },
+                      scope,
+                      fee:
+                          isCrossChain || receiveAssetBalance
+                              ? swapAdapter.maxAmountFeeReserve
+                              : swapAdapter.maxAmountFeeReserve.add(
+                                    swapAdapter.holdingReserve(scope),
+                                ),
+                  }
+                : undefined,
+        )
 
     const {
         allQuotes,
@@ -164,6 +212,8 @@ export const useSwapForm = (
         swapperAddress: selectedAddress ?? null,
         fromAssetId: fromAsset,
         toAssetId: toAsset,
+        toAssetScope: receiveScope,
+        destinationAddress: receivingAddress,
         payAmount,
         payDecimals: payAsset?.decimals ?? null,
         slippage,
@@ -210,6 +260,7 @@ export const useSwapForm = (
     }, [selectedQuote])
 
     const resetAmounts = useCallback(() => {
+        isPercentageFillRef.current = false
         setPayAmount(null)
         setReceiveAmount(null)
         setSelectedProviderName(null)
@@ -245,26 +296,38 @@ export const useSwapForm = (
 
     // Must follow the reset above: the route's pay asset lands in the store
     // after mount, and that change clears the amounts, so a resumed amount is
-    // applied only once the store holds its asset.
+    // applied only once the store holds its asset. An asset id alone doesn't
+    // settle that: every EVM chain's native asset shares one, and this form can
+    // mount on the previous chain before the route's chain is pinned.
     const pendingPayAmountRef = useRef(initialPayAmount)
     const shouldReopenConfirmRef = useRef(false)
     useEffect(() => {
         const pending = pendingPayAmountRef.current
-        if (!pending || fromAsset !== pending.assetId) return
+        // Asset ids repeat across chains: `native` on Base is not `native` here.
+        if (
+            !pending ||
+            pending.chainId !== scope.chainId ||
+            fromAsset !== pending.assetId
+        ) {
+            return
+        }
         pendingPayAmountRef.current = undefined
         shouldReopenConfirmRef.current = true
         setPayAmount(pending.amount)
-    }, [fromAsset])
+    }, [fromAsset, scope.chainId])
 
     // Leaving the tab must clear the form: the screen stays mounted, so without
-    // this the next visit opens on the previous session's amounts.
+    // this the next visit opens on the previous session's amounts. A source
+    // chain change remounts the form while focused, and must keep what it set.
+    const { isFocused } = useAppNavigation()
     useFocusEffect(
         useCallback(
             () => () => {
+                if (isFocused()) return
                 resetAmounts()
                 resetAssetPair()
             },
-            [resetAmounts, resetAssetPair],
+            [isFocused, resetAmounts, resetAssetPair],
         ),
     )
 
@@ -301,6 +364,7 @@ export const useSwapForm = (
         (amount: Nullable<Decimal>) => {
             // Editing takes over from a resume: no confirmation over a change.
             shouldReopenConfirmRef.current = false
+            isPercentageFillRef.current = false
             setPayAmount(amount)
             if (!isDecimalEqual(amount, quotedAmount)) {
                 resetQuotes()
@@ -317,7 +381,9 @@ export const useSwapForm = (
     }, [scope.chainId])
 
     const handleSwapDirection = useCallback(() => {
+        if (isCrossChain) return
         previousFromAssetRef.current = toAsset
+        isPercentageFillRef.current = false
         setFromAsset(toAsset)
         setToAsset(fromAsset)
         setPayAmount(receiveAmount)
@@ -325,6 +391,7 @@ export const useSwapForm = (
         setSelectedProviderName(null)
         resetQuotes()
     }, [
+        isCrossChain,
         fromAsset,
         toAsset,
         payAmount,
@@ -334,8 +401,17 @@ export const useSwapForm = (
         resetQuotes,
     ])
 
+    const showBalanceTooLow = useCallback(() => {
+        infoToast(
+            t('swap.form.balance_too_low_title'),
+            t('swap.form.balance_too_low_body', {
+                unit: payAsset?.unitName ?? fromAsset,
+            }),
+        )
+    }, [infoToast, t, payAsset, fromAsset])
+
     const applyPercentageAmount = useCallback(
-        async (percentage: number) => {
+        (percentage: number) => {
             if (!selectedAddress) return
             // Every silent return here reads as a dead button, so say why.
             if (!payAssetBalance?.amount || payAssetBalance.amount.isZero()) {
@@ -347,53 +423,75 @@ export const useSwapForm = (
                 )
                 return
             }
-            try {
-                const result = await calculateSwapAmountRef.current!({
-                    address: selectedAddress,
-                    asset_in_id: uint64IdToNumber(fromAsset),
-                    asset_out_id: uint64IdToNumber(toAsset),
-                    percentage: String(percentage / 100),
-                })
-                if (result.amount && !result.amount.isZero()) {
-                    const displayAmount = baseUnitsToDisplayUnits(
-                        result.amount,
-                        payAsset?.decimals ?? 0,
-                    )
-                    setPayAmount(displayAmount)
-                } else {
-                    // The backend clamps the swappable amount at zero when
-                    // fee reserves consume the balance; filling the field
-                    // with 0 would read as a dead button too.
-                    infoToast(
-                        t('swap.form.balance_too_low_title'),
-                        t('swap.form.balance_too_low_body', {
-                            unit: payAsset?.unitName ?? fromAsset,
-                        }),
-                    )
-                }
-            } catch {
-                // Already logged by the query client; the user needs to know the
-                // tap did something.
+            // Pending includes the previous pay asset's max, kept as placeholder.
+            if (!spendable || isSpendablePending) {
                 errorToast(
                     t('swap.form.percentage_error_title'),
                     t('swap.form.percentage_error_body'),
                 )
+                return
             }
+            const amount = spendable.max.mul(percentage).div(100).floor()
+            if (amount.isZero()) {
+                // Fee reserves can consume the whole balance; filling the
+                // field with 0 would read as a dead button too.
+                showBalanceTooLow()
+                return
+            }
+            isPercentageFillRef.current = true
+            setPayAmount(
+                baseUnitsToDisplayUnits(amount, payAsset?.decimals ?? 0),
+            )
         },
         [
             selectedAddress,
             fromAsset,
-            toAsset,
             payAsset,
             payAssetBalance,
+            spendable,
+            isSpendablePending,
             infoToast,
             errorToast,
+            showBalanceTooLow,
             t,
         ],
     )
 
+    // The Pera fee is known only once a quote answers, and it is charged on top
+    // of the amount, so a fill with no room left for it shrinks and re-quotes.
+    // Shrink only: the smaller amount's lower fee must not grow it back into
+    // another request.
+    useEffect(() => {
+        if (!isPercentageFillRef.current) return
+        if (!payAmount || !spendable || isSpendablePending) return
+        const decimals = payAsset?.decimals ?? 0
+        const amount = displayUnitsToBaseUnits(payAmount, decimals)
+        const peraFee = selectedQuote?.request.sourceAmount.equals(amount)
+            ? peraFeeInSourceAsset(selectedQuote)
+            : new Decimal(0)
+        const ceiling = spendable.max.sub(peraFee)
+        if (amount.lessThanOrEqualTo(ceiling)) return
+        if (ceiling.lessThanOrEqualTo(0)) {
+            resetAmounts()
+            showBalanceTooLow()
+            return
+        }
+        setPayAmount(baseUnitsToDisplayUnits(ceiling.floor(), decimals))
+        setReceiveAmount(null)
+        resetQuotes()
+    }, [
+        payAmount,
+        payAsset?.decimals,
+        selectedQuote,
+        spendable,
+        isSpendablePending,
+        resetAmounts,
+        resetQuotes,
+        showBalanceTooLow,
+    ])
+
     const handleMaxPress = useCallback(() => {
-        void applyPercentageAmount(100)
+        applyPercentageAmount(100)
     }, [applyPercentageAmount])
 
     const handleOpenPayAssetSelection = useCallback(async () => {
@@ -401,12 +499,15 @@ export const useSwapForm = (
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.AssetId]: fromAsset,
         })
-        const assetId = await requestBottomSheet<string>({
+        const selection = await requestBottomSheet<SwapAssetSelection>({
             contents: (
                 <SwapAssetSelectionContent
                     scope={scope}
                     variant='from'
-                    excludeAssetId={toAsset}
+                    excludeAsset={{
+                        chainId: receiveScope.chainId,
+                        assetId: toAsset,
+                    }}
                 />
             ),
             options: {
@@ -415,11 +516,16 @@ export const useSwapForm = (
                 autoCreateContainer: false,
             },
         })
+        if (!selection) return
+        if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
+            setSourceAsset(selection.scope.chainId, selection.assetId)
+            return
+        }
         // Re-picking the current asset must be a full no-op: clearing the
         // quotes without changing any quote input would strand the fetch
         // state as loading with nothing in flight.
-        if (!assetId || assetId === fromAsset) return
-        setFromAsset(assetId)
+        if (selection.assetId === fromAsset) return
+        setFromAsset(selection.assetId)
         // The effect above also resets, but only after a paint; reset here
         // too so no frame shows the old amount against the new asset.
         resetAmounts()
@@ -427,7 +533,9 @@ export const useSwapForm = (
         requestBottomSheet,
         scope,
         toAsset,
+        receiveScope.chainId,
         setFromAsset,
+        setSourceAsset,
         fromAsset,
         resetAmounts,
     ])
@@ -437,13 +545,16 @@ export const useSwapForm = (
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
             [AnalyticsMetadataKey.AssetId]: toAsset,
         })
-        const assetId = await requestBottomSheet<string>({
+        const selection = await requestBottomSheet<SwapAssetSelection>({
             contents: (
                 <SwapAssetSelectionContent
                     scope={scope}
                     variant='to'
                     fromAssetId={fromAsset}
-                    excludeAssetId={fromAsset}
+                    excludeAsset={{
+                        chainId: scope.chainId,
+                        assetId: fromAsset,
+                    }}
                 />
             ),
             options: {
@@ -452,12 +563,40 @@ export const useSwapForm = (
                 autoCreateContainer: false,
             },
         })
-        if (!assetId) return
-        setToAsset(assetId)
+        if (!selection) return
+        setToAsset(selection.assetId, selection.scope)
         setReceiveAmount(null)
         setSelectedProviderName(null)
         resetQuotes()
     }, [requestBottomSheet, scope, fromAsset, setToAsset, toAsset, resetQuotes])
+
+    const handleOpenReceivingAccount = useCallback(async () => {
+        await requestBottomSheet<string>({
+            contents: (
+                <SwapReceivingAccountContent
+                    accounts={receivingAccounts}
+                    chainId={receiveScope.chainId}
+                    selectedAddress={
+                        receivingAccount
+                            ? (ownAddressOf(receivingAccount) ?? null)
+                            : null
+                    }
+                    onSelect={selectReceivingAccount}
+                />
+            ),
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [
+        requestBottomSheet,
+        receivingAccounts,
+        receiveScope.chainId,
+        receivingAccount,
+        selectReceivingAccount,
+    ])
 
     const handleOpenProvider = useCallback(async () => {
         trackEvent(SwapEvent.SelectProviderOpen, {
@@ -497,12 +636,25 @@ export const useSwapForm = (
         })
         // Signing runs while this sheet is open; a Bluetooth Ledger in the
         // extension popup can't sign, and this lets its tab reopen the swap.
-        if (selectedAddress && payAmount) {
+        if (
+            selectedAddress &&
+            payAmount &&
+            (!isCrossChain || receivingAddress)
+        ) {
             registerTabResumeIntent({
                 flow: 'swap',
+                chainId: scope.chainId,
                 accountAddress: selectedAddress,
                 assetInId: fromAsset ?? nativeAssetId,
                 assetOutId: toAsset,
+                ...(isCrossChain && receivingAddress
+                    ? {
+                          receive: {
+                              scope: receiveScope,
+                              accountAddress: receivingAddress,
+                          },
+                      }
+                    : {}),
                 payAmount: payAmount.toFixed(),
             })
         }
@@ -562,15 +714,24 @@ export const useSwapForm = (
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
 
-        const successTitle = t('swap.execution.success_title')
-        const successBody = t('swap.execution.success_body', {
-            fromAsset: fromUnit,
-            toAsset: toUnit,
-        })
+        // A cross-chain payout lands minutes later; the tracked list follows it.
+        const isTracked = selectedQuote.routeKind === 'cross-chain'
+        const successTitle = isTracked
+            ? t('swap.tracking.started')
+            : t('swap.execution.success_title')
+        const successBody = isTracked
+            ? t('swap.tracking.in_progress')
+            : t('swap.execution.success_body', {
+                  fromAsset: fromUnit,
+                  toAsset: toUnit,
+              })
         successToast(successTitle, successBody)
         completeTabResume({ title: successTitle, body: successBody })
         resetAmounts()
     }, [
+        isCrossChain,
+        receiveScope,
+        receivingAddress,
         scope,
         selectedQuote,
         requestBottomSheet,
@@ -614,7 +775,7 @@ export const useSwapForm = (
         setIsLocalCurrencyInput(result.useLocalCurrency)
 
         if (result.balancePercentage !== null) {
-            void applyPercentageAmount(result.balancePercentage)
+            applyPercentageAmount(result.balancePercentage)
         }
     }, [
         requestBottomSheet,
@@ -625,8 +786,14 @@ export const useSwapForm = (
     ])
 
     return {
+        selectedAccount: selectedAccount ?? null,
         payAssetId: fromAsset,
         receiveAssetId: toAsset,
+        receiveScope,
+        receivingAccount,
+        isDirectionDisabled: isCrossChain,
+        isChainShown: isCrossChain || sourceChainIds.length > 1,
+        isReceivingAccountShown: isCrossChain,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,
@@ -645,6 +812,7 @@ export const useSwapForm = (
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>
             void handleOpenReceiveAssetSelection(),
+        handleOpenReceivingAccount: () => void handleOpenReceivingAccount(),
         handleOpenConfig: () => void handleOpenConfig(),
         handleOpenProvider: () => void handleOpenProvider(),
         handleOpenConfirm: () => void handleOpenConfirm(),

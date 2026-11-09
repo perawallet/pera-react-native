@@ -23,12 +23,14 @@ const ASSET_HOLDERS_STALE_TIME_MS = 60_000
 
 export type ResolveAssetHolderAddress = (
     assetId: string,
+    scope: ChainScope,
 ) => Promise<Nullable<string>>
 
 /**
- * Which of the user's accounts to treat as the holder of `assetId`, preferring
- * the selected account when it holds the asset. Resolves to `null` when no
- * account holds it (including the native asset, which has no holdings row).
+ * Which of the user's accounts to treat as the holder of `assetId` on `scope`,
+ * preferring the selected account when it holds the asset. Resolves to the
+ * holder's address on that scope's chain, or `null` when no account holds it
+ * (including a native asset on a chain that keeps no holdings row for it).
  *
  * The asset and collectible detail screens are account-scoped but their routes
  * only carry an asset id, so they read the *selected* account. Any caller that
@@ -71,14 +73,12 @@ export const resolveAssetHolderAddress = async (
     return candidates[0] ?? null
 }
 
-/** `resolveAssetHolderAddress` bound to the query client and `scope`. */
-export const useResolveAssetHolderAddress = (
-    scope: ChainScope,
-): ResolveAssetHolderAddress => {
+/** `resolveAssetHolderAddress` bound to the query client. */
+export const useResolveAssetHolderAddress = (): ResolveAssetHolderAddress => {
     const queryClient = useQueryClient()
     return useCallback(
-        (assetId: string) =>
+        (assetId: string, scope: ChainScope) =>
             resolveAssetHolderAddress(queryClient, assetId, scope),
-        [queryClient, scope],
+        [queryClient],
     )
 }

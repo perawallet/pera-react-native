@@ -14,9 +14,9 @@ import {
     encodeAlgorandAddress,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useStyles } from './styles'
 import { PWView, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -34,7 +34,7 @@ export const SigningAccountDisplay = ({
     const authAddress = transaction.authAddr?.publicKey
         ? encodeAlgorandAddress(transaction.authAddr.publicKey)
         : transaction.sender
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const signingAccount = useFindAccountByAddress(authAddress, scope)
 
     if (!signingAccount) {

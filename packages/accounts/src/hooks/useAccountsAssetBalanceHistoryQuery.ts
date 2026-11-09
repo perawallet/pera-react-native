@@ -42,7 +42,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     const address = account
         ? (chainAccountOf(account, scope.chainId)?.address ?? '')
         : ''
-    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
+    const { usdToPreferred } = useCurrency(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'balanceHistory',
@@ -56,17 +56,10 @@ export const useAccountsAssetsBalanceHistoryQuery = (
             address,
             assetId,
             period,
-            preferredCurrency,
         ),
         enabled: isQueryEnabled,
-        queryFn: () =>
-            fetchHoldingBalanceHistory(
-                address,
-                assetId,
-                period,
-                preferredCurrency,
-                scope,
-            ),
+        queryFn: ({ signal }) =>
+            fetchHoldingBalanceHistory(address, assetId, period, scope, signal),
         select: points =>
             points.map(point => ({
                 datetime: new Date(point.timestamp),

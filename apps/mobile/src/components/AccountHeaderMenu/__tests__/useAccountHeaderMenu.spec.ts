@@ -19,6 +19,7 @@ import {
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 
 const { mockCapabilities, mockLock, restart } = vi.hoisted(() => ({
@@ -46,7 +47,6 @@ vi.mock('@routes/capabilities', () => ({
 }))
 
 import { useAccountHeaderMenu } from '../useAccountHeaderMenu'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const enableDebugTools = () => {
     ;(usePreferences as Mock).mockReturnValue({
@@ -120,6 +120,19 @@ describe('useAccountHeaderMenu', () => {
         const labels = result.current.items.map(item => item.label)
         expect(labels.some(label => CHART_LABEL.test(label))).toBe(false)
         expect(labels).toContain('search.title')
+    })
+
+    it("lists the screen's own items before the shared ones", () => {
+        const leadingItems = [
+            { label: 'screen.action', icon: 'eye' as const, onPress: vi.fn() },
+        ]
+
+        const { result } = renderHook(() =>
+            useAccountHeaderMenu({ leadingItems }),
+        )
+
+        expect(result.current.items[0]).toBe(leadingItems[0])
+        expect(result.current.items.length).toBeGreaterThan(1)
     })
 
     it('adds the gallery shortcut to the developer items where the build includes it', () => {
@@ -202,12 +215,16 @@ describe('useAccountHeaderMenu', () => {
 
             const live = useNetworkStore.getState()
             expect(live.mode).toBe('live')
-            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('mainnet')
+            expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe(
+                'mainnet',
+            )
             expect(live.selectedNetworkByChain.algorand).toBe('betanet')
 
             act(() => developerModeItem(result.current.items)?.onPress())
 
-            expect(getSelectedScope(LEGACY_CHAIN_ID).networkId).toBe('betanet')
+            expect(getSelectedScope(ALGORAND_CHAIN_ID).networkId).toBe(
+                'betanet',
+            )
         })
 
         it('still toggles when the sync service is not initialized', () => {

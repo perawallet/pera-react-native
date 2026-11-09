@@ -11,7 +11,8 @@
  */
 
 export {
-    mockRampPairs,
+    mockRampDestinations,
+    mockRampSources,
     type MockRampPairsParams,
 } from './api/pairs/msw-handlers'
 

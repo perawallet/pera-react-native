@@ -819,7 +819,10 @@ const cases: Case[] = [
         () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Swap',
-                params: { assetInId: '0', assetOutId: ASSET_ID },
+                params: {
+                    assetIn: { chainId: 'algorand', assetId: '0' },
+                    assetOut: { chainId: 'algorand', assetId: ASSET_ID },
+                },
             })
         },
     ),

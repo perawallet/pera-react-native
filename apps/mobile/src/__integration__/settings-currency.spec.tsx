@@ -20,11 +20,11 @@ import {
     mockGetCurrency,
     mockListCurrencies,
 } from '@perawallet/wallet-core-currencies/test-handlers'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { JPY_ONLY, USD_EUR_GBP } from './__fixtures__/currencies'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // The radio draws its dot as the only child of its `-radio` circle.
 const isRadioSelected = (testID: string): boolean =>
@@ -130,7 +130,7 @@ describe('Flow: Settings → Currency selection', () => {
                 useNetworkStore.getState().setMode('developer')
                 useNetworkStore
                     .getState()
-                    .selectNetwork(LEGACY_CHAIN_ID, network)
+                    .selectNetwork(ALGORAND_CHAIN_ID, network)
 
                 renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
 

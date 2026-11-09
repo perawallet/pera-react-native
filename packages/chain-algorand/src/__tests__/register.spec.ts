@@ -226,6 +226,7 @@ describe('registerChain', () => {
         expect(nameServiceChainAdapters.get(ALGORAND_CHAIN_ID)).toBe(
             algorandNameServiceAdapter,
         )
+        expect(algorandNameServiceAdapter.service).toBe('nfd')
     })
 
     it('registers the Algorand card adapter', () => {

@@ -15,10 +15,10 @@ import {
     getAssetTransferType,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 
 export const useAssetTransferDisplay = (
     transaction: AlgorandTransactionView,
@@ -28,7 +28,7 @@ export const useAssetTransferDisplay = (
         [transaction],
     )
     const assetId = transaction.assetTransferTransaction?.assetId?.toString()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { data: asset, isPending: isAssetPending } =
         useSingleAssetDetailsQuery(assetId ?? '', scope)
 

@@ -30,12 +30,14 @@ import {
     insertAssetHolding,
     refreshAccountHoldings,
     useAccountsStore,
+    useHoldingsRefreshStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockAssetItems } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { http, HttpResponse } from 'msw'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { waitPastDoublePressGuard } from '@test-utils/rnw'
@@ -175,6 +177,9 @@ describe("Flow: One account's assets across chains", () => {
     beforeEach(async () => {
         openReceiveFundsOn.mockClear()
         await resetTestDatabase()
+        // A failed read's flag is in memory: left over, it would mark the next
+        // test's chain as failed against a database that no longer holds its rows.
+        useHoldingsRefreshStore.getState().resetState()
         useRemoteConfigStore.getState().resetState()
         resetListView()
         server.use(
@@ -281,7 +286,7 @@ describe("Flow: One account's assets across chains", () => {
         ).toBeNull()
     })
 
-    it("Given Base was just added and its first read fails, when its chip is selected, then Base's native token shows at zero without a funding prompt, and No Matching Assets only follows a search", async () => {
+    it("Given Base was just added and its first read fails, when its chip is selected, then Base's native token shows no amount and no value instead of a zero, without a funding prompt, and No Matching Assets only follows a search", async () => {
         server.use(http.post(BASE_RPC_URL, () => HttpResponse.error()))
         useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
         renderList(THREE_CHAIN_ACCOUNT)
@@ -290,8 +295,11 @@ describe("Flow: One account's assets across chains", () => {
         fireEvent.click(screen.getByTestId('asset_network_filter_base'))
 
         const native = await screen.findByTestId('asset_row_native')
-        // The amount alone: no read vouches for the zero, so it has no fiat value.
-        expect(within(native).getAllByText(/0\.00/)).toHaveLength(1)
+        // No read vouches for the zero, so neither the amount nor its value shows.
+        expect(within(native).queryByText(/0\.00/)).toBeNull()
+        expect(
+            within(native).getAllByText(UNKNOWN_AMOUNT_PLACEHOLDER),
+        ).toHaveLength(2)
         // A native coin's subtitle is its bare unit, never `<unit> · native`.
         expect(within(native).queryByText(/native/)).toBeNull()
         // The read failed, so the zero is a placeholder, not an unfunded balance.
@@ -442,9 +450,9 @@ describe("Flow: One account's assets across chains", () => {
         expect(rows).toHaveLength(2)
         expect(
             rows.map(row =>
-                within(row).queryByTestId('chain_label_ethereum')
+                within(row).queryByTestId('chain_avatar_badge_ethereum')
                     ? 'ethereum'
-                    : within(row).queryByTestId('chain_label_base')
+                    : within(row).queryByTestId('chain_avatar_badge_base')
                       ? 'base'
                       : null,
             ),
@@ -503,7 +511,7 @@ describe("Flow: One account's assets across chains", () => {
         })
         expect(
             within(screen.getByTestId('asset_row_0')).getByTestId(
-                'chain_label_algorand',
+                'chain_avatar_badge_algorand',
             ),
         ).toBeTruthy()
 

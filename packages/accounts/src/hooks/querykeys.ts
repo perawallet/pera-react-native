@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type {
-    ChainId,
-    ChainScope,
+import {
+    queryKeyReferencesScope,
+    type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { AccountAddress } from '../models'
@@ -148,12 +149,6 @@ export const getDelegatedAddressesQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'delegated-addresses', { address, scope }]
 
-export const getOwnedAssetIdsQueryKey = (scope: ChainScope) => [
-    MODULE_PREFIX,
-    'owned-asset-ids',
-    { scope },
-]
-
 export const getAssetHoldersQueryKey = (assetId: string, scope: ChainScope) => [
     MODULE_PREFIX,
     'asset-holders',
@@ -165,12 +160,11 @@ export const getAccountAssetBalanceHistoryQueryKey = (
     account_address: string,
     asset_id: string,
     period: HistoryPeriod,
-    currency: string,
 ) => [
     MODULE_PREFIX,
     'assets',
     'balance-history',
-    { period, currency, scope, asset_id, account_address },
+    { period, scope, asset_id, account_address },
 ]
 
 export const getInvalidateAccountBalancesPredicate = (query: Query) =>
@@ -215,9 +209,56 @@ const queryKeyTargetsAccount = (
         })
     })
 
+/** The account lists that read SQLite whole, each keyed by its sources. */
+export type AccountListQueryKind = 'holdings-page' | 'collectibles'
+
+/**
+ * Re-reads one kind of account list for the given addresses and nothing else:
+ * a list filling in after a chain's late read must not reload the summary,
+ * totals and charts that share the address (an EVM address spans chains).
+ */
+export function invalidateAccountListQueriesForAddresses(
+    queryClient: QueryClient,
+    kind: AccountListQueryKind,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    void queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+            queryKey[0] === MODULE_PREFIX &&
+            queryKey[1] === kind &&
+            queryKeyTargetsAccount(queryKey, targets),
+    })
+}
+
 export function invalidateAccountQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
+}
+
+const isAccountChartQuery = (queryKey: QueryKey): boolean =>
+    isAccountBalancesHistoryQuery(queryKey) ||
+    (queryKey[0] === MODULE_PREFIX &&
+        queryKey[1] === 'assets' &&
+        queryKey[2] === 'balance-history')
+
+/**
+ * The account queries of one network, for a change that only touched it, such
+ * as its prices. Charts are left out unless `includeCharts`: on an EVM chain
+ * one chart refetch is several backend reads.
+ */
+export function invalidateAccountQueriesForScope(
+    queryClient: QueryClient,
+    scope: ChainScope,
+    { includeCharts }: { includeCharts: boolean },
+): void {
+    void queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+            isAccountQuery(queryKey) &&
+            queryKeyReferencesScope(queryKey, scope) &&
+            (includeCharts || !isAccountChartQuery(queryKey)),
     })
 }
 
@@ -246,30 +287,54 @@ const queryKeyTargetsAccountAggregate = (
  * The per-address query keys carry a single-account address in their object
  * payload (`{ address }` for balance/summary/holdings-page/…, `account_address`
  * for asset balance-history), so the sync service can refresh just the accounts
- * that actually changed this tick instead of fanning a wide DB re-read across
- * every mounted account query. Keys without a single-account payload (e.g.
- * network-scoped owned-asset-ids, multi-account balance-history) are left alone
- * by default; `includeMultiAccountKeys` additionally invalidates multi-account
- * aggregates (the wealth-chart balance-history) whose `addresses` payload
- * intersects the targets — wanted by the post-submission refresh, where the
- * chart must reflect the send, but not by the sync tick, whose broad
- * asset-phase invalidation already covers periodic drift.
+ * that changed this tick instead of re-reading every mounted account query.
+ *
+ * `includeMultiAccountKeys` adds the multi-account aggregates (the wealth-chart
+ * balance-history) whose `addresses` intersect the targets, for a refresh that
+ * must show a send at once. `includeCharts: false` leaves every chart out, for
+ * the sync tick: an account that changes every block would otherwise reload
+ * its charts each tick, and the price pass refreshes them on its own schedule.
  */
 export function invalidateAccountQueriesForAddresses(
     queryClient: QueryClient,
     addresses: string[],
-    options?: { includeMultiAccountKeys?: boolean },
+    options?: { includeMultiAccountKeys?: boolean; includeCharts?: boolean },
 ): void {
     if (addresses.length === 0) return
     const targets = new Set(addresses)
     const includeMultiAccountKeys = options?.includeMultiAccountKeys ?? false
+    const includeCharts = options?.includeCharts ?? true
     void queryClient.invalidateQueries({
-        predicate: query =>
-            query.queryKey[0] === MODULE_PREFIX &&
-            (queryKeyTargetsAccount(query.queryKey, targets) ||
+        predicate: ({ queryKey }) =>
+            queryKey[0] === MODULE_PREFIX &&
+            (includeCharts || !isAccountChartQuery(queryKey)) &&
+            (queryKeyTargetsAccount(queryKey, targets) ||
                 (includeMultiAccountKeys &&
-                    queryKeyTargetsAccountAggregate(query.queryKey, targets))),
+                    queryKeyTargetsAccountAggregate(queryKey, targets))),
     })
+}
+
+/**
+ * Every chart that covers one of the given accounts: its asset charts and the
+ * multi-account charts (overview, portfolio) whose `addresses` include it. A
+ * chart still loading finishes: restarting it on each refresh could keep a
+ * slow chart for a busy account from ever finishing.
+ */
+export function invalidateAccountChartsForAddresses(
+    queryClient: QueryClient,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    void queryClient.invalidateQueries(
+        {
+            predicate: ({ queryKey }) =>
+                isAccountChartQuery(queryKey) &&
+                (queryKeyTargetsAccount(queryKey, targets) ||
+                    queryKeyTargetsAccountAggregate(queryKey, targets)),
+        },
+        { cancelRefetch: false },
+    )
 }
 
 /**
@@ -278,8 +343,8 @@ export function invalidateAccountQueriesForAddresses(
  * datasets (e.g. a 5k-row holdings page) sitting in cache until gcTime, where
  * the periodic sync's broad invalidations keep re-marking them stale. Removing
  * them frees the memory and stops that churn. Keys without a single-account
- * payload (e.g. network-scoped owned-asset-ids, multi-account balance-history)
- * are left for the caller to refresh.
+ * payload (e.g. multi-account balance-history) are left for the caller to
+ * refresh.
  */
 export function removeAccountQueriesForAddresses(
     queryClient: QueryClient,

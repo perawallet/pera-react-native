@@ -11,8 +11,15 @@
  */
 
 import { Decimal } from 'decimal.js'
+import * as Clipboard from 'expo-clipboard'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@test-utils/render'
+import {
+    createQueryClientWrapper,
+    fireEvent,
+    render,
+    renderHook,
+    screen,
+} from '@test-utils/render'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import * as assets from '@perawallet/wallet-core-assets'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
@@ -35,6 +42,8 @@ import {
 import { TransactionDetailBody } from '@modules/signing/transactions/TransactionDetailBody'
 import { TransactionPreviewRow } from '@modules/signing/transactions/TransactionPreviewRow'
 import { TransactionReviewBody } from '@modules/signing/transactions/TransactionReviewBody'
+import { EthereumTransactionDetailSection } from '../components/EthereumTransactionDetailSection'
+import { useEthereumTransactionPresentation } from '../hooks/useEthereumTransactionPresentation'
 
 const mockNavigate = vi.hoisted(() => vi.fn())
 // The suffix has its own spec; here the hero's title is the row label it wraps.
@@ -58,7 +67,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddressQuery: () => ({ data: undefined }),
+    useNameForAddressQuery: () => ({ data: undefined }),
 }))
 
 vi.mock('@perawallet/wallet-core-projects', async () => ({
@@ -317,52 +326,20 @@ describe('Ethereum transaction bodies', () => {
             ).toEqual({})
         })
 
-        it('keeps the selector and call data under a collapsed Advanced section', () => {
+        it("leaves an unread call's selector and call data to the details screen", () => {
             render(
                 <TransactionReviewBody
                     transaction={natives['contract-call']}
                 />,
-            )
-
-            const advanced = screen.getByTestId(
-                'ethereum_contract_call_advanced',
-            )
-            const content = screen.getByTestId('ethereum_contract_call_data')
-            expect(advanced.textContent).toContain(
-                'transactions.contract_call.advanced',
-            )
-            expect(advanced.contains(content)).toBe(true)
-            expect(content.closest('[pointer-events="none"]')).not.toBeNull()
-        })
-
-        it('shows a preview of the call data once Advanced is opened, and all of it on request', () => {
-            render(
-                <TransactionReviewBody
-                    transaction={natives['contract-call']}
-                />,
-            )
-
-            fireEvent.click(
-                screen.getByText('transactions.contract_call.advanced'),
             )
 
             expect(
-                screen
-                    .getByTestId('ethereum_contract_call_data')
-                    .closest('[pointer-events="none"]'),
+                screen.queryByTestId('ethereum_contract_call_selector'),
             ).toBeNull()
-            expect(textOf('ethereum_contract_call_data')).toContain(
-                COLLAPSED_CALL_DATA,
-            )
-            expect(textOf('ethereum_contract_call_selector')).toContain(
-                '0x5ae401dc',
-            )
-
-            fireEvent.click(screen.getByText('common.show_more'))
-
-            expect(textOf('ethereum_contract_call_data')).toContain(
-                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
-            )
+            expect(
+                screen.queryByTestId('ethereum_contract_call_data'),
+            ).toBeNull()
+            expect(screen.getByTestId('ethereum_view_details')).toBeTruthy()
         })
 
         it("shows a held signer on Ethereum's chain, and no caption without one", () => {
@@ -469,9 +446,6 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('ethereum_contract_call_warning')).toBe(
                 'transactions.contract_call.warning',
             )
-            expect(
-                screen.queryByTestId('ethereum_contract_call_advanced'),
-            ).toBeNull()
             expect(textOf('ethereum_contract_call_selector')).toContain(
                 '0x5ae401dc',
             )
@@ -480,6 +454,45 @@ describe('Ethereum transaction bodies', () => {
             )
             expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_value')).toMatch(/ETH.*0/)
+
+            fireEvent.click(screen.getByText('common.show_more'))
+
+            expect(textOf('ethereum_contract_call_data')).toContain(
+                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+            )
+        })
+
+        it("lists a call's nonce, gas limit and per-gas fees", () => {
+            render(
+                <TransactionDetailBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            expect(textOf('ethereum_nonce')).toMatch(/nonce0$/)
+            expect(textOf('ethereum_gas_limit')).toMatch(/gas_limit60000$/)
+            expect(textOf('ethereum_max_fee_per_gas')).toMatch(
+                /gas20(\.0+)? ethereum\.pricing\.gwei$/,
+            )
+            expect(textOf('ethereum_max_priority_fee_per_gas')).toMatch(
+                /gas1(\.0+)? ethereum\.pricing\.gwei$/,
+            )
+        })
+
+        it('copies the full call data from its copy button', () => {
+            render(
+                <TransactionDetailBody
+                    transaction={natives['contract-call']}
+                />,
+            )
+
+            fireEvent.click(
+                screen.getByTestId('ethereum_contract_call_data_copy'),
+            )
+
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+            )
         })
 
         it('shows a contract creation without a target and with its calldata in full', () => {
@@ -497,7 +510,7 @@ describe('Ethereum transaction bodies', () => {
         })
     })
 
-    describe('detail of a transaction already on chain', () => {
+    describe('detail of a transaction with no signed pricing', () => {
         const PRICING = ['fee', 'nonce', 'gas', 'isPreview']
         const mined = (feePaid?: Decimal): TransactionNative => ({
             family: 'evm',
@@ -521,6 +534,28 @@ describe('Ethereum transaction bodies', () => {
 
             expect(textOf('transaction_detail_fee')).toContain('0.000021')
             expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
+            expect(screen.queryByTestId('ethereum_nonce')).toBeNull()
+        })
+
+        it('shows no pricing, only that the fee is set once reached, for a batch call not yet priced', () => {
+            const preview: TransactionNative = {
+                family: 'evm',
+                transaction: {
+                    ...Object.fromEntries(
+                        Object.entries(
+                            natives.transfer.transaction as object,
+                        ).filter(([key]) => !PRICING.includes(key)),
+                    ),
+                    isPreview: true,
+                },
+            }
+
+            render(<TransactionDetailBody transaction={preview} />)
+
+            expect(screen.queryByTestId('ethereum_nonce')).toBeNull()
+            expect(textOf('ethereum_max_fee')).toContain(
+                'ethereum.batch.fee_when_reached',
+            )
         })
 
         it('shows no fee row, and no promise of one, when the history gave none', () => {
@@ -564,12 +599,15 @@ describe('Ethereum transaction bodies', () => {
             },
         })
 
-        it('reviews an unlimited approve as an approval with the spend warning, not as an unknown call', () => {
+        it('reviews an unlimited approve titled by what it allows, with the spend warning, not as an unknown call', () => {
             render(<TransactionReviewBody transaction={natives.approval} />)
 
             expect(
-                screen.getByText('transactions.list_item.approval'),
+                screen.getByText(/^signing\.spend_approval\.allow_title/),
             ).toBeTruthy()
+            expect(
+                screen.queryByText('transactions.list_item.approval'),
+            ).toBeNull()
             expect(
                 screen.getByTestId('message-signing-spend-approval-warning'),
             ).toBeTruthy()
@@ -638,6 +676,57 @@ describe('Ethereum transaction bodies', () => {
             expect(
                 screen.queryByTestId('ethereum_contract_call_warning'),
             ).toBeNull()
+        })
+
+        describe('with the NFT shown in its own card', () => {
+            const presentationOf = (from: string) => {
+                vi.mocked(useChainCapability).mockReturnValue(true)
+                const { result } = renderHook(
+                    () =>
+                        useEthereumTransactionPresentation(
+                            withCall({
+                                kind: 'erc721-safe-transfer',
+                                contract: ETHEREUM_FIXTURE_TOKEN,
+                                from,
+                                to: ETHEREUM_FIXTURE_RECIPIENT,
+                                tokenId: '7',
+                            }),
+                        ),
+                    { wrapper: createQueryClientWrapper() },
+                )
+                return result.current!
+            }
+
+            it('keeps the holder an approved operator moved it for, and drops the asset and amount rows the card repeats', () => {
+                render(
+                    <EthereumTransactionDetailSection
+                        presentation={presentationOf(HOLDER)}
+                        isAssetInCard
+                    />,
+                )
+
+                expect(textOf('ethereum_detail_sender')).toContain(
+                    shortOnEthereum(HOLDER),
+                )
+                expect(screen.queryByTestId('ethereum_detail_nft')).toBeNull()
+                expect(
+                    screen.queryByTestId('ethereum_detail_amount'),
+                ).toBeNull()
+            })
+
+            it('names no holder when the signer moved its own NFT', () => {
+                render(
+                    <EthereumTransactionDetailSection
+                        presentation={presentationOf(ETHEREUM_FIXTURE_SENDER)}
+                        isAssetInCard
+                    />,
+                )
+
+                expect(
+                    screen.queryByTestId('ethereum_detail_sender'),
+                ).toBeNull()
+                expect(screen.queryByTestId('ethereum_detail_nft')).toBeNull()
+            })
         })
 
         it('lists every item of an NFT batch, a repeated token id included, while contractDecoding is on', () => {

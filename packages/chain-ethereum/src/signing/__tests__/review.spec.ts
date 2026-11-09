@@ -39,6 +39,7 @@ import {
     type CallRecogniser,
 } from '../review'
 import { readEthereumNative } from '../transaction-view'
+import { spendApprovalSummary, swapSummary } from '../../transfer/summary'
 import {
     ATTACKER,
     V2_PORTION_UNWRAP,
@@ -228,6 +229,59 @@ const reviewOne = async (
 }
 
 describe('ethereumReviewerAdapter', () => {
+    describe('a call whose gas estimate reverted', () => {
+        const withRevert = (
+            transaction: TransactionSerializableEIP1559,
+            revertedEstimate: unknown,
+        ): UnsignedTransaction => ({
+            ...unsigned(transaction),
+            payload: { from: SENDER, transaction, revertedEstimate },
+        })
+
+        it("carries the revert and the contract's reason onto the view of a contract call", async () => {
+            const { view } = await reviewOne(
+                withRevert(NON_STANDARD_CALL, { reason: 'EXPIRED' }),
+            )
+
+            expect(view).toMatchObject({
+                kind: 'contract-call',
+                revertedEstimate: { reason: 'EXPIRED' },
+            })
+        })
+
+        it('carries it onto a plain send too, which is never simulated', async () => {
+            const { view } = await reviewOne(withRevert(TRANSFER, {}))
+
+            expect(view.kind).toBe('transfer')
+            expect('revertedEstimate' in view && view.revertedEstimate).toEqual(
+                {},
+            )
+        })
+
+        it('never signs a plain send without review', async () => {
+            const { reviewed } = await reviewOne(withRevert(TRANSFER, {}))
+
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it('refuses a malformed revert rather than dropping it', async () => {
+            await expect(
+                ethereumReviewerAdapter.decoder.decode(
+                    [withRevert(NON_STANDARD_CALL, { reason: 42 })],
+                    CONTEXT,
+                ),
+            ).rejects.toThrow('malformed')
+        })
+
+        it('leaves a call with no revert unflagged', async () => {
+            const { view } = await reviewOne(unsigned(NON_STANDARD_CALL))
+
+            expect('revertedEstimate' in view).toBe(false)
+        })
+    })
+
     describe('a native transfer', () => {
         it('is a send of its wei to its checksummed recipient', async () => {
             const { summary, view } = await reviewOne(unsigned(TRANSFER))
@@ -396,6 +450,82 @@ describe('ethereumReviewerAdapter', () => {
             )
             expect(summary.subtitle).toBeUndefined()
         })
+    })
+
+    describe("the wallet's own swap and spend approval", () => {
+        const APPROVAL_DATA = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [SPENDER, TOKEN_UNITS],
+        })
+        const SWAP_CALL = NON_STANDARD_CALL
+        const BOUNDED_APPROVE = { ...APPROVE, data: APPROVAL_DATA }
+        const AMOUNT = {
+            assetRef: { chainId: 'ethereum' as const, assetId: TOKEN },
+            value: new Decimal(TOKEN_UNITS.toString()),
+        }
+
+        it('auto-approves a swap the wallet wrote', async () => {
+            const { reviewed, view } = await reviewOne(
+                unsigned(SWAP_CALL, {
+                    summary: swapSummary(SENDER, TOKEN, AMOUNT),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(view.kind).toBe('swap-call')
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(true)
+        })
+
+        it('auto-approves an approval whose calldata is one', async () => {
+            const { reviewed } = await reviewOne(
+                unsigned(BOUNDED_APPROVE, {
+                    summary: spendApprovalSummary(SENDER, SPENDER, AMOUNT),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(true)
+        })
+
+        it('does not take an approval summary over other calldata', async () => {
+            const { reviewed, view } = await reviewOne(
+                unsigned(SWAP_CALL, {
+                    summary: spendApprovalSummary(SENDER, SPENDER, AMOUNT),
+                }),
+                WALLET_BUILT,
+            )
+
+            expect(view.kind).toBe('contract-call')
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it.each([
+            ['swap', SWAP_CALL, swapSummary(SENDER, TOKEN, AMOUNT)],
+            [
+                'approval',
+                BOUNDED_APPROVE,
+                spendApprovalSummary(SENDER, SPENDER, AMOUNT),
+            ],
+        ])(
+            'leaves a dApp request with a %s summary to the user',
+            async (_kind, transaction, summary) => {
+                const { reviewed } = await reviewOne(
+                    unsigned(transaction, { summary }),
+                    CONTEXT,
+                )
+
+                expect(
+                    ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+                ).toBe(false)
+            },
+        )
     })
 
     // The claim is checked by re-encoding it with the ERC-20 encoder the wallet
@@ -869,6 +999,47 @@ describe("a dApp's standard token calls", () => {
                 value: new Decimal(maxUint256.toString()),
             },
         })
+    })
+
+    it('name a well-known spender on the view, on mainnet only', () => {
+        const toPermit2: TransactionSerializableEIP1559 = {
+            ...APPROVE,
+            data: encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'approve',
+                args: [
+                    '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+                    maxUint256,
+                ],
+            }),
+        }
+
+        expect(
+            ethereumViewOf(unsigned(toPermit2), ETHEREUM)?.knownSpender,
+        ).toEqual({ name: 'Permit2', projectDomain: 'uniswap.org' })
+        expect(
+            ethereumViewOf(
+                unsigned(
+                    { ...toPermit2, chainId: 11155111 },
+                    { scope: SEPOLIA },
+                ),
+                ETHEREUM,
+            ),
+        ).not.toHaveProperty('knownSpender')
+        const toUnlisted: TransactionSerializableEIP1559 = {
+            ...APPROVE,
+            data: encodeFunctionData({
+                abi: erc20Abi,
+                functionName: 'approve',
+                args: [
+                    '0x1111111111111111111111111111111111111111',
+                    maxUint256,
+                ],
+            }),
+        }
+        expect(
+            ethereumViewOf(unsigned(toUnlisted), ETHEREUM),
+        ).not.toHaveProperty('knownSpender')
     })
 
     describe('under the shipped capability defaults', () => {

@@ -28,11 +28,6 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
-        typecheck: {
-            enabled: true,
-            include: ['src/**/*.test-d.ts'],
-            tsconfig: './tsconfig.typecheck.json',
-        },
     },
     resolve: {
         conditions: ['default'],
@@ -62,6 +57,18 @@ export default defineConfig({
             '@perawallet/wallet-core-deeplinks/testing': path.resolve(
                 __dirname,
                 '../deeplinks/src/__tests__/adapter-contract.ts',
+            ),
+            '@perawallet/wallet-core-nfd/testing': path.resolve(
+                __dirname,
+                '../nfd/src/__tests__/adapter-contract.ts',
+            ),
+            '@perawallet/wallet-core-onramp/testing': path.resolve(
+                __dirname,
+                '../onramp/src/__tests__/adapter-contract.ts',
+            ),
+            '@perawallet/wallet-core-swaps/testing': path.resolve(
+                __dirname,
+                '../swaps/src/__tests__/adapter-contract.ts',
             ),
             '@perawallet/wallet-core-signing/testing': path.resolve(
                 __dirname,

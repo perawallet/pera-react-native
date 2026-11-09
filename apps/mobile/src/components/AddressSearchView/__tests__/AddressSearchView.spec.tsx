@@ -16,14 +16,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
-import {
-    addressCodecs,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { useNameSearchQuery } from '@perawallet/wallet-core-nfd'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     addressFamilyOf: vi.fn(),
@@ -73,7 +71,8 @@ vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+    useNameSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+    nameServiceOf: vi.fn(() => 'nfd'),
 }))
 
 // AddressSearchInput renders AddressEntryField, which now always mounts
@@ -135,7 +134,7 @@ const mockIsValidAddress = vi.fn<(address: string) => boolean>()
 beforeEach(() => {
     addressCodecs.register({
         ...fixtureCodec,
-        chainId: LEGACY_CHAIN_ID,
+        chainId: ALGORAND_CHAIN_ID,
         isValid: address => mockIsValidAddress(address),
     })
 })
@@ -338,7 +337,7 @@ describe('AddressSearchView', () => {
     })
 
     it('forwards the NFD name alongside the address when an NFD result is selected', () => {
-        vi.mocked(useNfdSearchQuery).mockReturnValue({
+        vi.mocked(useNameSearchQuery).mockReturnValue({
             data: [
                 {
                     name: 'alice.algo',
@@ -347,7 +346,7 @@ describe('AddressSearchView', () => {
                 },
             ],
             isLoading: false,
-        } as unknown as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNameSearchQuery>)
 
         render(
             <AddressSearchView

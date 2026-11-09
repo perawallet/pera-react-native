@@ -20,19 +20,24 @@ import {
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
+import type {
+    ChainId,
+    ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
     useGlobalSearch,
+    type AccountSearchResult,
+    type AssetSearchResult,
     type SearchScope,
 } from '@perawallet/wallet-core-search'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { FilterOption } from '@components/FilterSelection'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCapability } from '@hooks/useCapability'
+import { useCapabilityCheck } from '@hooks/useCapability'
+import { useLanguage } from '@hooks/useLanguage'
+import { toChainFilterOptions } from '@modules/assets'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SearchFilterContent } from '../../components/SearchFilterContent'
 
@@ -60,9 +65,15 @@ const allocateSectionLimits = (counts: number[], budget: number): number[] => {
 
 export type SearchRow =
     | { type: 'section_header'; kind: SearchScope; key: string }
-    | { type: 'account'; account: WalletAccount; key: string }
+    | {
+          type: 'account'
+          account: WalletAccount
+          /** The chain the search matched the account on. */
+          chainId: Optional<ChainId>
+          key: string
+      }
     | { type: 'contact'; contact: Contact; key: string }
-    | { type: 'asset'; asset: PeraAsset; key: string }
+    | { type: 'asset'; asset: PeraAsset; scope: ChainScope; key: string }
     | {
           type: 'show_more'
           kind: SearchScope
@@ -71,30 +82,37 @@ export type SearchRow =
       }
 
 export type UseSearchScreenResult = {
-    /** The chain the asset results are on. */
-    chainId: ChainId
     value: string
     setValue: (text: string) => void
+    /** The debounced term the results matched. */
+    query: string
     rows: SearchRow[]
     hasResults: boolean
     isLoading: boolean
     scopes: SearchScope[]
     toggleScope: (scope: SearchScope) => void
+    /** The network the results are narrowed to; `null` is All. */
+    selectedChainId: Nullable<ChainId>
+    setSelectedChainId: (chainId: Nullable<ChainId>) => void
+    /** Empty while the wallet is on fewer than two networks: nothing to filter. */
+    chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    /** On All, with more than one network to tell apart: each asset row names its network. */
+    shouldShowAssetNetwork: boolean
     openFilterSheet: () => void
     onAccountPress: (account: WalletAccount) => void
     onContactPress: (contact: Contact) => void
-    onAssetPress: (asset: PeraAsset) => Promise<void>
+    onAssetPress: (asset: PeraAsset, scope: ChainScope) => Promise<void>
     onExpandSection: (kind: SearchScope) => void
 }
 
 type SectionConfig = {
     kind: SearchScope
-    items: Array<WalletAccount | Contact | PeraAsset>
+    items: Array<AccountSearchResult | Contact | AssetSearchResult>
     toRow: (item: never) => SearchRow
 }
 
 export const useSearchScreen = (): UseSearchScreenResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { t } = useLanguage()
     const [scopes, setScopes] = useState<SearchScope[]>([...SEARCH_SCOPES])
     const toggleScope = useCallback((scope: SearchScope) => {
         setScopes(prev =>
@@ -103,16 +121,28 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 : [...prev, scope],
         )
     }, [])
-    const { value, setValue, results, hasResults, isLoading } = useGlobalSearch(
-        scope,
-        {
+    const [selectedChainId, setSelectedChainId] =
+        useState<Nullable<ChainId>>(null)
+    const { value, setValue, query, results, hasResults, isLoading, chainIds } =
+        useGlobalSearch({
             scopes,
-        },
+            chainId: selectedChainId ?? undefined,
+        })
+    const chainFilterOptions = useMemo(
+        () =>
+            toChainFilterOptions(chainIds, {
+                allLabel: t('account_details.assets.network_filter_all'),
+                testIDPrefix: 'search_network_filter',
+            }),
+        [chainIds, t],
     )
+    const shouldShowAssetNetwork =
+        chainFilterOptions.length > 0 && selectedChainId === null
     const navigation = useAppNavigation()
     const { setSelectedAccountId } = useSelectedAccountId()
     const accounts = useAllAccounts()
-    const resolveAssetHolderAddress = useResolveAssetHolderAddress(scope)
+    const resolveAssetHolderAddress = useResolveAssetHolderAddress()
+    const checkCapability = useCapabilityCheck()
     const { setSelectedContact } = useContacts()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -122,6 +152,9 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 <SearchFilterContent
                     scopes={scopes}
                     onToggleScope={toggleScope}
+                    chainFilterOptions={chainFilterOptions}
+                    selectedChainId={selectedChainId}
+                    onSelectChain={setSelectedChainId}
                 />
             ),
             options: {
@@ -130,7 +163,13 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, scopes, toggleScope])
+    }, [
+        requestBottomSheet,
+        scopes,
+        toggleScope,
+        chainFilterOptions,
+        selectedChainId,
+    ])
 
     const [expandedSections, setExpandedSections] = useState<
         Record<SearchScope, boolean>
@@ -150,9 +189,10 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             {
                 kind: 'accounts',
                 items: results.accounts,
-                toRow: (account: WalletAccount) => ({
+                toRow: ({ account, chainId }: AccountSearchResult) => ({
                     type: 'account',
                     account,
+                    chainId,
                     key: `account-${account.id}`,
                 }),
             },
@@ -168,10 +208,11 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             {
                 kind: 'assets',
                 items: results.assets,
-                toRow: (asset: PeraAsset) => ({
+                toRow: ({ asset, scope }: AssetSearchResult) => ({
                     type: 'asset',
                     asset,
-                    key: `asset-${asset.assetId}`,
+                    scope,
+                    key: `asset-${scope.chainId}-${asset.assetId}`,
                 }),
             },
         ]
@@ -233,17 +274,16 @@ export const useSearchScreen = (): UseSearchScreenResult => {
         [navigation, setSelectedContact],
     )
 
-    const hasNfts = useCapability({
-        chain: { chainId: scope.chainId, capability: 'nft' },
-    })
-
     const onAssetPress = useCallback(
-        async (asset: PeraAsset) => {
+        async (asset: PeraAsset, scope: ChainScope) => {
             // Asset results span every account, but both detail screens read
             // the *selected* account for the owner row, balance, send sender
             // and opt-out — so hand the selection to the real holder first or
             // the asset gets attributed to the account searched from.
-            const holderAddress = await resolveAssetHolderAddress(asset.assetId)
+            const holderAddress = await resolveAssetHolderAddress(
+                asset.assetId,
+                scope,
+            )
             const holder = holderAddress
                 ? findAccountByAddressOn(accounts, scope.chainId, holderAddress)
                 : undefined
@@ -251,6 +291,9 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 setSelectedAccountId(holder.id)
             }
 
+            const hasNfts = checkCapability({
+                chain: { chainId: scope.chainId, capability: 'nft' },
+            })
             navigation.navigate('TabBar', {
                 screen: 'Home',
                 params:
@@ -276,20 +319,23 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             navigation,
             resolveAssetHolderAddress,
             setSelectedAccountId,
-            scope.chainId,
-            hasNfts,
+            checkCapability,
         ],
     )
 
     return {
-        chainId: scope.chainId,
         value,
         setValue,
+        query,
         rows,
         hasResults,
         isLoading,
         scopes,
         toggleScope,
+        selectedChainId,
+        setSelectedChainId,
+        chainFilterOptions,
+        shouldShowAssetNetwork,
         openFilterSheet,
         onAccountPress,
         onContactPress,

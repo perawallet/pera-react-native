@@ -11,8 +11,8 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { renderHook } from '@testing-library/react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const { useProvenPasskeysForBackupQueryMock } = vi.hoisted(() => ({
     useProvenPasskeysForBackupQueryMock: vi.fn(),
@@ -36,7 +36,7 @@ describe('useProvenPasskeysQuery', () => {
         const { result } = renderHook(() => useProvenPasskeysQuery())
 
         expect(useProvenPasskeysForBackupQueryMock).toHaveBeenCalledWith(
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
         )
         expect(result.current).toBe(packageResult)
     })

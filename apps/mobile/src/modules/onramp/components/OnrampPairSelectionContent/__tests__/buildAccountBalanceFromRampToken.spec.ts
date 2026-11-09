@@ -12,29 +12,20 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { Decimal } from 'decimal.js'
 import {
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
+import {
+    makeAlgoToken,
+    makeRampToken,
+    USDC_ROUTER_ID,
+} from '@test-utils/rampFixtures'
 import { buildAccountBalanceFromRampToken } from '../buildAccountBalanceFromRampToken'
 
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
-
-const makeToken = (overrides: Partial<RampToken> = {}): RampToken => ({
-    id: 'USDC_ALGORAND',
-    symbol: 'USDC',
-    name: 'USD Coin',
-    fractionDecimals: 6,
-    logo: 'https://example.com/usdc.png',
-    network: { id: 'ALGORAND', name: 'Algorand', logo: null },
-    priceInUsd: new Decimal(1),
-    ...overrides,
-})
 
 const assetWithTier = (
     verificationTier: PeraAssetVerificationTier,
@@ -51,7 +42,7 @@ describe('buildAccountBalanceFromRampToken', () => {
 
     it('maps ALGO to asset id 0', () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken({ id: 'ALGO', symbol: 'ALGO', name: 'Algorand' }),
+            makeAlgoToken(),
             null,
             MAINNET,
             null,
@@ -61,7 +52,7 @@ describe('buildAccountBalanceFromRampToken', () => {
 
     it("maps a token to its asset on the network, with the token's names", () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken(),
+            makeRampToken(),
             null,
             MAINNET,
             null,
@@ -72,19 +63,19 @@ describe('buildAccountBalanceFromRampToken', () => {
         expect(result.asset?.decimals).toBe(6)
     })
 
-    it('keeps the ramp id for a token with no asset on the network', () => {
+    it('keeps the router id for a token with no asset on the network', () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken({ id: 'MYSTERY', symbol: 'MYS' }),
+            makeRampToken({ id: 'other:1/token:7', symbol: 'MYS' }),
             null,
             MAINNET,
             null,
         )
-        expect(result.assetId).toBe('MYSTERY')
+        expect(result.assetId).toBe('other:1/token:7')
     })
 
     it("takes the verification tier from the token's asset", () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken(),
+            makeRampToken(),
             null,
             MAINNET,
             assetWithTier(PeraAssetVerificationTier.suspicious),
@@ -94,9 +85,9 @@ describe('buildAccountBalanceFromRampToken', () => {
         )
     })
 
-    it('verifies the native coin listed under its on-chain id', () => {
+    it('verifies the native coin', () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken({ id: '0', symbol: 'ALGO', name: 'Algorand' }),
+            makeAlgoToken(),
             null,
             MAINNET,
             null,
@@ -108,7 +99,7 @@ describe('buildAccountBalanceFromRampToken', () => {
 
     it('falls back to the default tier until the asset loads', () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken(),
+            makeRampToken({ id: USDC_ROUTER_ID }),
             null,
             MAINNET,
             null,
@@ -120,7 +111,7 @@ describe('buildAccountBalanceFromRampToken', () => {
 
     it('uses the provided balance as the amount', () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken({ id: 'ALGO', symbol: 'ALGO' }),
+            makeAlgoToken(),
             new Decimal(12.5),
             MAINNET,
             null,
@@ -130,7 +121,7 @@ describe('buildAccountBalanceFromRampToken', () => {
 
     it('defaults the amount to zero when balance is null', () => {
         const result = buildAccountBalanceFromRampToken(
-            makeToken(),
+            makeRampToken(),
             null,
             MAINNET,
             null,

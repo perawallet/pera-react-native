@@ -58,6 +58,16 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.xs,
         paddingHorizontal: theme.spacing.sm,
     },
+    // The ring is the badge's own background-coloured border, which lifts it off the artwork.
+    networkBadge: {
+        position: 'absolute',
+        bottom: theme.spacing.sm,
+        left: theme.spacing.sm,
+        backgroundColor: theme.colors.background,
+        borderRadius: theme.borderRadius.full,
+        borderWidth: theme.borders.md,
+        borderColor: theme.colors.background,
+    },
     amountBadgeText: {
         color: theme.colors.textWhite,
     },

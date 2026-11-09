@@ -30,9 +30,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts, useContactsStore } from '@perawallet/wallet-core-contacts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     resetTestDatabase,
     seedAlgoAsset,
+    seedAlgorandAccountState,
     seedAssets,
     setupTestDatabase,
     teardownTestDatabase,
@@ -42,10 +44,9 @@ import { SearchScreen } from '@modules/search/screens/SearchScreen'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 import { addressOf } from './__fixtures__/accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: ALGORAND_CHAIN_ID,
     networkId: 'mainnet',
 } as const
 
@@ -63,6 +64,18 @@ const SEARCH_ACCOUNT: WalletAccount = {
         },
     },
     name: `${SHARED_QUERY} account`,
+}
+
+// An unsynced account is fetched from a live node, whose late answer lands in a
+// later test and replaces the holdings seeded for the same address.
+const seedSyncedAccounts = async (accounts: WalletAccount[]) => {
+    for (const account of accounts) {
+        await seedAlgorandAccountState({
+            accountAddress: addressOf(account),
+            scope: MAINNET_SCOPE,
+            nativeBalance: new Decimal(1_000_000),
+        })
+    }
 }
 
 const addTestContact = (name: string, address: string) => {
@@ -95,6 +108,7 @@ describe('Flow: Global search', () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
+        await seedSyncedAccounts([SEARCH_ACCOUNT])
         resetTestContacts()
     })
 
@@ -132,6 +146,7 @@ describe('Flow: Global search', () => {
         }
         useAccountsStore.getState().setAccounts([otherAccount, SEARCH_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(otherAccount.id)
+        await seedSyncedAccounts([otherAccount])
 
         renderWithNavigation(SearchScreen, 'Search')
 
@@ -183,6 +198,7 @@ describe('Flow: Global search', () => {
         useAccountsStore.getState().setSelectedAccountId(SEARCH_ACCOUNT.id)
         await seedAlgoAsset()
         await seedAssets([NFT_TEST_ASSET])
+        await seedSyncedAccounts([nftHolder])
         await insertAssetHolding({
             accountAddress: addressOf(nftHolder),
             assetId: NFT_TEST_ASSET_ID,
@@ -195,7 +211,7 @@ describe('Flow: Global search', () => {
         typeQuery('Test Collectible')
 
         const assetRow = await screen.findByTestId(
-            `search_result_asset_${NFT_TEST_ASSET_ID}`,
+            `search_result_asset_algorand_${NFT_TEST_ASSET_ID}`,
         )
         fireEvent.click(assetRow)
 

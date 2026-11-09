@@ -12,35 +12,78 @@
 
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { SwapFee, SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { computeSwapAlgoShortfall } from '../computeSwapAlgoShortfall'
 
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-
-const ALGO = { assetId: '0' }
-const USDC = { assetId: '31566704' }
-const OTHER = { assetId: '999' }
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const ALGO = '0'
+const USDC = '31566704'
+const OTHER = '999'
 
 const d = (value: number | string) => new Decimal(value)
 
-type QuoteOverrides = Partial<SwapQuote> & {
-    assetIn?: { assetId: string }
-    assetOut?: { assetId: string }
+const fee = (
+    kind: SwapFee['kind'],
+    assetId: string,
+    amount: number,
+): SwapFee => ({
+    kind,
+    asset: { ...SCOPE, assetId },
+    amount: d(amount),
+    usdValue: null,
+})
+
+type QuoteShape = {
+    assetIn?: string
+    assetOut?: string
+    assetOutScope?: { chainId: string; networkId: string }
+    sourceAmount?: number
+    amountIn?: number
+    amountOut?: number
+    minimumAmountOut?: Nullable<number>
+    networkFee?: Nullable<number>
+    peraFee?: Nullable<{ assetId: string; amount: number }>
 }
 
 // Amounts are microAlgos / base units throughout, mirroring the backend's
-// prepare-time validation which this util replicates.
-const makeQuote = (overrides: QuoteOverrides = {}): SwapQuote =>
+// order-time validation which this util replicates.
+const makeQuote = ({
+    assetIn = ALGO,
+    assetOut = USDC,
+    assetOutScope = SCOPE,
+    sourceAmount = 200_000,
+    amountIn = sourceAmount,
+    amountOut = 17_000,
+    minimumAmountOut = 16_800,
+    networkFee = 4_000,
+    peraFee = { assetId: ALGO, amount: 1_000 },
+}: QuoteShape = {}): SwapQuote =>
     ({
-        assetIn: ALGO,
-        assetOut: USDC,
-        amountIn: d(200_000),
-        amountInWithSlippage: d(200_000),
-        amountOut: d(17_000),
-        amountOutWithSlippage: d(16_800),
-        transactionFees: d(4_000),
-        peraFeeAmount: d(1_000),
-        ...overrides,
-    }) as SwapQuote
+        request: {
+            sourceAsset: { ...SCOPE, assetId: assetIn },
+            destinationAsset: { ...SCOPE, assetId: assetOut },
+            sourceAmount: d(sourceAmount),
+            sourceAddress: 'SENDER',
+            destinationAddress: 'SENDER',
+            slippage: null,
+        },
+        assetIn: { assetId: assetIn },
+        assetOut: {
+            assetId: assetOut,
+            ref: { ...assetOutScope, assetId: assetOut },
+        },
+        amountIn: d(amountIn),
+        amountOut: d(amountOut),
+        minimumAmountOut:
+            minimumAmountOut === null ? null : d(minimumAmountOut),
+        fees: [
+            ...(networkFee === null ? [] : [fee('network', ALGO, networkFee)]),
+            ...(peraFee === null
+                ? []
+                : [fee('pera', peraFee.assetId, peraFee.amount)]),
+        ],
+    }) as unknown as SwapQuote
 
 describe('computeSwapAlgoShortfall', () => {
     it('returns null when the balance covers amount, fees, pera fee and min balance', () => {
@@ -75,6 +118,16 @@ describe('computeSwapAlgoShortfall', () => {
         expect(shortfall).toBeNull()
     })
 
+    it('reads the input from the request, not the router figure', () => {
+        const shortfall = computeSwapAlgoShortfall({
+            quote: makeQuote({ amountIn: 900_000 }),
+            algoBalance: d(405_000),
+            minBalance: d(200_000),
+        })
+
+        expect(shortfall).toBeNull()
+    })
+
     it('does not subtract the input amount for an ASA-in swap', () => {
         // Only fees + pera fee leave the ALGO balance: 206_000 - 4_000 - 1_000
         // = 201_000 >= 200_000.
@@ -82,8 +135,7 @@ describe('computeSwapAlgoShortfall', () => {
             quote: makeQuote({
                 assetIn: USDC,
                 assetOut: OTHER,
-                amountIn: d(1_000_000),
-                amountInWithSlippage: d(1_000_000),
+                sourceAmount: 1_000_000,
             }),
             algoBalance: d(206_000),
             minBalance: d(200_000),
@@ -94,10 +146,7 @@ describe('computeSwapAlgoShortfall', () => {
 
     it('flags fee coverage for an ASA-in swap that cannot pay its fees', () => {
         const shortfall = computeSwapAlgoShortfall({
-            quote: makeQuote({
-                assetIn: USDC,
-                assetOut: OTHER,
-            }),
+            quote: makeQuote({ assetIn: USDC, assetOut: OTHER }),
             algoBalance: d(203_000),
             minBalance: d(200_000),
         })
@@ -109,16 +158,15 @@ describe('computeSwapAlgoShortfall', () => {
     it('ignores the ALGO output credit for the post-swap check, like the backend', () => {
         // The backend validates the post-swap balance BEFORE crediting the
         // ALGO output (algod evaluates group slots sequentially, so the
-        // balance can dip mid-group). An ASA-in / ALGO-out swap whose network
-        // fees breach the MBR must fail even though the output would cover
-        // it: 203_000 - 4_000 = 199_000, 1_000 below the MBR. The pera-fee
-        // check (which does credit the output) passes and must not mask it.
+        // balance can dip mid-group): 203_000 - 4_000 = 199_000, 1_000 below
+        // the MBR. The pera-fee check (which does credit the output) passes and
+        // must not mask it.
         const shortfall = computeSwapAlgoShortfall({
             quote: makeQuote({
                 assetIn: USDC,
                 assetOut: ALGO,
-                amountOut: d(1_000_000),
-                amountOutWithSlippage: d(990_000),
+                amountOut: 1_000_000,
+                minimumAmountOut: 990_000,
             }),
             algoBalance: d(203_000),
             minBalance: d(200_000),
@@ -127,18 +175,51 @@ describe('computeSwapAlgoShortfall', () => {
         expect(shortfall?.toString()).toBe('1000')
     })
 
-    it('credits the ALGO output before checking the pera fee, like the backend', () => {
-        // Post-swap: 204_000 - 4_000 = 200_000 (passes). Pera fee check runs
-        // after crediting the slippage-adjusted output: 200_000 + 990_000 -
-        // 1_000 stays above the MBR.
+    it('credits the minimum ALGO output before checking the pera fee, like the backend', () => {
+        // Post-swap: 204_000 - 4_000 = 200_000 (passes). The pera fee check
+        // credits the minimum output: 200_000 + 990_000 - 1_000.
         const shortfall = computeSwapAlgoShortfall({
             quote: makeQuote({
                 assetIn: USDC,
                 assetOut: ALGO,
-                amountOut: d(1_000_000),
-                amountOutWithSlippage: d(990_000),
+                amountOut: 1_000_000,
+                minimumAmountOut: 990_000,
             }),
             algoBalance: d(204_000),
+            minBalance: d(200_000),
+        })
+
+        expect(shortfall).toBeNull()
+    })
+
+    it('gives no ALGO credit to an output on another chain whose id reads as native', () => {
+        const shortfall = computeSwapAlgoShortfall({
+            quote: makeQuote({
+                assetIn: USDC,
+                assetOut: ALGO,
+                assetOutScope: { chainId: 'ethereum', networkId: 'mainnet' },
+                amountOut: 1_000_000,
+                minimumAmountOut: 990_000,
+            }),
+            algoBalance: d(204_000),
+            minBalance: d(200_000),
+        })
+
+        expect(shortfall?.toString()).toBe('1000')
+    })
+
+    it('credits the expected output when the route sets no minimum', () => {
+        // 1_000 short on the pera fee alone, covered by the expected output.
+        const shortfall = computeSwapAlgoShortfall({
+            quote: makeQuote({
+                assetIn: USDC,
+                assetOut: ALGO,
+                amountOut: 5_000,
+                minimumAmountOut: null,
+                networkFee: null,
+                peraFee: { assetId: ALGO, amount: 5_000 },
+            }),
+            algoBalance: d(200_000),
             minBalance: d(200_000),
         })
 
@@ -152,8 +233,8 @@ describe('computeSwapAlgoShortfall', () => {
             quote: makeQuote({
                 assetIn: USDC,
                 assetOut: OTHER,
-                peraFeeAsset: USDC,
-            } as QuoteOverrides),
+                peraFee: { assetId: USDC, amount: 1_000 },
+            }),
             algoBalance: d(204_000),
             minBalance: d(200_000),
         })
@@ -161,24 +242,7 @@ describe('computeSwapAlgoShortfall', () => {
         expect(shortfall).toBeNull()
     })
 
-    it('treats a pera fee asset of ALGO the same as no fee asset', () => {
-        const shortfall = computeSwapAlgoShortfall({
-            quote: makeQuote({
-                assetIn: USDC,
-                assetOut: OTHER,
-                peraFeeAsset: ALGO,
-            } as QuoteOverrides),
-            algoBalance: d(204_000),
-            minBalance: d(200_000),
-        })
-
-        // 204_000 - 4_000 - 1_000 = 199_000; 1_000 short.
-        expect(shortfall?.toString()).toBe('1000')
-    })
-
     it('raises the requirement by the opt-in MBR when provided', () => {
-        // Covered against the current MBR, but not once the group's opt-in
-        // raises it by 100_000.
         const shortfall = computeSwapAlgoShortfall({
             quote: makeQuote(),
             algoBalance: d(500_000),
@@ -189,30 +253,13 @@ describe('computeSwapAlgoShortfall', () => {
         expect(shortfall?.toString()).toBe('5000')
     })
 
-    it('prefers the slippage-adjusted input amount over the raw one', () => {
-        // Fixed-output swap: the input can grow with slippage, and the backend
-        // validates against the slippage-adjusted figure.
+    it('treats missing fees as zero', () => {
         const shortfall = computeSwapAlgoShortfall({
             quote: makeQuote({
-                amountIn: d(200_000),
-                amountInWithSlippage: d(210_000),
-            }),
-            algoBalance: d(405_000),
-            minBalance: d(200_000),
-        })
-
-        expect(shortfall?.toString()).toBe('10000')
-    })
-
-    it('treats missing fee and amount fields as zero', () => {
-        const shortfall = computeSwapAlgoShortfall({
-            quote: makeQuote({
-                amountIn: undefined,
-                amountInWithSlippage: undefined,
-                amountOut: undefined,
-                amountOutWithSlippage: undefined,
-                transactionFees: undefined,
-                peraFeeAmount: undefined,
+                assetIn: USDC,
+                assetOut: OTHER,
+                networkFee: null,
+                peraFee: null,
             }),
             algoBalance: d(100_000),
             minBalance: d(200_000),

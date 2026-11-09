@@ -13,7 +13,6 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     customNodeAdapters,
     useNetworkStore,
@@ -26,6 +25,7 @@ import {
     setCustomNetwork,
 } from '@packages/chain-algorand/src/blockchain/store/custom-network'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import {
     allCapabilities,
     fixtureEthereumDescriptor,
@@ -78,7 +78,7 @@ describe('useAlgorandCustomNodeForm', () => {
         })
 
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         expect(result.current.draft).toMatchObject({
@@ -91,7 +91,7 @@ describe('useAlgorandCustomNodeForm', () => {
 
     test('with no persisted config, the draft seeds blank', () => {
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         expect(result.current.draft).toEqual({
@@ -105,7 +105,7 @@ describe('useAlgorandCustomNodeForm', () => {
     })
 
     test('mounting the hook does not switch the network', () => {
-        renderHook(() => useAlgorandCustomNodeForm(LEGACY_CHAIN_ID))
+        renderHook(() => useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID))
 
         expect(useNetworkStore.getState().mode).toBe('live')
     })
@@ -122,7 +122,7 @@ describe('useAlgorandCustomNodeForm', () => {
             if (
                 !hasSwitched &&
                 state.mode === 'developer' &&
-                state.selectedNetworkByChain[LEGACY_CHAIN_ID] === 'custom'
+                state.selectedNetworkByChain[ALGORAND_CHAIN_ID] === 'custom'
             ) {
                 hasSwitched = true
                 configAtSwitchTime = getCustomNetworkConfig()
@@ -130,7 +130,7 @@ describe('useAlgorandCustomNodeForm', () => {
         })
 
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -155,7 +155,9 @@ describe('useAlgorandCustomNodeForm', () => {
         unsubscribe()
         expect(useNetworkStore.getState().mode).toBe('developer')
         expect(
-            useNetworkStore.getState().selectedNetworkByChain[LEGACY_CHAIN_ID],
+            useNetworkStore.getState().selectedNetworkByChain[
+                ALGORAND_CHAIN_ID
+            ],
         ).toBe('custom')
         expect(configAtSwitchTime).toMatchObject({
             algodUrl: 'http://10.0.0.5:4001',
@@ -165,7 +167,7 @@ describe('useAlgorandCustomNodeForm', () => {
 
     test('not calling save persists nothing and does not switch', () => {
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -178,7 +180,7 @@ describe('useAlgorandCustomNodeForm', () => {
 
     test('an invalid URL blocks save entirely, including the switch', async () => {
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -202,7 +204,7 @@ describe('useAlgorandCustomNodeForm', () => {
 
     test('a missing genesis hash blocks save', async () => {
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -226,7 +228,7 @@ describe('useAlgorandCustomNodeForm', () => {
         // carry an empty one — and the extension advertises genesisId to every
         // connected dApp.
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -252,7 +254,7 @@ describe('useAlgorandCustomNodeForm', () => {
             genesisId: 'dockernet-v1',
         })
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -274,7 +276,7 @@ describe('useAlgorandCustomNodeForm', () => {
     test('a failed fetch surfaces an error but does not block manual entry', async () => {
         fetchGenesisFromNode.mockRejectedValue(new Error('unreachable'))
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -300,7 +302,7 @@ describe('useAlgorandCustomNodeForm', () => {
             genesisId: 'g',
         })
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => result.current.handleReset())
@@ -318,7 +320,7 @@ describe('useAlgorandCustomNodeForm', () => {
             genesisId: 'g',
         })
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -328,7 +330,10 @@ describe('useAlgorandCustomNodeForm', () => {
             await result.current.handleSave()
         })
 
-        expect(clearCustomNetworkCache).toHaveBeenCalled()
+        expect(clearCustomNetworkCache).toHaveBeenCalledWith(
+            expect.anything(),
+            ALGORAND_CHAIN_ID,
+        )
     })
 
     test('clears the old chain cache BEFORE repointing the clients at the new one', async () => {
@@ -351,7 +356,7 @@ describe('useAlgorandCustomNodeForm', () => {
         })
 
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -373,7 +378,7 @@ describe('useAlgorandCustomNodeForm', () => {
             genesisId: 'g',
         })
         const { result } = renderHook(() =>
-            useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+            useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
         )
 
         act(() => {
@@ -393,7 +398,7 @@ describe('useAlgorandCustomNodeForm', () => {
 
         test('fetch reports an error and save stays open', async () => {
             const { result } = renderHook(() =>
-                useAlgorandCustomNodeForm(LEGACY_CHAIN_ID),
+                useAlgorandCustomNodeForm(ALGORAND_CHAIN_ID),
             )
 
             act(() => {

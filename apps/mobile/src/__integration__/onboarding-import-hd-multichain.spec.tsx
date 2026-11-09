@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 
 import {
     chainAccountOf,
@@ -25,7 +26,7 @@ import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handl
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
+import { closestPressable, isElementDisabled } from '@test-utils/rnw'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen/OnboardingScreen'
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen/ImportInfoScreen'
@@ -53,6 +54,14 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             ...actual.config,
             chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
         },
+        // Ethereum is read from its node alone, whatever a local .env lists:
+        // the chain context takes its services from here.
+        peraServicesFor: (
+            scope: Parameters<typeof actual.peraServicesFor>[0],
+        ) =>
+            scope.chainId === 'ethereum'
+                ? (new Set() as ReturnType<typeof actual.peraServicesFor>)
+                : actual.peraServicesFor(scope),
         chainEndpointsFor: (
             chainId: Parameters<typeof actual.chainEndpointsFor>[0],
         ) =>
@@ -90,13 +99,7 @@ const renderHDImportFromOnboarding = () =>
         ],
     })
 
-const importMnemonic = async ({
-    isSelectingAll = false,
-    onAddressesListed,
-}: {
-    isSelectingAll?: boolean
-    onAddressesListed?: () => void
-} = {}) => {
+const reachSelection = async () => {
     renderHDImportFromOnboarding()
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
     await waitFor(() =>
@@ -131,17 +134,38 @@ const importMnemonic = async ({
             ).toBeTruthy(),
         { timeout: SLOW_WAIT_TIMEOUT_MS },
     )
+}
+
+const importMnemonic = async ({
+    onlyAddress,
+    onAddressesListed,
+}: {
+    /** Import this account alone instead of every preselected one. */
+    onlyAddress?: string
+    onAddressesListed?: () => void
+} = {}) => {
+    await reachSelection()
     onAddressesListed?.()
-    if (isSelectingAll) {
+    if (onlyAddress) {
+        // Every new account starts selected: clear them, then pick one. The
+        // row, not its checkbox, since a jsdom click on the checkbox also
+        // bubbles to the row and toggles twice.
         fireEvent.click(
             screen.getByTestId('import_select_addresses_select_all_checkbox'),
+        )
+        fireEvent.click(
+            closestPressable(
+                screen.getByTestId(
+                    `import_select_addresses_item_checkbox_${onlyAddress}`,
+                ),
+            )!,
         )
     }
     fireEvent.click(
         screen.getByTestId('import_select_addresses_continue_button'),
     )
     // More than one imported account skips the naming step.
-    if (!isSelectingAll) {
+    if (onlyAddress) {
         await waitFor(() => screen.getByTestId('name_account_finish_button'))
         fireEvent.click(screen.getByTestId('name_account_finish_button'))
     }
@@ -181,7 +205,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
             }),
         )
 
-    it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports it keeping the selection, then that later account is listed but not added, and nothing past the gap', async () => {
+    it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports only the first account, then that later account is listed but not added, and nothing past the gap', async () => {
         const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
         serveSeedActivity(ethereumOnlyAddress)
         const walk = vi.spyOn(
@@ -190,6 +214,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         )
 
         await importMnemonic({
+            onlyAddress: HD_TEST_ADDRESS,
             onAddressesListed: () =>
                 expect(
                     screen.getByTestId(
@@ -208,11 +233,130 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         )
     })
 
-    it('Given a seed used on Ethereum alone at a later account, when the user selects every listed account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {
+    it('Given Ethereum is unreachable, when the user imports the seed, then the selection lists the Algorand account and says Ethereum could not be checked', async () => {
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+
+        await importMnemonic({
+            onlyAddress: HD_TEST_ADDRESS,
+            onAddressesListed: () => {
+                expect(
+                    screen.getByTestId(
+                        'import_select_addresses_unchecked_networks',
+                    ),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${HD_TEST_ADDRESS}`,
+                    ),
+                ).toBeTruthy()
+            },
+        })
+    })
+
+    it('Given Ethereum was unreachable during the search, when the user checks it again once it answers, then the account used on Ethereum alone is listed and nothing is left unchecked', async () => {
+        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+        await reachSelection()
+        expect(
+            screen.getByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId(
+                `import_select_addresses_address_${ethereumOnlyAddress}`,
+            ),
+        ).toBeNull()
+
+        // Handlers added later win, so Ethereum answers from here on.
+        serveSeedActivity(ethereumOnlyAddress)
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_retry_networks_button'),
+        )
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${ethereumOnlyAddress}`,
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.queryByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeNull()
+    })
+
+    it('Given Ethereum was unreachable during the search, when checking again reaches no network at all, then the account found before is still listed and the networks can be checked again', async () => {
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+        await reachSelection()
+
+        // Every lookup fails from here on.
+        server.use(
+            mockAccountFastLookup({
+                address: ':any',
+                response: {},
+                status: 500,
+            }),
+        )
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_retry_networks_button'),
+        )
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${HD_TEST_ADDRESS}`,
+                    ),
+                ).toBeTruthy(),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            screen.getByTestId('import_select_addresses_unchecked_networks'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('import_select_addresses_retry_networks_button'),
+        ).toBeTruthy()
+    })
+
+    it('Given a seed used on Ethereum alone at a later account, when the user keeps every preselected account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {
         const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
         serveSeedActivity(ethereumOnlyAddress)
 
-        await importMnemonic({ isSelectingAll: true })
+        await importMnemonic()
 
         await waitFor(
             () => expect(useAccountsStore.getState().accounts).toHaveLength(2),

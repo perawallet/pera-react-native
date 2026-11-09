@@ -34,7 +34,7 @@ import {
 import { evmCapabilityDefaults } from '../../capability-defaults'
 import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
-import { evmHistoryItem } from '../api/msw-handlers'
+import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
 import {
     evmRpcHandlers,
     evmRpcTransaction,
@@ -179,6 +179,32 @@ describe('getEvmTransactionHistory', () => {
         expect(items[1]?.fee).toBeUndefined()
     })
 
+    it('leaves the fee off a row known only from a transfer log, and keeps it on one another address signed', async () => {
+        serve([
+            [
+                evmHistoryItem({
+                    hash: hash(1),
+                    fee: '21000',
+                    nft_transfers: [evmNftTransferLeg({ from: PEER, to: ME })],
+                }),
+                evmHistoryItem({
+                    hash: hash(2),
+                    from: PEER,
+                    to: ME,
+                    value: '5',
+                    fee: '21000',
+                }),
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items[0]?.fee).toBeUndefined()
+        expect(items[0]?.initiator).toBeUndefined()
+        expect(items[1]?.fee).toEqual(new Decimal(21000))
+        expect(items[1]?.initiator).toBe(PEER)
+    })
+
     it('carries the block number onto the record, and keeps a row whose block number is unreadable', async () => {
         serve([
             [
@@ -195,6 +221,51 @@ describe('getEvmTransactionHistory', () => {
         expect(items).toHaveLength(2)
         expect(items[0]?.blockNumber).toBe(19_000_000)
         expect(items[1]?.blockNumber).toBeUndefined()
+    })
+
+    it("names a single NFT's standard and collection on the record, and no NFT on a batch or a plain send", async () => {
+        const nftRow = (
+            n: number,
+            legs: ReturnType<typeof evmNftTransferLeg>[],
+        ) =>
+            evmHistoryItem({
+                hash: hash(n),
+                from: PEER,
+                to: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
+                value: '0',
+                method: 'safeTransferFrom',
+                nft_transfers: legs,
+            })
+        serve([
+            [
+                nftRow(1, [
+                    evmNftTransferLeg({
+                        standard: 'erc1155',
+                        from: PEER,
+                        to: ME,
+                    }),
+                ]),
+                nftRow(2, [
+                    evmNftTransferLeg({ from: PEER, to: ME, token_id: '1' }),
+                    evmNftTransferLeg({ from: PEER, to: ME, token_id: '2' }),
+                ]),
+                send,
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items.map(item => item.chainData)).toEqual([
+            {
+                family: 'evm',
+                nft: {
+                    standard: 'erc1155',
+                    collectionName: 'Bored Ape Yacht Club',
+                },
+            },
+            { family: 'evm' },
+            { family: 'evm' },
+        ])
     })
 
     it('lowercases the hash so it matches the id the submission ledger records', async () => {

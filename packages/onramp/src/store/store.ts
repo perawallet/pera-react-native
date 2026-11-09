@@ -18,23 +18,43 @@ import {
     type Nullable,
     type BaseStoreState,
 } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
+import type { RampDepositInstructions } from '../models'
+
 const STORE_NAME = 'onramp-store'
+
+const MAX_REMEMBERED_DEPOSITS = 20
 
 type OnrampState = BaseStoreState & {
     selectedSourceTokenId: Nullable<string>
     selectedDestinationTokenId: Nullable<string>
+    /** The chain Fund runs on; null until the user picks one. */
+    selectedChainId: Nullable<ChainId>
     senderAddress: string
+    /**
+     * Pay-in details of the deposit orders placed on this device, by order id.
+     * The router's order items don't carry them, so History's pay-in card and
+     * Cancel depend on this. Newest 20 kept.
+     */
+    depositInstructions: Record<string, RampDepositInstructions>
     setSelectedSourceTokenId: (id: Nullable<string>) => void
     setSelectedDestinationTokenId: (id: Nullable<string>) => void
+    setSelectedChainId: (chainId: Nullable<ChainId>) => void
     setSenderAddress: (address: string) => void
+    rememberDepositInstructions: (
+        orderId: string,
+        instructions: RampDepositInstructions,
+    ) => void
 }
 
 const initialState = {
     selectedSourceTokenId: null as Nullable<string>,
     selectedDestinationTokenId: null as Nullable<string>,
+    selectedChainId: null as Nullable<ChainId>,
     senderAddress: '',
+    depositInstructions: {} as Record<string, RampDepositInstructions>,
 }
 
 export const useOnrampStore: UseBoundStore<
@@ -47,16 +67,35 @@ export const useOnrampStore: UseBoundStore<
                 set({ selectedSourceTokenId: id }),
             setSelectedDestinationTokenId: (id: Nullable<string>) =>
                 set({ selectedDestinationTokenId: id }),
+            setSelectedChainId: (chainId: Nullable<ChainId>) =>
+                set({ selectedChainId: chainId }),
             setSenderAddress: (senderAddress: string) => set({ senderAddress }),
+            rememberDepositInstructions: (orderId, instructions) =>
+                set(state => {
+                    const { [orderId]: _replaced, ...others } =
+                        state.depositInstructions
+                    const kept = Object.entries(others).slice(
+                        -(MAX_REMEMBERED_DEPOSITS - 1),
+                    )
+                    return {
+                        depositInstructions: {
+                            ...Object.fromEntries(kept),
+                            [orderId]: instructions,
+                        },
+                    }
+                }),
             resetState: () => set({ ...initialState }),
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
-            // Only the destination sticks across sessions; the source is
-            // session-only so it's unset on every fresh entry.
+            // The destination, its chain and the deposit instructions stick
+            // across sessions; the source is session-only so it's unset on
+            // every fresh entry.
             partialize: state => ({
                 selectedDestinationTokenId: state.selectedDestinationTokenId,
+                selectedChainId: state.selectedChainId,
+                depositInstructions: state.depositInstructions,
             }),
         },
     ),

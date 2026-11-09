@@ -69,9 +69,11 @@ export const useSigningCompletedDriver = (): void => {
             if (!isInteractiveSource(req.sourceType)) return
 
             // In-app dApps are right behind this sheet and show their own
-            // confirmation: skip for webview-bridge signing and for WC
-            // sessions that were paired inside the in-app browser.
+            // confirmation: skip for webview-bridge and injected-provider
+            // signing and for WC sessions paired inside the in-app browser.
+            // The extension's injected approvals close their window instead.
             if (req.sourceType === 'webview') return
+            if (req.sourceType === 'injected') return
             if (resolveSessionOrigin(req)?.source === 'in-app') return
 
             if (openIdRef.current === req.id) return

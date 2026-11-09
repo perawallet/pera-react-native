@@ -39,6 +39,7 @@ export * from './useUpdateAccount'
 export * from './useMultisigDetailsBackfill'
 export * from './useAccountDiscovery'
 export * from './useAccountBalancesInvalidator'
+export * from './useHiddenTokensInvalidation'
 export * from './useAccountHoldingsInvalidator'
 export * from './useHdSeedGroups'
 export * from './useLedgerDeviceGroups'
@@ -61,11 +62,12 @@ export * from './useIsDelegationAvailable'
 export * from './useAccountCapabilityScope'
 export * from './useAccountChainOptions'
 export * from './useEnableChain'
-export * from './useOwnedAssets'
 export * from './useHDImportSession'
 export {
+    invalidateAccountChartsForAddresses,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
+    invalidateAccountQueriesForScope,
     removeAccountQueriesForAddresses,
     isAccountQuery,
     isAccountBalancesHistoryQuery,
@@ -91,6 +93,7 @@ export * from './useRemoveTokenMutation'
 export * from './useAccountHoldingSources'
 export * from './useIsHoldingsRefreshFailed'
 export * from './useHasAccountChainState'
+export * from './useFailedFirstReadChainIds'
 export * from './useUnreadHoldingChainIds'
 export * from './useAccountCollectiblesQuery'
 export * from './useEnsureAccountEnriched'

@@ -26,8 +26,8 @@ import {
 import type { NfdName } from '../models'
 
 /**
- * On-demand NFD batch queue. Used by `useNfdForAddressQuery` to coalesce
- * address lookups into a single bulk-read HTTP call.
+ * On-demand name lookup batch queue. Used by `useNameForAddressQuery` to coalesce
+ * address lookups into a single bulk names HTTP call.
  *
  * Debounced rather than a fixed window: a list being scrolled mounts rows
  * continuously, and a fixed window dispatches once per window for as long as

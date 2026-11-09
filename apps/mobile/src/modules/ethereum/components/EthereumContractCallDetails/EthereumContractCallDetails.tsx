@@ -10,20 +10,26 @@
  limitations under the License
  */
 
-import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethereum'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { PWText, PWView } from '@components/core'
+import {
+    bottomSheetNotifier,
+    PWLoadingIndicator,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ChainNotice } from '@components/ChainNotice'
-import { CopyableText } from '@components/CopyableText'
-import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ExpandableText } from '@components/ExpandableText'
 import { KeyValueRow } from '@components/KeyValueRow'
+import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
-import { contractCallNoticeOf } from './contractCallNotice'
+import { contractCallNoticeOf, isCallUnexplained } from './contractCallNotice'
+import { EthereumVerifiedCallRows } from './EthereumVerifiedCallRows'
 import { useStyles } from './styles'
 
 // '0x', the 4-byte selector and the first 32-byte argument word, in hex.
@@ -32,9 +38,9 @@ const CALL_DATA_PREVIEW_LENGTH = 74
 type EthereumContractCallDetailsProps = {
     presentation: EthereumTransactionPresentation
     /**
-     * `'review'` is the signing screen: the raw call sits collapsed under
-     * Advanced and the notice asks the user to trust the requesting dApp.
-     * `'detail'` reads a transaction already made, so the call stays inline.
+     * `'review'` is the signing screen: the notice asks the user to trust the
+     * requesting dApp and the raw call is left to the details screen.
+     * `'detail'` shows the raw call inline.
      */
     variant: 'review' | 'detail'
     /** Read only on `'review'`. */
@@ -51,15 +57,15 @@ export const EthereumContractCallDetails = ({
 }: EthereumContractCallDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { view, value, standardCall, contractAction, knownContract, scope } =
-        presentation
+    const { copyToClipboard } = useClipboard()
+    const { view, value, contractAction, knownContract, scope } = presentation
     const isReview = variant === 'review'
     const notice = isReview
         ? contractCallNoticeOf(source, verifiedOrigin)
         : undefined
-    const isExplained =
-        !!standardCall ||
-        (!!contractAction && hidesUnknownContractNotice(view.action))
+    // Only a review looks the name up; a transaction already made shows its call as recorded.
+    const verifiedCall = useEthereumVerifiedCall(view, scope, isReview)
+    const isExplained = !isCallUnexplained(presentation)
 
     const selectorRow = !!view.selector && (
         <KeyValueRow
@@ -70,20 +76,36 @@ export const EthereumContractCallDetails = ({
         </KeyValueRow>
     )
 
+    const handleCopyCallData = () => {
+        void copyToClipboard(view.data, {
+            notifier: bottomSheetNotifier.current ?? undefined,
+        })
+    }
+
     const callDataRow = (
         <KeyValueRow
             title={t('transactions.contract_call.call_data')}
             verticalAlignment='top'
         >
-            <CopyableText
-                testID='ethereum_contract_call_data'
-                copyValue={view.data}
-            >
-                <ExpandableText
-                    text={view.data}
-                    limit={CALL_DATA_PREVIEW_LENGTH}
+            <PWView style={styles.callData}>
+                <PWView
+                    style={styles.callDataText}
+                    testID='ethereum_contract_call_data'
+                >
+                    <ExpandableText
+                        text={view.data}
+                        limit={CALL_DATA_PREVIEW_LENGTH}
+                    />
+                </PWView>
+                <PWTouchableIcon
+                    name='copy'
+                    size='sm'
+                    variant='secondary'
+                    accessibilityLabel={t('common.copy')}
+                    testID='ethereum_contract_call_data_copy'
+                    onPress={handleCopyCallData}
                 />
-            </CopyableText>
+            </PWView>
         </KeyValueRow>
     )
 
@@ -136,17 +158,33 @@ export const EthereumContractCallDetails = ({
                 />
             </KeyValueRow>
 
-            {isReview ? (
-                <PWView testID='ethereum_contract_call_advanced'>
-                    <TitledExpandablePanel
-                        title={t('transactions.contract_call.advanced')}
-                        contentStyle={styles.advanced}
-                    >
-                        {selectorRow}
-                        {callDataRow}
-                    </TitledExpandablePanel>
-                </PWView>
-            ) : (
+            {verifiedCall.status === 'loading' && (
+                <KeyValueRow
+                    testID='ethereum_verified_call_loading'
+                    title={t('transactions.contract_call.function')}
+                >
+                    <PWLoadingIndicator size='sm' />
+                </KeyValueRow>
+            )}
+
+            {verifiedCall.status === 'decoded' && (
+                <EthereumVerifiedCallRows
+                    call={verifiedCall.call}
+                    scope={scope}
+                />
+            )}
+
+            {verifiedCall.status === 'lookup-failed' && (
+                <PWText
+                    testID='ethereum_verified_call_lookup_failed'
+                    variant='caption'
+                    style={styles.caption}
+                >
+                    {t('transactions.contract_call.lookup_failed')}
+                </PWText>
+            )}
+
+            {!isReview && (
                 <>
                     {selectorRow}
                     {callDataRow}

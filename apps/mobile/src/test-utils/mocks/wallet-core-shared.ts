@@ -32,9 +32,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     // Same reasoning as ErrorCategory: bytes.ts has no runtime imports, so it is
     // side-effect free to pull in by path. These decode persisted byte fields —
     // a stub returning undefined would hide every note and group id under test.
-    const { toBytes, decodeBytesToText } = await vi.importActual<
-        typeof import('@packages/shared/src/utils/bytes')
-    >('@packages/shared/src/utils/bytes')
+    const { toBytes, decodeBytesToText, hasUnprintableChars } =
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/bytes')
+        >('@packages/shared/src/utils/bytes')
 
     // urls.ts only imports plain constants, so the real origin checks are safe.
     const { originOf, isSameOrigin } = await vi.importActual<
@@ -263,12 +264,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
-    // Mirrors packages/shared/src/errors/network.ts.
-    const isChainRefusedError = (error: unknown): boolean =>
-        isPeraNetworkError(error) &&
-        error.status === 422 &&
-        (error.backendCode === 'unknown_chain' ||
-            error.backendCode === 'chain_not_enabled')
+    // Mirrors packages/shared/src/errors/network.ts. A function declaration so
+    // it can reach PeraServiceUnavailableError, declared further down.
+    function isChainRefusedError(error: unknown): boolean {
+        return (
+            (error instanceof PeraServiceUnavailableError &&
+                error.isChainRefused) ||
+            (isPeraNetworkError(error) &&
+                error.status === 422 &&
+                (error.backendCode === 'unknown_chain' ||
+                    error.backendCode === 'chain_not_enabled'))
+        )
+    }
 
     // Mirrors packages/shared/src/errors/integrity.ts: a sibling of
     // PeraNetworkError, never an instance of it.
@@ -319,6 +326,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             | undefined
         public readonly targetKey: string
         public readonly service: string | undefined
+        public readonly isSwitchedOff: boolean
+        public readonly isChainRefused: boolean
 
         constructor(
             target:
@@ -326,6 +335,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 | { chainId: string; networkId: string }
                 | { deployment: string },
             service?: string,
+            {
+                isSwitchedOff = false,
+                isChainRefused = false,
+            }: { isSwitchedOff?: boolean; isChainRefused?: boolean } = {},
         ) {
             const scope =
                 typeof target === 'string'
@@ -352,6 +365,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             this.scope = scope
             this.targetKey = scopeKey
             this.service = service
+            this.isSwitchedOff = isSwitchedOff
+            this.isChainRefused = isChainRefused
         }
     }
 
@@ -486,6 +501,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 .join(''),
         toBytes,
         decodeBytesToText,
+        hasUnprintableChars,
         // Must mirror the real constant (packages/shared/src/models/constants.ts).
         // The precision policy reads this, so a wrong value silently invalidates
         // every precision/formatting assertion.

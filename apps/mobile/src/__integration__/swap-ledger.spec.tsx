@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Drives the full prepare → sign → submit → status swap flow with a Ledger
+// Drives the full order → sign → submit → report swap flow with a Ledger
 // sender (device-approval overlay through submission) and with a rekeyed
 // sender (auth signs, sgnr stamped on the wire).
 
@@ -24,8 +24,6 @@ import {
     it,
 } from 'vitest'
 import React, { useEffect, useRef } from 'react'
-import { http, HttpResponse } from 'msw'
-import { Decimal } from 'decimal.js'
 import { decodeSignedTransaction } from 'algosdk'
 
 import { server } from '@test-utils/msw-server'
@@ -38,7 +36,6 @@ import {
     teardownTestDatabase,
 } from '@test-utils/database-setup'
 import {
-    buildPaymentTransaction,
     seedAlgo25Signer,
     fireEvent,
     screen,
@@ -54,9 +51,7 @@ import {
     type HardwareWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { encodeTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { SigningOverlays } from '@modules/signing/shell'
 import {
@@ -67,8 +62,12 @@ import {
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 import { addressOf } from './__fixtures__/accounts'
+import {
+    buildRouterSwapQuote,
+    mockSwapOrderWithPayment,
+    spyOnSwapSubmissionAndReports,
+} from './__fixtures__/swapRouter'
 
-const SWAP_ID = '98765'
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
 
@@ -112,88 +111,12 @@ const SwapHost = () => {
     return <SigningOverlays />
 }
 
-const buildQuote = (swapperAddress: string): SwapQuote =>
-    ({
-        quoteIdStr: 'quote-ledger-1',
-        swapperAddress,
-        assetIn: { assetId: '0' },
-        assetOut: { assetId: '31566704' },
-        // Base units; the prepared payment below spends exactly this plus the
-        // network fee, which validateSwapGroupAgainstQuote allows for.
-        amountIn: new Decimal(1_000_000),
-        peraFeeAmount: new Decimal(0),
-        // Client-stamped freshness marker: execute() refuses a
-        // quote without a recent `fetchedAt` as stale before it ever reaches
-        // prepare. Stamp it "now" so these signing-pipeline flows exercise a
-        // fresh quote rather than tripping the staleness guard.
-        fetchedAt: Date.now(),
-    }) as unknown as SwapQuote
-
-// One swap group with a single user-signable payment from `sender`.
-const mockPrepareWithPayment = (sender: string) => {
-    const unsigned = buildPaymentTransaction({
+// One swap step with a single user-signable payment from `sender`.
+const mockOrderWithPayment = (sender: string) =>
+    mockSwapOrderWithPayment({
         sender,
         receiver: sender === AUTH_ADDRESS ? LEDGER_ADDRESS : AUTH_ADDRESS,
     })
-    server.use(
-        http.post('*/v2/dex-swap/prepare-transactions/', () =>
-            HttpResponse.json(
-                {
-                    transaction_groups: [
-                        {
-                            purpose: 'swap' as const,
-                            transaction_group_id: 'group-swap-1',
-                            transactions: [
-                                encodeToBase64(encodeTransaction(unsigned)),
-                            ],
-                            signed_transactions: [null],
-                        },
-                    ],
-                    swap_id: 98_765,
-                    swap_id_str: SWAP_ID,
-                    swap_version: 'v2',
-                },
-                { status: 200 },
-            ),
-        ),
-    )
-}
-
-const spyOnSubmissionAndStatus = () => {
-    const algodBodies: Uint8Array[] = []
-    const statusPayloads: Array<Record<string, unknown>> = []
-    server.use(
-        http.post('*/v2/transactions', async ({ request }) => {
-            algodBodies.push(new Uint8Array(await request.arrayBuffer()))
-            return HttpResponse.json(
-                {
-                    txId: 'SWAPLEDGERTXID00000000000000000000000000000000000001',
-                },
-                { status: 200 },
-            )
-        }),
-        // Background confirmation poll after submit — keep it green so the
-        // flow's void confirmation branch settles quietly.
-        http.get('*/v2/transactions/pending/*', () =>
-            HttpResponse.json(
-                { 'confirmed-round': 101, 'pool-error': '' },
-                { status: 200 },
-            ),
-        ),
-        http.get('*/v2/status', () =>
-            HttpResponse.json({ 'last-round': 100 }, { status: 200 }),
-        ),
-        http.patch(`*/v2/dex-swap/swaps/${SWAP_ID}/`, async ({ request }) => {
-            const payload = (await request.json()) as Record<string, unknown>
-            statusPayloads.push(payload)
-            return HttpResponse.json(
-                { swap_version: 'v2', ...payload },
-                { status: 200 },
-            )
-        }),
-    )
-    return { algodBodies, statusPayloads }
-}
 
 describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline', () => {
     beforeAll(async () => {
@@ -217,7 +140,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
-        // execute() runs a balance preflight against algod before prepare;
+        // execute() runs a balance preflight against algod before the order;
         // fund the senders so the 1-ALGO quote (plus fees and the receive
         // asset's opt-in MBR) clears it.
         server.use(
@@ -232,19 +155,21 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         )
     })
 
-    it('Given a Ledger sender, when the user approves on the device, then the swap submits to algod and reports in_progress with the txn ids', async () => {
+    it('Given a Ledger sender, when the user approves on the device, then the swap submits to algod and reports the order sent with its txn id', async () => {
         useAccountsStore.getState().setAccounts([ledgerAccount])
         useAccountsStore.getState().setSelectedAccountId(ledgerAccount.id)
-        mockPrepareWithPayment(LEDGER_ADDRESS)
-        const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+        mockOrderWithPayment(LEDGER_ADDRESS)
+        const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
 
         renderWithNavigation(SwapHost, 'SwapLedgerHost')
         await waitFor(() => expect(executeSwap).not.toBeNull())
 
         let outcome: SwapExecutionOutcome | null = null
-        const run = executeSwap!(buildQuote(LEDGER_ADDRESS)).then(o => {
-            outcome = o
-        })
+        const run = executeSwap!(buildRouterSwapQuote(LEDGER_ADDRESS)).then(
+            o => {
+                outcome = o
+            },
+        )
 
         // The device-approval overlay surfaces while the exchange is
         // parked on the Ledger prompt.
@@ -264,27 +189,28 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
 
         expect(outcome).toEqual({ kind: 'success' })
         expect(algodBodies).toHaveLength(1)
-        expect(statusPayloads).toHaveLength(1)
-        expect(statusPayloads[0].status).toBe('in_progress')
-        expect(statusPayloads[0].submitted_transaction_ids).toHaveLength(1)
+        expect(reports).toHaveLength(1)
+        expect(reports[0].status).toBe('sent')
+        expect(reports[0].transactions).toHaveLength(1)
     })
 
-    it('Given a Ledger sender, when the device rejects, then the swap resolves as cancelled and the backend never receives a failure report', async () => {
-        // An on-device reject is a user cancel —
-        // reportSwapFailure (status failed/blockchain_error) must stay
-        // unreachable, and nothing may reach algod.
+    it('Given a Ledger sender, when the device rejects, then the swap resolves as cancelled and the order is reported cancelled', async () => {
+        // An on-device reject is a user cancel: nothing may reach algod, and
+        // the order is released rather than left pending.
         useAccountsStore.getState().setAccounts([ledgerAccount])
         useAccountsStore.getState().setSelectedAccountId(ledgerAccount.id)
-        mockPrepareWithPayment(LEDGER_ADDRESS)
-        const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+        mockOrderWithPayment(LEDGER_ADDRESS)
+        const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
 
         renderWithNavigation(SwapHost, 'SwapLedgerHost')
         await waitFor(() => expect(executeSwap).not.toBeNull())
 
         let outcome: SwapExecutionOutcome | null = null
-        const run = executeSwap!(buildQuote(LEDGER_ADDRESS)).then(o => {
-            outcome = o
-        })
+        const run = executeSwap!(buildRouterSwapQuote(LEDGER_ADDRESS)).then(
+            o => {
+                outcome = o
+            },
+        )
 
         await waitFor(
             () => {
@@ -306,7 +232,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
 
         expect(outcome).toEqual({ kind: 'cancelled' })
         expect(algodBodies).toHaveLength(0)
-        expect(statusPayloads).toHaveLength(0)
+        await waitFor(() => expect(reports).toEqual([{ status: 'cancelled' }]))
     })
 
     it('Given a sender rekeyed to a held local key, when the swap signs headlessly, then the auth key signs and the submitted blob carries sgnr', async () => {
@@ -320,19 +246,21 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         seedAuthority(LEDGER_ADDRESS, AUTH_ADDRESS)
         useAccountsStore.getState().setAccounts([rekeyedSender, authSigner])
         useAccountsStore.getState().setSelectedAccountId(rekeyedSender.id)
-        mockPrepareWithPayment(addressOf(rekeyedSender))
-        const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+        mockOrderWithPayment(addressOf(rekeyedSender))
+        const { algodBodies, reports } = spyOnSwapSubmissionAndReports()
 
         renderWithNavigation(SwapHost, 'SwapLedgerHost')
         await waitFor(() => expect(executeSwap).not.toBeNull())
 
-        const outcome = await executeSwap!(buildQuote(addressOf(rekeyedSender)))
+        const outcome = await executeSwap!(
+            buildRouterSwapQuote(addressOf(rekeyedSender)),
+        )
 
         expect(outcome).toEqual({ kind: 'success' })
         expect(algodBodies).toHaveLength(1)
         const signed = decodeSignedTransaction(algodBodies[0])
         expect(signed.txn.sender.toString()).toBe(addressOf(rekeyedSender))
         expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
-        expect(statusPayloads[0]?.status).toBe('in_progress')
+        expect(reports[0]?.status).toBe('sent')
     })
 })

@@ -12,7 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountCapabilityScope,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import {
@@ -23,7 +26,24 @@ import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
 import { useAccountTabNavigator } from '../useAccountTabNavigator'
 
-const mocks = vi.hoisted(() => ({ trackEvent: vi.fn() }))
+const mocks = vi.hoisted(() => {
+    const state = {
+        trackEvent: vi.fn(),
+        routeParams: {} as { tab?: string },
+        setParams: vi.fn((params: { tab?: string }) => {
+            state.routeParams = { ...state.routeParams, ...params }
+            if (params.tab === undefined) state.routeParams = {}
+        }),
+    }
+    return state
+})
+const navigation = { setParams: mocks.setParams }
+
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
+    useNavigation: () => navigation,
+    useRoute: () => ({ params: mocks.routeParams }),
+}))
 
 vi.mock('@analytics', async importOriginal => ({
     ...(await importOriginal<typeof import('@analytics')>()),
@@ -44,10 +64,19 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
 
 const keysOf = (tabs: { key: string }[]) => tabs.map(tab => tab.key)
 
+// The global mock turns every capability on; these cases switch them.
+const actualAccounts = await vi.importActual<
+    typeof import('@perawallet/wallet-core-accounts')
+>('@perawallet/wallet-core-accounts')
+
 describe('useAccountTabNavigator', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.routeParams = {}
         useRemoteConfigStore.getState().resetState()
+        vi.mocked(useAccountCapabilityScope).mockImplementation(
+            actualAccounts.useAccountCapabilityScope,
+        )
     })
 
     it('starts on the first tab with only that page mounted', () => {
@@ -125,14 +154,31 @@ describe('useAccountTabNavigator', () => {
         expect(keysOf(result.current.tabs)).toEqual(['Overview', 'History'])
     })
 
-    it("keeps only Overview while the chain's kill switch is on", () => {
+    it("keeps its tabs while the chain's kill switch is on, as it only turns off the Pera backend", () => {
+        const { result: before } = renderHook(() =>
+            useAccountTabNavigator(ALGORAND_ACCOUNT),
+        )
         act(() => setChainEnabled('algorand', false))
 
         const { result } = renderHook(() =>
             useAccountTabNavigator(ALGORAND_ACCOUNT),
         )
 
-        expect(keysOf(result.current.tabs)).toEqual(['Overview'])
+        expect(keysOf(result.current.tabs)).toEqual(keysOf(before.current.tabs))
+        expect(keysOf(result.current.tabs)).toContain('History')
+    })
+
+    it('keeps History while another chain the account holds serves it', () => {
+        registerEthereumChain()
+        act(() => setCapabilityOverrides({ history: false }, 'algorand'))
+        const onBoth: WalletAccount = {
+            ...ALGORAND_ACCOUNT,
+            chains: { ...ALGORAND_ACCOUNT.chains, ...ETHEREUM_ACCOUNT.chains },
+        }
+
+        const { result } = renderHook(() => useAccountTabNavigator(onBoth))
+
+        expect(keysOf(result.current.tabs)).toContain('History')
     })
 
     it('falls back to Overview when the open tab goes away', () => {
@@ -148,5 +194,48 @@ describe('useAccountTabNavigator', () => {
         rerender({ account: ETHEREUM_ACCOUNT })
 
         expect(result.current.index).toBe(0)
+    })
+
+    describe('a requested tab', () => {
+        it('opens the History tab, marks it visited and clears the request', () => {
+            mocks.routeParams = { tab: 'History' }
+
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+
+            expect(result.current.index).toBe(2)
+            expect(result.current.isPageVisited(2)).toBe(true)
+            expect(mocks.setParams).toHaveBeenCalledWith({ tab: undefined })
+            expect(mocks.trackEvent).not.toHaveBeenCalled()
+        })
+
+        it('stays on Overview when the chain has no History tab, and still clears the request', () => {
+            act(() => setCapabilityOverrides({ history: false }))
+            mocks.routeParams = { tab: 'History' }
+
+            const { result } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+
+            expect(result.current.index).toBe(0)
+            expect(mocks.setParams).toHaveBeenCalledWith({ tab: undefined })
+        })
+
+        it('applies a second request after the user swiped away', () => {
+            mocks.routeParams = { tab: 'History' }
+            const { result, rerender } = renderHook(() =>
+                useAccountTabNavigator(ALGORAND_ACCOUNT),
+            )
+            act(() => result.current.handleIndexChange(0))
+            expect(result.current.index).toBe(0)
+
+            mocks.routeParams = {}
+            rerender()
+            mocks.routeParams = { tab: 'History' }
+            rerender()
+
+            expect(result.current.index).toBe(2)
+        })
     })
 })

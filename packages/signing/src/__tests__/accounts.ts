@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     accountsChainAdapters,
     type AccountCustody,
@@ -27,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 
 /** The chain every signing spec signs on. */
-export const TEST_CHAIN_ID = LEGACY_CHAIN_ID
+export const TEST_CHAIN_ID = 'algorand'
 
 type AccountOptions = Partial<Omit<WalletAccount, 'custody' | 'chains'>> & {
     keyPairId?: string

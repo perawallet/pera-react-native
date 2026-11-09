@@ -41,6 +41,12 @@ import { toViemSignature } from './sign'
  */
 export type EthereumPayloadFeeEstimate = { preset: FeePreset; amount: bigint }
 
+/**
+ * The node's gas estimate for the call reverted, and the call was queued
+ * anyway. `reason` is the contract's own text, absent when it gave none.
+ */
+export type EthereumRevertedEstimate = { reason?: string }
+
 /** The `UnsignedTransaction.payload` on any EVM chain's scope. */
 export type EthereumTransactionPayload = {
     /** The sender, which an EIP-1559 transaction does not carry. */
@@ -67,6 +73,11 @@ export type EthereumTransactionPayload = {
      * still fails the shared payload read, as `hasHighFee` does.
      */
     feeEstimate?: EthereumPayloadFeeEstimate
+    /**
+     * Display-only, like `feeEstimate`: the review warns the call will likely
+     * fail. Signed with a fallback gas limit, so nothing signed comes from it.
+     */
+    revertedEstimate?: EthereumRevertedEstimate
 }
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -76,6 +87,12 @@ const isFeeEstimate = (value: unknown): value is EthereumPayloadFeeEstimate =>
     isRecord(value) &&
     FEE_PRESETS.some(preset => preset === value.preset) &&
     typeof value.amount === 'bigint'
+
+const isRevertedEstimate = (
+    value: unknown,
+): value is EthereumRevertedEstimate =>
+    isRecord(value) &&
+    (value.reason === undefined || typeof value.reason === 'string')
 
 /**
  * Reads a payload for review, previews included. Anything that signs reads it
@@ -119,6 +136,13 @@ export const readEvmReviewTransaction = (
     if (feeEstimate !== undefined && !isFeeEstimate(feeEstimate)) {
         throw new Error('The EVM transaction payload is malformed')
     }
+    const revertedEstimate = payload.revertedEstimate
+    if (
+        revertedEstimate !== undefined &&
+        !isRevertedEstimate(revertedEstimate)
+    ) {
+        throw new Error('The EVM transaction payload is malformed')
+    }
     return {
         from: getAddress(payload.from),
         transaction,
@@ -129,6 +153,13 @@ export const readEvmReviewTransaction = (
             feeEstimate: {
                 preset: feeEstimate.preset,
                 amount: feeEstimate.amount,
+            },
+        }),
+        ...(revertedEstimate !== undefined && {
+            revertedEstimate: {
+                ...(revertedEstimate.reason !== undefined && {
+                    reason: revertedEstimate.reason,
+                }),
             },
         }),
     }
@@ -183,7 +214,7 @@ export const createEvmPlannerAdapter = (
                 requestIndex: 0,
                 signer: from,
                 scheme: 'secp256k1',
-                payload: transactionDigest(transaction).digest,
+                payload: transactionDigest(transaction),
                 devicePayload: hexToBytes(
                     serializeTransaction({ ...transaction, type: 'eip1559' }),
                 ),

@@ -151,8 +151,22 @@ describe('Deeplink Parser - New Format', () => {
             expect(result?.type).toBe(DeeplinkType.ASSET_DETAIL)
             if (result?.type === DeeplinkType.ASSET_DETAIL) {
                 expect(result.address).toBe(TEST_ADDRESS)
-                expect(result.assetRef.assetId).toBe('31566704')
+                expect(result.assetRef?.assetId).toBe('31566704')
             }
+        })
+
+        it('parses asset-detail without assetId as the native asset', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/asset-detail/?address=${TEST_ADDRESS}`,
+                ),
+            ).toEqual({
+                type: DeeplinkType.ASSET_DETAIL,
+                sourceUrl: expect.any(String),
+                target: { chainId: 'algorand' },
+                address: TEST_ADDRESS,
+                assetRef: undefined,
+            })
         })
     })
 
@@ -690,15 +704,9 @@ describe('Deeplink Parser - New Format', () => {
             ).toBeNull()
         })
 
-        it('returns null for asset-detail without address or assetId', () => {
-            // Coverage for new-parser.ts line 202
+        it('returns null for asset-detail without address', () => {
             expect(
                 parsePerawalletAppUri('perawallet://app/asset-detail'),
-            ).toBeNull()
-            expect(
-                parsePerawalletAppUri(
-                    'perawallet://app/asset-detail?address=ADDR',
-                ),
             ).toBeNull()
             expect(
                 parsePerawalletAppUri(

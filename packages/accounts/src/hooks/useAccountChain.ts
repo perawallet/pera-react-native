@@ -10,17 +10,11 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    selectChainNetworkId,
-    useNetworkStore,
-    useSelectedScope,
-    useSwitchedOffChainIds,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { chainAccountOf } from '../credentials/accessors'
@@ -29,10 +23,8 @@ import {
     type AccountValueKey,
     type WalletAccount,
 } from '../models'
-import { accountsChainAdapters } from '../chain-adapter'
-import { canSignWith } from '../signer-resolution'
-import { useAccountChainStateStore, useAccountsStore } from '../store'
 import { useRegisteredChainIds } from './accountChainEntries'
+import { useSigningAccountsOn } from './useSigningAccounts'
 
 /**
  * The account's primary chain: the first registered chain, in registry order,
@@ -61,7 +53,7 @@ export const useAccountChainId = (
         : fallbackChainId
 }
 
-/** The account's own chain at that chain's selected network. */
+/** The account's first registered chain at its selected network; a display default, never an operation's chain. */
 export const useAccountScope = (
     account: Maybe<WalletAccount>,
     fallbackChainId: ChainId,
@@ -77,45 +69,11 @@ export const accountValueOf = <V>(
     return address ? values.get(accountValueKey(chainId, address)) : undefined
 }
 
-/**
- * Held accounts something held can sign for on the account's own chain. A
- * switched-off chain signs nothing, so its accounts drop out even though their
- * last synced balances are still stored.
- */
-export const useSigningAccountsOnOwnChain = (): WalletAccount[] => {
-    const accounts = useAccountsStore(state => state.accounts)
-    const registeredChainIds = useRegisteredChainIds()
-    const switchedOffChainIds = useSwitchedOffChainIds()
-    // Signer resolution reads the selected network's chain state, so both a
-    // state write and a network switch must re-run the filter.
-    const chainStates = useAccountChainStateStore(state => state.states)
-    const networksKey = useNetworkStore(state =>
-        registeredChainIds
-            .map(chainId => selectChainNetworkId(state, chainId))
-            .join(),
-    )
-    return useMemo(
-        () =>
-            accounts.filter(account => {
-                const chainId = accountChainIdOf(account, registeredChainIds)
-                return (
-                    !switchedOffChainIds.includes(chainId) &&
-                    accountsChainAdapters.has(chainId) &&
-                    canSignWith(account, accounts, chainId)
-                )
-            }),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [
-            accounts,
-            registeredChainIds,
-            switchedOffChainIds,
-            chainStates,
-            networksKey,
-        ],
-    )
-}
+/** Held accounts something held can sign for on any chain they hold. */
+export const useSigningAccountsOnAnyChain = (): WalletAccount[] =>
+    useSigningAccountsOn(useRegisteredChainIds())
 
-/** The account's address on its own chain, for keys, copy and testIDs outside a hook. */
+/** The account's address on its first registered chain, for keys, copy and testIDs outside a hook. */
 export const ownAddressOf = (account: WalletAccount): Optional<string> => {
     const registeredChainIds = getProvider()
         .chains.list()

@@ -14,11 +14,15 @@ import type {
     EvmChainId,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import { config } from '@perawallet/wallet-core-config'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { createEvmChain } from './create-evm-chain'
 import type { EvmChain, EvmChainRow } from './types'
 
 export const ETHEREUM_CHAIN_ID = 'ethereum' satisfies EvmChainId
+
+/** The chain ENS lives on: its names resolve against this chain's endpoints whatever chain they are sent on. */
+export const ENS_HOST_CHAIN_ID: EvmChainId = ETHEREUM_CHAIN_ID
 
 const ETHER = { symbol: 'ETH', name: 'Ether', decimals: 18, slip44: '60' }
 
@@ -26,6 +30,8 @@ const ETHER = { symbol: 'ETH', name: 'Ether', decimals: 18, slip44: '60' }
 const OP_STACK_GAS_PRICE_ORACLE = '0x420000000000000000000000000000000000000F'
 
 const GWEI = 1_000_000_000n
+
+const ETHEREUM_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
 export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
     {
@@ -41,6 +47,11 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         blockTimeMs: 12_000,
         finality: { kind: 'confirmations', recommended: 12 },
         enabledByDefault: true,
+        capabilities: {
+            swap: config.appEnvironment !== 'production',
+            onramp: config.appEnvironment !== 'production',
+        },
+        defaultSwapReceiveAssetId: ETHEREUM_USDC,
     },
     {
         id: 'base',

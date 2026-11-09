@@ -90,42 +90,19 @@ Runs an end-to-end check of a quantum-signed transaction against LocalNet: deriv
 address, funds it, builds a payment with a PQ-raised fee, checks the assembled PQ envelope against
 algosdk's own PQ signer, then broadcasts and waits for confirmation.
 
-Default LocalNet (`algod` 4.7.4-stable) has no `pqsig` support, so the script
-reports PENDING at exit 0 once the broadcast is rejected for that reason
-specifically. Any other failure reports FAIL with a non-zero exit.
+The algod version pinned in `tools/dev/localnet.compose.yml` verifies `pqsig`, so on a plain
+`pnpm localnet` the script reports **PASS: confirmed in round N** and the indexer serves the
+transaction, with no edits to the AlgoKit sandbox. A node without `pqsig` reports PENDING at exit 0
+once the broadcast is rejected for that reason specifically. Any other failure reports FAIL with a
+non-zero exit.
 
-For a real **PASS: confirmed in round N**, point LocalNet at a `pqsig`-capable node. Two things are
-needed together: the `master` image, and a genesis whose consensus enables Falcon-1024 (v42,
-inherited by `future`). Edit `~/.config/algokit/sandbox/`:
+The check talks to `localhost:4001` directly and needs no app config. LocalNet runs in dev mode, so
+`last-round` stays at 0 until a transaction is submitted; that is not a stalled node.
 
-```sh
-# docker-compose.yml          -> image: algorand/algod:master
-# algod_network_template.json -> add  "ConsensusProtocol": "future",  under "Genesis"
-docker compose -f ~/.config/algokit/sandbox/docker-compose.yml down -v
-docker compose -f ~/.config/algokit/sandbox/docker-compose.yml up -d
-pnpm localnet:quantum-check   # -> PASS: confirmed in round N
-```
-
-The check talks to `localhost:4001` directly and needs no app config. To exercise the app against
-this node, re-enter the custom network in Settings, Developer, Node Settings. Recreating the
-containers changes the genesis hash, so the previously saved config no longer matches.
-
-`algokit localnet start` and `reset` both rewrite those two files, so re-apply the edits after
-running either. `algorand/algod:nightly` is not a substitute; it still lacks `pqsig`.
-
-> [!WARNING]
-> This swap kills the indexer, but the app still works. Consensus v42 also enables `LoadTracking`,
-> adding a `ld` field to the block header. The published `conduit-localnet` and `indexer` images
-> predate it and cannot decode it, so conduit dies with
-> `error decoding block for round 1: msgpack decode error ... key ld` and the
-> indexer stays pinned at round 0 (`docker logs algokit_sandbox_conduit`;
-> `curl -s localhost:8980/health`).
->
-> Balances, the asset list and sending are unaffected, because `account-syncer.ts` reads them from
-> algod and holdings only fall back to the indexer past algod's resource cap. Expect indexer-backed
-> surfaces (transaction history, large accounts) to be empty. If a balance reads 0.00 on LocalNet it
-> is far more likely a stale `account_chain_state` row than the indexer: pull-to-refresh does NOT
-> re-fetch when a row already exists, so relaunch the app after funding.
+If the indexer sits at round 0 after a transaction (`curl -s localhost:8980/health`,
+`pnpm localnet:logs`), suspect a stale cached image: `docker pull`
+`algorandfoundation/conduit-localnet:latest` and `algorand/indexer:latest`, then
+`pnpm localnet:reset`.
 
 ### Conformance suite
 
@@ -178,7 +155,7 @@ pera-react-native/
 │   ├── platform-react-native/ # React Native implementation
 │   ├── platform-chrome/     # Chrome implementation
 │   ├── provider/            # `getProvider()` accessor used by packages
-│   └── …                    # ledger-*, keystore-chrome, passkey-autofill
+│   └── …                    # ledger-*, vault-chrome, passkey-autofill
 ├── conformance/             # LocalNet conformance suite
 ├── conformance-evm/         # EVM conformance suite (Anvil)
 ├── tools/                   # Development and CI scripts
@@ -234,6 +211,7 @@ in reviewed PRs, not via `fallow fix`.
 | [Architecture](docs/ARCHITECTURE.md)                       | Layering, platform drivers, per-platform features            |
 | [Style Guide](docs/STYLE_GUIDE.md)                         | Decisions behind the enforced rules                          |
 | [Testing](docs/TESTING.md)                                 | Unit, integration harness, locale tour                       |
+| [Chains](docs/CHAINS.md)                                   | Chain model, build and kill-switch knobs, adding a chain     |
 | [Security](docs/SECURITY.md)                               | Reporting a flaw, key custody, vault limits, supply chain    |
 | [Offline & Paused State](docs/OFFLINE_PAUSED_STATE.md)     | DB-first reads, the paused render contract                   |
 | [Translation Guide](docs/I18N_TRANSLATION_GUIDE.md)        | Locale bundles, plural traps, per-language rules             |

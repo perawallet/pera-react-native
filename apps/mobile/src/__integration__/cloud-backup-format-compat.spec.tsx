@@ -27,7 +27,6 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     useNetworkStore,
     useSelectedScope,
@@ -65,6 +64,7 @@ import {
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import {
@@ -177,20 +177,20 @@ const algo25Record = (formatVersion: number, name: string) => ({
  *  (or one set up directly), as the app shell would. */
 const startSync = () => {
     const importHook = renderQueryHook(() =>
-        useCloudBackupImport(useSelectedScope(LEGACY_CHAIN_ID)),
+        useCloudBackupImport(useSelectedScope(ALGORAND_CHAIN_ID)),
     )
     const contactImportHook = renderQueryHook(() =>
         useCloudBackupContactImport(),
     )
     const mnemonicHook = renderQueryHook(() =>
-        useResolveMnemonicForBackup(LEGACY_CHAIN_ID),
+        useResolveMnemonicForBackup(ALGORAND_CHAIN_ID),
     )
     const hdHook = renderQueryHook(() =>
-        useResolveHdSeedForBackup(LEGACY_CHAIN_ID),
+        useResolveHdSeedForBackup(ALGORAND_CHAIN_ID),
     )
     return initializeBackupSyncManager({
-        chainId: LEGACY_CHAIN_ID,
-        sources: createBackupSyncStoreSources(LEGACY_CHAIN_ID),
+        chainId: ALGORAND_CHAIN_ID,
+        sources: createBackupSyncStoreSources(ALGORAND_CHAIN_ID),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
@@ -220,7 +220,7 @@ const accountWith = (address: string) =>
     useAccountsStore
         .getState()
         .accounts.find(
-            a => chainAccountOf(a, LEGACY_CHAIN_ID)?.address === address,
+            a => chainAccountOf(a, ALGORAND_CHAIN_ID)?.address === address,
         )
 
 describe('Flow: Cloud backup across format versions', () => {
@@ -251,7 +251,7 @@ describe('Flow: Cloud backup across format versions', () => {
         // re-derives the same addresses.
         const { first, second } = await seedHDWalletAccounts()
         const hdHook = renderQueryHook(() =>
-            useResolveHdSeedForBackup(LEGACY_CHAIN_ID),
+            useResolveHdSeedForBackup(ALGORAND_CHAIN_ID),
         )
         const resolved = await hdHook.current(
             first as Parameters<typeof hdHook.current>[0],

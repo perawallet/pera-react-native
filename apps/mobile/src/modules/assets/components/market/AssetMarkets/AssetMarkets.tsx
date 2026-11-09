@@ -18,11 +18,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import {
     AssetFavoriteButton,
@@ -52,6 +48,7 @@ import type {
     AssetDetailsDisplay,
     AssetSupplyDisplay,
 } from '@modules/assets/types/asset-details-display'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
@@ -72,7 +69,7 @@ export const AssetMarkets = ({
 }: AssetMarketsProps) => {
     const { VerificationSection, IssuerControlsSection } = assetDetailsDisplay
     const styles = useStyles()
-    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useHomeChainScope()
     const { usdToPreferred } = useCurrency(currencyScope)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
@@ -226,7 +223,10 @@ export const AssetMarkets = ({
             )}
 
             <AssetDescription
-                description={assetDetails.peraMetadata?.description}
+                description={
+                    assetDetails.peraMetadata?.description ||
+                    (about.descriptionKey ? t(about.descriptionKey) : undefined)
+                }
             />
 
             {!!IssuerControlsSection && (

@@ -61,5 +61,9 @@ export const useStyles = makeStyles(theme => {
             marginLeft: theme.spacing.md,
             flexShrink: 0,
         },
+        // So a long token symbol on the amount can't squeeze the name out.
+        rightSlotCapped: {
+            maxWidth: '55%',
+        },
     }
 })

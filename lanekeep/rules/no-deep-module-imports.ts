@@ -21,14 +21,16 @@ const ENTRIES = new Set(['', 'index', 'routes', 'shell', 'web'])
 // chain-UI registry only each chain's per-feature UI, so neither goes through
 // the barrel. Chain icons get their own pair (each chain's logos, and the
 // ChainIcon that draws them) because the assets barrel renders them and must
-// not load the registry.
+// not load the registry. The chain picker's list draws chain rows, so it stays
+// off the transactions barrel for the same reason.
 const EXTRA_ENTRIES: Record<string, readonly string[]> = {
-    algorand: ['icons', 'chain-ui', 'chain-icons'],
+    algorand: ['icons', 'chain-ui', 'chain-icons', 'chain-id'],
     banners: ['carousel'],
     'chain-ui': ['icon'],
     deeplink: ['core'],
     ethereum: ['chain-ui', 'chain-icons'],
     'locale-tour': ['register', 'registry'],
+    transactions: ['chain-selection'],
     webview: ['browser'],
 }
 

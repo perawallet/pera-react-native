@@ -18,15 +18,17 @@ import {
     isWatchAccount,
     multisigParametersOf,
     useAccountChainId,
+    useAuthorityOf,
     useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
+    useFailedFirstReadChainIds,
     type AccountHoldingSource,
     type AccountValueTotalsMap,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    isTestTierScope,
+    countsTowardFiatTotals,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -42,13 +44,15 @@ import {
     type ChainAvailability,
 } from '@hooks/useChainAvailability'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useLanguage } from '@hooks/useLanguage'
+import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 
 export type CrossChainTotal =
     /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
     | { kind: 'fiat'; value: Maybe<Decimal> }
     /** Every chain the account holds on is a test network, whose funds never count as money; the row shows no value. */
     | { kind: 'testOnly' }
-    /** Every chain the account is on is switched off. */
+    /** The account holds on no chain this build registers. */
     | { kind: 'unavailable' }
 
 export type UseAccountWithBalanceResult = {
@@ -76,22 +80,31 @@ export type UseAccountWithBalanceResult = {
     singleNetworkChainId: Optional<ChainId>
     /** The member count of a joint account, which the avatar badge shows. */
     jointParticipantCount: Optional<number>
-    /** A whole-account row names only a watch account's type or network under it; the name and value say the rest. */
+    /** A joint account's required approvals out of its members, e.g. "Shared · 2 of 3 signers"; unset once it is rekeyed, as its members no longer sign. */
+    jointSignersLabel: Optional<string>
+    /** A whole-account row names only a watch account's type or network under it, unless its name is shared; the name and value say the rest. */
     shouldShowSecondaryLabel: boolean
+    /** A whole-account row whose name another account also shows, so it shows its address to tell them apart. */
+    hasDuplicateName: boolean
 }
+
+const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
 
 /**
  * Matches the account overview's headline: test-network holdings stay out,
  * and one unknown chain makes the total unknown rather than understated.
+ * `failedFirstReadChainIds`: chains whose first read failed, so a zero there
+ * is a placeholder.
  */
 export const crossChainTotalOf = (
     sources: readonly AccountHoldingSource[],
     accountValueTotals: AccountValueTotalsMap,
     usdToPreferred: (usd: Maybe<Decimal>) => Nullable<Decimal>,
+    failedFirstReadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
 ): CrossChainTotal => {
     if (sources.length === 0) return { kind: 'unavailable' }
-    const counted = sources.filter(
-        source => !isTestTierScope(getProvider().chains, source.scope),
+    const counted = sources.filter(source =>
+        countsTowardFiatTotals(getProvider().chains, source.scope),
     )
     if (counted.length === 0) return { kind: 'testOnly' }
     const values = counted.map(source =>
@@ -102,6 +115,12 @@ export const crossChainTotalOf = (
     if (values.some(value => !value || value.isPending)) {
         return { kind: 'fiat', value: undefined }
     }
+    const isPlaceholderZero = counted.some(
+        (source, index) =>
+            failedFirstReadChainIds.has(source.scope.chainId) &&
+            values[index]?.fiatValue?.isZero() === true,
+    )
+    if (isPlaceholderZero) return { kind: 'fiat', value: null }
     const usdTotal = values.reduce<Nullable<Decimal>>(
         (total, value) =>
             total === null || !value || value.fiatValue === null
@@ -124,8 +143,8 @@ export const useAccountWithBalance = (
     const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
     const isChainAgnostic = chainOverride === undefined
-    // Leaves out switched-off chains, so their last-synced values can't count.
     const sources = useAccountHoldingSources(account)
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(sources)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
         homeScope,
@@ -139,18 +158,41 @@ export const useAccountWithBalance = (
     const crossChainTotal = useMemo(
         (): Optional<CrossChainTotal> =>
             isChainAgnostic
-                ? crossChainTotalOf(sources, accountValueTotals, usdToPreferred)
+                ? crossChainTotalOf(
+                      sources,
+                      accountValueTotals,
+                      usdToPreferred,
+                      failedFirstReadChainIds,
+                  )
                 : undefined,
-        [isChainAgnostic, sources, accountValueTotals, usdToPreferred],
+        [
+            isChainAgnostic,
+            sources,
+            accountValueTotals,
+            usdToPreferred,
+            failedFirstReadChainIds,
+        ],
     )
 
     const singleNetworkChainId =
         isChainAgnostic && isWatchAccount(account) && sources.length === 1
             ? sources[0]?.scope.chainId
             : undefined
-    const jointParticipantCount = isChainAgnostic
-        ? multisigParametersOf(account, accountChainId)?.addresses.length
+    const { t } = useLanguage()
+    const { hasDuplicateName: isNameShared } = useUniqueAccountName()
+    const hasDuplicateName = isChainAgnostic && isNameShared(account)
+    const authority = useAuthorityOf(account, scope)
+    const multisig = isChainAgnostic
+        ? multisigParametersOf(account, accountChainId)
         : undefined
+    const jointParticipantCount = multisig?.addresses.length
+    const jointSignersLabel =
+        multisig && authority === null
+            ? t('account_info.type_multisig_signers', {
+                  threshold: multisig.threshold,
+                  total: multisig.addresses.length,
+              })
+            : undefined
 
     return {
         scope,
@@ -165,6 +207,9 @@ export const useAccountWithBalance = (
         crossChainTotal,
         singleNetworkChainId,
         jointParticipantCount,
-        shouldShowSecondaryLabel: !isChainAgnostic || isWatchAccount(account),
+        jointSignersLabel,
+        shouldShowSecondaryLabel:
+            !isChainAgnostic || isWatchAccount(account) || hasDuplicateName,
+        hasDuplicateName,
     }
 }

@@ -15,6 +15,7 @@ import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
+import { networkListOf } from '@modules/chain-ui'
 import {
     type RouteProp,
     useNavigation,
@@ -30,14 +31,12 @@ import {
     type WalletDiscoveryProgress,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useDelegationScanNoticeResult,
@@ -45,7 +44,16 @@ import {
 } from '../../hooks'
 import { useHdWalletRescan } from './useHdWalletRescan'
 
-export type ScanNetworkStatus = 'checking' | 'failed'
+export type ScanNetworkStatus = 'checking' | 'failed' | 'unavailable'
+
+const scanNetworkStatusOf = (
+    progress: Optional<WalletDiscoveryProgress>,
+    chainId: ChainId,
+): ScanNetworkStatus => {
+    if (progress?.refusedChainIds.includes(chainId)) return 'unavailable'
+    if (progress?.failedChainIds.includes(chainId)) return 'failed'
+    return 'checking'
+}
 
 export type ScanNetwork = {
     chainId: ChainId
@@ -78,7 +86,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { errorToast } = useToast()
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { discoverImportAccounts, cancelImport } = useHDImportSession(scope)
     const { scanRekeyed } = useDelegationScanNoticeResult()
     const { rescanHdWallet } = useHdWalletRescan()
@@ -120,8 +128,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const hasSearched = useRef(false)
     const isImportMode = 'mode' in params && params.mode === 'import'
     const isSearchingImportRef = useRef(false)
+    // Read by the failure path: when nothing could be offered, the networks
+    // that couldn't be checked are why.
+    const uncheckedChainIdsRef = useRef<ChainId[]>([])
     const hasLeftRef = useRef(false)
-    const [rescanAbort] = useState(() => new AbortController())
+    const [searchAbort] = useState(() => new AbortController())
     const [progress, setProgress] = useState<WalletDiscoveryProgress>()
     const [isCancelling, setIsCancelling] = useState(false)
 
@@ -133,19 +144,20 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 if (isImportMode) {
                     if (!isSearchingImportRef.current) return
                     hasLeftRef.current = true
+                    searchAbort.abort()
                     cancelImport()
                     return
                 }
                 hasLeftRef.current = true
-                rescanAbort.abort()
+                searchAbort.abort()
             }),
-        [isImportMode, reactNavigation, cancelImport, rescanAbort],
+        [isImportMode, reactNavigation, cancelImport, searchAbort],
     )
 
     const handleCancel = useCallback(() => {
         setIsCancelling(true)
-        rescanAbort.abort()
-    }, [rescanAbort])
+        searchAbort.abort()
+    }, [searchAbort])
 
     const searchAccounts = useCallback(async () => {
         if (hasSearched.current) return
@@ -156,11 +168,19 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             // picks the account(s) to import.
             if ('mode' in params && params.mode === 'import') {
                 isSearchingImportRef.current = true
-                const discovered = await discoverImportAccounts({
+                const {
+                    accounts: discovered,
+                    failedChainIds,
+                    isOriginFallback,
+                } = await discoverImportAccounts({
                     walletKeyId: params.walletKeyId,
+                    signal: searchAbort.signal,
+                    onProgress: setProgress,
+                    previous: params.previous,
                 })
                 isSearchingImportRef.current = false
                 if (hasLeftRef.current) return
+                uncheckedChainIdsRef.current = failedChainIds
                 if (discovered.length === 0) {
                     throw new Error('HD discovery returned no accounts')
                 }
@@ -168,6 +188,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     mode: 'import',
                     walletKeyId: params.walletKeyId,
                     accounts: discovered,
+                    failedChainIds,
+                    isOriginFallback,
                 })
                 return
             }
@@ -181,7 +203,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             if (hdIndexOf(account) !== undefined) {
                 await rescanHdWallet(account, {
                     chainIds,
-                    signal: rescanAbort.signal,
+                    signal: searchAbort.signal,
                     onProgress: setProgress,
                     hasLeft: () => hasLeftRef.current,
                 })
@@ -228,9 +250,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 cancelImport()
             }
             // Not showError: an unrecognised error would fall through to generic copy instead of this step's.
+            const unchecked = uncheckedChainIdsRef.current
             errorToast(
                 t('onboarding.import_account.failed_title'),
-                t('onboarding.import_account.failed_body'),
+                unchecked.length > 0
+                    ? t('onboarding.import_account.failed_networks_body', {
+                          networks: networkListOf(unchecked, t),
+                      })
+                    : t('onboarding.import_account.failed_body'),
             )
             navigation.goBack()
         }
@@ -245,7 +272,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         errorToast,
         setSelectedAccountId,
         scope.chainId,
-        rescanAbort,
+        searchAbort,
     ])
 
     useEffect(() => {
@@ -257,9 +284,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             (progress?.chainIds ?? []).map(chainId => ({
                 chainId,
                 name: chainDisplayNameOf(chainId) ?? chainId,
-                status: progress?.failedChainIds.includes(chainId)
-                    ? 'failed'
-                    : 'checking',
+                status: scanNetworkStatusOf(progress, chainId),
             })),
         [progress],
     )
@@ -281,7 +306,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         dotOpacities,
         progressLabel,
         networks,
-        canCancel: progress !== undefined,
+        canCancel: !isImportMode && progress !== undefined,
         isCancelling,
         handleCancel,
     }

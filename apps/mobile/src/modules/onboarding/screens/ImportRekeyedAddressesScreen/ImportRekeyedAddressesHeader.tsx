@@ -34,7 +34,9 @@ export const ImportRekeyedAddressesHeader = ({
                     count: accountsCount,
                 }) +
                 '\n' +
-                t('onboarding.import_rekeyed_addresses.description_line_2')
+                t('onboarding.import_rekeyed_addresses.description_line_2', {
+                    count: accountsCount,
+                })
             }
         />
     )

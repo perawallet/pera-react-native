@@ -11,29 +11,28 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-
-import type { OnrampStatus } from '../models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'onramp'
 
 export const onrampQueryKeys = {
-    pairs: (destinationTokenIds: string[], scope: Nullable<ChainScope>) =>
-        [MODULE_PREFIX, 'pairs', { destinationTokenIds, scope }] as const,
+    destinations: (scope: Nullable<ChainScope>) =>
+        [MODULE_PREFIX, 'destinations', { scope }] as const,
+    sources: (destinationId: Nullable<string>, scope: Nullable<ChainScope>) =>
+        [MODULE_PREFIX, 'sources', { destinationId, scope }] as const,
     region: (scope: Nullable<ChainScope>) =>
         [MODULE_PREFIX, 'region', { scope }] as const,
-    /** Prefix matching every history query (any device/account/status/scope) —
+    /** Prefix matching every history query (any device/account/scope) —
      *  used to invalidate the list after an order changes (e.g. cancelled). */
     historyRoot: () => [MODULE_PREFIX, 'history'] as const,
     history: (
         deviceId: string,
         accountAddress: string,
-        status: Optional<OnrampStatus>,
         scope: Nullable<ChainScope>,
     ) =>
         [
             MODULE_PREFIX,
             'history',
-            { deviceId, accountAddress, status, scope },
+            { deviceId, accountAddress, scope },
         ] as const,
 }

@@ -24,7 +24,7 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 ┌─────────────────────────────────────────────────────┐
 │                   extensions/*                       │
 │   provider · drivers (platform-chrome,               │
-│   platform-react-native, keystore-chrome) ·          │
+│   platform-react-native, vault-chrome) ·             │
 │   Ledger transports → hardware-wallet                │
 │                         ▼                            │
 │   platform  (the PlatformServices contract)          │
@@ -112,7 +112,7 @@ entry, so the contract carries no React or React Query.
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
 to miss when tracing: the keystore engine and the Ledger transports (the `.web.ts` twin of the
 app's `bootstrap/hardware-wallet-transports.ts`). On web
-`@algorandfoundation/react-native-keystore` resolves to `extensions/keystore-chrome`, but only so
+`@algorandfoundation/react-native-keystore` resolves to `extensions/vault-chrome`, but only so
 static imports of it resolve; the engine comes from `@algorandfoundation/keystore-web`.
 
 ### Where browser-specific code lives
@@ -129,7 +129,7 @@ when `platform === 'web'`.
 
 A lint rule (`pera/no-chrome-imports-outside-web`, enforced by `pnpm lint:lanekeep`) checks the
 boundary in the direction that actually matters: a file that is not `.web.*` may not import
-`platform-chrome`, `keystore-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
+`platform-chrome`, `vault-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
 would fail at runtime on the missing `chrome` global.
 
 `pera/no-react-native-imports-in-packages` holds the other direction: `packages/*/src` may not
@@ -205,8 +205,9 @@ menu) is left out of production builds and kept in development and staging; the 
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
 `modules/settings/routes/developer-gallery.ts`, which the oxlint rule
-`pera/dev-gallery-entry-points` enforces. The Ethereum chain module ships only when the baked `CHAINS`
-lists `ethereum`, and the extension build fails if viem reaches a bundle anyway. Metro logs each
+`pera/dev-gallery-entry-points` enforces. A chain package's entry modules ship only when the baked
+`CHAINS` lists one of its chains (`tools/dev/chain-packages.cjs`), and the extension build fails if
+viem reaches a bundle without an EVM chain. Metro logs each
 decision at startup (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend
@@ -230,6 +231,25 @@ Reads whose answer is obtainable from algod or the indexer must therefore branch
 result. Swallowing it is indistinguishable from a genuine empty result in the UI, which is how a
 dead probe once reported "no addresses found" during account discovery. Pera-proprietary reads have
 no fallback and should surface as unavailable.
+
+A chain's remote kill switch (`chain_<id>_overrides` with `enabled: false`) turns off only its Pera
+backend, the same way: `servicesOf` lists nothing for it and the query client refuses its Pera
+requests. Balances, sync, pending-row reconciliation, send, receive and dApp sessions keep running on
+RPC, and holdings the backend can no longer list stay at their last value, except tokens an account
+already holds, which are read over RPC. `peraServicesFor` and the query client read the switch, and
+so does onramp, which the backend brokers; feature code never hides a chain because of it.
+
+The backend can also refuse a chain itself: each deployment lists the chains it serves at
+`GET /api/v4/chains/`, and answers 422 `chain_not_enabled` or `unknown_chain` for any other. Both
+feed one gate, `isPeraScopeRefused(scope)`, which `servicesOf` reads like the kill switch, so a refused
+scope takes the same RPC-only path. `usePeraServedChainsQuery` (`packages/device`) reads the list
+once per launch for the wallet's deployment on native only: the backend rejects web integrity
+tokens on that route, so web relies on the 422 alone. A production build boots without a token,
+so the read waits for `canCallIntegrityGuardedRoute`. A failed read, or one naming
+none of the build's networks, gates nothing. The query client marks a scope refused on its first 422 and throws
+`PeraServiceUnavailableError` with `isChainRefused`, which `isChainRefusedError` accepts, and nothing
+reports a refusal as a failure. The list only switches chains off: a chain the build doesn't register
+still needs a release.
 
 ## How a chain reaches its backends
 
@@ -309,8 +329,9 @@ A chain-neutral transaction is signed through its chain's `TransactionPlanner`, 
 `transactionPlanners` in chain-contract so a chain package registers it without depending on
 packages/signing. `plan` names each signature and its exact bytes, the wallet signs only those, each
 with the key of the account the request names in the scheme it names, and `assemble` builds the
-signed transaction. The key store never signs bytes a payload supplies, so a request can't have
-arbitrary bytes signed, which is what `eth_sign` would allow.
+signed transaction. The bytes the key store signs are always ones a planner computed from the
+transaction or message it parsed, never a hash the payload carries, so a request can't have arbitrary
+bytes signed. That is what `eth_sign` would allow, and Ethereum's message signer refuses it.
 
 The planner signs a local key only in the scheme it plans and assembles only a complete signature
 set. An Algorand quantum key, a Ledger, a multisig proposal and a multisig cosignature therefore sign
@@ -368,4 +389,5 @@ Platform service abstractions live in `extensions/*`, not in a package.
 - Where files go and what to call them: [Code Layout](CODE_LAYOUT.md)
 - How dApp sessions reach the wallet on native and in the extension: [Connections](CONNECTIONS.md)
 - How a web page talks to the extension without WalletConnect: [dApp bridge](DAPP_BRIDGE.md)
+- How a chain plugs in, the build and kill-switch knobs, and adding a chain: [Chains](CHAINS.md)
 - How an EVM send is priced, what MAX holds back, and why a small balance remains: [EVM fees](EVM_FEES.md)

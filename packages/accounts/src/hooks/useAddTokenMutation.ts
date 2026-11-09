@@ -16,8 +16,11 @@ import {
     fetchAndPersistAssets,
     getAssetById,
 } from '@perawallet/wallet-core-assets'
+import { logger } from '@perawallet/wallet-core-shared'
 import { addAccountToken, insertAssetHolding } from '../db'
 import { TokenMetadataUnavailableError } from '../errors'
+import { fetchAndPersistAccount } from '../sync/account-syncer'
+import { useHiddenTokensStore } from '../store/hiddenTokens'
 import { invalidateAccountQueriesForAddresses } from './querykeys'
 
 type AddTokenVariables = {
@@ -40,15 +43,31 @@ export const useAddTokenMutation = (): UseAddTokenMutationResult => {
             scope,
             assetId,
         }: AddTokenVariables) => {
-            // Not fetchAssetMetadata: it stores only the chain's half, and the
-            // resync won't refetch the logo or tier while that half is fresh.
             await fetchAndPersistAssets([assetId], scope)
             // The sync skips a token it can't read rather than throwing.
             if (!(await getAssetById({ assetId, scope }))) {
                 throw new TokenMetadataUnavailableError(assetId)
             }
             await addAccountToken({ accountAddress, scope, assetId })
+            // Adding a token the user hid is asking to see it again.
+            useHiddenTokensStore.getState().setTokenHidden({
+                address: accountAddress,
+                scope,
+                assetId,
+                isHidden: false,
+            })
             await insertAssetHolding({ accountAddress, assetId, scope })
+            // The change signal won't flag an account the add didn't touch on
+            // chain, so a token already held would show zero until its next transfer.
+            await fetchAndPersistAccount(accountAddress, scope).catch(
+                (error: unknown) => {
+                    logger.warn('Account read after adding a token failed', {
+                        scope,
+                        assetId,
+                        error,
+                    })
+                },
+            )
         },
         onSuccess: (_data, { accountAddress }) => {
             invalidateAccountQueriesForAddresses(queryClient, [accountAddress])

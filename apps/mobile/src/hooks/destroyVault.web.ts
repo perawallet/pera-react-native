@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { destroyVault } from '@perawallet/wallet-extension-keystore-chrome'
+export { destroyVault } from '@perawallet/wallet-extension-vault-chrome'

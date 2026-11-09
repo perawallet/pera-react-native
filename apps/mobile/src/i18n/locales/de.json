@@ -52,7 +52,8 @@
         "title": "Assets verwalten",
         "sort": "Sortieren",
         "filter": "Filter",
-        "remove_assets": "Assets entfernen"
+        "hide_tokens": "Tokens ausblenden",
+        "remove_assets": "Algorand-Assets entfernen"
     },
     "age_gate": {
         "loading": {
@@ -73,11 +74,11 @@
     "app": {
         "initialization_failed": {
             "title": "App-Start fehlgeschlagen",
-            "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher.",
+            "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Blockchain sicher.",
             "retry": "Erneut versuchen",
             "keystore": {
                 "title": "Wallet-Datenfehler",
-                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher."
+                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Blockchain sicher."
             }
         }
     },
@@ -95,7 +96,9 @@
         "display_nfts": "NFTs in der Asset-Liste anzeigen",
         "display_nfts_description": "NFT-Assets werden in der Asset-Liste deines Kontos angezeigt",
         "display_opted_in_nfts": "Angemeldete NFTs anzeigen",
-        "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt"
+        "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt",
+        "show_suspicious": "Verdächtige Assets anzeigen",
+        "show_suspicious_description": "Zeigt Tokens an, die Pera als wahrscheinlichen Spam oder Betrug markiert hat. Sie zählen nie zu deinem Guthaben"
     },
     "add_asset": {
         "title": "Asset hinzufügen",
@@ -128,6 +131,7 @@
         },
         "collectible_title": "Für NFT anmelden",
         "collectible_note": "Du musst dich für die NFT-ASA-ID anmelden, um sie in dein Wallet übertragen zu können. Füge die ASA-ID in die Suchleiste ein.",
+        "collectible_note_multichain": "Für Algorand-NFTs musst du dich anmelden, bevor sie an dich gesendet werden können. Füge die ASA-ID des NFTs in die Suchleiste ein. Jede Anmeldung kostet eine Transaktionsgebühr und erhöht das Mindestguthaben deines Kontos um 0,1 ALGO. NFTs in anderen Netzwerken wie Ethereum brauchen keine Anmeldung.",
         "collectible_search_placeholder": "Nach Asset-ID oder NFT-Name suchen",
         "token": {
             "added_title": "Token hinzugefügt",
@@ -170,11 +174,29 @@
         "opt_out_cta": "Abmelden"
     },
     "remove_assets": {
-        "title": "Assets entfernen",
+        "title": "Algorand-Assets entfernen",
         "select_all": "Alle auswählen",
         "deselect_all": "Alle abwählen",
         "empty_title": "Keine entfernbaren Assets",
-        "empty_body": "Es können nur Assets mit einem Guthaben von null entfernt werden, die du nicht selbst erstellt hast."
+        "empty_body": "Es können nur Algorand-Assets mit einem Guthaben von null entfernt werden, die du nicht selbst erstellt hast. Beim Entfernen meldet sich dein Konto in einer Transaktion von dem Asset ab."
+    },
+    "hide_tokens": {
+        "title": "Tokens ausblenden",
+        "tokens_section": "Tokens",
+        "hidden_section": "Ausgeblendete Tokens",
+        "empty_title": "Keine Tokens zum Ausblenden",
+        "empty_body": "Dieses Konto hält keine Tokens, die ausgeblendet werden können."
+    },
+    "token_visibility": {
+        "hide": "Token ausblenden",
+        "unhide": "Token einblenden",
+        "hide_action": "Ausblenden",
+        "unhide_action": "Einblenden",
+        "hidden_toast_title": "{{assetName}} ausgeblendet",
+        "hidden_toast_body": "Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben. Du kannst es unter Assets verwalten > Tokens ausblenden wieder einblenden.",
+        "hidden_swipe_toast_body": "Tippe, um es rückgängig zu machen. Das Token erscheint nicht mehr in deinen Assets und zählt nicht zu deinem Guthaben.",
+        "shown_toast_title": "{{assetName}} eingeblendet",
+        "filtered_note": "Pera hat dieses Token als verdächtig markiert, daher erscheint es nicht in deinen Assets. Mit „Verdächtige Assets anzeigen“ in den Asset-Filtern kannst du es einblenden."
     },
     "deeplink": {
         "error": {
@@ -193,6 +215,8 @@
             "body_network_mismatch": "Wechsle zu {{network}}, um diesen Link zu öffnen.",
             "title_no_account": "Kein Konto für diesen Link",
             "body_no_account": "Du hast kein {{chain}}-Konto.",
+            "title_name_not_found": "Name nicht gefunden",
+            "body_name_not_found": "{{name}} hat keine Adresse auf {{chain}}.",
             "title_unsupported": "Link nicht unterstützt",
             "body_unsupported_on_chain": "Pera kann diesen Link auf {{chain}} nicht öffnen.",
             "title_recover": "Konto konnte nicht importiert werden",
@@ -208,7 +232,7 @@
     "address_actions": {
         "title": "Gescannte Kontoadresse",
         "send_transaction": "Transaktion senden",
-        "send_transaction_subtitle": "ALGO oder Assets an diese Adresse senden",
+        "send_transaction_subtitle": "Assets an diese Adresse senden",
         "watch_address": "Adresse beobachten",
         "watch_address_subtitle": "Als Beobachtungskonto hinzufügen",
         "add_contact": "Neuen Kontakt hinzufügen",
@@ -228,11 +252,12 @@
         "no_accounts_found": "Keine Konten gefunden",
         "no_accounts_body": "Es gibt keine passenden Konten",
         "search_placeholder": "Kontoadresse, NFD-Name oder Kurzname",
-        "search_placeholder_evm": "0x-Adresse oder Kontoname",
+        "search_placeholder_evm": "0x-Adresse, ENS-Name oder Kontoname",
         "search_placeholder_neutral": "Adresse oder Kontoname",
         "nfd_results": "NFDomains",
-        "nfd_resolving": "NFD wird aufgelöst...",
-        "nfd_resolved": "Aufgelöst von {{name}}",
+        "ens_results": "ENS",
+        "name_resolving": "Name wird aufgelöst...",
+        "name_resolved": "Aufgelöst von {{name}}",
         "wrong_network": {
             "title": {
                 "algorand": "Das ist eine Algorand-Adresse",
@@ -265,7 +290,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Gelöscht)"
+        "deleted_label": "(Gelöscht)",
+        "unverified_label": "Nicht verifiziert"
     },
     "asset_details": {
         "about": {
@@ -276,7 +302,13 @@
             "asa_url": "ASA-URL",
             "show_on": "Anzeigen auf",
             "project_website": "Projekt-Website",
-            "open_browser": "Im Browser öffnen"
+            "open_browser": "Im Browser öffnen",
+            "native_description": {
+                "ether": "Ether (ETH) ist der native Coin von Ethereum. Er bezahlt Transaktionsgebühren und sichert das Netzwerk durch Staking. Auch Layer-2-Netzwerke wie Base und Arbitrum nutzen ETH.",
+                "bnb": "BNB ist der native Coin der BNB Chain. Er bezahlt Transaktionsgebühren und sichert das Netzwerk durch Staking.",
+                "avax": "AVAX ist der native Coin von Avalanche. Er bezahlt Transaktionsgebühren und sichert das Netzwerk durch Staking.",
+                "pol": "POL ist der native Coin von Polygon. Er bezahlt Transaktionsgebühren und sichert das Netzwerk durch Staking."
+            }
         },
         "main_screen": {
             "holdings_tab": "Bestände",
@@ -352,6 +384,11 @@
             "suspicious_description": "Dieses ASA wurde vom Pera ASA-Verifizierungsprogramm als verdächtig markiert.",
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
         },
+        "token_warning": {
+            "unverified_title": "Nicht verifiziertes Token",
+            "suspicious_title": "Verdächtiges Token",
+            "body": "Pera hat dieses Token nicht verifiziert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
+        },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
     },
     "accounts": {
@@ -385,9 +422,15 @@
             "search_placeholder": "NFTs durchsuchen",
             "empty_title": "NFTs",
             "empty_body": "Willkommen in deiner NFT-Galerie! Du hast noch keine NFTs. Alle NFTs in deinem Wallet werden hier angezeigt.",
+            "empty_body_multichain": "Willkommen in deiner NFT-Galerie!\nDu hast noch keine NFTs. NFTs, die du in Netzwerken wie Ethereum erhältst, erscheinen hier automatisch. Für Algorand-NFTs musst du dich zuerst anmelden.",
             "empty_optin": "Für NFT anmelden",
+            "empty_optin_algorand": "Für Algorand-NFT anmelden",
             "nomatch_title": "Keine passenden NFTs",
             "nomatch_body": "Keine NFTs entsprechen deinem Suchbegriff",
+            "network_empty_title": "Keine NFTs",
+            "network_empty_body": "Du hast keine NFTs auf {{chain}}.",
+            "suspicious_hidden_title": "Verdächtige NFTs ausgeblendet",
+            "suspicious_hidden_body": "Pera hat diese NFTs als wahrscheinlichen Spam oder Betrug markiert. Um sie zu sehen, aktiviere „Verdächtige NFTs anzeigen“ unter Verwalten > Filter.",
             "count": "{{count}} NFTs",
             "count_one": "{{count}} NFT",
             "manage": "Verwalten",
@@ -399,6 +442,8 @@
             "filter_opted_in_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt",
             "filter_watch_accounts": "NFTs von Beobachtungskonten anzeigen",
             "filter_watch_accounts_description": "Dadurch werden NFTs aus deinen Beobachtungskonten sowie aus deinen eigenen Konten angezeigt",
+            "filter_suspicious": "Verdächtige NFTs anzeigen",
+            "filter_suspicious_description": "Dadurch werden auch NFTs angezeigt, die Pera als wahrscheinlichen Spam oder Betrug markiert hat",
             "sort_title_asc": "Name (A-Z)",
             "sort_title_desc": "Name (Z-A)",
             "sort_newest_first": "Neueste zuerst",
@@ -425,7 +470,7 @@
         },
         "no_balance": {
             "welcome": "Willkommen!",
-            "get_started": "Zahle ALGO ein, um zu starten",
+            "get_started": "Zahle Krypto ein, um zu starten",
             "buy": "Krypto kaufen",
             "receive": "Empfangen",
             "more": "Mehr"
@@ -489,11 +534,13 @@
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
         "account_number": "Konto Nr. {{number}}",
+        "name_taken": "Du hast bereits ein Konto mit diesem Namen. Wähle einen anderen Namen, damit du sie unterscheiden kannst.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
         "type_watch": "Beobachtungskonto",
         "type_ledger": "Ledger-Konto",
         "type_multisig": "Gemeinschaftskonto",
+        "type_multisig_signers": "Gemeinsam · {{threshold}} von {{total}} Signierern",
         "type_quantum": "Quantum-Konto",
         "type_rekeyed": "Rekeyed Konto",
         "type_rekeyed_signer": "Rekeyed (Signiert von {{to}})",
@@ -1048,12 +1095,15 @@
         "wealth_chart": {
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
-            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets"
+            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
+            "currency_unavailable_body": "Dieses Diagramm ist in {{currency}} derzeit nicht verfügbar"
         },
         "webview": {
             "failed_title": "Seite konnte nicht geladen werden",
             "reload": "Neu laden",
             "failed_body": "Beim Laden dieser Seite ist ein Fehler aufgetreten. Bitte überprüfe deine Internetverbindung und versuche es erneut.",
+            "unavailable_title": "Diese Seite ist gerade nicht verfügbar",
+            "unavailable_body": "Bitte versuche es gleich noch einmal.",
             "offline_title": "Du bist offline",
             "offline_body": "Diese Seite kann ohne Internetverbindung nicht geladen werden. Sie wird automatisch neu geladen, sobald du wieder online bist.",
             "unknown_host": "Unbekannte Website"
@@ -1097,6 +1147,7 @@
             "no_contact_title": "Kein Kontakt gefunden",
             "no_contact_body": "Es scheint ein Fehler aufgetreten zu sein.  Der angegebene Kontakt konnte nicht gefunden werden",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "Im Explorer ansehen",
             "copy": "Adresse kopieren",
             "show_qr": "QR-Code anzeigen",
@@ -1204,6 +1255,14 @@
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
+            },
+            "timeout": {
+                "title": "Netzwerk antwortet nicht",
+                "body": "Das Netzwerk hat nicht rechtzeitig geantwortet. Bitte versuche es erneut."
+            },
+            "network_unreachable": {
+                "title": "Netzwerk nicht erreichbar",
+                "body": "Wir konnten keine Verbindung zum Netzwerk herstellen. Prüfe deine Verbindung oder versuche es in einem Moment erneut."
             },
             "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x.",
             "replaced_transaction_confirmed": {
@@ -2087,7 +2146,6 @@
             "finish_button": "Kontoerstellung abschließen",
             "creating": "Gemeinschaftskonto wird erstellt...",
             "error_title": "Konto konnte nicht erstellt werden",
-            "error_name_taken": "Ein Konto mit diesem Namen existiert bereits.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Ein Gemeinschaftskonto mit diesen Teilnehmern und diesem Schwellenwert befindet sich bereits in deinem Wallet."
         },
@@ -2234,6 +2292,10 @@
             "quantum": {
                 "title": "Quantum-Konto",
                 "description": "Falcon-1024-Signaturen, nativ auf Algorand gesichert"
+            },
+            "twelve_word": {
+                "title": "12-Wort-Passphrase",
+                "description": "Aus einem anderen Wallet importieren, das eine 12-Wort-Wiederherstellungsphrase verwendet"
             }
         },
         "import_info": {
@@ -2245,10 +2307,12 @@
             "title": "Gib deine Wiederherstellungsphrase ein",
             "quantum_title": "Gib deine Quantum-Passphrase ein",
             "quantum_info_note": "Eine 25-Wort-Passphrase eines regulären Algorand-Kontos ist kein Quantum-Konto und kann hier nicht importiert werden.",
+            "twelve_word_info_note": "Ein Algorand Secure Backup-Wiederherstellungsschlüssel ist keine Wiederherstellungsphrase und stellt hier keine Konten wieder her. Um ein Backup wiederherzustellen, nutze „Aus Algorand Secure Backup wiederherstellen“.",
             "importing": "Wallet wird importiert...",
             "button": "Wiederherstellen",
             "failed_title": "Import fehlgeschlagen",
             "failed_body": "Beim Importieren deines Wallets ist ein Fehler aufgetreten",
+            "failed_networks_body": "Nicht geprüft werden konnten: {{networks}}. Prüfe deine Verbindung und versuche es erneut.",
             "duplicate_account_title": "Konto bereits hinzugefügt",
             "duplicate_account_body": "Dieses Konto befindet sich bereits in deinem Wallet.",
             "invalid_mnemonic_title": "Ungültige Passphrase",
@@ -2277,6 +2341,7 @@
             "cancel": "Abbrechen",
             "network_checking": "Wird geprüft",
             "network_failed": "Nicht geprüft",
+            "network_unavailable": "Nicht verfügbar",
             "checked_accounts_one": "{{count}} Konto geprüft",
             "checked_accounts_other": "{{count}} Konten geprüft",
             "new_found_one": "{{count}} neues Konto gefunden",
@@ -2339,14 +2404,21 @@
             "select_all": "Alle auswählen",
             "already_imported": "bereits importiert",
             "import_button": "Konten importieren",
+            "go_to_wallet": "Zum Wallet",
             "total_value": "<0/> insgesamt",
             "all_imported_title": "Bereits in deinem Wallet",
-            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
+            "all_imported_body": "Alle Konten aus diesem Wallet sind bereits in Pera. Ist eines als Beobachtungskonto hinzugefügt, entferne es zuerst und importiere es dann erneut, um es mit vollem Zugriff hinzuzufügen.",
+            "unchecked_networks_title": "Nicht geprüft: {{networks}}",
+            "unchecked_networks_body": "Die Konten der anderen Netzwerke sind aufgelistet. Du kannst später erneut nach neuen Konten suchen.",
+            "retry_networks": "Erneut prüfen: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekeyed Konten gefunden",
-            "description_line_1": "Du hast {{count}} rekeyed Konten. Das bedeutet, dass du Transaktionen der rekeyed Konten mit dem soeben hinzugefügten Konto signieren kannst",
-            "description_line_2": "Wähle die rekeyed Konten aus, die du deinem Wallet hinzufügen möchtest:",
+            "title_one": "{{count}} rekeyed Konto gefunden",
+            "title_other": "{{count}} rekeyed Konten gefunden",
+            "description_line_1_one": "Du hast {{count}} rekeyed Konto. Das bedeutet, dass du Transaktionen des rekeyed Kontos mit dem soeben hinzugefügten Konto signieren kannst",
+            "description_line_1_other": "Du hast {{count}} rekeyed Konten. Das bedeutet, dass du Transaktionen der rekeyed Konten mit dem soeben hinzugefügten Konto signieren kannst",
+            "description_line_2_one": "Wähle das rekeyed Konto aus, das du deinem Wallet hinzufügen möchtest:",
+            "description_line_2_other": "Wähle die rekeyed Konten aus, die du deinem Wallet hinzufügen möchtest:",
             "already_imported": "bereits importiert",
             "continue": "Konten zum Hinzufügen auswählen",
             "skip": "Vorerst überspringen",
@@ -2410,7 +2482,7 @@
             "recover_passphrase_title": "Mit Passphrase wiederherstellen",
             "recover_passphrase_description": "Wallet mithilfe einer Passphrase wiederherstellen",
             "recover_qr_title": "Mit QR-Code wiederherstellen",
-            "recover_qr_description": "Algorand-Wallet mit einem QR-Code wiederherstellen",
+            "recover_qr_description": "Wallet mit einem QR-Code wiederherstellen",
             "private_key_title": "Privaten Schlüssel importieren",
             "private_key_description": "Konto über seinen privaten Schlüssel hinzufügen",
             "pair_ledger_title": "Mit Ledger koppeln",
@@ -2885,7 +2957,7 @@
         "empty_prompt_body": "Durchsuche deine Konten, Kontakte und Assets",
         "show_more": "{{count}} weitere anzeigen",
         "no_results_title": "Keine Ergebnisse",
-        "no_results_body": "Versuche einen anderen Suchbegriff",
+        "no_results_body": "Suche nach Kontoname, Adresse oder Netzwerk",
         "sections": {
             "accounts": "Konten",
             "contacts": "Kontakte",
@@ -2895,7 +2967,8 @@
             "title": "Suchoptionen",
             "accounts": "Konten einschließen",
             "contacts": "Kontakte einschließen",
-            "assets": "Assets einschließen"
+            "assets": "Assets einschließen",
+            "network": "Netzwerk"
         }
     },
     "security": {
@@ -3005,6 +3078,10 @@
             "nfd_mismatch_body": "Der NFD-Vertrag für {{name}} führt diese Adresse nicht. Füge die Adresse direkt ein, wenn du ihr vertraust.",
             "nfd_unavailable_title": "{{name}} konnte nicht überprüft werden",
             "nfd_unavailable_body": "Das NFD-Register war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein.",
+            "ens_mismatch_title": "Name stimmt nicht mit der Chain überein",
+            "ens_mismatch_body": "ENS führt {{name}} in diesem Netzwerk nicht auf diese Adresse. Füge die Adresse direkt ein, wenn du ihr vertraust.",
+            "ens_unavailable_title": "{{name}} konnte nicht überprüft werden",
+            "ens_unavailable_body": "ENS war nicht erreichbar, um diesen Namen zu prüfen. Versuche es erneut oder füge die Adresse direkt ein.",
             "invalid_address_title": "Ungültige Adresse",
             "invalid_address_body": "Das ist keine gültige {{chain}}-Adresse."
         },
@@ -3056,7 +3133,7 @@
         },
         "processing": {
             "title": "Transaktion wird gesendet",
-            "subtitle": "Deine Transaktion wird vom Algorand-Netzwerk verarbeitet.",
+            "subtitle": "Deine Transaktion wird vom Netzwerk {{network}} verarbeitet.",
             "title_hardware": "Verbindung mit deinem Ledger-Gerät wird hergestellt",
             "subtitle_hardware": "Verbindung zu {{deviceName}} wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
             "subtitle_hardware_noDevice": "Verbindung zu deinem Ledger-Gerät wird hergestellt. Stelle sicher, dass es entsperrt und in Reichweite ist und die {{appName}}-App geöffnet ist.",
@@ -3065,7 +3142,7 @@
         "success": {
             "title": "Transaktion verarbeitet",
             "asset_transferred_title": "Asset übertragen",
-            "subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
+            "subtitle": "Deine Transaktion wurde erfolgreich vom Netzwerk {{network}} empfangen",
             "pending_title": "Transaktion gesendet",
             "pending_subtitle": "Deine Transaktion wurde an das Netzwerk {{network}} gesendet und wartet auf Bestätigung.",
             "view_in_explorer": "Transaktionsdetails im Pera Explorer anzeigen",
@@ -3390,7 +3467,15 @@
             "spender_label": "Berechtigte Adresse",
             "unlimited": "Unbegrenzt",
             "deadline_label": "Frist",
-            "never": "Nie"
+            "never": "Nie",
+            "known_title": "Über diese Freigabe",
+            "known_description": "{{name}} ist ein bekannter Smart Contract",
+            "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
+            "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
+            "allow_title_assets": "{{spender}} erlauben, deine Assets zu verwenden",
+            "allow_title_unknown": "Einer anderen Adresse erlauben, deine {{asset}} zu verwenden",
+            "allow_title_unknown_assets": "Einer anderen Adresse erlauben, deine Assets zu verwenden"
         },
         "collection_approval": {
             "warning": "Damit kann der Operator jedes Objekt dieser Sammlung übertragen, das du besitzt, auch künftige, bis du die Freigabe widerrufst.",
@@ -3502,6 +3587,12 @@
                 "spender": "Berechtigte Adresse",
                 "operator": "Operator"
             }
+        },
+        "predicted_failure": {
+            "title": "Diese Transaktion wird wahrscheinlich fehlschlagen",
+            "body": "Pera hat sie anhand des neuesten Blocks ausgeführt und sie ist fehlgeschlagen. Wenn du trotzdem signierst, zahlst du möglicherweise trotzdem die Netzwerkgebühr.",
+            "reason": "Grund des Contracts: „{{reason}}“",
+            "acknowledge": "Ich verstehe, dass sie wahrscheinlich fehlschlägt, und möchte trotzdem signieren"
         }
     },
     "site_safety": {
@@ -3554,6 +3645,7 @@
             "raw_transaction": "Rohtransaktion"
         },
         "notice": {
+            "confirming": "Wird bestätigt",
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",
@@ -3591,13 +3683,22 @@
         },
         "record_detail": {
             "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
-            "transaction_id": "Transaktions-ID"
+            "transaction_id": "Transaktions-ID",
+            "quantity": "Menge",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
-            "advanced": "Erweitert",
+            "function": "Funktion",
+            "arguments": "Argumente",
+            "argument_index": "Argument {{index}}",
+            "implementation": "Implementierung",
+            "verified_source": "Benannt nach dem verifizierten Quellcode des Smart Contracts.",
+            "verified_source_proxy": "Dieser Smart Contract ist ein Proxy. Benannt nach dem verifizierten Quellcode des Smart Contracts, an den er weiterleitet.",
+            "lookup_failed": "Pera konnte den Funktionsnamen dieses Smart Contracts nicht abrufen.",
             "unchecked_warning": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du {{domain}} vertraust.",
             "unchecked_warning_no_source": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du der App vertraust, die sie gesendet hat."
         },
@@ -3896,7 +3997,8 @@
             "swap_to_title": "Tauschen zu",
             "search_placeholder": "Nach Name oder ID suchen",
             "no_results_title": "Keine passenden Assets",
-            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
+            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar"
         },
         "configuration": {
             "title": "Tauscheinstellungen",
@@ -3919,6 +4021,12 @@
             "price_impact": "Preisauswirkung",
             "slippage_tolerance": "Slippage-Toleranz",
             "pera_fee": "Pera-Gebühr",
+            "network_fee": "Netzwerkgebühr",
+            "provider_fee": "Anbietergebühr",
+            "route": "Route",
+            "cross_chain_note": "Dein {{asset}} kommt auf {{network}} an, sobald der Anbieter den Tausch abgeschlossen hat. Du kannst ihn auf dem Bildschirm „Tauschen“ verfolgen.",
+            "spend_approval_note": "Du signierst zuerst eine Freigabe für den Betrag dieses Tauschs und danach den Tausch selbst.",
+            "insufficient_network_fee": "Nicht genug {{symbol}}, um die Netzwerkgebühr zu bezahlen.",
             "provider": "Anbieter",
             "minimum_received": "Mindestbetrag erhalten",
             "confirm_swap": "Tausch bestätigen",
@@ -3979,10 +4087,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "Top 5 Tauschpaare",
-            "volume_24h": "Volumen (24H)",
-            "error": "Top-Tauschpaare konnten nicht geladen werden"
+        "tracking": {
+            "started": "Cross-Chain-Swap gesendet",
+            "in_progress": "Läuft. Dein Guthaben ist unterwegs.",
+            "completed": "Abgeschlossen. Dein {{toAsset}} ist angekommen.",
+            "failed": "Der Tausch konnte nicht abgeschlossen werden. Falls dein Guthaben gesendet wurde, gibt der Anbieter es an dein Konto zurück.",
+            "refunded": "Der Tausch wurde erstattet. Dein {{fromAsset}} ist wieder auf deinem Konto.",
+            "expired": "Der Tausch ist abgelaufen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "cancelled": "Der Tausch wurde abgebrochen, bevor er begonnen hat. Falls dein Guthaben dein Konto verlassen hat, kann sich der Status noch bis zu 7 Tage ändern.",
+            "dismiss": "Ausblenden"
+        },
+        "receiving_account": {
+            "title": "Empfangskonto",
+            "label": "Empfangen auf"
         }
     },
     "onramp": {
@@ -4082,7 +4199,6 @@
             "source_amount": "Quellbetrag",
             "destination_amount": "Zielbetrag",
             "network": "Netzwerk",
-            "payment_method": "Zahlungsmethode",
             "created_at": "Erstellt am",
             "exchange_rate": "Effektiver Wechselkurs",
             "to_address": "Zieladresse"
@@ -4099,7 +4215,9 @@
             "in_progress": "In Bearbeitung",
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
-            "cancelled": "Storniert"
+            "cancelled": "Storniert",
+            "expired": "Abgelaufen",
+            "refunded": "Erstattet"
         },
         "history": {
             "filter_all": "Alle",
@@ -4814,10 +4932,26 @@
             "fee_recipient": "Gezahlt an",
             "base_units": "Basiseinheiten"
         },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas-Limit",
+            "max_fee_per_gas": "Max. Gebühr pro Gas",
+            "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
+        },
         "known_contract": {
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",
             "matches_site": "Entspricht {{domain}}"
+        },
+        "simulation": {
+            "title": "Geschätzte Änderungen",
+            "estimate_note": "Geschätzt anhand des neuesten Blocks. Das Ergebnis kann sich ändern, bevor deine Transaktion aufgenommen wird.",
+            "approvals_title": "Genehmigungen",
+            "revoke_title": "Berechtigung zur Nutzung deiner {{asset}} entfernen",
+            "revoke_title_assets": "Berechtigung zur Nutzung deiner Assets entfernen",
+            "no_changes": "Es werden keine Änderungen an deinem Guthaben oder deinen Genehmigungen erwartet.",
+            "unavailable": "Diese Transaktion konnte nicht simuliert werden. Prüfe sie sorgfältig, bevor du signierst."
         }
     }
 }

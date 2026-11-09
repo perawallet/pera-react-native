@@ -63,8 +63,14 @@ export const createChromeDappTransport = ({
             if (!isDappHostRequestMessage(message)) return false
             if (message.provider !== provider) return false
             if (!isTrustedExtensionPageSender(sender, chromeLike)) return false
-            const { origin, hasUserActivation, faviconUrl, returnTo, request } =
-                message
+            const {
+                origin,
+                hasUserActivation,
+                isWalletLocked,
+                faviconUrl,
+                returnTo,
+                request,
+            } = message
             const respond: DappRespond = response =>
                 sendHostResponse(chromeLike, {
                     provider,
@@ -82,6 +88,7 @@ export const createChromeDappTransport = ({
                     {
                         origin,
                         hasUserActivation,
+                        isWalletLocked,
                         ...(faviconUrl ? { faviconUrl } : {}),
                     },
                     request,

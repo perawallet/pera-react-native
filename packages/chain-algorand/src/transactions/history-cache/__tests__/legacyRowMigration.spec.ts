@@ -19,7 +19,6 @@ import {
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     getRowsByChainData,
     getTransactionHistory,
@@ -27,6 +26,7 @@ import {
     setChainDataValue,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 import { algorandHistoryDataOf } from '../../history-data'
 import { flatHistoryItem } from '../../../test-utils/history-item'
 import {
@@ -40,7 +40,7 @@ import { registerAlgorandHistoryCodec } from './register-history-codec'
 const TAG = '0018_drop_transaction_algorand_columns'
 const NETWORK = 'algorand/mainnet'
 const ADDRESS = 'ACCT1'
-const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const migrationsBefore = Object.fromEntries(
     Object.entries(migrations).filter(([tag]) => tag < TAG),

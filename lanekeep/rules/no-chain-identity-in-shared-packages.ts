@@ -21,7 +21,7 @@ export const CHAIN_IDS = [
     'polygon',
 ] as const
 
-// An app pins the legacy chain at its own call sites, so a chain id literal
+// An app names a chain at its own call sites, so a chain id literal
 // there is fine; branching on one is not.
 const APP_SOURCE = /(^|\/)apps\/[^/]+\/src\//
 
@@ -52,6 +52,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/chain-contract/src/scope.ts',
         text: '(part as Partial<ChainScope>).chainId === chainId',
         reason: "Compares a query key's scope against whichever chain the caller passes, never a named chain.",
+    },
+    {
+        file: 'packages/background/src/service/sync-service.ts',
+        text: 'parseScopeKey(key).chainId === id',
+        reason: 'Matches the scopes of whichever chain just settled a submission, never a named chain.',
     },
     {
         file: 'packages/dapp/src/handler.ts',
@@ -94,6 +99,16 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Checks each account against whichever chain the portfolio chart plots, never a named chain.',
     },
     {
+        file: 'apps/mobile/src/modules/onramp/screens/OnrampScreen/useOnrampScreen.tsx',
+        text: 'scope?.chainId !== routeChainId',
+        reason: "Waits until Fund's scope is on whichever chain the route names, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/onramp/screens/OnrampScreen/useOnrampScreen.tsx',
+        text: 'scope?.chainId === selectedChainId',
+        reason: 'Checks the list in hand belongs to whichever chain the user chose, never a named chain.',
+    },
+    {
         file: 'packages/chain-contract/src/models/domain.ts',
         text: "'algorand'",
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',
@@ -104,9 +119,14 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Drops whichever chain was added most recently, never a named chain.',
     },
     {
-        file: 'packages/accounts/src/credentials/accessors.ts',
-        text: 'scope.chainId !== LEGACY_CHAIN_ID',
-        reason: "The legacy rekey fields it reads are the Algorand chain's; per-chain authority replaces them.",
+        file: 'packages/chain-shared/src/store/legacy-network.ts',
+        text: "'algorand'",
+        reason: "The pre-mode network blobs held only Algorand's selection, and Algorand's override is the one hydrate checks.",
+    },
+    {
+        file: 'packages/assets/src/models/assets.ts',
+        text: "'algorand'",
+        reason: "USDC's known ids are Algorand ASA ids, keyed by Algorand's scope.",
     },
     {
         file: 'packages/signing/src/hooks/usePlannerHook.ts',
@@ -114,14 +134,14 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Picks the caller's chain's planner while every planner's hook still runs; never a named chain.",
     },
     {
-        file: 'packages/onramp/src/token-identity.ts',
-        text: 'rampTokenChainId(token) !== scope.chainId',
-        reason: 'Checks a ramp token lives on whichever scope the caller passes, never a named chain.',
-    },
-    {
         file: 'apps/browser/src/offscreen/connections/connectionsHost.ts',
         text: 'scope.chainId !== request.chainId',
         reason: "Refuses a handed-off send signed for another chain than its own request's; compares two passed values, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/swap/components/SwapForm/useSwapForm.tsx',
+        text: 'pending.chainId !== scope.chainId',
+        reason: 'Holds a resumed amount until the form is on the chain it was entered on; compares two passed values, never a named chain.',
     },
     {
         file: 'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
@@ -137,6 +157,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
         text: 'source.scope.chainId === selectedChainId',
         reason: 'Narrows the asset list to whichever chain the selected chip names, never a named chain.',
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/AccountNfts/useAccountNfts.tsx',
+        text: 'row.scope.chainId === selectedChainId',
+        reason: 'Narrows the NFT gallery to whichever chain the selected chip names, never a named chain.',
     },
     {
         file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
@@ -184,9 +209,24 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Intl.Collator's sensitivity option, not a ChainId.",
     },
     {
+        file: 'apps/mobile/src/modules/dapp/screens/WcConnectScreen/useWcConnectScreen.ts',
+        text: 'chainId === home.chainId',
+        reason: "Asks whether the proposal is on the wallet's home chain, whose network the testnet indicator already names; compares two passed values, never a named chain.",
+    },
+    {
         file: 'apps/mobile/src/modules/gift-card/hooks/useBidaliTransport.ts',
         text: "'algorand'",
         reason: "Bidali's payment-currency code, not a ChainId.",
+    },
+    {
+        file: 'packages/swaps/src/execution/steps.ts',
+        text: 'step.scope.chainId !== chainId',
+        reason: "Keeps an order's steps on whichever chain the caller passes, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/swap/screens/SwapScreen/resolveSwapRouteAssets.ts',
+        text: 'ref.chainId === scope.chainId',
+        reason: "Drops a route asset that isn't on whichever swap scope the caller passes, never a named chain.",
     },
 ]
 

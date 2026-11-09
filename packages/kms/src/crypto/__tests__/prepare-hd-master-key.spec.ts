@@ -12,7 +12,9 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
-import { generateHDMasterKey } from '../hdwallet-utils'
+import { mnemonicToEntropy, mnemonicToSeedSync } from '@scure/bip39'
+import { wordlist } from '@scure/bip39/wordlists/english.js'
+import { entropyToIndices, generateHDMasterKey } from '../hdwallet-utils'
 import { prepareHDMasterKey } from '../prepare-hd-master-key'
 import { mnemonicWordsToIndices } from '../mnemonic-indices'
 
@@ -37,7 +39,42 @@ const USER_MNEMONIC =
     'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'
 const USER_MNEMONIC_INDICES = mnemonicWordsToIndices(USER_MNEMONIC.split(' '))!
 
+const TWELVE_WORD_MNEMONIC =
+    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+
 describe('prepareHDMasterKey', () => {
+    test('derives a 12-word phrase to its 16-byte entropy and the standard BIP-39 root key', async () => {
+        const result = await prepareHDMasterKey({
+            mnemonicIndices: mnemonicWordsToIndices(
+                TWELVE_WORD_MNEMONIC.split(' '),
+            )!,
+        })
+
+        expect(Array.from(result.entropy)).toEqual(
+            Array.from(mnemonicToEntropy(TWELVE_WORD_MNEMONIC, wordlist)),
+        )
+        expect(result.entropy.byteLength).toBe(16)
+        expect(Array.from(result.rootKey)).toEqual(
+            Array.from(fromSeed(mnemonicToSeedSync(TWELVE_WORD_MNEMONIC))),
+        )
+    })
+
+    test('rejects a 12-word phrase with a bad checksum before deriving anything', async () => {
+        const indices = mnemonicWordsToIndices(new Array(12).fill('abandon'))!
+
+        await expect(
+            prepareHDMasterKey({ mnemonicIndices: indices }),
+        ).rejects.toThrow(/checksum/)
+        expect(fromSeed).not.toHaveBeenCalled()
+    })
+
+    test('still mints a 24-word phrase (32-byte entropy) when no mnemonic is given', async () => {
+        const result = await prepareHDMasterKey()
+
+        expect(result.entropy.byteLength).toBe(32)
+        expect(entropyToIndices(result.entropy)).toHaveLength(24)
+    })
+
     test('returns rootKey (96B), entropy (32B), and a stable id when indices provided', async () => {
         const result = await prepareHDMasterKey({
             mnemonicIndices: USER_MNEMONIC_INDICES,

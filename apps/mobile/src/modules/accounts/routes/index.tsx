@@ -20,6 +20,7 @@ import {
     AssetDetailsScreen,
     CollectibleDetailScreen,
 } from '@modules/assets/routes'
+import { HideTokensScreen } from '@modules/accounts/screens/HideTokensScreen'
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
 import { peraCardAccountScreens } from '@modules/card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
@@ -67,6 +68,11 @@ export const AccountStackNavigator = () => {
                 options={{
                     title: '',
                 }}
+            />
+            <AccountStack.Screen
+                name='HideTokens'
+                component={HideTokensScreen}
+                options={{ title: 'hide_tokens.title' }}
             />
             {canManageAssets && (
                 <AccountStack.Screen

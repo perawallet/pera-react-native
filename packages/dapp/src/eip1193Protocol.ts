@@ -25,6 +25,8 @@ export const EIP1193_METHOD = {
     switchChain: 'wallet_switchEthereumChain',
     addChain: 'wallet_addEthereumChain',
     revokePermissions: 'wallet_revokePermissions',
+    getPermissions: 'wallet_getPermissions',
+    requestPermissions: 'wallet_requestPermissions',
     sendTransaction: 'eth_sendTransaction',
     personalSign: 'personal_sign',
     signTypedDataV4: 'eth_signTypedData_v4',
@@ -75,8 +77,8 @@ export const EIP1193_ERROR_CODE = {
     internal: -32_603,
 } as const
 
-/** What the user grants at connect, as the approval and Connections settings list it. */
+/** What the user grants at connect: reading accounts plus everything a connected site may queue for approval. */
 export const EIP1193_PERMISSION_METHODS: readonly string[] = [
     EIP1193_METHOD.accounts,
-    EIP1193_METHOD.switchChain,
+    ...EIP1193_QUEUED_METHODS,
 ]

@@ -52,7 +52,8 @@
         "title": "Varlıkları yönet",
         "sort": "Sırala",
         "filter": "Filtrele",
-        "remove_assets": "Varlıkları kaldır"
+        "hide_tokens": "Tokenları gizle",
+        "remove_assets": "Algorand varlıklarını kaldır"
     },
     "age_gate": {
         "loading": {
@@ -73,11 +74,11 @@
     "app": {
         "initialization_failed": {
             "title": "Uygulama başlatılamadı",
-            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların Algorand blok zincirinde güvende.",
+            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların blok zincirinde güvende.",
             "retry": "Tekrar dene",
             "keystore": {
                 "title": "Cüzdan verisi hatası",
-                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların Algorand blok zincirinde güvende."
+                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların blok zincirinde güvende."
             }
         }
     },
@@ -95,7 +96,9 @@
         "display_nfts": "NFT’leri varlık listesinde göster",
         "display_nfts_description": "NFT varlıkları hesabının varlık listesinde gösterilecek",
         "display_opted_in_nfts": "Opt-in olduğun NFT’leri göster",
-        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin"
+        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin",
+        "show_suspicious": "Şüpheli varlıkları göster",
+        "show_suspicious_description": "Pera’nın olası spam veya dolandırıcılık olarak işaretlediği token’ları gösterir. Bakiyene asla dahil edilmezler"
     },
     "add_asset": {
         "title": "Varlık ekle",
@@ -128,6 +131,7 @@
         },
         "collectible_title": "NFT’ye opt-in ol",
         "collectible_note": "NFT’yi cüzdanına aktarabilmek için NFT’nin ASA ID’sine opt-in olman gerekir. ASA ID’sini arama çubuğuna yapıştır.",
+        "collectible_note_multichain": "Algorand NFT’lerinin sana gönderilebilmesi için önce opt-in olman gerekir. NFT’nin ASA ID’sini arama çubuğuna yapıştır. Her opt-in bir işlem ücretine mal olur ve hesabının minimum bakiyesini 0,1 ALGO artırır. Ethereum gibi diğer ağlardaki NFT’ler için opt-in gerekmez.",
         "collectible_search_placeholder": "Varlık ID’si veya NFT adı ara",
         "token": {
             "added_title": "Token eklendi",
@@ -170,11 +174,29 @@
         "opt_out_cta": "Opt-out"
     },
     "remove_assets": {
-        "title": "Varlıkları kaldır",
+        "title": "Algorand varlıklarını kaldır",
         "select_all": "Tümünü seç",
         "deselect_all": "Seçimi kaldır",
         "empty_title": "Kaldırılabilir varlık yok",
-        "empty_body": "Yalnızca bakiyesi sıfır olan ve senin oluşturmadığın varlıklar kaldırılabilir."
+        "empty_body": "Yalnızca bakiyesi sıfır olan ve senin oluşturmadığın Algorand varlıkları kaldırılabilir. Birini kaldırmak, hesabını o varlıktan bir işlemle çıkarır."
+    },
+    "hide_tokens": {
+        "title": "Tokenları gizle",
+        "tokens_section": "Tokenlar",
+        "hidden_section": "Gizli tokenlar",
+        "empty_title": "Gizlenecek token yok",
+        "empty_body": "Bu hesapta gizlenebilecek token yok."
+    },
+    "token_visibility": {
+        "hide": "Tokenı gizle",
+        "unhide": "Tokenı göster",
+        "hide_action": "Gizle",
+        "unhide_action": "Göster",
+        "hidden_toast_title": "{{assetName}} gizlendi",
+        "hidden_toast_body": "Varlıklarında görünmez ve bakiyene dahil edilmez. Varlıkları yönet > Tokenları gizle bölümünden yeniden gösterebilirsin.",
+        "hidden_swipe_toast_body": "Geri almak için dokun. Varlıklarında görünmez ve bakiyene dahil edilmez.",
+        "shown_toast_title": "{{assetName}} gösterildi",
+        "filtered_note": "Pera bu tokenı şüpheli olarak işaretledi, bu yüzden varlıklarında görünmez. Varlık filtrelerindeki “Şüpheli varlıkları göster” ile listeleyebilirsin."
     },
     "deeplink": {
         "error": {
@@ -193,6 +215,8 @@
             "body_network_mismatch": "Bu bağlantıyı açmak için {{network}} ağına geç.",
             "title_no_account": "Bu bağlantı için hesap yok",
             "body_no_account": "{{chain}} hesabın yok.",
+            "title_name_not_found": "İsim bulunamadı",
+            "body_name_not_found": "{{chain}} üzerinde {{name}} için adres yok.",
             "title_unsupported": "Bağlantı desteklenmiyor",
             "body_unsupported_on_chain": "Pera bu bağlantıyı {{chain}} ağında açamıyor.",
             "title_recover": "Hesap içe aktarılamadı",
@@ -208,7 +232,7 @@
     "address_actions": {
         "title": "Taranan hesap adresi",
         "send_transaction": "İşlem gönder",
-        "send_transaction_subtitle": "Bu adrese ALGO veya varlık gönder",
+        "send_transaction_subtitle": "Bu adrese varlık gönder",
         "watch_address": "Bir adresi izle",
         "watch_address_subtitle": "Yalnızca izleme hesabı olarak ekle",
         "add_contact": "Yeni kişi ekle",
@@ -228,11 +252,12 @@
         "no_accounts_found": "Hesap bulunamadı",
         "no_accounts_body": "Eşleşen hesap yok",
         "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
-        "search_placeholder_evm": "0x adresi veya hesap adı",
+        "search_placeholder_evm": "0x adresi, ENS adı veya hesap adı",
         "search_placeholder_neutral": "Adres veya hesap adı",
         "nfd_results": "NFDomains",
-        "nfd_resolving": "NFD çözümleniyor...",
-        "nfd_resolved": "{{name}} üzerinden çözümlendi",
+        "ens_results": "ENS",
+        "name_resolving": "İsim çözümleniyor...",
+        "name_resolved": "{{name}} üzerinden çözümlendi",
         "wrong_network": {
             "title": {
                 "algorand": "Bu bir Algorand adresi",
@@ -265,7 +290,8 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)"
+        "deleted_label": "(Silindi)",
+        "unverified_label": "Doğrulanmamış"
     },
     "asset_details": {
         "about": {
@@ -276,7 +302,13 @@
             "asa_url": "ASA URL",
             "show_on": "Şurada göster",
             "project_website": "Proje web sitesi",
-            "open_browser": "Tarayıcıda aç"
+            "open_browser": "Tarayıcıda aç",
+            "native_description": {
+                "ether": "Ether (ETH), Ethereum ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır. Base ve Arbitrum gibi katman 2 ağları da ETH kullanır.",
+                "bnb": "BNB, BNB Chain ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır.",
+                "avax": "AVAX, Avalanche ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır.",
+                "pol": "POL, Polygon ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır."
+            }
         },
         "main_screen": {
             "holdings_tab": "Varlıklar",
@@ -352,6 +384,11 @@
             "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
         },
+        "token_warning": {
+            "unverified_title": "Doğrulanmamış token",
+            "suspicious_title": "Şüpheli token",
+            "body": "Pera bu tokenı doğrulamadı. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
+        },
         "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
     },
     "accounts": {
@@ -385,9 +422,15 @@
             "search_placeholder": "NFT ara",
             "empty_title": "NFT’ler",
             "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
+            "empty_body_multichain": "NFT galerine hoş geldin!\nHenüz hiç NFT’n yok. Ethereum gibi ağlarda aldığın NFT’ler burada kendiliğinden görünür. Algorand NFT’leri için önce opt-in olman gerekir.",
             "empty_optin": "NFT ekle",
+            "empty_optin_algorand": "Algorand NFT’sine opt-in ol",
             "nomatch_title": "Eşleşen NFT yok",
             "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
+            "network_empty_title": "NFT yok",
+            "network_empty_body": "{{chain}} ağında hiç NFT’n yok.",
+            "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
+            "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Yönet",
@@ -399,6 +442,8 @@
             "filter_opted_in_description": "Sahibi olmadığın hâlde opt-in olduğun NFT’leri gösterebilir veya gizleyebilirsin",
             "filter_watch_accounts": "İzleme hesaplarındaki NFT’leri göster",
             "filter_watch_accounts_description": "Bu, kendi hesaplarının yanı sıra izleme hesaplarındaki NFT’leri de gösterir",
+            "filter_suspicious": "Şüpheli NFT’leri göster",
+            "filter_suspicious_description": "Bu, Pera’nın olası spam veya dolandırıcılık olarak işaretlediği NFT’leri de gösterir",
             "sort_title_asc": "Ad (A-Z)",
             "sort_title_desc": "Ad (Z-A)",
             "sort_newest_first": "Yeniden eskiye",
@@ -425,7 +470,7 @@
         },
         "no_balance": {
             "welcome": "Pera’ya hoş geldin!",
-            "get_started": "Başlamak için ALGO yatır",
+            "get_started": "Başlamak için kripto yatır",
             "buy": "Kripto satın al",
             "receive": "Al",
             "more": "Daha fazla"
@@ -489,11 +534,13 @@
         "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
         "account_number": "Hesap #{{number}}",
+        "name_taken": "Bu isimde bir hesabın zaten var. Birbirinden ayırt edebilmek için farklı bir isim seç.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
         "type_watch": "İzleme hesabı",
         "type_ledger": "Ledger hesabı",
         "type_multisig": "Paylaşılan hesap",
+        "type_multisig_signers": "Paylaşılan · {{threshold}}/{{total}} imzalayan",
         "type_quantum": "Quantum hesabı",
         "type_rekeyed": "Rekey yapılmış hesap",
         "type_rekeyed_signer": "Rekey yapıldı ({{to}} imzalıyor)",
@@ -1056,12 +1103,15 @@
         "wealth_chart": {
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
-            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor"
+            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "currency_unavailable_body": "Bu grafik şu anda {{currency}} para biriminde kullanılamıyor"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",
             "reload": "Yeniden yükle",
             "failed_body": "Bu sayfa yüklenirken bir hata oluştu. Lütfen internet bağlantını kontrol et ve tekrar dene.",
+            "unavailable_title": "Bu sayfa şu anda kullanılamıyor",
+            "unavailable_body": "Lütfen birazdan tekrar dene.",
             "offline_title": "Çevrimdışısın",
             "offline_body": "Bu sayfa internet bağlantısı olmadan yüklenemez. Yeniden çevrimiçi olduğunda kendiliğinden yüklenecek.",
             "unknown_host": "Bilinmeyen site"
@@ -1105,6 +1155,7 @@
             "no_contact_title": "Kişi bulunamadı",
             "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
             "nfd_label": "NFDomain",
+            "ens_label": "ENS",
             "view_in_explorer": "Explorer’da görüntüle",
             "copy": "Adresi kopyala",
             "show_qr": "QR kodunu göster",
@@ -1212,6 +1263,14 @@
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
+            },
+            "timeout": {
+                "title": "Ağ yanıt vermedi",
+                "body": "Ağ zamanında yanıt vermedi. Tekrar dene."
+            },
+            "network_unreachable": {
+                "title": "Ağa ulaşılamıyor",
+                "body": "Ağa bağlanılamadı. Bağlantını kontrol et veya biraz sonra tekrar dene."
             },
             "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan.",
             "replaced_transaction_confirmed": {
@@ -2095,7 +2154,6 @@
             "finish_button": "Hesap oluşturmayı tamamla",
             "creating": "Paylaşılan hesap oluşturuluyor...",
             "error_title": "Hesap oluşturulamadı",
-            "error_name_taken": "Bu isimde bir hesap zaten var.",
             "duplicate_account_title": "Hesap zaten eklenmiş",
             "duplicate_account_body": "Bu katılımcılara ve bu eşiğe sahip bir paylaşılan hesap cüzdanında zaten var."
         },
@@ -2242,6 +2300,10 @@
             "quantum": {
                 "title": "Quantum hesabı",
                 "description": "Algorand üzerinde doğal olarak güvence altına alınan Falcon-1024 imzaları"
+            },
+            "twelve_word": {
+                "title": "12 kelimelik passphrase",
+                "description": "12 kelimelik kurtarma passphrase’i kullanan başka bir cüzdandan içe aktar"
             }
         },
         "import_info": {
@@ -2253,10 +2315,12 @@
             "title": "Kurtarma passphrase’ini gir",
             "quantum_title": "Quantum passphrase’ini gir",
             "quantum_info_note": "Normal bir Algorand hesabına ait 25 kelimelik passphrase bir Quantum hesabı değildir ve buradan içe aktarılamaz.",
+            "twelve_word_info_note": "Algorand Secure Backup kurtarma anahtarı bir kurtarma passphrase’i değildir ve burada hesapları kurtarmaz. Bir yedeği geri yüklemek için “Algorand Secure Backup’tan kurtar” seçeneğini kullan.",
             "importing": "Cüzdan içe aktarılıyor...",
             "button": "Kurtar",
             "failed_title": "İçe aktarma başarısız",
             "failed_body": "Cüzdanın içe aktarılırken bir hata oluştu",
+            "failed_networks_body": "Şu ağlar kontrol edilemedi: {{networks}}. Bağlantını kontrol edip tekrar dene.",
             "duplicate_account_title": "Hesap zaten eklenmiş",
             "duplicate_account_body": "Bu hesap cüzdanında zaten var.",
             "invalid_mnemonic_title": "Geçersiz passphrase",
@@ -2285,6 +2349,7 @@
             "cancel": "İptal",
             "network_checking": "Kontrol ediliyor",
             "network_failed": "Kontrol edilemedi",
+            "network_unavailable": "Kullanılamıyor",
             "checked_accounts_one": "{{count}} hesap kontrol edildi",
             "checked_accounts_other": "{{count}} hesap kontrol edildi",
             "new_found_one": "{{count}} yeni hesap bulundu",
@@ -2347,14 +2412,21 @@
             "select_all": "Tümünü seç",
             "already_imported": "zaten içe aktarıldı",
             "import_button": "Hesapları içe aktar",
+            "go_to_wallet": "Cüzdana git",
             "total_value": "Toplam <0/>",
             "all_imported_title": "Zaten cüzdanında",
-            "all_imported_body": "Bu cüzdanın türettiği tüm adresler zaten Pera’da — yalnızca izlediklerin dahil. Bir adresi özel anahtarıyla yeniden eklemek için önce onu kaldır."
+            "all_imported_body": "Bu cüzdandaki tüm hesaplar zaten Pera’da. Biri izleme hesabı olarak eklendiyse önce onu kaldır, ardından tam erişimle eklemek için yeniden içe aktar.",
+            "unchecked_networks_title": "Kontrol edilemeyen ağlar: {{networks}}",
+            "unchecked_networks_body": "Diğer ağlardaki hesaplar listelendi. Yeni hesapları daha sonra yeniden tarayabilirsin.",
+            "retry_networks": "Yeniden kontrol et: {{networks}}"
         },
         "import_rekeyed_addresses": {
-            "title": "{{count}} rekey yapılmış hesap bulundu",
-            "description_line_1": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
-            "description_line_2": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
+            "title_one": "{{count}} rekey yapılmış hesap bulundu",
+            "title_other": "{{count}} rekey yapılmış hesap bulundu",
+            "description_line_1_one": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_1_other": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_2_one": "Cüzdanına eklemek istediğin rekey yapılmış hesabı seç:",
+            "description_line_2_other": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
             "already_imported": "zaten içe aktarıldı",
             "continue": "Eklenecek hesapları seç",
             "skip": "Şimdilik atla",
@@ -2418,7 +2490,7 @@
             "recover_passphrase_title": "Passphrase ile kurtar",
             "recover_passphrase_description": "Passphrase kullanarak bir cüzdanı kurtar",
             "recover_qr_title": "QR kod ile kurtar",
-            "recover_qr_description": "QR kod kullanarak bir Algorand cüzdanını kurtar",
+            "recover_qr_description": "QR kod kullanarak bir cüzdanı kurtar",
             "private_key_title": "Özel anahtarı içe aktar",
             "private_key_description": "Özel anahtarından bir hesap ekleyin",
             "pair_ledger_title": "Ledger ile eşleştir",
@@ -2893,7 +2965,7 @@
         "empty_prompt_body": "Hesaplarında, kişilerinde ve varlıklarında ara",
         "show_more": "{{count}} tane daha göster",
         "no_results_title": "Sonuç yok",
-        "no_results_body": "Farklı bir arama terimi dene",
+        "no_results_body": "Hesap adı, adres veya ağa göre aramayı dene",
         "sections": {
             "accounts": "Hesaplar",
             "contacts": "Kişiler",
@@ -2903,7 +2975,8 @@
             "title": "Arama seçenekleri",
             "accounts": "Hesapları dahil et",
             "contacts": "Kişileri dahil et",
-            "assets": "Varlıkları dahil et"
+            "assets": "Varlıkları dahil et",
+            "network": "Ağ"
         }
     },
     "security": {
@@ -3013,6 +3086,10 @@
             "nfd_mismatch_body": "{{name}} için NFD sözleşmesi bu adresi listelemiyor. Güveniyorsan adresi doğrudan yapıştır.",
             "nfd_unavailable_title": "{{name}} doğrulanamadı",
             "nfd_unavailable_body": "Bu adı kontrol etmek için NFD kaydına ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır.",
+            "ens_mismatch_title": "Ad zincirdekiyle eşleşmiyor",
+            "ens_mismatch_body": "ENS, {{name}} adını bu ağda bu adrese yönlendirmiyor. Güveniyorsan adresi doğrudan yapıştır.",
+            "ens_unavailable_title": "{{name}} doğrulanamadı",
+            "ens_unavailable_body": "Bu adı kontrol etmek için ENS'e ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır.",
             "invalid_address_title": "Geçersiz adres",
             "invalid_address_body": "Bu, geçerli bir {{chain}} adresi değil."
         },
@@ -3064,7 +3141,7 @@
         },
         "processing": {
             "title": "İşlem gönderiliyor",
-            "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
+            "subtitle": "İşlemin {{network}} ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
             "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
             "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
@@ -3073,7 +3150,7 @@
         "success": {
             "title": "İşlem gerçekleşti",
             "asset_transferred_title": "Varlık transfer edildi",
-            "subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "subtitle": "İşlemin {{network}} ağı tarafından başarıyla alındı",
             "pending_title": "İşlem gönderildi",
             "pending_subtitle": "İşlemin {{network}} ağına gönderildi ve onay bekliyor.",
             "view_in_explorer": "İşlem detayını Pera Explorer’da gör",
@@ -3398,7 +3475,15 @@
             "spender_label": "Yetkili adres",
             "unlimited": "Sınırsız",
             "deadline_label": "Son tarih",
-            "never": "Hiçbir zaman"
+            "never": "Hiçbir zaman",
+            "known_title": "Bu onay hakkında",
+            "known_description": "{{name}} bilinen bir sözleşme",
+            "known_spend_note": "{{name}} bilinen bir sözleşme. Bu tokeni yalnızca onayladığın bir işlem veya imza kapsamında hareket ettirebilir.",
+            "known_unlimited_note": "Tutar sınırsız, bu yüzden bu token için {{name}} sözleşmesine tekrar onay vermen gerekmez.",
+            "allow_title": "{{spender}} sözleşmesinin {{asset}} bakiyeni kullanmasına izin ver",
+            "allow_title_assets": "{{spender}} sözleşmesinin varlıklarını kullanmasına izin ver",
+            "allow_title_unknown": "Başka bir adresin {{asset}} bakiyeni kullanmasına izin ver",
+            "allow_title_unknown_assets": "Başka bir adresin varlıklarını kullanmasına izin ver"
         },
         "collection_approval": {
             "warning": "Bu, operatörün bu koleksiyonda sahip olduğun tüm öğeleri, sonradan alacakların dahil, iptal edene kadar transfer etmesine izin verir.",
@@ -3510,6 +3595,12 @@
                 "spender": "Yetkili adres",
                 "operator": "Operatör"
             }
+        },
+        "predicted_failure": {
+            "title": "Bu işlem büyük olasılıkla başarısız olacak",
+            "body": "Pera işlemi en son blokta çalıştırdı ve başarısız oldu. Yine de imzalarsan ağ ücretini ödeyebilirsin.",
+            "reason": "Sözleşmenin gerekçesi: “{{reason}}”",
+            "acknowledge": "Büyük olasılıkla başarısız olacağını anlıyorum ve yine de imzalamak istiyorum"
         }
     },
     "site_safety": {
@@ -3562,6 +3653,7 @@
             "raw_transaction": "Ham işlem"
         },
         "notice": {
+            "confirming": "Onaylanıyor",
             "pending": "Beklemede, başlangıç zamanı: {{since}}",
             "failed": "Başarısız",
             "replaced": "Başka bir işlemle değiştirildi",
@@ -3599,13 +3691,22 @@
         },
         "record_detail": {
             "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
-            "transaction_id": "İşlem Kimliği"
+            "transaction_id": "İşlem Kimliği",
+            "quantity": "Adet",
+            "nft_collection": "{{collection}} · {{standard}}",
+            "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
-            "advanced": "Gelişmiş",
+            "function": "Fonksiyon",
+            "arguments": "Argümanlar",
+            "argument_index": "Argüman {{index}}",
+            "implementation": "Uygulama sözleşmesi",
+            "verified_source": "Ad, sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "verified_source_proxy": "Bu sözleşme bir proxy. Ad, yönlendirdiği sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "lookup_failed": "Pera bu sözleşmenin fonksiyon adını sorgulayamadı.",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },
@@ -3904,7 +4005,8 @@
             "swap_to_title": "Hedef varlık",
             "search_placeholder": "Ada veya ID’ye göre ara",
             "no_results_title": "Eşleşen varlık yok",
-            "no_results_body": "Arama terimine uyan varlık bulunamadı"
+            "no_results_body": "Arama terimine uyan varlık bulunamadı",
+            "no_chain_results_body": "Bu ağda kullanılabilir varlık yok"
         },
         "configuration": {
             "title": "Swap ayarları",
@@ -3927,6 +4029,12 @@
             "price_impact": "Fiyat etkisi",
             "slippage_tolerance": "Kayma toleransı",
             "pera_fee": "Pera ücreti",
+            "network_fee": "Ağ ücreti",
+            "provider_fee": "Sağlayıcı ücreti",
+            "route": "Rota",
+            "cross_chain_note": "Sağlayıcı swap işlemini tamamladığında {{asset}} varlığın {{network}} ağına ulaşır. İşlemi Swap ekranından takip edebilirsin.",
+            "spend_approval_note": "Önce bu swap tutarı için bir onay, ardından swap işlemini imzalayacaksın.",
+            "insufficient_network_fee": "Ağ ücretini ödemek için yeterli {{symbol}} yok.",
             "provider": "Sağlayıcı",
             "minimum_received": "Minimum alınacak miktar",
             "confirm_swap": "Swap’ı onayla",
@@ -3987,10 +4095,19 @@
                 }
             }
         },
-        "top_pairs": {
-            "title": "En popüler 5 swap",
-            "volume_24h": "Hacim (24s)",
-            "error": "En popüler swap’lar yüklenemedi"
+        "tracking": {
+            "started": "Zincirler arası swap gönderildi",
+            "in_progress": "Devam ediyor. Varlıkların yolda.",
+            "completed": "Tamamlandı. {{toAsset}} varlığın hesabına ulaştı.",
+            "failed": "Swap tamamlanamadı. Varlıkların gönderildiyse sağlayıcı onları hesabına iade edecek.",
+            "refunded": "Swap iade edildi. {{fromAsset}} varlığın hesabına geri döndü.",
+            "expired": "Swap başlamadan süresi doldu. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
+            "cancelled": "Swap başlamadan iptal edildi. Varlıkların hesabından çıktıysa durum 7 güne kadar değişebilir.",
+            "dismiss": "Kapat"
+        },
+        "receiving_account": {
+            "title": "Alıcı hesap",
+            "label": "Alınacak hesap"
         }
     },
     "onramp": {
@@ -4090,7 +4207,6 @@
             "source_amount": "Kaynak miktarı",
             "destination_amount": "Hedef miktarı",
             "network": "Ağ",
-            "payment_method": "Ödeme yöntemi",
             "created_at": "Oluşturulma tarihi",
             "exchange_rate": "Gerçekleşen kur",
             "to_address": "Alıcı adresi"
@@ -4107,7 +4223,9 @@
             "in_progress": "Devam ediyor",
             "completed": "Tamamlandı",
             "failed": "Başarısız",
-            "cancelled": "İptal edildi"
+            "cancelled": "İptal edildi",
+            "expired": "Süresi doldu",
+            "refunded": "İade edildi"
         },
         "history": {
             "filter_all": "Tümü",
@@ -4814,10 +4932,26 @@
             "fee_recipient": "Alıcı",
             "base_units": "temel birim"
         },
+        "pricing": {
+            "gwei": "Gwei",
+            "nonce": "Nonce",
+            "gas_limit": "Gas limiti",
+            "max_fee_per_gas": "Gas başına maks. ücret",
+            "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
+        },
         "known_contract": {
             "title": "Sözleşme",
             "verified": "Doğrulanmış sözleşme",
             "matches_site": "{{domain}} ile eşleşiyor"
+        },
+        "simulation": {
+            "title": "Tahmini değişiklikler",
+            "estimate_note": "En son bloka göre tahmin edildi. Sonuç, işlemin dahil edilmesinden önce değişebilir.",
+            "approvals_title": "Onaylar",
+            "revoke_title": "{{asset}} varlığını kullanma iznini kaldır",
+            "revoke_title_assets": "Varlıklarını kullanma iznini kaldır",
+            "no_changes": "Bakiyelerinde veya onaylarında bir değişiklik beklenmiyor.",
+            "unavailable": "Bu işlem simüle edilemedi. İmzalamadan önce dikkatlice incele."
         }
     }
 }

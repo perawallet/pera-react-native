@@ -12,56 +12,73 @@
 
 import { useMemo, useState } from 'react'
 import {
+    assetFromHoldingLiteRow,
+    chainAccountOf,
+    useAccountAssetsQuery,
     useAllAccounts,
-    useOwnedAssets,
+    useRegisteredChainIds,
+    useWalletHoldingSources,
+    type AccountHoldingSource,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    toScopeKey,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     SEARCH_SCOPES,
+    type AccountSearchResult,
+    type AssetSearchResult,
     type GlobalSearchResults,
     type SearchScope,
 } from '../models'
+import { matchAccount, type SearchableChain } from '../utils/matchAccount'
 
 const DEFAULT_DEBOUNCE_MS = 300
 
-// Search spans every chain the account is on, so a query matches any of its addresses.
+// The sort key falls back to the first address, whichever chain it is on.
 const addressesOf = (account: WalletAccount): string[] =>
     Object.values(account.chains).flatMap(entry => entry?.address ?? [])
 
 const sortKeyOf = (account: WalletAccount): string =>
     account.name ?? addressesOf(account)[0] ?? ''
 
-// Search reaches chain scopes only through accounts, so it borrows that type.
-type ChainScope = Parameters<typeof useOwnedAssets>[0]
+const compare = (a: string, b: string) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
 
 export type UseGlobalSearchOptions = {
     debounceMs?: number
     /** Which result types to search. Defaults to all three scopes. */
     scopes?: readonly SearchScope[]
-    /** Predicate applied to the local owned-assets set before substring
-     *  matching. Useful to narrow to collectibles for NFT search. */
-    assetFilter?: (asset: PeraAsset) => boolean
+    /** Narrows every result type to this network. */
+    chainId?: ChainId
 }
 
 export type UseGlobalSearchResult = {
     value: string
     setValue: (text: string) => void
+    /** The debounced term the results matched. */
+    query: string
     results: GlobalSearchResults
     hasResults: boolean
     isLoading: boolean
+    /** The registered chains any account has an entry on, in registry order. */
+    chainIds: ChainId[]
 }
 
 export const useGlobalSearch = (
-    chainScope: ChainScope,
     options?: UseGlobalSearchOptions,
 ): UseGlobalSearchResult => {
     const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS
     const scopes = options?.scopes ?? SEARCH_SCOPES
-    const assetFilter = options?.assetFilter
+    const filterChainId = options?.chainId
 
     const includesAccounts = scopes.includes('accounts')
     const includesContacts = scopes.includes('contacts')
@@ -73,57 +90,98 @@ export const useGlobalSearch = (
 
     const accounts = useAllAccounts()
     const { findContacts } = useContacts()
+    const registeredChainIds = useRegisteredChainIds()
 
-    const { assets: allOwnedAssets, isLoading: isOwnedAssetsLoading } =
-        useOwnedAssets(chainScope, { enabled: includesAssets })
+    const chains = useMemo<SearchableChain[]>(
+        () =>
+            registeredChainIds.map(id => ({
+                id,
+                displayName: chainDisplayNameOf(id) ?? id,
+            })),
+        [registeredChainIds],
+    )
 
-    const ownedAssets = useMemo<PeraAsset[]>(() => {
-        if (!includesAssets) return []
-        if (!assetFilter) return allOwnedAssets
-        return allOwnedAssets.filter(assetFilter)
-    }, [includesAssets, allOwnedAssets, assetFilter])
+    const chainIds = useMemo(
+        () =>
+            registeredChainIds.filter(chainId =>
+                accounts.some(
+                    account => chainAccountOf(account, chainId) !== undefined,
+                ),
+            ),
+        [registeredChainIds, accounts],
+    )
+
+    const walletSources = useWalletHoldingSources()
+    const sources = useMemo(() => {
+        if (!filterChainId) return walletSources
+        const byChain = new Map<ChainId, AccountHoldingSource[]>()
+        for (const source of walletSources) {
+            const { chainId } = source.scope
+            byChain.set(chainId, [...(byChain.get(chainId) ?? []), source])
+        }
+        return byChain.get(filterChainId) ?? []
+    }, [walletSources, filterChainId])
+    const {
+        holdings,
+        isPending: isHoldingsPending,
+        isPlaceholderData: isHoldingsPlaceholder,
+    } = useAccountAssetsQuery(sources, {
+        search: debouncedValue,
+        enabled: includesAssets && hasQuery,
+    })
+    // The read keeps the previous term's rows while the new one loads, and they
+    // would pass for results of this term.
+    const isHoldingsStale = includesAssets && hasQuery && isHoldingsPlaceholder
 
     const results = useMemo<GlobalSearchResults>(() => {
         if (!hasQuery) return EMPTY_GLOBAL_SEARCH_RESULTS
 
         const lowered = debouncedValue.toLowerCase()
-        const compare = (a: string, b: string) =>
-            a.localeCompare(b, undefined, { sensitivity: 'base' })
 
-        const matchingAccounts = includesAccounts
+        const matchingAccounts: AccountSearchResult[] = includesAccounts
             ? accounts
-                  .filter(
+                  .flatMap(
                       account =>
-                          addressesOf(account).some(address =>
-                              address.toLowerCase().includes(lowered),
-                          ) || account.name?.toLowerCase().includes(lowered),
+                          matchAccount(
+                              account,
+                              lowered,
+                              chains,
+                              filterChainId,
+                          ) ?? [],
                   )
-                  .slice()
-                  .sort((a, b) => compare(sortKeyOf(a), sortKeyOf(b)))
+                  .sort((a, b) =>
+                      compare(sortKeyOf(a.account), sortKeyOf(b.account)),
+                  )
             : []
 
         const matchingContacts = includesContacts
-            ? findContacts({ keyword: debouncedValue })
+            ? findContacts({
+                  keyword: debouncedValue,
+                  family: filterChainId
+                      ? getChainDescriptor(filterChainId).family
+                      : undefined,
+              })
                   .slice()
                   .sort((a, b) => compare(a.name, b.name))
             : []
 
-        const matchingAssets = includesAssets
-            ? ownedAssets
-                  .filter(
-                      asset =>
-                          asset.name?.toLowerCase().includes(lowered) ||
-                          asset.unitName?.toLowerCase().includes(lowered) ||
-                          asset.assetId.includes(debouncedValue),
-                  )
-                  .slice()
-                  .sort((a, b) =>
-                      compare(
-                          a.name ?? a.unitName ?? a.assetId,
-                          b.name ?? b.unitName ?? b.assetId,
-                      ),
-                  )
-            : []
+        const seen = new Set<string>()
+        const matchingAssets: AssetSearchResult[] = []
+        if (includesAssets && !isHoldingsStale) {
+            for (const row of holdings) {
+                const key = `${toScopeKey(row.scope)}:${row.assetId}`
+                if (seen.has(key)) continue
+                seen.add(key)
+                const asset = assetFromHoldingLiteRow(row, row.scope.chainId)
+                if (asset) matchingAssets.push({ asset, scope: row.scope })
+            }
+            matchingAssets.sort((a, b) =>
+                compare(
+                    a.asset.name ?? a.asset.unitName ?? a.asset.assetId,
+                    b.asset.name ?? b.asset.unitName ?? b.asset.assetId,
+                ),
+            )
+        }
 
         return {
             accounts: matchingAccounts,
@@ -137,8 +195,11 @@ export const useGlobalSearch = (
         includesContacts,
         includesAssets,
         accounts,
+        chains,
+        filterChainId,
         findContacts,
-        ownedAssets,
+        holdings,
+        isHoldingsStale,
     ])
 
     const hasResults =
@@ -146,13 +207,15 @@ export const useGlobalSearch = (
         results.contacts.length > 0 ||
         results.assets.length > 0
 
-    // Filtering is in memory, so the debounce window isn't loading: counting
-    // it would flash the skeleton on every keystroke.
+    // Accounts and contacts filter in memory, so the debounce window isn't
+    // loading: counting it would flash the skeleton on every keystroke.
     return {
         value,
         setValue,
+        query: debouncedValue,
         results,
         hasResults,
-        isLoading: value.length > 0 && isOwnedAssetsLoading,
+        isLoading: value.length > 0 && (isHoldingsPending || isHoldingsStale),
+        chainIds,
     }
 }

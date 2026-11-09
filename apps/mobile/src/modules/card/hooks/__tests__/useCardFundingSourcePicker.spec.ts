@@ -14,6 +14,7 @@ import {
     useAccountChainStateStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -81,9 +82,8 @@ import {
     type AlgorandAccountKind,
 } from '@test-utils/accountCustody'
 import { registerAlgorandCardAdapter } from '@test-utils/cardChainAdapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
-const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 
 const account = (
     address: string,

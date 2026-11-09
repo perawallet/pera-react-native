@@ -29,6 +29,45 @@ export function calculateBackoff(
     return Math.min(currentInterval * multiplier, maxInterval)
 }
 
+/** `intervalMs` is a duration; `nextEligibleAt` is epoch ms from `Date.now()`. */
+export interface Backoff {
+    intervalMs: number
+    nextEligibleAt: number
+}
+
+export type NextBackoffOptions = {
+    firstIntervalMs: number
+    multiplier?: number
+    maxIntervalMs: number
+}
+
+/**
+ * The wait after one more failure: `firstIntervalMs` after the first, then
+ * `multiplier` times the last, capped at `maxIntervalMs`. `startedAtMs` is when
+ * the failed attempt began, so a loop that arms its timer only once an attempt
+ * settles finds a wait of one loop interval due on its next run.
+ */
+export const nextBackoff = (
+    previous: Optional<Backoff>,
+    startedAtMs: number,
+    { firstIntervalMs, multiplier = 2, maxIntervalMs }: NextBackoffOptions,
+): Backoff => {
+    const intervalMs = previous
+        ? calculateBackoff(previous.intervalMs, multiplier, maxIntervalMs)
+        : firstIntervalMs
+    return { intervalMs, nextEligibleAt: startedAtMs + intervalMs }
+}
+
+// A wait longer than the interval itself means the device clock moved back;
+// without this the caller would stall for the whole skew.
+export const isBackoffDue = (
+    backoff: Optional<Backoff>,
+    nowMs: number,
+): boolean =>
+    backoff === undefined ||
+    backoff.nextEligibleAt <= nowMs ||
+    backoff.nextEligibleAt - nowMs > backoff.intervalMs
+
 /**
  * Lets the UI paint (e.g. a spinner) before a heavy synchronous task starts.
  */
@@ -174,5 +213,48 @@ export function withTimeout<T>(
         promise.then(resolve, reject)
     }).finally(() => {
         if (timerId !== undefined) clearTimeout(timerId)
+    })
+}
+
+/** Named `TimeoutError` so the expected-error filter treats a missed deadline as connectivity, not a defect. */
+export const timeoutErrorOf = (operation: string, ms: number): Error => {
+    const error = new Error(`${operation} timed out after ${ms}ms`)
+    error.name = 'TimeoutError'
+    return error
+}
+
+/**
+ * Runs `run` with a signal that aborts when `ms` pass or `outer` aborts, so the
+ * requests it started stop rather than run on after the deadline. A missed
+ * deadline rejects with `timeoutErrorOf`; an `outer` abort rejects with
+ * whatever `run` throws for it.
+ */
+export function withDeadline<T>(
+    run: (signal: AbortSignal) => Promise<T>,
+    ms: number,
+    operation: string,
+    outer?: AbortSignal,
+): Promise<T> {
+    const controller = new AbortController()
+    const abortWithOuter = () => controller.abort(outer?.reason)
+    if (outer?.aborted) abortWithOuter()
+    else outer?.addEventListener('abort', abortWithOuter, { once: true })
+
+    // Reject before aborting, so the deadline's error wins over the abort's.
+    const deadline = new Promise<never>((_, reject) => {
+        const timer = setTimeout(() => {
+            const error = timeoutErrorOf(operation, ms)
+            reject(error)
+            controller.abort(error)
+        }, ms)
+        controller.signal.addEventListener('abort', () => clearTimeout(timer), {
+            once: true,
+        })
+    })
+    const work = run(controller.signal)
+    return Promise.race([work, deadline]).finally(() => {
+        outer?.removeEventListener('abort', abortWithOuter)
+        // Stops the timer once `work` has settled first.
+        controller.abort()
     })
 }

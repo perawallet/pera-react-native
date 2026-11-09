@@ -14,8 +14,16 @@
 
 // @vitest-environment node
 
-import { describe, it, expect } from 'vitest'
-import { getVerificationIcon } from '../verification'
+import { afterEach, beforeEach, describe, it, expect } from 'vitest'
+import type {
+    DisplayableAsset,
+    PeraAssetVerificationTier,
+} from '@perawallet/wallet-core-assets'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
+import { getVerificationIcon, unvettedTierOf } from '../verification'
 
 describe('getVerificationIcon', () => {
     it.each([
@@ -32,5 +40,71 @@ describe('getVerificationIcon', () => {
 
     it('returns null for an unknown tier', () => {
         expect(getVerificationIcon('something-else')).toBeNull()
+    })
+})
+
+describe('unvettedTierOf', () => {
+    const token = (
+        verificationTier: PeraAssetVerificationTier,
+        overrides: Partial<DisplayableAsset> = {},
+    ): DisplayableAsset => ({
+        assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        name: 'Token',
+        peraMetadata: { verificationTier },
+        ...overrides,
+    })
+
+    beforeEach(() => {
+        registerEthereumChain()
+    })
+
+    afterEach(() => {
+        restoreAlgorandOnlyChains()
+    })
+
+    it.each(['unverified', 'suspicious'] as const)(
+        'names the %s tier of a token on a chain where tokens arrive unasked',
+        tier => {
+            expect(unvettedTierOf(token(tier), 'ethereum')).toBe(tier)
+        },
+    )
+
+    it('is null for a verified token', () => {
+        expect(unvettedTierOf(token('verified'), 'ethereum')).toBeNull()
+    })
+
+    it('is null for an asset the user opted in to on Algorand', () => {
+        expect(
+            unvettedTierOf(token('unverified', { assetId: '123' }), 'algorand'),
+        ).toBeNull()
+    })
+
+    it('is null for the native coin and for a collectible', () => {
+        expect(
+            unvettedTierOf(
+                token('unverified', { assetId: 'native' }),
+                'ethereum',
+            ),
+        ).toBeNull()
+        expect(
+            unvettedTierOf(
+                token('unverified', {
+                    peraMetadata: {
+                        verificationTier: 'unverified',
+                        type: 'collectible',
+                    },
+                }),
+                'ethereum',
+            ),
+        ).toBeNull()
+    })
+
+    it('is null for an asset with no metadata yet', () => {
+        expect(
+            unvettedTierOf(
+                token('verified', { peraMetadata: undefined }),
+                'ethereum',
+            ),
+        ).toBeNull()
     })
 })

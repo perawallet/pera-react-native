@@ -14,7 +14,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { PeraAssetType, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
+import type {
+    AccountSearchResult,
+    AssetSearchResult,
+} from '@perawallet/wallet-core-search'
 import { useSearchScreen } from '../useSearchScreen'
 
 const {
@@ -22,6 +30,8 @@ const {
     mockResolveAssetHolderAddress,
     mockSetSelectedAccountId,
     mockSearchResults,
+    mockUseGlobalSearch,
+    mockChainIds,
     mockWindowDimensions,
     HOLDER_ACCOUNT,
 } = vi.hoisted(() => ({
@@ -34,6 +44,8 @@ const {
     mockResolveAssetHolderAddress: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
     mockSearchResults: vi.fn(),
+    mockUseGlobalSearch: vi.fn(),
+    mockChainIds: vi.fn(),
     mockWindowDimensions: vi.fn(),
 }))
 
@@ -59,15 +71,24 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useResolveAssetHolderAddress: () => mockResolveAssetHolderAddress,
 }))
 
+vi.mock('@hooks/useHomeChainScope', () => ({
+    useHomeChainScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
+}))
+
 vi.mock('@perawallet/wallet-core-search', () => ({
     SEARCH_SCOPES: ['accounts', 'contacts', 'assets'],
-    useGlobalSearch: () => ({
-        value: '',
-        setValue: vi.fn(),
-        results: mockSearchResults(),
-        hasResults: false,
-        isLoading: false,
-    }),
+    useGlobalSearch: (options: unknown) => {
+        mockUseGlobalSearch(options)
+        return {
+            value: '',
+            setValue: vi.fn(),
+            query: '',
+            results: mockSearchResults(),
+            hasResults: false,
+            isLoading: false,
+            chainIds: mockChainIds(),
+        }
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
@@ -78,29 +99,34 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: vi.fn() }),
 }))
 
+const ALGO_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+
 const asset = (type?: PeraAssetType): PeraAsset =>
     ({
         assetId: '31566704',
         peraMetadata: type ? { type } : undefined,
     }) as PeraAsset
 
-const assets = (count: number): PeraAsset[] =>
-    Array.from({ length: count }, (_, i) => ({ assetId: `${i}` }) as PeraAsset)
+const assets = (count: number): AssetSearchResult[] =>
+    Array.from({ length: count }, (_, i) => ({
+        asset: { assetId: `${i}` } as PeraAsset,
+        scope: ALGO_SCOPE,
+    }))
 
-const accounts = (count: number): WalletAccount[] =>
-    Array.from(
-        { length: count },
-        (_, i) =>
-            ({
-                id: `account-${i}`,
-                custody: { kind: 'watch' },
-                chains: { algorand: { address: `ADDR${i}` } },
-            }) as WalletAccount,
-    )
+const accounts = (count: number): AccountSearchResult[] =>
+    Array.from({ length: count }, (_, i) => ({
+        account: {
+            id: `account-${i}`,
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: `ADDR${i}` } },
+        } as WalletAccount,
+        chainId: undefined,
+    }))
 
 const setResults = (results: {
-    accounts?: WalletAccount[]
-    assets?: PeraAsset[]
+    accounts?: AccountSearchResult[]
+    assets?: AssetSearchResult[]
 }) => {
     mockSearchResults.mockReturnValue({
         accounts: results.accounts ?? [],
@@ -120,6 +146,7 @@ describe('useSearchScreen', () => {
         mockResolveAssetHolderAddress.mockResolvedValue(null)
         // 560pt / 56pt rows = a 10-row budget.
         mockWindowDimensions.mockReturnValue({ height: 560, fontScale: 1 })
+        mockChainIds.mockReturnValue(['algorand'])
         setResults({})
     })
 
@@ -186,7 +213,10 @@ describe('useSearchScreen', () => {
     it('routes a collectible result to the collectible detail screen', async () => {
         const { result } = renderHook(() => useSearchScreen())
 
-        await result.current.onAssetPress(asset(PeraAssetType.collectible))
+        await result.current.onAssetPress(
+            asset(PeraAssetType.collectible),
+            ALGO_SCOPE,
+        )
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Home',
@@ -200,7 +230,10 @@ describe('useSearchScreen', () => {
     it('routes a fungible result to the asset detail screen', async () => {
         const { result } = renderHook(() => useSearchScreen())
 
-        await result.current.onAssetPress(asset(PeraAssetType.standard_asset))
+        await result.current.onAssetPress(
+            asset(PeraAssetType.standard_asset),
+            ALGO_SCOPE,
+        )
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Home',
@@ -215,9 +248,15 @@ describe('useSearchScreen', () => {
         mockResolveAssetHolderAddress.mockResolvedValue('HOLDER_ADDRESS')
         const { result } = renderHook(() => useSearchScreen())
 
-        await result.current.onAssetPress(asset(PeraAssetType.collectible))
+        await result.current.onAssetPress(
+            asset(PeraAssetType.collectible),
+            ALGO_SCOPE,
+        )
 
-        expect(mockResolveAssetHolderAddress).toHaveBeenCalledWith('31566704')
+        expect(mockResolveAssetHolderAddress).toHaveBeenCalledWith(
+            '31566704',
+            ALGO_SCOPE,
+        )
         expect(mockSetSelectedAccountId).toHaveBeenCalledWith(HOLDER_ACCOUNT.id)
         expect(
             mockSetSelectedAccountId.mock.invocationCallOrder[0],
@@ -227,9 +266,111 @@ describe('useSearchScreen', () => {
     it('leaves the selected account alone when no account holds the asset', async () => {
         const { result } = renderHook(() => useSearchScreen())
 
-        await result.current.onAssetPress(asset(PeraAssetType.standard_asset))
+        await result.current.onAssetPress(
+            asset(PeraAssetType.standard_asset),
+            ALGO_SCOPE,
+        )
 
         expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalled()
+    })
+
+    it('opens an asset result on the network it was found on', async () => {
+        mockResolveAssetHolderAddress.mockResolvedValue(null)
+        const { result } = renderHook(() => useSearchScreen())
+
+        await result.current.onAssetPress(
+            asset(PeraAssetType.standard_asset),
+            ETH_SCOPE,
+        )
+
+        expect(mockResolveAssetHolderAddress).toHaveBeenCalledWith(
+            '31566704',
+            ETH_SCOPE,
+        )
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'AssetDetails',
+                params: { assetId: '31566704', chainId: 'ethereum' },
+            },
+        })
+    })
+
+    it('offers no network chips for a wallet on one network', () => {
+        mockChainIds.mockReturnValue(['algorand'])
+
+        const { result } = renderHook(() => useSearchScreen())
+
+        expect(result.current.chainFilterOptions).toEqual([])
+        expect(result.current.shouldShowAssetNetwork).toBe(false)
+    })
+
+    it('offers All plus a chip per network for a wallet on several', () => {
+        mockChainIds.mockReturnValue(['algorand', 'ethereum'] as ChainId[])
+
+        const { result } = renderHook(() => useSearchScreen())
+
+        expect(
+            result.current.chainFilterOptions.map(option => option.value),
+        ).toEqual([null, 'algorand', 'ethereum'])
+        expect(result.current.shouldShowAssetNetwork).toBe(true)
+    })
+
+    it('searches one network once its chip is selected, and names networks no more', () => {
+        mockChainIds.mockReturnValue(['algorand', 'ethereum'] as ChainId[])
+        const { result } = renderHook(() => useSearchScreen())
+
+        act(() => result.current.setSelectedChainId('ethereum'))
+
+        expect(mockUseGlobalSearch).toHaveBeenLastCalledWith(
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
+        expect(result.current.shouldShowAssetNetwork).toBe(false)
+    })
+
+    it('searches every network again when All is selected', () => {
+        mockChainIds.mockReturnValue(['algorand', 'ethereum'] as ChainId[])
+        const { result } = renderHook(() => useSearchScreen())
+        act(() => result.current.setSelectedChainId('ethereum'))
+
+        act(() => result.current.setSelectedChainId(null))
+
+        expect(mockUseGlobalSearch).toHaveBeenLastCalledWith(
+            expect.objectContaining({ chainId: undefined }),
+        )
+    })
+
+    it('hands an account result its matched chain', () => {
+        mockSearchResults.mockReturnValue({
+            accounts: [{ account: HOLDER_ACCOUNT, chainId: 'ethereum' }],
+            contacts: [],
+            assets: [],
+        })
+
+        const { result } = renderHook(() => useSearchScreen())
+
+        expect(result.current.rows[1]).toMatchObject({
+            type: 'account',
+            chainId: 'ethereum',
+            key: 'account-holder-account',
+        })
+    })
+
+    it('keys an asset row by its network as well as its id', () => {
+        setResults({
+            assets: [
+                { asset: asset(), scope: ALGO_SCOPE },
+                { asset: asset(), scope: ETH_SCOPE },
+            ],
+        })
+
+        const { result } = renderHook(() => useSearchScreen())
+
+        expect(
+            result.current.rows
+                .filter(row => row.type === 'asset')
+                .map(r => r.key),
+        ).toEqual(['asset-algorand-31566704', 'asset-ethereum-31566704'])
     })
 })

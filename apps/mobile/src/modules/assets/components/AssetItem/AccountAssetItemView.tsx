@@ -18,13 +18,8 @@ import {
     type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { type ReactNode } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
@@ -42,10 +37,12 @@ export type AccountAssetItemViewProps = {
     skipFetch?: boolean
     /** Marks a holding-level frozen asset (selection contexts). */
     showFrozenBadge?: boolean
-    /** The holding's chain; the selected Algorand scope when unset. */
-    scope?: ChainScope
+    /** The holding's own chain and network. */
+    scope: ChainScope
     /** Replaces the secondary line under the name, such as the holding's network. */
     subtitle?: ReactNode
+    /** A further line under the secondary one, such as the holding's chain. */
+    footer?: ReactNode
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -56,15 +53,13 @@ export const AccountAssetItemView = ({
     showBalance = true,
     skipFetch = false,
     showFrozenBadge = false,
-    scope: holdingScope,
+    scope,
     subtitle,
+    footer,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
-    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const scope = holdingScope ?? legacyScope
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId(scope)
 
     const { asset, item } = useAccountAssetItemView({
         accountBalance,
@@ -94,15 +89,12 @@ export const AccountAssetItemView = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
-            {/* No unit next to the figure: the row already carries it under the
-                asset name, and a long one squeezed the amount out.
-                ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 asset={asset}
                 chainId={scope.chainId}
                 value={accountBalance.amount}
                 density='compact'
-                showSymbol={isNativeAssetId(accountBalance.assetId)}
+                isUnitShrinkable
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
@@ -123,6 +115,7 @@ export const AccountAssetItemView = ({
             asset={asset}
             chainId={scope.chainId}
             right={showBalance ? balance : undefined}
+            shouldCapRightSlot
             logoUrl={logoUrl}
             iconSize={iconSize}
             showFavorite
@@ -130,6 +123,7 @@ export const AccountAssetItemView = ({
             showFrozenBadge={showFrozenBadge}
             copyableAssetId
             subtitle={subtitle}
+            footer={footer}
             onPress={onPress}
             {...rest}
         />

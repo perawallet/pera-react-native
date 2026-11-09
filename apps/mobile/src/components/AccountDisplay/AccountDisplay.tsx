@@ -58,7 +58,7 @@ export type AccountDisplayProps = {
     showAccountType?: boolean
     /** Shows the account type on the secondary line even for a named account, in place of its address or NFD. */
     alwaysShowAccountType?: boolean
-    /** The chain whose name and address to show; defaults to the legacy chain. */
+    /** The chain whose name and address to show; defaults to the account's first registered chain. */
     chainId?: ChainId
     /** Pins the displayed chain's icon to the avatar's bottom-left corner, clear of the backup badge. */
     showChainBadge?: boolean
@@ -169,7 +169,10 @@ export const AccountDisplay = ({
                     )}
                     {!!avatarBadge && (
                         <PWView
-                            style={styles.avatarBadge}
+                            style={[
+                                styles.avatarBadge,
+                                styles.customAvatarBadge,
+                            ]}
                             testID='account_avatar_badge'
                         >
                             {avatarBadge}

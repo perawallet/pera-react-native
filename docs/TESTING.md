@@ -75,8 +75,9 @@ deliberately takes a `lanekeep-ignore-next-line` with a reason.
 
 ### Coverage
 
-`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions. The
-mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
+`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions.
+`.github/workflows/ci-coverage.yml` enforces the gate nightly on the chain packages it lists, and a
+drop below it turns that run red. The mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
 under `apps/mobile/src/modules/`, `routes/` folders, and the dev-gallery catalogs. Module hooks
 (`use*`) still count, so a gap there is a missing hook test, not a missing render test.
 
@@ -164,7 +165,7 @@ Flow tests live in `apps/mobile/src/__integration__/<flow>.spec.tsx` and run rea
 Zustand stores, real domain hooks and the real KMS keystore. Only the network is mocked (MSW) and the
 platform's native services are swapped for in-memory test implementations.
 
-Four test-only aliases, wired in `vitest.config.ts`. Each stand-in explains itself at the top of
+Test-only aliases, wired in `vitest.config.ts`. Each stand-in explains itself at the top of
 its own file, including what it deliberately does not reproduce; read those rather than trusting a
 summary here.
 
@@ -175,6 +176,12 @@ summary here.
 | `@perawallet/wallet-extension-ledger-react-native*` | `src/test-utils/ledger-extension-stub.ts`   |
 | `crypto` (for its `argon2`)                         | `src/test-utils/node-crypto-with-argon2.ts` |
 | `@react-navigation/native`, `native-stack`          | `src/test-utils/test-navigator.tsx`         |
+
+The platform driver has a second layer. `src/test-utils/mocks/platform.ts`, loaded by
+`vitest.setup.ts`, `vi.mock`s the driver, so a spec gets that factory rather than
+`platform-driver-test.ts`, and a fake added only to the alias target stays invisible. A service a
+flow must drive goes in the factory. A spec that needs the fuller in-memory driver opts in with
+`vi.unmock('@perawallet/wallet-extension-platform-driver')`, as `migration-inbox.spec.tsx` does.
 
 The keystore double is the one to watch: it mirrors the real library's shape rather than an
 approximation, because a drifting double leaves the whole flow suite green against an API the library
@@ -337,6 +344,23 @@ describes, not the test that uses it, so it stays reusable.
 
 Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
 BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI.
+
+### Recorded backend responses
+
+The Pera backend routes the EVM chains call have recorded responses in
+`packages/chain-ethereum/src/__tests__/backend-recordings/`. Each one's `*.contract.spec.ts` parses
+every row strictly with the schema the app uses, so a backend change the app would silently drop fails
+CI. Two routes the app calls have no recording: NFT holdings
+(`/api/v3/evm/{id}/accounts/{addr}/nfts/`) and NFT metadata (`/api/v4/nfts/`). The backend doesn't
+serve either yet, so there is no route test to record from. Add both once it does.
+
+Staging can't be recorded from a laptop or CI: its Cloudflare answers `/api/v3/evm/*` and
+`/api/v4/*` with a 403 HTML page for anything but the app, whatever the token. The recordings come
+instead from the backend's own route tests: run `bun install` in an `algorand-backend` checkout's
+`bun/`, then `node tools/dev/record-backend-responses.mjs <checkout>`. They hold the real routes'
+output over the test suites' fake data. Refresh them when the backend changes one of these routes,
+and never edit them by hand. A new EVM route needs an entry in that script and a contract spec. A
+spec that fails after a refresh means the schema or the backend is wrong, not the recording.
 
 ## On-device benchmarks
 

@@ -12,6 +12,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     buildAccount,
     findAccountByAddressOn,
@@ -32,6 +33,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
+import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 import { useShouldPlayConfetti, useExitAccountFlow } from '@modules/onboarding'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import { getNextSharedAccountName } from '../../utils'
@@ -40,6 +42,7 @@ import type { MultisigStackParamList } from '../../routes/types'
 type UseNameMultisigScreenResult = {
     accountName: string
     isCreating: boolean
+    nameError: Optional<string>
     isFinishDisabled: boolean
     handleNameChange: (value: string) => void
     handleFinish: () => Promise<void>
@@ -72,6 +75,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
+    const { isAccountNameTaken } = useUniqueAccountName()
     const { errorToast } = useToast()
     const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
@@ -90,13 +94,15 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         ),
     )
     const [isCreating, setIsCreating] = useState(false)
+    // Once saved, the new account's own name is in the store; it must not
+    // read as a duplicate while the flow exits.
+    const [isCreated, setIsCreated] = useState(false)
     const { allowProgrammaticNavigation } = useNavigationLock(isCreating)
 
-    // Account names are not required to be unique — multiple accounts may
-    // share a name. The only hard constraint is the account address, checked
-    // in `handleFinish` below.
     const trimmedName = accountName.trim()
-    const isFinishDisabled = isCreating || trimmedName === ''
+    const isNameTaken = !isCreated && isAccountNameTaken(trimmedName)
+    const nameError = isNameTaken ? t('account_info.name_taken') : undefined
+    const isFinishDisabled = isCreating || trimmedName === '' || isNameTaken
 
     const handleNameChange = useCallback((value: string) => {
         setAccountName(value)
@@ -159,7 +165,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
 
             const newAccount = withMultisigParameters(
                 buildAccount({
-                    name: accountName,
+                    name: trimmedName,
                     custody: { kind: 'multisig' },
                     chainId: adapter.chainId,
                     chains: { [adapter.chainId]: { address: multisigAddress } },
@@ -169,6 +175,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             )
 
             setAccounts([...accounts, newAccount])
+            setIsCreated(true)
             setSelectedAccountId(newAccount.id)
             setShouldPlayConfetti(true)
             resetState()
@@ -191,7 +198,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         addresses,
         threshold,
         version,
-        accountName,
+        trimmedName,
         accounts,
         setAccounts,
         createMultisigMutation,
@@ -208,6 +215,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     return {
         accountName,
         isCreating,
+        nameError,
         isFinishDisabled,
         handleNameChange,
         handleFinish,

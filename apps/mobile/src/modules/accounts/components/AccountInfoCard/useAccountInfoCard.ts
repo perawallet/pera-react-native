@@ -20,15 +20,11 @@ import {
     useCapabilityChainResolver,
     useHdSeedGroups,
     useLedgerDeviceGroups,
+    accountChainIdOf,
+    useRegisteredChainIds,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    useSwitchedOffChainIds,
-} from '@perawallet/wallet-core-chain-shared'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
@@ -86,8 +82,8 @@ export const useAccountInfoCard = ({
     const [isExpanded, setIsExpanded] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<Optional<string>>()
 
-    const switchedOff = useSwitchedOffChainIds()
     const isMultichain = useIsMultichain()
+    const registeredChainIds = useRegisteredChainIds()
 
     const { hdSeedGroups } = useHdSeedGroups()
     const { ledgerDeviceGroups } = useLedgerDeviceGroups()
@@ -167,10 +163,9 @@ export const useAccountInfoCard = ({
     const structureRows = useMemo<AccountStructureRow[]>(() => {
         if (!structureGroup) return []
         return structureGroup.accounts.map(member => {
-            const options = accountChainOptions(
-                member,
-                chainId => !switchedOff.includes(chainId),
-            ).filter(option => option.isEnabled && option.address)
+            const options = accountChainOptions(member, () => true).filter(
+                option => option.isEnabled && option.address,
+            )
             const chains = options.map(option => {
                 const displayed = displayChainOption(option)
                 return {
@@ -188,14 +183,15 @@ export const useAccountInfoCard = ({
                 account: member,
                 name: getAccountName(
                     member,
-                    options[0]?.chainId ?? LEGACY_CHAIN_ID,
+                    options[0]?.chainId ??
+                        accountChainIdOf(member, registeredChainIds),
                 ),
                 isViewing,
                 canExpand: !isViewing && chains.length > 0,
                 chains,
             }
         })
-    }, [structureGroup, switchedOff, account.id, getAccountName])
+    }, [structureGroup, account.id, getAccountName, registeredChainIds])
 
     const showStructure = isHDWallet || (isLedger && structureRows.length > 0)
 
@@ -216,7 +212,7 @@ export const useAccountInfoCard = ({
     // Ledger account on no Ledger chain falls back the way the Ledger flow does.
     const scanChainId: ChainId = hardwareDetails
         ? (ledgerChainOf(account) ?? firstLedgerChainId)
-        : LEGACY_CHAIN_ID
+        : accountChainIdOf(account, registeredChainIds)
     let scanLabel = t('account_info.scan_new_addresses')
     if (isHDWallet) {
         scanLabel = t('account_info.scan_new_wallet_accounts')

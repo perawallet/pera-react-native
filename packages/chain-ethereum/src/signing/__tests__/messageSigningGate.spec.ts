@@ -79,11 +79,11 @@ describe('withMessageSigningGate', () => {
         expect(dappRequestFailureOf(refusalOf())).toBe('unsupported-method')
     })
 
-    it('fails closed while the chain kill switch is off', () => {
+    it('still plans while the chain kill switch is off, which only turns off its Pera backend', () => {
         chains.setCapabilityOverrides(() => ({
             chainEnabled: { ethereum: false },
         }))
 
-        expect(dappRequestFailureOf(refusalOf())).toBe('unsupported-method')
+        expect(adapter.plan(request, context)).toHaveLength(1)
     })
 })

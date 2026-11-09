@@ -11,17 +11,21 @@
  */
 
 import {
+    addressCodecs,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     nameServiceChainAdapters,
     type NameServiceChainAdapter,
 } from '../chain-adapter'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 // Shape-only, unlike a real chain's check: these specs cover the name
 // service's plumbing, not address validation.
 export const fakeNameServiceAdapter = (
     overrides: Partial<NameServiceChainAdapter> = {},
 ): NameServiceChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
+    service: 'nfd',
     isValidAddress: address => /^[0-9a-zA-Z]{58}$/.test(address),
     ...overrides,
 })
@@ -32,5 +36,12 @@ export const registerFakeNameServiceAdapter = (
     const adapter = fakeNameServiceAdapter(overrides)
     nameServiceChainAdapters.reset()
     nameServiceChainAdapters.register(adapter)
+    // Case-insensitive, like the EVM and base32 encodings the real codecs compare.
+    addressCodecs.reset()
+    addressCodecs.register({
+        chainId: adapter.chainId,
+        isValid: adapter.isValidAddress,
+        normalize: address => address.toLowerCase(),
+    } as AddressCodec)
     return adapter
 }

@@ -17,14 +17,16 @@ import '../../../i18n'
 import { useNetworkStatusStore } from '@modules/network'
 import { BalanceLineChart } from '../BalanceLineChart'
 
-const { lineChartProps } = vi.hoisted(() => ({
+const { lineChartProps, chart } = vi.hoisted(() => ({
     lineChartProps: { current: null as Record<string, unknown> | null },
+    chart: { throws: false },
 }))
 
 // victory-native renders through Skia, which needs a real canvas surface —
 // stub it and capture the props so these stay behavioral rather than visual.
 vi.mock('victory-native', () => ({
     CartesianChart: (props: Record<string, unknown>) => {
+        if (chart.throws) throw new Error('skia failed to draw')
         lineChartProps.current = props
         return <div data-testid='line-chart'>CartesianChart</div>
     },
@@ -71,6 +73,7 @@ const renderChart = (
 describe('BalanceLineChart', () => {
     beforeEach(() => {
         lineChartProps.current = null
+        chart.throws = false
         useNetworkStatusStore.getState().setHasInternet(true)
     })
 
@@ -161,6 +164,21 @@ describe('BalanceLineChart', () => {
         expect(onRetry).toHaveBeenCalledTimes(1)
     })
 
+    it('keeps the error state up and disables its retry button while the read is asked again', () => {
+        const onRetry = vi.fn()
+        renderChart({
+            isError: true,
+            isRetrying: true,
+            errorBody: 'could not load chart',
+            onRetry,
+        })
+
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(screen.getByText('could not load chart')).toBeTruthy()
+        expect(onRetry).not.toHaveBeenCalled()
+    })
+
     it('renders the offline state instead of the spinner when paused with no data', () => {
         renderChart({ series: undefined, isPending: true, isPaused: true })
 
@@ -231,5 +249,56 @@ describe('BalanceLineChart', () => {
         })
 
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
+    })
+
+    it('says the drawing failed, not the query error body, when the chart throws while a query error body is set', () => {
+        chart.throws = true
+        renderChart({
+            series: [{ balance: 1 }, { balance: 2 }],
+            errorBody: "This chart isn't available in ARS right now",
+        })
+
+        expect(screen.getByText('An error has occurred')).toBeTruthy()
+        expect(
+            screen.queryByText("This chart isn't available in ARS right now"),
+        ).toBeNull()
+    })
+
+    it('draws again, with no Retry, once new points arrive after a throw', () => {
+        chart.throws = true
+        const chartWith = (balances: number[]) => (
+            <BalanceLineChart<SeriesItem>
+                series={balances.map(balance => ({ balance }))}
+                getValue={item => item.balance}
+                getDatetime={() => new Date(0)}
+                onSelectionChanged={vi.fn()}
+                isPending={false}
+                emptyBody={EMPTY_BODY}
+            />
+        )
+        const { rerender } = render(chartWith([1, 2]))
+        expect(screen.getByText('An error has occurred')).toBeTruthy()
+
+        chart.throws = false
+        rerender(chartWith([1, 2]))
+        expect(screen.getByText('An error has occurred')).toBeTruthy()
+        rerender(chartWith([3, 4]))
+
+        expect(screen.getByTestId('line-chart')).toBeTruthy()
+    })
+
+    it('turns a throw while drawing the chart into its error state, and Retry draws it again', () => {
+        const onRetry = vi.fn()
+        chart.throws = true
+        renderChart({ series: [{ balance: 1 }, { balance: 2 }], onRetry })
+
+        expect(screen.getByText('An error has occurred')).toBeTruthy()
+        expect(screen.queryByTestId('line-chart')).toBeNull()
+
+        chart.throws = false
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(onRetry).toHaveBeenCalledTimes(1)
+        expect(screen.getByTestId('line-chart')).toBeTruthy()
     })
 })

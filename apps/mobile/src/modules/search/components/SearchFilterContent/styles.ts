@@ -22,4 +22,8 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         paddingVertical: theme.spacing.sm,
     },
+    networkSection: {
+        gap: theme.spacing.sm,
+        paddingTop: theme.spacing.md,
+    },
 }))

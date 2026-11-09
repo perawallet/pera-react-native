@@ -13,13 +13,16 @@
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { PeraCardAccountStackParamList } from '@modules/card'
 
+export type AccountTabKey = 'Overview' | 'Nfts' | 'History'
+
 export type AccountStackParamsList = {
-    AccountDetails?: { playConfetti?: boolean }
+    AccountDetails?: { playConfetti?: boolean; tab?: AccountTabKey }
     AssetDetails?: {
         assetId: string
         chainId: ChainId
         isCollectible?: boolean
     }
     CollectibleDetails?: { assetId: string; chainId: ChainId }
+    HideTokens?: undefined
     RemoveAssets?: undefined
 } & PeraCardAccountStackParamList

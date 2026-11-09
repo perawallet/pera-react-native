@@ -30,6 +30,12 @@ const PARITY_MNEMONIC =
 const PARITY_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 
+// The BIP-39 zero-entropy vector: 12 words, the shape other wallets hand out.
+const TWELVE_WORD_MNEMONIC =
+    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+const TWELVE_WORD_MASTER_ADDRESS =
+    'ACJDJWM7GWMKJFROZP2VSWZBP5FLSSMMMFXL5MPLZQRPQFARUKKRLAZ53E'
+
 describe('XHD public-key getter ground truth', () => {
     test('derives the funded address at account=1 keyIndex=0 (Peikert)', async () => {
         const seed = await mnemonicToSeed(USER_MNEMONIC)
@@ -79,5 +85,21 @@ describe('XHD public-key getter ground truth', () => {
                 networkId: 'mainnet',
             }),
         ).toBe(PARITY_ADDRESS)
+    })
+
+    test('derives a 12-word phrase the same way as a 24-word one, at account=0 keyIndex=0 (Peikert)', async () => {
+        const rootKey = fromSeed(await mnemonicToSeed(TWELVE_WORD_MNEMONIC))
+        const getPublicKey = createXHDGetPublicKey(rootKey)
+
+        const pubKey = await getPublicKey({
+            account: 0,
+            keyIndex: 0,
+        })
+        expect(
+            algorandAddressCodec.fromPublicKey(pubKey, {
+                scheme: 'ed25519',
+                networkId: 'mainnet',
+            }),
+        ).toBe(TWELVE_WORD_MASTER_ADDRESS)
     })
 })

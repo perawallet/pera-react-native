@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { mapWithConcurrency, partition } from '@perawallet/wallet-core-shared'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { fetchNfdBulkRead } from '../api'
@@ -27,7 +30,7 @@ import {
 } from '../db'
 
 /**
- * Bulk-fetches NFD names for the given addresses and persists them to the
+ * Bulk-fetches names (NFD, ENS) for the given addresses and persists them to the
  * `nfd_cache` table. Skips addresses that are already cached and still fresh,
  * so calling this on every sync tick is cheap in steady state.
  */
@@ -64,13 +67,18 @@ export async function fetchAndPersistNfds(
             scope,
         })
 
-        // Build a map of hits keyed by address; we need to emit one row
-        // per requested address, including negative results for any
-        // address absent from the response.
-        const hitMap = new Map(results.map(r => [r.address, r.name]))
+        // Keyed by the codec's canonical form: the backend may answer an EVM
+        // address in a different case than the one asked, and an exact-string
+        // miss would cache "no name" for the whole TTL.
+        const codec = addressCodecs.get(scope.chainId)
+        const hitMap = new Map(
+            results
+                .filter(r => codec.isValid(r.address))
+                .map(r => [codec.normalize(r.address), r.name]),
+        )
         const entries: NfdCacheEntry[] = batch.map(address => ({
             address,
-            name: hitMap.get(address) ?? null,
+            name: hitMap.get(codec.normalize(address)) ?? null,
         }))
 
         await upsertNfdEntries({ scope, entries })

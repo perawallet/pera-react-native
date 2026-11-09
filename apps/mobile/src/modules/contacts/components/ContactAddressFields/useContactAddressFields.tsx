@@ -21,8 +21,10 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { chainFamilyDisplay } from '@modules/chain-ui'
+import type { ContactAddressRow } from '../../hooks/useContactForm'
 
 export type UseContactAddressFieldsParams = {
+    rows: readonly ContactAddressRow[]
     pendingReplacement: Optional<AddressFamilyMatch>
     onAddressInputChange: (text: string) => void
     confirmReplacement: () => void
@@ -32,10 +34,13 @@ export type UseContactAddressFieldsParams = {
 export type UseContactAddressFieldsResult = {
     /** Every registered chain, so a scan of any of them is taken. */
     scanChainIds: readonly ChainId[]
+    /** A registered family still has no address; another one would only replace. */
+    canAddAddress: boolean
     handlePaste: () => Promise<void>
 }
 
 export const useContactAddressFields = ({
+    rows,
     pendingReplacement,
     onAddressInputChange,
     confirmReplacement,
@@ -45,13 +50,12 @@ export const useContactAddressFields = ({
     const { readText } = useClipboard()
     const { request } = useBottomSheet()
 
-    const scanChainIds = useMemo(
-        () =>
-            getProvider()
-                .chains.list()
-                .map(({ id }) => id),
-        [],
-    )
+    const chains = useMemo(() => getProvider().chains.list(), [])
+    const scanChainIds = useMemo(() => chains.map(({ id }) => id), [chains])
+    const canAddAddress = useMemo(() => {
+        const held = new Set(rows.map(row => row.family))
+        return chains.some(({ family }) => !held.has(family))
+    }, [chains, rows])
 
     const handlePaste = useCallback(async () => {
         onAddressInputChange(await readText())
@@ -88,5 +92,5 @@ export const useContactAddressFields = ({
         })()
     }, [pendingReplacement, request, t, confirmReplacement, cancelReplacement])
 
-    return { scanChainIds, handlePaste }
+    return { scanChainIds, canAddAddress, handlePaste }
 }

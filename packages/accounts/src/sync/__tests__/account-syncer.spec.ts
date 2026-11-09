@@ -11,10 +11,9 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 
@@ -126,6 +125,8 @@ describe('fetchAndPersistAccount', () => {
             error: new Error('upstream_unavailable'),
         }
 
+        const unrefreshedByFailure = unrefreshed
+
         const registerReads = async (
             reads: { unrefreshedHoldings?: typeof unrefreshed }[],
         ) => {
@@ -177,6 +178,95 @@ describe('fetchAndPersistAccount', () => {
             expect(
                 useHoldingsRefreshStore.getState().failed[mainnetKey]?.A,
             ).toBeUndefined()
+        })
+
+        describe('because the backend does not serve the scope', () => {
+            const notServed = async () => {
+                const { PeraServiceUnavailableError } =
+                    await import('@perawallet/wallet-core-shared')
+                return {
+                    includes: (assetId: string) => assetId.startsWith('nft/'),
+                    error: new PeraServiceUnavailableError(
+                        MAINNET_SCOPE,
+                        'assets',
+                    ),
+                }
+            }
+
+            it('flags nothing while no stored row is kept, as the read vouches for what is shown', async () => {
+                await registerReads([
+                    { unrefreshedHoldings: await notServed() },
+                ])
+                const { useHoldingsRefreshStore } =
+                    await import('../../store/holdingsRefresh')
+
+                await fetchAndPersistAccount('A', MAINNET_SCOPE)
+
+                expect(
+                    useHoldingsRefreshStore.getState().failed[
+                        'algorand/mainnet' as never
+                    ]?.A,
+                ).toBeUndefined()
+            })
+
+            it('logs a kept row at debug, not warn, while a genuine failure still warns', async () => {
+                const { logger } =
+                    await import('@perawallet/wallet-core-shared')
+                const { refreshAccountHoldings } = await import('../../db')
+                const warn = vi.spyOn(logger, 'warn')
+                const debug = vi.spyOn(logger, 'debug')
+                const retainOnce = () =>
+                    vi
+                        .mocked(refreshAccountHoldings)
+                        .mockImplementationOnce(async ({ retain }) => {
+                            retain?.('nft/1')
+                            return false
+                        })
+                await registerReads([
+                    { unrefreshedHoldings: await notServed() },
+                    { unrefreshedHoldings: unrefreshedByFailure },
+                ])
+
+                retainOnce()
+                await fetchAndPersistAccount('A', MAINNET_SCOPE)
+                expect(debug).toHaveBeenCalledWith(
+                    'Account holdings partly unrefreshed',
+                    expect.anything(),
+                )
+                expect(warn).not.toHaveBeenCalledWith(
+                    'Account holdings partly unrefreshed',
+                    expect.anything(),
+                )
+
+                await fetchAndPersistAccount('A', MAINNET_SCOPE)
+                expect(warn).toHaveBeenCalledWith(
+                    'Account holdings partly unrefreshed',
+                    expect.anything(),
+                )
+            })
+
+            it('flags the account once a stored row is kept', async () => {
+                await registerReads([
+                    { unrefreshedHoldings: await notServed() },
+                ])
+                const { refreshAccountHoldings } = await import('../../db')
+                const { useHoldingsRefreshStore } =
+                    await import('../../store/holdingsRefresh')
+                vi.mocked(refreshAccountHoldings).mockImplementationOnce(
+                    async ({ retain }) => {
+                        retain?.('nft/1')
+                        return false
+                    },
+                )
+
+                await fetchAndPersistAccount('A', MAINNET_SCOPE)
+
+                expect(
+                    useHoldingsRefreshStore.getState().failed[
+                        'algorand/mainnet' as never
+                    ]?.A,
+                ).toBe(true)
+            })
         })
     })
 })

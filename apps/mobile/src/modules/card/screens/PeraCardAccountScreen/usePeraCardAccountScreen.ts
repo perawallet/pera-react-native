@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import type { AccountDisplayCard } from '@components/AccountDisplay'
 import {
     useAccountDrawerPickerKind,
@@ -60,7 +60,7 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
         const account = findCardAccount(
             accounts,
             connectedAddress,
-            LEGACY_CHAIN_ID,
+            ALGORAND_CHAIN_ID,
         )
         // "Linked" is the on-chain binding (escrow card), not the locally
         // selected funding account: without the card nothing is linked yet.
@@ -74,7 +74,7 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
             title: t('peraCard.account.navigation_title'),
             subtitle: account
                 ? t('peraCard.account.linked_to', {
-                      name: getAccountName(account, LEGACY_CHAIN_ID),
+                      name: getAccountName(account, ALGORAND_CHAIN_ID),
                   })
                 : t('peraCard.account.linked_to_fallback'),
         }

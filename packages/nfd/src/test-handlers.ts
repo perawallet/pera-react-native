@@ -11,10 +11,9 @@
  */
 
 export {
-    mockNfdNamesForAddress,
     mockNfdBulkRead,
-    mockNfdSearch,
-    type MockNfdNamesForAddressParams,
+    mockNameSearch,
     type MockNfdBulkReadParams,
-    type MockNfdSearchParams,
+    type NfdBulkReadRequestBody,
+    type MockNameSearchParams,
 } from './api/msw-handlers'

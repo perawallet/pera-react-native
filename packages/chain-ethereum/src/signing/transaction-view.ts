@@ -16,6 +16,7 @@ import type { Address, Hex } from 'viem'
 import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
 import type {
     FeePreset,
+    KnownSpender,
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmNftStandard } from '../blockchain/utils/caip19'
@@ -43,6 +44,12 @@ export type EthereumPricedView = {
      * no estimate.
      */
     feeEstimate?: { preset: FeePreset; amount: Decimal }
+    /**
+     * The node's gas estimate reverted and the call was queued with a fallback
+     * gas limit, so the review warns it will likely fail. `reason` is the
+     * contract's own text.
+     */
+    revertedEstimate?: { reason?: string }
     /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
     fee: {
         maxFeePerGas: Decimal
@@ -65,7 +72,12 @@ export type EthereumMinedView = {
 }
 
 type EthereumTransactionViewBase = {
-    kind: 'transfer' | 'token-transfer' | 'nft-transfer' | 'contract-call'
+    kind:
+        | 'transfer'
+        | 'token-transfer'
+        | 'nft-transfer'
+        | 'contract-call'
+        | 'swap-call'
     from: Address
     /** Absent for a contract creation. */
     to?: Address
@@ -104,6 +116,8 @@ type EthereumTransactionViewBase = {
      * `contractDecoding` is on.
      */
     knownContract?: EvmContractLabel
+    /** Only with an `approve` or `increase-allowance` `call` whose spender is in the registry. */
+    knownSpender?: KnownSpender
     /** Only with `knownContract`: what the calldata proves the call does. */
     action?: EvmContractAction
 }
@@ -113,6 +127,7 @@ const KINDS: readonly string[] = [
     'token-transfer',
     'nft-transfer',
     'contract-call',
+    'swap-call',
 ]
 
 const isAddressValue = (value: unknown): value is Address =>
@@ -205,6 +220,14 @@ const isKnownContract = (value: unknown): boolean =>
         (domain): domain is string => typeof domain === 'string',
     )
 
+const isKnownSpender = (value: unknown): boolean =>
+    isRecord(value) &&
+    typeof value.name === 'string' &&
+    isOptional(
+        value.projectDomain,
+        (domain): domain is string => typeof domain === 'string',
+    )
+
 const isActionAsset = (value: unknown): boolean =>
     isRecord(value) &&
     (value.kind === 'native' ||
@@ -266,6 +289,10 @@ const isFee = (value: unknown): boolean =>
     Decimal.isDecimal(value.maxPriorityFeePerGas) &&
     Decimal.isDecimal(value.maxFee)
 
+const isRevertedEstimate = (value: unknown): boolean =>
+    isRecord(value) &&
+    (value.reason === undefined || typeof value.reason === 'string')
+
 const isFeeEstimate = (value: unknown): boolean =>
     isRecord(value) &&
     FEE_PRESETS.some(preset => preset === value.preset) &&
@@ -290,6 +317,8 @@ const isView = (value: unknown): value is EthereumTransactionView =>
             (value.hasHighFee === undefined || value.hasHighFee === true) &&
             (value.feeEstimate === undefined ||
                 isFeeEstimate(value.feeEstimate)) &&
+            (value.revertedEstimate === undefined ||
+                isRevertedEstimate(value.revertedEstimate)) &&
             isFee(value.fee))) &&
     (value.token === undefined || isToken(value.token)) &&
     (value.nft === undefined || isNft(value.nft)) &&
@@ -298,6 +327,9 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     (value.knownContract === undefined ||
         (value.kind === 'contract-call' &&
             isKnownContract(value.knownContract))) &&
+    (value.knownSpender === undefined ||
+        (value.kind === 'contract-call' &&
+            isKnownSpender(value.knownSpender))) &&
     (value.action === undefined ||
         (value.kind === 'contract-call' &&
             value.knownContract !== undefined &&

@@ -30,8 +30,11 @@ import {
 export const importFormatsFor = (chainId: ChainId): readonly LocalKeyKind[] =>
     accountsChainAdapters.get(chainId).localKeyKinds
 
+/** A key kind as entered from one of its word counts. */
+export type MnemonicImportFormat = { seed: LocalKeySeed; wordCount: number }
+
 export type DetectedImportKind =
-    | { success: true; seed: LocalKeySeed }
+    | ({ success: true } & MnemonicImportFormat)
     | { success: false; wordCount: number }
 
 /**
@@ -50,7 +53,7 @@ export const detectImportKind = (
             candidate.mnemonicWordCounts.includes(wordCount),
     )
     return kind
-        ? { success: true, seed: kind.seed }
+        ? { success: true, seed: kind.seed, wordCount }
         : { success: false, wordCount }
 }
 

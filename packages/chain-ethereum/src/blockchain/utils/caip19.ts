@@ -173,3 +173,17 @@ export const fromCaip19 = (
     }
     throw new InvalidCaip19Error(caip19, scope)
 }
+
+/** The app asset id for a router id; null when it isn't an asset on this chain's network. */
+export const evmAssetIdOfRouterId = (
+    routerAssetId: string,
+    scope: ChainScope,
+    chain: EvmChain,
+): Nullable<string> => {
+    try {
+        return fromCaip19(routerAssetId, scope, chain)
+    } catch (error) {
+        if (error instanceof InvalidCaip19Error) return null
+        throw error
+    }
+}

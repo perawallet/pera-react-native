@@ -27,10 +27,12 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore, type useKMS } from '@perawallet/wallet-core-kms'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import type {
-    HistoryPeriod,
-    Nullable,
-    Optional,
+import {
+    CHART_QUERY_TIMEOUT_MS,
+    withDeadline,
+    type HistoryPeriod,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     HdAccountsUnsupportedError,
@@ -126,6 +128,7 @@ export type LocalKeyKind = {
     seed: LocalKeySeed
     signingScheme: SigningScheme
     isHd: boolean
+    /** The first is the count an import entry opens when it names none. */
     mnemonicWordCounts: readonly number[]
     /** False: reachable only from its own import entry, never from a word count. */
     isAutoDetected: boolean
@@ -235,6 +238,8 @@ export type AccountStateReadHint = {
     priorChainState: Optional<AccountChainState>
     /** Tokens the user added on this scope, whose balances a chain without opt-in reads too; absent means none. */
     addedTokenIds?: readonly string[]
+    /** The syncer persists this read, so a chain may do work that only pays off for an account the wallet holds, such as discovering what it received. */
+    isPersisted?: boolean
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
@@ -328,14 +333,15 @@ export interface AccountsChainAdapter {
         addresses: string[],
         period: HistoryPeriod,
         scope: ChainScope,
+        signal?: AbortSignal,
     ): Promise<Nullable<PortfolioHistoryPoint[]>>
     /** One holding's history. Absent on a chain with no such source. */
     fetchHoldingBalanceHistory?(
         address: string,
         assetId: string,
         period: HistoryPeriod,
-        currency: string,
         scope: ChainScope,
+        signal?: AbortSignal,
     ): Promise<HoldingBalanceHistoryPoint[]>
     /**
      * Whether a sync pass has anything to read. A null cursor has never
@@ -365,10 +371,14 @@ export interface AccountsChainAdapter {
      * An adapter that can tell a failed read from a negative one leaves the
      * address out of the map: callers read it as inactive, and a walk counts
      * that batch as partly answered.
+     * Once `signal` aborts the walk has given up on the batch: the adapter
+     * starts no further lookup for it and may reject. An adapter that ignores
+     * it stays correct.
      */
     checkActivity(
         addresses: string[],
         scope: ChainScope,
+        signal?: AbortSignal,
     ): Promise<Map<string, boolean>>
     /**
      * Public keys from the in-memory XHD root key `prepareHDMasterKey`
@@ -571,33 +581,51 @@ export const fetchHoldingAcquisitionOrder = async (
         : new Map()
 }
 
-/** `null`, without a request, on a chain with no portfolio history source. */
+/**
+ * `null`, without a request, on a chain with no portfolio history source.
+ * Rejects once the chain has not answered in `CHART_QUERY_TIMEOUT_MS`, and
+ * aborts the requests it started: a history read is several requests in
+ * sequence, each with its own timeout. `signal` cancels it early.
+ */
 export const fetchPortfolioHistory = async (
     addresses: string[],
     period: HistoryPeriod,
     scope: ChainScope,
+    signal?: AbortSignal,
 ): Promise<Nullable<PortfolioHistoryPoint[]>> =>
-    (await accountsChainAdapters
-        .get(scope.chainId)
-        .fetchPortfolioHistory?.(addresses, period, scope)) ?? null
+    (await withDeadline(
+        async deadline =>
+            accountsChainAdapters
+                .get(scope.chainId)
+                .fetchPortfolioHistory?.(addresses, period, scope, deadline),
+        CHART_QUERY_TIMEOUT_MS,
+        'portfolio history',
+        signal,
+    )) ?? null
 
-/** Empty, without a request, on a chain with no holding history source. */
+/** Empty, without a request, on a chain with no holding history source; ends on the same deadline as the portfolio history. */
 export const fetchHoldingBalanceHistory = async (
     address: string,
     assetId: string,
     period: HistoryPeriod,
-    currency: string,
     scope: ChainScope,
+    signal?: AbortSignal,
 ): Promise<HoldingBalanceHistoryPoint[]> =>
-    (await accountsChainAdapters
-        .get(scope.chainId)
-        .fetchHoldingBalanceHistory?.(
-            address,
-            assetId,
-            period,
-            currency,
-            scope,
-        )) ?? []
+    (await withDeadline(
+        async deadline =>
+            accountsChainAdapters
+                .get(scope.chainId)
+                .fetchHoldingBalanceHistory?.(
+                    address,
+                    assetId,
+                    period,
+                    scope,
+                    deadline,
+                ),
+        CHART_QUERY_TIMEOUT_MS,
+        'holding balance history',
+        signal,
+    )) ?? []
 
 /** No restriction when the holding has no data or the chain describes none. */
 export const describeHolding = (

@@ -12,10 +12,7 @@
 
 import { vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import {
-    type AssetRef,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type AssetRef } from '@perawallet/wallet-core-chain-contract'
 import { assetsChainAdapters, type AssetsChainAdapter } from '../chain-adapter'
 import {
     DEFAULT_ASSET_METADATA,
@@ -42,7 +39,7 @@ export const FAKE_NATIVE_ASSET: PeraAsset = {
 export const fakeAssetsAdapter = (
     overrides: Partial<AssetsChainAdapter> = {},
 ): AssetsChainAdapter => ({
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     priceProvider: 'pera',
     maxPriceIdsPerRequest: 100,
     getNativeAsset: () => FAKE_NATIVE_ASSET,

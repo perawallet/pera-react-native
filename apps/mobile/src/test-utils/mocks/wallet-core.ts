@@ -11,6 +11,7 @@
  */
 
 import { vi } from 'vitest'
+import { create } from 'zustand'
 import type { Decimal } from 'decimal.js'
 import {
     i18nKey,
@@ -83,13 +84,30 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-swaps', async () => {
-    const { Decimal } = await import('decimal.js')
+    // Pure quote helpers stay real, by path: the barrel pulls in stores.
+    const { formatSwapRate, swapRate } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
+    >('@packages/swaps/src/utils/swapQuoteHelpers')
+    const { swapFeeOf } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapFees')
+    >('@packages/swaps/src/utils/swapFees')
+    const { isSwapOrderSettled } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/swapOrderSettlement')
+    >('@packages/swaps/src/utils/swapOrderSettlement')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
-        apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
-            slippage.mul(100).toString(),
-        useProvidersQuery: vi.fn(() => ({ data: [] })),
+        formatSwapRate,
+        swapRate,
+        swapFeeOf,
+        isSwapOrderSettled,
+        scopeOfSwapAsset: ({
+            chainId,
+            networkId,
+        }: {
+            chainId: string
+            networkId: string
+        }) => ({ chainId, networkId }),
         useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
         // An account on Algorand swaps there, as it does at the build defaults.
         useSwapScope: vi.fn(
@@ -98,11 +116,33 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
                     ? { chainId: 'algorand', networkId: 'mainnet' }
                     : null,
         ),
+        useSwapSourceScope: vi.fn(
+            (account: { chains?: { algorand?: unknown } } | null) =>
+                account?.chains?.algorand
+                    ? { chainId: 'algorand', networkId: 'mainnet' }
+                    : null,
+        ),
+        useSwapSourceCostQuery: vi.fn(() => ({
+            sourceCost: null,
+            isLoading: false,
+        })),
+        useEnsureSwapDestination: vi.fn(() => ({
+            ensureReceivable: vi.fn(async () => true),
+        })),
         useSwapChainResolver: vi.fn(
             () => (account: { chains?: { algorand?: unknown } }) =>
                 account.chains?.algorand ? 'algorand' : undefined,
         ),
         useSwapSigningAccounts: vi.fn(() => []),
+        isSwapChain: vi.fn((chainId: string) =>
+            ['algorand', 'ethereum'].includes(chainId),
+        ),
+        // Specs that load the real chain packages register their adapters here.
+        swapChainAdapters: { register: vi.fn(), has: vi.fn(() => false) },
+        useSwapsStore: vi.fn(),
+        useSwapTrackedOrders: vi.fn(() => []),
+        useSwapTrackingStore: vi.fn(),
+        useSwapOrderTracker: vi.fn(),
     }
 })
 
@@ -276,8 +316,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
               ? ethereumNativeAsset
               : undefined,
     ),
-    isNativeAssetId: (_chainId: string, assetId: string) =>
-        assetId === nativeAsset.assetId,
+    isNativeAssetId: (chainId: string, assetId: string) =>
+        assetId ===
+        (chainId === 'ethereum' ? ethereumNativeAsset : nativeAsset).assetId,
     useIsNativeAssetId:
         () => (assetId: string | number | bigint | null | undefined) =>
             assetId != null && String(assetId) === nativeAsset.assetId,
@@ -365,9 +406,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
             collectibleSortMode: 'newestFirst',
             showOptedIn: false,
             showWatchAccounts: false,
+            showSuspicious: false,
             setCollectibleSortMode: vi.fn(),
             setShowOptedIn: vi.fn(),
             setShowWatchAccounts: vi.fn(),
+            setShowSuspicious: vi.fn(),
             resetState: vi.fn(),
         }),
     ),
@@ -398,6 +441,50 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 
 // Mock @perawallet/wallet-core-accounts
 vi.mock('@perawallet/wallet-core-accounts', () => {
+    // Light stand-ins, not the real modules: those load the provider and the
+    // persisted-store helpers, which a spec with a minimal shared mock lacks.
+    // Their own specs cover the real ones.
+    const receivesUnaskedAssets = (chainId: string) => chainId === 'ethereum'
+    const canHideHolding = (chainId: string, assetId: string) =>
+        receivesUnaskedAssets(chainId) && assetId !== 'native'
+    const hiddenScopeKey = (scope: ChainScope) =>
+        `${scope.chainId}/${scope.networkId}`
+    const hiddenAssetIdsOf = (
+        hiddenTokens: Record<string, Record<string, string[]>>,
+        address: string,
+        scope: ChainScope,
+    ): readonly string[] => hiddenTokens[hiddenScopeKey(scope)]?.[address] ?? []
+    const useHiddenTokensStore = create<{
+        hiddenTokens: Record<string, Record<string, string[]>>
+        setTokenHidden: (params: {
+            address: string
+            scope: ChainScope
+            assetId: string
+            isHidden: boolean
+        }) => void
+        replaceHiddenTokens: (
+            hiddenTokens: Record<string, Record<string, string[]>>,
+        ) => void
+        resetState: () => void
+    }>(set => ({
+        hiddenTokens: {},
+        setTokenHidden: ({ address, scope, assetId, isHidden }) =>
+            set(state => {
+                const key = hiddenScopeKey(scope)
+                const held = state.hiddenTokens[key]?.[address] ?? []
+                const next = isHidden
+                    ? [...new Set([...held, assetId])].sort()
+                    : held.filter(id => id !== assetId)
+                return {
+                    hiddenTokens: {
+                        ...state.hiddenTokens,
+                        [key]: { ...state.hiddenTokens[key], [address]: next },
+                    },
+                }
+            }),
+        replaceHiddenTokens: hiddenTokens => set({ hiddenTokens }),
+        resetState: () => set({ hiddenTokens: {} }),
+    }))
     // Pure re-implementations of the accessors: an account is its custody and
     // its per-chain entries.
     const entriesOf = (account: any): any[] =>
@@ -449,9 +536,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         if (!sourceSets.has(key)) sourceSets.set(key, sources)
         return sourceSets.get(key)!
     }
+    const NO_UNREAD_CHAIN_IDS: ReadonlySet<string> = new Set()
     return {
+        canHideHolding,
+        receivesUnaskedAssets,
+        hiddenAssetIdsOf,
+        useHiddenTokensStore,
+        useHiddenTokensInvalidation: vi.fn(),
         accountChainIdOf: vi.fn(accountChainIdOf),
         useAccountHoldingSources: vi.fn(holdingSourcesOf),
+        useUnreadHoldingChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
+        useFailedFirstReadChainIds: vi.fn(() => NO_UNREAD_CHAIN_IDS),
         useRegisteredChainIds: vi.fn(() => ['algorand']),
         canImportRawKey: vi.fn(() => false),
         preferDefaultChain: vi.fn((chainIds: string[]) => chainIds[0]),
@@ -474,7 +569,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) =>
                 chainAccountOf(account, accountChainIdOf(account))?.address,
         ),
-        useSigningAccountsOnOwnChain: vi.fn(() => []),
+        useSigningAccountsOnAnyChain: vi.fn(() => []),
+        // Every capability on; a spec that switches one off wires the real hook.
+        useAccountCapabilityScope: vi.fn(
+            (account: any, _capability: string, chainId?: string) =>
+                account ? scopeOf(chainId ?? accountChainIdOf(account)) : null,
+        ),
         custodyOf: vi.fn((account: any) => account.custody),
         hasCustody: vi.fn(
             (account: any, kind: string) => kindOf(account) === kind,
@@ -543,6 +643,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             discoverDelegatedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
+        useAccountHoldingsAcrossChainsQuery: vi.fn(() => ({
+            assetBalances: [],
+            isPending: false,
+            isError: false,
+        })),
         useHoldingAcquisitionOrderQuery: vi.fn(() => ({
             acquisitionOrder: new Map(),
             isPending: false,
@@ -648,6 +753,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         multisigParametersOf: vi.fn(() => undefined),
         useCanSignWith: vi.fn((account: any) => hasSigningKeys(account)),
+        useCanSignWithCheck: vi.fn(
+            () => (account: any) => hasSigningKeys(account),
+        ),
+        useCanSignOnAnyChain: vi.fn((account: any) => hasSigningKeys(account)),
+        useAccountChainOptionsResolver: vi.fn(() => () => []),
         useDelegatedAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
         useAccountAssetBalanceQuery: vi.fn(() => ({
@@ -681,6 +791,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             manual: 'manual',
         },
         findAccountByAnyChainAddress: vi.fn(findInAnyChain),
+        chainIdOfAddress: vi.fn((account: any, address: string) =>
+            Object.keys(account?.chains ?? {}).find(
+                chainId =>
+                    chainAccountOf(account, chainId)?.address === address,
+            ),
+        ),
         importableCandidate: vi.fn((accounts: any[] = [], account: any) =>
             accounts.some(held =>
                 Object.entries(account?.chains ?? {}).some(
@@ -705,10 +821,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 resetState: vi.fn(),
             }),
         ),
-        useOwnedAssets: vi.fn(() => ({
-            assets: [],
-            isLoading: false,
-        })),
+        useWalletHoldingSources: vi.fn(() => []),
         rehydrateAccountsStore: vi.fn(async () => {}),
         // Subclassed at module load by chain packages' own account errors.
         AccountError: class AccountError extends Error {},
@@ -835,6 +948,8 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             setCurrencyPreference: vi.fn(),
             portfolioPreferredValue: '0',
             usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+            isRateUnavailable: false,
+            refetchRate: vi.fn(),
         })),
         usePreferredCurrencyPriceQuery: vi.fn(() => ({
             data: { usdPrice: new Decimal(1) },

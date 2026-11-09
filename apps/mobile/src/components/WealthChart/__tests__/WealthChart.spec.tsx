@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
-import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { fireEvent, render, screen } from '@test-utils/render'
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this test's module graph.
 import '../../../i18n'
 import { WealthChart } from '../WealthChart'
 import { usePortfolioHistoryQuery } from '@perawallet/wallet-core-accounts'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     ChainId,
     ChainScope,
@@ -52,6 +53,7 @@ const mockHistory = (
         data: [],
         isPending: false,
         isError: false,
+        isRetrying: false,
         isPaused: false,
         error: null,
         isUnavailableOnNetwork: false,
@@ -72,9 +74,75 @@ const renderChart = (enabled?: boolean) =>
         />,
     )
 
+const defaultCurrency = vi.mocked(useCurrency).getMockImplementation()!
+
 describe('WealthChart', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+    })
+
+    afterEach(() => {
+        vi.mocked(useCurrency).mockImplementation(defaultCurrency)
+    })
+
+    it('says the chart is not available in the currency, with a retry that asks for the rate again, when its rate is unavailable', () => {
+        const refetchRate = vi.fn()
+        const refetch = vi.fn()
+        vi.mocked(useCurrency).mockReturnValue({
+            ...defaultCurrency(ALGORAND),
+            preferredCurrency: 'ARS',
+            isRateUnavailable: true,
+            refetchRate,
+        })
+        mockHistory({ refetch })
+
+        renderChart()
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(
+            screen.getByText("This chart isn't available in ARS right now"),
+        ).toBeTruthy()
+        expect(refetchRate).toHaveBeenCalledTimes(1)
+        expect(refetch).not.toHaveBeenCalled()
+    })
+
+    it('retries both the history and the rate when both have failed', () => {
+        const refetchRate = vi.fn()
+        const refetch = vi.fn()
+        vi.mocked(useCurrency).mockReturnValue({
+            ...defaultCurrency(ALGORAND),
+            isRateUnavailable: true,
+            refetchRate,
+        })
+        mockHistory({ isError: true, refetch })
+
+        renderChart()
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(refetchRate).toHaveBeenCalledTimes(1)
+        expect(refetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('holds the retry button while the failed history is being asked again', () => {
+        const refetch = vi.fn()
+        mockHistory({ isError: true, isRetrying: true, refetch })
+
+        renderChart()
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(refetch).not.toHaveBeenCalled()
+    })
+
+    it('keeps the offline state when the rate is unavailable while offline', () => {
+        vi.mocked(useCurrency).mockReturnValue({
+            ...defaultCurrency(ALGORAND),
+            isRateUnavailable: true,
+        })
+        mockHistory({ isPending: true, isPaused: true })
+
+        renderChart()
+
+        expect(screen.getByText('Offline Mode')).toBeTruthy()
     })
 
     it('reads the summed history of exactly the sources it is given', () => {

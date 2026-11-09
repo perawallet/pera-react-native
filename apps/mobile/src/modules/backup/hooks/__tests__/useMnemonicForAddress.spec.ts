@@ -55,6 +55,34 @@ describe('useMnemonicForAddress', () => {
         )
     })
 
+    test('reads the key on whichever chain holds the address', async () => {
+        const account: WalletAccount = {
+            id: 'hd-evm-account',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: {
+                algorand: { address: 'ALGO_ADDR', keyPairId: 'algo-key' },
+                ethereum: { address: '0xETH_ADDR', keyPairId: 'eth-key' },
+            },
+        }
+
+        const { result } = renderHook(() =>
+            useMnemonicForAddress('0xETH_ADDR', account),
+        )
+
+        const handler = vi.fn()
+        await result.current.executeWithMnemonic(handler)
+
+        expect(mockExecuteWithMnemonic).toHaveBeenCalledWith(
+            'eth-key',
+            'backup-flow',
+            handler,
+        )
+    })
+
     test('forwards keyPairId to KMS for an algo25 account', async () => {
         const account: WalletAccount = {
             id: 'algo25-account',

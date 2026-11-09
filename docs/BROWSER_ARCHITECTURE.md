@@ -7,7 +7,7 @@
 > `apps/browser/src/{background,content,offscreen}` (realm entry points),
 > `extensions/platform-chrome` (the `PlatformServices` driver: storage, DB host, offscreen storage
 > proxy, trusted-sender gate), `packages/browser-runtime` (message routing, dApp/WC/passkey/integrity
-> plumbing, extension-tab navigation), `extensions/keystore-chrome` (vault, WebAuthn signer),
+> plumbing, extension-tab navigation), `extensions/vault-chrome` (vault, WebAuthn signer),
 > `extensions/provider/src/keystore/*.web.ts` (the keystore engine).
 
 ---
@@ -193,15 +193,9 @@ rules and failure handling are specified in `docs/WEB_INTEGRITY_ENROLMENT_CONTRA
 
 ---
 
-## 6. Ported code
+## 6. Web keystore resolution
 
-`keystore-chrome/src/keystore/` holds the key types and error class the WebAuthn signer needs,
-ported verbatim from `@algorandfoundation/keystore@1.0.0-canary.17` and carrying `oxlint-disable …
-upstream style preserved` banners. Review them by **diffing against upstream**, not by local
-restyling. Everything else in the package (vault, auto-lock, lockout, passkey unlock, the WebAuthn
-signer) is our own code.
-
-On web, Metro still resolves `@algorandfoundation/react-native-keystore` to this package (see
+On web, Metro still resolves `@algorandfoundation/react-native-keystore` to `extensions/vault-chrome` (see
 `apps/mobile/metro.config.js`): shared barrels import it statically, and the real package would pull
 native modules into the web bundle. It exports none of that package's names, so they read as
 `undefined` there; the code paths that use them never run on web. `keystore:*` entries in

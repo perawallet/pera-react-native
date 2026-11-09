@@ -39,6 +39,10 @@ export type AssetAboutDisplay = {
     idLabelKey: Nullable<I18nKey>
     urlLabelKey: I18nKey
     explorerLink: Nullable<AssetExplorerLink>
+    /** Used when the asset carries no description of its own. */
+    descriptionKey?: I18nKey
+    /** Used when the asset carries no `projectUrl`; still passes the browser gate. */
+    websiteUrl?: string
 }
 
 /** `amount` is in base units; null renders as the unknown-amount placeholder. `labelKey` also titles the info sheet. */

@@ -44,6 +44,7 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
+import { isOptInChain } from '../chainProtocol'
 import {
     useOtherRegisteredChainIds,
     useRegisteredChainIds,
@@ -156,12 +157,20 @@ export const summarizeHoldings = (
             return assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
         }
         const nativeAssetValue = nativeAssetValueOf()
-        if (nativeAssetValue) {
-            nativeValue = nativeValue.plus(nativeAssetValue)
-        } else if (!usdAssetPrice.isZero()) {
-            hasUnconvertible = true
+        // Listed, but never counted: a flagged token's price isn't one to trust, and a hidden one is the user's to keep out.
+        // An opt-in chain's asset was chosen by the user, so it counts.
+        const isCounted =
+            !holding.isHidden &&
+            (isOptInChain(chainId) ||
+                asset.peraMetadata?.verificationTier !== 'suspicious')
+        if (isCounted) {
+            if (nativeAssetValue) {
+                nativeValue = nativeValue.plus(nativeAssetValue)
+            } else if (!usdAssetPrice.isZero()) {
+                hasUnconvertible = true
+            }
+            usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
         }
-        usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
         return {
             assetId: holding.assetId,
             asset,
@@ -369,6 +378,8 @@ export type ChainAssetBalance = AssetWithAccountBalance & {
 export type UseAccountHoldingsAcrossChainsQueryResult = {
     assetBalances: ChainAssetBalance[]
     isPending: boolean
+    /** A chain's read failed; the other chains' balances are still listed. */
+    isError: boolean
 }
 
 /**
@@ -427,7 +438,9 @@ export const useAccountHoldingsAcrossChainsQuery = (
     const resultsSig = results
         .map(
             (r, i) =>
-                `${heldOn[i] ?? ''}|${r.dataUpdatedAt}|${r.isPending ? 1 : 0}`,
+                `${heldOn[i] ?? ''}|${r.dataUpdatedAt}|${r.isPending ? 1 : 0}${
+                    r.isError ? 1 : 0
+                }`,
         )
         .join('||')
 
@@ -443,6 +456,7 @@ export const useAccountHoldingsAcrossChainsQuery = (
                     : []
             }),
             isPending: results.some(r => r.isPending),
+            isError: results.some(r => r.isError),
         }),
         // `resultsSig` is the stable stand-in for `results`; see
         // useAccountBalancesQuery.

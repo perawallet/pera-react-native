@@ -24,7 +24,7 @@ import {
     authorityTransitionLabel,
     type AuthorityTransitionLabel,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     accountForType,
     type AlgorandAccountKind,
@@ -41,7 +41,7 @@ const transitionLabel = ({
 }): Omit<AuthorityTransitionLabel, 'supportUrl'> => {
     const label = authorityTransitionLabel(
         { from: accountForType(from), to: accountForType(to) },
-        LEGACY_CHAIN_ID,
+        ALGORAND_CHAIN_ID,
     )
     if (!label) throw new Error('Algorand words every transition')
     const { labelKey, signerKey, descriptionKey } = label

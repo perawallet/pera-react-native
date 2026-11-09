@@ -30,22 +30,21 @@ import {
     FAKE_NATIVE_ASSET,
     fakeAssetsAdapter,
 } from '@perawallet/wallet-core-assets/testing'
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
 import { refreshAccountHoldings } from '../holdingsRepository'
+import { useHiddenTokensStore } from '../../store/hiddenTokens'
 import {
     getAccountPortfolioTotals,
     getAccountFundedNetworks,
 } from '../portfolioQueries'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 const TESTNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'testnet',
 } as const
 // ChainId is a closed union, so the second native asset rides on Ethereum's id.
@@ -154,6 +153,81 @@ describe('account portfolio queries', () => {
             expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(5, 6)
             // All four assets have metadata.
             expect(totals.missingMetadataCount).toBe(0)
+        })
+
+        it('leaves a suspicious token out of the USD value', async () => {
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...richAsset('100', 'Banana'),
+                        peraMetadata: {
+                            ...richAsset('100', 'Banana').peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            // Only '200' counts now: 1 * $3.
+            expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(3, 6)
+            expect(totals.holdingsCount).toBe(4)
+        })
+
+        it('leaves a token the user hid out of the USD value', async () => {
+            useHiddenTokensStore.getState().setTokenHidden({
+                address: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                assetId: '200',
+                isHidden: true,
+            })
+
+            try {
+                const totals = await getAccountPortfolioTotals({
+                    db,
+                    accountAddress: 'ADDR1',
+                    scope: MAINNET_SCOPE,
+                })
+
+                // Only '100' counts now: 2 * $1.
+                expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(2, 6)
+                expect(totals.holdingsCount).toBe(4)
+            } finally {
+                useHiddenTokensStore.getState().resetState()
+            }
+        })
+
+        it('counts a suspicious token on a chain where the user opts in to each asset', async () => {
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...richAsset('100', 'Banana'),
+                        peraMetadata: {
+                            ...richAsset('100', 'Banana').peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            // '100' counts again: 2 * $1 + 1 * $3.
+            expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(5, 6)
         })
 
         it('reports no native amount or price for an account with no native row', async () => {

@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import {
     filterQuotesByPaymentMethod,
@@ -23,8 +22,6 @@ import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export type UseOnrampProviderContentProps = {
     quotes: RampQuote[]
-    /** Display units; XO destination amounts are computed from it. */
-    sourceAmount: Nullable<Decimal>
     selectedPaymentMethodId: Nullable<string>
 }
 
@@ -36,7 +33,6 @@ export type UseOnrampProviderContentResult = {
 
 export const useOnrampProviderContent = ({
     quotes,
-    sourceAmount,
     selectedPaymentMethodId,
 }: UseOnrampProviderContentProps): UseOnrampProviderContentResult => {
     const { resolve } = useBottomSheetResult<string>()
@@ -49,12 +45,12 @@ export const useOnrampProviderContent = ({
     )
 
     const sortedQuotes = useMemo(
-        () => sortQuotesByDestinationDesc(methodQuotes, sourceAmount),
-        [methodQuotes, sourceAmount],
+        () => sortQuotesByDestinationDesc(methodQuotes),
+        [methodQuotes],
     )
     const bestQuoteId = useMemo(
-        () => pickBestQuote(methodQuotes, sourceAmount)?.quoteId,
-        [methodQuotes, sourceAmount],
+        () => pickBestQuote(methodQuotes)?.quoteId,
+        [methodQuotes],
     )
 
     const handleSelect = useCallback(

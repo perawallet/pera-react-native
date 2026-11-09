@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '../../../chain-id'
 
 // Mock the queryClient using vi.hoisted to avoid hoisting issues
 const mockQueryClient = vi.hoisted(() => vi.fn())
@@ -88,7 +88,10 @@ describe('fetchTransactionHistory', () => {
 
         expect(mockQueryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             method: 'GET',
             url: '/v1/accounts/ABC123DEF456/transactions/',
             params: {
@@ -204,7 +207,10 @@ describe('fetchTransactionHistory', () => {
 
         expect(mockQueryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'testnet',
+            } as const,
             method: 'GET',
             url: '/v1/accounts/ABC123DEF456/transactions/',
             params: {
@@ -363,7 +369,10 @@ describe('fetchMoreTransactions', () => {
 
         expect(mockQueryClient).toHaveBeenCalledWith({
             backend: 'pera',
-            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            scope: {
+                chainId: ALGORAND_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const,
             method: 'GET',
             url: '/v1/accounts/ABC123/transactions/?cursor=abc&limit=25',
             signal: undefined,

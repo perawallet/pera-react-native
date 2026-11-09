@@ -15,6 +15,8 @@ import type { RequestConfiguration } from '@perawallet/wallet-core-shared'
 // A discovery GET runs once per quiet address on every chain, all through one
 // shared gate: a retried 5xx or a 10s default timeout on a failing network
 // would hold the gate long enough to stall the healthy chains' lookups too.
+// The walk's idle window (`CHAIN_PROBE_IDLE_TIMEOUT_MS` in accounts) must stay
+// above `timeout`, or a lookup is cut just before it would have answered.
 export const DISCOVERY_LOOKUP_BOUNDS = {
     timeout: 5000,
     retry: { limit: 0 },

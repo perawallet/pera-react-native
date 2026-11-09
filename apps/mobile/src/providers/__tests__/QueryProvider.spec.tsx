@@ -29,6 +29,9 @@ import { QueryProvider, queryClient } from '../QueryProvider'
 import { setOnPeraBackendUnavailable } from '../queryClient'
 import * as queryClientModule from '../queryClient'
 
+// Its query reads the backend's chain list; this spec covers the client policy.
+vi.mock('../PeraServedChainsSync', () => ({ PeraServedChainsSync: () => null }))
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 )

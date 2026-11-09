@@ -20,7 +20,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     i18nKey,
     type ChainId,
     type ChainScope,
@@ -37,6 +36,7 @@ import {
 } from '@perawallet/wallet-core-projects'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import type { Nullable, Maybe, Optional } from '@perawallet/wallet-core-shared'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import {
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,
@@ -53,6 +53,7 @@ import {
     toConnectionPermissions,
     type ConnectionPermission,
 } from '@modules/walletconnect'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 export type ChainNetworkLabel = {
@@ -145,7 +146,8 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const proposal =
         approval?.kind === 'connection-proposal' ? approval : undefined
     // Every proposal reaching this window names one chain.
-    const chainId = proposal?.requested.chains[0] ?? LEGACY_CHAIN_ID
+    const home = useHomeChainScope()
+    const chainId = proposal?.requested.chains[0] ?? home.chainId
     const accounts = useSigningAccounts(chainId)
     const { t } = useLanguage()
     const allAccounts = useAllAccounts()
@@ -160,7 +162,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const scope = useSelectedScope(chainId)
     // Only Algorand's Pera backend serves the dApp registry, and it is keyed by
     // url alone, so every chain's proposal is checked against it there.
-    const registryScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const registryScope = useSelectedScope(ALGORAND_CHAIN_ID)
     const { selectedAccountId } = useSelectedAccountId()
 
     // The page's claimed url and the tab the browser says sent the request.
@@ -251,7 +253,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         isRequesterOriginDistinct,
         chainId,
         chainNetwork:
-            chainId === LEGACY_CHAIN_ID ? undefined : chainNetworkOf(scope),
+            chainId === home.chainId ? undefined : chainNetworkOf(scope),
         verificationTier,
         accounts,
         selected,

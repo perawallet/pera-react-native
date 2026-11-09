@@ -73,7 +73,6 @@ export interface AccountsContractFixtures extends AccountStateContractFixtures {
         addresses: string[]
         assetId: string
         period: HistoryPeriod
-        currency: string
         /** Handlers under which each declared history operation answers with `portfolio` and `balance`. */
         handlers: readonly RequestHandler[]
         /** `null` where the scope serves no portfolio history. */
@@ -289,7 +288,7 @@ export const accountsContractTests = (
                 )
                 expect(detected).toEqual(
                     expected
-                        ? { success: true, seed: expected.seed }
+                        ? { success: true, seed: expected.seed, wordCount }
                         : { success: false, wordCount },
                 )
                 if (detected.success) {
@@ -425,13 +424,7 @@ export const accountsContractTests = (
                     fetchPortfolioHistory(['ANY'], 'one-day', scope),
                 ).resolves.toBeNull()
                 await expect(
-                    fetchHoldingBalanceHistory(
-                        'ANY',
-                        'ANY',
-                        'one-day',
-                        'USD',
-                        scope,
-                    ),
+                    fetchHoldingBalanceHistory('ANY', 'ANY', 'one-day', scope),
                 ).resolves.toEqual([])
                 return
             }
@@ -451,7 +444,6 @@ export const accountsContractTests = (
                         history.addresses[0]!,
                         history.assetId,
                         history.period,
-                        history.currency,
                         scope,
                     ),
                 ).resolves.toEqual(history.balance)
@@ -788,7 +780,13 @@ export const accountPresentationContractTests = (
 
             for (const kind of makeAdapter().localKeyKinds) {
                 const options = presentation.keyKindOptions(kind.seed)
-                for (const row of [options?.recover, options?.create]) {
+                const recoverRows = options?.recover ?? []
+                const counts = recoverRows.map(row => row.wordCount)
+                expect(new Set(counts).size).toBe(counts.length)
+                for (const count of counts) {
+                    expect(kind.mnemonicWordCounts).toContain(count)
+                }
+                for (const row of [...recoverRows, options?.create]) {
                     if (!row) continue
                     expect(isNonEmptyString(row.id)).toBe(true)
                     expect(isNonEmptyString(row.titleKey)).toBe(true)

@@ -179,12 +179,16 @@ export const deeplinkAdapterContractTests = (
         it("accepts every intent address with the chain's codec", () => {
             for (const intent of okIntents()) {
                 if (intent.kind === 'payment') {
-                    expect(
-                        fixtures.codec.isValid(
-                            intent.recipient,
-                            intent.target.networkId,
-                        ),
-                    ).toBe(true)
+                    if ('address' in intent.recipient) {
+                        expect(
+                            fixtures.codec.isValid(
+                                intent.recipient.address,
+                                intent.target.networkId,
+                            ),
+                        ).toBe(true)
+                    } else {
+                        expect(intent.recipient.name).not.toBe('')
+                    }
                 } else if (
                     (intent.kind === 'address' ||
                         intent.kind === 'asset-opt-in') &&

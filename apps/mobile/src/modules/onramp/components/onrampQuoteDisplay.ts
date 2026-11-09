@@ -12,29 +12,20 @@
 
 import { MELD_PROVIDERS, type RampQuote } from '@perawallet/wallet-core-onramp'
 
-// XO quotes have no first-class "service provider" name, so we fall back to the
-// payment method name and finally a hardcoded "Exodus" (XO is Exodus-backed).
-// "Exodus" is a brand name, kept literal (not internationalized).
-const XO_FALLBACK_PROVIDER = 'Exodus'
+// A deposit quote has no service-provider name to map, so it reads "Exodus"
+// (XO is Exodus-backed), a brand name kept literal, not internationalized.
+const XO_PROVIDER_NAME = 'Exodus'
 
 const meldProviders = MELD_PROVIDERS as Record<string, { name: string }>
 
 export const getOnrampProviderName = (quote: RampQuote): string => {
     if (quote.kind === 'meld') {
-        // Meld's serviceProvider is an UPPER id (e.g. "COINBASEPAY"); map it to
-        // a human-readable name, falling back to the raw id when unmapped.
-        return (
-            meldProviders[quote.serviceProvider]?.name ?? quote.serviceProvider
-        )
+        // Meld's provider is an UPPER id (e.g. "COINBASEPAY"); map it to a
+        // human-readable name, falling back to the raw id when unmapped.
+        return meldProviders[quote.provider]?.name ?? quote.provider
     }
-    return quote.paymentMethod.name || XO_FALLBACK_PROVIDER
+    return XO_PROVIDER_NAME
 }
 
 export const getOnrampPaymentMethodName = (quote: RampQuote): string =>
     quote.paymentMethod.name
-
-// Currency of the destination (receive) amount. Meld carries a fiat/crypto code
-// (e.g. "USD", "ALGO"); XO only has the destination asset id. The asset id may
-// not be a recognisable symbol — that's acceptable, it's surfaced verbatim.
-export const getOnrampDestinationCurrency = (quote: RampQuote): string =>
-    quote.kind === 'meld' ? quote.destinationCurrencyCode : quote.amount.assetId

@@ -11,11 +11,13 @@
  */
 
 import { rehydrateAccountsStore } from '@perawallet/wallet-core-accounts'
-import { chainModule as algorandChainModule } from '@perawallet/wallet-core-chain-algorand'
+import {
+    ALGORAND_CHAIN_ID,
+    chainModule as algorandChainModule,
+} from '@perawallet/wallet-core-chain-algorand'
 import {
     buildChainSetup,
     CHAIN_IDS,
-    LEGACY_CHAIN_ID,
     registerChainSetup,
     type ChainCapabilityOverrides,
     type ChainContext,
@@ -35,7 +37,9 @@ import {
     chainEndpointsFor,
     config,
     getPeraServicesConfig,
+    isPeraScopeRefused,
     peraServicesFor,
+    setPeraBackendSwitch,
 } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { rehydrateSigningStore } from '@perawallet/wallet-core-signing'
@@ -64,10 +68,17 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
                 entry.chainId,
             ),
         ),
-    getPeraBackend: scope => ({
-        baseUrl: getPeraServicesConfig(scope).backendUrl,
-        services: peraServicesFor(scope),
-    }),
+    getPeraBackend: scope => {
+        const services = peraServicesFor(scope)
+        return {
+            baseUrl:
+                services.size === 0
+                    ? ''
+                    : getPeraServicesConfig(scope).backendUrl,
+            services,
+            isChainRefused: isPeraScopeRefused(scope),
+        }
+    },
     timeouts: config.chainRequestTimeouts[entry.chainId],
     kms: kmsCore,
 })
@@ -107,6 +118,7 @@ export const declareChainPlatformInputs = (setup: ChainSetup): void => {
 export const registerChainAdapters = (): void => {
     const { chains } = getProvider()
     chains.setCapabilityOverrides(readCapabilityLayers)
+    setPeraBackendSwitch(chainId => chains.isSwitchedOff(chainId))
     const setup = buildChainSetup(
         config.chains,
         {
@@ -121,5 +133,5 @@ export const registerChainAdapters = (): void => {
     void rehydrateAccountsStore()
     // Sign requests persisted before requests named their chain were all
     // Algorand ones.
-    void rehydrateSigningStore({ unstampedRequestChainId: LEGACY_CHAIN_ID })
+    void rehydrateSigningStore({ unstampedRequestChainId: ALGORAND_CHAIN_ID })
 }

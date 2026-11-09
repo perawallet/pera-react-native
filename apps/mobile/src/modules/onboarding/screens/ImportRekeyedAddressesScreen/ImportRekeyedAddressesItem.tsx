@@ -17,7 +17,7 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { SelectableAccountCheckboxRow } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -38,7 +38,7 @@ export const ImportRekeyedAddressesItem = ({
 }: ImportRekeyedAddressesItemProps) => {
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
-    const address = chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? ''
+    const address = chainAccountOf(account, ALGORAND_CHAIN_ID)?.address ?? ''
 
     const handleOpenInfo = useCallback(() => {
         void requestBottomSheet<void>({

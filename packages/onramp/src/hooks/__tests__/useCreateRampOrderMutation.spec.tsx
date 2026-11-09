@@ -13,13 +13,13 @@
 // @vitest-environment jsdom
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
 import React from 'react'
 
 import { mockCreateRampOrder } from '../../test-handlers'
-import type { RampOrderApiResponse } from '../../api/orders/schema'
+import type { RampOrderApiInput } from '../../api/orders/schema'
+import { SCOPE } from '../../__tests__/routerFixtures'
 import { useCreateRampOrderMutation } from '../useCreateRampOrderMutation'
 
 const server = setupServer()
@@ -28,18 +28,17 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const xoOrder: RampOrderApiResponse = {
-    swap_order_id: 'order-1',
-    xo: {
-        pay_in_address: 'PAYIN_ADDRESS',
-        source_amount: '100',
-        provider_response: {
-            payInAddress: 'PAYIN_ADDRESS',
-            toAddress: 'DEST_ADDRESS',
-            status: 'waiting',
+const xoOrder: RampOrderApiInput = {
+    order_id: 'order-1',
+    status: 'pending',
+    expires_at: null,
+    steps: [
+        {
+            kind: 'deposit_instructions',
+            address: 'PAYIN_ADDRESS',
+            memo: null,
         },
-    },
-    meld: null,
+    ],
 }
 
 function createWrapper() {
@@ -63,15 +62,13 @@ describe('onramp/useCreateRampOrderMutation', () => {
         })
 
         const order = await result.current.mutateAsync({
-            scope: { chainId: 'algorand', networkId: 'mainnet' },
-            quote: 'quote-1',
-            sourceAmount: new Decimal(100),
-            sourceAddress: 'SOURCE_ADDRESS',
+            scope: SCOPE,
+            quoteId: 'quote-1',
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(order.swapOrderId).toBe('order-1')
+        expect(order.orderId).toBe('order-1')
         expect(order.kind).toBe('xo')
     })
 })

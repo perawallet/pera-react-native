@@ -80,14 +80,27 @@ describe('useIsOnTestTier', () => {
         })
     })
 
-    test('is false in developer mode with a single chain registered', () => {
-        registerChain('algorand', 'testnet')
-        useNetworkStore.getState().setMode('developer')
+    describe('with a single chain registered', () => {
+        beforeEach(() => {
+            registerChain('algorand', 'testnet')
+        })
 
-        const { result } = renderHook(() =>
-            useIsOnTestTier(['algorand' as ChainId]),
-        )
+        test('is false in live mode', () => {
+            const { result } = renderHook(() =>
+                useIsOnTestTier(['algorand' as ChainId]),
+            )
 
-        expect(result.current).toBe(false)
+            expect(result.current).toBe(false)
+        })
+
+        test('is true in developer mode', () => {
+            useNetworkStore.getState().setMode('developer')
+
+            const { result } = renderHook(() =>
+                useIsOnTestTier(['algorand' as ChainId]),
+            )
+
+            expect(result.current).toBe(true)
+        })
     })
 })

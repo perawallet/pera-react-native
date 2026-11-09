@@ -22,7 +22,7 @@ import { CopyableText } from '@components/CopyableText'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
@@ -39,7 +39,7 @@ export type RekeyedAccountInfoContentProps = {
 export const RekeyedAccountInfoContent = ({
     account,
 }: RekeyedAccountInfoContentProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { t } = useLanguage()
@@ -124,6 +124,7 @@ export const RekeyedAccountInfoContent = ({
                 <AccountAssetItemView
                     key={balance.assetId}
                     accountBalance={balance}
+                    scope={scope}
                     style={styles.assetItem}
                 />
             ))}

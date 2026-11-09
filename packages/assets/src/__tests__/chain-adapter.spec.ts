@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ChainAdapterNotRegisteredError,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    CHART_QUERY_TIMEOUT_MS,
     PeraNetworkError,
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
@@ -28,6 +28,7 @@ import {
     fetchAndPersistAssets,
     fetchAssetAuthorities,
     fetchAssetMetadata,
+    fetchAssetPriceHistory,
     fetchOnChainAsset,
     findNativeAsset,
     isNativeAssetId,
@@ -52,7 +53,7 @@ describe('assetsAdapterFor / nativeAssetFor', () => {
 
         expect(
             assetsAdapterFor({
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const),
         ).toBe(adapter)
@@ -86,7 +87,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ syncAssets })
 
         await fetchAndPersistAssets(['1', '2'], {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const)
 
@@ -104,7 +105,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ getAssetMetadata })
 
         const asset = await fetchAssetMetadata('7', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -126,7 +127,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ fetchAssetAuthorities: member })
 
         const result = await fetchAssetAuthorities('7', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -142,7 +143,7 @@ describe('scope wrappers', () => {
 
         await expect(
             fetchAssetAuthorities('7', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).resolves.toEqual({
@@ -159,7 +160,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ search })
 
         const result = await searchAssets({ query: 'usdc', cursor: 'C1' }, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -174,7 +175,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ search: undefined })
 
         const rejection = searchAssets({ query: 'usdc' }, {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -189,7 +190,7 @@ describe('scope wrappers', () => {
         registerFakeAssetsAdapter({ fetchOnChainAsset: fetchOnChain })
 
         const asset = await fetchOnChainAsset('7', {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'mainnet',
         } as const)
 
@@ -206,7 +207,7 @@ describe('searchAssetsAcrossScopes', () => {
         useAssetSearchAvailabilityStore.getState().resetState()
     })
 
-    const ALGORAND = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
+    const ALGORAND = { chainId: 'algorand', networkId: 'mainnet' } as const
     const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
     const asset = (assetId: string): DisplayableAsset => ({ assetId })
     const registerBoth = (
@@ -495,39 +496,75 @@ describe('with no adapter registered', () => {
 
         await expect(
             fetchAndPersistAssets(['1'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchOnChainAsset('1', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAssetMetadata('1', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAssetAuthorities('1', {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             searchAssets({ query: 'a' }, {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
         await expect(
             fetchAndPersistPrices(['1'], {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'mainnet',
             } as const),
         ).rejects.toBeInstanceOf(ChainAdapterNotRegisteredError)
+    })
+})
+
+describe('fetchAssetPriceHistory deadline', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+    it('rejects with a TimeoutError once the chain has not answered in time, and not before', async () => {
+        vi.useFakeTimers()
+        registerFakeAssetsAdapter({
+            getPriceHistory: () => new Promise<never>(() => {}),
+        })
+        const rejection = fetchAssetPriceHistory('1', 'one-day', scope).catch(
+            (error: Error) => error,
+        )
+        let isSettled = false
+        void rejection.then(() => {
+            isSettled = true
+        })
+
+        await vi.advanceTimersByTimeAsync(CHART_QUERY_TIMEOUT_MS - 1)
+        expect(isSettled).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+
+        expect(await rejection).toMatchObject({ name: 'TimeoutError' })
+    })
+
+    it('returns the points of a history that answers in time', async () => {
+        registerFakeAssetsAdapter({ getPriceHistory: vi.fn(async () => []) })
+
+        await expect(
+            fetchAssetPriceHistory('1', 'one-day', scope),
+        ).resolves.toEqual([])
     })
 })

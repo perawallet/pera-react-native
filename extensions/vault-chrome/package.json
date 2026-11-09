@@ -1,0 +1,41 @@
+{
+  "name": "@perawallet/wallet-extension-vault-chrome",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./vault/autolock": {
+      "types": "./dist/vault/autolock.d.ts",
+      "default": "./dist/vault/autolock.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@algorandfoundation/keystore-core": "catalog:",
+    "@noble/hashes": "catalog:",
+    "@scure/base": "catalog:",
+    "@tanstack/store": "catalog:",
+    "@perawallet/wallet-core-passkeys": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "@types/chrome": "catalog:",
+    "@types/node": "catalog:",
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@algorandfoundation/dp256": "catalog:"
+  }
+}

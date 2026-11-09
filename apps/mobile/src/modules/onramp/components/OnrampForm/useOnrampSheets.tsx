@@ -11,14 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import type { Decimal } from 'decimal.js'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { useTrackOnrampEvent } from '@modules/onramp/hooks/useTrackOnrampEvent'
-import { OnrampPairSelectionContent } from '../OnrampPairSelectionContent'
+import {
+    OnrampPairSelectionContent,
+    type OnrampDestinationPick,
+} from '../OnrampPairSelectionContent'
 import { OnrampSourceSelectionContent } from '../OnrampSourceSelectionContent'
 import { OnrampProviderContent } from '../OnrampProviderContent'
 import { OnrampPaymentMethodContent } from '../OnrampPaymentMethodContent'
@@ -26,17 +29,16 @@ import { OnrampSenderAddressContent } from '../OnrampSenderAddressContent'
 
 type UseOnrampSheetsParams = {
     quotes: RampQuote[]
-    /** Display units; the provider sheet ranks XO quotes with it. */
-    sourceAmount: Nullable<Decimal>
     selectedQuoteId: Nullable<string>
     selectQuote: (quoteId: string) => void
     selectedPaymentMethodId: Nullable<string>
     selectPaymentMethod: (paymentMethodId: string) => void
-    /** Destination token price in USD, for the provider rows' fiat value line. */
-    destinationPriceInUsd: Nullable<Decimal>
+    /** The receive asset's symbol, which the provider rows show their amounts in. */
+    destinationSymbol: string
     senderAddress: string
     setSelectedSourceTokenId: (id: string) => void
     setSelectedDestinationTokenId: (id: string) => void
+    setSelectedChainId: (chainId: ChainId) => void
     setSenderAddress: (address: string) => void
 }
 
@@ -53,21 +55,21 @@ type UseOnrampSheetsResult = {
  * content and applies the resolved value back through the form's setters. Split
  * out of `useOnrampForm` to keep that hook under the max-lines threshold.
  *
- * The selection sheets resolve a TOKEN id (source or destination), which the
- * handler commits directly to the store; source and destination are now
- * independent (no pair is resolved here).
+ * The source sheet resolves a token id and the destination sheet a
+ * destination pick (chain and token id); the handler commits either directly
+ * to the store, with no pair resolved here.
  */
 export const useOnrampSheets = ({
     quotes,
-    sourceAmount,
     selectedQuoteId,
     selectQuote,
     selectedPaymentMethodId,
     selectPaymentMethod,
-    destinationPriceInUsd,
+    destinationSymbol,
     senderAddress,
     setSelectedSourceTokenId,
     setSelectedDestinationTokenId,
+    setSelectedChainId,
     setSenderAddress,
 }: UseOnrampSheetsParams): UseOnrampSheetsResult => {
     const { request: requestBottomSheet } = useBottomSheet()
@@ -89,7 +91,7 @@ export const useOnrampSheets = ({
 
     const handleOpenDestinationSelection = useCallback(async () => {
         if (scope === null) return
-        const destinationTokenId = await requestBottomSheet<string>({
+        const pick = await requestBottomSheet<OnrampDestinationPick>({
             contents: (
                 <OnrampPairSelectionContent
                     variant='destination'
@@ -102,9 +104,15 @@ export const useOnrampSheets = ({
                 autoCreateContainer: false,
             },
         })
-        if (!destinationTokenId) return
-        setSelectedDestinationTokenId(destinationTokenId)
-    }, [requestBottomSheet, setSelectedDestinationTokenId, scope])
+        if (!pick) return
+        setSelectedChainId(pick.chainId)
+        setSelectedDestinationTokenId(pick.tokenId)
+    }, [
+        requestBottomSheet,
+        setSelectedChainId,
+        setSelectedDestinationTokenId,
+        scope,
+    ])
 
     const handleOpenProvider = useCallback(async () => {
         trackOnrampEvent(OnrampEvent.ProviderTap)
@@ -112,10 +120,9 @@ export const useOnrampSheets = ({
             contents: (
                 <OnrampProviderContent
                     quotes={quotes}
-                    sourceAmount={sourceAmount}
                     selectedQuoteId={selectedQuoteId}
                     selectedPaymentMethodId={selectedPaymentMethodId}
-                    destinationPriceInUsd={destinationPriceInUsd}
+                    destinationSymbol={destinationSymbol}
                 />
             ),
             options: {
@@ -131,10 +138,9 @@ export const useOnrampSheets = ({
     }, [
         requestBottomSheet,
         quotes,
-        sourceAmount,
         selectedQuoteId,
         selectedPaymentMethodId,
-        destinationPriceInUsd,
+        destinationSymbol,
         selectQuote,
         trackOnrampEvent,
     ])

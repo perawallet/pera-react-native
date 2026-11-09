@@ -49,15 +49,27 @@ import {
     encodeEvmNftTransfer,
     readEvmNftTransferAsset,
 } from '../transfer/nft-transfer'
-import { nftSendSubtitle, sendSummary } from '../transfer/summary'
+import {
+    nftSendSubtitle,
+    sendSummary,
+    spendApprovalSummary,
+    swapSummary,
+} from '../transfer/summary'
 import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
 import {
     contractActionSummary,
     decodeEvmContractAction,
     hidesUnknownContractNotice,
 } from './contract-actions'
-import { findKnownEvmContract, wrappedNativeOf } from './known-contracts'
-import type { EthereumPayloadFeeEstimate } from './adapter'
+import {
+    findKnownEvmContract,
+    knownSpenderOf,
+    wrappedNativeOf,
+} from './known-contracts'
+import type {
+    EthereumPayloadFeeEstimate,
+    EthereumRevertedEstimate,
+} from './adapter'
 import type { EvmStandardCall } from './standard-call-types'
 import {
     approvalWarningOf,
@@ -144,6 +156,8 @@ const AUTO_APPROVED_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
     'transfer',
     'token-transfer',
     'nft-transfer',
+    'swap',
+    'approval',
 ])
 
 const viewOfNative = (
@@ -160,11 +174,13 @@ const viewOfNative = (
 // recognition never lets it sign without review; a view that can't be read
 // never does either.
 const isAutoApproved = (transaction: ReviewedTransaction): boolean => {
-    const kind = viewOfNative(transaction)?.kind
+    const view = viewOfNative(transaction)
     return (
         AUTO_APPROVED_KINDS.has(transaction.summary.kind) &&
-        kind !== undefined &&
-        kind !== 'contract-call'
+        view !== undefined &&
+        view.kind !== 'contract-call' &&
+        // A call the node says reverts is never signed unreviewed.
+        !('revertedEstimate' in view && view.revertedEstimate)
     )
 }
 
@@ -195,6 +211,7 @@ type Pricing = {
     maxPriorityFeePerGas: bigint
     hasHighFee?: true
     feeEstimate?: EthereumPayloadFeeEstimate
+    revertedEstimate?: EthereumRevertedEstimate
 }
 
 type Call = {
@@ -218,8 +235,14 @@ const readCall = (
     chain: EvmChain,
     context?: ReviewContext,
 ): Call => {
-    const { from, transaction, isPreview, hasHighFee, feeEstimate } =
-        readEvmReviewTransaction(unsigned, chain)
+    const {
+        from,
+        transaction,
+        isPreview,
+        hasHighFee,
+        feeEstimate,
+        revertedEstimate,
+    } = readEvmReviewTransaction(unsigned, chain)
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
@@ -267,6 +290,7 @@ const readCall = (
                 maxPriorityFeePerGas,
                 ...(hasHighFee && { hasHighFee }),
                 ...(feeEstimate && { feeEstimate }),
+                ...(revertedEstimate && { revertedEstimate }),
             },
         }),
     }
@@ -275,7 +299,10 @@ const readCall = (
 const pricingOf = (
     call: Call,
 ):
-    | Pick<EthereumPricedView, 'nonce' | 'gas' | 'fee' | 'feeEstimate'>
+    | Pick<
+          EthereumPricedView,
+          'nonce' | 'gas' | 'fee' | 'feeEstimate' | 'revertedEstimate'
+      >
     | EthereumPreviewView
     | EthereumMinedView => {
     if (call.pricing) {
@@ -283,6 +310,9 @@ const pricingOf = (
             nonce: call.pricing.nonce,
             gas: call.pricing.gas,
             ...(call.pricing.hasHighFee && { hasHighFee: true as const }),
+            ...(call.pricing.revertedEstimate && {
+                revertedEstimate: call.pricing.revertedEstimate,
+            }),
             ...(call.pricing.feeEstimate && {
                 feeEstimate: {
                     preset: call.pricing.feeEstimate.preset,
@@ -315,10 +345,11 @@ const viewOf = (
         nft,
         call: standard,
         knownContract,
+        knownSpender,
         action,
     }: Pick<
         EthereumTransactionView,
-        'token' | 'nft' | 'call' | 'knownContract' | 'action'
+        'token' | 'nft' | 'call' | 'knownContract' | 'knownSpender' | 'action'
     > = {},
 ): EthereumTransactionView => ({
     kind,
@@ -334,6 +365,7 @@ const viewOf = (
     ...(nft && { nft }),
     ...(standard && { call: standard }),
     ...(knownContract && { knownContract }),
+    ...(knownSpender && { knownSpender }),
     ...(action && { action }),
 })
 
@@ -349,8 +381,15 @@ const contractCallView = (
         eip155ChainId !== undefined && to
             ? findKnownEvmContract(eip155ChainId, to)
             : undefined
+    const spender =
+        standard?.kind === 'approve' || standard?.kind === 'increase-allowance'
+            ? knownSpenderOf(eip155ChainId, standard.spender)
+            : undefined
     if (eip155ChainId === undefined || !to || !known) {
-        return viewOf(call, 'contract-call', standard && { call: standard })
+        return viewOf(call, 'contract-call', {
+            ...(standard && { call: standard }),
+            ...(spender && { knownSpender: spender }),
+        })
     }
     // A standard token call keeps its own review, even to a known contract.
     const action = standard
@@ -362,6 +401,7 @@ const contractCallView = (
           )
     return viewOf(call, 'contract-call', {
         ...(standard && { call: standard }),
+        ...(spender && { knownSpender: spender }),
         knownContract: {
             kind: known.kind,
             name: known.name,
@@ -481,6 +521,27 @@ const verifiedNftTransfer = (
     }
 }
 
+// A swap's own calls: its confirmation sheet showed them and the swap flow
+// checked them against the request, so nothing here re-reads the route. An
+// approval still has to be one, since its summary is only a claim.
+const walletSwapSummary = (
+    summary: Optional<TransactionSummary>,
+    call: Call,
+    chain: EvmChain,
+): Optional<TransactionSummary> => {
+    if (!call.to || !summary?.amount) return undefined
+    if (summary.kind === 'swap') {
+        return swapSummary(call.from, call.to, summary.amount)
+    }
+    const standard = decodeEvmStandardCall(call)
+    return summary.kind === 'approval' && standard?.kind === 'approve'
+        ? spendApprovalSummary(call.from, standard.spender, {
+              assetRef: { chainId: chain.row.id, assetId: standard.contract },
+              value: standard.value,
+          })
+        : undefined
+}
+
 /** The view a review screen reads, or null for a payload review would refuse. Never a verified token or NFT transfer: that needs the request's summary. */
 export const ethereumViewOf = (
     unsigned: UnsignedTransaction,
@@ -582,6 +643,15 @@ const reviewCall = async (
                 ),
             ),
             native: toEthereumNative(viewOf(call, 'nft-transfer', { nft })),
+        }
+    }
+    const walletSwap = context.isWalletBuilt
+        ? walletSwapSummary(summary, call, chain)
+        : undefined
+    if (walletSwap) {
+        return {
+            summary: walletSwap,
+            native: toEthereumNative(viewOf(call, 'swap-call')),
         }
     }
     const view = contractCallView(

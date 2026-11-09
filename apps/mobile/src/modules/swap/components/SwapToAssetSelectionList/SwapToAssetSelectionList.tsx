@@ -12,8 +12,15 @@
 
 import { useCallback } from 'react'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainId,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { scopeOfSwapAsset } from '@perawallet/wallet-core-swaps'
 import { EmptyView } from '@components/EmptyView'
+import { FilterSelection } from '@components/FilterSelection'
 import { AssetSelectionList } from '@modules/assets'
 import {
     useSwapToAssetSelectionList,
@@ -25,12 +32,13 @@ import { useStyles } from './styles'
 export type SwapToAssetSelectionListProps = {
     scope: ChainScope
     fromAssetId: string
-    onAssetSelected: (asset: AssetWithAccountBalance) => void
+    onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
     isVisible?: boolean
     excludeAssetId?: string
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
+    emptyChainResultBody: string
     inBottomSheet?: boolean
 }
 
@@ -43,6 +51,7 @@ export const SwapToAssetSelectionList = ({
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
+    emptyChainResultBody,
     inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
@@ -51,7 +60,12 @@ export const SwapToAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        chainOptions,
+        selectedChainId,
+        handleSelectChain,
+        isChainShown,
         isLoading,
+        handleEndReached,
         handleAssetSelected,
     } = useSwapToAssetSelectionList({
         scope,
@@ -62,35 +76,64 @@ export const SwapToAssetSelectionList = ({
     })
 
     const renderItem = useCallback(
-        ({ item }: { item: AvailableAssetWithBalance }) => (
-            <SwapToAssetItemView
-                dexAsset={item.dexAsset}
-                balance={item.balance}
-                onPress={() => handleAssetSelected(item)}
-                style={styles.item}
-                testID={`swap-asset-item-${item.dexAsset.assetId}`}
-            />
-        ),
-        [handleAssetSelected, styles],
+        ({ item }: { item: AvailableAssetWithBalance }) => {
+            const { ref } = item.swapAsset
+            const isOnScope = toScopeKey(ref) === toScopeKey(scope)
+            return (
+                <SwapToAssetItemView
+                    swapAsset={item.swapAsset}
+                    balance={item.balance}
+                    scope={scopeOfSwapAsset(ref)}
+                    isChainShown={isChainShown}
+                    onPress={() => handleAssetSelected(item)}
+                    style={styles.item}
+                    testID={
+                        isOnScope
+                            ? `swap-asset-item-${item.swapAsset.assetId}`
+                            : `swap-asset-item-${ref.chainId}-${item.swapAsset.assetId}`
+                    }
+                />
+            )
+        },
+        [handleAssetSelected, isChainShown, scope, styles],
     )
 
     return (
         <AssetSelectionList
             data={items}
             renderItem={renderItem}
-            keyExtractor={item => item.dexAsset.assetId}
+            // Ids repeat across chains: every EVM chain's native asset is 'native'.
+            keyExtractor={item =>
+                `${toScopeKey(item.swapAsset.ref)}/${item.swapAsset.assetId}`
+            }
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}
+            searchAccessory={
+                chainOptions.length > 0 ? (
+                    <FilterSelection<Nullable<ChainId>>
+                        options={chainOptions}
+                        selectedValue={selectedChainId}
+                        onSelect={handleSelectChain}
+                        testID='swap_to_chain_filter'
+                    />
+                ) : undefined
+            }
             isLoading={isLoading && items.length === 0}
+            onEndReached={handleEndReached}
             skeletonCount={3}
             cardLayout
             inBottomSheet={inBottomSheet}
             ListEmptyComponent={
-                !isLoading && debouncedSearchFilter ? (
+                !isLoading &&
+                (debouncedSearchFilter || selectedChainId !== null) ? (
                     <EmptyView
                         title={emptyResultTitle}
-                        body={emptyResultBody}
+                        body={
+                            debouncedSearchFilter
+                                ? emptyResultBody
+                                : emptyChainResultBody
+                        }
                     />
                 ) : undefined
             }

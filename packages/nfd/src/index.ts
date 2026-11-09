@@ -15,9 +15,16 @@ export * from './hooks'
 export * from './api'
 export * from './db'
 export * from './sync'
-export { verifyNameAddress, type VerifyNameAddressParams } from './services'
+export {
+    verifyNameAddress,
+    resolveVerifiedNameAddress,
+    type VerifyNameAddressParams,
+    type ResolveVerifiedNameAddressParams,
+    type VerifiedNameResolution,
+} from './services'
 export {
     nameServiceChainAdapters,
+    nameServiceOf,
     type NameServiceChainAdapter,
     type VerifyForwardResolutionParams,
 } from './chain-adapter'

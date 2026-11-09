@@ -14,13 +14,23 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { Linking, Platform } from 'react-native'
-import type {
-    RampPair,
-    MeldQuote,
-    XoQuote,
-    RampOrder,
+import {
+    RampAmountOutOfRangeError,
+    type RampPair,
+    type RampQuote,
+    type RampOrder,
 } from '@perawallet/wallet-core-onramp'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
+import {
+    ALGO_ROUTER_ID,
+    BTC_ROUTER_ID,
+    USD_ROUTER_ID,
+    makeAlgoToken,
+    makeDepositToken,
+    makeFiatToken,
+    makeRampPair,
+    makeRampToken,
+} from '@test-utils/rampFixtures'
 import { useOnrampForm } from '../useOnrampForm'
 import { OnrampTermsContent } from '../../OnrampTermsContent'
 
@@ -30,6 +40,7 @@ const mockCreateQuote = vi.fn()
 const mockCreateOrder = vi.fn()
 const mockEnsureOptIn = vi.fn()
 const mockSetSenderAddress = vi.fn()
+const mockRememberDepositInstructions = vi.fn()
 const mockSetSelectedSourceTokenId = vi.fn()
 const mockSetSelectedDestinationTokenId = vi.fn()
 const mockErrorToast = vi.fn()
@@ -59,7 +70,11 @@ vi.mock('@perawallet/wallet-core-onramp', async () => {
         }),
         useCreateRampQuoteMutation: () => ({ mutateAsync: mockCreateQuote }),
         useCreateRampOrderMutation: () => ({ mutateAsync: mockCreateOrder }),
+        useRampRegionQuery: () => ({
+            data: { countryCode: 'DE', countryName: 'Germany' },
+        }),
         useOnramp: () => ({
+            rememberDepositInstructions: mockRememberDepositInstructions,
             senderAddress: mockSenderAddress,
             setSenderAddress: mockSetSenderAddress,
             setSelectedSourceTokenId: mockSetSelectedSourceTokenId,
@@ -185,113 +200,51 @@ vi.mock('../useOnrampTerms', () => ({
 
 // --- fixtures -------------------------------------------------------------
 
-const meldPair: RampPair = {
-    id: 'pair-meld',
-    sourceToken: {
-        id: 'USD',
-        symbol: 'USD',
-        name: 'US Dollar',
-        fractionDecimals: 2,
-        logo: null,
-        network: { id: 'fiat', name: 'Fiat', logo: null },
-        priceInUsd: null,
-    },
-    destinationToken: {
-        id: 'ALGO',
-        symbol: 'ALGO',
-        name: 'Algorand',
-        fractionDecimals: 6,
-        logo: null,
-        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
-        priceInUsd: null,
-    },
-    provider: { id: 'meld', paymentTypes: ['CARD'], limits: null },
-}
+const meldPair = makeRampPair(makeFiatToken('USD'), makeAlgoToken())
 
-const usdcMeldPair: RampPair = {
-    ...meldPair,
-    id: 'pair-meld-usdc',
-    destinationToken: {
-        id: 'USDC_ALGORAND',
-        symbol: 'USDC',
-        name: 'USD Coin',
-        fractionDecimals: 6,
-        logo: null,
-        network: { id: 'ALGORAND', name: 'Algorand', logo: null },
-        priceInUsd: null,
-    },
-}
+const usdcMeldPair = makeRampPair(makeFiatToken('USD'), makeRampToken())
 
-const xoPair: RampPair = {
-    ...meldPair,
-    id: 'pair-xo',
-    provider: {
-        id: 'xo',
-        paymentTypes: ['CARD'],
-        limits: null,
-    },
-}
+const xoPair = makeRampPair(makeDepositToken(), makeAlgoToken())
 
 const makeMeldQuote = (
-    overrides: Partial<MeldQuote> & { quoteId: string },
-): MeldQuote => ({
+    overrides: Partial<RampQuote> & { quoteId: string },
+): RampQuote => ({
     kind: 'meld',
+    provider: 'STRIPE',
     paymentMethod: { id: 'CARD', logo: null, name: 'Card' },
     sourceAmount: new Decimal(100),
     destinationAmount: new Decimal(500),
-    sourceCurrencyCode: 'USD',
-    destinationCurrencyCode: 'ALGO',
-    totalFee: new Decimal(1),
-    networkFee: null,
-    transactionFee: new Decimal(1),
-    exchangeRate: new Decimal(5),
-    paymentMethodType: 'CARD',
-    serviceProvider: 'STRIPE',
-    institutionName: null,
-    lowKyc: false,
+    sourceValueInUsd: new Decimal(100),
+    destinationValueInUsd: new Decimal(80),
     ...overrides,
 })
 
 const makeXoQuote = (
-    overrides: Partial<XoQuote> & { quoteId: string },
-): XoQuote => ({
-    kind: 'xo',
-    paymentMethod: { id: 'CARD', logo: null, name: 'Card' },
-    amount: { assetId: 'ALGO', value: new Decimal(5) },
-    min: { assetId: 'USD', value: new Decimal(10) },
-    max: { assetId: 'USD', value: new Decimal(5000) },
-    minerFee: { assetId: 'ALGO', value: new Decimal(1) },
-    expiry: Date.now() + 60_000,
-    pairId: 'pair-xo',
-    providerQuoteId: 'provider-quote-1',
-    ...overrides,
-})
+    overrides: Partial<RampQuote> & { quoteId: string },
+): RampQuote =>
+    makeMeldQuote({
+        kind: 'xo',
+        provider: 'XO',
+        paymentMethod: { id: 'CRYPTO', logo: null, name: '' },
+        ...overrides,
+    })
 
 const meldOrder: RampOrder = {
     kind: 'meld',
-    swapOrderId: 'order-1',
-    widgetUrl: 'https://meld.widget/checkout',
+    orderId: 'order-1',
+    checkoutUrl: 'https://meld.widget/checkout',
 }
 
 const xoOrder: RampOrder = {
     kind: 'xo',
-    swapOrderId: 'order-2',
-    payInAddress: 'PAY_IN',
-    sourceAmount: new Decimal(100),
-    toAddress: 'ACCOUNT_ADDRESS',
-    status: 'pending',
+    orderId: 'order-2',
+    deposit: { address: 'PAY_IN', memo: null },
 }
 
-// Real /v1/ramp/quotes/ 400 body; the single-quoted JSON leaf in
-// non_field_errors[0] carries the provider limits.
-const buildBelowMinQuoteError = (leaf: string) => ({
-    type: 'SourceAmountIsTooLow',
-    fallback_message: 'Amount is too low.',
-    detail: { non_field_errors: [leaf] },
-})
-
-const belowMinQuoteError = buildBelowMinQuoteError(
-    "{'message': 'Source amount is below the minimum allowed, which is 600.00.', 'min_amount': '600.00', 'max_amount': '5000.00'}",
+const belowMinQuoteError = new RampAmountOutOfRangeError(
+    'min',
+    { min: new Decimal(600), max: new Decimal(5000) },
+    'Source amount is below the minimum allowed.',
 )
 
 describe('useOnrampForm', () => {
@@ -330,14 +283,40 @@ describe('useOnrampForm', () => {
         })
 
         expect(mockCreateQuote).toHaveBeenCalledTimes(1)
-        expect(mockCreateQuote).toHaveBeenCalledWith(
-            expect.objectContaining({
-                scope: { chainId: 'algorand', networkId: 'mainnet' },
-                pair: 'pair-meld',
-                destinationAddress: 'ACCOUNT_ADDRESS',
-                sourceAmount: new Decimal(100),
-            }),
-        )
+        expect(mockCreateQuote).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            sourceToken: {
+                id: USD_ROUTER_ID,
+                kind: 'fiat',
+                fractionDecimals: 2,
+            },
+            destinationToken: { id: ALGO_ROUTER_ID, fractionDecimals: 6 },
+            sourceAmount: new Decimal(100),
+            destinationAddress: 'ACCOUNT_ADDRESS',
+            countryCode: 'DE',
+            refundAddress: 'SENDER_ADDRESS',
+        })
+    })
+
+    it('asks for no quote while the amount is empty or floors to nothing', async () => {
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+
+        act(() => {
+            result.current.setSourceAmountText('')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        act(() => {
+            result.current.setSourceAmountText('0.001')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(mockCreateQuote).not.toHaveBeenCalled()
+        expect(result.current.errorMessage).toBeNull()
+        expect(result.current.isQuoting).toBe(false)
     })
 
     it('does not re-quote when an edit leaves the amount unchanged', async () => {
@@ -371,11 +350,11 @@ describe('useOnrampForm', () => {
 
         // First call resolves slowly, second call resolves fast — the fresh
         // one wins regardless of resolution order.
-        let resolveStale: (v: MeldQuote[]) => void = () => {}
+        let resolveStale: (v: RampQuote[]) => void = () => {}
         mockCreateQuote
             .mockImplementationOnce(
                 () =>
-                    new Promise<MeldQuote[]>(resolve => {
+                    new Promise<RampQuote[]>(resolve => {
                         resolveStale = resolve
                     }),
             )
@@ -404,6 +383,43 @@ describe('useOnrampForm', () => {
         })
 
         expect(result.current.selectedQuote?.quoteId).toBe('fresh')
+    })
+
+    it('cannot confirm while a re-quote is in flight, so an order never uses a quote for another amount', async () => {
+        let resolveRequote: (v: RampQuote[]) => void = () => {}
+        mockCreateQuote
+            .mockResolvedValueOnce([makeMeldQuote({ quoteId: 'q100' })])
+            .mockImplementationOnce(
+                () =>
+                    new Promise<RampQuote[]>(resolve => {
+                        resolveRequote = resolve
+                    }),
+            )
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+
+        act(() => {
+            result.current.setSourceAmountText('100')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        expect(result.current.canConfirm).toBe(true)
+
+        act(() => {
+            result.current.setSourceAmountText('200')
+        })
+        expect(result.current.isQuoting).toBe(true)
+        expect(result.current.canConfirm).toBe(false)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        await act(async () => {
+            resolveRequote([makeMeldQuote({ quoteId: 'q200' })])
+            await Promise.resolve()
+        })
+
+        expect(result.current.canConfirm).toBe(true)
     })
 
     it('filters out quotes with an excluded payment method on Android', async () => {
@@ -526,25 +542,96 @@ describe('useOnrampForm', () => {
         expect(typeof result.current.handleOpenPaymentMethod).toBe('function')
     })
 
-    it('sets an error message when the amount is below the XO minimum', async () => {
+    it('quotes a deposit pair per amount, sending the sender address as the refund address', async () => {
         mockCreateQuote.mockResolvedValue([makeXoQuote({ quoteId: 'xo-1' })])
 
         const { result } = renderHook(() => useOnrampForm(xoPair))
 
-        // XO fetches on pair mount with source_amount null.
+        // No amount yet, so nothing to ask.
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
+        expect(mockCreateQuote).not.toHaveBeenCalled()
 
         act(() => {
-            result.current.setSourceAmountText('5') // below min of 10
+            result.current.setSourceAmountText('0.5')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        act(() => {
+            result.current.setSourceAmountText('0.7')
         })
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
-        expect(result.current.limits?.min?.toString()).toBe('10')
-        expect(result.current.errorMessage).toBeTruthy()
+        expect(mockCreateQuote).toHaveBeenCalledTimes(2)
+        expect(mockCreateQuote).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                sourceToken: {
+                    id: BTC_ROUTER_ID,
+                    kind: 'deposit',
+                    fractionDecimals: 8,
+                },
+                sourceAmount: new Decimal('0.7'),
+                refundAddress: 'SENDER_ADDRESS',
+            }),
+        )
+    })
+
+    it('sends no refund address when the sender address is blank', async () => {
+        mockSenderAddress = '   '
+        mockCreateQuote.mockResolvedValue([])
+
+        const { result } = renderHook(() => useOnrampForm(xoPair))
+        act(() => {
+            result.current.setSourceAmountText('1')
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(mockCreateQuote).toHaveBeenCalledWith(
+            expect.objectContaining({ refundAddress: null }),
+        )
+    })
+
+    it('exposes the selected quote USD prices per unit', async () => {
+        mockCreateQuote.mockResolvedValue([
+            makeMeldQuote({
+                quoteId: 'm1',
+                destinationAmount: new Decimal(1000),
+            }),
+        ])
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.sourceUsdPrice?.toString()).toBe('1')
+        expect(result.current.destinationUsdPrice?.toString()).toBe('0.08')
+        expect(result.current.destinationAmount?.toString()).toBe('1000')
+    })
+
+    it('shows the router message and the above-max copy when the amount is too high', async () => {
+        mockCreateQuote.mockRejectedValue(
+            new RampAmountOutOfRangeError(
+                'max',
+                { min: null, max: new Decimal(5000) },
+                'Amount is too high.',
+            ),
+        )
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.errorMessage).toBe('onramp.form.amount_above_max')
+        expect(result.current.limits?.max?.toString()).toBe('5000')
+        expect(result.current.limits?.min).toBeNull()
     })
 
     it('exposes Meld limits and the below-min copy when the seeded quote fails', async () => {
@@ -598,8 +685,10 @@ describe('useOnrampForm', () => {
 
     it('exposes a min-only limit with a null max', async () => {
         mockCreateQuote.mockRejectedValue(
-            buildBelowMinQuoteError(
-                "{'message': 'Too low.', 'min_amount': '600.00'}",
+            new RampAmountOutOfRangeError(
+                'min',
+                { min: new Decimal(600), max: null },
+                'Too low.',
             ),
         )
 
@@ -612,10 +701,13 @@ describe('useOnrampForm', () => {
         expect(result.current.limits?.max).toBeNull()
     })
 
-    it('shows localized below-minimum copy, not backend prose, when the limits are unparseable', async () => {
-        // The apostrophe corrupts the single-quote normalisation.
+    it('shows localized below-minimum copy when the router names no limit', async () => {
         mockCreateQuote.mockRejectedValue(
-            buildBelowMinQuoteError("{'message': 'isn't parseable'}"),
+            new RampAmountOutOfRangeError(
+                'min',
+                { min: null, max: null },
+                'Too low.',
+            ),
         )
 
         const { result } = renderHook(() => useOnrampForm(meldPair))
@@ -629,23 +721,23 @@ describe('useOnrampForm', () => {
         )
     })
 
-    it('shows localized copy when the backend sends a non-numeric limit', async () => {
-        // The TRY pair returns the literal word "for" as the limit, in the
-        // prose as well as in min_amount.
-        mockCreateQuote.mockRejectedValue(
-            buildBelowMinQuoteError(
-                "{'message': 'Source amount is below the minimum allowed, which is for.', 'min_amount': 'for'}",
-            ),
-        )
+    it("shows the router's message for any other refusal", async () => {
+        mockCreateQuote.mockRejectedValue({
+            name: 'HTTPError',
+            status: 403,
+            data: {
+                error: 'Not available in your country.',
+                code: 'pair_restricted_in_country',
+            },
+        })
 
         const { result } = renderHook(() => useOnrampForm(meldPair))
         await act(async () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
-        expect(result.current.limits).toBeNull()
         expect(result.current.errorMessage).toBe(
-            'onramp.form.amount_below_min_unknown',
+            'Not available in your country.',
         )
     })
 
@@ -737,7 +829,7 @@ describe('useOnrampForm', () => {
         expect(mockErrorToast).toHaveBeenCalled()
     })
 
-    it('hands the USDC destination token to the receive preparation', async () => {
+    it("hands the USDC destination's asset id to the receive preparation", async () => {
         mockCreateQuote.mockResolvedValue([makeMeldQuote({ quoteId: 'm1' })])
 
         const { result } = renderHook(() => useOnrampForm(usdcMeldPair))
@@ -757,7 +849,7 @@ describe('useOnrampForm', () => {
             expect.objectContaining({
                 address: 'ACCOUNT_ADDRESS',
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
-                destinationToken: usdcMeldPair.destinationToken,
+                assetId: '31566704',
             }),
         )
     })
@@ -822,7 +914,7 @@ describe('useOnrampForm', () => {
         expect(mockOpenURL).not.toHaveBeenCalled()
     })
 
-    it('creates the order with the parsed source amount', async () => {
+    it('quotes with the parsed source amount and orders by quote id', async () => {
         mockCreateQuote.mockResolvedValue([makeXoQuote({ quoteId: 'xo-1' })])
         mockCreateOrder.mockResolvedValue(xoOrder)
 
@@ -841,24 +933,25 @@ describe('useOnrampForm', () => {
             await result.current.handleConfirm()
         })
 
-        const [orderParams] = mockCreateOrder.mock.calls[0]! as [
+        const [quoteParams] = mockCreateQuote.mock.calls.at(-1)! as [
             { sourceAmount: Decimal },
         ]
-        expect(orderParams.sourceAmount.toFixed()).toBe('100.5')
+        expect(quoteParams.sourceAmount.toFixed()).toBe('100.5')
+        expect(mockCreateOrder).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+            quoteId: 'xo-1',
+        })
     })
 
-    it('sends a null source address for an XO order with no sender address', async () => {
-        // Sender address is optional for XO; an empty value must become null,
-        // not '' (the backend rejects an empty string as a missing field).
-        mockSenderAddress = ''
+    it("remembers a deposit order's pay-in details for History", async () => {
         mockCreateQuote.mockResolvedValue([makeXoQuote({ quoteId: 'xo-1' })])
-        mockCreateOrder.mockResolvedValue(xoOrder)
+        mockCreateOrder.mockResolvedValue({
+            ...xoOrder,
+            deposit: { address: 'PAY_IN', memo: '99' },
+        })
 
         const { result } = renderHook(() => useOnrampForm(xoPair))
 
-        await act(async () => {
-            await vi.advanceTimersByTimeAsync(500)
-        })
         act(() => {
             result.current.setSourceAmountText('100')
         })
@@ -869,8 +962,9 @@ describe('useOnrampForm', () => {
             await result.current.handleConfirm()
         })
 
-        expect(mockCreateOrder).toHaveBeenCalledWith(
-            expect.objectContaining({ sourceAddress: null }),
+        expect(mockRememberDepositInstructions).toHaveBeenCalledWith(
+            'order-2',
+            { address: 'PAY_IN', memo: '99' },
         )
     })
 

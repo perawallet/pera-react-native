@@ -12,36 +12,52 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    formatNumber,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    addressOn,
+    useAllAccounts,
+    useSelectedAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     formatAssetAmount,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    apiSlippageToPercent,
+    formatSwapRate,
+    swapRate,
+    scopeOfSwapAsset,
+    useSwapSourceCostQuery,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { useLanguage } from '@hooks/useLanguage'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
+import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
 import { useStyles } from './styles'
 
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
 type UseSwapConfirmationParams = {
     scope: ChainScope
-    quote: Nullable<SwapQuote>
+    quote: SwapQuote
     swapStatus: SwapExecutionStatus
+}
+
+export type SwapReceiveTarget = {
+    /** Null when no account in the wallet holds `address`. */
+    account: Nullable<WalletAccount>
+    address: string
+    scope: ChainScope
 }
 
 type UseSwapConfirmationResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
+    /** Where a cross-chain payout lands; null on a same-chain swap, which pays the swapper. */
+    receiveTarget: Nullable<SwapReceiveTarget>
     inAsset: Optional<PeraAsset>
     outAsset: Optional<PeraAsset>
     isProcessing: boolean
@@ -54,13 +70,26 @@ type UseSwapConfirmationResult = {
     /** In the preferred currency; null until a rate resolves. */
     payFiatValue: Nullable<Decimal>
     receiveFiatValue: Nullable<Decimal>
-    rateDisplay: string
-    minimumReceivedDisplay: string
-    peraFeeDisplay: string
+    /** Null when an asset's decimals are unknown. */
+    rateDisplay: Nullable<string>
+    /** Null when the route sets no minimum. */
+    minimumReceivedDisplay: Nullable<string>
+    /** Null when the quote carries no Pera fee. */
+    peraFeeDisplay: Nullable<string>
+    /** Null when the quote carries no provider fee: some providers price theirs into the rate. */
+    providerFeeDisplay: Nullable<string>
+    /** The source chain's own estimate, else the quote's source-chain fee; null while that estimate loads, or when neither has one. */
+    networkFeeDisplay: Nullable<string>
+    needsSpendApproval: boolean
+    /** Non-null while the account can't pay the source chain's fee: confirm stays off. */
+    insufficientFeeMessage: Nullable<string>
     slippageDisplay: string
     hasHighPriceImpact: boolean
-    priceImpactDisplay: string
+    /** Null when the route reports no price impact. */
+    priceImpactDisplay: Nullable<string>
     priceImpactStyle: object
+    /** Set on a cross-chain swap, whose payout lands after this sheet closes. */
+    crossChainNote: Nullable<string>
 }
 
 export const useSwapConfirmation = ({
@@ -69,21 +98,37 @@ export const useSwapConfirmation = ({
     swapStatus,
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const selectedAccount = useSelectedAccount()
+    const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
+    const { sourceCost, isLoading: isSourceCostLoading } =
+        useSwapSourceCostQuery({ quote, scope })
 
-    const assetInId = quote?.assetIn.assetId
-    const assetOutId = quote?.assetOut.assetId
-    const { data: inAssets } = useAssetsQuery(
-        scope,
-        assetInId ? [assetInId] : [],
-    )
+    const assetInId = quote.assetIn.assetId
+    const assetOutId = quote.assetOut.assetId
+    const { data: inAssets } = useAssetsQuery(scope, [assetInId])
     const { data: outAssets } = useAssetsQuery(
-        scope,
-        assetOutId ? [assetOutId] : [],
+        scopeOfSwapAsset(quote.assetOut.ref),
+        [assetOutId],
     )
-    const inAsset = assetInId ? inAssets?.get(assetInId) : undefined
-    const outAsset = assetOutId ? outAssets?.get(assetOutId) : undefined
+    const receiveTarget = useMemo<Nullable<SwapReceiveTarget>>(() => {
+        if (quote.routeKind !== 'cross-chain') return null
+        const { destinationAddress, destinationAsset } = quote.request
+        const receiveScope = scopeOfSwapAsset(destinationAsset)
+        return {
+            account:
+                accounts.find(
+                    account =>
+                        addressOn(account, receiveScope) === destinationAddress,
+                ) ?? null,
+            address: destinationAddress,
+            scope: receiveScope,
+        }
+    }, [quote, accounts])
+
+    const inAsset = inAssets?.get(assetInId)
+    const outAsset = outAssets?.get(assetOutId)
 
     const isProcessing =
         swapStatus === 'preparing' ||
@@ -96,90 +141,114 @@ export const useSwapConfirmation = ({
     const isCommitted = isProcessing && !isCancellable
 
     const payDisplay = useMemo(() => {
-        if (!quote?.amountIn) return '-'
+        if (!quote.amountIn) return '-'
         return formatAssetAmount(quote.amountIn, {
             decimals: quote.assetIn.decimals,
         })
-    }, [quote?.amountIn, quote?.assetIn])
+    }, [quote.amountIn, quote.assetIn])
 
     const receiveDisplay = useMemo(() => {
-        if (!quote?.amountOut) return '-'
+        if (!quote.amountOut) return '-'
         return formatAssetAmount(quote.amountOut, {
             decimals: quote.assetOut.decimals,
         })
-    }, [quote?.amountOut, quote?.assetOut])
+    }, [quote.amountOut, quote.assetOut])
 
     // No rate yet gives null, so the fiat line is omitted rather than quoting
     // the swap at 0.
     const payFiatValue = useMemo(
         () =>
-            quote?.amountInUsdValue
+            quote.amountInUsdValue
                 ? usdToPreferred(new Decimal(quote.amountInUsdValue))
                 : null,
-        [quote?.amountInUsdValue, usdToPreferred],
+        [quote.amountInUsdValue, usdToPreferred],
     )
 
     const receiveFiatValue = useMemo(
         () =>
-            quote?.amountOutUsdValue
+            quote.amountOutUsdValue
                 ? usdToPreferred(new Decimal(quote.amountOutUsdValue))
                 : null,
-        [quote?.amountOutUsdValue, usdToPreferred],
+        [quote.amountOutUsdValue, usdToPreferred],
     )
 
-    const rateDisplay = useMemo(() => {
-        if (!quote?.price) return '-'
-        const outDecimals = quote.assetOut.decimals ?? 6
-        const { sign, integer, fraction } = formatNumber(
-            quote.price,
-            outDecimals,
-            undefined,
-            2,
-        )
-        return `1 ${quote.assetIn.unitName ?? ''} ≈ ${sign}${integer}${fraction} ${quote.assetOut.unitName ?? ''}`
-    }, [quote?.price, quote?.assetIn, quote?.assetOut])
+    const rateDisplay = useMemo(
+        () => (swapRate(quote) ? formatSwapRate(quote) : null),
+        [quote],
+    )
 
     const minimumReceivedDisplay = useMemo(() => {
-        if (!quote?.amountOutWithSlippage) return '-'
-        return formatAssetAmount(quote.amountOutWithSlippage, quote.assetOut)
-    }, [quote?.amountOutWithSlippage, quote?.assetOut])
+        if (!quote.minimumAmountOut) return null
+        return formatAssetAmount(quote.minimumAmountOut, quote.assetOut)
+    }, [quote.minimumAmountOut, quote.assetOut])
 
-    const peraFeeDisplay = useMemo(() => {
-        if (!quote?.peraFeeAmount) return '-'
-        return formatAssetAmount(
-            quote.peraFeeAmount,
-            quote.peraFeeAsset ?? quote.assetIn,
-        )
-    }, [quote?.peraFeeAmount, quote?.peraFeeAsset, quote?.assetIn])
+    const peraFeeDisplay = useMemo(() => formatSwapFee(quote, 'pera'), [quote])
 
-    const slippageDisplay = useMemo(() => {
-        if (!quote?.slippage) return '-'
-        return `${apiSlippageToPercent(quote.slippage)}%`
-    }, [quote?.slippage])
+    const providerFeeDisplay = useMemo(
+        () => formatSwapFee(quote, 'provider'),
+        [quote],
+    )
+
+    const networkFeeDisplay = useMemo(() => {
+        if (!sourceCost) {
+            return isSourceCostLoading
+                ? null
+                : formatSwapFee(quote, 'network', scope)
+        }
+        const { networkFee, nativeDecimals, nativeSymbol } = sourceCost
+        return formatAssetAmount(networkFee, {
+            decimals: nativeDecimals,
+            unitName: nativeSymbol,
+        })
+    }, [sourceCost, isSourceCostLoading, quote, scope])
+
+    const insufficientFeeMessage = sourceCost?.shortfall
+        ? t('swap.quote.insufficient_network_fee', {
+              symbol: sourceCost.nativeSymbol,
+          })
+        : null
+
+    const slippageDisplay = useMemo(
+        () =>
+            quote.request.slippage
+                ? formatSwapSlippage(quote)
+                : t('swap.provider.auto_label'),
+        [quote, t],
+    )
 
     const hasHighPriceImpact = useMemo(
         () =>
-            quote?.priceImpact?.greaterThanOrEqualTo(
+            quote.priceImpact?.greaterThanOrEqualTo(
                 PRICE_IMPACT_HIGH_THRESHOLD,
             ) ?? false,
-        [quote?.priceImpact],
+        [quote.priceImpact],
     )
 
     const priceImpactDisplay = useMemo(() => {
-        if (!quote?.priceImpact) return '-'
+        if (!quote.priceImpact) return null
         return `${quote.priceImpact.toDecimalPlaces(2).toString()}%`
-    }, [quote?.priceImpact])
+    }, [quote.priceImpact])
 
     const priceImpactStyle = useMemo(() => {
-        if (!quote?.priceImpact) return styles.detailValue
+        if (!quote.priceImpact) return styles.detailValue
         if (quote.priceImpact.lessThan(1)) return styles.priceImpactLow
         if (quote.priceImpact.lessThan(PRICE_IMPACT_HIGH_THRESHOLD))
             return styles.priceImpactMedium
         return styles.priceImpactHigh
-    }, [quote?.priceImpact, styles])
+    }, [quote.priceImpact, styles])
+
+    const crossChainNote = useMemo(() => {
+        if (!receiveTarget) return null
+        const { chainId } = receiveTarget.scope
+        return t('swap.quote.cross_chain_note', {
+            asset: quote.assetOut.unitName ?? quote.assetOut.assetId,
+            network: chainDisplayNameOf(chainId) ?? chainId,
+        })
+    }, [receiveTarget, quote.assetOut, t])
 
     return {
         selectedAccount,
+        receiveTarget,
         inAsset,
         outAsset,
         isProcessing,
@@ -192,9 +261,14 @@ export const useSwapConfirmation = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        providerFeeDisplay,
+        networkFeeDisplay,
+        needsSpendApproval: sourceCost?.needsSpendApproval ?? false,
+        insufficientFeeMessage,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
+        crossChainNote,
     }
 }

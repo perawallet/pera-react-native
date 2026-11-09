@@ -48,8 +48,20 @@ import { ETHEREUM } from '../../__tests__/evm-chains'
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
         importOriginal,
+        ['nfts'],
     ),
 )
+
+const storedHoldings = vi.hoisted(() => ({ ids: [] as string[] }))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    getAccountHeldAssets: vi.fn(async () =>
+        storedHoldings.ids.map(assetId => ({ assetId, scope: SCOPE })),
+    ),
+}))
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ADDRESS: Hex = '0x00000000000000000000000000000000000000aa'
@@ -118,7 +130,10 @@ const recordRpcCalls = (): RpcCall[] => {
 }
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    storedHoldings.ids = []
+})
 afterAll(() => server.close())
 
 describe('fetchAccountState token holdings', () => {
@@ -441,5 +456,86 @@ describe('fetchAccountState added tokens', () => {
         })
 
         expect(state.holdings.map(h => h.assetId)).toEqual(['native', DAI])
+    })
+})
+
+describe('fetchAccountState holdings the read had no source for', () => {
+    it('keeps a stored token the missing token list cannot vouch for, but not the native holding or an added token it read', async () => {
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [DAI]: token(3n) })),
+        )
+        const ops = createEthereumAccountStateOps(testChainContext(), ETHEREUM)
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, {
+            ...HINT,
+            addedTokenIds: [DAI],
+        })
+
+        expect(state.unrefreshedHoldings?.includes(USDC)).toBe(true)
+        expect(state.unrefreshedHoldings?.includes(DAI)).toBe(false)
+        expect(state.unrefreshedHoldings?.includes('native')).toBe(false)
+        expect(state.unrefreshedHoldings?.error).toMatchObject({
+            service: 'assets',
+        })
+    })
+
+    it('reads the balance of a stored token without the token list, so a send made while the backend is off shows', async () => {
+        storedHoldings.ids = ['native', USDC, `${USDC}/7`]
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(60n) })),
+        )
+        const ops = createEthereumAccountStateOps(testChainContext(), ETHEREUM)
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(
+            state.holdings.map(h => [h.assetId, h.amount.toFixed()]),
+        ).toEqual([
+            ['native', '1'],
+            [USDC, '60'],
+        ])
+        expect(state.unrefreshedHoldings?.includes(USDC)).toBe(false)
+    })
+
+    it('keeps a stored token whose balance call fails, rather than deleting it as sold', async () => {
+        storedHoldings.ids = [USDC, BROKEN]
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [USDC]: token(60n) })),
+        )
+        const ops = createEthereumAccountStateOps(testChainContext(), ETHEREUM)
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.holdings.map(h => h.assetId)).toEqual(['native', USDC])
+        expect(state.unrefreshedHoldings?.includes(BROKEN)).toBe(true)
+        expect(state.unrefreshedHoldings?.includes(USDC)).toBe(false)
+    })
+
+    it('keeps stored NFTs when the scope has no NFT service', async () => {
+        server.use(...rpcAtBlock('0x64'), ...whitelist())
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.unrefreshedHoldings?.includes(`${USDC}/1`)).toBe(true)
+        expect(state.unrefreshedHoldings?.includes(USDC)).toBe(false)
+        expect(state.unrefreshedHoldings?.error).toMatchObject({
+            service: 'nfts',
+        })
+    })
+
+    it('reports nothing unrefreshed while the scope has the token list and the NFT service', async () => {
+        server.use(...rpcAtBlock('0x64'), ...whitelist())
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets', 'nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.unrefreshedHoldings).toBeUndefined()
     })
 })

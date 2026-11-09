@@ -43,8 +43,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 
 import { algorandBroadcasterAdapter } from '../broadcaster'
 import { signedAlgorandTransactionFromBytes } from '../signedTransactions'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
+import { ALGORAND_CHAIN_ID } from '../../chain-id'
 
 describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
     test('is a retryable network_unavailable error naming the timeout', () => {
@@ -58,7 +58,7 @@ describe('algorandBroadcasterAdapter.submitTimeoutError', () => {
 })
 
 describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
-    const scope = { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const
+    const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'testnet' } as const
     const sender = generateAccount()
     const group = [1n, 2n].map(amount =>
         makeTestPaymentTx(sender.addr, {
@@ -110,7 +110,7 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
         )
 
         const scope = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: ALGORAND_CHAIN_ID,
             networkId: 'mainnet',
         } as const
         const ids = await algorandBroadcasterAdapter.submitAndAutoRefresh(
@@ -124,7 +124,7 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
         expect(postedTo).toBe(
             new URL(
                 getAlgorandChainConfig({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'mainnet',
                 } as const).algodUrl,
             ).origin,
@@ -132,7 +132,7 @@ describe('algorandBroadcasterAdapter submit and waitForConfirmation', () => {
         expect(postedTo).not.toBe(
             new URL(
                 getAlgorandChainConfig({
-                    chainId: LEGACY_CHAIN_ID,
+                    chainId: ALGORAND_CHAIN_ID,
                     networkId: 'testnet',
                 } as const).algodUrl,
             ).origin,

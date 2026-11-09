@@ -17,6 +17,7 @@ import {
     ownAddressOf,
     useAccountHoldingSources,
     useAccountValueTotalsQuery,
+    useFailedFirstReadChainIds,
     useRegisteredChainIds,
     type LocalAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -24,10 +25,7 @@ import {
     addressCodecs,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    useSelectedScope,
-    useSwitchedOffChainIds,
-} from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     crossChainTotalOf,
@@ -53,12 +51,12 @@ export const useDiscoveredAccountRow = (
     account: LocalAccount,
 ): UseDiscoveredAccountRowResult => {
     const registeredChainIds = useRegisteredChainIds()
-    const switchedOffChainIds = useSwitchedOffChainIds()
     const chainId = accountChainIdOf(account, registeredChainIds)
     const scope = useSelectedScope(chainId)
     const { getAccountName } = useAccountName()
     const { usdToPreferred } = useCurrency(scope)
     const sources = useAccountHoldingSources(account)
+    const failedFirstReadChainIds = useFailedFirstReadChainIds(sources)
     const { accountValueTotals } = useAccountValueTotalsQuery(
         [account],
         scope,
@@ -68,7 +66,6 @@ export const useDiscoveredAccountRow = (
     const addressLines = useMemo(() => {
         const lines: DiscoveredAddressLine[] = []
         for (const id of registeredChainIds) {
-            if (switchedOffChainIds.includes(id)) continue
             const address = chainAccountOf(account, id)?.address
             if (!address) continue
             const line = lines.find(held => held.address === address)
@@ -85,11 +82,17 @@ export const useDiscoveredAccountRow = (
             }
         }
         return lines
-    }, [account, registeredChainIds, switchedOffChainIds])
+    }, [account, registeredChainIds])
 
     const total = useMemo(
-        () => crossChainTotalOf(sources, accountValueTotals, usdToPreferred),
-        [sources, accountValueTotals, usdToPreferred],
+        () =>
+            crossChainTotalOf(
+                sources,
+                accountValueTotals,
+                usdToPreferred,
+                failedFirstReadChainIds,
+            ),
+        [sources, accountValueTotals, usdToPreferred, failedFirstReadChainIds],
     )
 
     return {

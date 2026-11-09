@@ -12,9 +12,10 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWBadge, PWView, type PWViewProps } from '@components/core'
+import { PWText, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
+import { AvatarCountBadge } from '@components/AvatarCountBadge'
 import { ChainBadge } from '@components/ChainBadge'
 import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -25,7 +26,7 @@ import { useAccountWithBalance } from './useAccountWithBalance'
 export type AccountWithBalanceProps = {
     account: WalletAccount
     isHighlighted?: boolean
-    /** The chain whose address, balance and native asset to show; defaults to the account's own chain. */
+    /** The chain whose address, balance and native asset to show; defaults to the account's first registered chain. */
     chainId?: ChainId
 } & PWViewProps
 
@@ -46,7 +47,9 @@ export const AccountWithBalance = ({
         crossChainTotal,
         singleNetworkChainId,
         jointParticipantCount,
+        jointSignersLabel,
         shouldShowSecondaryLabel,
+        hasDuplicateName,
     } = useAccountWithBalance(account, chainId)
     // A chain-agnostic row stands for every chain the account is on, so no one
     // chain's badge applies. No row carries a TestNet badge: developer mode puts
@@ -55,6 +58,28 @@ export const AccountWithBalance = ({
         !crossChainTotal && isMultiChain && !!chainName ? (
             <ChainBadge name={chainName} />
         ) : undefined
+
+    const renderSecondaryContent = () => {
+        // The address under the name is what tells a shared name apart.
+        if (hasDuplicateName) return undefined
+        if (singleNetworkChainId) {
+            return <ChainLabel chainId={singleNetworkChainId} />
+        }
+        if (jointSignersLabel) {
+            return (
+                <PWText
+                    variant='body'
+                    weight={400}
+                    numberOfLines={1}
+                    style={styles.secondaryLabel}
+                    testID='account_joint_signers'
+                >
+                    {jointSignersLabel}
+                </PWText>
+            )
+        }
+        return undefined
+    }
 
     const renderBalance = () => {
         if (crossChainTotal) {
@@ -136,20 +161,13 @@ export const AccountWithBalance = ({
                 chainId={chainId}
                 showChevron={false}
                 showAccountType
-                alwaysShowAccountType={!!crossChainTotal}
+                alwaysShowAccountType={!!crossChainTotal && !hasDuplicateName}
                 shouldShowSecondaryLabel={shouldShowSecondaryLabel}
                 badges={badges}
-                secondaryContent={
-                    singleNetworkChainId ? (
-                        <ChainLabel chainId={singleNetworkChainId} />
-                    ) : undefined
-                }
+                secondaryContent={renderSecondaryContent()}
                 avatarBadge={
                     jointParticipantCount !== undefined ? (
-                        <PWBadge
-                            variant='secondary'
-                            value={jointParticipantCount}
-                        />
+                        <AvatarCountBadge count={jointParticipantCount} />
                     ) : undefined
                 }
                 style={styles.accountDisplay}

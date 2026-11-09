@@ -14,7 +14,10 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { OfflineBanner } from '@components/OfflineBanner'
 import ErrorBoundary from 'react-native-error-boundary'
-import { useSyncNewAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useHiddenTokensInvalidation,
+    useSyncNewAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { DeviceRegistrar } from '@components/DeviceRegistrar'
@@ -59,6 +62,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useImageMemoryRelease()
 
     useBackupSyncLifecycle()
+    useHiddenTokensInvalidation()
 
     // Called where the sync start/stop effect used to sit, after the other
     // lifecycle hooks, so this refactor doesn't change the startup order.

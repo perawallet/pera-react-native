@@ -12,17 +12,24 @@
 
 export {
     DEFAULT_EVM_RPC_RESPONSES,
+    encodeErc20Approve,
+    encodeUnsignedEvmCall,
     erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmRpcTransaction,
     evmTransactionReceipt,
+    readRawEvmTransaction,
     type Erc20Fixture,
     type EvmRpcFixtures,
     type EvmRpcMethod,
     type EvmRpcResponder,
     type EvmRpcResults,
 } from './blockchain/msw-handlers'
+export {
+    ensResolverCallResponder,
+    type EnsRecordFixture,
+} from './names/msw-handlers'
 export {
     peraEvmHandlers,
     type PeraEvmFixtures,
@@ -44,6 +51,18 @@ export {
     type PeraEvmHistoryFixtures,
 } from './history/api/msw-handlers'
 export type { EvmHistoryItemResponse } from './history/api/schema'
+export {
+    verifiedAbiResponse,
+    type PeraEvmContractAbiFixtures,
+} from './contracts/api/msw-handlers'
+export type { EvmContractAbiResponse } from './contracts/api/schema'
+export {
+    simulationRevertedResponse,
+    simulationSuccessResponse,
+    simulationUnavailableResponse,
+    type PeraEvmSimulationFixtures,
+} from './simulation/api/msw-handlers'
+export type { EvmSimulationResponse } from './simulation/api/schema'
 export type {
     AssetItemResponse,
     ChartPointResponse,

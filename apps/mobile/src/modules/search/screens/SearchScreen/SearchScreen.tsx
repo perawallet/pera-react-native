@@ -10,11 +10,6 @@
  limitations under the License
  */
 
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWFlatList, PWIcon, PWScreen, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
@@ -27,25 +22,24 @@ import { useSearchScreen } from './useSearchScreen'
 
 const SKELETON_ROW_COUNT = 5
 
-const accountAddressOf = (account: WalletAccount) =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
-
 export const SearchScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
         value,
         setValue,
+        query,
         rows,
         hasResults,
         isLoading,
         scopes,
+        selectedChainId,
         onAccountPress,
         onContactPress,
         onAssetPress,
         onExpandSection,
+        shouldShowAssetNetwork,
         openFilterSheet,
-        chainId,
     } = useSearchScreen()
 
     useNavigationHeader({
@@ -59,15 +53,15 @@ export const SearchScreen = () => {
         ),
     })
 
-    const listKey = `${scopes.join(',')}:${value}`
+    const listKey = `${scopes.join(',')}:${selectedChainId ?? 'all'}:${value}`
 
     const { listRef, renderItem, keyExtractor } = useSearchScreenList({
         onAccountPress,
         onContactPress,
         onAssetPress,
         onExpandSection,
-        chainId,
-        getAccountAddress: accountAddressOf,
+        query,
+        shouldShowAssetNetwork,
         value,
         scopes,
     })

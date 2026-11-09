@@ -41,10 +41,11 @@ import {
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { registerFakeNativeAsset } from '../../__tests__/fakeAccountsChain'
+import { useHiddenTokensStore } from '../../store/hiddenTokens'
 
 const MAINNET_SCOPE = {
-    chainId: LEGACY_CHAIN_ID,
+    chainId: 'algorand',
     networkId: 'mainnet',
 } as const
 
@@ -85,7 +86,7 @@ describe('account holdings queries', () => {
                 scope: MAINNET_SCOPE,
                 holdings: [
                     {
-                        assetId: nativeAssetFor(LEGACY_CHAIN_ID).assetId,
+                        assetId: nativeAssetFor('algorand').assetId,
                         amount: new Decimal(0),
                     },
                     { assetId: '10', amount: new Decimal(0) },
@@ -110,6 +111,188 @@ describe('account holdings queries', () => {
                 '10',
                 '20',
             ])
+        })
+    })
+
+    describe('hideSuspicious', () => {
+        const token = (
+            assetId: string,
+            verificationTier: 'verified' | 'unverified' | 'suspicious',
+        ): PeraAsset => ({
+            assetId,
+            decimals: 0,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier,
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        const idsOf = async (hideSuspicious?: boolean) =>
+            (
+                await getAccountHoldingsLite({
+                    db,
+                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                    hideSuspicious,
+                })
+            )
+                .map(row => row.assetId)
+                .sort()
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                holdings: ['10', '20', '30', '40'].map(assetId => ({
+                    assetId,
+                    amount: new Decimal(5),
+                })),
+            })
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    token('10', 'suspicious'),
+                    token('20', 'verified'),
+                    token('30', 'unverified'),
+                ],
+            })
+        })
+
+        it('drops suspicious rows and keeps verified, unverified and unenriched ones', async () => {
+            expect(await idsOf(true)).toEqual(['20', '30', '40'])
+        })
+
+        it('lists every row without the filter', async () => {
+            expect(await idsOf()).toEqual(['10', '20', '30', '40'])
+        })
+
+        it('keeps a suspicious row on a chain where the user opts in to each asset', async () => {
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+            expect(await idsOf(true)).toEqual(['10', '20', '30', '40'])
+        })
+    })
+
+    describe('excludeHidden', () => {
+        const token = (
+            assetId: string,
+            verificationTier: 'verified' | 'suspicious',
+        ): PeraAsset => ({
+            assetId,
+            decimals: 0,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier,
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        const hide = (address: string, assetId: string) =>
+            useHiddenTokensStore.getState().setTokenHidden({
+                address,
+                scope: MAINNET_SCOPE,
+                assetId,
+                isHidden: true,
+            })
+
+        const rowsOf = (address: string, filters: object = {}) =>
+            getAccountHoldingsLite({
+                db,
+                sources: [{ address, scope: MAINNET_SCOPE }],
+                ...filters,
+            })
+
+        beforeEach(async () => {
+            useHiddenTokensStore.getState().resetState()
+            for (const address of ['ADDR1', 'ADDR2']) {
+                await refreshAccountHoldings({
+                    db,
+                    accountAddress: address,
+                    scope: MAINNET_SCOPE,
+                    holdings: ['10', '20', '30'].map(assetId => ({
+                        assetId,
+                        amount: new Decimal(5),
+                    })),
+                })
+            }
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [token('10', 'suspicious'), token('20', 'verified')],
+            })
+        })
+
+        afterEach(() => {
+            useHiddenTokensStore.getState().resetState()
+        })
+
+        it('drops a hidden row even when suspicious rows are kept', async () => {
+            hide('ADDR1', '20')
+
+            const rows = await rowsOf('ADDR1', {
+                excludeHidden: true,
+                hideSuspicious: false,
+            })
+
+            expect(rows.map(row => row.assetId).sort()).toEqual(['10', '30'])
+        })
+
+        it('drops hidden and suspicious rows together', async () => {
+            hide('ADDR1', '30')
+
+            const rows = await rowsOf('ADDR1', {
+                excludeHidden: true,
+                hideSuspicious: true,
+            })
+
+            expect(rows.map(row => row.assetId)).toEqual(['20'])
+        })
+
+        it('lists a hidden row without the filter', async () => {
+            hide('ADDR1', '20')
+
+            expect(await rowsOf('ADDR1')).toHaveLength(3)
+        })
+
+        it('hides for the account that hid it only', async () => {
+            hide('ADDR1', '20')
+
+            const rows = await rowsOf('ADDR2', { excludeHidden: true })
+
+            expect(rows).toHaveLength(3)
+        })
+
+        it('hides nothing on a chain where the user opts in to each asset', async () => {
+            hide('ADDR1', '20')
+            registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+            const rows = await rowsOf('ADDR1', { excludeHidden: true })
+
+            expect(rows).toHaveLength(3)
+        })
+
+        it('marks hidden rows on the enriched page read', async () => {
+            hide('ADDR1', '20')
+
+            const rows = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+            })
+
+            expect(
+                rows.filter(row => row.isHidden).map(row => row.assetId),
+            ).toEqual(['20'])
         })
     })
 
@@ -193,6 +376,35 @@ describe('account holdings queries', () => {
             })
 
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2'])
+        })
+
+        it('surfaces each collectible verification tier', async () => {
+            const suspicious = collectible('2', 'Banana', 'Fruit Club')
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...suspicious,
+                        peraMetadata: {
+                            ...suspicious.peraMetadata!,
+                            verificationTier: 'suspicious',
+                        },
+                    },
+                ],
+            })
+
+            const rows = await getAccountCollectiblesLite({
+                db,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+            })
+
+            expect(
+                rows.find(row => row.assetId === '2')?.verificationTier,
+            ).toBe('suspicious')
+            expect(
+                rows.find(row => row.assetId === '10')?.verificationTier,
+            ).not.toBe('suspicious')
         })
 
         it('surfaces title and collection name without parsing in JS', async () => {
@@ -350,7 +562,7 @@ describe('account holdings queries', () => {
 
         it('reads every source in one pass and tags each row with its scope', async () => {
             const testnet = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const
             await refreshAccountHoldings({
@@ -567,7 +779,7 @@ describe('account holdings queries', () => {
                 networkId: 'mainnet',
             } as const
             const TESTNET_SCOPE = {
-                chainId: LEGACY_CHAIN_ID,
+                chainId: 'algorand',
                 networkId: 'testnet',
             } as const
             const ETH_SOURCE = { address: '0xETH', scope: ETH_SCOPE }
@@ -893,7 +1105,7 @@ describe('account holdings queries', () => {
     describe('getAccountHeldAssets', () => {
         const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
         const TESTNET_SCOPE = {
-            chainId: LEGACY_CHAIN_ID,
+            chainId: 'algorand',
             networkId: 'testnet',
         } as const
 

@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+    useNavigation,
+    useRoute,
+    type NavigationProp,
+    type RouteProp,
+} from '@react-navigation/native'
 import {
     runOnJS,
     useAnimatedReaction,
@@ -18,22 +24,21 @@ import {
     type SharedValue,
 } from 'react-native-reanimated'
 import {
-    useAccountChainId,
     type WalletAccount,
+    useAccountCapabilityScope,
+    useAccountChainId,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAccountTabRequest } from '@hooks/useAccountTabRequest'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
+import type { AccountStackParamsList, AccountTabKey } from '../../routes/types'
 import {
     trackEvent,
     AccountDetailsEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
-
-export type AccountTabKey = 'Overview' | 'Nfts' | 'History'
 
 const TAB_EVENTS: Record<AccountTabKey, AccountDetailsEvent> = {
     Overview: AccountDetailsEvent.Assets,
@@ -55,11 +60,10 @@ export const useAccountTabNavigator = (
     account: WalletAccount,
 ): UseAccountTabNavigatorResult => {
     const { t } = useLanguage()
-    const chainId = useAccountChainId(account, LEGACY_CHAIN_ID)
-    // A switched-off chain has every capability off, so this also drops both
-    // tabs, and their queries, while its kill switch is on.
+    const chainId = useAccountChainId(account, useHomeChainScope().chainId)
+    // A tab, and its queries, drops only once no chain the account holds serves it.
     const hasNfts = useNftHoldingSources(account).length > 0
-    const hasHistory = useChainCapability(chainId, 'history')
+    const hasHistory = useAccountCapabilityScope(account, 'history') !== null
     const offset = useSharedValue(0)
 
     const tabs = useMemo<AccountTab[]>(
@@ -113,6 +117,25 @@ export const useAccountTabNavigator = (
         },
         [tabs],
     )
+
+    // A caller outside the screen asks for a tab through the route; the
+    // param is cleared once read so asking again later applies again.
+    const navigation =
+        useNavigation<
+            NavigationProp<AccountStackParamsList, 'AccountDetails'>
+        >()
+    const requestedTab =
+        useRoute<RouteProp<AccountStackParamsList, 'AccountDetails'>>().params
+            ?.tab
+    useEffect(() => {
+        if (!requestedTab) return
+        const requestedIndex = tabs.findIndex(tab => tab.key === requestedTab)
+        if (requestedIndex >= 0) {
+            setActiveKey(requestedTab)
+            markVisited(requestedIndex)
+        }
+        navigation.setParams({ tab: undefined })
+    }, [requestedTab, tabs, markVisited, navigation])
 
     // Mount the incoming page as the drag passes halfway rather than when it
     // settles, so the mount lands while the finger is still moving instead of

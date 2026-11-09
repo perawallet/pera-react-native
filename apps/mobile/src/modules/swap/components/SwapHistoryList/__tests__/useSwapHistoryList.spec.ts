@@ -13,28 +13,35 @@
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
-import { useSwapHistoryList } from '../useSwapHistoryList'
+import { VISIBLE_SWAP_STATUSES } from '../../../constants'
+import {
+    useSwapHistoryList,
+    type ListedSwapHistoryItem,
+} from '../useSwapHistoryList'
 
-const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+const { SCOPE, ETH_SCOPE } = vi.hoisted(() => ({
+    SCOPE: { chainId: 'algorand', networkId: 'mainnet' } as const,
+    ETH_SCOPE: { chainId: 'ethereum', networkId: 'mainnet' } as const,
+}))
 
-const { mockExplorerUrlFor, mockPushWebView, mockTrackEvent } = vi.hoisted(
-    () => ({
+const { mockExplorerUrlFor, mockPushWebView, mockTrackEvent, mockHistory } =
+    vi.hoisted(() => ({
         mockExplorerUrlFor: vi.fn(),
         mockPushWebView: vi.fn(),
         mockTrackEvent: vi.fn(),
-    }),
-)
+        mockHistory: vi.fn(),
+    }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     swapExplorerUrlFor: mockExplorerUrlFor,
-    useSwapHistoryInfiniteQuery: () => ({
-        swaps: [],
-        isLoading: false,
-        isError: false,
-        isFetchingNextPage: false,
-        hasNextPage: false,
-        fetchNextPage: vi.fn(),
-    }),
+    useSwapHistoryInfiniteQuery: mockHistory,
+}))
+
+vi.mock('../../../hooks/useSwapAccountAddresses', () => ({
+    useSwapAccountAddresses: () => [
+        { scope: SCOPE, address: 'ADDR' },
+        { scope: ETH_SCOPE, address: '0xETH' },
+    ],
 }))
 
 vi.mock('@modules/webview', () => ({
@@ -47,15 +54,62 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 const item = {
-    id: '1',
-    transactionGroupId: 'GROUP',
+    orderId: 'order-1',
     assetIn: { unitName: 'ALGO' },
     assetOut: { unitName: 'USDC' },
-} as unknown as SwapHistoryItem
+} as unknown as ListedSwapHistoryItem
+
+const historyOf = (swaps: SwapHistoryItem[]) => ({
+    swaps,
+    isLoading: false,
+    isError: false,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+})
 
 describe('useSwapHistoryList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockHistory.mockReturnValue(historyOf([]))
+    })
+
+    it('reads every swap-chain address of the account, the swap scope first', () => {
+        renderHook(() =>
+            useSwapHistoryList({
+                scope: SCOPE,
+                address: 'ADDR',
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(mockHistory).toHaveBeenCalledWith(
+            [
+                { scope: SCOPE, address: 'ADDR' },
+                { scope: ETH_SCOPE, address: '0xETH' },
+            ],
+            VISIBLE_SWAP_STATUSES,
+        )
+    })
+
+    it('hides rows naming an asset this wallet cannot resolve', () => {
+        const legacy = {
+            ...item,
+            orderId: 'legacy',
+            assetOut: null,
+        } as unknown as SwapHistoryItem
+        mockHistory.mockReturnValue(historyOf([legacy, item]))
+
+        const { result } = renderHook(() =>
+            useSwapHistoryList({
+                scope: SCOPE,
+                address: 'ADDR',
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(result.current.swaps).toEqual([item])
+        expect(result.current.keyExtractor(item)).toBe('order-1')
     })
 
     it("opens the swap on its chain's explorer", () => {

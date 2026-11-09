@@ -50,6 +50,50 @@ describe('swaps/store', () => {
         expect(result.current.toAsset).toBeNull()
     })
 
+    test('setSourceChainId clears the pair and where it was going', () => {
+        const store = useSwapsStore.getState()
+        store.setFromAsset('1234')
+        store.setToAsset('5678')
+        store.setReceivingAccountId('account-1')
+
+        store.setSourceChainId('ethereum')
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: null,
+            toAsset: null,
+            toAssetScope: null,
+            receivingAccountId: null,
+        })
+    })
+
+    test('setSourceAsset pays on the new chain and clears where it was going', () => {
+        const store = useSwapsStore.getState()
+        store.setSlippage('0.5')
+        store.setToAsset('5678')
+        store.setReceivingAccountId('account-1')
+
+        store.setSourceAsset('ethereum', 'native')
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: null,
+            toAssetScope: null,
+            receivingAccountId: null,
+            slippage: '0.5',
+        })
+        useSwapsStore.getState().setSlippage(null)
+    })
+
+    test('resetState forgets the chosen source chain', () => {
+        useSwapsStore.getState().setSourceChainId('ethereum')
+
+        useSwapsStore.getState().resetState()
+
+        expect(useSwapsStore.getState().sourceChainId).toBeNull()
+    })
+
     test('setFromAsset updates fromAsset state', () => {
         const { result } = renderHook(() => useSwapsStore())
 
@@ -181,6 +225,34 @@ describe('swaps/store', () => {
             slippage: '1.5',
             isLocalCurrencyInput: true,
             fromAsset: null,
+        })
+    })
+
+    test('setToAsset keeps the scope the asset lives on, and forgets it when none is given', () => {
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        useSwapsStore.getState().setToAsset('native', scope)
+        expect(useSwapsStore.getState()).toMatchObject({
+            toAsset: 'native',
+            toAssetScope: scope,
+        })
+
+        useSwapsStore.getState().setToAsset('31566704')
+        expect(useSwapsStore.getState().toAssetScope).toBeNull()
+    })
+
+    test('resetState clears the receive scope and receiving account', () => {
+        useSwapsStore.getState().setToAsset('native', {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        })
+        useSwapsStore.getState().setReceivingAccountId('account-2')
+
+        useSwapsStore.getState().resetState()
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            toAssetScope: null,
+            receivingAccountId: null,
         })
     })
 })

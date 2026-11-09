@@ -102,8 +102,8 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const makeQuote = (quoteIdStr: string): SwapQuote =>
-    ({ quoteIdStr }) as unknown as SwapQuote
+const makeQuote = (quoteId: string): SwapQuote =>
+    ({ quoteId }) as unknown as SwapQuote
 
 const resolveWith = (result: ExecuteSwapResult) =>
     mockExecuteSwap.mockResolvedValue(result)
@@ -141,7 +141,7 @@ const holdExecution = () => {
 describe('useSwapExecution', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        resolveWith({ kind: 'success', txIds: ['tx-1'] })
+        resolveWith({ kind: 'success', orderId: '1', txIds: ['tx-1'] })
     })
 
     it('starts with idle status', () => {
@@ -150,6 +150,67 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('idle')
         expect(result.current.error).toBeNull()
         expect(result.current.txIds).toEqual([])
+    })
+
+    describe('readying the destination first', () => {
+        const run = async (
+            prepareDestination: () => Promise<boolean>,
+            current: {
+                execute: ReturnType<typeof useSwapExecution>['execute']
+            },
+        ) => {
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await current.execute(
+                    makeQuote('quote-1'),
+                    prepareDestination,
+                )
+            })
+            return outcome
+        }
+
+        it('runs the swap once the destination is ready', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => true, result.current)
+
+            expect(mockExecuteSwap).toHaveBeenCalledOnce()
+            expect(outcome).toEqual({ kind: 'success' })
+        })
+
+        it('creates no order when the user declines', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => false, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toEqual({ kind: 'cancelled' })
+            expect(result.current.status).toBe('idle')
+        })
+
+        it('creates no order when the sheet closed meanwhile', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                result.current.cancel()
+                return true
+            }, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toEqual({ kind: 'cancelled' })
+        })
+
+        it('fails in the prepare phase when it throws, with no order', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            const outcome = await run(async () => {
+                throw new Error('attestation missing')
+            }, result.current)
+
+            expect(mockExecuteSwap).not.toHaveBeenCalled()
+            expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
+            expect(result.current.status).toBe('error')
+        })
     })
 
     it('runs the quote with localized signing copy', async () => {
@@ -169,7 +230,11 @@ describe('useSwapExecution', () => {
     })
 
     it('reports success with the submitted txIds', async () => {
-        resolveWith({ kind: 'success', txIds: ['group-1-id', 'group-2-id'] })
+        resolveWith({
+            kind: 'success',
+            orderId: '1',
+            txIds: ['group-1-id', 'group-2-id'],
+        })
         const { result } = renderHook(() => useSwapExecution())
 
         const outcome = await executeOnce(result.current.execute)
@@ -202,7 +267,7 @@ describe('useSwapExecution', () => {
         }
 
         await act(async () => {
-            held.release({ kind: 'success', txIds: [] })
+            held.release({ kind: 'success', orderId: '1', txIds: [] })
             await outcomePromise
         })
         expect(result.current.status).toBe('success')
@@ -538,12 +603,12 @@ describe('useSwapExecution', () => {
 
     it.each([
         [
-            { phase: 'prepare', reason: 'missing-quote-id' } as const,
-            'Swap quote is missing its id',
+            { phase: 'prepare', reason: 'no-signable-steps' } as const,
+            'swap.execution.error_body',
         ],
         [
-            { phase: 'prepare', reason: 'no-transaction-groups' } as const,
-            'No transaction groups returned',
+            { phase: 'prepare', reason: 'unsupported-steps' } as const,
+            'swap.execution.error_body',
         ],
         [
             { phase: 'prepare', reason: 'quote-mismatch' } as const,
@@ -574,7 +639,7 @@ describe('useSwapExecution', () => {
         expect(result.current.error).toBeNull()
 
         await act(async () => {
-            held.release({ kind: 'success', txIds: [] })
+            held.release({ kind: 'success', orderId: '1', txIds: [] })
             await outcomePromise
         })
     })

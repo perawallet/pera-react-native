@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
+import {
+    eq,
+    and,
+    inArray,
+    notInArray,
+    ne,
+    not,
+    or,
+    isNull,
+    sql,
+} from 'drizzle-orm'
 import { unionAll } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import {
@@ -28,6 +38,9 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { describeHolding } from '../chain-adapter'
 import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
+import { isOptInChain } from '../chainProtocol'
+import { isNotSuspiciousSql } from './holdingSuspicion'
+import { hiddenHoldingSql } from './holdingVisibility'
 import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
@@ -315,6 +328,10 @@ export type AccountHoldingsFilters = {
     hideZeroBalanceNfts?: boolean
     /** Asset types to exclude regardless of holding amount. */
     excludeAssetTypes?: string[]
+    /** When true, rows whose asset Pera flags suspicious are excluded, except on an opt-in chain; rows with no metadata yet stay. */
+    hideSuspicious?: boolean
+    /** Leaves out holdings the user hid, whatever the other filters keep. */
+    excludeHidden?: boolean
 }
 
 type GetAccountHoldingsParams = {
@@ -331,11 +348,14 @@ export async function getAccountHoldings({
     hideNfts,
     hideZeroBalanceNfts,
     excludeAssetTypes,
+    hideSuspicious,
+    excludeHidden,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
     const scopeKey = toScopeKey(scope)
     const needsAssetJoin =
         hideNfts === true ||
         hideZeroBalanceNfts === true ||
+        hideSuspicious === true ||
         !!excludeAssetTypes?.length
 
     const baseConditions = [
@@ -348,6 +368,12 @@ export async function getAccountHoldings({
         // so a zero amount is always the literal "0".
         baseConditions.push(
             ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
+        )
+    }
+
+    if (excludeHidden) {
+        baseConditions.push(
+            not(hiddenHoldingSql([{ address: accountAddress, scope }])),
         )
     }
 
@@ -398,6 +424,11 @@ export async function getAccountHoldings({
                 notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
             )!,
         )
+    }
+
+    // The user chose every asset on an opt-in chain, so its rows stay.
+    if (hideSuspicious && !isOptInChain(scope.chainId)) {
+        joinConditions.push(isNotSuspiciousSql())
     }
 
     const rows = await db

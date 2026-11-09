@@ -21,8 +21,8 @@ import {
     SubmissionError,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
-import type { SwapStatusUpdateRequest } from '../api'
-import type { SwapHandoffRecord } from '../models'
+import type { ReportSwapOrderFn } from '../execution/types'
+import type { SwapHandoffRecord, SwapOrderReport } from '../models'
 
 export type CosignSubmissionAttemptParams = {
     scope: ChainScope
@@ -64,11 +64,7 @@ export type SwapHandoffResolutionDeps = {
      * algod accepts, so a crash before cleanup can't re-submit on relaunch.
      */
     markSubmitted: (txIds: string[]) => void
-    /** PATCH the swap's backend status. */
-    updateSwapStatus: (input: {
-        swapId: string
-        data: SwapStatusUpdateRequest
-    }) => Promise<unknown>
+    reportOrder: ReportSwapOrderFn
     /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
     markConfirmed: (input: {
         scope: ChainScope
@@ -167,6 +163,8 @@ export const resolveSwapHandoffOutcome = async ({
     deps: SwapHandoffResolutionDeps
 }): Promise<void> => {
     const { signRequestId, swapIdStr, deviceId, plan } = record
+    // After any group lands, the router settles the order from the chain.
+    let hasBroadcast = false
 
     await completeMultisigHandoff(record.scope.chainId, {
         outcome,
@@ -209,6 +207,7 @@ export const resolveSwapHandoffOutcome = async ({
                     }
                     try {
                         const ids = await deps.submitGroup(groupBytes)
+                        hasBroadcast = true
                         txIds.push(...ids)
                     } catch (error) {
                         await markAttemptOutcome(attemptId, error, deps)
@@ -241,37 +240,52 @@ export const resolveSwapHandoffOutcome = async ({
             removeHandoff: () => deps.removeHandoff(signRequestId),
             reportError: deps.reportError,
             onSubmitted: async txIds => {
-                await deps.updateSwapStatus({
-                    swapId: swapIdStr,
-                    data: {
-                        status: 'in_progress',
-                        submitted_transaction_ids: txIds,
-                        swap_version: 'v2',
-                    },
-                })
+                const report = sentSwapReportOf(record, txIds)
+                if (report) {
+                    await deps.reportOrder({ orderId: swapIdStr, report })
+                }
             },
-            // declined → user cancelled; expired → timed out.
-            onSoftRejected: async reason => {
-                await deps.updateSwapStatus({
-                    swapId: swapIdStr,
-                    data: {
-                        status: reason === 'declined' ? 'cancelled' : 'failed',
-                        reason:
-                            reason === 'declined' ? 'user_cancelled' : 'other',
-                        swap_version: 'v2',
-                    },
+            onSoftRejected: async () => {
+                await deps.reportOrder({
+                    orderId: swapIdStr,
+                    report: { status: 'cancelled' },
                 })
             },
             onFailed: async () => {
-                await deps.updateSwapStatus({
-                    swapId: swapIdStr,
-                    data: {
-                        status: 'failed',
-                        reason: 'blockchain_error',
-                        swap_version: 'v2',
-                    },
+                if (hasBroadcast) return
+                await deps.reportOrder({
+                    orderId: swapIdStr,
+                    report: { status: 'cancelled' },
                 })
             },
         },
     })
+}
+
+/**
+ * The `sent` report for the tx ids the handoff's groups produced, in plan
+ * order. Null for a record from before the router: it has no step labels, and
+ * its id was never a router order.
+ */
+export const sentSwapReportOf = (
+    record: SwapHandoffRecord,
+    txIds: string[],
+): Nullable<SwapOrderReport> => {
+    const transactions: Extract<
+        SwapOrderReport,
+        { status: 'sent' }
+    >['transactions'] = []
+    let offset = 0
+    for (const group of record.plan) {
+        if (group.purpose === undefined) return null
+        for (const txHash of txIds.slice(offset, offset + group.slots.length)) {
+            transactions.push({
+                scope: record.scope,
+                txHash,
+                purpose: group.purpose,
+            })
+        }
+        offset += group.slots.length
+    }
+    return { status: 'sent', transactions }
 }

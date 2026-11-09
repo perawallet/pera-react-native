@@ -127,7 +127,7 @@ describe('useSyncCandidateAccounts', () => {
         )
     })
 
-    it('skips a switched-off chain', () => {
+    it('syncs a chain whose Pera backend is switched off, as its RPC reads still run', () => {
         registerChainFamilies([ALGORAND, ETHEREUM])
         getProvider().chains.setCapabilityOverrides(() => ({
             chainEnabled: { [ETHEREUM]: false },
@@ -145,7 +145,7 @@ describe('useSyncCandidateAccounts', () => {
 
         expect(
             mockSyncAndEnrichNewAccount.mock.calls.map(([address]) => address),
-        ).toEqual([ALGORAND_ADDRESS])
+        ).toEqual([ALGORAND_ADDRESS, EVM_ADDRESS])
     })
 
     it('on unmount deletes the unheld addresses, keeping one a stored account gained meanwhile', async () => {

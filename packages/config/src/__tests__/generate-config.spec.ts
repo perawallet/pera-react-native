@@ -11,7 +11,13 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import {
+    existsSync,
+    mkdtempSync,
+    readFileSync,
+    writeFileSync,
+    rmSync,
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -22,7 +28,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 
 import {
-    evmConfigKeys,
+    scopeConfigKeys,
     getConfig,
     overrideEnvironmentMap,
     type Config,
@@ -30,23 +36,44 @@ import {
 
 const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 
-type ScopeConfigKeys = {
-    chainId: string
-    networkId: string
-    tier: string
-    eip155ChainId: number
-    rpcUrlEnv: string
-    rpcUrlKey: string
-    peraServicesEnv: string
-    peraServicesKey: string
+type ChainNetworkRow = { id: string; tier: string } & Record<string, unknown>
+
+type ChainPackage = {
+    package: string
+    networks: Record<string, ChainNetworkRow[]>
+    mobileStubbedModules: string[]
+    scopeConfigFields: { name: string; isRequired: boolean }[]
 }
 
-const evmTooling = createRequire(import.meta.url)(
-    '../../../../tools/dev/evm-config-keys.cjs',
-) as {
-    evmChainConfigKeys: () => { capabilitiesEnv: string }[]
-    evmScopeConfigKeys: () => ScopeConfigKeys[]
+type ChainScopeConfigKey = {
+    package: string
+    chainId: string
+    network: ChainNetworkRow
+    field: string
+    env: string
+    key: string
+    isRequired: boolean
 }
+
+const chainPackages = createRequire(import.meta.url)(
+    '../../../../tools/dev/chain-packages.cjs',
+) as {
+    CHAIN_PACKAGES: ChainPackage[]
+    EVM_CHAIN_PACKAGE: string
+    chainPackageCapabilityConfigKeys: () => { env: string; key: string }[]
+    chainPackageFieldConfigKeys: (
+        packageName: string,
+        fieldName: string,
+    ) => ChainScopeConfigKey[]
+    chainPackageNamed: (name: string) => ChainPackage
+    chainPackageScopeConfigKeys: () => ChainScopeConfigKey[]
+    validateChainPackages: (packages: ChainPackage[]) => void
+}
+
+const TEST_CHAIN_PACKAGES = join(
+    __dirname,
+    '../../../../tools/dev/__tests__/fixtures/test-chain-packages.cjs',
+)
 
 const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
@@ -63,17 +90,15 @@ const guardedEnvVars = (): string[] => {
 
 const TURBO_JSON = join(__dirname, '../../../../turbo.json')
 
-// The literal lines, plus the EVM lines the script generates from the table.
+// The literal lines, plus the chain package lines the script generates from the table.
 const appendedEnvVars = (): string[] => [
     ...[
         ...readFileSync(SCRIPT, 'utf8').matchAll(
             /^append_config "([A-Z0-9_]+)"/gm,
         ),
     ].map(match => match[1]),
-    ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesEnv),
-    ...evmTooling
-        .evmScopeConfigKeys()
-        .flatMap(keys => [keys.rpcUrlEnv, keys.peraServicesEnv]),
+    ...chainPackages.chainPackageCapabilityConfigKeys().map(keys => keys.env),
+    ...chainPackages.chainPackageScopeConfigKeys().map(keys => keys.env),
 ]
 
 const isHashedByTurbo = (name: string, globalEnv: string[]): boolean =>
@@ -184,27 +209,223 @@ describe('tools/dev/generate-config.sh', () => {
         expect(output).toContain('chainEthereumCapabilities: "send"')
     })
 
-    test('names every EVM scope key and env var as the config schema does', () => {
+    test('names every table scope key and env var as the config schema does', () => {
+        const tableKeys = chainPackages.chainPackageScopeConfigKeys()
+
+        expect(tableKeys.length).toBeGreaterThan(0)
+        for (const keys of tableKeys) {
+            expect(overrideEnvironmentMap[keys.key as keyof Config]).toBe(
+                keys.env,
+            )
+        }
+    })
+
+    test('names every EVM scope key as scopeConfigKeys does', () => {
         const expected = EVM_CHAIN_IDS.flatMap(chainId =>
-            EVM_CHAIN_NETWORKS[chainId].networks.map(network => {
-                const keys = evmConfigKeys(chainId, network.id)
-                return {
-                    chainId,
-                    networkId: network.id,
-                    tier: network.tier,
-                    eip155ChainId: network.eip155ChainId,
-                    rpcUrlEnv: keys.rpcUrlEnv,
-                    rpcUrlKey: keys.rpcUrl,
-                    peraServicesEnv: keys.peraServicesEnv,
-                    peraServicesKey: keys.peraServices,
-                }
+            EVM_CHAIN_NETWORKS[chainId].networks.flatMap(network => {
+                const keys = scopeConfigKeys(chainId, network.id)
+                return [
+                    {
+                        chainId,
+                        field: 'rpcUrl',
+                        env: keys.rpcUrlEnv,
+                        key: keys.rpcUrl,
+                    },
+                    {
+                        chainId,
+                        field: 'peraServices',
+                        env: keys.peraServicesEnv,
+                        key: keys.peraServices,
+                    },
+                ]
             }),
         )
 
-        expect(evmTooling.evmScopeConfigKeys()).toEqual(expected)
-        for (const keys of expected) {
-            expect(overrideEnvironmentMap[keys.rpcUrlKey]).toBe(keys.rpcUrlEnv)
+        expect(
+            chainPackages
+                .chainPackageScopeConfigKeys()
+                .map(({ chainId, field, env, key }) => ({
+                    chainId,
+                    field,
+                    env,
+                    key,
+                })),
+        ).toEqual(expected)
+    })
+
+    describe('validateChainPackages', () => {
+        const testChainPackage = (
+            name: string,
+            chainId: string,
+        ): ChainPackage => ({
+            package: name,
+            networks: { [chainId]: [{ id: 'mainnet', tier: 'mainnet' }] },
+            mobileStubbedModules: [],
+            scopeConfigFields: [{ name: 'rpcUrl', isRequired: true }],
+        })
+
+        test('accepts the committed table', () => {
+            expect(() =>
+                chainPackages.validateChainPackages(
+                    chainPackages.CHAIN_PACKAGES,
+                ),
+            ).not.toThrow()
+        })
+
+        test('refuses a chain id that is not one word', () => {
+            expect(() =>
+                chainPackages.validateChainPackages([
+                    testChainPackage('@perawallet/a', 'foo-bar'),
+                ]),
+            ).toThrow(/serves chain "foo-bar"/)
+        })
+
+        test('refuses a chain two packages serve', () => {
+            expect(() =>
+                chainPackages.validateChainPackages([
+                    testChainPackage('@perawallet/a', 'base'),
+                    testChainPackage('@perawallet/b', 'base'),
+                ]),
+            ).toThrow(
+                /"base" is served by both @perawallet\/a and @perawallet\/b/,
+            )
+        })
+    })
+
+    describe('chainPackageNamed', () => {
+        test('finds chain-ethereum', () => {
+            expect(
+                chainPackages.chainPackageNamed(chainPackages.EVM_CHAIN_PACKAGE)
+                    .package,
+            ).toBe('@perawallet/wallet-core-chain-ethereum')
+        })
+
+        test('refuses a name the table lacks', () => {
+            expect(() =>
+                chainPackages.chainPackageNamed('@perawallet/renamed'),
+            ).toThrow(/No chain package named @perawallet\/renamed/)
+        })
+    })
+
+    describe('chainPackageFieldConfigKeys', () => {
+        test('lists one key per chain-ethereum network for the field', () => {
+            const keys = chainPackages.chainPackageFieldConfigKeys(
+                chainPackages.EVM_CHAIN_PACKAGE,
+                'rpcUrl',
+            )
+
+            expect(keys.map(keys => keys.env)).toContain(
+                'ETHEREUM_MAINNET_RPC_URL',
+            )
+            expect(keys.every(keys => keys.field === 'rpcUrl')).toBe(true)
+            expect(keys).toHaveLength(
+                Object.values(EVM_CHAIN_NETWORKS).flatMap(
+                    ({ networks }) => networks,
+                ).length,
+            )
+        })
+
+        test('refuses a field the package does not declare', () => {
+            expect(() =>
+                chainPackages.chainPackageFieldConfigKeys(
+                    chainPackages.EVM_CHAIN_PACKAGE,
+                    'rpcUrls',
+                ),
+            ).toThrow(/bakes no rpcUrls config key/)
+        })
+    })
+
+    describe('a test-only chain package in the table', () => {
+        const TESTCHAIN_ENDPOINTS = {
+            CHAIN_PACKAGES_TABLE: TEST_CHAIN_PACKAGES,
+            TESTCHAIN_MAINNET_RPC_URL: 'https://testchain.rpc.example',
+            TESTCHAIN_DEVNET_RPC_URL: 'https://testchain-devnet.rpc.example',
         }
+
+        test('emits its RPC URLs and leaves an unset optional field out', () => {
+            const output = run({
+                CHAINS: 'algorand,testchain',
+                ...TESTCHAIN_ENDPOINTS,
+                TESTCHAIN_MAINNET_PERA_SERVICES: '',
+            })
+
+            expect(output).toContain(
+                'testchainMainnetRpcUrl: "https://testchain.rpc.example"',
+            )
+            expect(output).toContain(
+                'testchainDevnetRpcUrl: "https://testchain-devnet.rpc.example"',
+            )
+            expect(output).not.toContain('testchainMainnetPeraServices')
+        })
+
+        test.each(['algorand,testchain', 'algorand,\ttestchain'])(
+            'fails a build with CHAINS=%j and TESTCHAIN_DEVNET_RPC_URL unset',
+            chains => {
+                expect(
+                    runExpectingFailure({
+                        CHAINS: chains,
+                        ...TESTCHAIN_ENDPOINTS,
+                        TESTCHAIN_DEVNET_RPC_URL: '',
+                    }),
+                ).toMatch(
+                    /TESTCHAIN_DEVNET_RPC_URL is unset but CHAINS ships testchain/,
+                )
+            },
+        )
+
+        test('does not ask a build without it for its RPC URLs', () => {
+            expect(() =>
+                run({
+                    CHAINS: 'algorand',
+                    CHAIN_PACKAGES_TABLE: TEST_CHAIN_PACKAGES,
+                    TESTCHAIN_MAINNET_RPC_URL: '',
+                    TESTCHAIN_DEVNET_RPC_URL: '',
+                }),
+            ).not.toThrow()
+        })
+
+        test('fails when the allowlist bakes CHAINS but drops an RPC URL', () => {
+            expect(
+                runExpectingFailure({
+                    CHAINS: 'algorand,testchain',
+                    ...TESTCHAIN_ENDPOINTS,
+                    CONFIG_ALLOWLIST: 'chainIds testchainMainnetRpcUrl',
+                }),
+            ).toMatch(/CONFIG_ALLOWLIST drops testchainDevnetRpcUrl/)
+        })
+
+        test('fails a build whose table names a chain id that is not one word', () => {
+            const table = join(dir, 'hyphenated-chain-packages.cjs')
+            writeFileSync(
+                table,
+                `module.exports = { CHAIN_PACKAGES: ${JSON.stringify([
+                    {
+                        package: '@perawallet/wallet-core-chain-testchain',
+                        networks: {
+                            'test-chain': [{ id: 'mainnet', tier: 'mainnet' }],
+                        },
+                        mobileStubbedModules: [],
+                        scopeConfigFields: [
+                            { name: 'rpcUrl', isRequired: true },
+                        ],
+                    },
+                ])} }`,
+            )
+
+            expect(
+                runExpectingFailure({ CHAIN_PACKAGES_TABLE: table }),
+            ).toMatch(/serves chain "test-chain"/)
+            expect(existsSync(join(dir, 'generated-env.ts'))).toBe(false)
+        })
+
+        test('fails before writing anything when the table is missing', () => {
+            expect(
+                runExpectingFailure({
+                    CHAIN_PACKAGES_TABLE: join(dir, 'missing.cjs'),
+                }),
+            ).toMatch(/Cannot find module/)
+            expect(existsSync(join(dir, 'generated-env.ts'))).toBe(false)
+        })
     })
 
     test('emits the capability list of a chain added to the EVM table', () => {
@@ -466,6 +687,19 @@ describe('tools/dev/generate-config.sh', () => {
                     REOWN_PROJECT_ID: '',
                 }),
             ).toMatch(/REOWN_PROJECT_ID is unset in a production build/)
+        })
+
+        test('fails a production build that swaps the chain package table', () => {
+            expect(
+                runExpectingFailure({
+                    APP_ENV: 'production',
+                    MAINNET_BACKEND_URL: 'https://mainnet.api.perawallet.app',
+                    TESTNET_BACKEND_URL: 'https://testnet.api.perawallet.app',
+                    BACKUP_BASE_URL: 'https://backup.perawallet.app/',
+                    REOWN_PROJECT_ID: 'project-id',
+                    CHAIN_PACKAGES_TABLE: TEST_CHAIN_PACKAGES,
+                }),
+            ).toMatch(/CHAIN_PACKAGES_TABLE is refused in a production build/)
         })
 
         test('leaves a non-production build with no project id alone', () => {

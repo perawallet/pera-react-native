@@ -60,7 +60,8 @@ const SURFACES = ['popup', 'expanded', 'approval', 'offscreen']
 // Popup: 423.53x705.89 CSS layout at 0.85 zoom = a 360x600 physical popup
 // (Chrome's height cap). zoom scales the declared box and Chrome sizes the
 // popup window to rendered content, so declaring 360x600 directly would
-// shrink the real popup to 306x510.
+// shrink the real popup to 306x510. Window dimensions don't see this zoom;
+// the react-native-web patch in pnpm-workspace.yaml divides them by it.
 const POPUP_CSS =
     '<style>html,body{width:423.53px;height:705.89px;margin:0;overflow:hidden}html{zoom:0.85}#root{width:100%;height:100%}</style>'
 // Web-only, all surfaces: react-native-web renders <Text> as selectable HTML
@@ -286,10 +287,10 @@ await build({
     format: 'esm',
     target: 'chrome120',
     alias: {
-        '@perawallet/wallet-extension-keystore-chrome/vault/autolock':
+        '@perawallet/wallet-extension-vault-chrome/vault/autolock':
             path.join(
                 root,
-                '../../extensions/keystore-chrome/src/vault/autolock.ts',
+                '../../extensions/vault-chrome/src/vault/autolock.ts',
             ),
         // esbuild also rewrites subpaths of an aliased package, so the
         // /messaging entry needs its own, longer key.
@@ -323,12 +324,12 @@ cpSync(
 )
 
 // 2b'. The vault's Argon2id worker, spawned by name from the extension pages
-// (ARGON2_WORKER_URL in keystore-chrome's vault/argon2.ts).
+// (ARGON2_WORKER_URL in vault-chrome's vault/argon2.ts).
 await build({
     entryPoints: [
         path.join(
             root,
-            '../../extensions/keystore-chrome/src/vault/argon2-worker.ts',
+            '../../extensions/vault-chrome/src/vault/argon2-worker.ts',
         ),
     ],
     outfile: path.join(dist, 'argon2-worker.js'),

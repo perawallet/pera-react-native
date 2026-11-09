@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import { OnrampEvent } from '@analytics'
 
@@ -60,19 +59,18 @@ vi.mock('../../OnrampSenderAddressContent', () => ({
 }))
 
 const QUOTES = [{ id: 'quote-1' }] as unknown as RampQuote[]
-const PRICE = new Decimal('0.25')
 
 const params = {
     quotes: QUOTES,
-    sourceAmount: new Decimal('100'),
     selectedQuoteId: 'quote-1',
     selectQuote: vi.fn(),
     selectedPaymentMethodId: 'card',
     selectPaymentMethod: vi.fn(),
-    destinationPriceInUsd: PRICE,
+    destinationSymbol: 'ALGO',
     senderAddress: 'SENDER',
     setSelectedSourceTokenId: vi.fn(),
     setSelectedDestinationTokenId: vi.fn(),
+    setSelectedChainId: vi.fn(),
     setSenderAddress: vi.fn(),
 }
 
@@ -116,8 +114,11 @@ describe('useOnrampSheets', () => {
     })
 
     describe('destination selection', () => {
-        it('opens the destination picker for the account scope and commits the pick', async () => {
-            mocks.requestBottomSheet.mockResolvedValue('algo')
+        it('opens the destination picker for the account scope and commits the picked token and its chain', async () => {
+            mocks.requestBottomSheet.mockResolvedValue({
+                chainId: 'ethereum',
+                tokenId: 'eth',
+            })
             const { result } = renderSheets()
 
             await act(() => result.current.handleOpenDestinationSelection())
@@ -128,16 +129,18 @@ describe('useOnrampSheets', () => {
                 scope: SCOPE,
             })
             expect(params.setSelectedDestinationTokenId).toHaveBeenCalledWith(
-                'algo',
+                'eth',
             )
+            expect(params.setSelectedChainId).toHaveBeenCalledWith('ethereum')
         })
 
-        it('keeps the destination when the sheet is dismissed', async () => {
+        it('keeps the destination and the chain when the sheet is dismissed', async () => {
             const { result } = renderSheets()
 
             await act(() => result.current.handleOpenDestinationSelection())
 
             expect(params.setSelectedDestinationTokenId).not.toHaveBeenCalled()
+            expect(params.setSelectedChainId).not.toHaveBeenCalled()
         })
 
         it('opens nothing without an onramp account scope', async () => {
@@ -160,10 +163,9 @@ describe('useOnrampSheets', () => {
             expect(lastSheet().contents.type).toBe(OnrampProviderContent)
             expect(lastSheet().contents.props).toEqual({
                 quotes: QUOTES,
-                sourceAmount: new Decimal('100'),
                 selectedQuoteId: 'quote-1',
                 selectedPaymentMethodId: 'card',
-                destinationPriceInUsd: PRICE,
+                destinationSymbol: 'ALGO',
             })
             expect(mocks.trackOnrampEvent.mock.calls).toEqual([
                 [OnrampEvent.ProviderTap],

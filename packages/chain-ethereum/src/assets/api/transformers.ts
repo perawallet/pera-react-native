@@ -67,9 +67,9 @@ const toPeraAsset = (
               name: item.name ?? undefined,
               unitName: item.unit_name ?? undefined,
               decimals: item.fraction_decimals,
-              // The backend sends no supply: 0 unless the asset came from a
-              // chain read.
-              totalSupply: new Decimal(0),
+              // Zero is the unknown sentinel the asset screen fills with a
+              // contract read.
+              totalSupply: new Decimal(item.total ?? 0),
               creator: { address: '' },
               peraMetadata: {
                   isDeleted: false,
