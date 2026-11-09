@@ -22,8 +22,8 @@ import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { SettingsStackParamsList } from '@modules/settings/routes'
+import { connectionKindCopy } from '@modules/settings/utils/connectionKindCopy'
 import {
-    isSiteConnectionKind,
     toUnifiedConnection,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
@@ -79,35 +79,18 @@ export const useConnectionsSettingsScreen =
 
         const confirmRevoke = useCallback(
             async (connection: UnifiedConnection) => {
-                // A dapp connection revokes a site's page-level access, not a
-                // paired WalletConnect session, so the copy differs.
-                const isWalletConnect = !isSiteConnectionKind(connection.kind)
+                const copy = connectionKindCopy(connection.kind)
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <ConfirmActionContent
                             icon='trash'
                             iconVariant='error'
-                            title={t(
-                                isWalletConnect
-                                    ? 'walletconnect.settings.delete_title'
-                                    : 'settings.connected_sites.revoke_title',
-                            )}
-                            message={t(
-                                isWalletConnect
-                                    ? 'walletconnect.settings.delete_body'
-                                    : 'settings.connected_sites.revoke_body',
-                                { origin: connection.subtitle },
-                            )}
-                            confirmLabel={t(
-                                isWalletConnect
-                                    ? 'common.delete.label'
-                                    : 'settings.connected_sites.revoke_confirm',
-                            )}
-                            cancelLabel={t(
-                                isWalletConnect
-                                    ? 'common.cancel.label'
-                                    : 'settings.connected_sites.revoke_cancel',
-                            )}
+                            title={t(copy.deleteTitleKey)}
+                            message={t(copy.deleteBodyKey, {
+                                origin: connection.subtitle,
+                            })}
+                            confirmLabel={t(copy.confirmKey)}
+                            cancelLabel={t(copy.cancelKey)}
                             confirmVariant='destructive'
                             testID='connections_settings_revoke_confirm_bottom_sheet'
                             confirmTestID='connections_settings_revoke_confirm_button'

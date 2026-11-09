@@ -47,7 +47,11 @@ import {
 } from '@modules/walletconnect'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
-import { isSiteConnectionKind } from '../ConnectionsSettingsScreen/connectionsSettingsHelpers'
+import {
+    connectionKindCopy,
+    isSiteConnectionKind,
+    type ConnectionKindCopy,
+} from '@modules/settings/utils/connectionKindCopy'
 
 // The analytics dimension is a string enum; the row carries the badge number.
 const wcVersionFor = (
@@ -138,8 +142,8 @@ const toConnectedAccountRows = (
 }
 
 export type UseSettingsWalletConnectDetailsScreenResult = {
-    /** A site's injected-provider access, not a paired WalletConnect session. */
     isSite: boolean
+    copy: ConnectionKindCopy
     preferredIcon: Optional<string>
     connectedAccounts: ConnectedAccountRow[]
     permissions: ConnectionPermission[]
@@ -174,6 +178,7 @@ export const useSettingsWalletConnectDetailsScreen = (
     )
 
     const isSite = isSiteConnectionKind(connection.kind)
+    const copy = connectionKindCopy(connection.kind)
     const preferredIcon = getPreferredDappIcon(connection.peer.icons)
     const permissions = useMemo(
         () => toConnectionPermissions(connection.permissions),
@@ -233,6 +238,7 @@ export const useSettingsWalletConnectDetailsScreen = (
 
     return {
         isSite,
+        copy,
         preferredIcon,
         connectedAccounts,
         permissions,

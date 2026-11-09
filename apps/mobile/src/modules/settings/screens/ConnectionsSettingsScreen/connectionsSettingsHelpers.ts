@@ -11,17 +11,13 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { DAPP_KIND, EIP1193_DAPP_KIND } from '@perawallet/wallet-core-dapp/wire'
+import { EIP1193_DAPP_KIND } from '@perawallet/wallet-core-dapp/wire'
 import type { ConnectionKind as RegistryConnectionKind } from '@perawallet/wallet-extension-connections'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { ModalState } from '@hooks/useModalState'
 
 export type ConnectionKind = RegistryConnectionKind
-
-/** A site's page-level access through an injected provider, not a paired WalletConnect session. */
-export const isSiteConnectionKind = (kind: ConnectionKind): boolean =>
-    kind === DAPP_KIND || kind === EIP1193_DAPP_KIND
 
 /** Screen-only read model; `connectedAt` is epoch ms. */
 export type UnifiedConnection = {
@@ -36,7 +32,6 @@ export type UnifiedConnection = {
      * so a site connected through both providers shows two tellable rows.
      */
     badgeLabel?: string
-    /** Opens the connection's details, which list its accounts by their address on the connection's chain. */
     onOpen: () => void
     onRevoke: () => void
 }

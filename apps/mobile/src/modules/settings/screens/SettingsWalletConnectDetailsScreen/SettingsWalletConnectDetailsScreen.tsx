@@ -52,6 +52,7 @@ export const SettingsWalletConnectDetailsScreen = ({
 
     const {
         isSite,
+        copy,
         preferredIcon,
         connectedAccounts,
         permissions,
@@ -61,11 +62,7 @@ export const SettingsWalletConnectDetailsScreen = ({
         handleOpenLink,
     } = useSettingsWalletConnectDetailsScreen(connection)
 
-    const deleteTitle = t(
-        isSite
-            ? 'settings.connected_sites.revoke_title'
-            : 'walletconnect.settings.delete_title',
-    )
+    const deleteTitle = t(copy.deleteTitleKey)
 
     return (
         <PWScreen testID='wallet_connect_details_screen'>
@@ -78,7 +75,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                 )}
                 {!preferredIcon && (
                     <PWIcon
-                        name={isSite ? 'globe' : 'wallet-connect'}
+                        name={copy.fallbackIcon}
                         size='xl'
                     />
                 )}
@@ -153,18 +150,20 @@ export const SettingsWalletConnectDetailsScreen = ({
                             <PWText>
                                 {t('walletconnect.settings.permissions')}
                             </PWText>
-                            <InfoButton
-                                size='sm'
-                                title={t(
-                                    'walletconnect.settings.permissions_info_title',
-                                )}
-                            >
-                                <PWText>
-                                    {t(
-                                        'walletconnect.settings.permissions_info_body',
+                            {!isSite && (
+                                <InfoButton
+                                    size='sm'
+                                    title={t(
+                                        'walletconnect.settings.permissions_info_title',
                                     )}
-                                </PWText>
-                            </InfoButton>
+                                >
+                                    <PWText>
+                                        {t(
+                                            'walletconnect.settings.permissions_info_body',
+                                        )}
+                                    </PWText>
+                                </InfoButton>
+                            )}
                         </PWView>
                     }
                 >
@@ -192,19 +191,11 @@ export const SettingsWalletConnectDetailsScreen = ({
                 >
                     <Dialog.Title title={deleteTitle} />
                     <PWText>
-                        {isSite
-                            ? t('settings.connected_sites.revoke_body', {
-                                  origin: connection.subtitle,
-                              })
-                            : t('walletconnect.settings.delete_body')}
+                        {t(copy.deleteBodyKey, { origin: connection.subtitle })}
                     </PWText>
                     <Dialog.Actions>
                         <Dialog.Button
-                            title={t(
-                                isSite
-                                    ? 'settings.connected_sites.revoke_confirm'
-                                    : 'common.delete.label',
-                            )}
+                            title={t(copy.confirmKey)}
                             titleStyle={{
                                 color: theme.colors.alertNegative,
                             }}
@@ -213,11 +204,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                             testID='wallet_connect_details_confirm_delete_button'
                         />
                         <Dialog.Button
-                            title={t(
-                                isSite
-                                    ? 'settings.connected_sites.revoke_cancel'
-                                    : 'common.cancel.label',
-                            )}
+                            title={t(copy.cancelKey)}
                             onPress={deleteModalState.close}
                             disabled={isLoading}
                             testID='wallet_connect_details_cancel_button'
