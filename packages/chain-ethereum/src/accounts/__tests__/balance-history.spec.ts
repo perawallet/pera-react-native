@@ -872,6 +872,15 @@ describe('the adapter methods', () => {
         ).resolves.toEqual([])
         await expect(
             ops().fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
+        ).resolves.toEqual([])
+    })
+
+    it('answers no portfolio on a chain the backend serves no balance history for when the addresses hold something there', async () => {
+        server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '3000000' }]
+
+        await expect(
+            ops().fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
         ).resolves.toBeNull()
     })
 
@@ -880,7 +889,7 @@ describe('the adapter methods', () => {
 
         await expect(
             ops(['assets']).fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
-        ).resolves.toBeNull()
+        ).resolves.toEqual([])
         await expect(
             ops(['prices']).fetchHoldingBalanceHistory!(
                 ALICE,
@@ -888,6 +897,26 @@ describe('the adapter methods', () => {
                 'one-day',
                 SCOPE,
             ),
+        ).resolves.toEqual([])
+        expect(requests).toEqual([])
+    })
+
+    it('answers no portfolio without a request on a scope missing a service when the addresses hold something there', async () => {
+        const requests = recordRequests()
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '3000000' }]
+
+        await expect(
+            ops(['assets']).fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
+        ).resolves.toBeNull()
+        expect(requests).toEqual([])
+    })
+
+    it('treats a zero-amount row as holding nothing', async () => {
+        const requests = recordRequests()
+        stored.holdings[ALICE] = [{ assetId: USDC, amount: '0' }]
+
+        await expect(
+            ops(['prices']).fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
         ).resolves.toEqual([])
         expect(requests).toEqual([])
     })

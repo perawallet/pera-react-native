@@ -326,8 +326,10 @@ export interface AccountsChainAdapter {
     describeHolding?(native: ChainHoldingNative): HoldingDescription
     /**
      * The summed value of `addresses` over `period`. `null` when the network
-     * serves no portfolio history, unlike `[]`, which is a source with no
-     * points. Absent on a chain with no portfolio history source.
+     * serves no portfolio history for addresses that hold something there.
+     * `[]` is a source with no points; an adapter may also answer it on such a
+     * network while the addresses hold nothing, since an empty source adds
+     * nothing to the sum. Absent on a chain with no portfolio history source.
      */
     fetchPortfolioHistory?(
         addresses: string[],

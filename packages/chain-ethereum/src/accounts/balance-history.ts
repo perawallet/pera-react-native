@@ -303,6 +303,9 @@ export const valueHolding = (
 const toUtcDay = (timestamp: number): string =>
     new Date(timestamp).toISOString().slice(0, 10)
 
+const holdsNothing = (holdings: { amount: Decimal }[]): boolean =>
+    holdings.every(({ amount }) => amount.isZero())
+
 const hasServices = (ctx: ChainContext, scope: ChainScope): boolean => {
     const offered = ctx.getPeraBackend(scope).services
     return offered.has(ASSETS_SERVICE) && offered.has(PRICES_SERVICE)
@@ -473,7 +476,13 @@ export const createEthereumBalanceHistoryOps = (
     const fetchPortfolioHistory: AccountsChainAdapter['fetchPortfolioHistory'] =
         async (addresses, period, scope, signal) => {
             eip155ChainIdOf(scope, chain)
-            if (!hasServices(ctx, scope)) return null
+            // An empty source adds nothing to the sum, so a network holding nothing must not blank the chart.
+            if (!hasServices(ctx, scope)) {
+                const unservedHoldings = await readHoldings(scope, addresses, {
+                    isCounted: true,
+                })
+                return holdsNothing(unservedHoldings) ? [] : null
+            }
             if (addresses.length === 0) return []
             const [listed, holdings] = await Promise.all([
                 listedTokens(scope),
@@ -500,7 +509,7 @@ export const createEthereumBalanceHistoryOps = (
                 gatedChartRequest,
                 hiddenIn(scope, addresses),
             )
-            if (grid === null) return null
+            if (grid === null) return holdsNothing(holdings) ? [] : null
             if (grid.length === 0) return []
             const points = [
                 ...grid,
