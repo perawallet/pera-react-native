@@ -21,7 +21,7 @@ import { fetchNodeJson } from '../blockchain/utils/nodeHttp'
 import type {
     NameAddressVerification,
     VerifyForwardResolutionParams,
-} from '@perawallet/wallet-core-nfd'
+} from '@perawallet/wallet-core-names'
 import { fetchNfdAppId } from './registry'
 
 // NFD contract (v2) layout: the name and owner sit in global state; verified

@@ -24,7 +24,7 @@ import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapte
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 
-let mockNfdNames: { name: string }[] | undefined
+let mockServiceNames: { name: string }[] | undefined
 let mockAccountTypeLabel: string | undefined
 let mockShouldPromptBackup: boolean
 
@@ -36,8 +36,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal =>
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNameForAddressQuery: () => ({ data: mockNfdNames }),
+vi.mock('@perawallet/wallet-core-names', () => ({
+    useNameForAddressQuery: () => ({ data: mockServiceNames }),
 }))
 
 vi.mock('@hooks/useAccountTypeLabel', () => ({
@@ -70,7 +70,7 @@ describe('useAccountDisplay', () => {
     })
 
     beforeEach(() => {
-        mockNfdNames = undefined
+        mockServiceNames = undefined
         mockAccountTypeLabel = undefined
         mockShouldPromptBackup = false
         mockPromptArgs.mockReset()
@@ -167,7 +167,7 @@ describe('useAccountDisplay', () => {
     })
 
     it("keeps a named Ethereum account's name and shows its primary name beneath", () => {
-        mockNfdNames = [{ name: 'alice.eth' }]
+        mockServiceNames = [{ name: 'alice.eth' }]
         const account: WalletAccount = {
             id: 'account-2',
             name: 'Savings',
@@ -190,7 +190,7 @@ describe('useAccountDisplay', () => {
     })
 
     it('suppresses the secondary line when it repeats the primary', () => {
-        mockNfdNames = [{ name: 'pera.algo' }]
+        mockServiceNames = [{ name: 'pera.algo' }]
 
         const { result } = renderHook(() =>
             useAccountDisplay({
@@ -206,7 +206,7 @@ describe('useAccountDisplay', () => {
     })
 
     it('keeps the raw secondary in compact mode where it is the only label', () => {
-        mockNfdNames = [{ name: 'pera.algo' }]
+        mockServiceNames = [{ name: 'pera.algo' }]
 
         const { result } = renderHook(() =>
             useAccountDisplay({
@@ -258,7 +258,7 @@ describe('useAccountDisplay', () => {
 
     it("shows a named account's type in place of its address or NFD when always requested", () => {
         mockAccountTypeLabel = 'Ledger account'
-        mockNfdNames = [{ name: 'flavortown.algo' }]
+        mockServiceNames = [{ name: 'flavortown.algo' }]
 
         const { result } = renderHook(() =>
             useAccountDisplay({

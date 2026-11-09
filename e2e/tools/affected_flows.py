@@ -161,7 +161,7 @@ PACKAGES = {
     "ledger-shared": ["onboarding", "rekey"],
     "messages": ["transactions"],
     "multisig": ["multisig", "rekey"],
-    "nfd": ["send_receive", "contacts"],
+    "names": ["send_receive", "contacts"],
     "onramp": ["onramp"],
     "passkeys": ["settings", "cloud_backup"],
     "projects": ["stake"],

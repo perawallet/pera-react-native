@@ -145,7 +145,7 @@ const TransactionListItemView = ({
 }
 
 /**
- * Rows carry their own query observers (NFD reverse lookup, asset details), so
+ * Rows carry their own query observers (name reverse lookup, asset details), so
  * a parent re-render — pagination, a refetch, a store write — used to re-run
  * every mounted row's hooks. `transaction` / `record` come straight from the
  * query cache and `onPress` from a `useCallback`, so the default shallow

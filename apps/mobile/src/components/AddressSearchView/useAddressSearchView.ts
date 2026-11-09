@@ -36,7 +36,7 @@ import {
     nameServiceOf,
     useNameSearchQuery,
     type NameSearchResult,
-} from '@perawallet/wallet-core-nfd'
+} from '@perawallet/wallet-core-names'
 import {
     useDebouncedValue,
     type Nullable,

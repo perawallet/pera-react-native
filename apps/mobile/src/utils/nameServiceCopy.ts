@@ -11,7 +11,7 @@
  */
 
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
-import type { NameServiceId } from '@perawallet/wallet-core-nfd'
+import type { NameServiceId } from '@perawallet/wallet-core-names'
 
 export type NameServiceCopy = {
     resultsTitleKey: I18nKey

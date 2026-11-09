@@ -138,7 +138,7 @@ describe('clearCustomNetworkCache', () => {
                    ('TX_TESTNET', ${testnet}, 'pay', 'SENDER', '1000', '{}', 1)
         `)
         await db.run(sql`
-            INSERT INTO nfd_cache (address, scope, updated_at)
+            INSERT INTO name_cache (address, scope, updated_at)
             VALUES ('ADDR', ${custom}, 1), ('ADDR', ${testnet}, 1)
         `)
         await db.run(sql`
@@ -247,8 +247,8 @@ describe('clearCustomNetworkCache', () => {
                 } as const,
             },
         ]
-        const customNfdKey = [
-            'nfd',
+        const customNameKey = [
+            'names',
             'address',
             {
                 address: 'ADDR',
@@ -272,7 +272,7 @@ describe('clearCustomNetworkCache', () => {
         queryClient.setQueryData(testnetAccountKey, { value: 2 })
         queryClient.setQueryData(customAssetKey, { value: 3 })
         queryClient.setQueryData(customTransactionKey, { value: 4 })
-        queryClient.setQueryData(customNfdKey, { value: 5 })
+        queryClient.setQueryData(customNameKey, { value: 5 })
         queryClient.setQueryData(unrelatedDomainKey, { value: 6 })
 
         await clearCustomNetworkCache(queryClient, 'algorand', db)
@@ -280,7 +280,7 @@ describe('clearCustomNetworkCache', () => {
         expect(queryClient.getQueryData(customAccountKey)).toBeUndefined()
         expect(queryClient.getQueryData(customAssetKey)).toBeUndefined()
         expect(queryClient.getQueryData(customTransactionKey)).toBeUndefined()
-        expect(queryClient.getQueryData(customNfdKey)).toBeUndefined()
+        expect(queryClient.getQueryData(customNameKey)).toBeUndefined()
         expect(queryClient.getQueryData(testnetAccountKey)).toEqual({
             value: 2,
         })

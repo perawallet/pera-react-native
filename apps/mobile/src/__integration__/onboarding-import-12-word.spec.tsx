@@ -265,6 +265,7 @@ describe('Flow: Onboarding → Import a 12-word seed', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-1',
+                name: '',
                 custody: {
                     kind: 'local',
                     seed: 'bip39',

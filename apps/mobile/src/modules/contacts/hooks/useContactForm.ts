@@ -84,7 +84,7 @@ export type UseContactFormResult = {
 /**
  * Shared form plumbing for Add and Edit Contact screens. Owns the
  * react-hook-form instance, the address being entered and the family it
- * belongs to, NFD resolution, and the image picker wiring. Each screen
+ * belongs to, name resolution, and the image picker wiring. Each screen
  * supplies its own submit / delete behaviour on top of what this returns.
  */
 export const useContactForm = (

@@ -38,8 +38,8 @@ const CONTRACT_SUITES = {
         '../deeplinks/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-multisig/testing':
         '../multisig/src/__tests__/adapter-contract.ts',
-    '@perawallet/wallet-core-nfd/testing':
-        '../nfd/src/__tests__/adapter-contract.ts',
+    '@perawallet/wallet-core-names/testing':
+        '../names/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-onramp/testing':
         '../onramp/src/__tests__/adapter-contract.ts',
     '@perawallet/wallet-core-signing/testing':

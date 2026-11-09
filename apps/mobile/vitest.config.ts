@@ -175,7 +175,7 @@ const distResolvedPackages = new Set([
 // Same, for the root barrel only; their `/test-handlers` still come from source.
 const distResolvedRoots = new Set([
     '@perawallet/wallet-core-card',
-    '@perawallet/wallet-core-nfd',
+    '@perawallet/wallet-core-names',
 ])
 
 // @rneui/base loads its rating images with CommonJS `require('./x.png')` inside
