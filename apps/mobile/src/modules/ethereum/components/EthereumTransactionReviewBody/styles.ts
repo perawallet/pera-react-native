@@ -69,6 +69,11 @@ export const useStyles = makeStyles(theme => ({
     label: {
         color: theme.colors.textGray,
     },
+    // One flex child, so the review's space-between can't pull the link away from its rows;
+    // the gap stands in for the screen's, which fragment rows (EthereumTransferAssetRows) rely on.
+    details: {
+        gap: theme.spacing.lg,
+    },
     transactionDetails: {
         alignSelf: 'flex-start',
         marginVertical: theme.spacing.sm,

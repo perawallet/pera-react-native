@@ -267,6 +267,18 @@ describe('TransactionReviewBody', () => {
         ).toBeTruthy()
     })
 
+    it("puts the fee ahead of a key registration's summary", () => {
+        renderReview(buildAlgorandDisplayFixture('key-registration'))
+
+        expect(
+            screen
+                .getByText('transactions.common.tx_fee')
+                .compareDocumentPosition(
+                    screen.getByText('transactions.key_reg.status'),
+                ) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
+    })
+
     it('still renders the header and fee when the signer is not in the wallet', () => {
         vi.mocked(useFindAccountByAddress).mockReturnValue(null)
         renderReview(buildAlgorandDisplayFixture('payment'))
