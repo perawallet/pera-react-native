@@ -23,6 +23,7 @@ const SPEC_SECONDS: Record<string, number> = {
     'window-ethereum.spec.ts': 65,
     'quantum-import.spec.ts': 49,
     'wallet-smoke.spec.ts': 33,
+    'send-confirm-amount.spec.ts': 32,
     'delete-all-data.spec.ts': 32,
     'passkey-provider.spec.ts': 24,
     'walletconnect.spec.ts': 21,
