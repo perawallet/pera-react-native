@@ -30,14 +30,14 @@ export type TransactionReviewLayoutProps = {
     hero?: ReactNode
     /** The review's own warnings, folded into one banner. */
     warnings?: readonly ReviewWarningItem[]
-    /** What the transaction will do, ahead of every other section. */
+    /** What the transaction will do, after the hero and the warnings. */
     summary?: ReactNode
     participants: ReactNode
     /** The cost, in the scrolling body right after the participants. A chain passes this or `stickyFee`. */
     fee?: ReactNode
     /** The cost, pinned directly above `actions` so it is on screen beside Confirm. */
     stickyFee?: ReactNode
-    /** What the transaction does in full, after the fee. */
+    /** What the transaction does in full, last in the scrolling body. */
     details?: ReactNode
     /** The screen's Confirm and Cancel. */
     actions: ReactNode
