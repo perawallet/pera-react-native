@@ -102,6 +102,19 @@ import {
     spyOnSwapSubmissionAndReports,
 } from './__fixtures__/swapRouter'
 
+// The integration setup registers whichever chains config enables.
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+        },
+    }
+})
+
 const ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:0`
 const ETH_ID = 'eip155:1/slip44:60'
 const ETH_ASSET = evmChainOf('ethereum').nativeAsset.assetId
