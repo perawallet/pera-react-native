@@ -190,14 +190,18 @@ describe('useWcConnectScreen', () => {
         )
 
         expect(result.current.chainId).toBe('ethereum')
-        expect(mocks.useSigningAccountsOn).toHaveBeenLastCalledWith(['ethereum'])
+        expect(mocks.useSigningAccountsOn).toHaveBeenLastCalledWith([
+            'ethereum',
+        ])
     })
 
     it('stays on Algorand until a proposal has loaded', () => {
         const { result } = render(null)
 
         expect(result.current.chainId).toBe('algorand')
-        expect(mocks.useSigningAccountsOn).toHaveBeenLastCalledWith(['algorand'])
+        expect(mocks.useSigningAccountsOn).toHaveBeenLastCalledWith([
+            'algorand',
+        ])
     })
 
     describe('chain and network', () => {

@@ -39,9 +39,9 @@ describe('toUnifiedConnection', () => {
     // The unified list is kind-agnostic; the badge and copy branch on the
     // record's own kind, not on a label the mapper invents.
     it('carries the row kind through instead of relabelling it', () => {
-        expect(toUnifiedConnection(row, vi.fn(), noChainName, vi.fn()).kind).toBe(
-            'walletconnect-v1',
-        )
+        expect(
+            toUnifiedConnection(row, vi.fn(), noChainName, vi.fn()).kind,
+        ).toBe('walletconnect-v1')
     })
 
     it('badges an EVM site with its chain’s name, so it reads apart from the same site’s Algorand row', () => {
@@ -55,7 +55,8 @@ describe('toUnifiedConnection', () => {
         }
 
         expect(
-            toUnifiedConnection(evmRow, vi.fn(), chainNameOf, vi.fn()).badgeLabel,
+            toUnifiedConnection(evmRow, vi.fn(), chainNameOf, vi.fn())
+                .badgeLabel,
         ).toBe('Base')
         expect(
             toUnifiedConnection(
@@ -63,8 +64,7 @@ describe('toUnifiedConnection', () => {
                 vi.fn(),
                 chainNameOf,
                 vi.fn(),
-            )
-                .badgeLabel,
+            ).badgeLabel,
         ).toBeUndefined()
     })
 
@@ -76,7 +76,8 @@ describe('toUnifiedConnection', () => {
         }
 
         expect(
-            toUnifiedConnection(evmRow, vi.fn(), () => 'Base', vi.fn()).badgeLabel,
+            toUnifiedConnection(evmRow, vi.fn(), () => 'Base', vi.fn())
+                .badgeLabel,
         ).toBeUndefined()
         expect(
             toUnifiedConnection(
