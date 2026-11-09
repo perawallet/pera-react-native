@@ -346,7 +346,7 @@ describe('Flow: send an NFT from an Ethereum account', () => {
             expect(
                 screen.getByTestId('send_confirm_network')
                     .previousElementSibling?.textContent,
-            ).toMatch(/BORE1$/),
+            ).toMatch(/1 BORE$/),
         )
         await confirmSend()
 

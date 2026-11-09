@@ -389,7 +389,8 @@
             "suspicious_title": "Jeton suspect",
             "body": "Pera n’a pas vérifié ce jeton. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
         },
-        "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet"
+        "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet",
+        "toggle_amount_hint": "Appuyez pour basculer entre la valeur et le montant de l’actif"
     },
     "accounts": {
         "legacyQuantum": {

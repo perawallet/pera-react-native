@@ -95,7 +95,24 @@ describe('CurrencyAmount', () => {
         expect(text.indexOf('¦')).toBeLessThan(text.indexOf('-'))
     })
 
-    it('renders the sign after the unit for an ASA (not before it)', () => {
+    it('renders the sign after a leading unit for an ASA (not before it)', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1000)}
+                currency='HIPO'
+                assetId='123456'
+                chainId={ALGORAND_CHAIN_ID}
+                precision='compact'
+                sign='+'
+                symbolPosition='start'
+            />,
+        )
+        const text = container.textContent ?? ''
+        // "HIPO +1000" — unit symbol precedes the sign, unlike a prefix.
+        expect(text.indexOf('HIPO')).toBeLessThan(text.indexOf('+'))
+    })
+
+    it("puts an asset's unit after the amount by default", () => {
         const { container } = render(
             <CurrencyAmount
                 value={new Decimal(1000)}
@@ -106,9 +123,31 @@ describe('CurrencyAmount', () => {
                 sign='+'
             />,
         )
-        const text = container.textContent ?? ''
-        // "HIPO +1000" — unit symbol precedes the sign, unlike a prefix.
-        expect(text.indexOf('HIPO')).toBeLessThan(text.indexOf('+'))
+        expect(container.textContent).toMatch(/^\+.*1000 HIPO$/)
+    })
+
+    it('keeps the Algo glyph and a fiat symbol before the amount by default', () => {
+        const { container: algo } = render(
+            <CurrencyAmount
+                value={new Decimal(1)}
+                currency='ALGO'
+                assetId='0'
+                chainId={ALGORAND_CHAIN_ID}
+                precision='compact'
+            />,
+        )
+        const { container: fiat } = render(
+            <CurrencyAmount
+                value={new Decimal(1)}
+                currency='USD'
+                assetId={null}
+                chainId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        expect(algo.textContent).toMatch(/^¦/)
+        expect(fiat.textContent).toMatch(/^USD/)
     })
 
     it('renders the Algo symbol as a text glyph for ALGO', () => {
@@ -323,6 +362,24 @@ describe('CurrencyAmount fiat floor', () => {
             />,
         )
         expect(container.textContent).not.toContain('< ')
+    })
+
+    it('shows a dust asset amount in a list row as "< 0.0001"', () => {
+        vi.mocked(formatCurrency).mockClear()
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.000000000000012')}
+                currency='LMWR'
+                assetId='0x0'
+                chainId={null}
+                precision='list'
+                assetDecimals={18}
+            />,
+        )
+        const [value, precision] = vi.mocked(formatCurrency).mock.calls[0]
+        expect(container.textContent).toContain('< ')
+        expect(value?.toString()).toBe('0.0001')
+        expect(precision).toBe(4)
     })
 
     it('hides the amount, floor included, in privacy mode', () => {
@@ -592,6 +649,7 @@ describe('CurrencyAmount shouldFitWidth', () => {
         chainId: null,
         precision: 'assetFull',
         assetDecimals: 18,
+        symbolPosition: 'start',
     } as const
 
     it('keeps the unit in its own text by default', () => {
@@ -665,7 +723,7 @@ describe('CurrencyAmount abbreviateFrom', () => {
         expect(String(value)).toBe('1.23')
         expect(precision).toBe(2)
         expect(container.textContent).toBe(
-            'ETHcommon.amount_abbreviation.million',
+            'common.amount_abbreviation.million ETH',
         )
     })
 

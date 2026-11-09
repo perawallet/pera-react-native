@@ -48,7 +48,6 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
         iconChainId,
         verificationIcon,
         isSuspicious,
-        subtitle,
         chainIds,
         decimals,
         fiat,
@@ -91,39 +90,32 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                             />
                         ) : null}
                     </PWView>
-                    <PWText
-                        variant='body'
-                        style={styles.subtitle}
-                        numberOfLines={1}
-                    >
-                        {subtitle}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.amountContainer}>
                     <CurrencyAmount
                         currency={item.group.symbol}
                         assetId=''
                         chainId={null}
                         value={amount}
-                        precision='compact'
+                        precision='list'
                         assetDecimals={decimals}
-                        isUnitShrinkable
-                        style={styles.primaryAmount}
-                        numberOfLines={1}
-                    />
-                    <CurrencyAmount
-                        currency={fiat.displayCurrency}
-                        assetId={null}
-                        chainId={null}
-                        isFiat
-                        value={fiat.value}
-                        precision='compact'
-                        showSymbol
-                        variant='body'
-                        style={styles.secondaryAmount}
+                        style={styles.subtitle}
                         numberOfLines={1}
                     />
                 </PWView>
+                {fiat.value == null ? null : (
+                    <PWView style={styles.valueContainer}>
+                        <CurrencyAmount
+                            currency={fiat.displayCurrency}
+                            assetId={null}
+                            chainId={null}
+                            isFiat
+                            value={fiat.value}
+                            precision='compact'
+                            showSymbol
+                            style={styles.value}
+                            numberOfLines={1}
+                        />
+                    </PWView>
+                )}
             </PWView>
             <PWView style={styles.networksRow}>
                 <PWView style={styles.networksToggle}>

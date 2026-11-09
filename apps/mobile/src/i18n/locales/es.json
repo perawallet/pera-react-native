@@ -389,7 +389,8 @@
             "suspicious_title": "Token sospechoso",
             "body": "Pera no ha verificado este token. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
         },
-        "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo"
+        "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo",
+        "toggle_amount_hint": "Toca para alternar entre el valor y la cantidad del activo"
     },
     "accounts": {
         "legacyQuantum": {

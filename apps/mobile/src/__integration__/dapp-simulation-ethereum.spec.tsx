@@ -384,8 +384,8 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         expect(changes.textContent).toContain('ETH')
         expect(changes.textContent).toContain('2.28296')
         // 0.001 ETH at $2,040 and 2.28296 USDC at $1.
-        expect(changes.textContent).toContain('ETH-0.001$ 2.04')
-        expect(changes.textContent).toContain('+2.28296$ 2.28')
+        expect(changes.textContent).toContain('-0.001 ETH$ 2.04')
+        expect(changes.textContent).toContain('+2.28296 USDC$ 2.28')
         expect(changes.textContent).toContain(
             'ethereum.simulation.estimate_note',
         )

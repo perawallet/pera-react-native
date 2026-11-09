@@ -232,11 +232,16 @@ describe("Flow: One account's assets across chains", () => {
             `asset_row_${USDC_TEST_ASSET.assetId}`,
         )
         const ethereumMember = screen.getByTestId(`asset_row_${ETH_USDC}`)
+        // Each member's network heads its row.
         expect(
-            within(algorandMember).getByTestId('chain_label_algorand'),
+            within(algorandMember.parentElement!).getByTestId(
+                'chain_label_algorand',
+            ),
         ).toBeTruthy()
         expect(
-            within(ethereumMember).getByTestId('chain_label_ethereum'),
+            within(ethereumMember.parentElement!).getByTestId(
+                'chain_label_ethereum',
+            ),
         ).toBeTruthy()
         expect(screen.queryByTestId('asset_details_stub')).toBeNull()
     })
@@ -295,11 +300,13 @@ describe("Flow: One account's assets across chains", () => {
         fireEvent.click(screen.getByTestId('asset_network_filter_base'))
 
         const native = await screen.findByTestId('asset_row_native')
-        // No read vouches for the zero, so neither the amount nor its value shows.
+        // No read vouches for the zero, so the amount is a placeholder and no value shows.
         expect(within(native).queryByText(/0\.00/)).toBeNull()
         expect(
-            within(native).getAllByText(UNKNOWN_AMOUNT_PLACEHOLDER),
-        ).toHaveLength(2)
+            within(native).getAllByText(
+                new RegExp(`^${UNKNOWN_AMOUNT_PLACEHOLDER}`),
+            ),
+        ).toHaveLength(1)
         // A native coin's subtitle is its bare unit, never `<unit> · native`.
         expect(within(native).queryByText(/native/)).toBeNull()
         // The read failed, so the zero is a placeholder, not an unfunded balance.
@@ -495,7 +502,9 @@ describe("Flow: One account's assets across chains", () => {
             `asset_row_${ETH_USDC}`,
         )
         expect(
-            within(ethereumMember).getAllByTestId('chain_label_ethereum'),
+            within(ethereumMember.parentElement!).getAllByTestId(
+                'chain_label_ethereum',
+            ),
         ).toHaveLength(1)
     })
 
