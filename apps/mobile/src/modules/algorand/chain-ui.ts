@@ -89,6 +89,9 @@ export const algorandChainUi: ChainUi = {
     passphraseCompatibilityKey: i18nKey(
         'view_passphrase.compatibility.algorand',
     ),
+    passphraseCompatibilityKeyByWordCount: {
+        12: i18nKey('view_passphrase.compatibility.algorand_twelve_word'),
+    },
     accountOptions: {
         ExpandedSection: AlgorandAccountSection,
         useHasExpandedSection: useHasAlgorandAccountSection,
