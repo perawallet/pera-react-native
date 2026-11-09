@@ -28,4 +28,12 @@ export const useStyles = makeStyles(theme => ({
     differing: {
         color: theme.colors.error,
     },
+    acknowledge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    acknowledgeLabel: {
+        flexShrink: 1,
+    },
 }))

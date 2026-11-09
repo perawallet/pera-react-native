@@ -388,7 +388,6 @@ registerPreview({
                         <PWCheckbox
                             checked={true}
                             onPress={() => undefined}
-                            title='Accept terms and conditions'
                         />
                     ),
                 },
@@ -398,7 +397,6 @@ registerPreview({
                         <PWCheckbox
                             checked={false}
                             onPress={() => undefined}
-                            title='Subscribe to newsletter'
                         />
                     ),
                 },

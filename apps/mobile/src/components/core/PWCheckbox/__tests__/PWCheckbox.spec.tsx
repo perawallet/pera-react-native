@@ -14,7 +14,6 @@ import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { PWCheckbox } from '../PWCheckbox'
-import { Text } from 'react-native'
 
 describe('PWCheckbox', () => {
     it('calls onPress when pressed', () => {
@@ -23,12 +22,11 @@ describe('PWCheckbox', () => {
             <PWCheckbox
                 checked={false}
                 onPress={onPress}
-            >
-                <Text>Accept Terms</Text>
-            </PWCheckbox>,
+                testID='terms_checkbox'
+            />,
         )
 
-        fireEvent.click(screen.getByText('Accept Terms'))
+        fireEvent.click(screen.getByTestId('terms_checkbox'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 })
