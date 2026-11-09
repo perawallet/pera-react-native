@@ -128,7 +128,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.14.0
   msw: ^2.14.6
-  oxfmt: ^0.74.0
+  oxfmt: ^0.75.0
   punycode: ^2.3.1
   react: 19.3.0
   react-dom: 19.3.0
