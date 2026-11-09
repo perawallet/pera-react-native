@@ -54,43 +54,43 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your NFTs, a new one every hour."
+            "value": "One of your NFTs, chosen or at random."
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine NFTs, jede Stunde ein neues."
+            "value": "Eines deiner NFTs, ausgewählt oder zufällig."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus NFTs, uno nuevo cada hora."
+            "value": "Uno de tus NFTs, elegido o al azar."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vos NFT, un nouveau chaque heure."
+            "value": "Un de vos NFT, choisi ou au hasard."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seus NFTs, um novo a cada hora."
+            "value": "Um dos seus NFTs, escolhido ou aleatório."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seus NFTs, um novo a cada hora."
+            "value": "Um dos seus NFTs, escolhido ou aleatório."
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "NFT’lerin, her saat yeni biri."
+            "value": "NFT’lerinden biri, seçilmiş ya da rastgele."
           }
         }
       }

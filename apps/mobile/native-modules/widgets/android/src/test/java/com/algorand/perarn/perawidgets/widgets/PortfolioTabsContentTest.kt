@@ -49,6 +49,14 @@ class PortfolioTabsContentTest {
         assertEquals(150f, t.pageHeightDp)
     }
 
+    @Test fun onlyAWideWidgetGivesTheTransactionsHalfItsOwnLink() {
+        val wide = tabs(page = TRANSACTIONS_PAGE, width = 250f)
+        assertEquals(portfolio.tapUrl, wide.tapUrl)
+        assertEquals(transactions.tapUrl, wide.transactionsHalfTapUrl)
+        assertNull(tabs(page = TRANSACTIONS_PAGE).transactionsHalfTapUrl)
+        assertNull(tabs(page = TRANSACTIONS_PAGE, hidden = true).transactionsHalfTapUrl)
+    }
+
     @Test fun theSelectedTabDecidesThePageAndTheTap() {
         val tx = tabs(page = TRANSACTIONS_PAGE)
         assertEquals(TabsMode.Tabs, tx.mode)

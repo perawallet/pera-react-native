@@ -30,4 +30,16 @@ enum DeepLink {
         }
         return components.url
     }
+
+    /// One account opens that account; no account opens the portfolio drawer.
+    static func portfolio(account: String?) -> URL? {
+        guard let account else { return url("portfolio/") }
+        return url("account-detail/", ["address": account])
+    }
+
+    /// One account opens its History tab; no account opens the portfolio drawer.
+    static func transactions(account: String?) -> URL? {
+        guard let account else { return url("portfolio/") }
+        return url("account-detail/", ["address": account, "tab": "history"])
+    }
 }

@@ -56,16 +56,17 @@ final class StubURLProtocol: URLProtocol {
 
     override func stopLoading() {}
 
+    // `path()`, not `.path`: the property drops the trailing slash every route key carries.
     private static func route(for url: URL?) -> Response? {
         guard let url else { return nil }
         let carried = Set(URLComponents(url: url, resolvingAgainstBaseURL: true)?.queryItems ?? [])
         let match = routes.first { key, _ in
             let parts = key.split(separator: "?", maxSplits: 1).map(String.init)
-            guard parts.count == 2, parts[0] == url.path else { return false }
+            guard parts.count == 2, parts[0] == url.path() else { return false }
             let wanted = URLComponents(string: "?" + parts[1])?.queryItems ?? []
             return wanted.allSatisfy(carried.contains)
         }
-        return match?.value ?? routes[url.path]
+        return match?.value ?? routes[url.path()]
     }
 }
 

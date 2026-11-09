@@ -63,7 +63,7 @@ final class PortfolioFetcherTests: XCTestCase {
 
         _ = await PortfolioFetcher.fetch(addresses: ["A", "B"], period: "one-day", testFeed)
 
-        let request = try XCTUnwrap(StubURLProtocol.requests.first { $0.url?.path == "/v1/wallet/wealth/" })
+        let request = try XCTUnwrap(StubURLProtocol.requests.first { $0.url?.path() == "/v1/wallet/wealth/" })
         let items = URLComponents(url: try XCTUnwrap(request.url), resolvingAgainstBaseURL: false)?.queryItems ?? []
         XCTAssertEqual(items.first { $0.name == "account_addresses" }?.value, "A,B")
         XCTAssertEqual(items.first { $0.name == "period" }?.value, "one-day")

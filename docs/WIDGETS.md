@@ -1,63 +1,58 @@
 # Home-screen widgets
 
-Pera's home-screen widgets are native code per platform: SwiftUI/WidgetKit on iOS, Glance on
-Android. React Native cannot render inside a widget process, so no widget UI is shared between
-platforms. What is shared is everything that feeds them: the app computes a display-ready
-**snapshot** in TypeScript and hands it to the widgets through a small native bridge. What each iOS
-widget shows, its options and its taps are in [WIDGETS_IOS.md](WIDGETS_IOS.md).
+Pera's home-screen widgets are native code per platform: SwiftUI/WidgetKit on iOS, Jetpack Glance on
+Android. React Native cannot render inside a widget, so no widget UI is shared between platforms.
+What is shared is everything that feeds them: the app computes a display-ready **snapshot** in
+TypeScript and hands it to the widgets through a small native bridge. This doc is that shared
+contract. What each widget shows, its options, its taps and how each platform builds them are in
+[WIDGETS_IOS.md](WIDGETS_IOS.md) and [WIDGETS_ANDROID.md](WIDGETS_ANDROID.md).
 
 ```text
-RN app (JS)                          native bridge               widget process
-───────────                          ─────────────               ──────────────
-queries + stores ─► buildWidgetSnapshot ─► writeSnapshot(json) ─► App Group / SharedPreferences
-NFT image URLs   ─────────────────────► syncImages(items)    ─► cached, downsampled files
-                                                                   └─► TimelineProvider renders
+RN app (JS)                          native bridge                widgets
+───────────                          ─────────────                ───────
+queries + stores ─► buildWidgetSnapshot ─► writeSnapshot(json) ─► widget storage ─► render
+NFT image URLs   ─────────────────────► syncImages(items)    ─► cached image files
+                                                                  Pera backend ◄─ own fetches
 ```
+
+## Platforms
+
+|                  | iOS                                                  | Android                                      |
+| ---------------- | ---------------------------------------------------- | -------------------------------------------- |
+| Widget UI        | WidgetKit extension                                  | Glance, inside the native bridge module      |
+| Snapshot storage | App Group shared with the extension                  | App-private SharedPreferences `pera_widgets` |
+| Scheduler        | WidgetKit timelines                                  | WorkManager                                  |
+| Scan shortcut    | Control (Control Center, Lock Screen, Action button) | Quick Settings tile                          |
+
+Both platforms also offer the scanner from the app icon's long-press menu ("Scan QR Code",
+`useAppQuickActions`, set at runtime so the title follows the app language).
+
+| Widget                                                              | iOS | Android |
+| ------------------------------------------------------------------- | --- | ------- |
+| Portfolio, Transactions, Price, Receive QR                          | ✓   | ✓       |
+| Portfolio & Transactions with a tab bar                             | ✓   | ✓       |
+| Portfolio & Transactions with a flip button                         | ✓   | —       |
+| NFTs                                                                | ✓   | —       |
+| Cloud Backup, Passphrase Backup, Backups                            | ✓   | —       |
+| Inbox, Inbox List, Signatures, Notifications, Inbox & Notifications | ✓   | —       |
 
 ## Where the code lives
 
-| Piece                       | Location                                                                                                                                  | Knows about                                      |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| iOS widget extension        | `targets/widget/` under `apps/mobile`, created by `@bacons/apple-targets`                                                                 | The snapshot JSON shape and the App Group        |
-| Swift shared across targets | `targets/_shared/` under `apps/mobile`                                                                                                    | Snapshot `Codable`, reader, presentational views |
-| Native bridge               | Expo module `PeraWidgets` in `native-modules/widgets/` under `apps/mobile`                                                                | Nothing about the schema: strings and files      |
-| Platform service            | `WidgetsService` in `extensions/platform`, RN implementation in `extensions/platform-react-native`, no-op in `extensions/platform-chrome` | The bridge methods                               |
-| Snapshot schema and sync    | `widgets` module in the mobile app (`buildWidgetSnapshot`, `useWidgetSnapshotSync`)                                                       | Accounts, currencies, settings, i18n, network    |
+| Piece                    | Location                                                                                                                                  | Knows about                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Snapshot schema and sync | `widgets` module in the mobile app (`buildWidgetSnapshot`, `WidgetSnapshotSync`)                                                          | Accounts, currencies, settings, i18n, network                    |
+| Platform service         | `WidgetsService` in `extensions/platform`, RN implementation in `extensions/platform-react-native`, no-op in `extensions/platform-chrome` | The bridge methods                                               |
+| Native bridge            | Expo module `PeraWidgets` in `apps/mobile/native-modules/widgets/`                                                                        | Where the snapshot and images live; on Android, also the widgets |
+| iOS widgets              | `apps/mobile/targets/widget/`, with the snapshot `Codable` in `apps/mobile/targets/_shared/`                                              | [WIDGETS_IOS.md](WIDGETS_IOS.md)                                 |
+| Android widgets          | `apps/mobile/native-modules/widgets/android/`                                                                                             | [WIDGETS_ANDROID.md](WIDGETS_ANDROID.md)                         |
 
 The snapshot logic stays an app module: it projects existing domains for one mobile-only surface.
 Promote it to `packages/` if a second consumer appears.
 
-## Why `@bacons/apple-targets`
-
-`ios/` is regenerated by prebuild, so the extension target must be recreated from code on every
-prebuild. `@bacons/apple-targets` does this declaratively and references the target folder in
-place, so the Swift edited in Xcode is the committed source, and adding a widget means adding a
-Swift file.
-
-A hand-written config plugin was rejected: the passkey-autofill extension is added that way, and
-`apps/mobile/plugins/withPasskeyAutofillFixes.js` exists to repair what hand-rolled pbxproj surgery
-gets wrong (missing target dependency, duplicate sources, embed phase ordered after Firebase scripts
-causing an Xcode "Cycle inside" error). The widget target must coexist with that extension; verify
-both still embed after any change to either plugin.
-
-## Target configuration
-
-- **Deployment target 17.0** for the extension, while the app stays on 16.4. Needed for
-  `containerBackground(for: .widget)`, which iOS 17 requires for correct rendering in StandBy and
-  on the Mac desktop. Devices on 16.x do not offer the widget.
-- **Bundle ID** `<app bundle id>.widget`.
-- **App Group** `group.<app bundle id>`, the same group the passkey-autofill plugin already
-  provisions (the app's Info.plist carries it as `AppGroupIdentifier`). `apple-targets` only
-  auto-mirrors groups listed in `ios.entitlements`, and Pera's group is added by a mod instead, so
-  the target config must set it explicitly from the app config.
-- A new extension needs its own App ID with the App Group capability and provisioning profiles for
-  every variant before it can be signed in CI.
-
 ## The snapshot
 
-One versioned JSON document, defined once as a Zod schema in TypeScript and mirrored as a Swift
-`Codable` and a Kotlin data class. Every field after `version` is optional on the native side, so an
-older widget never fails to decode a newer snapshot.
+One versioned JSON document, defined once as a Zod schema in TypeScript (`snapshot.ts` in the
+`widgets` module) and mirrored as a Swift `Codable` and a Kotlin data class.
 
 ```ts
 {
@@ -74,7 +69,7 @@ older widget never fails to decode a newer snapshot.
   assetOptions: [{ assetId, name, unitName }] | null,
   algoPrice: { formatted: '€0.19', asOf: 1727600000000 } | null,
   portfolio:
-    | { state: 'visible', formatted: '€1,234.56', algoFormatted: '6,500.12 ALGO', asOf: number }
+    | { state: 'visible', formatted: '€1,234.56' | null, algoFormatted: '6,500.12 ALGO', asOf: number }
     | { state: 'hidden' }
     | null,
   nfts:
@@ -85,50 +80,72 @@ older widget never fails to decode a newer snapshot.
     cloud: { state: 'notSetUp' | 'partial' | 'failed' | 'backedUp', title, detail | null } | null,
     passphrase: { state: 'needed' | 'backedUp', title, detail | null },
   } | null,
-  receiveTargets: [{ address, name, paymentUri, chain }] | null,
   inboxFeed: {
     deviceId, addresses, localAddresses, accountNames: [{ address, name }],
     notifications: { backendUrl, deviceId } | null,
   } | null,
+  receiveTargets: [{ address, name, paymentUri, chain: 'algorand:…' | null }] | null,
 }
 ```
 
+- **Decoding.** Every top-level field after `version` is optional on both platforms, so an older
+  widget never fails on a field a newer app adds. Inside a field they differ: Swift requires the
+  members a widget can't render without, so a malformed field fails the whole decode and the widget
+  shows its placeholder; Kotlin makes every member nullable.
 - **Values cross the bridge as formatted strings.** No `Decimal` or `number` amount is ever
   serialised. The self-refreshing widgets (below) format what they fetch with Swift and Kotlin
   ports of `formatCurrency`: fiat at the currency's digits capped at 2, half-up, `< $ 0.01` below the
   smallest unit; unit prices at 2–6 decimals. Their tests assert strings generated from the TS
   functions, so a live value and the app's snapshot fallback render the same.
-- **`asOf` is epoch milliseconds from the query's `dataUpdatedAt`**, not the write time, so
-  "Updated" is honest after an offline launch. It moves only when the value does.
+- **`asOf` is epoch milliseconds from the price query's `dataUpdatedAt`**, not the write time, so
+  "Updated" is honest after an offline launch. It doesn't count as a change on its own.
 - **Strings with a count carry a literal `{count}`** (`inboxWaiting`, `inboxToSign`): the widget
   substitutes the number, so the translation keeps its own word order.
 - **Asset IDs are decimal strings**; they can exceed 2^53.
-- **Addresses are stored, and rendered by one widget only.** `portfolioFeed` carries the signing
-  accounts' addresses so the portfolio widget can refresh itself; they stay in the App Group, which
-  only Pera's own targets can read. `receiveTargets` is the exception: the Receive QR widget draws an
-  address and its QR (see below).
+- **The app clears the snapshot when the wallet has no signing accounts** on the widgets' chain, so
+  a watch-only wallet gets the placeholder everywhere.
 
-### What may leave the app lock
+## Security and privacy
 
-The snapshot sits outside the app lock and is rendered on the home screen, StandBy and the Mac
-desktop. No widget offers lock-screen sizes: they are readable without unlocking the phone, so they
-wait on a security review. Home-screen widgets still appear on a locked phone in StandBy and on the
-Mac desktop, so balances, charts, transaction rows and NFT images are marked `.privacySensitive()`,
-which iOS redacts until the phone is unlocked. `privacyMode` therefore applies to every widget: when it is on, `portfolio` and
-`nfts` are written as `{ state: 'hidden' }`, `portfolioFeed` is `null` (the builder enforces this
-even if a caller passes one), and **no NFT data, images or addresses are written at all**. Price data
-is public and always written. Backup status is written in privacy mode too and isn't marked
-`.privacySensitive()`: it reveals no holdings, and its prompt is the point of the widget.
+Widgets sit outside the app lock. The PIN or biometrics protect the app, not the home screen:
+anyone holding an unlocked phone sees what the widgets show, as with a notification preview. What
+the snapshot may hold follows from that.
 
-### When the app writes it
+- **Never in the snapshot:** keys, passphrases, or anything that signs.
+- **Stored, never rendered:** the accounts' addresses (`portfolioFeed`, `inboxFeed`), device ids,
+  and the `X-API-Key` the app already ships with, so the widgets can fetch between launches. Only
+  Pera can read the storage (an App Group on iOS, app-private SharedPreferences on Android), and
+  `apps/mobile/plugins/withExcludeDataFromBackup.js` keeps it out of device backups on both.
+- **Rendered:** balances, charts, transaction rows, NFT images, inbox counts and, in Receive QR
+  only, one address and its QR.
+- **A tap goes through the app lock.** Every tap is a deep link into the app; with the app lock on,
+  the lock screen covers the destination until the user unlocks, and signing still asks for the PIN
+  or biometrics. The widgets never see the lock's state, so turning the PIN on changes nothing on
+  the home screen.
+- **Privacy mode** is what keeps holdings off the home screen. `portfolio` and `nfts` are written
+  as `{ state: 'hidden' }`, and `portfolioFeed`, `assetOptions`, `inboxFeed` and `receiveTargets`
+  are `null` (the builder enforces this even if a caller passes them), so the snapshot holds no
+  address, account name or NFT. A widget's saved options still hold the account picked in them, as
+  an address. Prices are public and always written. Backup status is written too: it reveals no
+  holdings, and its prompt is the point of the widget.
+- **Locked phone.** Neither platform offers a widget on the lock screen, where it would be readable
+  without unlocking. iOS still shows home-screen widgets on a locked phone in StandBy and on the Mac
+  desktop, so it redacts their sensitive content until unlock; Android's home screen isn't visible
+  on a locked phone.
+- **Settings screens skip the PIN.** Edit Widget on iOS and the widget settings screen on Android
+  list account and asset names without asking for it, as the widget itself would, and only on an
+  unlocked phone.
+- **Network.** The widgets' own requests carry the app's certificate pins (below).
+
+## When the app writes it
 
 `WidgetSnapshotSync`, a component that renders nothing, is mounted beside the app content in
-`RootComponent`: as a hook in the root it re-rendered the whole tree on every price or sync tick.
+`RootComponent`, so a price or sync tick re-renders only it.
 
 - It writes when the snapshot differs from the last one written, `asOf` aside, so an unchanged
-  price poll does not spend a timeline reload.
-- It writes on the transition to background, so the widget matches what the user last saw. The
-  native side reloads timelines only when the data differs from what it already holds.
+  price poll does not spend a widget reload.
+- It writes on the transition to background, so the widgets match what the user last saw. The
+  native side redraws only when the data differs from what it already holds.
 - **It never overwrites with pending or errored data.** If inputs are not ready,
   `buildWidgetSnapshot` returns `undefined` and the previous snapshot stays; a read that errors
   keeps its last good value (`useSettledWidgetValue`), and a failed NFT read never purges images.
@@ -137,65 +154,54 @@ is public and always written. Backup status is written in privacy mode too and i
 - **Delete all data raises a wipe guard first** (`useWidgetWipeStore`) and clears the widgets after
   the stores reset, so no write or background re-write lands in between.
 
-## Look and feel
+## Language and theme
 
-Widgets should read as part of Pera, not as a generic system widget.
-
-- **Colours** come from the app's theme tokens in `apps/mobile/src/theme/tokens/light.ts` and
-  `dark.ts`. The widget uses a small subset (background, primary and secondary text, positive and
-  negative, `testnetBg`/`testnetText`), declared as colour sets through the `apple-targets`
-  `colors` option. They are hand-copied because the target config cannot import TypeScript; keep
-  the token names identical so a search finds both.
-- **Typography** is DM Sans, the app's font (`apps/mobile/assets/fonts/`). Only the weights the
-  widgets use are bundled into the extension and registered in its Info.plist `UIAppFonts`.
-- **Theme** follows the app's setting, not only the system: the snapshot carries `theme`, and the
-  widget applies it when it is `light` or `dark`. iOS still overrides colours in tinted and vibrant
-  rendering modes (StandBy at night, the inactive Mac desktop), so meaning must never depend on colour
-  alone; a price change carries ▲/▼ as well as green/red.
-
-### Network bar
-
-The app shows a yellow bar with the network name on every non-mainnet network (`RootComponent`,
-using `useNetworkLabel`). Widgets do the same: when `network.isMainnet` is false they render a top
-bar in `testnetBg`/`testnetText` with `network.label`, so TestNet value is never mistaken for real
-funds on the home screen.
-
-### Language
-
-Widgets render in the app's language, which can differ from the device's.
-
-- Every user-visible label comes from `snapshot.strings`, translated in JS from the normal locale
-  bundles under a `widgets.*` namespace. New keys must land in all locales; `pera/locale-key-parity`
-  enforces it.
-- Swift sets `.environment(\.locale, …)` from `snapshot.locale`, which localises relative dates and
-  sets the layout direction.
-- **Trap:** before the first snapshot exists, or if it fails to decode, the widget knows no
-  language. The placeholder for that state is the Pera logo with no text. The widget gallery name
-  and description are system UI and use the extension's own string catalog in the device language.
+- Every user-visible label in a widget comes from `snapshot.strings`, translated in JS from the
+  normal locale bundles under a `widgets.*` namespace, so widgets render in the app's language,
+  which can differ from the device's. New keys must land in all locales; `pera/locale-key-parity`
+  enforces it. The Price widget's "24h" and "ID" are the exception: iOS takes them from the
+  extension's catalog in the device language, and Android has them in English.
+- The widget gallery text and each widget's options follow the device language instead, from each
+  platform's own string resources.
+- The snapshot carries the app's `theme`, and widgets apply it when it is `light` or `dark`.
+  Colours are copies of the app's tokens (`apps/mobile/src/theme/tokens/light.ts` and `dark.ts`),
+  hand-copied per platform; keep the token names identical so a search finds every copy.
+- Off MainNet, widgets draw the app's yellow network bar (`testnetBg`/`testnetText` with
+  `network.label`), so TestNet value is never mistaken for real funds on the home screen.
 
 ## Self-refreshing widgets
 
-App-pushed snapshots go stale whenever the app is not opened, and iOS suspends the app's JavaScript
-seconds after it is backgrounded, so the price and portfolio widgets fetch for themselves every 30
-minutes, and 5 minutes after a failed fetch, showing the last good data meanwhile. "Updated" shows
-the data's clock time ("Updated 14:05", plus the day once not today), as the Watch does. iOS
-timelines keep one entry per minute, so row ages ("6 hr. ago") advance. Android can't redraw every
-minute (Doze can hold a redraw for hours), so its transaction rows show a clock time today,
-"Yesterday", then a date, which never go stale.
+App-pushed snapshots go stale whenever the app is not opened, so Portfolio, Transactions, Price
+and the inbox widgets fetch for themselves every 30 minutes, and 5 minutes after a failed fetch.
+After a failed fetch, Android keeps showing the last values it fetched; iOS keeps none, so it falls
+back to what the app last wrote where the snapshot has it (the all-accounts portfolio, the ALGO
+price) and shows `—` otherwise. "Updated" shows a clock time ("Updated 14:05", plus the day once
+not today). The other widgets change only when the app writes, except an NFT widget set to move on
+at an interval.
 
 ### Price
 
-- `GET /v1/public/assets/0/` gives `usd_value` and `usd_value_24_hour_ago`, so one call yields the
-  price and the 24h change.
+- `GET /v1/public/assets/{assetId}/` gives `usd_value` and `usd_value_24_hour_ago`, so one call
+  yields the price and the 24h change.
 - `GET /v1/currencies/{code}/` gives the USD rate for a non-USD currency.
-- `GET /v1/assets/price-chart/?asset_id=0&period=one-week` feeds the sparkline.
+- `GET /v1/assets/price-chart/?asset_id={assetId}&period={period}` feeds the chart.
 
 The app supplies `priceFeed`: the selected network's backend URL, the `X-API-Key` the app already
-sends, and the preferred currency (USD when that is ALGO, since "1 ALGO = 1 ALGO" says nothing). It is
-`null` on networks without a Pera backend, and any failed fetch falls back to the app's last
-`algoPrice`. Priced in ALGO, an asset's price, 24h change and chart are all ratios to ALGO's own
+sends, and the preferred currency (USD when that is ALGO, since "1 ALGO = 1 ALGO" says nothing). It
+is `null` on networks without a Pera backend. A failed fetch of ALGO in the app's currency falls back
+to the app's last `algoPrice`; any other pair shows no price without a live one. Priced in ALGO, an asset's price, 24h change and chart are all ratios to ALGO's own
 (`usd_value` over ALGO's, then and 24h ago); a chart whose series doesn't line up with ALGO's is
 dropped rather than drawn wrong.
+
+The price widget prices any verified asset in any quote currency, defaulting to ALGO in the app's
+currency. The asset list is `assetOptions`: verified, non-collectible assets the signing accounts
+hold. A look-alike asset is a phishing surface on a home screen, so the picker offers verified
+assets only, the widget always shows the verified badge and, for anything but ALGO, the asset id,
+and every fetch re-checks `verification_tier`: an asset downgraded after it was picked shows no
+price. The currency list is loaded live from `GET /v1/currencies/`, plus ALGO as a quote for other
+assets.
+
+### Pinning
 
 `priceFeed.pinning` carries the app's root-CA pins when its Pera API pinning flag is on and the
 backend host qualifies (`buildPinningConfig`). Every widget request then requires a pinned key in
@@ -207,228 +213,103 @@ switch reaches the widgets with the next snapshot.
 
 `GET /v1/wallet/wealth/?account_addresses=A,B&period=<period>` is the endpoint behind the app's home
 chart. Its last point is the current total, so one call gives the amounts and the chart. The app
-supplies `portfolioFeed`: the signing accounts' addresses and its `chartPeriod` preference, so the
-widget charts the same period as the home screen. Addresses are comma-joined because that is how the
-app's HTTP client serialises arrays.
+supplies `portfolioFeed`: the signing accounts' addresses and names, and its `chartPeriod`
+preference, so a widget left on "Default" charts the same period as the home screen. Addresses are
+comma-joined because that is how the app's HTTP client serialises arrays.
 
 ### Transactions
 
 `GET /v1/accounts/{address}/transactions/?limit=N` per account, merged newest first and deduplicated
 by id (a transfer between two of the user's accounts appears in both). "Portfolio" reads at most
 five accounts so the fetch fits a widget refresh's few-second budget. Rows follow the app's own
-rules (`summarize.ts` and the history transformers in `chain-algorand`), on both platforms: each row
-reads from the side of the account whose page it came from, the amount is the transaction's own
-(plus a close-out sweep) rather than the fee-inclusive balance impact, ALGO is always 6 decimals even
-when the backend sends its `asset(0)` placeholder, and key registrations, heartbeats and asset
-admin rows show as a plain "Transaction". Pages stay in account order, so a transfer between two of
-the user's accounts reads from the same side on every refresh. Labels reuse the app's `transactions.list_item.*` translations via `snapshot.strings`,
-because the backend's `interpreted_meaning` is English only.
+rules (`summarize.ts` and the history transformers in `chain-algorand`), on both platforms: each
+row reads from the side of the account whose page it came from, the amount is the transaction's own
+(plus a close-out sweep) rather than the fee-inclusive balance impact, ALGO is always 6 decimals
+even when the backend sends its `asset(0)` placeholder, and key registrations, heartbeats and asset
+admin rows show as a plain "Transaction". Pages stay in account order, so a transfer between two
+of the user's accounts reads from the same side on every refresh. Labels reuse the app's
+`transactions.list_item.*` translations via `snapshot.strings`, because the backend's
+`interpreted_meaning` is English only.
 
-## Price widget assets
+### Inbox
 
-The price widget prices any verified asset in any quote currency, defaulting to ALGO in the app's
-currency. The asset list is `assetOptions`: verified, non-collectible assets the signing accounts
-hold, `null` in privacy mode. A look-alike asset is a phishing surface on a home screen, so the
-picker offers verified assets only, the widget always shows the verified badge and, for anything but
-ALGO, the asset id, and every fetch re-checks `verification_tier`: an asset downgraded after it was
-picked shows no price. The currency list is loaded live from `GET /v1/currencies/`, plus ALGO as a
-quote for other assets.
+The inbox widgets make the requests the app makes: `POST /v1/inbox/{device}/` with the accounts'
+addresses, and `GET /v2/devices/{device}/notifications/`. The app shares the device ids, the
+addresses and every account's name in `inboxFeed`, which is null in privacy mode, where the network
+has no inbox, and without a device id or addresses.
 
-## Opening the app from Portfolio and Transactions widgets
+- **Only what still needs the user counts:** a sign request counts while it can still be signed or
+  declined (`pending` or `ready`, the app's `ACTIONABLE_SIGN_REQUEST_STATUSES`); anything later is
+  history. Asset inboxes with no requests are dropped.
+- **Rows are labelled by name, never address,** from `accountNames`, which covers every account so
+  a shared account's request shows its name.
 
-Set to "Portfolio", both open `perawallet://app/portfolio`: home, with the account drawer open on the
-portfolio and the first account in its list selected. The drawer lives in the tab shell, which may
-mount after the link arrives, so the link sets a request flag (`useAccountDrawerRequestStore`) the
-drawer consumes once mounted, like the scan shortcut's. Set to one account, a Portfolio widget opens
-it through `account-detail`, and a Transactions widget adds `tab=history`, which asks the account
-screen for its History tab the same way (`useAccountTabRequestStore`).
+## Deep links
+
+Every widget tap is a `perawallet://app/` link the app already understands, or one added for the
+widgets.
+
+| Link                          | Opens                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------- |
+| `portfolio`                   | Home, with the account drawer open on the portfolio                                |
+| `account-detail?address=`     | That account; `tab=history` opens its History tab, `chain=` (CAIP-2) its network   |
+| `scan`                        | Home's QR scanner                                                                  |
+| `inbox`, `notifications`      | The Messages tab on the inbox or the notifications                                 |
+| `sign-request`, `asset-inbox` | That sign request, or that account's asset inbox                                   |
+| `cloud-backup`                | The cloud backup stack, which picks intro, setup or overview itself                |
+| `passphrase-backup`           | The backup of the first account that needs one at tap time, or home when none does |
+| `nft-detail`                  | That NFT, from whichever account holds it                                          |
+| (the bare app link)           | The app                                                                            |
+
+- **Screens that mount late.** The drawer, the account's tabs and the scanner may mount after the
+  link arrives, so these links set a request flag the screen consumes once mounted
+  (`useAccountDrawerRequestStore`, `useAccountTabRequestStore` and the scanner's own).
+- **Origin gate.** `inbox` and `notifications` only open a Messages tab, so push notifications may
+  use them; a push notification may not open `scan`, `cloud-backup` or `passphrase-backup`. A web
+  page needs the origin gate to open any of the five.
 
 ## Multi-page widgets
 
-Widgets cannot scroll or take gestures, and an app cannot put its widgets in a Smart Stack (only
-the user can build one; entries can only hint relevance). Two-page widgets therefore switch pages
-with iOS 17 interactive buttons running an `AppIntent`, and the page lives in the App Group per
-widget kind (`WidgetPageStore`), shared by every copy of that kind on screen. Only the current page's
-data is fetched. Android has the tab bar only, through a Glance `ActionCallback`; its page is kept
-per widget in Glance state, and the tab bar takes the page's bottom padding so a 2x2 page keeps its
-chart.
+Widgets cannot scroll or take gestures, so a two-page widget switches pages with a button that runs
+an action (an `AppIntent` on iOS, a Glance `ActionCallback` on Android) and redraws. The tab bar
+sets its page directly, so a tap always lands where its icon says; iOS also has a flip button that
+toggles. A wide widget shows both pages side by side instead, and each half is its own link. Where
+the page is kept and what each platform fetches per page is in the platform docs.
 
-Two controls are offered side by side so the team can compare them:
+## NFT images
 
-- **Flip button:** Portfolio & Transactions has a small corner button that toggles the page.
-- **Tab bar:** Portfolio & Transactions (tabs) and Inbox & Notifications have a row of icon
-  buttons along the bottom (`SegmentedPageBar`), the current page filled. Each sets its page
-  directly, so a tap always lands where its icon says, and the buttons are large enough to hit
-  without aiming. Icons need no room for translations; the page names are VoiceOver labels. It
-  costs a row of content.
+Widgets cannot load remote images, so the app prepares them, never the widget:
 
-Only the small size switches pages: a medium Portfolio & Transactions or Inbox & Notifications
-shows both side by side, each half its own tap, so the tabs variant of Portfolio & Transactions is
-small only. The plain Portfolio widget has neither; it and Transactions can be stacked instead.
-
-## Inbox widgets
-
-Inbox (small: total waiting and a breakdown by kind), Inbox List (medium: newest three rows, each its
-own link), Signatures (small: multisig requests only), Notifications (medium: newest three) and
-Inbox & Notifications (medium: the count beside the newest notifications; small: tabs). They fetch for themselves every 30 minutes, like Transactions, with the
-same requests the app makes: `POST /v1/inbox/{device}/` with the accounts' addresses, and
-`GET /v2/devices/{device}/notifications/`. The app shares the device ids, the addresses and account
-names in `inboxFeed`, which is null in privacy mode or where the network has no inbox.
-
-- **Only what still needs the user counts:** a sign request is shown while `pending`; one that is
-  ready, submitted, failed or expired is history. Asset inboxes with no requests are dropped.
-- **Rows are labelled by name, never address,** from `accountNames`, which covers every account so a
-  shared account's request shows its name.
-- **Taps:** a sign request opens through the existing `sign-request` link, incoming assets through
-  `asset-inbox`, invitations and the widget itself through the new `perawallet://app/inbox`, and
-  notifications through `perawallet://app/notifications`. Both new links only open a Messages tab, so
-  push notifications may use them; pages need the origin gate.
-- Counts, rows and notification text are `.privacySensitive()`: notification text can name amounts.
-
-## Scan shortcuts
-
-"Scan with Pera" opens the home screen's QR scanner from outside the app: an iOS 18 control (Control
-Center and the Action button, `ScanControl` in the widget extension) and the app icon's long-press
-quick action (`expo-quick-actions`, set at runtime so the title follows the app language). Both end
-in the `perawallet://app/scan` deep link, which navigates home and sets a request flag the home
-screen consumes, because the link can arrive before that screen has mounted.
-
-The control does not open that URL itself: a control's `OpenURLIntent` with a custom scheme can
-silently do nothing. Its intent (`OpenScannerIntent`, in `targets/_shared` so the app compiles it
-too) is marked to open the app, records a timestamped request in the App Group and posts a Darwin
-notification; the app checks the request on activation and on that notification, because iOS may
-activate the app before the intent runs. A request older than a minute is dropped, so a missed one
-can't open the scanner later. iOS offers no way to keep a control off the lock screen, but it unlocks the
-phone before opening an app, so a locked phone still can't reach the scanner. The icon is an SF Symbols template of the Pera petals in
-`apps/mobile/targets/symbols/pera-scan.svg`. Android's equivalent is a Quick Settings tile
-(`ScanTileService`, the same glyph as a vector) that opens `perawallet://app/scan` directly, after
-unlocking the phone when tapped from the lock screen. Push notifications may not open the scanner, and web
-pages need the origin gate. A request is ignored while any QR scanner is open, and running the
-control briefly backgrounds Pera, so an open scanner rides out the app lock's resume check covered
-with its camera paused rather than being dismissed and re-presented.
-
-## Backup widgets
-
-Three widgets show backup status: Cloud Backup (small), Passphrase Backup (small) and Backups
-(medium, both side by side). They read only the snapshot's `backup` field and never refresh on
-their own, because both statuses change only inside the app, which reloads every widget when it
-writes.
-
-- **The app writes finished lines** (title and detail per backup), so wording, plurals and the
-  last-sync date stay in the app's i18n rather than in Swift.
-- **Cloud** comes from `useCloudBackupSummary` in the cloud-backup module, which counts accounts
-  the way the backup overview screen does. A failed sync outranks missing accounts, since backing
-  those up can't succeed until syncing works. `cloud` is `null` where cloud backup isn't offered
-  (remote flag or chain capability off).
-- **Passphrase** counts accounts with `useAccountsNeedingMnemonicBackup` from
-  `@perawallet/wallet-core-backup`, the list form of the rule behind the in-app reminder banner and
-  account badge, so the three never disagree. It covers every account, not just signing ones: a
-  rekey target needs its passphrase too.
-- **Taps** use `perawallet://app/cloud-backup` (the cloud backup stack picks intro, setup or
-  overview itself) and `perawallet://app/passphrase-backup`, which carries no address: the app
-  opens the backup of the first account that needs one at tap time, or lands home when none does.
-  In the medium widget each half is its own link. Push notifications may not open either link, and
-  web pages need the origin gate.
-
-## Receive QR widget
-
-Shows one account's receive QR and name (small only), the account picked in Edit Widget or the
-first one. The app writes each account's address and payment URI, built by `receiveTargetOf` in
-`apps/mobile/src/utils`, which the Receive screen also uses, so both encode the same QR; the
-extension only draws it. A tap opens that account through `account-detail`, with the network's
-CAIP-2 id as `chain=` so an account on another chain opens on its own.
-
-It is the one widget that renders an address, so it never shows on a locked phone: the content is
-`.privacySensitive()`, which iOS blanks on the lock screen, in StandBy and on the Mac desktop while
-the phone is locked, and the widget is disfavoured for StandBy. iOS has no way to forbid placing a
-home-screen widget in StandBy outright; redaction covers that case. Privacy mode writes no
-addresses, and the widget shows the logo.
-
-## Widget options
-
-Each widget has an Edit Widget sheet (`AppIntentConfiguration`, in `targets/widget/WidgetIntents.swift`
-under `apps/mobile`), so two copies of a widget can be configured differently.
-
-- **Portfolio:** chart period ("Default" follows the app's `chartPeriod`), chart on or off, and
-  the account: "Portfolio" (every account) or one account. A single-account widget without a live fetch shows nothing rather than the
-  all-accounts total the snapshot holds.
-- **Price:** asset, currency ("Default" is the app's), chart period, and "Show asset per currency"
-  ("1 EUR = 5.4 ALGO", from the live fetch only), which takes the chart's place in a small widget.
-- **Transactions:** the account: "Portfolio" (every account) or one account.
-- **NFT:** "Random NFT" or one NFT, and how often to change ("Never" first and default). A picked
-  NFT with an interval moves on to the others in random order.
-- **Receive QR:** the account; every account that can receive, watch accounts included.
-
-Every list starts with its default ("Portfolio", "Default", "Random NFT", "Never", ALGO) and selects it, so no
-option ever shows empty. The account and NFT lists come from the snapshot, so in privacy mode they hold only their default. Option labels
-live in the extension's string catalog and follow the device language, like the gallery text. The
-catalog carries `pt` as a copy of `pt-BR`: iOS never falls back from `pt-PT` to `pt-BR`, so without
-it a Portuguese phone skips to the next language in its list.
-
-## NFT widget
-
-Shows one of up to 10 NFTs held by the signing accounts (see the options above). The order and the
-current slot derive from a start time stored in the App Group (`NftSchedule`), so a rebuild keeps the
-NFT already showing until its interval ends. Tapping opens the NFT through `perawallet://app/nft-detail`, which takes no address: the app
-selects whichever account holds it.
-
-Widgets cannot load remote images (`AsyncImage` does nothing in WidgetKit), and the extension has a
-memory ceiling of roughly 30 MB that kills it silently when exceeded. So images are prepared by the
-app, never by the widget:
-
-- JS selects image-type collectibles (or ones with a `previewUrl`), drops any URL that fails
-  `httpsUrlSchema` from `@perawallet/wallet-core-shared`, and calls
-  `syncImages([{ key, url }])` before writing the snapshot.
-- The native module downloads each new key (https only, size cap, timeout), downsamples with
-  ImageIO `CGImageSourceCreateThumbnailAtIndex` to the largest widget size, writes it into the App
-  Group, and deletes keys no longer listed. Downsampling also yields a static frame for GIFs, which
-  widgets cannot animate.
-- `syncImages` returns the keys it cached, and **only those go into the snapshot**, so the widget
+- JS takes each held collectible's primary image, or the preview of its first image-type media,
+  reading past the 10-NFT cap to skip collectibles with neither. It drops any URL that fails
+  `httpsUrlSchema` from `@perawallet/wallet-core-shared`, and calls `syncImages([{ key, url }])`
+  before writing the snapshot.
+- The native module downloads each new key, writes a downsampled file where the widgets can read
+  it, and deletes keys no longer listed.
+- `syncImages` returns the keys it cached, and **only those go into the snapshot**, so a widget
   never references a missing file.
 
-The download runs in the app rather than the extension because the URLs come from untrusted NFT
-metadata. The app has the memory and time budget, and the extension only ever decodes a small file
-the app already validated. The list only changes when the app runs anyway, so independent refresh
-would gain nothing.
+The download runs in the app rather than the widget because the URLs come from untrusted NFT
+metadata: the app has the memory and time budget, and the widget only ever decodes a small file the
+app already validated. The list only changes when the app runs anyway, so independent refresh would
+gain nothing. Only iOS has an NFT widget; on Android `syncImages` downloads nothing.
 
 ## Failure behaviour
 
 | Situation                                    | Widget shows                                                     |
 | -------------------------------------------- | ---------------------------------------------------------------- |
 | No snapshot, decode failure, unknown version | Pera logo placeholder                                            |
-| A field missing                              | That element falls back; the rest renders                        |
-| `state: 'hidden'`                            | Masked value (`••••`) or the logo for NFTs                       |
-| `nfts` empty or `null`                       | Logo placeholder                                                 |
+| A top-level field missing                    | That element falls back; the rest renders                        |
+| `state: 'hidden'`                            | Masked value (`••••`), or the logo where nothing can be masked   |
+| No signing accounts                          | Pera logo placeholder (the app cleared the snapshot)             |
 | Transactions never fetched, or fetch failed  | `—` on iOS, a blank list on Android; never "No transactions"     |
 | Native module absent (web, tests)            | `requireOptionalNativeModule` returns `null`; the service no-ops |
 
 ## Testing
 
-- `buildWidgetSnapshot` carries the logic and gets the bulk of the unit tests: privacy, empty
-  accounts, pending inputs, network and locale propagation, NFT selection, non-https URLs dropped,
-  only cached keys included.
-- `useWidgetSnapshotSync`: dedupe, write on background, no write while pending, `syncImages` before
-  `writeSnapshot`.
-- The extension's Foundation-only logic (fetchers, transaction classifier, snapshot decoding) has
-  XCTest coverage in the Swift package at `apps/mobile/targets/widget-core`, whose sources are
-  symlinks to the shipped files. Run `pnpm --filter mobile test:widget-core`; it needs no simulator
-  or Xcode project, and CI does not run it.
-- Android's pure logic (fetchers, layouts, formatting, pinning, config) has JVM tests in the widgets
-  module: `./gradlew :<widgets-module>:testDebugUnitTest` from `apps/mobile/android` after a prebuild.
-- Swift `#Preview`s use fixture snapshots: each failure row above, both themes, RTL, non-mainnet.
-
-## Constraints kept open for other platforms
-
-- **Android.** The Glance widgets live in the widgets native module and read the same JSON from a
-  `pera_widgets` SharedPreferences file, so the JS side is identical on both platforms. They use
-  `SizeMode.Responsive` with tight steps around a 2x2: with `Exact` the launcher picks between a
-  landscape and a portrait render, and ColorOS draws the landscape one on a portrait home screen.
-  WorkManager is the only scheduler (`updatePeriodMillis` is 0, so two schedulers don't double the
-  passes).
-- **watchOS.** An App Group does not reach the Watch. `writeSnapshot` is the single sink so the
-  native module can forward the same JSON over `WCSession.updateApplicationContext`, and cached
-  images over `transferFile`, without any JS or schema change. Complications are WidgetKit accessory
-  families, the same sizes as iPhone lock-screen widgets, so they share that security review. Keys
-  never go to the Watch.
-- **Mac.** iPhone widgets appear on macOS 14+ through Continuity; they run on the phone, and taps
-  that open the app prompt to continue on the iPhone.
+- `buildWidgetSnapshot` carries the logic and gets the bulk of the unit tests (`snapshot.spec.ts`
+  in the `widgets` module): privacy, empty accounts, pending inputs, network and locale
+  propagation, NFT selection, non-https URLs dropped, only cached keys included.
+- `useWidgetSnapshotWriter.spec.ts`: dedupe, write on background, no write while pending, privacy
+  mode at once, image purges and the wipe guard.
+- Each platform's native tests are described in its own doc.

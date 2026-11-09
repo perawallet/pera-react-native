@@ -140,6 +140,9 @@ private fun TabsView(
             PortfolioPage(context, snapshot, portfolio, colors, isDark, width, height)
         } else if (tabs.mode == TabsMode.SideBySide) {
             val column = (width - 1f) / 2
+            val openTransactions = tabs.transactionsHalfTapUrl?.let {
+                Intent(Intent.ACTION_VIEW, Uri.parse(it)).setPackage(context.packageName)
+            }
             Row(modifier = GlanceModifier.fillMaxSize()) {
                 Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
                     PortfolioPage(context, snapshot, portfolio, colors, isDark, column, height, showLogo = false)
@@ -147,7 +150,8 @@ private fun TabsView(
                 Box(modifier = GlanceModifier.width(1.dp).fillMaxHeight().padding(vertical = PADDING_DP.dp)) {
                     Box(modifier = GlanceModifier.fillMaxSize().background(colors.layer)) {}
                 }
-                Box(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
+                val half = GlanceModifier.defaultWeight().fillMaxHeight()
+                Box(modifier = openTransactions?.let { half.clickable(actionStartActivity(it)) } ?: half) {
                     val title = snapshot.string("recentTransactions") ?: tx.title
                     TransactionsPage(snapshot, tx.copy(title = title), colors, column, height, now, is24Hour, isCompact = true)
                 }

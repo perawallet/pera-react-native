@@ -284,11 +284,7 @@ struct TransactionsWidgetView: View {
 }
 
 extension TransactionsWidgetView {
-    // One account opens its history; the whole portfolio opens the portfolio drawer.
-    var tapURL: URL? {
-        guard let address = entry.accountAddress else { return DeepLink.url("portfolio/") }
-        return DeepLink.url("account-detail/", ["address": address, "tab": "history"])
-    }
+    var tapURL: URL? { DeepLink.transactions(account: entry.accountAddress) }
 }
 
 struct TransactionsWidget: Widget {

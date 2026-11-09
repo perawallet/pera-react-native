@@ -60,11 +60,11 @@ class PeraWidgetsModule : Module() {
       }
     }
 
-    // No Android widget renders images yet, so nothing is downloaded: report
-    // only what is already on disk to keep the snapshot honest.
     // The Scan control is iOS-only.
     AsyncFunction("consumePendingScan") { false }
 
+    // No Android widget renders images, so nothing is downloaded: report
+    // only what is already on disk to keep the snapshot honest.
     AsyncFunction("syncImages") { items: List<Map<String, String>> ->
       items.mapNotNull { it["key"] }
         .filter { File(imagesDirectory, "nft-$it.jpg").exists() }

@@ -35,6 +35,8 @@ data class TabsContent(
     val transactions: TransactionsContent?,
     // What each page gets: the whole widget, or the room above the tab bar.
     val pageHeightDp: Float,
+    // Side by side only: the transactions half's own link, over the widget's portfolio one.
+    val transactionsHalfTapUrl: String? = null,
 )
 
 fun tabsContent(
@@ -49,7 +51,9 @@ fun tabsContent(
     val tx = transactions?.takeIf { snapshot.portfolio?.state != "hidden" }
         ?: return TabsContent(TabsMode.PortfolioOnly, false, portfolio.tapUrl, null, heightDp)
     // A wide widget has room for both, as iOS's medium size.
-    if (widthDp >= WIDE_FROM_DP) return TabsContent(TabsMode.SideBySide, false, portfolio.tapUrl, tx, heightDp)
+    if (widthDp >= WIDE_FROM_DP) {
+        return TabsContent(TabsMode.SideBySide, false, portfolio.tapUrl, tx, heightDp, transactionsHalfTapUrl = tx.tapUrl)
+    }
     val pageHeight = heightDp - TAB_BAR_DP
     val rows = transactionsLayout(
         widthDp, pageHeight, snapshot.network?.isMainnet == false,

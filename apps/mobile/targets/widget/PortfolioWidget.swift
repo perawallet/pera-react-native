@@ -177,12 +177,21 @@ struct PortfolioWidgetView: View {
             .widgetURL(tapURL)
     }
 
-    // One account opens that account; all accounts open the portfolio drawer.
+    // The page on screen decides; side by side, each half is its own link over this one.
     private var tapURL: URL? {
-        if let address = entry.accountAddress {
-            return DeepLink.url("account-detail/", ["address": address])
+        canFlip && entry.page == 1 ? transactionsURL : portfolioURL
+    }
+
+    private var portfolioURL: URL? { DeepLink.portfolio(account: entry.accountAddress) }
+    private var transactionsURL: URL? { DeepLink.transactions(account: entry.accountAddress) }
+
+    @ViewBuilder
+    private func linked<Label: View>(_ url: URL?, @ViewBuilder _ label: () -> Label) -> some View {
+        if let url {
+            Link(destination: url, label: label)
+        } else {
+            label()
         }
-        return DeepLink.url("portfolio/")
     }
 
     @ViewBuilder
@@ -230,51 +239,60 @@ struct PortfolioWidgetView: View {
     // Portfolio on the left, transactions on the right: medium has room for both.
     private var sideBySide: some View {
         HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(PeraFont.medium(12))
-                    .foregroundStyle(PeraColor.textGray)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                Text(primary ?? "—")
-                    .font(PeraFont.bold(22))
-                    .foregroundStyle(PeraColor.textMain)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.4)
-                    .contentTransition(.numericText())
-                    .privacySensitive()
-                if let secondary {
-                    Text(secondary)
-                        .font(PeraFont.regular(12))
-                        .foregroundStyle(PeraColor.textGray)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .privacySensitive()
-                }
-                if let chart {
-                    Sparkline(values: chart, color: trendColor(entry.quote?.change))
-                        .frame(height: 22)
-                        .padding(.vertical, 2)
-                        .privacySensitive()
-                }
-                if let updated {
-                    UpdatedLabel(prefix: snapshot?.string("updated"), date: updated, now: entry.date)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            linked(portfolioURL) { sideBySidePortfolio }
             Divider()
-            TransactionsPage(
-                title: transactionsTitle(snapshot, accountName: nil),
-                rows: entry.rows,
-                snapshot: snapshot,
-                limit: sideBySideRowLimit,
-                now: entry.date,
-                isCompact: true
-            )
+            linked(transactionsURL) {
+                TransactionsPage(
+                    title: transactionsTitle(snapshot, accountName: nil),
+                    rows: entry.rows,
+                    snapshot: snapshot,
+                    limit: sideBySideRowLimit,
+                    now: entry.date,
+                    isCompact: true
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .contentShape(Rectangle())
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .peraChrome(network: snapshot?.network)
+    }
+
+    private var sideBySidePortfolio: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(PeraFont.medium(12))
+                .foregroundStyle(PeraColor.textGray)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Text(primary ?? "—")
+                .font(PeraFont.bold(22))
+                .foregroundStyle(PeraColor.textMain)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+                .contentTransition(.numericText())
+                .privacySensitive()
+            if let secondary {
+                Text(secondary)
+                    .font(PeraFont.regular(12))
+                    .foregroundStyle(PeraColor.textGray)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .privacySensitive()
+            }
+            if let chart {
+                Sparkline(values: chart, color: trendColor(entry.quote?.change))
+                    .frame(height: 22)
+                    .padding(.vertical, 2)
+                    .privacySensitive()
+            }
+            if let updated {
+                UpdatedLabel(prefix: snapshot?.string("updated"), date: updated, now: entry.date)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .contentShape(Rectangle())
     }
 
     private var transactionsPage: some View {

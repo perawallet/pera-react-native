@@ -108,7 +108,7 @@ final class PriceFetcherTests: XCTestCase {
 
         _ = await PriceFetcher.fetch(testFeed, assetId: "0", quote: .fiat("USD"), period: "one-week")
 
-        XCTAssertFalse(StubURLProtocol.requests.contains { $0.url?.path.hasPrefix("/v1/currencies/") == true })
+        XCTAssertFalse(StubURLProtocol.requests.contains { $0.url?.path().hasPrefix("/v1/currencies/") == true })
     }
 
     func testHasNoChangeWhenThePreviousPriceIsZero() async throws {

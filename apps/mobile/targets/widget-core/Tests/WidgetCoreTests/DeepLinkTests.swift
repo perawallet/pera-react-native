@@ -30,6 +30,19 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertEqual(items, [URLQueryItem(name: "signRequestId", value: "1&x=2 #y")])
     }
 
+    func testPortfolioAndTransactionsOpenTheAccountOrThePortfolio() {
+        XCTAssertEqual(DeepLink.portfolio(account: nil)?.absoluteString, "perawallet://app/portfolio/")
+        XCTAssertEqual(DeepLink.transactions(account: nil)?.absoluteString, "perawallet://app/portfolio/")
+        XCTAssertEqual(
+            DeepLink.portfolio(account: "ADDR")?.absoluteString,
+            "perawallet://app/account-detail/?address=ADDR"
+        )
+        XCTAssertEqual(
+            DeepLink.transactions(account: "ADDR")?.absoluteString,
+            "perawallet://app/account-detail/?address=ADDR&tab=history"
+        )
+    }
+
     func testLeavesOutAMissingValue() {
         XCTAssertEqual(
             DeepLink.url("account-detail/", ["address": "ADDR", "chain": nil])?.absoluteString,
