@@ -11,7 +11,6 @@
  */
 
 import { PWText } from '@components/core'
-import { AvatarBadge } from '@components/AvatarBadge'
 import { useStyles } from './styles'
 
 export type AvatarCountBadgeProps = {
@@ -22,13 +21,11 @@ export const AvatarCountBadge = ({ count }: AvatarCountBadgeProps) => {
     const styles = useStyles()
 
     return (
-        <AvatarBadge>
-            <PWText
-                variant='captionSmall'
-                style={styles.text}
-            >
-                {count}
-            </PWText>
-        </AvatarBadge>
+        <PWText
+            variant='captionSmall'
+            style={styles.text}
+        >
+            {count}
+        </PWText>
     )
 }

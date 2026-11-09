@@ -20,7 +20,6 @@ import {
     PWTouchableOpacity,
 } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
-import { AvatarBadge } from '@components/AvatarBadge'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ChainIcon } from '@modules/chain-ui/icon'
 
@@ -55,12 +54,10 @@ export const ConnectionApprovalAccountRow = ({
                 account={account}
                 chainId={chainId}
                 avatarBadge={
-                    <AvatarBadge>
-                        <ChainIcon
-                            chainId={chainId}
-                            size={getIconPixelSize(theme, 'sm')}
-                        />
-                    </AvatarBadge>
+                    <ChainIcon
+                        chainId={chainId}
+                        size={getIconPixelSize(theme, 'sm')}
+                    />
                 }
                 showChevron={false}
             />

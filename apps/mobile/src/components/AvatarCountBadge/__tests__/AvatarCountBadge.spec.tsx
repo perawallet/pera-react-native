@@ -11,15 +11,13 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { render, screen, within } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { AvatarCountBadge } from '../AvatarCountBadge'
 
 describe('AvatarCountBadge', () => {
     it('shows the count it is given, including two-digit counts', () => {
         render(<AvatarCountBadge count={12} />)
 
-        expect(
-            within(screen.getByTestId('avatar_badge')).getByText('12'),
-        ).toBeTruthy()
+        expect(screen.getByText('12')).toBeTruthy()
     })
 })
