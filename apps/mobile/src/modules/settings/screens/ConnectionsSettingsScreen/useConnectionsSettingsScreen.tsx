@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
@@ -21,6 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
 import {
     isSiteConnectionKind,
     toUnifiedConnection,
@@ -49,7 +50,7 @@ export const useConnectionsSettingsScreen =
         const scannerState = useModalState()
         const canConnect = useCapability({ anyChain: 'dappConnect' })
         const navigation =
-            useNavigation<NativeStackNavigationProp<ParamListBase>>()
+            useNavigation<NativeStackNavigationProp<SettingsStackParamsList>>()
 
         const openConnection = useCallback(
             (row: ConnectionSettingsRow) => {
