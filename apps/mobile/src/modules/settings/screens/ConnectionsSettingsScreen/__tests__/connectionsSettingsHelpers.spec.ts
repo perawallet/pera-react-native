@@ -39,7 +39,7 @@ describe('toUnifiedConnection', () => {
     // The unified list is kind-agnostic; the badge and copy branch on the
     // record's own kind, not on a label the mapper invents.
     it('carries the row kind through instead of relabelling it', () => {
-        expect(toUnifiedConnection(row, vi.fn(), noChainName).kind).toBe(
+        expect(toUnifiedConnection(row, vi.fn(), noChainName, vi.fn()).kind).toBe(
             'walletconnect-v1',
         )
     })
@@ -55,10 +55,15 @@ describe('toUnifiedConnection', () => {
         }
 
         expect(
-            toUnifiedConnection(evmRow, vi.fn(), chainNameOf).badgeLabel,
+            toUnifiedConnection(evmRow, vi.fn(), chainNameOf, vi.fn()).badgeLabel,
         ).toBe('Base')
         expect(
-            toUnifiedConnection({ ...row, kind: 'dapp' }, vi.fn(), chainNameOf)
+            toUnifiedConnection(
+                { ...row, kind: 'dapp' },
+                vi.fn(),
+                chainNameOf,
+                vi.fn(),
+            )
                 .badgeLabel,
         ).toBeUndefined()
     })
@@ -71,7 +76,7 @@ describe('toUnifiedConnection', () => {
         }
 
         expect(
-            toUnifiedConnection(evmRow, vi.fn(), () => 'Base').badgeLabel,
+            toUnifiedConnection(evmRow, vi.fn(), () => 'Base', vi.fn()).badgeLabel,
         ).toBeUndefined()
         expect(
             toUnifiedConnection(
@@ -81,6 +86,7 @@ describe('toUnifiedConnection', () => {
                 },
                 vi.fn(),
                 noChainName,
+                vi.fn(),
             ).badgeLabel,
         ).toBeUndefined()
     })
@@ -88,9 +94,20 @@ describe('toUnifiedConnection', () => {
     it('revokes by the connection id', () => {
         const revoke = vi.fn()
 
-        toUnifiedConnection(row, revoke, noChainName).onRevoke()
+        toUnifiedConnection(row, revoke, noChainName, vi.fn()).onRevoke()
 
         expect(revoke).toHaveBeenCalledWith('conn-1')
+    })
+})
+
+describe('toUnifiedConnection onOpen', () => {
+    it('opens the row it was made from', () => {
+        const open = vi.fn()
+
+        toUnifiedConnection(row, vi.fn(), noChainName, open).onOpen()
+
+        expect(open).toHaveBeenCalledTimes(1)
+        expect(open).toHaveBeenCalledWith(row)
     })
 })
 

@@ -16,6 +16,7 @@ import {
     PWImage,
     PWText,
     PWTouchableIcon,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -34,8 +35,9 @@ export const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
     const isWalletConnect = !isSiteConnectionKind(connection.kind)
 
     return (
-        <PWView
+        <PWTouchableOpacity
             style={styles.connectionRow}
+            onPress={connection.onOpen}
             testID={`connection_row_${connection.id}`}
         >
             {connection.iconUrl ? (
@@ -84,6 +86,6 @@ export const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
                 onPress={() => onRevoke(connection)}
                 testID={`connection_revoke_${connection.id}`}
             />
-        </PWView>
+        </PWTouchableOpacity>
     )
 }

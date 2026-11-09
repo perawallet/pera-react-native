@@ -11,6 +11,9 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useCapability } from '@hooks/useCapability'
@@ -45,6 +48,18 @@ export const useConnectionsSettingsScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
         const canConnect = useCapability({ anyChain: 'dappConnect' })
+        const navigation =
+            useNavigation<NativeStackNavigationProp<ParamListBase>>()
+
+        const openConnection = useCallback(
+            (row: ConnectionSettingsRow) => {
+                navigation.navigate('WalletConnectSettings', {
+                    screen: 'WalletConnectSettingsDetails',
+                    params: { connection: row },
+                })
+            },
+            [navigation],
+        )
 
         const connections = useMemo(
             () =>
@@ -54,10 +69,11 @@ export const useConnectionsSettingsScreen =
                             row,
                             revokeConnection,
                             chainDisplayNameOf,
+                            openConnection,
                         ),
                     )
                     .sort((a, b) => b.connectedAt - a.connectedAt),
-            [connectionRows, revokeConnection],
+            [connectionRows, revokeConnection, openConnection],
         )
 
         const confirmRevoke = useCallback(

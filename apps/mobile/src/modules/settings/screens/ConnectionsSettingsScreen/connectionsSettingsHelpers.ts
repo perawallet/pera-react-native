@@ -36,6 +36,8 @@ export type UnifiedConnection = {
      * so a site connected through both providers shows two tellable rows.
      */
     badgeLabel?: string
+    /** Opens the connection's details, which list its accounts by their address on the connection's chain. */
+    onOpen: () => void
     onRevoke: () => void
 }
 
@@ -68,6 +70,7 @@ export const toUnifiedConnection = (
     row: ConnectionSettingsRow,
     revoke: (id: string) => void,
     chainNameOf: (chainId: ChainId) => Optional<string>,
+    open: (row: ConnectionSettingsRow) => void,
 ): UnifiedConnection => {
     const badgeLabel = badgeLabelOf(row, chainNameOf)
     return {
@@ -78,6 +81,7 @@ export const toUnifiedConnection = (
         iconUrl: row.iconUrl,
         connectedAt: row.lastActiveAt || row.createdAt,
         ...(badgeLabel ? { badgeLabel } : {}),
+        onOpen: () => open(row),
         onRevoke: () => revoke(row.id),
     }
 }
