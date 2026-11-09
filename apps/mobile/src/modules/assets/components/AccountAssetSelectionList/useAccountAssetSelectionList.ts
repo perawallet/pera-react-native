@@ -133,7 +133,7 @@ export const useAccountAssetSelectionList = ({
         const filtered = searchTerm
             ? items.filter(item => {
                   return (
-                      item.assetId.includes(searchTerm) ||
+                      item.assetId.toLowerCase().includes(searchTerm) ||
                       item.asset?.name?.toLowerCase().includes(searchTerm) ||
                       item.asset?.unitName?.toLowerCase().includes(searchTerm)
                   )
