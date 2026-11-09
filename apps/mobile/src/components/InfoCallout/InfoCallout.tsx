@@ -64,7 +64,7 @@ export const InfoCallout = ({
             <PWView style={styles.textColumn}>
                 <PWText variant={titleVariant}>{title}</PWText>
                 <PWText
-                    variant='caption'
+                    variant='bodyCompact'
                     style={styles.body}
                 >
                     {body}
