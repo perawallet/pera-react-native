@@ -26,28 +26,28 @@ describe('connectionKindCopy', () => {
     it.each(['dapp', 'dapp-eip1193'] as const)(
         'gives %s the connected-sites copy and the globe',
         kind => {
-            const copy = connectionKindCopy(kind)
-
-            expect(copy.deleteTitleKey).toBe(
-                'settings.connected_sites.revoke_title',
-            )
-            expect(copy.confirmKey).toBe(
-                'settings.connected_sites.revoke_confirm',
-            )
-            expect(copy.fallbackIcon).toBe('globe')
+            expect(connectionKindCopy(kind)).toEqual({
+                badgeKey: 'settings.connections.badge_dapp',
+                deleteTitleKey: 'settings.connected_sites.revoke_title',
+                deleteBodyKey: 'settings.connected_sites.revoke_body',
+                confirmKey: 'settings.connected_sites.revoke_confirm',
+                cancelKey: 'settings.connected_sites.revoke_cancel',
+                fallbackIcon: 'globe',
+            })
         },
     )
 
     it.each(['walletconnect-v1', 'walletconnect-v2'] as const)(
         'gives %s the WalletConnect copy and icon',
         kind => {
-            const copy = connectionKindCopy(kind)
-
-            expect(copy.deleteTitleKey).toBe(
-                'walletconnect.settings.delete_title',
-            )
-            expect(copy.confirmKey).toBe('common.delete.label')
-            expect(copy.fallbackIcon).toBe('wallet-connect')
+            expect(connectionKindCopy(kind)).toEqual({
+                badgeKey: 'settings.connections.badge_wallet_connect',
+                deleteTitleKey: 'walletconnect.settings.delete_title',
+                deleteBodyKey: 'walletconnect.settings.delete_body',
+                confirmKey: 'common.delete.label',
+                cancelKey: 'common.cancel.label',
+                fallbackIcon: 'wallet-connect',
+            })
         },
     )
 })

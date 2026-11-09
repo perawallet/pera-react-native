@@ -264,6 +264,7 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
         })
 
         expect(result.current.isSite).toBe(true)
+        expect(result.current.copy.fallbackIcon).toBe('globe')
         expect(mocks.revoke).toHaveBeenCalledWith('client-1')
         expect(trackEvent).not.toHaveBeenCalled()
     })
