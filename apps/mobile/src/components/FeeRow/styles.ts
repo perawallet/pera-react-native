@@ -51,6 +51,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-start',
         gap: theme.spacing.md,
     },
+    chevronExpanded: {
+        transform: [{ rotate: '180deg' }],
+    },
     maxFeeLabel: {
         flexShrink: 1,
         flexDirection: 'row',

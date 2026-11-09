@@ -3116,7 +3116,8 @@
             "max_fee_for_preset": "Frais maximum ({{preset}})",
             "max_fee_info": "Le maximum que vous paierez si les frais du réseau augmentent. Vous payez généralement moins.",
             "wait_seconds": "~{{seconds}} s",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Affiche les options de frais"
         },
         "confirmation": {
             "add_to_contacts": "+ Ajouter aux contacts",
