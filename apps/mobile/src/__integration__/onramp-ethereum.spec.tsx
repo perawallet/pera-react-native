@@ -54,9 +54,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         },
         // History is keyed by the deployment's device id; the backend mock
         // only answers the deployment of a scope through `peraDeploymentOf`.
-        deploymentOf: (
-            scope: Parameters<typeof withBackend.deploymentOf>[0],
-        ) =>
+        deploymentOf: (scope: Parameters<typeof withBackend.deploymentOf>[0]) =>
             scope === null
                 ? null
                 : (withBackend.peraDeploymentOf(scope) ?? null),
