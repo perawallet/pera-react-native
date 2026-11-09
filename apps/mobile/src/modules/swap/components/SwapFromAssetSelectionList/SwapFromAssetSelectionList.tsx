@@ -30,7 +30,6 @@ export type SwapFromAssetSelectionListProps = {
     scope: ChainScope
     excludeAsset?: AssetRef
     onAssetSelected: (asset: ChainAssetBalance) => void
-    searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
     emptyChainResultBody: string
@@ -43,7 +42,6 @@ export const SwapFromAssetSelectionList = ({
     scope,
     excludeAsset,
     onAssetSelected,
-    searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
     emptyChainResultBody,
@@ -54,6 +52,7 @@ export const SwapFromAssetSelectionList = ({
         visibleChainIds,
         isChainShown,
         handleSelectChain,
+        searchPlaceholder,
     } = useSwapFromAssetSelectionList(scope)
 
     return (

@@ -23,12 +23,15 @@ import {
     type PeraAsset,
     type PeraAssetVerificationTier,
     getAssetsQueryKey,
+    nativeAssetFor,
+    useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
     scopeOfSwapAsset,
     useSwapPairsInfiniteQuery,
@@ -39,12 +42,22 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { FilterOption } from '@components/FilterSelection'
+import { useLanguage } from '@hooks/useLanguage'
 import { useSwapChainFilter } from '../../hooks/useSwapChainFilter'
 import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
+import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
+import { swapAssetSearchPlaceholderKey } from '../../utils/swapAssetSearchPlaceholderKey'
 
 export type AvailableAssetWithBalance = {
     swapAsset: SwapAsset
     balance: Nullable<Decimal>
+}
+
+type SwapCrossNetworkEmptyState = {
+    title: string
+    body: string
+    /** Null when the selected account can't pay on the picked network. */
+    actionLabel: Nullable<string>
 }
 
 type UseSwapToAssetSelectionListParams = {
@@ -53,6 +66,7 @@ type UseSwapToAssetSelectionListParams = {
     isVisible?: boolean
     excludeAssetId?: string
     onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
+    onSwitchPayAsset: (assetId: string, scope: ChainScope) => void
 }
 
 type UseSwapToAssetSelectionListResult = {
@@ -68,6 +82,9 @@ type UseSwapToAssetSelectionListResult = {
     isLoading: boolean
     handleEndReached: () => void
     handleAssetSelected: (item: AvailableAssetWithBalance) => void
+    searchPlaceholder: string
+    crossNetworkEmptyState: Nullable<SwapCrossNetworkEmptyState>
+    handleSwapOnSelectedNetwork: () => void
 }
 
 export const useSwapToAssetSelectionList = ({
@@ -76,8 +93,10 @@ export const useSwapToAssetSelectionList = ({
     isVisible,
     excludeAssetId,
     onAssetSelected,
+    onSwitchPayAsset,
 }: UseSwapToAssetSelectionListParams): UseSwapToAssetSelectionListResult => {
     const queryClient = useQueryClient()
+    const { t } = useLanguage()
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
 
@@ -132,6 +151,13 @@ export const useSwapToAssetSelectionList = ({
         destinationScopes: visibleScopes,
         q: debouncedSearchFilter || undefined,
     })
+
+    const sourceChainIds = useSwapSourceChains(selectedAccount)
+    const { data: payAssets } = useAssetsQuery(
+        scope,
+        fromAssetId ? [fromAssetId] : [],
+    )
+    const payAsset = payAssets?.get(fromAssetId)
 
     const handleEndReached = useCallback(() => {
         if (hasNextPage) fetchNextPage()
@@ -233,6 +259,71 @@ export const useSwapToAssetSelectionList = ({
         [onAssetSelected, queryClient],
     )
 
+    const crossNetworkEmptyState =
+        useMemo((): Nullable<SwapCrossNetworkEmptyState> => {
+            if (
+                selectedChainId === null ||
+                selectedChainId === scope.chainId ||
+                isLoading ||
+                searchFilter ||
+                debouncedSearchFilter ||
+                items.length > 0
+            ) {
+                return null
+            }
+            const canPayOnSelected = sourceChainIds.includes(selectedChainId)
+            const params = {
+                network: chainDisplayNameOf(selectedChainId) ?? selectedChainId,
+                payNetwork: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+                asset: payAsset?.unitName ?? payAsset?.name ?? fromAssetId,
+            }
+            return {
+                title: t(
+                    'swap.asset_selection.cross_network_empty_title',
+                    params,
+                ),
+                body: t(
+                    canPayOnSelected
+                        ? 'swap.asset_selection.cross_network_empty_body'
+                        : 'swap.asset_selection.cross_network_empty_body_other_account',
+                    params,
+                ),
+                actionLabel: canPayOnSelected
+                    ? t(
+                          'swap.asset_selection.cross_network_empty_action',
+                          params,
+                      )
+                    : null,
+            }
+        }, [
+            selectedChainId,
+            scope.chainId,
+            isLoading,
+            searchFilter,
+            debouncedSearchFilter,
+            items.length,
+            sourceChainIds,
+            payAsset,
+            fromAssetId,
+            t,
+        ])
+
+    const handleSwapOnSelectedNetwork = useCallback(() => {
+        if (!crossNetworkEmptyState?.actionLabel || selectedChainId === null) {
+            return
+        }
+        const targetScope = destinationScopes.find(
+            ({ chainId }) => chainId === selectedChainId,
+        )
+        if (!targetScope) return
+        onSwitchPayAsset(nativeAssetFor(selectedChainId).assetId, targetScope)
+    }, [
+        crossNetworkEmptyState,
+        selectedChainId,
+        destinationScopes,
+        onSwitchPayAsset,
+    ])
+
     return {
         items,
         searchFilter,
@@ -245,5 +336,8 @@ export const useSwapToAssetSelectionList = ({
         isLoading,
         handleEndReached,
         handleAssetSelected,
+        searchPlaceholder: t(swapAssetSearchPlaceholderKey(visibleChainIds)),
+        crossNetworkEmptyState,
+        handleSwapOnSelectedNetwork,
     }
 }

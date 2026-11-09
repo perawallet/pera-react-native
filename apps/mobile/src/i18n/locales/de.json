@@ -4001,9 +4001,15 @@
             "swap_from_title": "Tauschen von",
             "swap_to_title": "Tauschen zu",
             "search_placeholder": "Nach Name oder ID suchen",
+            "search_placeholder_evm": "Nach Name, Symbol oder Contract-Adresse suchen",
+            "search_placeholder_all": "Nach Name, Symbol, ID oder Contract-Adresse suchen",
             "no_results_title": "Keine passenden Assets",
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
-            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar"
+            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar",
+            "cross_network_empty_title": "Tausch zu {{network}} nicht möglich",
+            "cross_network_empty_body": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, zahle stattdessen mit einem Asset auf {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, wechsle zu einem Konto auf {{network}} und zahle mit einem seiner Assets.",
+            "cross_network_empty_action": "Auf {{network}} tauschen"
         },
         "configuration": {
             "title": "Tauscheinstellungen",

@@ -4031,9 +4031,15 @@
             "swap_from_title": "Converter de",
             "swap_to_title": "Converter para",
             "search_placeholder": "Buscar por nome ou ID",
+            "search_placeholder_evm": "Buscar por nome, símbolo ou endereço do contrato",
+            "search_placeholder_all": "Buscar por nome, símbolo, ID ou endereço do contrato",
             "no_results_title": "Nenhum ativo encontrado",
             "no_results_body": "Nenhum ativo corresponde à sua busca",
-            "no_chain_results_body": "Nenhum ativo disponível nesta rede"
+            "no_chain_results_body": "Nenhum ativo disponível nesta rede",
+            "cross_network_empty_title": "Não é possível converter para {{network}}",
+            "cross_network_empty_body": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, pague com um ativo em {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} em {{payNetwork}} ainda não pode ser convertido em ativos em {{network}}. Para obtê-los, troque para uma conta em {{network}} e pague com um dos ativos dela.",
+            "cross_network_empty_action": "Converter em {{network}}"
         },
         "configuration": {
             "title": "Configurações de conversão",

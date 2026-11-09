@@ -31,6 +31,8 @@ import { useStyles } from './styles'
 export type SwapAssetSelection = {
     assetId: string
     scope: ChainScope
+    /** `pay` also comes from Swap To when the user moves the swap onto another network. */
+    side: 'pay' | 'receive'
 }
 
 type BaseProps = {
@@ -62,9 +64,19 @@ export const SwapAssetSelectionContent = (
                     [AnalyticsMetadataKey.AssetName]: assetName,
                 },
             )
-            resolve({ assetId: asset.assetId, scope: assetScope })
+            resolve({
+                assetId: asset.assetId,
+                scope: assetScope,
+                side: variant === 'from' ? 'pay' : 'receive',
+            })
         },
         [resolve, variant],
+    )
+
+    const handleSwitchPayAsset = useCallback(
+        (assetId: string, payScope: ChainScope) =>
+            resolve({ assetId, scope: payScope, side: 'pay' }),
+        [resolve],
     )
 
     const handleFromAssetSelected = useCallback(
@@ -86,12 +98,10 @@ export const SwapAssetSelectionContent = (
                         scope={scope}
                         fromAssetId={props.fromAssetId}
                         onAssetSelected={handleAssetSelected}
+                        onSwitchPayAsset={handleSwitchPayAsset}
                         isVisible
                         excludeAssetId={excludeAsset?.assetId}
                         inBottomSheet
-                        searchPlaceholder={t(
-                            'swap.asset_selection.search_placeholder',
-                        )}
                         emptyResultTitle={t(
                             'swap.asset_selection.no_results_title',
                         )}
@@ -107,9 +117,6 @@ export const SwapAssetSelectionContent = (
                         scope={scope}
                         excludeAsset={excludeAsset}
                         onAssetSelected={handleFromAssetSelected}
-                        searchPlaceholder={t(
-                            'swap.asset_selection.search_placeholder',
-                        )}
                         emptyResultTitle={t(
                             'swap.asset_selection.no_results_title',
                         )}
