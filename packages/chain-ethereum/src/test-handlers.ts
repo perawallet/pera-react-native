@@ -52,8 +52,9 @@ export {
 } from './history/api/msw-handlers'
 export type { EvmHistoryItemResponse } from './history/api/schema'
 export {
+    contractMetadataResponse,
     verifiedAbiResponse,
-    type PeraEvmContractAbiFixtures,
+    type PeraEvmContractFixtures,
 } from './contracts/api/msw-handlers'
 export type { EvmContractAbiResponse } from './contracts/api/schema'
 export {

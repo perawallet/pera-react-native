@@ -3487,6 +3487,8 @@
             "known_description": "{{name}} bilinen bir sözleşme",
             "known_spend_note": "{{name}} bilinen bir sözleşme. Bu tokeni yalnızca onayladığın bir işlem veya imza kapsamında hareket ettirebilir.",
             "known_unlimited_note": "Tutar sınırsız, bu yüzden bu token için {{name}} sözleşmesine tekrar onay vermen gerekmez.",
+            "unlimited_limit_note": "Pera bu tutarı düşüremez. Yalnızca ihtiyacın kadarını onaylamak için reddet ve uygulama izin veriyorsa daha küçük bir tutar belirle.",
+            "balance_label": "Bakiyen",
             "allow_title": "{{spender}} sözleşmesinin {{asset}} bakiyeni kullanmasına izin ver",
             "allow_title_assets": "{{spender}} sözleşmesinin varlıklarını kullanmasına izin ver",
             "allow_title_unknown": "Başka bir adresin {{asset}} bakiyeni kullanmasına izin ver",
@@ -3713,6 +3715,7 @@
             "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Gelişmiş",
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",

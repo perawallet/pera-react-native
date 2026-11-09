@@ -24,7 +24,10 @@ import {
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { EvmContractAbiResponse } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
+import type {
+    EvmContractAbiResponse,
+    PeraEvmContractFixtures,
+} from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import type { FakeWalletKit } from '@test-utils/walletkit-stub'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 
@@ -61,8 +64,12 @@ const { useRemoteConfigStore } =
 const { useConnectionRegistry, resetConnectionPairingStateForTesting } =
     await import('@perawallet/wallet-core-connections')
 const { getProvider } = await import('@perawallet/wallet-extension-provider')
-const { evmRpcHandlers, peraEvmHandlers, verifiedAbiResponse } =
-    await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
+const {
+    contractMetadataResponse,
+    evmRpcHandlers,
+    peraEvmHandlers,
+    verifiedAbiResponse,
+} = await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { PERA_URL } =
     await import('@packages/chain-ethereum/src/__tests__/pera-backend')
 const { SENDER, SIGNER_KEY_PAIR_ID } =
@@ -93,6 +100,9 @@ const DISTRIBUTOR = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'
 const IMPLEMENTATION = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 const CONTACT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 const CONTACT_NAME = 'Carol'
+const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+// approve(ROUTER, max uint256)
+const APPROVE_ROUTER_DATA = `0x095ea7b3000000000000000000000000${ROUTER.slice(2).toLowerCase()}${'f'.repeat(64)}`
 
 const SWAP_EXACT_ETH_FOR_TOKENS = {
     type: 'function',
@@ -221,10 +231,20 @@ const review = async (
     data: string,
     contractAbis: Record<string, EvmContractAbiResponse> | number = {},
     value = '0x0',
+    {
+        contractMetadata = {},
+        readyTestId = 'ethereum_contract_call_to',
+    }: Pick<PeraEvmContractFixtures, 'contractMetadata'> & {
+        readyTestId?: string
+    } = {},
 ) => {
     server.use(
         ...evmRpcHandlers(),
-        ...peraEvmHandlers({ baseUrl: PERA_URL, contractAbis }),
+        ...peraEvmHandlers({
+            baseUrl: PERA_URL,
+            contractAbis,
+            contractMetadata,
+        }),
     )
     const walletKit = await connectEthereum()
     act(() => {
@@ -238,7 +258,7 @@ const review = async (
             }),
         )
     })
-    await waitFor(() => screen.getByTestId('ethereum_contract_call_to'), {
+    await waitFor(() => screen.getByTestId(readyTestId), {
         timeout: 15_000,
     })
 }
@@ -246,10 +266,16 @@ const review = async (
 const argumentRows = () =>
     screen.queryAllByTestId('ethereum_verified_call_argument')
 
+// The label is looked up apart from the ABI, so each part is counted on its own.
 const abiPathsRequested: string[] = []
+const metadataPathsRequested: string[] = []
 const recordRequest = ({ request }: { request: Request }) => {
-    const { pathname } = new URL(request.url)
-    if (pathname.includes('/contracts/')) abiPathsRequested.push(pathname)
+    const { pathname, searchParams } = new URL(request.url)
+    if (!pathname.includes('/contracts/')) return
+    if (searchParams.get('include') === 'abi') abiPathsRequested.push(pathname)
+    if (searchParams.get('include') === 'metadata') {
+        metadataPathsRequested.push(pathname)
+    }
 }
 
 describe('Flow: a dApp asks to call a contract whose source is verified', () => {
@@ -271,6 +297,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         walletKitStub.reset()
         captured.registry = undefined
         abiPathsRequested.length = 0
+        metadataPathsRequested.length = 0
         await getProvider().connections.store.clear()
         resetConnectionPairingStateForTesting()
         useAccountsStore.getState().setAccounts([ETHEREUM_ACCOUNT])
@@ -340,6 +367,73 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             screen.getByTestId('ethereum_contract_call_warning'),
         ).toBeTruthy()
         expect(screen.queryByTestId('ethereum_contract_call_data')).toBeNull()
+    })
+
+    describe('a contract Pera curates that the app does not bundle', () => {
+        const curated = {
+            [ROUTER.toLowerCase()]: contractMetadataResponse(
+                'Example V2 Router',
+                'Example',
+                'https://example.org',
+            ),
+        }
+
+        it('Given an approval for it to spend a token, when it is reviewed, then the spender is named as Pera curates it', async () => {
+            await review(USDC, APPROVE_ROUTER_DATA, {}, '0x0', {
+                contractMetadata: curated,
+                readyTestId: 'message-signing-spend-approval-spender',
+            })
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId(
+                            'message-signing-spend-approval-spender',
+                        ).textContent,
+                    ).toContain('Example V2 Router')
+                },
+                { timeout: 15_000 },
+            )
+        })
+
+        it('Given the call the approval was for, when it is reviewed, then the contract is named the same way', async () => {
+            await review(ROUTER, SWAP_DATA, {}, '0x2386f26fc10000', {
+                contractMetadata: curated,
+            })
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('ethereum_known_contract')
+                            .textContent,
+                    ).toContain('Example V2 Router')
+                },
+                { timeout: 15_000 },
+            )
+        })
+
+        it('Given its project is not verified, when a call to it is reviewed, then it is not named', async () => {
+            await review(ROUTER, SWAP_DATA, {}, '0x2386f26fc10000', {
+                contractMetadata: {
+                    [ROUTER.toLowerCase()]: contractMetadataResponse(
+                        'Example V2 Router',
+                        'Example',
+                        'https://example.org',
+                        'unverified',
+                    ),
+                },
+            })
+
+            await waitFor(() => {
+                expect(metadataPathsRequested).toHaveLength(1)
+            })
+            await waitFor(() => {
+                expect(
+                    screen.queryByTestId('ethereum_verified_call_loading'),
+                ).toBeNull()
+            })
+            expect(screen.queryByTestId('ethereum_known_contract')).toBeNull()
+        })
     })
 
     it("Given a call through a verified proxy, when it is reviewed, then it shows the implementation's function, says the contract is a proxy and names a contact", async () => {
@@ -438,5 +532,6 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             screen.queryByTestId('ethereum_verified_call_loading'),
         ).toBeNull()
         expect(abiPathsRequested).toEqual([])
+        expect(metadataPathsRequested).toEqual([])
     })
 })

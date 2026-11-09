@@ -29,15 +29,18 @@ import { useSpendApprovalWarning } from './useSpendApprovalWarning'
 export type SpendApprovalWarningProps = {
     approval: SpendApproval
     scope: ChainScope
+    /** A signed permit carries a deadline; an on-chain `approve` has none to show. */
+    showsDeadline?: boolean
 }
 
 export const SpendApprovalWarning = ({
     approval,
     scope,
+    showsDeadline = false,
 }: SpendApprovalWarningProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { rows, deadlineText, knownSpenderName } =
+    const { rows, deadlineText, knownSpenderName, isUnlimited } =
         useSpendApprovalWarning(approval)
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -105,6 +108,7 @@ export const SpendApprovalWarning = ({
                     <AddressDisplay
                         address={approval.spender}
                         displayType='address-only'
+                        scope={scope}
                     />
                 </PWView>
             </KeyValueRow>
@@ -116,12 +120,23 @@ export const SpendApprovalWarning = ({
                     index={index}
                 />
             ))}
-            <KeyValueRow
-                testID='message-signing-spend-approval-deadline'
-                title={t('signing.spend_approval.deadline_label')}
-            >
-                <PWText>{deadlineText}</PWText>
-            </KeyValueRow>
+            {isUnlimited && (
+                <PWText
+                    testID='message-signing-spend-approval-unlimited-note'
+                    variant='caption'
+                    style={styles.note}
+                >
+                    {t('signing.spend_approval.unlimited_limit_note')}
+                </PWText>
+            )}
+            {showsDeadline && (
+                <KeyValueRow
+                    testID='message-signing-spend-approval-deadline'
+                    title={t('signing.spend_approval.deadline_label')}
+                >
+                    <PWText>{deadlineText}</PWText>
+                </KeyValueRow>
+            )}
         </PWView>
     )
 }

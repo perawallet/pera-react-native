@@ -3487,6 +3487,8 @@
             "known_description": "{{name}} est un contrat connu",
             "known_spend_note": "{{name}} est un contrat connu. Il ne peut déplacer ce token que dans le cadre d’une transaction ou d’une signature que vous approuvez.",
             "known_unlimited_note": "Le montant est illimité : vous n’aurez pas à autoriser de nouveau ce token pour {{name}}.",
+            "unlimited_limit_note": "Pera ne peut pas réduire ce montant. Pour n’approuver que ce dont vous avez besoin, refusez et choisissez un montant plus petit dans l’application, si elle le permet.",
+            "balance_label": "Votre solde",
             "allow_title": "Autoriser {{spender}} à utiliser vos {{asset}}",
             "allow_title_assets": "Autoriser {{spender}} à utiliser vos actifs",
             "allow_title_unknown": "Autoriser une autre adresse à utiliser vos {{asset}}",
@@ -3713,6 +3715,7 @@
             "nft_fallback": "{{collection}} · ID du token {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Avancé",
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
             "function_selector": "Sélecteur de fonction",
             "call_data": "Données de l’appel",

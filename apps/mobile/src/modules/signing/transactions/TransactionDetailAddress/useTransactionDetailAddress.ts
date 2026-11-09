@@ -11,7 +11,6 @@
  */
 
 import {
-    getAccountDisplayName,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -23,6 +22,7 @@ import {
     type Contact,
 } from '@perawallet/wallet-core-contacts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useAccountName } from '@hooks/useAccountName'
 
 export type UseTransactionDetailAddressResult = {
     ownAccount: Nullable<WalletAccount>
@@ -37,6 +37,7 @@ export const useTransactionDetailAddress = (
 ): UseTransactionDetailAddressResult => {
     const ownAccount = useFindAccountByAddress(address, scope)
     const { contacts } = useContacts()
+    const { getAccountName } = useAccountName()
     const contact = ownAccount
         ? undefined
         : findContactByAddress(
@@ -48,7 +49,7 @@ export const useTransactionDetailAddress = (
     return {
         ownAccount,
         ownAccountName: ownAccount
-            ? getAccountDisplayName(ownAccount, scope.chainId)
+            ? getAccountName(ownAccount, scope.chainId)
             : undefined,
         contact,
     }

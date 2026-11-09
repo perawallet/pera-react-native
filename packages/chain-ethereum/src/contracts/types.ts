@@ -26,6 +26,13 @@ export type EvmContractAbiAnswer =
     /** The scope offers no lookup; nothing failed. */
     | { status: 'unavailable' }
 
+/** A contract Pera curates, checked against its project's published deployments. */
+export type EvmContractMetadata = {
+    /** A proper noun: shown as written, never translated. */
+    name: string
+    projectUrl: string
+}
+
 export type EvmVerifiedAbi = Extract<
     EvmContractAbiAnswer,
     { status: 'verified' }

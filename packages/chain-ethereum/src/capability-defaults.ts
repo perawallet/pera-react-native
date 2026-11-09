@@ -35,6 +35,9 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'ledger',
     'nft',
     'nameService',
+    // Fail-safe on every chain: a contract neither the bundled registry nor
+    // the backend knows is shown as an unrecognised call.
+    'contractDecoding',
     // Still behind the app-wide enable_cloud_backup flag, as for Algorand.
     'cloudBackup',
 ])
@@ -42,12 +45,7 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
 // Off by default but safe for remote config to switch on: no Algorand-only code,
 // and no Pera endpoint a scope without a deployment could reach. Anything else
 // stays off.
-const SWITCHABLE: readonly ChainCapability[] = [
-    'contractDecoding',
-    'discover',
-    'onramp',
-    'swap',
-]
+const SWITCHABLE: readonly ChainCapability[] = ['discover', 'onramp', 'swap']
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 

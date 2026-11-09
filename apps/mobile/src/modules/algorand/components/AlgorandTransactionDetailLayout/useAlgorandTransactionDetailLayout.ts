@@ -153,7 +153,7 @@ export const useAlgorandTransactionDetailLayout = (
             scope,
             iconName: algorandTransactionIconName(txType),
             title: heroTitle({ key: titleKeyOf(transaction, viewer) }),
-            status: isOnChain ? 'completed' : 'pending',
+            ...(isOnChain && { status: 'completed' as const }),
             amount,
             isAmountLoading,
             transactionId: transaction.id || undefined,

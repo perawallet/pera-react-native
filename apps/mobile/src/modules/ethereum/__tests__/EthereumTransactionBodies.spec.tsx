@@ -304,7 +304,7 @@ describe('Ethereum transaction bodies', () => {
             ).toBeNull()
         })
 
-        it('warns about an unrecognised call in the warnings banner, and keeps its target and amount in view', () => {
+        it('warns about an unrecognised call in the warnings banner, and keeps its target in view with no zero amount', () => {
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -328,7 +328,9 @@ describe('Ethereum transaction bodies', () => {
                 'transactions.contract_call.unchecked_warning',
             )
             expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
-            expect(textOf('ethereum_contract_call_value')).toMatch(/ETH.*0/)
+            expect(
+                screen.queryByTestId('ethereum_contract_call_value'),
+            ).toBeNull()
             expect(screen.queryByTestId('ethereum_review_amount')).toBeNull()
         })
 
@@ -549,7 +551,7 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('transaction_detail_amount')).toMatch(/USDC.*5/)
         })
 
-        it('shows an unrecognised call as its warning, selector, collapsed calldata, target and zero value', () => {
+        it("shows an unrecognised call with the review's warning, and its selector, collapsed calldata, target and zero value under Advanced", () => {
             render(
                 <TransactionDetailBody
                     transaction={natives['contract-call']}
@@ -557,8 +559,14 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(textOf('ethereum_contract_call_warning')).toBe(
-                'transactions.contract_call.warning',
+                'transactions.contract_call.unchecked_warning_no_source',
             )
+            expect(
+                screen.getByText('transactions.contract_call.advanced'),
+            ).toBeTruthy()
+            const advanced = textOf('ethereum_detail_advanced')
+            expect(advanced).toContain('0x5ae401dc')
+            expect(advanced).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_selector')).toContain(
                 '0x5ae401dc',
             )

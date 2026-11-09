@@ -43,10 +43,16 @@ export {
     type UseEvmContractAbiQueryParams,
     type UseEvmContractAbiQueryResult,
 } from './contracts/hooks/useEvmContractAbiQuery'
+export {
+    useEvmContractMetadataQuery,
+    type UseEvmContractMetadataQueryParams,
+    type UseEvmContractMetadataQueryResult,
+} from './contracts/hooks/useEvmContractMetadataQuery'
 export type {
     EvmAbiArgument,
     EvmAbiValue,
     EvmContractAbiAnswer,
+    EvmContractMetadata,
     EvmVerifiedAbi,
     EvmVerifiedCall,
 } from './contracts/types'

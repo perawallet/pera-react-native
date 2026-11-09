@@ -1191,7 +1191,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     return { walletKit, request }
                 }
 
-                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning, a note that Pera cannot lower it and no deadline, and approving it answers the dApp', async () => {
                     const { walletKit, request } = await reviewCall()
 
                     await waitFor(() => {
@@ -1209,6 +1209,17 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(
                         screen.getAllByText('signing.spend_approval.unlimited'),
                     ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-unlimited-note',
+                        ),
+                    ).not.toHaveLength(0)
+                    // An on-chain approve has no deadline; only a signed permit does.
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-deadline',
+                        ),
+                    ).toBeNull()
                     await waitFor(() => {
                         expect(screen.getAllByText('USDC')).not.toHaveLength(0)
                     })
@@ -1240,21 +1251,22 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     })
                 })
 
-                it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it stays an unrecognised contract call with the unknown-contract notice', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it reads as a send of the token with no unknown-contract notice', async () => {
                     await reviewCall(TRANSFER_DATA)
 
                     await waitFor(() => {
                         expect(
-                            screen.getAllByTestId(
-                                'ethereum_contract_call_warning',
-                            ),
+                            screen.getAllByText('transactions.list_item.send'),
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByText(
                             'transactions.list_item.contract_call',
                         ),
-                    ).not.toHaveLength(0)
+                    ).toBeNull()
                 })
             })
 

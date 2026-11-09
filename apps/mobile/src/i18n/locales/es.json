@@ -3487,6 +3487,8 @@
             "known_description": "{{name}} es un contrato conocido",
             "known_spend_note": "{{name}} es un contrato conocido. Solo puede mover este token como parte de una transacción o firma que apruebes.",
             "known_unlimited_note": "La cantidad es ilimitada, así que no tendrás que volver a autorizar este token para {{name}}.",
+            "unlimited_limit_note": "Pera no puede reducir esta cantidad. Para aprobar solo lo que necesitas, recházala y elige una cantidad menor en la aplicación, si lo permite.",
+            "balance_label": "Tu saldo",
             "allow_title": "Permitir que {{spender}} use tus {{asset}}",
             "allow_title_assets": "Permitir que {{spender}} use tus activos",
             "allow_title_unknown": "Permitir que otra dirección use tus {{asset}}",
@@ -3713,6 +3715,7 @@
             "nft_fallback": "{{collection}} · ID del token {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Avanzado",
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
             "function_selector": "Selector de función",
             "call_data": "Datos de la llamada",

@@ -13,7 +13,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    getAccountDisplayName,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -26,7 +25,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useFindAccountByAddress: vi.fn(),
-    getAccountDisplayName: vi.fn(),
+}))
+
+const getAccountName = vi.fn()
+vi.mock('@hooks/useAccountName', () => ({
+    useAccountName: () => ({ getAccountName }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
@@ -51,20 +54,20 @@ const ACCOUNT = { id: 'a1', name: 'Savings' } as WalletAccount
 describe('useTransactionDetailAddress', () => {
     beforeEach(() => {
         vi.mocked(useFindAccountByAddress).mockReset()
-        vi.mocked(getAccountDisplayName).mockReset()
+        getAccountName.mockReset()
         mockContacts.contacts = []
     })
 
-    it("Given the user's own address, then it names that account", () => {
+    it("Given the user's own address, then it names that account as the review does", () => {
         vi.mocked(useFindAccountByAddress).mockReturnValue(ACCOUNT)
-        vi.mocked(getAccountDisplayName).mockReturnValue('Savings')
+        getAccountName.mockReturnValue('Savings')
 
         const { result } = renderHook(() =>
             useTransactionDetailAddress(ADDRESS, SCOPE),
         )
 
         expect(useFindAccountByAddress).toHaveBeenCalledWith(ADDRESS, SCOPE)
-        expect(getAccountDisplayName).toHaveBeenCalledWith(ACCOUNT, 'ethereum')
+        expect(getAccountName).toHaveBeenCalledWith(ACCOUNT, 'ethereum')
         expect(result.current).toEqual({
             ownAccount: ACCOUNT,
             ownAccountName: 'Savings',
@@ -84,7 +87,7 @@ describe('useTransactionDetailAddress', () => {
             ownAccountName: undefined,
             contact: undefined,
         })
-        expect(getAccountDisplayName).not.toHaveBeenCalled()
+        expect(getAccountName).not.toHaveBeenCalled()
     })
 
     it('Given a contact holds the address, then it names that contact', () => {
