@@ -987,15 +987,17 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     },
                     { timeout: 5000 },
                 )
-                fireEvent.click(
-                    screen.getAllByTestId('review_warnings_toggle')[0],
-                )
                 for (const id of [
                     'ethereum_high_fee_warning',
                     'ethereum_contract_call_warning',
                 ]) {
                     expect(screen.getAllByTestId(id)).not.toHaveLength(0)
                 }
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(true)
             })
 
             it('Given a call the node says would revert, when the dApp sends it with its own gas, then nothing is queued and the user is told why', async () => {

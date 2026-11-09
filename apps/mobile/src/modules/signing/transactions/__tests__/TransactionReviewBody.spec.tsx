@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { type ComponentProps } from 'react'
 import { Decimal } from 'decimal.js'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { screen } from '@test-utils/render'
@@ -223,13 +223,21 @@ describe('TransactionReviewBody', () => {
             () => (
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
-                    transaction={{ family: 'evm', transaction: {} }}
+                    transaction={
+                        {
+                            family: 'unregistered',
+                            transaction: {},
+                        } as unknown as ComponentProps<
+                            typeof TransactionReviewBody
+                        >['transaction']
+                    }
                 />
             ),
             'Review',
         )
 
         expect(container.textContent).toBe('')
+        expect(screen.queryByTestId('review_actions_probe')).toBeNull()
     })
 
     it('shows the requesting dApp and the origin the platform observed', () => {

@@ -10,8 +10,12 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     useFlagReviewRisk,
+    useReviewRiskAcknowledgementStore,
+    useReviewRiskFlagStore,
     useReviewRiskGate,
 } from '../../hooks/useReviewRiskGate'
 import type { ReviewWarningItem } from './types'
@@ -28,8 +32,28 @@ export const useReviewWarningsBanner = (
     items: readonly ReviewWarningItem[],
 ): UseReviewWarningsBannerResult => {
     const hasHighRisk = items.some(item => item.isHighRisk)
+    const highRiskIds = items
+        .filter(item => item.isHighRisk)
+        .map(item => item.id)
+        .sort()
+        .join('|')
     useFlagReviewRisk(hasHighRisk)
     const { isAcknowledged, toggleAcknowledged } = useReviewRiskGate()
+    const { currentRequest } = useSigningRequest()
+    const requestId = currentRequest?.id
+
+    // A tick only covers the warnings on screen when it was given, so a high-risk item arriving later asks again.
+    useEffect(() => {
+        if (!requestId || !highRiskIds) return
+        const hasNewId = useReviewRiskFlagStore
+            .getState()
+            .markSeen(requestId, highRiskIds.split('|'))
+        if (!hasNewId) return
+        const store = useReviewRiskAcknowledgementStore.getState()
+        if (store.acknowledgedRequestId === requestId) {
+            store.setAcknowledgedRequestId(undefined)
+        }
+    }, [highRiskIds, requestId])
 
     return {
         isCollapsible: items.length > 1,

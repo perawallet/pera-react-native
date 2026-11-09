@@ -49,7 +49,7 @@ export const FeeAmount = ({
             />
             <PreferredAmount
                 sourceAmount={wholeAmount}
-                sourceAssetId={asset?.assetId ?? ''}
+                sourceAssetId={asset.assetId}
                 scope={scope}
                 density='compact'
                 alignRight

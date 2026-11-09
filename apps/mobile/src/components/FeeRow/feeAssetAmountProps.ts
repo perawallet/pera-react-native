@@ -11,19 +11,21 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import { nativeAssetFor, toWholeUnits } from '@perawallet/wallet-core-assets'
+import {
+    nativeAssetFor,
+    toWholeUnits,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { AssetAmountProps } from '@components/AssetAmount'
 
 export type FeeAssetAmountProps = Pick<
     AssetAmountProps,
-    | 'chainId'
-    | 'asset'
-    | 'value'
-    | 'density'
-    | 'symbolPosition'
-    | 'ignorePrivacyMode'
->
+    'chainId' | 'density' | 'symbolPosition' | 'ignorePrivacyMode'
+> & {
+    asset: PeraAsset
+    value: Decimal
+}
 
 /**
  * `amount` is in base units of the scope's native asset. Every place that shows

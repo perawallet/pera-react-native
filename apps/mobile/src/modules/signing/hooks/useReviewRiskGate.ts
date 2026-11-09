@@ -19,19 +19,43 @@ import { createAcknowledgementStore } from './createAcknowledgementStore'
 type ReviewRiskFlagState = {
     /** The request a high-risk review warning is on screen for. */
     flaggedRequestId: Optional<string>
+    /** High-risk warning ids already on screen for `seenRequestId`, kept here so every banner instance agrees. */
+    seenRequestId: Optional<string>
+    seenIds: readonly string[]
 }
 
 type ReviewRiskFlagActions = {
     setFlaggedRequestId: (id: Optional<string>) => void
+    /** Records `ids` as seen; returns whether any was new for the request. */
+    markSeen: (requestId: string, ids: readonly string[]) => boolean
     resetState: () => void
 }
 
 export const useReviewRiskFlagStore = create<
     ReviewRiskFlagState & ReviewRiskFlagActions
->()(set => ({
+>()((set, get) => ({
     flaggedRequestId: undefined,
+    seenRequestId: undefined,
+    seenIds: [],
     setFlaggedRequestId: id => set({ flaggedRequestId: id }),
-    resetState: () => set({ flaggedRequestId: undefined }),
+    markSeen: (requestId, ids) => {
+        const { seenRequestId, seenIds } = get()
+        const known = seenRequestId === requestId ? seenIds : []
+        const added = ids.filter(id => !known.includes(id))
+        if (added.length > 0 || seenRequestId !== requestId) {
+            set({
+                seenRequestId: requestId,
+                seenIds: [...known, ...added],
+            })
+        }
+        return added.length > 0
+    },
+    resetState: () =>
+        set({
+            flaggedRequestId: undefined,
+            seenRequestId: undefined,
+            seenIds: [],
+        }),
 }))
 
 registerStore({

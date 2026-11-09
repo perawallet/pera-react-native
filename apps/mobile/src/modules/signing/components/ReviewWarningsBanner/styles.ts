@@ -20,7 +20,7 @@ export const useStyles = makeStyles((theme, { hasHighRisk }: StyleProps) => ({
     container: {
         gap: theme.spacing.md,
         padding: theme.spacing.lg,
-        borderRadius: theme.spacing.sm,
+        borderRadius: theme.borderRadius.sm,
         backgroundColor: hasHighRisk
             ? theme.colors.suspiciousBannerBg
             : theme.colors.warningSurface,

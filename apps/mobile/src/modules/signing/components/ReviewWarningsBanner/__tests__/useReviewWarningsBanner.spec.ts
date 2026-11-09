@@ -82,4 +82,29 @@ describe('useReviewWarningsBanner', () => {
 
         expect(flagged()).toBeUndefined()
     })
+
+    it('asks again when a high-risk item arrives after the user acknowledged', () => {
+        const { result, rerender } = renderHook(
+            ({ items }) => useReviewWarningsBanner(items),
+            { initialProps: { items: [item('fee', true)] } },
+        )
+        act(() => result.current.toggleAcknowledged())
+        expect(result.current.isAcknowledged).toBe(true)
+
+        rerender({ items: [item('failure', true), item('fee', true)] })
+
+        expect(result.current.isAcknowledged).toBe(false)
+    })
+
+    it('keeps the acknowledgement when an advisory item arrives', () => {
+        const { result, rerender } = renderHook(
+            ({ items }) => useReviewWarningsBanner(items),
+            { initialProps: { items: [item('fee', true)] } },
+        )
+        act(() => result.current.toggleAcknowledged())
+
+        rerender({ items: [item('fee', true), item('note')] })
+
+        expect(result.current.isAcknowledged).toBe(true)
+    })
 })

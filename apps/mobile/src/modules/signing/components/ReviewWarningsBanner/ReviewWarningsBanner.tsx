@@ -68,6 +68,7 @@ export const ReviewWarningsBanner = ({ items }: ReviewWarningsBannerProps) => {
             {isCollapsible ? (
                 <TitledExpandablePanel
                     hasVerticalChevron
+                    startExpanded={hasHighRisk}
                     headerStyle={styles.panelHeader}
                     testID='review_warnings_toggle'
                     title={
