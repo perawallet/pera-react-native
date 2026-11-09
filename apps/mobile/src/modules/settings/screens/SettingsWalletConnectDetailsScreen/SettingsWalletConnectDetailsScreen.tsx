@@ -51,6 +51,7 @@ export const SettingsWalletConnectDetailsScreen = ({
     const { peer } = connection
 
     const {
+        isSite,
         preferredIcon,
         connectedAccounts,
         permissions,
@@ -59,6 +60,12 @@ export const SettingsWalletConnectDetailsScreen = ({
         handleDelete,
         handleOpenLink,
     } = useSettingsWalletConnectDetailsScreen(connection)
+
+    const deleteTitle = t(
+        isSite
+            ? 'settings.connected_sites.revoke_title'
+            : 'walletconnect.settings.delete_title',
+    )
 
     return (
         <PWScreen testID='wallet_connect_details_screen'>
@@ -71,7 +78,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                 )}
                 {!preferredIcon && (
                     <PWIcon
-                        name='wallet-connect'
+                        name={isSite ? 'globe' : 'wallet-connect'}
                         size='xl'
                     />
                 )}
@@ -174,7 +181,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                 <PWView style={styles.deleteContainer}>
                     <PWButton
                         variant='secondary'
-                        title={t('walletconnect.settings.delete_title')}
+                        title={deleteTitle}
                         onPress={deleteModalState.open}
                         testID='wallet_connect_details_delete_button'
                     />
@@ -183,13 +190,21 @@ export const SettingsWalletConnectDetailsScreen = ({
                     isVisible={deleteModalState.isOpen}
                     onBackdropPress={deleteModalState.close}
                 >
-                    <Dialog.Title
-                        title={t('walletconnect.settings.delete_title')}
-                    />
-                    <PWText>{t('walletconnect.settings.delete_body')}</PWText>
+                    <Dialog.Title title={deleteTitle} />
+                    <PWText>
+                        {isSite
+                            ? t('settings.connected_sites.revoke_body', {
+                                  origin: connection.subtitle,
+                              })
+                            : t('walletconnect.settings.delete_body')}
+                    </PWText>
                     <Dialog.Actions>
                         <Dialog.Button
-                            title={t('common.delete.label')}
+                            title={t(
+                                isSite
+                                    ? 'settings.connected_sites.revoke_confirm'
+                                    : 'common.delete.label',
+                            )}
                             titleStyle={{
                                 color: theme.colors.alertNegative,
                             }}
@@ -198,7 +213,11 @@ export const SettingsWalletConnectDetailsScreen = ({
                             testID='wallet_connect_details_confirm_delete_button'
                         />
                         <Dialog.Button
-                            title={t('common.cancel.label')}
+                            title={t(
+                                isSite
+                                    ? 'settings.connected_sites.revoke_cancel'
+                                    : 'common.cancel.label',
+                            )}
                             onPress={deleteModalState.close}
                             disabled={isLoading}
                             testID='wallet_connect_details_cancel_button'

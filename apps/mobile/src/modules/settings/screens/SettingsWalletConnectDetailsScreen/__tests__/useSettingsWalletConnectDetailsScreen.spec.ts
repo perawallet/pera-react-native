@@ -248,6 +248,33 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
 
         expect(result.current.isLoading).toBe(false)
     })
+
+    it('revokes a site connection without logging a WalletConnect disconnect', async () => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                kind: 'dapp-eip1193',
+                protocolVersion: undefined,
+                networks: [{ chainId: 'ethereum', networkId: 'mainnet' }],
+            }),
+        )
+
+        await act(async () => {
+            result.current.handleDelete()
+        })
+
+        expect(result.current.isSite).toBe(true)
+        expect(mocks.revoke).toHaveBeenCalledWith('client-1')
+        expect(trackEvent).not.toHaveBeenCalled()
+    })
+
+    it('does not treat a WalletConnect session as a site', () => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen(connectionRow()),
+        )
+
+        expect(result.current.isSite).toBe(false)
+    })
 })
 
 describe('useSettingsWalletConnectDetailsScreen — connected accounts', () => {
