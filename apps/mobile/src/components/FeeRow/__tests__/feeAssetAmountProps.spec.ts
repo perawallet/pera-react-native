@@ -23,7 +23,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     nativeAssetFor: vi.fn(),
 }))
 
-const SCOPE = { chainId: 'testchain', networkId: 'mainnet' } as ChainScope
+const SCOPE = {
+    chainId: 'testchain',
+    networkId: 'mainnet',
+} as unknown as ChainScope
 const NATIVE = {
     assetId: 'native',
     unitName: 'TKN',

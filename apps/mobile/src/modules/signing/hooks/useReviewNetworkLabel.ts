@@ -11,7 +11,7 @@
  */
 
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { chainNetworkOf } from '@modules/chain-ui/chainNetwork'
+import { chainNetworkOf } from '@utils/chainNetwork'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSignRequestScope } from './useSignRequestScope'
 

@@ -88,12 +88,9 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         isConfirmBlocked: isAddressConfirmBlocked,
     } = useRequestAddressSafety()
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
-    const { isConfirmBlocked: isRiskConfirmBlocked } =
-        useReviewRiskGate()
+    const { isConfirmBlocked: isRiskConfirmBlocked } = useReviewRiskGate()
     const isConfirmBlocked =
-        isAddressConfirmBlocked ||
-        isSiteConfirmBlocked ||
-        isRiskConfirmBlocked
+        isAddressConfirmBlocked || isSiteConfirmBlocked || isRiskConfirmBlocked
 
     // Bumped to remount the slide-to-confirm slider so it resets as needed
     const [slideResetKey, setSlideResetKey] = useState(0)

@@ -39,9 +39,7 @@ export const FeeAmount = ({
     const { asset, value: wholeAmount } = assetAmountProps
 
     return (
-        <PWView
-            style={isCompact ? styles.compactFeeAmount : styles.feeAmount}
-        >
+        <PWView style={isCompact ? styles.compactFeeAmount : styles.feeAmount}>
             <AssetAmount
                 {...assetAmountProps}
                 alignRight

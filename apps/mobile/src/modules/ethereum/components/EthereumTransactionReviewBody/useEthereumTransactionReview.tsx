@@ -13,7 +13,10 @@
 import { useMemo } from 'react'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
-import { PredictedFailureMessage, type ReviewWarningItem } from '@modules/signing'
+import {
+    PredictedFailureMessage,
+    type ReviewWarningItem,
+} from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import {
     useEthereumSimulationSection,

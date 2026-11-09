@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { useFlagReviewRisk, useReviewRiskGate } from '../../hooks/useReviewRiskGate'
+import {
+    useFlagReviewRisk,
+    useReviewRiskGate,
+} from '../../hooks/useReviewRiskGate'
 import type { ReviewWarningItem } from './types'
 
 export type UseReviewWarningsBannerResult = {

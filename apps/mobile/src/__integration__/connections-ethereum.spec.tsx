@@ -966,7 +966,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
             })
 
-            it("Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner", async () => {
+            it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
                 const walletKit = await settle()
                 renderSignReview()
 

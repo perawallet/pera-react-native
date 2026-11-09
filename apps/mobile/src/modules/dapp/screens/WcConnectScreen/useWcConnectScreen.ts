@@ -29,10 +29,7 @@ import {
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import type { Nullable, Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import {
-    chainNetworkOf,
-    type ChainNetworkLabel,
-} from '@modules/chain-ui/chainNetwork'
+import { chainNetworkOf, type ChainNetworkLabel } from '@utils/chainNetwork'
 import {
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,

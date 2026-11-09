@@ -25,7 +25,7 @@ vi.mock('../useSignRequestScope', () => ({
     useSignRequestScope: () => SEPOLIA,
 }))
 
-vi.mock('@modules/chain-ui/chainNetwork', () => ({
+vi.mock('@utils/chainNetwork', () => ({
     chainNetworkOf: ({ networkId }: ChainScope) => ({
         chain: 'Ethereum',
         network: networkId === 'sepolia' ? 'Sepolia' : networkId,

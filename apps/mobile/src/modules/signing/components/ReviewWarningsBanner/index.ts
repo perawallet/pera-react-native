@@ -14,5 +14,8 @@ export {
     ReviewWarningsBanner,
     type ReviewWarningsBannerProps,
 } from './ReviewWarningsBanner'
-export { ReviewWarningText, type ReviewWarningTextProps } from './ReviewWarningText'
+export {
+    ReviewWarningText,
+    type ReviewWarningTextProps,
+} from './ReviewWarningText'
 export type { ReviewWarningItem } from './types'
