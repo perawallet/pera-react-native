@@ -360,6 +360,19 @@ const v5Records = (a: FixtureAccounts) =>
         chains,
     }))
 
+/** v6 records how and when each chain entry was enabled. */
+const v6Records = (a: FixtureAccounts) =>
+    v5Records(a).map(record => ({
+        ...record,
+        chains: {
+            algorand: {
+                ...record.chains.algorand,
+                enabledAt: 0,
+                enabledBy: 'created',
+            },
+        },
+    }))
+
 export const STORE_FIXTURES: StoreFixture[] = [
     {
         name: 'v0',
@@ -491,6 +504,33 @@ export const STORE_FIXTURES: StoreFixture[] = [
                 unscopedAuthorities: {},
             },
             version: 5,
+        }),
+    },
+    {
+        // The last shape that held accounts without a name.
+        name: 'v6',
+        payload: a => ({
+            state: {
+                accounts: v6Records(a),
+                selectedAccountId: a.algo25.id,
+                sortMode: 'manual',
+                manualAccountOrder: [
+                    a.algo25.id,
+                    a.hd.id,
+                    a.quantum.id,
+                    a.rekeyed.id,
+                    a.watch.id,
+                ],
+                launchAccountMode: 'lastUsed',
+                launchAccountId: null,
+                authorities: {
+                    [`algorand/${NETWORK}`]: {
+                        [a.rekeyed.address]: a.algo25.address,
+                    },
+                },
+                unscopedAuthorities: {},
+            },
+            version: 6,
         }),
     },
 ]

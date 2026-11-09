@@ -225,6 +225,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-quantum-1',
+                name: '',
                 custody: { kind: 'local', seed: 'quantum' },
                 chains: {
                     algorand: {

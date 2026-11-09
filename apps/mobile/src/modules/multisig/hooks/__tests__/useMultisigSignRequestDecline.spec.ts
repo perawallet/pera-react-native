@@ -104,6 +104,7 @@ const buildAccount = (
     chainId: ChainId = 'algorand',
 ): WalletAccount => ({
     id: `algo25-${address}`,
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { [chainId]: { address: address, keyPairId: `kp-${address}` } },
 })

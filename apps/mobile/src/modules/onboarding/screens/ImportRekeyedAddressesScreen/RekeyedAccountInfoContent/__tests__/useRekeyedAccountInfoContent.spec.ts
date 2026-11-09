@@ -42,6 +42,7 @@ const rekeyed = (authority?: string): WalletAccount => {
     if (authority) seedAuthority('REKEYED_ADDR', authority)
     return {
         id: 'rekeyed',
+        name: '',
         custody: { kind: 'watch' },
         chains: { algorand: { address: 'REKEYED_ADDR' } },
     }

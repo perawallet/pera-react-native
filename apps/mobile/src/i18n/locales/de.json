@@ -534,6 +534,8 @@
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
         "account_number": "Konto Nr. {{number}}",
+        "shared_account_number": "Gemeinschaftskonto Nr. {{number}}",
+        "ledger_account_number": "Ledger-Konto Nr. {{number}}",
         "name_taken": "Du hast bereits ein Konto mit diesem Namen. Wähle einen anderen Namen, damit du sie unterscheiden kannst.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
@@ -2148,7 +2150,6 @@
         "name": {
             "title": "Benenne dein Konto",
             "description": "Benenne dein Konto, um es bei der Nutzung von Pera Wallet leicht wiederzuerkennen. Diese Namen werden lokal gespeichert und sind nur für dich sichtbar.",
-            "default_name": "Gemeinschaftskonto",
             "finish_button": "Kontoerstellung abschließen",
             "creating": "Gemeinschaftskonto wird erstellt...",
             "error_title": "Konto konnte nicht erstellt werden",
@@ -2205,7 +2206,6 @@
                 "screen_title": "Gemeinschaftskonto",
                 "title": "Benenne dein Gemeinschaftskonto",
                 "description": "Benenne dein Konto, um es bei der Nutzung von Pera Wallet leicht wiederzuerkennen. Diese Namen werden lokal gespeichert und sind nur für dich sichtbar.",
-                "default_name": "Gemeinschaftskonto",
                 "finish_button": "Fertigstellen",
                 "saving": "Gemeinschaftskonto wird gespeichert..."
             }
@@ -2396,7 +2396,6 @@
         "name_account": {
             "title": "Benenne dein Konto",
             "description": "Benenne dein Konto, um es bei der Nutzung von Pera Wallet leicht wiederzuerkennen. Diese Namen werden lokal gespeichert und sind nur für dich sichtbar.",
-            "wallet_label": "Wallet Nr. {{count}}",
             "finish_button": "Kontoerstellung abschließen"
         },
         "import_select_addresses": {
@@ -4451,7 +4450,6 @@
         "scan_header": {
             "having_issues": "Hast du Probleme?"
         },
-        "default_account_name": "Ledger {{number}}",
         "handoff_added": {
             "title": "Ledger-Konto hinzugefügt",
             "body": "Du kannst es jetzt in der Pera-Erweiterung verwenden."

@@ -20,7 +20,6 @@ import {
     hardwareJoinCandidates,
     type HardwareWalletDetails,
     isHardwareWalletAccount,
-    isLedgerAccount,
     isWatchAccount,
     type LedgerSelectableAccount,
     recordAuthority,
@@ -62,7 +61,6 @@ import {
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
-import { normalizeAccountName } from '@hooks/useUniqueAccountName'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     type AddAccountStackParamList,
@@ -385,27 +383,6 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             details: HardwareWalletDetails
         }> = []
 
-        // Default names number on from the ledger accounts already in the
-        // wallet ("Ledger 3" after two prior imports); a number another
-        // account already shows is skipped, since removals and renames
-        // leave the count short of the highest number.
-        let nextDefaultNameNumber = current.filter(isLedgerAccount).length + 1
-        const nextDefaultName = (): string => {
-            const taken = new Set(
-                getAllAccounts().map(a => normalizeAccountName(a.name ?? '')),
-            )
-            let name = t('ledger.default_account_name', {
-                number: nextDefaultNameNumber,
-            })
-            while (taken.has(normalizeAccountName(name))) {
-                nextDefaultNameNumber++
-                name = t('ledger.default_account_name', {
-                    number: nextDefaultNameNumber,
-                })
-            }
-            return name
-        }
-
         const detailsFor = (
             acc: HardwareWalletDerivedAccount,
         ): HardwareWalletDetails => ({
@@ -571,21 +548,17 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 joinIdOf(proofs[upgrades.length + i]),
             )
         })
+        // A created account takes the store's next "Ledger Account #N"; one
+        // joining the device's account keeps that account's name.
         for (const [i, { address, details }] of hardwareEntries.entries()) {
-            const before = getAllAccounts().length
             addHardwareChainAccount(
                 details,
                 chainId,
                 address,
-                nextDefaultName(),
+                undefined,
                 undefined,
                 joinIdOf(proofs[upgrades.length + rebinds.length + i]),
             )
-            // An entry joining the device's account keeps that account's
-            // name, so only a created account uses up a number.
-            if (getAllAccounts().length > before) {
-                nextDefaultNameNumber++
-            }
         }
         if (batch.length > 0) {
             const scope = getSelectedScope(chainId)
@@ -635,7 +608,6 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         setShouldPlayConfetti,
         exitAccountFlow,
         isHandoffTab,
-        t,
     ])
 
     // Guards double-taps while the upgrade confirmation sheet is open.

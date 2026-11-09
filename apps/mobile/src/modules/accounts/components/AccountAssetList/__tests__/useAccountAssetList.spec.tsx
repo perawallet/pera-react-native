@@ -82,6 +82,7 @@ const ETH_ADDRESS = `0x${'a'.repeat(40)}`
 
 const twoChainAccount: WalletAccount = {
     id: 'two-chains',
+    name: '',
     custody: { kind: 'watch' },
     chains: {
         algorand: { address: 'test-address' },
@@ -338,6 +339,7 @@ describe('useAccountAssetList', () => {
         registerEthereum()
         const ethAccount: WalletAccount = {
             id: 'eth',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ETH_ADDRESS } },
         }
@@ -394,6 +396,7 @@ describe('useAccountAssetList', () => {
         registerEthereum()
         const ethAccount: WalletAccount = {
             id: 'eth',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ETH_ADDRESS } },
         }
@@ -519,6 +522,7 @@ describe('useAccountAssetList', () => {
         it('lists nothing, not skeletons, when the account has no chain this build registers', () => {
             const unregistered: WalletAccount = {
                 id: 'unregistered',
+                name: '',
                 custody: { kind: 'watch' },
                 chains: { base: { address: ETH_ADDRESS } },
             }
@@ -906,6 +910,7 @@ describe('useAccountAssetList', () => {
     describe('hiding tokens', () => {
         const ethAccount: WalletAccount = {
             id: 'eth',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: ETH_ADDRESS } },
         }

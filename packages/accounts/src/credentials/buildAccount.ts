@@ -24,6 +24,7 @@ import type {
 export type BuildAccountInput<C extends AccountCustody = AccountCustody> = {
     /** Defaults to a fresh ordered unique id. */
     id?: string
+    /** Left empty, the store names the account when it is stored. */
     name?: string
     custody: C
     /** The chain the account is created on: it must have an entry there, with a key when the custody is local. */
@@ -69,7 +70,7 @@ export const buildAccount = <C extends AccountCustody>(
     }
     return {
         id: id ?? generateOrderedUniqueId(),
-        ...(name !== undefined ? { name } : {}),
+        name: name ?? '',
         custody,
         chains,
     } as unknown as AccountWithCustody<C['kind']>

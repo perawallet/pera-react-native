@@ -58,6 +58,7 @@ export const accountForType = (
     const custody = custodyForType(type)
     return {
         id: `${type}-account`,
+        name: '',
         custody,
         chains: {
             algorand: {

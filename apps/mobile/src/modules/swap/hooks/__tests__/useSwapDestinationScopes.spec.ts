@@ -27,7 +27,7 @@ const account = (
     id: string,
     chains: WalletAccount['chains'],
     custody: WalletAccount['custody'] = { kind: 'local', seed: null },
-): WalletAccount => ({ id, custody, chains })
+): WalletAccount => ({ id, name: '', custody, chains })
 
 const ALGO_ONLY = account('algo', {
     algorand: { address: 'ALGO_ADDR', keyPairId: 'k1' },

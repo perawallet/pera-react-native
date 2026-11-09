@@ -152,6 +152,7 @@ describe('algorandSingleKeyAccounts', () => {
             )
             expect(minted.account).toEqual({
                 id: expect.any(String),
+                name: '',
                 custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {
@@ -203,6 +204,7 @@ describe('algorandSingleKeyAccounts', () => {
             expect(minted.isNewSeed).toBe(true)
             expect(minted.account).toEqual({
                 id: expect.any(String),
+                name: '',
                 custody: { kind: 'local', seed: 'quantum' },
                 chains: {
                     algorand: {

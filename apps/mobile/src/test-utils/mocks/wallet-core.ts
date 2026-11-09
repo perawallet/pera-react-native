@@ -675,22 +675,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getAccountDisplayName: vi.fn(a => a?.name || ''),
-        isNamedAfterOwnAddress: vi.fn(
-            (account: any) =>
-                !!account?.name &&
-                entriesOf(account).some(
-                    entry => entry.address === account.name,
-                ),
+        setAccountNameTemplates: vi.fn(),
+        isUnnamed: vi.fn((account: any) => !account?.name?.trim()),
+        accountNameKindOf: vi.fn(() => 'account'),
+        nextAccountName: vi.fn(
+            (accounts: readonly unknown[]) => `Account #${accounts.length + 1}`,
         ),
-        accountNumberOf: vi.fn((account: any) => {
-            const custody = account?.custody
-            if (custody?.kind === 'local' && custody.seed === 'bip39') {
-                return custody.hd.account + custody.hd.keyIndex + 1
-            }
-            return custody?.kind === 'hardware'
-                ? custody.accountIndex + 1
-                : undefined
-        }),
+        withAccountNames: vi.fn((accounts: any[]) =>
+            accounts.map((account, index) =>
+                account.name?.trim()
+                    ? account
+                    : { ...account, name: `Account #${index + 1}` },
+            ),
+        ),
         useAccountPresentation: vi.fn(() => null),
         authorityTransitionLabel: vi.fn(() => ({
             labelKey: i18nKey('account_info.type_rekeyed_signer'),
@@ -849,7 +846,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         },
         buildAccount: vi.fn((input: any) => ({
             id: input.id ?? `account-${Math.random().toString(36).slice(2)}`,
-            ...(input.name !== undefined ? { name: input.name } : {}),
+            name: input.name ?? '',
             custody: input.custody,
             chains: input.chains,
         })),

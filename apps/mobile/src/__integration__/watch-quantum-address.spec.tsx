@@ -115,6 +115,7 @@ describe('watch quantum address', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-1',
+                name: '',
                 custody: { kind: 'watch' },
                 chains: { algorand: { address: WATCH_TARGET_ADDRESS } },
             },

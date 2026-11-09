@@ -26,6 +26,7 @@ export const algorandAccountAt = (
     id: string = address,
 ): WalletAccount => ({
     id,
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address } },
 })

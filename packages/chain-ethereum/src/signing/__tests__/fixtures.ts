@@ -451,6 +451,7 @@ export const SIGNER_KEY_PAIR_ID = 'kms-entry-1'
 
 export const ETHEREUM_SIGNER_ACCOUNT: WalletAccount = {
     id: 'eth-signer',
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { ethereum: { address: SENDER, keyPairId: SIGNER_KEY_PAIR_ID } },
 }

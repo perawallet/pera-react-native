@@ -73,23 +73,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
     getAccountDisplayName: mockGetAccountDisplayName,
-    isNamedAfterOwnAddress: () => false,
-    accountNumberOf: (account: {
-        custody?: {
-            kind: string
-            seed?: string | null
-            hd?: { account: number; keyIndex: number }
-            accountIndex?: number
-        }
-    }) => {
-        const custody = account.custody
-        if (custody?.kind === 'local' && custody.hd) {
-            return custody.hd.account + custody.hd.keyIndex + 1
-        }
-        return custody?.kind === 'hardware'
-            ? (custody.accountIndex ?? 0) + 1
-            : undefined
+    isUnnamed: (account: { name?: string }) => !account.name?.trim(),
+    nextAccountName: (accounts: { name?: string }[]) => {
+        const shown = accounts.map(
+            ({ name }) =>
+                Number(
+                    /^account_info\.account_number (\d+)$/.exec(
+                        name ?? '',
+                    )?.[1],
+                ) || 0,
+        )
+        return `account_info.account_number ${Math.max(0, ...shown) + 1}`
     },
+    accountNameKindOf: () => 'account',
     hdIndexOf: () => undefined,
     signingKeyOn: () => undefined,
     chainAccountOf: (
@@ -159,6 +155,7 @@ describe('useNameAccountScreen', () => {
     describe('with chains added after the hand-over', () => {
         const routeAccount = {
             id: 'imported',
+            name: 'Account #1',
             chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
             custody: {
                 kind: 'local',
@@ -206,30 +203,16 @@ describe('useNameAccountScreen', () => {
         const CHAIN_ID = 'second-chain'
         const account = {
             id: 'chain-1',
+            name: 'Account #1',
             chains: { [CHAIN_ID]: { address: '0xabc', keyPairId: 'kp' } },
             custody: { kind: 'local', seed: null },
         }
 
-        it("names the account from that chain's address", () => {
-            mockRouteParams = { account, chainId: CHAIN_ID }
-
-            renderHook(() => useNameAccountScreen())
-
-            expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
-                account,
-                CHAIN_ID,
-            )
-        })
-
-        it("names the account from a chain it holds when the given chain isn't one of them", () => {
+        it("names the account on a chain it holds when the given chain isn't one of them", () => {
             mockRouteParams = { account, chainId: 'dropped-chain' }
 
             const { result } = renderHook(() => useNameAccountScreen())
 
-            expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
-                account,
-                CHAIN_ID,
-            )
             expect(result.current.chainId).toBe(CHAIN_ID)
         })
 
@@ -254,10 +237,12 @@ describe('useNameAccountScreen', () => {
         })
     })
 
-    it('initializes with default wallet name when no account is passed', () => {
+    it('offers the next account number when no account is passed', () => {
         const { result } = renderHook(() => useNameAccountScreen())
 
-        expect(result.current.walletDisplay).toBe('Wallet 1')
+        expect(result.current.walletDisplay).toBe(
+            'account_info.account_number 1',
+        )
         expect(result.current.account).toBeUndefined()
         expect(result.current.isCreating).toBe(false)
     })
@@ -305,6 +290,8 @@ describe('useNameAccountScreen', () => {
                     accountIndex: 0,
                 },
             ],
+            ['an Algo25 account', { kind: 'local', seed: null }],
+            ['a watch account', { kind: 'watch' }],
         ])('numbers %s', (_, custody) => {
             mockRouteParams = {
                 account: {
@@ -324,27 +311,7 @@ describe('useNameAccountScreen', () => {
             )
         })
 
-        it.each([
-            ['an Algo25 account', { kind: 'local', seed: null }],
-            ['a watch account', { kind: 'watch' }],
-        ])('falls back to the address-based name for %s', (_, custody) => {
-            const account = {
-                id: 'unnumbered',
-                chains: { algorand: { address: 'ADDR' } },
-                custody,
-            }
-            mockRouteParams = { account }
-
-            const { result } = renderHook(() => useNameAccountScreen())
-
-            expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
-                account,
-                'algorand',
-            )
-            expect(result.current.walletDisplay).toBe('Account 1')
-        })
-
-        it('saves no name when the numbered name is left unchanged', async () => {
+        it('saves the offered name when it is left unchanged', async () => {
             mockRouteParams = {
                 account: {
                     id: 'numbered',
@@ -363,7 +330,10 @@ describe('useNameAccountScreen', () => {
             })
 
             expect(mockSaveAccount).toHaveBeenCalledWith(
-                expect.objectContaining({ id: 'numbered', name: undefined }),
+                expect.objectContaining({
+                    id: 'numbered',
+                    name: 'account_info.account_number 1',
+                }),
             )
         })
 
@@ -415,10 +385,10 @@ describe('useNameAccountScreen', () => {
                 custody: { kind: 'watch' },
             })
 
-            it('suggests the next free number when another account already shows the generated one', async () => {
+            it('offers one past the highest number another account shows, leaving gaps', async () => {
                 mockStoredAccounts.accounts = [
-                    stored('other', 'OTHER', 'account_info.account_number 1'),
-                    stored('third', 'THIRD', 'account_info.account_number 2'),
+                    stored('other', 'OTHER', 'account_info.account_number 2'),
+                    stored('third', 'THIRD', 'account_info.account_number 1'),
                 ]
                 mockRouteParams = { account: hdRouteAccount('new', 'ADDR') }
                 const { result } = renderHook(() => useNameAccountScreen())
@@ -534,12 +504,6 @@ describe('useNameAccountScreen', () => {
                 )
             })
         })
-
-        it('offers a wallet name when no account is handed over', () => {
-            const { result } = renderHook(() => useNameAccountScreen())
-
-            expect(result.current.accountTitle).toBe('Wallet 1')
-        })
     })
 
     it('handleNameChange updates walletDisplay', () => {
@@ -572,7 +536,7 @@ describe('useNameAccountScreen', () => {
             result.current.handleNameChange(typed)
         })
 
-        expect(result.current.previewName).toBe('Wallet 1')
+        expect(result.current.previewName).toBe('account_info.account_number 1')
     })
 
     it('previews the typed name without surrounding spaces', () => {

@@ -353,6 +353,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'pre-seeded',
+                name: '',
                 custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {

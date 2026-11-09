@@ -10,21 +10,13 @@
  limitations under the License
  */
 
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
-import { registerAlgorandAddressCodec } from '@test-utils/algorandAccountsAdapter'
 import { accountForType } from '@test-utils/accountCustody'
 
 const mockAccounts = vi.hoisted(() => ({ current: [] as WalletAccount[] }))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            params ? `${key} ${JSON.stringify(params)}` : key,
-    }),
-}))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -35,56 +27,33 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 
 const ADDRESS = 'XYZ7MHAEQKWGVHKQWDN3QDCUFHP6DSRIZQDMBRBIDXUT5HUEMU3QT7LQ'
 
-const numbered = (number: number) =>
-    `account_info.account_number ${JSON.stringify({ number })}`
-
-const hdAccount = (
-    id: string,
-    account: number,
-    overrides: Partial<WalletAccount> = {},
-): WalletAccount =>
-    accountForType('hdWallet', ADDRESS, {
-        id,
-        custody: { kind: 'local', seed: 'bip39', hd: { account, keyIndex: 0 } },
-        ...overrides,
-    })
+const named = (id: string, name: string): WalletAccount =>
+    accountForType('watch', ADDRESS, { id, name })
 
 const render = () => renderHook(() => useUniqueAccountName()).result.current
 
 describe('useUniqueAccountName', () => {
-    beforeAll(() => {
-        registerAlgorandAddressCodec()
-    })
-
     beforeEach(() => {
         mockAccounts.current = []
     })
 
     describe('isAccountNameTaken', () => {
         it('matches another account regardless of case and surrounding spaces', () => {
-            mockAccounts.current = [hdAccount('a', 0, { name: 'Savings' })]
+            mockAccounts.current = [named('a', 'Savings')]
 
             expect(render().isAccountNameTaken('  sAVINGS ')).toBe(true)
             expect(render().isAccountNameTaken('Savings 2')).toBe(false)
         })
 
-        it('counts the generated number of an unnamed account as its name', () => {
-            mockAccounts.current = [hdAccount('a', 0)]
-
-            expect(render().isAccountNameTaken(numbered(1))).toBe(true)
-        })
-
         it('ignores the excepted account', () => {
-            mockAccounts.current = [hdAccount('a', 0, { name: 'Savings' })]
+            mockAccounts.current = [named('a', 'Savings')]
 
             expect(render().isAccountNameTaken('Savings', 'a')).toBe(false)
             expect(render().isAccountNameTaken('Savings', 'b')).toBe(true)
         })
 
-        it('never counts an empty name or an account shown by its address', () => {
-            mockAccounts.current = [
-                accountForType('watch', ADDRESS, { id: 'w' }),
-            ]
+        it('never counts an empty name', () => {
+            mockAccounts.current = [named('a', '')]
 
             expect(render().isAccountNameTaken('   ')).toBe(false)
             expect(render().isAccountNameTaken('')).toBe(false)
@@ -92,43 +61,16 @@ describe('useUniqueAccountName', () => {
     })
 
     describe('hasDuplicateName', () => {
-        it('is true for accounts that show the same name', () => {
-            const first = hdAccount('a', 0)
-            const second = hdAccount('b', 0)
-            mockAccounts.current = [first, second, hdAccount('c', 1)]
+        it('is true for accounts with the same name and false for a unique one', () => {
+            const first = named('a', 'Account #1')
+            const second = named('b', 'account #1 ')
+            const unique = named('c', 'Account #2')
+            mockAccounts.current = [first, second, unique]
             const { hasDuplicateName } = render()
 
             expect(hasDuplicateName(first)).toBe(true)
             expect(hasDuplicateName(second)).toBe(true)
-        })
-
-        it('is false for a unique name and for an account shown by its address', () => {
-            const unique = hdAccount('c', 1)
-            const watch = accountForType('watch', ADDRESS, { id: 'w' })
-            mockAccounts.current = [hdAccount('a', 0), unique, watch]
-            const { hasDuplicateName } = render()
-
             expect(hasDuplicateName(unique)).toBe(false)
-            expect(hasDuplicateName(watch)).toBe(false)
-        })
-    })
-
-    describe('nextFreeAccountName', () => {
-        it('skips every number another account shows', () => {
-            mockAccounts.current = [
-                hdAccount('a', 0),
-                hdAccount('b', 1),
-                hdAccount('c', 0, { name: numbered(3).toUpperCase() }),
-            ]
-
-            expect(render().nextFreeAccountName(1)).toBe(numbered(4))
-        })
-
-        it('starts at the number given and ignores the excepted account', () => {
-            mockAccounts.current = [hdAccount('a', 0)]
-
-            expect(render().nextFreeAccountName(2)).toBe(numbered(2))
-            expect(render().nextFreeAccountName(1, 'a')).toBe(numbered(1))
         })
     })
 })

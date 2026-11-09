@@ -30,6 +30,7 @@ const account = (
     chains: WalletAccount['chains'],
 ): WalletAccount => ({
     id,
+    name: '',
     custody: { kind: 'watch' },
     chains,
 })

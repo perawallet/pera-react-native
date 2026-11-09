@@ -31,6 +31,7 @@ import { useBackupReminderBanner } from '../useBackupReminderBanner'
 
 const accountHD: WalletAccount = {
     id: 'hd-account',
+    name: '',
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     chains: { algorand: { address: 'HD1', keyPairId: 'kp' } },
 }
@@ -70,6 +71,7 @@ describe('useBackupReminderBanner', () => {
         mockShouldPrompt.mockReturnValue(false)
         const evmOnly: WalletAccount = {
             id: 'evm-account',
+            name: '',
             custody: {
                 kind: 'local',
                 seed: 'bip39',

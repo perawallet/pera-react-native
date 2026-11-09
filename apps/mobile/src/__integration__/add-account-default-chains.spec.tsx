@@ -194,6 +194,12 @@ const finishNaming = async (): Promise<void> => {
         timeout: SLOW_WAIT_TIMEOUT_MS,
     })
     fireEvent.click(screen.getByTestId('name_account_finish_button'))
+    // Set only once the name is saved; an imported account is named on import.
+    await waitFor(
+        () =>
+            expect(useOnboardingStore.getState().shouldPlayConfetti).toBe(true),
+        { timeout: SLOW_WAIT_TIMEOUT_MS },
+    )
 }
 
 const importKeyThroughOptions = async (): Promise<void> => {
@@ -225,9 +231,6 @@ const importKeyThroughOptions = async (): Promise<void> => {
 
 const expectImportedKeyOnEthereumAlone = async (): Promise<void> => {
     await finishNaming()
-    await waitFor(() =>
-        expect(useAccountsStore.getState().accounts[0]?.name).toBeDefined(),
-    )
     const account = theOnlyAccount()
     expect(Object.keys(account.chains)).toEqual(['ethereum'])
     expect(chainAccountOf(account, 'ethereum')?.address.toLowerCase()).toBe(
@@ -412,7 +415,7 @@ describe('Flow: adding an account lands it on its default chains', () => {
         expect(useAccountsStore.getState().accounts).toEqual([imported])
     })
 
-    it('Given a key active only on Polygon, when it is imported, then the account holds Polygon alone and is named from its Polygon address', async () => {
+    it('Given a key active only on Polygon, when it is imported, then the account holds Polygon alone and is offered the name it was stored with', async () => {
         server.use(...handlersFor(['polygon']))
         renderWithNavigation(
             ImportAccountOptionsScreen,
@@ -428,13 +431,9 @@ describe('Flow: adding an account lands it on its default chains', () => {
             () => screen.getByTestId('name_account_name_input'),
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        expect((nameInput as HTMLInputElement).value).not.toBe(
-            'No Address Found',
-        )
-        expect((nameInput as HTMLInputElement).value.toLowerCase()).toContain(
-            TEST_PRIVATE_KEY_ADDRESS.slice(2, 6),
-        )
         const account = theOnlyAccount()
+        expect((nameInput as HTMLInputElement).value).toBe(account.name)
+        expect(account.name).toBe('Account #1')
         expect(Object.keys(account.chains)).toEqual(['polygon'])
         expect(chainAccountOf(account, 'polygon')?.enabledBy).toBe('discovery')
     })

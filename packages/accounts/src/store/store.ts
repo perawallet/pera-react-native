@@ -92,6 +92,11 @@ import {
 } from '../errors'
 import { createWalletDiscoveryTracker } from '../discovery-progress'
 import {
+    DEFAULT_ACCOUNT_NAME_TEMPLATES,
+    isUnnamed,
+    withAccountNames,
+} from '../account-names'
+import {
     discoverWalletActivity,
     hdPathKey,
     type ProbedHdIndex,
@@ -107,7 +112,7 @@ import {
 const STORE_NAME = 'accounts-store'
 // Bumping this, or changing `migrateAccountsState`, adds the payload the
 // outgoing version wrote to conformance/src/suites/store-migration/fixtures.ts.
-const STORE_VERSION = 6
+const STORE_VERSION = 7
 
 type PersistedAccountsState = Pick<
     AccountsState,
@@ -245,7 +250,7 @@ const migrateRecords = (
                     typeof raw.address === 'string' ? raw.address : undefined,
                 account: {
                     id: persistedIdOf(raw) ?? uniqueId(derivedIdOf(decoded)),
-                    ...(typeof raw.name === 'string' ? { name: raw.name } : {}),
+                    name: typeof raw.name === 'string' ? raw.name : '',
                     ...decoded,
                 },
             },
@@ -354,11 +359,39 @@ const stampPreRecordEntries = (account: WalletAccount): WalletAccount => ({
     ),
 })
 
+const truncatedAddressOf = (account: WalletAccount): string => {
+    const chainId = CHAIN_IDS.find(id => account.chains[id])
+    const address = chainId && account.chains[chainId]?.address
+    if (!chainId || !address) return ''
+    return addressCodecs.has(chainId)
+        ? addressCodecs.get(chainId).truncate(address)
+        : address
+}
+
+// Before v7 an unnamed account showed "Account #N" when it had an HD or device
+// position, and its truncated address otherwise; each is stored as its name
+// now. In English: translations load after the store hydrates.
+const nameUnnamedAccounts = (
+    accounts: readonly WalletAccount[],
+): WalletAccount[] =>
+    withAccountNames(
+        accounts.map(account => {
+            const hasPosition =
+                hdIndexOf(account) !== undefined ||
+                isHardwareWalletAccount(account)
+            return isUnnamed(account) && !hasPosition
+                ? { ...account, name: truncatedAddressOf(account) }
+                : account
+        }),
+        DEFAULT_ACCOUNT_NAME_TEMPLATES,
+    )
+
 /**
  * Each record keeps only its custody and chain entries, the authority it
  * carried before v4 moving into the authority maps, and a record no chain
  * decodes is dropped. Selection moves from addresses to account ids. Every
- * entry persisted before v6 is recorded as enabled at creation.
+ * entry persisted before v6 is recorded as enabled at creation, and every
+ * account persisted before v7 without a name gets the one it showed.
  */
 export const migrateAccountsState = (
     persistedState: unknown,
@@ -371,9 +404,12 @@ export const migrateAccountsState = (
         version >= 5
             ? (persistedState as PersistedAccountsState)
             : migrateToV5(persistedState, version)
+    const accounts = state.accounts ?? []
     return {
         ...state,
-        accounts: (state.accounts ?? []).map(stampPreRecordEntries),
+        accounts: nameUnnamedAccounts(
+            version >= 6 ? accounts : accounts.map(stampPreRecordEntries),
+        ),
     }
 }
 
@@ -934,8 +970,9 @@ export const useAccountsStore: UseBoundStore<
                 // (`duplicateRank`) rather than whichever happened to come
                 // first. Callers that need to surface duplicates to the user
                 // use addAccount or throw DuplicateAccountError before
-                // reaching here; this is the structural safety net.
-                accounts = resolveDuplicateAccounts(accounts)
+                // reaching here; this is the structural safety net. Every
+                // account leaves with a name.
+                accounts = withAccountNames(resolveDuplicateAccounts(accounts))
 
                 const currentSelected = get().selectedAccountId
                 const currentManualOrder = get().manualAccountOrder
@@ -986,6 +1023,7 @@ export const useAccountsStore: UseBoundStore<
                     }
                 }
                 get().setAccounts([...accounts, account])
+                return findAccountById(get().accounts, account.id)
             },
             importAccountFromPrivateKey: async (
                 chainId: ChainId,
@@ -1047,9 +1085,9 @@ export const useAccountsStore: UseBoundStore<
                                   chainId,
                               )
                             : { account: draft, unusedKeys: [] }
-                        get().addAccount(account)
+                        const stored = get().addAccount(account)
                         await removeUnreferencedKeys(get().accounts, unusedKeys)
-                        return account
+                        return stored
                     } catch (error) {
                         await removeUnreferencedKey(get().accounts, keyPairId)
                         throw error
@@ -1095,8 +1133,7 @@ export const useAccountsStore: UseBoundStore<
                     accounts,
                     chainId,
                 )
-                get().addAccount(account)
-                return account
+                return get().addAccount(account)
             },
             enableChain: (accountId, chainId, enabledBy, options) =>
                 queuedFor(accountId, async () => {
@@ -1410,8 +1447,7 @@ export const useAccountsStore: UseBoundStore<
                         chainId,
                         chains: { [chainId]: entry },
                     })
-                    get().addAccount(account)
-                    return account
+                    return get().addAccount(account)
                 }
                 const existing = chainAccountOf(holder, chainId)
                 if (existing) {
@@ -1475,8 +1511,7 @@ export const useAccountsStore: UseBoundStore<
                         chainId,
                         chains: { [chainId]: entry },
                     })
-                    get().addAccount(account)
-                    return account
+                    return get().addAccount(account)
                 }
                 const updated = {
                     ...boundToDevice(holder, details),

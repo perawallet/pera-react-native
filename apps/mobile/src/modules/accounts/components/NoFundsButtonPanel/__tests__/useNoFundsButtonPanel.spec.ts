@@ -85,6 +85,7 @@ describe('useNoFundsButtonPanel', () => {
     it('removes buying for an account with no address on an onramp chain', () => {
         vi.mocked(useSelectedAccount).mockReturnValue({
             id: 'elsewhere',
+            name: '',
             custody: { kind: 'watch' },
             chains: { ethereum: { address: '0xADDRESS' } },
         })

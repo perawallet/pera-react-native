@@ -38,6 +38,7 @@ import { useStyles } from './styles'
 // is a rekey to hardware; the auth account isn't in the store to look up.
 const LEDGER_AUTH_ACCOUNT: HardwareWalletAccount = {
     id: 'ledger-auth',
+    name: '',
     custody: {
         kind: 'hardware',
         device: {

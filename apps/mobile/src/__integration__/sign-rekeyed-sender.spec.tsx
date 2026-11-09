@@ -74,6 +74,7 @@ const blockOnSignature = (): Promise<Uint8Array> => {
 
 const ledgerAccount: HardwareWalletAccount = {
     id: 'hw-ledger-1',
+    name: '',
     custody: {
         kind: 'hardware',
         device: {

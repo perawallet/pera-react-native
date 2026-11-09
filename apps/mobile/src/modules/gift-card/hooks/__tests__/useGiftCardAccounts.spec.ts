@@ -23,6 +23,7 @@ import {
 
 const accountOn = (chainId: string): WalletAccount => ({
     id: `account-${chainId}`,
+    name: '',
     chains: { [chainId]: { address: `ADDR-${chainId}`, keyPairId: 'kp' } },
     custody: { kind: 'local', seed: null },
 })

@@ -11,11 +11,13 @@
  */
 
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts/chain-adapter'
-import type {
-    ChainContext,
-    ChainRegistry,
+import {
+    addressCodecs,
+    type ChainContext,
+    type ChainRegistry,
 } from '@perawallet/wallet-core-chain-contract'
 import { algorandAccountsAdapter } from '@perawallet/wallet-core-chain-algorand/accounts/adapter'
+import { algorandAddressCodec } from '@perawallet/wallet-core-chain-algorand/accounts/address-codec'
 import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
@@ -27,6 +29,8 @@ import { setAlgorandChainContext } from '@perawallet/wallet-core-chain-algorand/
 // Signer resolution routes through the adapter registered for the chain being
 // signed on, so suites that resolve a signer need Algorand's registered.
 accountsChainAdapters.register(algorandAccountsAdapter)
+// The store migration names an unnamed account by its truncated address.
+addressCodecs.register(algorandAddressCodec)
 // Algorand's node clients take their request ceilings from the registered context.
 setAlgorandChainContext({
     getScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),

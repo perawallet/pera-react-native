@@ -135,6 +135,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 const sampleDiscovered = [
     {
         id: '1',
+        name: 'Account #1',
         chains: { algorand: { address: 'ADDR-A', keyPairId: 'w-1' } },
         custody: {
             kind: 'local',
@@ -144,6 +145,7 @@ const sampleDiscovered = [
     },
     {
         id: '2',
+        name: 'Account #2',
         chains: { algorand: { address: 'ADDR-B', keyPairId: 'w-1' } },
         custody: {
             kind: 'local',
@@ -152,6 +154,31 @@ const sampleDiscovered = [
         },
     },
 ]
+
+describe('useImportSelectAddressesScreen — naming', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockAllAccounts.current = []
+    })
+
+    test('offers each unnamed new account the name the store would give it', () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: sampleDiscovered.map(account => ({
+                ...account,
+                name: '',
+            })),
+        }
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        expect(result.current.accounts.map(account => account.name)).toEqual([
+            'Account #1',
+            'Account #2',
+        ])
+    })
+})
 
 describe('useImportSelectAddressesScreen — import mode', () => {
     beforeEach(() => {
@@ -571,6 +598,7 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
     test('reads the store fresh inside the deferred write so a concurrent add is not dropped', async () => {
         const concurrent = {
             id: 'c',
+            name: 'Concurrent',
             chains: { algorand: { address: 'CONCURRENT', keyPairId: 'kp-c' } },
             custody: { kind: 'local', seed: null },
         } as WalletAccount

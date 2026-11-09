@@ -534,6 +534,8 @@
         "viewing": "Actuel",
         "wallet_label": "Wallet n° {{number}}",
         "account_number": "Compte n° {{number}}",
+        "shared_account_number": "Compte partagé n° {{number}}",
+        "ledger_account_number": "Compte Ledger n° {{number}}",
         "name_taken": "Vous avez déjà un compte portant ce nom. Choisissez un autre nom pour pouvoir les distinguer.",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Compte Algo25",
@@ -2156,7 +2158,6 @@
         "name": {
             "title": "Nommez votre compte",
             "description": "Nommez votre compte pour l’identifier facilement lors de l’utilisation de Pera Wallet. Ces noms sont stockés localement et ne sont visibles que par vous.",
-            "default_name": "Compte partagé",
             "finish_button": "Terminer la création du compte",
             "creating": "Création du compte partagé...",
             "error_title": "Échec de la création du compte",
@@ -2213,7 +2214,6 @@
                 "screen_title": "Compte partagé",
                 "title": "Nommez votre compte partagé",
                 "description": "Nommez votre compte pour l’identifier facilement lors de l’utilisation de Pera Wallet. Ces noms sont stockés localement et ne sont visibles que par vous.",
-                "default_name": "Compte partagé",
                 "finish_button": "Terminer",
                 "saving": "Enregistrement du compte partagé..."
             }
@@ -2404,7 +2404,6 @@
         "name_account": {
             "title": "Nommez votre compte",
             "description": "Nommez votre compte pour l’identifier facilement lors de l’utilisation de Pera Wallet. Ces noms sont stockés localement et ne sont visibles que par vous.",
-            "wallet_label": "Wallet n° {{count}}",
             "finish_button": "Terminer la création"
         },
         "import_select_addresses": {
@@ -4459,7 +4458,6 @@
         "scan_header": {
             "having_issues": "Des problèmes ?"
         },
-        "default_account_name": "Ledger {{number}}",
         "handoff_added": {
             "title": "Compte Ledger ajouté",
             "body": "Vous pouvez maintenant l’utiliser dans l’extension Pera."

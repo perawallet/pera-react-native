@@ -128,6 +128,7 @@ const multisigAccount = (
 
 const watchAccount = (address: string): WatchAccount => ({
     id: `watch-${address}`,
+    name: '',
     custody: { kind: 'watch' },
     chains: { algorand: { address } },
 })

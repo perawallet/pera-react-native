@@ -56,7 +56,7 @@ const RPC_URL = 'https://mainnet.rpc.test/'
 const watchAccount = (
     id: string,
     chains: WalletAccount['chains'],
-): WalletAccount => ({ id, custody: { kind: 'watch' }, chains })
+): WalletAccount => ({ id, name: '', custody: { kind: 'watch' }, chains })
 
 const requestKey = (request: Request): string =>
     `${request.method} ${new URL(request.url).pathname}`

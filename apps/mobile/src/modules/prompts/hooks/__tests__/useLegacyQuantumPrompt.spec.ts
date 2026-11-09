@@ -53,12 +53,14 @@ import { useLegacyQuantumPrompt } from '../useLegacyQuantumPrompt'
 
 const legacyAccount = (id: string, address: string): WalletAccount => ({
     id,
+    name: '',
     custody: { kind: 'local', seed: 'quantum' },
     chains: { algorand: { address, keyPairId: `${id}-quantum` } },
 })
 
 const canonicalAccount = (id: string, address: string): WalletAccount => ({
     id,
+    name: '',
     custody: { kind: 'local', seed: 'quantum' },
     chains: { algorand: { address, keyPairId: `${id}-quantum-pqk1` } },
 })

@@ -15,16 +15,12 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useLanguage } from '@hooks/useLanguage'
-import { useAccountName } from '@hooks/useAccountName'
 
 export type UseUniqueAccountNameResult = {
-    /** Whether another account shows `name`, ignoring case and surrounding spaces; an empty name is never taken. */
+    /** Whether another account has `name`, ignoring case and surrounding spaces; an empty name is never taken. */
     isAccountNameTaken: (name: string, exceptAccountId?: string) => boolean
-    /** Whether another account shows the same name as `account`; false for one shown by its address. */
+    /** Whether another account has the same name as `account`. */
     hasDuplicateName: (account: WalletAccount) => boolean
-    /** "Account #N" for the lowest N at or above `from` that no other account shows. */
-    nextFreeAccountName: (from: number, exceptAccountId?: string) => string
 }
 
 /** The form names are compared in: names differing only in case or surrounding spaces are the same. */
@@ -33,19 +29,15 @@ export const normalizeAccountName = (name: string) =>
 
 export const useUniqueAccountName = (): UseUniqueAccountNameResult => {
     const accounts = useAllAccounts()
-    const { t } = useLanguage()
-    const { getOwnName } = useAccountName()
 
     const idsByName = useMemo(() => {
         const map = new Map<string, string[]>()
         for (const account of accounts) {
-            const name = getOwnName(account)
-            if (name === undefined) continue
-            const key = normalizeAccountName(name)
+            const key = normalizeAccountName(account.name)
             map.set(key, [...(map.get(key) ?? []), account.id])
         }
         return map
-    }, [accounts, getOwnName])
+    }, [accounts])
 
     const isAccountNameTaken = useCallback(
         (name: string, exceptAccountId?: string) => {
@@ -59,25 +51,10 @@ export const useUniqueAccountName = (): UseUniqueAccountNameResult => {
     )
 
     const hasDuplicateName = useCallback(
-        (account: WalletAccount) => {
-            const name = getOwnName(account)
-            return name !== undefined && isAccountNameTaken(name, account.id)
-        },
-        [getOwnName, isAccountNameTaken],
+        (account: WalletAccount) =>
+            isAccountNameTaken(account.name, account.id),
+        [isAccountNameTaken],
     )
 
-    const nextFreeAccountName = useCallback(
-        (from: number, exceptAccountId?: string) => {
-            let number = from
-            let name = t('account_info.account_number', { number })
-            while (isAccountNameTaken(name, exceptAccountId)) {
-                number++
-                name = t('account_info.account_number', { number })
-            }
-            return name
-        },
-        [t, isAccountNameTaken],
-    )
-
-    return { isAccountNameTaken, hasDuplicateName, nextFreeAccountName }
+    return { isAccountNameTaken, hasDuplicateName }
 }

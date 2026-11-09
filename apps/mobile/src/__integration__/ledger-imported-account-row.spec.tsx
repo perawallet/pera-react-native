@@ -54,6 +54,7 @@ describe('Flow: Ledger imported account row checkbox', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'hw-ledger-1',
+                name: '',
                 custody: {
                     kind: 'hardware',
                     device: {

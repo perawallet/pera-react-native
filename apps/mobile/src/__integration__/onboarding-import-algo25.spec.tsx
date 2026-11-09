@@ -262,6 +262,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         useAccountsStore.getState().setAccounts([
             {
                 id: 'existing-algo25-1',
+                name: '',
                 custody: { kind: 'local', seed: null },
                 chains: {
                     algorand: {

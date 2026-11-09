@@ -23,6 +23,7 @@ const ETH_ADDRESS = `0x${'f'.repeat(40)}`
 
 const TWO_CHAIN_ACCOUNT: WalletAccount = {
     id: 'both',
+    name: '',
     custody: { kind: 'watch' },
     chains: {
         algorand: { address: 'ALGO' },

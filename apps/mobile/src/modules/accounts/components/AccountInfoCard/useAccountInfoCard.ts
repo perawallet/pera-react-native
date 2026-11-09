@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    getAccountDisplayName,
     type WalletAccount,
     accountChainOptions,
     hardwareDetailsOf,
@@ -29,7 +30,6 @@ import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAccountName } from '@hooks/useAccountName'
 import { navigationRef } from '@routes/navigationRef'
 import {
     useAccountTypeLabel,
@@ -78,7 +78,6 @@ export const useAccountInfoCard = ({
     onClose,
 }: UseAccountInfoCardParams): UseAccountInfoCardResult => {
     const { t } = useLanguage()
-    const { getAccountName } = useAccountName()
     const [isExpanded, setIsExpanded] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<Optional<string>>()
 
@@ -181,7 +180,7 @@ export const useAccountInfoCard = ({
             const isViewing = member.id === account.id
             return {
                 account: member,
-                name: getAccountName(
+                name: getAccountDisplayName(
                     member,
                     options[0]?.chainId ??
                         accountChainIdOf(member, registeredChainIds),
@@ -191,7 +190,7 @@ export const useAccountInfoCard = ({
                 chains,
             }
         })
-    }, [structureGroup, account.id, getAccountName, registeredChainIds])
+    }, [structureGroup, account.id, registeredChainIds])
 
     const showStructure = isHDWallet || (isLedger && structureRows.length > 0)
 

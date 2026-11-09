@@ -184,6 +184,7 @@ const mockQueryReturn = (
 
 const buildAccount = (address: string): WalletAccount => ({
     id: `algo25-${address}`,
+    name: '',
     custody: { kind: 'local', seed: null },
     chains: { algorand: { address: address, keyPairId: `kp-${address}` } },
 })
@@ -1250,6 +1251,7 @@ describe('usePendingSignaturesContent', () => {
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
+    name: '',
     custody: {
         kind: 'hardware',
         device: {
