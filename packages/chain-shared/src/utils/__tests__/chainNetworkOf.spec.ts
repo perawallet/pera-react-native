@@ -10,20 +10,34 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { chainNetworkOf } from '../chainNetwork'
+import { describe, expect, it } from 'vitest'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { chainNetworkOf } from '../chainNetworkOf'
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    chainDisplayNameOf: (chainId: string) =>
-        ({ ethereum: 'Ethereum' })[chainId],
-    getChainDescriptor: () => ({
-        networks: [{ id: 'sepolia', displayName: 'Sepolia' }],
-    }),
-}))
+const ALL_ON = Object.fromEntries(
+    CHAIN_CAPABILITIES.map(capability => [capability, true]),
+) as ChainCapabilities
+
+const registerEthereum = () =>
+    getProvider().chains.register(
+        {
+            id: 'ethereum',
+            displayName: 'Ethereum',
+            networks: [{ id: 'sepolia', displayName: 'Sepolia' }],
+        } as unknown as ChainDescriptor,
+        ALL_ON,
+    )
 
 describe('chainNetworkOf', () => {
     it('names a known chain and network', () => {
+        registerEthereum()
+
         expect(
             chainNetworkOf({
                 chainId: 'ethereum',
@@ -33,6 +47,8 @@ describe('chainNetworkOf', () => {
     })
 
     it('falls back to the raw network id when the chain does not list it', () => {
+        registerEthereum()
+
         expect(
             chainNetworkOf({
                 chainId: 'ethereum',

@@ -55,6 +55,7 @@ import {
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
+    DAPP_HIGH_FEE_MULTIPLIER,
     buildEthereumSendTransaction,
     validateEthereumSendTransaction,
     type EthereumSendTransactionRequest,
@@ -605,6 +606,10 @@ describe('buildEthereumSendTransaction', () => {
                 amount: 21_000n * parseGwei('5'),
             },
         })
+    })
+
+    it('flags a fee above twice the wallet pricing, the figure the mobile high-fee copy states', () => {
+        expect(DAPP_HIGH_FEE_MULTIPLIER).toBe(2n)
     })
 
     it('flags a dApp gas limit far above the estimate for review', async () => {

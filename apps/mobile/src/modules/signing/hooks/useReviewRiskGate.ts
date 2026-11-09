@@ -16,6 +16,10 @@ import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { createAcknowledgementStore } from './createAcknowledgementStore'
 
+export const useReviewRiskAcknowledgementStore = createAcknowledgementStore(
+    'review-risk-acknowledgement-store',
+)
+
 type ReviewRiskFlagState = {
     /** The request a high-risk review warning is on screen for. */
     flaggedRequestId: Optional<string>
@@ -26,8 +30,11 @@ type ReviewRiskFlagState = {
 
 type ReviewRiskFlagActions = {
     setFlaggedRequestId: (id: Optional<string>) => void
-    /** Records `ids` as seen; returns whether any was new for the request. */
-    markSeen: (requestId: string, ids: readonly string[]) => boolean
+    /**
+     * Records the high-risk warning ids on screen. A tick only covers the warnings on
+     * screen when it was given, so an id that is new for the request withdraws it.
+     */
+    noteHighRisk: (requestId: string, ids: readonly string[]) => void
     resetState: () => void
 }
 
@@ -38,7 +45,7 @@ export const useReviewRiskFlagStore = create<
     seenRequestId: undefined,
     seenIds: [],
     setFlaggedRequestId: id => set({ flaggedRequestId: id }),
-    markSeen: (requestId, ids) => {
+    noteHighRisk: (requestId, ids) => {
         const { seenRequestId, seenIds } = get()
         const known = seenRequestId === requestId ? seenIds : []
         const added = ids.filter(id => !known.includes(id))
@@ -48,7 +55,11 @@ export const useReviewRiskFlagStore = create<
                 seenIds: [...known, ...added],
             })
         }
-        return added.length > 0
+        if (added.length === 0) return
+        const acknowledgement = useReviewRiskAcknowledgementStore.getState()
+        if (acknowledgement.acknowledgedRequestId === requestId) {
+            acknowledgement.setAcknowledgedRequestId(undefined)
+        }
     },
     resetState: () =>
         set({
@@ -63,10 +74,6 @@ registerStore({
     clearStorage: () => {},
     resetState: () => useReviewRiskFlagStore.getState().resetState(),
 })
-
-export const useReviewRiskAcknowledgementStore = createAcknowledgementStore(
-    'review-risk-acknowledgement-store',
-)
 
 export type UseReviewRiskGateResult = {
     isFlagged: boolean

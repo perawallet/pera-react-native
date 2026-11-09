@@ -139,24 +139,49 @@ describe('useFlagReviewRisk', () => {
     })
 })
 
-describe('useReviewRiskFlagStore seen ids', () => {
+describe('useReviewRiskFlagStore noteHighRisk', () => {
     beforeEach(() => {
         useReviewRiskFlagStore.getState().resetState()
+        useReviewRiskAcknowledgementStore.getState().resetState()
     })
 
-    it('reports an id as new once per request', () => {
-        const { markSeen } = useReviewRiskFlagStore.getState()
+    const acknowledged = () =>
+        useReviewRiskAcknowledgementStore.getState().acknowledgedRequestId
 
-        expect(markSeen('request-1', ['fee'])).toBe(true)
-        expect(markSeen('request-1', ['fee'])).toBe(false)
-        expect(markSeen('request-1', ['fee', 'failure'])).toBe(true)
+    it('keeps the acknowledgement while the same ids are noted again', () => {
+        const { noteHighRisk } = useReviewRiskFlagStore.getState()
+        noteHighRisk('request-1', ['fee'])
+        useReviewRiskAcknowledgementStore
+            .getState()
+            .setAcknowledgedRequestId('request-1')
+
+        noteHighRisk('request-1', ['fee'])
+
+        expect(acknowledged()).toBe('request-1')
     })
 
-    it('forgets the ids when the request changes', () => {
-        const { markSeen } = useReviewRiskFlagStore.getState()
-        markSeen('request-1', ['fee'])
+    it('withdraws the acknowledgement when a new id arrives for the request', () => {
+        const { noteHighRisk } = useReviewRiskFlagStore.getState()
+        noteHighRisk('request-1', ['fee'])
+        useReviewRiskAcknowledgementStore
+            .getState()
+            .setAcknowledgedRequestId('request-1')
 
-        expect(markSeen('request-2', ['fee'])).toBe(true)
+        noteHighRisk('request-1', ['fee', 'failure'])
+
+        expect(acknowledged()).toBeUndefined()
+    })
+
+    it("leaves another request's acknowledgement alone and forgets the ids when the request changes", () => {
+        const { noteHighRisk } = useReviewRiskFlagStore.getState()
+        noteHighRisk('request-1', ['fee'])
+        useReviewRiskAcknowledgementStore
+            .getState()
+            .setAcknowledgedRequestId('request-1')
+
+        noteHighRisk('request-2', ['fee'])
+
+        expect(acknowledged()).toBe('request-1')
         expect(useReviewRiskFlagStore.getState().seenIds).toEqual(['fee'])
     })
 })

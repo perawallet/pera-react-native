@@ -14,7 +14,6 @@ import { useEffect } from 'react'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     useFlagReviewRisk,
-    useReviewRiskAcknowledgementStore,
     useReviewRiskFlagStore,
     useReviewRiskGate,
 } from '../../hooks/useReviewRiskGate'
@@ -42,17 +41,11 @@ export const useReviewWarningsBanner = (
     const { currentRequest } = useSigningRequest()
     const requestId = currentRequest?.id
 
-    // A tick only covers the warnings on screen when it was given, so a high-risk item arriving later asks again.
     useEffect(() => {
         if (!requestId || !highRiskIds) return
-        const hasNewId = useReviewRiskFlagStore
+        useReviewRiskFlagStore
             .getState()
-            .markSeen(requestId, highRiskIds.split('|'))
-        if (!hasNewId) return
-        const store = useReviewRiskAcknowledgementStore.getState()
-        if (store.acknowledgedRequestId === requestId) {
-            store.setAcknowledgedRequestId(undefined)
-        }
+            .noteHighRisk(requestId, highRiskIds.split('|'))
     }, [highRiskIds, requestId])
 
     return {

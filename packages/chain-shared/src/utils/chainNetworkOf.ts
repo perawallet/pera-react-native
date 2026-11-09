@@ -11,16 +11,15 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    getChainDescriptor,
-} from '@perawallet/wallet-core-chain-shared'
+import { chainDisplayNameOf } from './chainDisplayNameOf'
+import { getChainDescriptor } from './getChainDescriptor'
 
 export type ChainNetworkLabel = {
     chain: string
     network: string
 }
 
+/** Falls back to the raw network id for one the chain's descriptor doesn't list, such as a custom network. */
 export const chainNetworkOf = ({
     chainId,
     networkId,

@@ -73,7 +73,9 @@ export const TitledExpandablePanel = ({
         <PWView style={containerStyle}>
             <PWTouchableOpacity
                 onPress={onPress}
-                style={[styles.header, headerStyle]}
+                style={
+                    headerStyle ? [styles.header, headerStyle] : styles.header
+                }
                 testID={testID}
             >
                 {typeof title === 'string' ? (

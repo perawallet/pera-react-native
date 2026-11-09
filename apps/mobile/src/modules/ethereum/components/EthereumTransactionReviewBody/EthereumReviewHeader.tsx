@@ -10,15 +10,12 @@
  limitations under the License
  */
 
+import { chainNetworkOf } from '@perawallet/wallet-core-chain-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWText, PWView } from '@components/core'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    SourceMetadataBadge,
-    useReviewNetworkLabel,
-    useSpendApprovalTitle,
-} from '@modules/signing'
+import { SourceMetadataBadge, useSpendApprovalTitle } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useStyles } from './styles'
 
@@ -37,8 +34,11 @@ export const EthereumReviewHeader = ({
 }: EthereumReviewHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const networkLabel = useReviewNetworkLabel()
     const { titleKey, iconName, standardCall } = presentation
+    const networkLabel = t(
+        'dapp.approval.chain_network',
+        chainNetworkOf(presentation.scope),
+    )
     const approvalTitle = useSpendApprovalTitle(
         standardCall?.kind === 'token-approval'
             ? standardCall.spendApproval

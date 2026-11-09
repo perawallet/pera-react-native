@@ -35,7 +35,6 @@ export {
     ReviewWarningText,
     type ReviewWarningItem,
 } from './components/ReviewWarningsBanner'
-export { useReviewNetworkLabel } from './hooks/useReviewNetworkLabel'
 export {
     BalanceImpactSection,
     balanceImpactItemOf,

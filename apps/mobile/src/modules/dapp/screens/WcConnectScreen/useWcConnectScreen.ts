@@ -20,7 +20,11 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainNetworkOf,
+    useSelectedScope,
+    type ChainNetworkLabel,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
@@ -29,7 +33,6 @@ import {
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import type { Nullable, Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import { chainNetworkOf, type ChainNetworkLabel } from '@utils/chainNetwork'
 import {
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,

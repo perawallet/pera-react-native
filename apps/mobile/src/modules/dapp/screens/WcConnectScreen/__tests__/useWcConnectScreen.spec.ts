@@ -42,10 +42,17 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         chainId,
         networkId: mocks.selectedNetworks[chainId] ?? 'mainnet',
     }),
-    chainDisplayNameOf: (chainId: string) =>
-        ({ algorand: 'Algorand', base: 'Base' })[chainId],
-    getChainDescriptor: (chainId: string) => ({
-        networks: NETWORKS[chainId] ?? [],
+    chainNetworkOf: ({
+        chainId,
+        networkId,
+    }: {
+        chainId: string
+        networkId: string
+    }) => ({
+        chain: { algorand: 'Algorand', base: 'Base' }[chainId] ?? chainId,
+        network:
+            (NETWORKS[chainId] ?? []).find(({ id }) => id === networkId)
+                ?.displayName ?? networkId,
     }),
 }))
 
