@@ -10,30 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type {
-    AssetWithAccountBalance,
-    ChainAssetBalance,
-} from '@perawallet/wallet-core-accounts'
 import type {
     AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapFromAssetSelectionList } from '../SwapFromAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
-import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
-
-/** The picked asset, on the scope it lives on. */
-export type SwapAssetSelection = {
-    assetId: string
-    scope: ChainScope
-    /** `pay` also comes from Swap To when the user moves the swap onto another network. */
-    side: 'pay' | 'receive'
-}
+import { useSwapAssetSelectionContent } from './useSwapAssetSelectionContent'
 
 type BaseProps = {
     scope: ChainScope
@@ -49,40 +36,11 @@ export const SwapAssetSelectionContent = (
     const { scope, variant, excludeAsset } = props
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<SwapAssetSelection>()
-
-    const handleAssetSelected = useCallback(
-        (asset: AssetWithAccountBalance, assetScope: ChainScope) => {
-            const assetName =
-                asset.asset?.unitName ?? asset.asset?.name ?? asset.assetId
-            trackEvent(
-                variant === 'from'
-                    ? SwapEvent.SelectTopAsset
-                    : SwapEvent.SelectBottomAsset,
-                {
-                    [AnalyticsMetadataKey.ChainId]: assetScope.chainId,
-                    [AnalyticsMetadataKey.AssetName]: assetName,
-                },
-            )
-            resolve({
-                assetId: asset.assetId,
-                scope: assetScope,
-                side: variant === 'from' ? 'pay' : 'receive',
-            })
-        },
-        [resolve, variant],
-    )
-
-    const handleSwitchPayAsset = useCallback(
-        (assetId: string, payScope: ChainScope) =>
-            resolve({ assetId, scope: payScope, side: 'pay' }),
-        [resolve],
-    )
-
-    const handleFromAssetSelected = useCallback(
-        (asset: ChainAssetBalance) => handleAssetSelected(asset, asset.scope),
-        [handleAssetSelected],
-    )
+    const {
+        handleAssetSelected,
+        handleFromAssetSelected,
+        handleSwitchPayAsset,
+    } = useSwapAssetSelectionContent(variant)
 
     const title =
         variant === 'from'
