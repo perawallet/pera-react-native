@@ -10,14 +10,34 @@
  limitations under the License
  */
 
-import type { RampChainAdapter } from '@perawallet/wallet-core-onramp'
+import { useCallback } from 'react'
+import { useAddIncomingTokenMutation } from '@perawallet/wallet-core-accounts'
+import type {
+    EnsureCanReceive,
+    RampChainAdapter,
+} from '@perawallet/wallet-core-onramp'
 import { evmAssetIdOfRouterId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+
+// Nothing to sign: the purchase arrives in someone else's transfer, so the
+// bought token is added for every later read to include. Not awaited, since
+// the delivery is minutes away and the order mustn't wait on a metadata read.
+const useEnsureCanReceive = (): EnsureCanReceive => {
+    const { addIncomingToken } = useAddIncomingTokenMutation()
+    return useCallback(
+        async ({ address, scope, assetId }) => {
+            void addIncomingToken({ accountAddress: address, scope, assetId })
+            return true
+        },
+        [addIncomingToken],
+    )
+}
 
 export const createEvmRampAdapter = (chain: EvmChain): RampChainAdapter => ({
     chainId: chain.row.id,
     fromRouterAssetId: (routerAssetId, scope) =>
         evmAssetIdOfRouterId(routerAssetId, scope, chain),
+    useEnsureCanReceive,
     // Only tokens the router lists as destinations can be bought.
     isBuyLimitedToDestinations: true,
 })
