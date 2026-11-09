@@ -23,10 +23,7 @@ const { nativeAsset } = algorandDescriptor
  * placeholder for any other id has to stand, since only the backend knows
  * that asset's real facts.
  */
-export const resolveAlgorandAssetFacts: AssetFactsResolver = (
-    assetId,
-    facts,
-) =>
+export const resolveAlgorandAssetFacts: AssetFactsResolver = (assetId, facts) =>
     isAlgorandNativeAssetId(assetId)
         ? { unitName: nativeAsset.symbol, decimals: nativeAsset.decimals }
         : facts

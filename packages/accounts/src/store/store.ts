@@ -144,9 +144,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
 /** A record already held only as custody and chain entries, as one for a chain with no accounts adapter can be. */
-const currentShapeOf = (
-    raw: PersistedRecord,
-): Optional<DecodedAccountRecord> =>
+const currentShapeOf = (raw: PersistedRecord): Optional<DecodedAccountRecord> =>
     isObject(raw.custody) &&
     typeof raw.custody.kind === 'string' &&
     isObject(raw.chains) &&

@@ -308,10 +308,7 @@ const isListedPassDue = (detection: Detection, key: string): boolean => {
 const isListedPassOwed = (detection: Detection, key: string): boolean =>
     detection.owedListedPasses.has(key) && isListedPassDue(detection, key)
 
-const latestOf = (
-    a: Optional<number>,
-    b: Optional<number>,
-): Optional<number> =>
+const latestOf = (a: Optional<number>, b: Optional<number>): Optional<number> =>
     a === undefined || b === undefined ? (a ?? b) : Math.max(a, b)
 
 // Not awaited: a slow history backend must never hold the balance read. What
