@@ -12,12 +12,9 @@
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ExpandableText } from '@components/ExpandableText'
+import { CheckboxRow } from '@components/CheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    WarningAcknowledgeRow,
-    WarningBanner,
-    WarningBannerBody,
-} from '../WarningBanner'
+import { WarningBanner, WarningBannerBody } from '../WarningBanner'
 import { useStyles } from './styles'
 import { usePredictedFailureWarning } from './usePredictedFailureWarning'
 
@@ -52,7 +49,7 @@ export const PredictedFailureWarning = ({
                     textStyle={styles.reason}
                 />
             )}
-            <WarningAcknowledgeRow
+            <CheckboxRow
                 label={t('signing.predicted_failure.acknowledge')}
                 isChecked={isAcknowledged}
                 onToggle={toggleAcknowledged}

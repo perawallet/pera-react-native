@@ -11,13 +11,10 @@
  */
 
 import type { ReviewedAddress } from '@perawallet/wallet-core-signing'
+import { CheckboxRow } from '@components/CheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
-import {
-    WarningAcknowledgeRow,
-    WarningBanner,
-    WarningBannerBody,
-} from '../WarningBanner'
+import { WarningBanner, WarningBannerBody } from '../WarningBanner'
 import { ListedAddress } from './ListedAddress'
 import { LookAlikeAddress } from './LookAlikeAddress'
 
@@ -82,7 +79,7 @@ export const RequestAddressWarning = ({
                 ),
             )}
             {!isListedAddressBlocking && (
-                <WarningAcknowledgeRow
+                <CheckboxRow
                     label={t('signing.address_safety.acknowledge')}
                     isChecked={isAcknowledged}
                     onToggle={toggleAcknowledged}
