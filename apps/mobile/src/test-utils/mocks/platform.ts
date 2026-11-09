@@ -90,6 +90,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', async () => {
                 getDeviceLocale: () => 'en-US',
                 getDeviceLocales: () => ['en-US'],
                 getDeviceLanguage: () => 'en',
+                getUserAgent: () => 'PeraWallet/test',
             },
             firebase: {
                 getToken: vi.fn().mockResolvedValue('mock-token'),

@@ -281,9 +281,7 @@ describe('usePeraWebviewInterface', () => {
                 throw 'x'
             })
 
-            act(() =>
-                handleMessage(bridgeMessage('t-4', 'getPublicSettings')),
-            )
+            act(() => handleMessage(bridgeMessage('t-4', 'getPublicSettings')))
 
             expect(injectedScript(webview)).toContain(
                 '"error":{"code":-32603,"message":"Internal error"}',
