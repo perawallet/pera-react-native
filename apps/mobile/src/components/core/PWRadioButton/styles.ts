@@ -27,9 +27,9 @@ export const useStyles = makeStyles(theme => {
             minWidth: 0,
         },
         radioContainer: {
-            borderWidth: theme.borders.sm,
-            borderRadius: theme.spacing.xl,
-            borderColor: theme.colors.layerGray,
+            borderWidth: theme.borders.md,
+            borderRadius: theme.borderRadius.full,
+            borderColor: theme.colors.textGrayLighter,
             width: theme.spacing.xl,
             height: theme.spacing.xl,
             justifyContent: 'center',
@@ -40,7 +40,7 @@ export const useStyles = makeStyles(theme => {
             borderColor: theme.colors.positive,
         },
         selectedRadio: {
-            borderRadius: theme.spacing.lg,
+            borderRadius: theme.borderRadius.full,
             width: theme.spacing.md,
             height: theme.spacing.md,
             backgroundColor: theme.colors.positive,

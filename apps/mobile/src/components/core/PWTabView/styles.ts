@@ -30,7 +30,7 @@ export const useTabBarStyles = makeStyles(theme => {
         },
         container: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.xxl,
+            borderRadius: theme.borderRadius.full,
             // minHeight (not height) so the bar grows when labels wrap to a
             // second line under large accessibility font sizes.
             minHeight: theme.spacing['3xl'],
@@ -74,9 +74,9 @@ export const useTabBarStyles = makeStyles(theme => {
         indicator: {
             flex: 1,
             backgroundColor: theme.colors.background,
-            height: theme.spacing.xxl,
+            height: theme.controlHeight.sm,
             margin: theme.spacing.xs,
-            borderRadius: theme.spacing.xxl,
+            borderRadius: theme.borderRadius.full,
             ...theme.shadows.md,
         },
         label: {
