@@ -2111,6 +2111,56 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(walletKit.updateSession).not.toHaveBeenCalled()
                 })
 
+                it('Given the wallet in developer mode, when a dApp naming mainnet first connects, then it hears chainChanged for Sepolia and nothing tells the user', async () => {
+                    act(() => {
+                        useNetworkStore.getState().setMode('developer')
+                    })
+                    const walletKit = await settleEthereum([
+                        ETH_MAINNET,
+                        ETH_SEPOLIA,
+                    ])
+
+                    await waitFor(() => {
+                        expect(emitted(walletKit)).toEqual([
+                            {
+                                topic: V2_SESSION_TOPIC,
+                                event: {
+                                    name: 'chainChanged',
+                                    data: '0xaa36a7',
+                                },
+                                chainId: ETH_SEPOLIA,
+                            },
+                        ])
+                    })
+
+                    emitRequest(walletKit, {
+                        id: 35,
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x1' }],
+                        chainId: ETH_MAINNET,
+                    })
+                    emitRequest(walletKit, {
+                        id: 36,
+                        method: 'eth_chainId',
+                        params: [],
+                        chainId: ETH_MAINNET,
+                    })
+
+                    await waitFor(() => {
+                        expect(
+                            walletKit.respondSessionRequest,
+                        ).toHaveBeenCalledTimes(2)
+                    })
+                    const sent = answers(walletKit)
+                    expect(sent.get(35)).toMatchObject({
+                        error: { code: 4901 },
+                    })
+                    expect(sent.get(36)).toMatchObject({
+                        error: { code: 4901 },
+                    })
+                    expect(toastBodies()).toEqual([])
+                })
+
                 it('Given the session holds the only Ethereum account, when the wallet removes it, then the dApp hears accountsChanged with no accounts', async () => {
                     const walletKit = await settleEthereum()
 

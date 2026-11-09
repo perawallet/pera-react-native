@@ -427,6 +427,60 @@ describe('chains sharing the eip155 namespace', () => {
     })
 })
 
+describe('telling a new session the selected network', () => {
+    const settle = async (chains: string[]) => {
+        const opened = await open()
+        opened.walletKit.emit(
+            'session_proposal',
+            makeProposal({
+                requiredNamespaces: {},
+                optionalNamespaces: {
+                    eip155: {
+                        chains,
+                        methods: ['eth_sendTransaction'],
+                        events: ['chainChanged'],
+                    },
+                },
+            }),
+        )
+        await flush()
+        await opened.proposals[0].approve([ETH])
+        await flush()
+        return opened
+    }
+
+    it('sends nothing while the first chain the dApp named is a selected network', async () => {
+        const { walletKit } = await settle([
+            ETHEREUM_MAINNET,
+            BASE_MAINNET,
+            ETHEREUM_SEPOLIA,
+            BASE_SEPOLIA,
+        ])
+
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('moves the dApp once, to the first selected network in its own order, however many chains share the namespace', async () => {
+        selectedNetworks.ethereum = 'sepolia'
+        selectedNetworks.base = 'sepolia'
+
+        const { walletKit } = await settle([
+            BASE_MAINNET,
+            ETHEREUM_MAINNET,
+            BASE_SEPOLIA,
+            ETHEREUM_SEPOLIA,
+        ])
+
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledTimes(1)
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                event: { name: 'chainChanged', data: '0x14a34' },
+                chainId: BASE_SEPOLIA,
+            }),
+        )
+    })
+})
+
 describe('a switch to another chain of the namespace', () => {
     const lackingEthereum = async () => {
         const opened = await liveOnBase()
@@ -614,7 +668,7 @@ describe('a switch to another chain of the namespace', () => {
         )
     })
 
-    it('answers 4901 for a served network the wallet has not selected', async () => {
+    it('answers 4901 for a served network the wallet has not selected, without telling the user', async () => {
         const opened = await liveOnBase()
 
         await request(opened, switchTo('0x14a34'))
@@ -628,12 +682,7 @@ describe('a switch to another chain of the namespace', () => {
                 error: expect.objectContaining({ code: 4901 }),
             },
         })
-        expect(opened.context.onError).toHaveBeenCalledWith(
-            expect.objectContaining({
-                name: 'WalletConnectInvalidNetworkError',
-            }),
-            { connectionId: TOPIC },
-        )
+        expect(opened.context.onError).not.toHaveBeenCalled()
     })
 })
 
