@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { Decimal } from 'decimal.js'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 import type {
@@ -29,6 +29,8 @@ export type ReviewBodyProps = {
     source?: SignRequestSource
     /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
     verifiedOrigin?: string
+    /** The screen's Confirm and Cancel, which the review layout pins under its sticky fee. */
+    actions: ReactNode
 }
 
 export type DetailBodyProps = {
@@ -56,7 +58,8 @@ export type TransactionDetailSummary = {
     iconName: IconName
     /** Already translated by the chain. */
     title: string
-    status: TransactionDetailStatus
+    /** Unset before signing: a transaction not yet sent has no status to report. */
+    status?: TransactionDetailStatus
     /** Unset when the transaction moves no single amount, or while the asset it moves is still being read. */
     amount?: TransactionDetailAmount
     /** The asset the amount is in is still being read, so the hero holds its place. */

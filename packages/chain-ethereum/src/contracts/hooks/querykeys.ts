@@ -15,14 +15,28 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { EvmContractPart } from '../api/endpoints'
 
-const MODULE_PREFIX = 'contract-abis'
+const MODULE_PREFIX = 'evm-contracts'
 
-export const contractAbiQueryKey = (
+// Memory only: `query-persistence.ts` keeps this prefix off disk, since its
+// keys are the contracts dApps asked the user to call. An hour covers every
+// step of a dApp flow; an ABI changes only on a proxy upgrade.
+export const CONTRACT_CACHE_TIME_MS = 60 * 60_000
+
+export const contractQueryKey = (
+    part: EvmContractPart,
     scope: ChainScope,
     address: string,
-): readonly [typeof MODULE_PREFIX, ChainId, NetworkId, string] => [
+): readonly [
+    typeof MODULE_PREFIX,
+    EvmContractPart,
+    ChainId,
+    NetworkId,
+    string,
+] => [
     MODULE_PREFIX,
+    part,
     scope.chainId,
     scope.networkId,
     address.toLowerCase(),

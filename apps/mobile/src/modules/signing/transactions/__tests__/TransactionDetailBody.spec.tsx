@@ -255,7 +255,7 @@ describe('TransactionDetailBody', () => {
         })
     })
 
-    it('shows a pending status and no identifier or explorer link for an unsigned transaction', () => {
+    it('shows no status, identifier or explorer link for an unsigned transaction', () => {
         renderDetail(
             buildAlgorandDisplayFixture('payment', {
                 id: '',
@@ -263,7 +263,7 @@ describe('TransactionDetailBody', () => {
             }),
         )
 
-        expect(screen.getByText('transactions.common.pending')).toBeTruthy()
+        expect(screen.queryByText('transactions.common.pending')).toBeNull()
         expect(screen.queryByText(FIXTURE_TRANSACTION_ID)).toBeNull()
         expect(screen.queryByTestId('transaction_detail_explorer')).toBeNull()
         expect(screen.getByTestId('transaction_detail_fee')).toBeTruthy()

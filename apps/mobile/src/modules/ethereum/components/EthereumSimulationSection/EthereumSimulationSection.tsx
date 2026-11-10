@@ -11,27 +11,30 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import { ChainNotice } from '@components/ChainNotice'
 import { useLanguage } from '@hooks/useLanguage'
-import { BalanceImpactSection, PredictedFailureWarning } from '@modules/signing'
+import { BalanceImpactSection } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumApprovalChangeRow } from './EthereumApprovalChangeRow'
 import { useStyles } from './styles'
-import { useEthereumSimulationSection } from './useEthereumSimulationSection'
+import type { EthereumSimulationSectionState } from './useEthereumSimulationSection'
 
 type EthereumSimulationSectionProps = {
     presentation: EthereumTransactionPresentation
+    state: EthereumSimulationSectionState
 }
 
 export const EthereumSimulationSection = ({
     presentation,
+    state,
 }: EthereumSimulationSectionProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const state = useEthereumSimulationSection(presentation)
 
     switch (state.status) {
-        case 'hidden': {
+        // A failed or unavailable simulation is a warning in the review's banner, not a section.
+        case 'hidden':
+        case 'reverted':
+        case 'unavailable': {
             return null
         }
         case 'loading': {
@@ -47,18 +50,6 @@ export const EthereumSimulationSection = ({
                         {t('signing.balance_impact.analyzing')}
                     </PWText>
                 </PWView>
-            )
-        }
-        case 'reverted': {
-            return <PredictedFailureWarning reason={state.reason} />
-        }
-        case 'unavailable': {
-            return (
-                <ChainNotice
-                    kind='warning'
-                    titleKey='ethereum.simulation.unavailable'
-                    testID='ethereum_simulation_unavailable'
-                />
             )
         }
         case 'success': {

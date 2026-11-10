@@ -70,18 +70,18 @@ describe('useEthereumTransactionDetailBody', () => {
         vi.mocked(useEthereumTransactionPresentation).mockReset()
     })
 
-    it("Given a transfer before it is signed, then it is pending, with the sent asset as the hero's amount, no id and no fee yet", () => {
+    it("Given a transfer before it is signed, then it has no status, with the sent asset as the hero's amount, no id and no fee yet", () => {
         const { summary } = bodyOf(presentationOf())
 
         expect(summary).toMatchObject({
             scope: SCOPE,
             title: 'transactions.list_item.send',
             iconName: 'send-icon',
-            status: 'pending',
             from: ME,
             to: PEER,
         })
         expect(summary?.amount?.value.toString()).toBe('1')
+        expect(summary?.status).toBeUndefined()
         expect(summary?.transactionId).toBeUndefined()
         expect(summary?.fee).toBeUndefined()
     })

@@ -11,24 +11,33 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getIconPixelSize } from '@components/core'
 import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
-    amountContainer: {
-        alignItems: 'flex-end',
+    amount: {
+        color: theme.colors.textGray,
     },
-    primaryAmount: {
+    value: {
         ...getFontWeightVariant(theme, 'h4', 500),
         textAlign: 'right',
     },
-    secondaryAmount: {
-        textAlign: 'right',
-        color: theme.colors.textGray,
-        alignSelf: 'flex-end',
-    },
+    // Tight under its network header, loose above the next one, so each
+    // header reads as belonging to the row below it.
     groupMember: {
         marginLeft: theme.spacing.xl,
-        marginVertical: theme.spacing.md,
+        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.lg,
         alignItems: 'flex-start',
+    },
+    // Starts at the group row's text column: its xl icon plus the row's gap.
+    networkHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        marginLeft: getIconPixelSize(theme, 'xl') + theme.spacing.lg,
+    },
+    networkHeaderLine: {
+        flex: 1,
     },
 }))

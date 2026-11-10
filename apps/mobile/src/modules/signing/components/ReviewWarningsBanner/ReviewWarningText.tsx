@@ -10,13 +10,28 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { ReactNode } from 'react'
+import { PWText } from '@components/core'
+import { useReviewWarningTextStyles } from './styles'
 
-export const useStyles = makeStyles(theme => ({
-    // Starts where the inset member rows do (AssetListItemView's groupMember).
-    separator: {
-        height: theme.borders.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        marginLeft: theme.spacing.xl,
-    },
-}))
+export type ReviewWarningTextProps = {
+    children: ReactNode
+    testID?: string
+}
+
+export const ReviewWarningText = ({
+    children,
+    testID,
+}: ReviewWarningTextProps) => {
+    const styles = useReviewWarningTextStyles()
+
+    return (
+        <PWText
+            variant='body'
+            style={styles.text}
+            testID={testID}
+        >
+            {children}
+        </PWText>
+    )
+}

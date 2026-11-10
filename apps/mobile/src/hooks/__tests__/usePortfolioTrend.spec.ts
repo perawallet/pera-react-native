@@ -18,7 +18,7 @@ import {
     type AccountHoldingSource,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { usePortfolioTrend } from '../usePortfolioTrend'
+import { useHistoryTrend, usePortfolioTrend } from '../usePortfolioTrend'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -185,5 +185,48 @@ describe('usePortfolioTrend', () => {
         })
 
         expect(renderTrend().result.current.hasNoTrend).toBe(true)
+    })
+})
+
+describe('useHistoryTrend for an amount', () => {
+    const amountPoint = (amount: string) => ({
+        preferredValue: null,
+        amount: new Decimal(amount),
+    })
+    const renderAmountTrend = (amounts: string[], selectedAmount?: Decimal) =>
+        renderHook(() =>
+            useHistoryTrend(
+                {
+                    data: amounts.map(amountPoint),
+                    isPending: false,
+                    isPaused: false,
+                    isError: false,
+                },
+                false,
+                selectedAmount,
+                'amount',
+            ),
+        )
+
+    it('measures the amount held, unpriced points included', () => {
+        const { result } = renderAmountTrend(['2', '2.5'])
+
+        expect(result.current.hasNoTrend).toBe(false)
+        expect(result.current.trendAbsolute.toFixed()).toBe('0.5')
+        expect(result.current.trendPercentage.toFixed()).toBe('25')
+        expect(result.current.trendDirection).toBe('up')
+    })
+
+    it('reads a move under a cent but over the 4th place as a change, since the amount renders at 4 dp', () => {
+        const { result } = renderAmountTrend(['1', '1.001'])
+
+        expect(result.current.trendDirection).toBe('up')
+    })
+
+    it('measures to a scrubbed amount', () => {
+        const { result } = renderAmountTrend(['2', '4'], new Decimal('1'))
+
+        expect(result.current.trendAbsolute.toFixed()).toBe('-1')
+        expect(result.current.trendDirection).toBe('down')
     })
 })

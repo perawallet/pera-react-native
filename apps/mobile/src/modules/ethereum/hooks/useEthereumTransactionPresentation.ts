@@ -12,11 +12,7 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import {
-    formatAssetAmount,
-    useNativeAsset,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     useFindAccountByAddress,
     type WalletAccount,
@@ -31,7 +27,6 @@ import {
     ETHEREUM_CHAIN_ID,
     readEthereumNative,
     type EthereumTransactionView,
-    type EvmContractLabel,
     type EvmNftItem,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -47,6 +42,7 @@ import {
     useEthereumContractAction,
     type EthereumContractActionPresentation,
 } from './useEthereumContractAction'
+import type { EthereumContractLabel } from './useEthereumContractLabel'
 import {
     useEthereumStandardCall,
     type EthereumAmount,
@@ -71,7 +67,7 @@ export type EthereumTransactionPresentation = {
     /** A call to a known contract whose calldata proves what it does; null for any other call. */
     contractAction: Nullable<EthereumContractActionPresentation>
     /** The well-known contract a call goes to, whether or not its action could be read. */
-    knownContract: Nullable<EvmContractLabel>
+    knownContract: Nullable<EthereumContractLabel>
     isContractActionLoading: boolean
     /** Moves value: a transfer view, or a contract call read as a token or NFT transfer. */
     isTransfer: boolean
@@ -100,11 +96,8 @@ export type EthereumTransactionPresentation = {
     maxFee: Nullable<EthereumAmount>
     /** Null on a batch call not yet reached and on a mined transaction. */
     reviewFee: Nullable<EthereumReviewFee>
-    /**
-     * Set when a dApp's gas limit and fees authorise far more than the wallet's
-     * own pricing would: `maxFee` formatted for the warning. Null otherwise.
-     */
-    highFeeText: Nullable<string>
+    /** A dApp's gas limit and fees authorise far more than the wallet's own pricing would. */
+    hasHighFee: boolean
     /** `view.feePaid` in ether, on a transaction already on chain whose history gave a fee; whoever paid it. */
     feePaid: Nullable<EthereumAmount>
     signingAccount: Nullable<WalletAccount>
@@ -262,10 +255,7 @@ export const useEthereumTransactionPresentation = (
                           }),
                       }
                     : null,
-            highFeeText:
-                'fee' in view && view.hasHighFee
-                    ? formatAssetAmount(view.fee.maxFee, nativeAsset)
-                    : null,
+            hasHighFee: 'fee' in view && !!view.hasHighFee,
             feePaid:
                 'isMined' in view && view.feePaid
                     ? toEther(view.feePaid)

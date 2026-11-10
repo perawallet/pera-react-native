@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     type AccountAssetBalanceHistoryItem,
@@ -42,8 +42,12 @@ export type UseAssetHoldingsResult = {
     holdingAmount: Decimal
     /** Display units; the scrubbed point's amount while scrubbing, else the holding. */
     tokenAmount: Decimal
-    /** False once the price lookup has settled with no rate: the header leads with the token amount instead. */
+    /** False once the price lookup has settled with no rate: the header shows the token amount, with no toggle. */
     isPriced: boolean
+    /** The header shows the preferred-currency value rather than the token amount. */
+    isValueShown: boolean
+    toggleAmount: () => void
+    amountHint: string
     hasBalanceHistory: boolean
     /** The chain has balance history and the global chart preference is on. */
     isChartShown: boolean
@@ -54,7 +58,6 @@ export type UseAssetHoldingsResult = {
     selectedPoint: Nullable<AccountAssetBalanceHistoryItem>
     setSelectedPoint: (point: Nullable<AccountAssetBalanceHistoryItem>) => void
     canCopyAmount: boolean
-    copyAmountHint: string
     handleCopyAmount: () => void
     /** Set for a token Pera hasn't vetted, on a chain where anyone can send one unasked. */
     tokenWarning: Nullable<{ title: string; body: string }>
@@ -97,6 +100,12 @@ export const useAssetHoldings = ({
         undefined,
         scope,
     )
+    const isPriced = isPending || convertedValue !== null
+    const [prefersValue, setPrefersValue] = useState(true)
+    const toggleAmount = useCallback(
+        () => setPrefersValue(current => !current),
+        [],
+    )
 
     // The balance shows a rounded figure (6 dp at most), so a long-press copies the
     // full-precision amount. Privacy mode disables it: the copy would reveal the balance.
@@ -124,7 +133,15 @@ export const useAssetHoldings = ({
         assetHolding,
         holdingAmount,
         tokenAmount,
-        isPriced: isPending || convertedValue !== null,
+        isPriced,
+        isValueShown: isPriced && prefersValue,
+        toggleAmount,
+        amountHint: [
+            isPriced && t('asset_details.toggle_amount_hint'),
+            !privacyMode && t('asset_details.copy_full_amount_hint'),
+        ]
+            .filter(Boolean)
+            .join('. '),
         hasBalanceHistory,
         isChartShown,
         period,
@@ -133,7 +150,6 @@ export const useAssetHoldings = ({
         selectedPoint,
         setSelectedPoint,
         canCopyAmount: !privacyMode,
-        copyAmountHint: t('asset_details.copy_full_amount_hint'),
         handleCopyAmount,
         tokenWarning,
     }

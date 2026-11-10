@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { type ComponentProps } from 'react'
 import { Decimal } from 'decimal.js'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { screen } from '@test-utils/render'
@@ -30,7 +30,10 @@ import {
     FIXTURE_SENDER,
     type AlgorandDisplayFixtureKind,
 } from '@test-utils/algorand-display-fixtures'
+import { PWText } from '@components/core'
 import { TransactionReviewBody } from '../TransactionReviewBody'
+
+const REVIEW_ACTIONS = <PWText testID='review_actions_probe' />
 
 // The global mock stubs the blockchain barrel; the bodies classify with the real utils.
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
@@ -102,6 +105,7 @@ const renderReview = (
     ]
     const Review = () => (
         <TransactionReviewBody
+            actions={REVIEW_ACTIONS}
             transaction={transaction}
             source={origin.source}
             verifiedOrigin={origin.verifiedOrigin}
@@ -218,13 +222,22 @@ describe('TransactionReviewBody', () => {
         const { container } = renderWithNavigation(
             () => (
                 <TransactionReviewBody
-                    transaction={{ family: 'evm', transaction: {} }}
+                    actions={REVIEW_ACTIONS}
+                    transaction={
+                        {
+                            family: 'unregistered',
+                            transaction: {},
+                        } as unknown as ComponentProps<
+                            typeof TransactionReviewBody
+                        >['transaction']
+                    }
                 />
             ),
             'Review',
         )
 
         expect(container.textContent).toBe('')
+        expect(screen.queryByTestId('review_actions_probe')).toBeNull()
     })
 
     it('shows the requesting dApp and the origin the platform observed', () => {

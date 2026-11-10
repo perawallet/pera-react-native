@@ -30,9 +30,10 @@ export const evmContractAbiResponseSchema = z.union([
         proxy: proxySchema,
     }),
     // `unresolved_proxy`: a proxy whose implementation the backend can't read,
-    // so there is no ABI to name the call with.
+    // so there is no ABI to name the call with. `unavailable`: the registries
+    // couldn't be asked and nothing was cached, so it is unknown either way.
     z.object({
-        status: z.enum(['not_verified', 'unresolved_proxy']),
+        status: z.enum(['not_verified', 'unresolved_proxy', 'unavailable']),
         abi: z.null(),
         registry: z.null(),
         proxy: proxySchema,
@@ -42,3 +43,26 @@ export const evmContractAbiResponseSchema = z.union([
 export type EvmContractAbiResponse = z.infer<
     typeof evmContractAbiResponseSchema
 >
+
+// Only the project fields the app reads; the rest is Discover's.
+const evmContractMetadataSchema = z.object({
+    name: z.string(),
+    project: z.object({
+        name: z.string(),
+        url: z.string(),
+        logo_png: z.string().nullable(),
+        verification_tier: z.string(),
+    }),
+})
+
+export type EvmContractMetadataResponse = z.infer<
+    typeof evmContractMetadataSchema
+>
+
+// A part `include` leaves out is absent; `metadata: null` is a contract Pera doesn't know.
+export const evmContractResponseSchema = z.object({
+    abi: evmContractAbiResponseSchema.optional(),
+    metadata: evmContractMetadataSchema.nullable().optional(),
+})
+
+export type EvmContractResponse = z.infer<typeof evmContractResponseSchema>

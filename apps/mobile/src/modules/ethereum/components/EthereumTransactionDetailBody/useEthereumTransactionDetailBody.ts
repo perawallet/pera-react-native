@@ -47,7 +47,7 @@ export const useEthereumTransactionDetailBody = (
                 scope: presentation.scope,
                 iconName: presentation.iconName,
                 title: heroTitle({ key: presentation.titleKey }),
-                status: 'isMined' in view ? 'completed' : 'pending',
+                ...('isMined' in view && { status: 'completed' as const }),
                 amount: amount?.asset
                     ? { asset: amount.asset, value: amount.value }
                     : undefined,

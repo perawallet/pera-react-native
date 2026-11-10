@@ -35,12 +35,17 @@ const hostOf = (url?: string): Optional<string> => {
  * attested it, the observed origin first. The dApp's own claimed url never
  * reaches this copy.
  */
+export const requesterHostOf = (
+    source?: SignRequestSource,
+    verifiedOrigin?: string,
+): Optional<string> =>
+    hostOf(verifiedOrigin) ?? hostOf(source?.verification?.verifiedOrigin)
+
 export const contractCallNoticeOf = (
     source?: SignRequestSource,
     verifiedOrigin?: string,
 ): ContractCallNotice => {
-    const domain =
-        hostOf(verifiedOrigin) ?? hostOf(source?.verification?.verifiedOrigin)
+    const domain = requesterHostOf(source, verifiedOrigin)
 
     return domain
         ? {

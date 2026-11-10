@@ -24,6 +24,16 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useEthereumContractAction } from '../useEthereumContractAction'
 
+// The curated lookup is its own hook's to test; here only the bundled entry names a contract.
+vi.mock('../useEthereumContractLabel', () => ({
+    useEthereumContractLabel: (
+        _scope: unknown,
+        _address: unknown,
+        bundled: unknown,
+        isEnabled = true,
+    ) => (isEnabled ? (bundled ?? null) : null),
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')

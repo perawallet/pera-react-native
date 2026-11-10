@@ -174,7 +174,7 @@ test('portfolio renders the empty-state account with the ALGO row', async () => 
     // non-skeleton states — accepting either is what proves we're past the
     // loading skeleton rather than racing it (account_screen is present even
     // mid-skeleton, so it proves nothing).
-    const algoRow = page.getByText('ALGO', { exact: true }).first()
+    const algoRow = page.getByText('Algo', { exact: true }).first()
     const emptyState = page.getByText('No Assets', { exact: true })
     await expect(algoRow.or(emptyState)).toBeVisible({ timeout: 30_000 })
 

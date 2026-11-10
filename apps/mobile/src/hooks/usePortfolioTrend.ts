@@ -23,27 +23,40 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { LIST_MAX_PRECISION } from '@components/CurrencyAmount'
 
 export type PortfolioTrendDirection = 'up' | 'down' | 'flat'
 
+/** `amount` trends a holding's display-unit amount rather than its preferred-currency value. */
+export type TrendMeasure = 'value' | 'amount'
+
+// The places each measure renders at: the trend's fiat, and an asset list row's amount.
+const PLACES_BY_MEASURE: Record<TrendMeasure, number> = {
+    value: 2,
+    amount: LIST_MAX_PRECISION,
+}
+
 export type UsePortfolioTrendResult = {
-    /** In the preferred currency. */
+    /** In the preferred currency, or display units when trending an amount. */
     trendAbsolute: Decimal
     trendPercentage: Decimal
-    /** `flat` when the change rounds to zero at the 2 dp the trend renders at. */
+    /** `flat` when the change rounds to zero at the places the trend renders at. */
     trendDirection: PortfolioTrendDirection
     hasNoTrend: boolean
     /** False once an offline read is paused: it won't resolve, so callers show nothing rather than a loader that never ends. */
     isPending: boolean
 }
 
-const directionOf = (change: Decimal): PortfolioTrendDirection => {
-    if (change.toDecimalPlaces(2).isZero()) return 'flat'
+const directionOf = (
+    change: Decimal,
+    places: number,
+): PortfolioTrendDirection => {
+    if (change.toDecimalPlaces(places).isZero()) return 'flat'
     return change.isPositive() ? 'up' : 'down'
 }
 
 type TrendHistory = {
-    data: { preferredValue: Nullable<Decimal> }[]
+    data: { preferredValue: Nullable<Decimal>; amount?: Decimal }[]
     isPending: boolean
     isPaused: boolean
     isError: boolean
@@ -52,12 +65,14 @@ type TrendHistory = {
 /**
  * `isIncomplete` withholds a change the history can't fully back.
  * `selectedValue` is a scrubbed point's value: the change then runs from the
- * chart's start to it, and `null` (an unpriced point) has none.
+ * chart's start to it, and `null` (an unpriced point) has none. In `amount`
+ * mode it is the scrubbed point's amount.
  */
 export const useHistoryTrend = (
     { data, isPending, isPaused, isError }: TrendHistory,
     isIncomplete: boolean,
     selectedValue?: Maybe<Decimal>,
+    measure: TrendMeasure = 'value',
 ): UsePortfolioTrendResult => {
     const isSettling = isPending && !isPaused
 
@@ -66,10 +81,12 @@ export const useHistoryTrend = (
     // report a swing that never happened.
     const pricedValues = useMemo(
         () =>
-            data.flatMap(point =>
-                point.preferredValue ? [point.preferredValue] : [],
-            ),
-        [data],
+            data.flatMap(point => {
+                const value =
+                    measure === 'amount' ? point.amount : point.preferredValue
+                return value ? [value] : []
+            }),
+        [data, measure],
     )
 
     const [trendAbsolute, trendPercentage] = useMemo(() => {
@@ -78,7 +95,10 @@ export const useHistoryTrend = (
         return [last.minus(first), percentChange(first, last)]
     }, [pricedValues, selectedValue])
 
-    const trendDirection = directionOf(trendAbsolute)
+    const trendDirection = directionOf(
+        trendAbsolute,
+        PLACES_BY_MEASURE[measure],
+    )
 
     return {
         trendAbsolute,

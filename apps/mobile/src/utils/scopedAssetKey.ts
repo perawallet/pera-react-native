@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
-export const useStyles = makeStyles(theme => ({
-    contentContainer: {
-        flexGrow: 1,
-        gap: theme.spacing.lg,
-        justifyContent: 'space-between',
-    },
-}))
+// Asset ids are only unique within a scope: every EVM chain's native asset is 'native'.
+export const scopedAssetKey = (scope: ChainScope, assetId: string): string =>
+    `${toScopeKey(scope)}/${assetId}`

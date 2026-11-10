@@ -32,6 +32,7 @@ import {
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
+import { useEthereumContractLabel } from './useEthereumContractLabel'
 
 export type EthereumAmount = {
     /** Null only when a token's record can't be read; `value` is then in base units. */
@@ -268,6 +269,16 @@ export const useEthereumStandardCall = (
         useSingleAssetDetailsQuery(nftAssetId, scope)
     // A disabled query reports pending too.
     const isNftLoading = !!nftAssetId && isNftPending
+    const spender =
+        call?.kind === 'approve' || call?.kind === 'increase-allowance'
+            ? call.spender
+            : undefined
+    const knownSpender = useEthereumContractLabel(
+        scope,
+        spender,
+        view?.knownSpender,
+        !!spender,
+    )
 
     return useMemo(() => {
         if (!call) return { standardCall: null, isLoading: false }
@@ -283,13 +294,13 @@ export const useEthereumStandardCall = (
                 scope.chainId,
                 token,
                 nft,
-                view?.knownSpender,
+                knownSpender ?? undefined,
             ),
             isLoading: fungible.isLoading || isNftLoading,
         }
     }, [
         call,
-        view?.knownSpender,
+        knownSpender,
         scope.chainId,
         fungible.asset,
         fungible.value,

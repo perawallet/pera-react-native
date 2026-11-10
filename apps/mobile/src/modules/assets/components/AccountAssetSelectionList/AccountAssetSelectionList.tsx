@@ -16,14 +16,11 @@ import {
     type AssetWithAccountBalance,
     type ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
-import {
-    toScopeKey,
-    type AssetRef,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
 import { ChainLabel } from '@modules/chain-ui/icon'
+import { scopedAssetKey } from '@utils/scopedAssetKey'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -50,9 +47,8 @@ export type AccountAssetSelectionListProps = {
     emptyView?: ReactElement
 }
 
-// Ids repeat across chains: every EVM chain's native asset is 'native'.
 const keyOf = (item: ChainAssetBalance) =>
-    `${toScopeKey(item.scope)}/${item.assetId}`
+    scopedAssetKey(item.scope, item.assetId)
 
 export const AccountAssetSelectionList = ({
     onAssetSelected,
