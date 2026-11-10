@@ -360,9 +360,9 @@ describe("Flow: One account's assets across chains", () => {
         expect(prompt.textContent).toContain(
             'account_details.assets.funding_title',
         )
-        // Nothing buys or swaps onto Base in this build.
+        // Base swaps outside production, but nothing buys onto it.
         expect(screen.queryByTestId('network_funding_buy_button')).toBeNull()
-        expect(screen.queryByTestId('network_funding_swap_button')).toBeNull()
+        expect(screen.getByTestId('network_funding_swap_button')).toBeTruthy()
         expect(
             screen.queryByText('account_details.assets.nomatch_title'),
         ).toBeNull()
