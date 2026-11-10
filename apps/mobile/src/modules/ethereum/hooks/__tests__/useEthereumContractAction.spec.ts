@@ -543,13 +543,13 @@ describe('useEthereumContractAction', () => {
                 deposits: [
                     {
                         asset: USDC_RECORD,
-                        value: new Decimal(0.353_961),
+                        value: new Decimal('0.353961'),
                         isBaseUnits: false,
                         bound: 'at-most',
                     },
                     {
                         asset: expect.objectContaining({ unitName: 'ETH' }),
-                        value: new Decimal(0.000_168),
+                        value: new Decimal('0.000168'),
                         isBaseUnits: false,
                         bound: 'at-most',
                     },

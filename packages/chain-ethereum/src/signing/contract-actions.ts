@@ -186,7 +186,8 @@ type PositionCall = { name: string; args: readonly unknown[] }
 type MintParams = {
     token0: Address
     token1: Address
-    fee: number
+    // A pool fee tier, only compared with the pool creation's.
+    fee: unknown
     amount0Desired: bigint
     amount1Desired: bigint
     recipient: Address
