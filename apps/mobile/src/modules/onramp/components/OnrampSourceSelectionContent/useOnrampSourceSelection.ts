@@ -44,7 +44,7 @@ type UseOnrampSourceSelectionResult = {
     fiatTokens: RampToken[]
     cryptoTokens: RampToken[]
     isFiat: (token: RampToken) => boolean
-    /** The source chain the crypto list is narrowed to, as the router names it; null for all. */
+    /** The source chain the crypto list is narrowed to, by its network name; null for all. */
     chainFilter: Nullable<string>
     setChainFilter: (network: Nullable<string>) => void
     /** All, then one chip per source chain; empty when crypto comes from fewer than two. */

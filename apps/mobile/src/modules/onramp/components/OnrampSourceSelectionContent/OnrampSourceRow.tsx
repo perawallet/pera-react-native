@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { PWImage, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CircleFlag } from '@components/CircleFlag'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
+import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 import { OnrampTokenIcon } from '../OnrampTokenIcon'
 import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
 
 type OnrampSourceRowProps = {
     token: RampToken
@@ -31,25 +31,39 @@ export const OnrampSourceRow = ({
 }: OnrampSourceRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { theme } = useTheme()
 
     const flagCountryCode = isFiat ? token.countryCode : undefined
 
     // Fiat sub-line: the localized country name keyed by ISO 3166-1 alpha-2
     // code, falling back to the raw code when untranslated. Crypto sub-line:
-    // "{symbol} · {network} network".
+    // "{symbol} · {network}", or the symbol alone when the router names no chain.
     const countryCode = token.countryCode?.toUpperCase()
     const subLineOf = () => {
         if (isFiat && countryCode) {
             return t(`countries.${countryCode}`, { defaultValue: countryCode })
         }
         if (isFiat) return token.name
+        if (token.network.name === '') return token.symbol
         return t('onramp.source_selection.network_suffix', {
             symbol: token.symbol,
             network: token.network.name,
         })
     }
     const subLine = subLineOf()
+
+    const { chainId, logo: networkLogo } = token.network
+    const networkBadgeOf = () => {
+        if (chainId) return <ChainAvatarBadge chainId={chainId} />
+        if (networkLogo) {
+            return (
+                <ChainAvatarBadge
+                    logoUrl={networkLogo}
+                    testID={`onramp-source-network-badge-${token.id}`}
+                />
+            )
+        }
+        return null
+    }
 
     return (
         <PWTouchableOpacity
@@ -63,21 +77,13 @@ export const OnrampSourceRow = ({
                         size='xl'
                     />
                 ) : (
-                    <PWView style={styles.iconContainer}>
+                    <PWView>
                         <OnrampTokenIcon
                             token={token}
                             size='xl'
                             shape='circle'
                         />
-                        {!!token.network.logo && (
-                            <PWImage
-                                source={{ uri: token.network.logo }}
-                                style={styles.networkBadge}
-                                testID={`onramp-source-network-badge-${token.id}`}
-                                width={theme.spacing.xl}
-                                height={theme.spacing.xl}
-                            />
-                        )}
+                        {networkBadgeOf()}
                     </PWView>
                 )}
                 <PWView style={styles.rowTextContainer}>

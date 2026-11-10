@@ -4196,7 +4196,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Crypto",
             "see_all_fiat": "Voir toutes les devises fiat",
-            "network_suffix": "{{symbol}} · réseau {{network}}",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "Aucun actif disponible"
         },
         "provider": {

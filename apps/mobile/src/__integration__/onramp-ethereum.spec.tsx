@@ -111,7 +111,7 @@ const { resetTestDatabase, setupTestDatabase, teardownTestDatabase } =
 const { createQueryClientWrapper } = await import('@test-utils/render')
 const { renderWithNavigation } =
     await import('@test-utils/renderWithNavigation')
-const { setCapabilityOverrides } =
+const { setCapabilityOverrides, setChainEnabled } =
     await import('@test-utils/capability-overrides')
 const { isElementDisabled } = await import('@test-utils/rnw')
 const { AssetDetailsScreen } =
@@ -504,6 +504,39 @@ describe('Flow: Fund an Ethereum account', () => {
         expect(
             requestsTo('GET', '/history/').at(-1)?.search.get('accounts'),
         ).toBe(ETH_CAIP10)
+    })
+
+    it("Given a deposit coin on a chain the wallet runs with its Pera backend switched off, when the user lists crypto sources, then the coin's chip and row carry the wallet's own name and icon for that chain", async () => {
+        selectAccount(ETH_ONLY_ACCOUNT)
+        useOnrampStore.setState({ selectedDestinationTokenId: ETH_ID })
+        setChainEnabled('algorand', false)
+        serveRouter({
+            sources: [
+                row(BTC_ASSET, 'deposit'),
+                row(asset(ALGO_ID, 'ALGO', 6, 'Algorand Mainnet'), 'deposit'),
+            ],
+        })
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+        await screen.findByTestId('onramp-pay-input', {}, FORM_TIMEOUT)
+        fireEvent.click(screen.getAllByTestId('onramp-pair-selector')[0])
+        fireEvent.click(
+            await screen.findByTestId(
+                'onramp-source-filter-crypto',
+                {},
+                FORM_TIMEOUT,
+            ),
+        )
+
+        expect(
+            (await screen.findByTestId('onramp_source_chain_algorand'))
+                .textContent,
+        ).toBe('Algorand')
+        expect(
+            within(
+                screen.getByTestId(`onramp-source-row-${ALGO_ID}`),
+            ).getByTestId('chain_avatar_badge_algorand'),
+        ).toBeTruthy()
     })
 
     describe('Buy on an ERC-20', () => {

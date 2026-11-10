@@ -167,7 +167,10 @@ export const AccountDisplay = ({
                         {...iconProps}
                     />
                     {showChainBadge && (
-                        <ChainAvatarBadge chainId={resolvedChainId} />
+                        <ChainAvatarBadge
+                            chainId={resolvedChainId}
+                            corner='left'
+                        />
                     )}
                     {!!avatarBadge && (
                         <PWView

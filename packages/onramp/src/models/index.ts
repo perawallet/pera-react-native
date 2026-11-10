@@ -11,6 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type OnrampStatus =
@@ -25,9 +26,14 @@ export type OnrampStatus =
 export type RampTokenKind = 'token' | 'deposit' | 'fiat'
 
 export type RampNetwork = {
-    /** The router's chain label for a deposit coin; '' for everything else. */
+    /**
+     * A deposit coin's chain: the wallet's own name for a chain it runs, else
+     * the router's label. '' for everything else.
+     */
     name: string
     logo: Nullable<string>
+    /** A deposit coin's chain when the wallet runs it, which then has the wallet's own icon. */
+    chainId?: ChainId
 }
 
 export type RampToken = {
