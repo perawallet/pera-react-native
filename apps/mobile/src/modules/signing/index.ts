@@ -23,6 +23,7 @@ export {
     SpendApprovalWarning,
     type SpendApprovalWarningProps,
 } from './components/SpendApprovalWarning'
+export { isKnownContractSite } from './utils/knownContractSite'
 export {
     spendApprovalTitleOf,
     useSpendApprovalTitle,

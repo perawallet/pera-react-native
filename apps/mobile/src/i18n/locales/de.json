@@ -3466,6 +3466,7 @@
         },
         "spend_approval": {
             "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
+            "spend_warning_transaction": "Diese Transaktion erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
             "nft_spend_warning": "Diese Signatur erlaubt einer anderen Adresse, dieses NFT ohne erneute Rückfrage von deinem Konto zu bewegen.",
             "spend_warning_bold": "Signiere nur, wenn du dieser Anwendung vertraust.",
             "spender_caption": "Berechtigte Adresse: {{address}}",
@@ -3480,6 +3481,7 @@
             "known_description": "{{name}} ist ein bekannter Smart Contract",
             "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
             "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "known_site_mismatch": "{{name}} gehört zu {{domain}}, aber diese Anfrage kommt von {{site}}.",
             "unlimited_limit_note": "Pera kann diesen Betrag nicht senken. Wenn du nur so viel freigeben willst, wie du brauchst, lehne ab und lege in der App einen kleineren Betrag fest, falls sie das anbietet.",
             "balance_label": "Dein Guthaben",
             "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
@@ -4925,7 +4927,11 @@
             "fee": "Gebühr",
             "fee_share": "{{percent}} der Ausgabe des Tauschs",
             "fee_recipient": "Gezahlt an",
-            "base_units": "Basiseinheiten"
+            "base_units": "Basiseinheiten",
+            "deposit_at_most": "Du hinterlegst höchstens",
+            "position": "Position",
+            "new_position": "Neuer Positions-NFT",
+            "closes_position": "Schließt die Position und verbrennt ihren NFT"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4941,8 +4947,8 @@
         },
         "review_warnings": {
             "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
-            "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
-            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
+            "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
         },
         "simulation": {
             "title": "Geschätzte Änderungen",

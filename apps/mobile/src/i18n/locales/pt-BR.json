@@ -3490,6 +3490,7 @@
         },
         "spend_approval": {
             "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
+            "spend_warning_transaction": "Esta transação permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
             "nft_spend_warning": "Esta assinatura permite que outro endereço movimente este NFT da sua conta sem pedir sua confirmação de novo.",
             "spend_warning_bold": "Assine somente se você confia neste aplicativo.",
             "spender_caption": "Endereço autorizado: {{address}}",
@@ -3504,6 +3505,7 @@
             "known_description": "{{name}} é um contrato conhecido",
             "known_spend_note": "{{name}} é um contrato conhecido. Ele só pode movimentar este token como parte de uma transação ou assinatura que você aprovar.",
             "known_unlimited_note": "O valor é ilimitado, então você não vai precisar autorizar este token para {{name}} de novo.",
+            "known_site_mismatch": "{{name}} pertence a {{domain}}, mas esta solicitação vem de {{site}}.",
             "unlimited_limit_note": "A Pera não pode reduzir este valor. Para aprovar só o necessário, recuse e defina um valor menor no aplicativo, se ele permitir.",
             "balance_label": "Seu saldo",
             "allow_title": "Permitir que {{spender}} use seus {{asset}}",
@@ -4953,7 +4955,11 @@
             "fee": "Taxa",
             "fee_share": "{{percent}} do resultado da conversão",
             "fee_recipient": "Paga para",
-            "base_units": "unidades base"
+            "base_units": "unidades base",
+            "deposit_at_most": "Você deposita no máximo",
+            "position": "Posição",
+            "new_position": "NFT da nova posição",
+            "closes_position": "Fecha a posição e queima o NFT dela"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4969,8 +4975,8 @@
         },
         "review_warnings": {
             "high_fee_title": "Taxa de rede muito acima do normal",
-            "high_fee_body": "{{domain}} definiu a taxa desta transação em mais do dobro do que o Pera usaria na configuração Normal. Você pagará no máximo <0/> (taxa máxima), geralmente menos.",
-            "high_fee_body_no_source": "O app que enviou isto definiu a taxa em mais do dobro do que o Pera usaria na configuração Normal. Você pagará no máximo <0/> (taxa máxima), geralmente menos."
+            "high_fee_body": "{{domain}} definiu a taxa desta transação em mais do dobro do que o Pera usaria na configuração Rápida. Você pagará no máximo <0/> (taxa máxima), geralmente menos.",
+            "high_fee_body_no_source": "O app que enviou isto definiu a taxa em mais do dobro do que o Pera usaria na configuração Rápida. Você pagará no máximo <0/> (taxa máxima), geralmente menos."
         },
         "simulation": {
             "title": "Mudanças estimadas",

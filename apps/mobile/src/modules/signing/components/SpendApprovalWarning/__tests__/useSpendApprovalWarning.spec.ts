@@ -18,9 +18,20 @@ import type {
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { useSpendApprovalWarning } from '../useSpendApprovalWarning'
+import {
+    useSpendApprovalWarning as useWarning,
+    type SpendApprovalContext,
+} from '../useSpendApprovalWarning'
 
 vi.mock('@hooks/useLanguage')
+
+const SIGNATURE: SpendApprovalContext = { requestKind: 'signature' }
+const TRANSACTION: SpendApprovalContext = { requestKind: 'transaction' }
+
+const useSpendApprovalWarning = (
+    value: SpendApproval,
+    context: SpendApprovalContext = SIGNATURE,
+) => useWarning(value, context)
 
 const SPENDER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const DEADLINE = Date.UTC(2026, 0, 31)
@@ -188,6 +199,112 @@ describe('an unlimited approval sent as a transaction', () => {
             )
 
             expect(result.current.knownSpenderName).toBeUndefined()
+        })
+
+        it('is trusted with today’s copy when the request has no attested origin', () => {
+            const { result } = renderHook(() =>
+                useSpendApprovalWarning(
+                    approval({ knownSpender: PERMIT2 }),
+                    TRANSACTION,
+                ),
+            )
+
+            expect(result.current.isTrusted).toBe(true)
+            expect(result.current.rows).toEqual([
+                expect.objectContaining({
+                    type: 'spend',
+                    message: 'signing.spend_approval.known_spend_note',
+                }),
+            ])
+        })
+
+        it('is trusted when the attested origin is the project’s own site', () => {
+            const { result } = renderHook(() =>
+                useSpendApprovalWarning(approval({ knownSpender: PERMIT2 }), {
+                    ...TRANSACTION,
+                    verifiedOrigin: 'https://app.uniswap.org',
+                }),
+            )
+
+            expect(result.current.isTrusted).toBe(true)
+        })
+
+        it('is not trusted when the attested origin is another site, leading with the mismatch and keeping the name', () => {
+            const { result } = renderHook(() =>
+                useSpendApprovalWarning(
+                    approval({
+                        knownSpender: PERMIT2,
+                        allowances: [unlimited('0xtsla')],
+                    }),
+                    { ...TRANSACTION, verifiedOrigin: 'https://evil.example' },
+                ),
+            )
+
+            expect(result.current.isTrusted).toBe(false)
+            expect(result.current.knownSpenderName).toBe('Permit2')
+            expect(result.current.rows.map(row => row.type)).toEqual([
+                'site-mismatch',
+                'spend',
+                'unlimited',
+            ])
+            expect(result.current.rows[0]).toEqual({
+                type: 'site-mismatch',
+                icon: 'warning',
+                message: 'signing.spend_approval.known_site_mismatch',
+            })
+            expect(result.current.rows[1].message).toBe(
+                'signing.spend_approval.spend_warning_transaction',
+            )
+            expect(result.current.rows[2].message).toBe(
+                'signing.spend_approval.unlimited_warning',
+            )
+        })
+
+        it('is not trusted for an unknown spender asked for from a matching site', () => {
+            const { result } = renderHook(() =>
+                useSpendApprovalWarning(approval(), {
+                    ...TRANSACTION,
+                    verifiedOrigin: 'https://app.uniswap.org',
+                }),
+            )
+
+            expect(result.current.isTrusted).toBe(false)
+            expect(result.current.rows).toEqual([
+                expect.objectContaining({
+                    type: 'spend',
+                    message: 'signing.spend_approval.spend_warning_transaction',
+                }),
+            ])
+        })
+    })
+
+    describe('by request kind', () => {
+        it('words a transaction’s spend row as a transaction and a signature’s as a signature', () => {
+            const transaction = renderHook(() =>
+                useSpendApprovalWarning(approval(), TRANSACTION),
+            ).result.current
+            const signature = renderHook(() =>
+                useSpendApprovalWarning(approval(), SIGNATURE),
+            ).result.current
+
+            expect(transaction.rows[0].message).toBe(
+                'signing.spend_approval.spend_warning_transaction',
+            )
+            expect(signature.rows[0].message).toBe(
+                'signing.spend_approval.spend_warning',
+            )
+        })
+
+        it('shows the deadline for signatures only', () => {
+            const transaction = renderHook(() =>
+                useSpendApprovalWarning(approval(), TRANSACTION),
+            ).result.current
+            const signature = renderHook(() =>
+                useSpendApprovalWarning(approval(), SIGNATURE),
+            ).result.current
+
+            expect(transaction.showsDeadline).toBe(false)
+            expect(signature.showsDeadline).toBe(true)
         })
     })
 })

@@ -16,8 +16,8 @@ import { PWIcon, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { isKnownContractSite } from '@modules/signing'
 import type { EthereumContractLabel } from '../../hooks/useEthereumContractLabel'
-import { isKnownContractSite } from '../../utils/isKnownContractSite'
 import { useStyles } from './styles'
 
 type EthereumKnownContractRowProps = {

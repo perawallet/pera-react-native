@@ -3474,6 +3474,7 @@
         },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
+            "spend_warning_transaction": "Bu işlem, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
             "nft_spend_warning": "Bu imza, başka bir adresin bu NFT’yi hesabından sana tekrar sormadan hareket ettirmesine izin verir.",
             "spend_warning_bold": "Yalnızca bu uygulamaya güveniyorsan imzala.",
             "spender_caption": "Yetkili adres: {{address}}",
@@ -3488,6 +3489,7 @@
             "known_description": "{{name}} bilinen bir sözleşme",
             "known_spend_note": "{{name}} bilinen bir sözleşme. Bu tokeni yalnızca onayladığın bir işlem veya imza kapsamında hareket ettirebilir.",
             "known_unlimited_note": "Tutar sınırsız, bu yüzden bu token için {{name}} sözleşmesine tekrar onay vermen gerekmez.",
+            "known_site_mismatch": "{{name}}, {{domain}} sitesine ait, ancak bu istek {{site}} sitesinden geliyor.",
             "unlimited_limit_note": "Pera bu tutarı düşüremez. Yalnızca ihtiyacın kadarını onaylamak için reddet ve uygulama izin veriyorsa daha küçük bir tutar belirle.",
             "balance_label": "Bakiyen",
             "allow_title": "{{spender}} sözleşmesinin {{asset}} bakiyeni kullanmasına izin ver",
@@ -4925,7 +4927,11 @@
             "fee": "Ücret",
             "fee_share": "Swap çıktısının {{percent}} kadarı",
             "fee_recipient": "Alıcı",
-            "base_units": "temel birim"
+            "base_units": "temel birim",
+            "deposit_at_most": "En fazla yatırırsın",
+            "position": "Pozisyon",
+            "new_position": "Yeni pozisyon NFT’si",
+            "closes_position": "Pozisyonu kapatır ve NFT’sini yakar"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4941,8 +4947,8 @@
         },
         "review_warnings": {
             "high_fee_title": "Alışılmadık şekilde yüksek ağ ücreti",
-            "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Normal ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
-            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Normal ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
+            "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
+            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
         },
         "simulation": {
             "title": "Tahmini değişiklikler",

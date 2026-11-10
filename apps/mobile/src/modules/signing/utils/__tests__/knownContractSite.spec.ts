@@ -12,7 +12,10 @@
 
 import { describe, expect, it } from 'vitest'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { isKnownContractSite } from '../isKnownContractSite'
+import {
+    isKnownContractSite,
+    spenderSiteMismatchOf,
+} from '../knownContractSite'
 
 const verified = (
     status: NonNullable<SignRequestSource['verification']>['status'],
@@ -96,5 +99,63 @@ describe('isKnownContractSite', () => {
 
     it('is false with no origin at all', () => {
         expect(isKnownContractSite('uniswap.org')).toBe(false)
+    })
+})
+
+describe('spenderSiteMismatchOf', () => {
+    it('is undefined for the project’s own site', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                undefined,
+                'https://app.uniswap.org',
+            ),
+        ).toBeUndefined()
+    })
+
+    it('names the host of another observed origin', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                undefined,
+                'https://evil.example',
+            ),
+        ).toBe('evil.example')
+    })
+
+    it('names the host of a valid Verify origin that is another site', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                verified('valid', 'https://evil.example'),
+            ),
+        ).toBe('evil.example')
+    })
+
+    it.each(['unknown', 'mismatch'] as const)(
+        'is undefined when Verify rates the origin %s',
+        status => {
+            expect(
+                spenderSiteMismatchOf(
+                    'uniswap.org',
+                    verified(status, 'https://evil.example'),
+                ),
+            ).toBeUndefined()
+        },
+    )
+
+    it('never counts the url the dApp claims for itself', () => {
+        expect(
+            spenderSiteMismatchOf('uniswap.org', {
+                name: 'Evil',
+                url: 'https://evil.example',
+            }),
+        ).toBeUndefined()
+    })
+
+    it('is undefined for a contract with no project domain', () => {
+        expect(
+            spenderSiteMismatchOf(undefined, undefined, 'https://evil.example'),
+        ).toBeUndefined()
     })
 })
