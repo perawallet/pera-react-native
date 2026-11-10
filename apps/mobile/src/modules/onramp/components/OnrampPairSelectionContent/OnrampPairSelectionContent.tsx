@@ -49,6 +49,8 @@ export const OnrampPairSelectionContent = ({
         handleSelectChain,
         handleTokenSelected,
     } = useOnrampPairSelectionContent({ scope })
+    // The account can be funded on more than one chain, so the chips and each row say which.
+    const isChainShown = chainOptions.length > 0
 
     const renderItem = useCallback(
         ({ item }: { item: OnrampSelectableToken }) => (
@@ -57,12 +59,13 @@ export const OnrampPairSelectionContent = ({
                 asset={item.asset}
                 scope={listScope}
                 balance={item.balance}
+                showChainBadge={isChainShown}
                 onPress={() => handleTokenSelected(item.token)}
                 style={styles.item}
                 testID={`onramp-asset-row-${item.token.id}`}
             />
         ),
-        [handleTokenSelected, styles, listScope],
+        [handleTokenSelected, styles, listScope, isChainShown],
     )
 
     return (
@@ -77,7 +80,7 @@ export const OnrampPairSelectionContent = ({
                     onSearchChange={setSearchFilter}
                     searchPlaceholder={t('onramp.pair_selection.search')}
                     searchAccessory={
-                        chainOptions.length > 0 ? (
+                        isChainShown ? (
                             <FilterSelection<Nullable<ChainId>>
                                 options={chainOptions}
                                 selectedValue={selectedChainId}

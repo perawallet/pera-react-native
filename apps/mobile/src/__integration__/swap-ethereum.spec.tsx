@@ -84,7 +84,7 @@ const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
 const { useEffect, useRef } = await import('react')
 const { useQueryClient } = await import('@tanstack/react-query')
-const { act, fireEvent, renderHook, screen, waitFor } =
+const { act, fireEvent, renderHook, screen, waitFor, within } =
     await import('@testing-library/react')
 const { Decimal } = await import('decimal.js')
 const { insertAssetHolding, useAccountChainStateStore, useAccountsStore } =
@@ -542,9 +542,9 @@ describe('Flow: Swap from an Ethereum account', () => {
         const namedRow = await screen.findByTestId(
             `asset-list-item-ethereum-${TOKEN}`,
         )
-        expect(namedRow.textContent).toContain(
-            'account_details.assets.chain_network',
-        )
+        expect(
+            within(namedRow).getByTestId('chain_avatar_badge_ethereum'),
+        ).toBeTruthy()
         fireEvent.click(
             await screen.findByTestId('swap_from_chain_filter_ethereum'),
         )

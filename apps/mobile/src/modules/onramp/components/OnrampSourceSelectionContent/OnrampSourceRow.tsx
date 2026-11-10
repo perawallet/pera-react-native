@@ -14,7 +14,6 @@ import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CircleFlag } from '@components/CircleFlag'
-import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 import { OnrampTokenIcon } from '../OnrampTokenIcon'
 import { useStyles } from './styles'
 
@@ -51,20 +50,6 @@ export const OnrampSourceRow = ({
     }
     const subLine = subLineOf()
 
-    const { chainId, logo: networkLogo } = token.network
-    const networkBadgeOf = () => {
-        if (chainId) return <ChainAvatarBadge chainId={chainId} />
-        if (networkLogo) {
-            return (
-                <ChainAvatarBadge
-                    logoUrl={networkLogo}
-                    testID={`onramp-source-network-badge-${token.id}`}
-                />
-            )
-        }
-        return null
-    }
-
     return (
         <PWTouchableOpacity
             onPress={onPress}
@@ -77,14 +62,12 @@ export const OnrampSourceRow = ({
                         size='xl'
                     />
                 ) : (
-                    <PWView>
-                        <OnrampTokenIcon
-                            token={token}
-                            size='xl'
-                            shape='circle'
-                        />
-                        {networkBadgeOf()}
-                    </PWView>
+                    <OnrampTokenIcon
+                        token={token}
+                        size='xl'
+                        shape='circle'
+                        networkLogoTestID={`onramp-source-network-badge-${token.id}`}
+                    />
                 )}
                 <PWView style={styles.rowTextContainer}>
                     <PWText

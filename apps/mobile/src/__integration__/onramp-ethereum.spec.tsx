@@ -688,6 +688,9 @@ describe('Flow: Fund an Ethereum account', () => {
                 ),
             ).toBeTruthy()
             expect(
+                within(usdcRow).getByTestId('chain_avatar_badge_ethereum'),
+            ).toBeTruthy()
+            expect(
                 screen.queryByTestId(`onramp-asset-row-${ALGO_ID}`),
             ).toBeNull()
         })
