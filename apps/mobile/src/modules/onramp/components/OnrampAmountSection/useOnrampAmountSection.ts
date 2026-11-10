@@ -64,7 +64,7 @@ type UseOnrampAmountSectionResult = {
     fiatBaseAmount: Decimal
     /** ALGO-preferred users see fiat values in USD, like the rest of the app. */
     shouldUseUsdFallback: boolean
-    /** The chain a crypto pay asset comes from, as the router names it; null otherwise. */
+    /** The chain a crypto pay asset comes from; null otherwise. */
     sourceNetworkName: Nullable<string>
     handleTextChange: (text: string) => void
 }

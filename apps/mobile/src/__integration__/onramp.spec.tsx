@@ -36,6 +36,7 @@ import {
     renderHook,
     screen,
     waitFor,
+    within,
 } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { QueryClient } from '@tanstack/react-query'
@@ -195,6 +196,15 @@ const USDC_SOL_ASSET: RampAsset = {
     chain: 'Solana',
 }
 const SOLANA_SENDER = '7EcDhSYGxXyscszYEp35KHN8vvw3svAuLKTzXwCFLtV'
+
+// A deposit coin the router names no chain for.
+const LTC_ID = 'bip122:12a765e31ffd4059bada1e25190f6e98/slip44:2'
+const LTC_ASSET: RampAsset = {
+    asset_id: LTC_ID,
+    name: 'Litecoin',
+    unit_name: 'LTC',
+    fraction_decimals: 8,
+}
 
 const row = (asset: RampAsset, kind: string): RampPairRow => ({
     kind,
@@ -871,6 +881,32 @@ describe('Flow: Onramp buy (native XO)', () => {
         expect(
             await screen.findByText(PAY_IN_ADDRESS, {}, { timeout: 5000 }),
         ).toBeTruthy()
+    })
+
+    it('Given a deposit coin the router names no chain for, when the user opens the From list, then its row shows the symbol with no network after it', async () => {
+        seedSelectedAccount()
+        markIntroSeen()
+        useOnrampStore.setState({ selectedDestinationTokenId: ALGO_ID })
+        server.use(
+            mockRampDestinations({
+                response: { next: null, results: [row(ALGO_ASSET, 'token')] },
+            }),
+            mockRampSources({
+                response: { next: null, results: [row(LTC_ASSET, 'deposit')] },
+            }),
+            mockRampRegion({ response: REGION_RESPONSE }),
+        )
+
+        renderWithNavigation(OnrampScreen, 'Fund')
+        await screen.findByTestId('onramp-pay-input', {}, { timeout: 5000 })
+        fireEvent.click(screen.getAllByTestId('onramp-pair-selector')[0])
+
+        const coinRow = await screen.findByTestId(
+            `onramp-source-row-${LTC_ID}`,
+            {},
+            { timeout: 5000 },
+        )
+        expect(within(coinRow).getByText('LTC')).toBeTruthy()
     })
 
     it('Given a Meld pair whose seeded amount is below the provider minimum, when the user taps MIN, then the form re-quotes at the minimum and Proceed enables', async () => {

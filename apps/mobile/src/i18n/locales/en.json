@@ -3900,9 +3900,11 @@
         },
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "title_network": "{{name}} wants to connect to your {{network}} account",
-            "title_networks": "{{name}} wants to connect to your {{network}} and {{otherNetwork}} accounts",
-            "network_not_added": "Not added",
+            "title_connect": "{{name}} wants to connect",
+            "networks_heading": "Networks",
+            "networks_more": "+{{count}}",
+            "networks_optional_note": "Optional. {{name}} also works on these networks.",
+            "network_added": "Added",
             "origin_verified": "Verified by WalletConnect",
             "accounts_title": "SELECT ACCOUNTS",
             "no_accounts": "None of your accounts can connect on this network.",
@@ -4196,7 +4198,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Crypto",
             "see_all_fiat": "See all fiat currencies",
-            "network_suffix": "{{symbol}} · {{network}} network",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "No assets available"
         },
         "provider": {

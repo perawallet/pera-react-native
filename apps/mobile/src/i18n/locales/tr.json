@@ -3900,9 +3900,11 @@
         },
         "request": {
             "title": "{{name}} hesabına bağlanmak istiyor",
-            "title_network": "{{name}} {{network}} hesabına bağlanmak istiyor",
-            "title_networks": "{{name}} {{network}} ve {{otherNetwork}} hesaplarına bağlanmak istiyor",
-            "network_not_added": "Eklenmedi",
+            "title_connect": "{{name}} bağlanmak istiyor",
+            "networks_heading": "Ağlar",
+            "networks_more": "+{{count}}",
+            "networks_optional_note": "İsteğe bağlı. {{name}} bu ağlarda da çalışır.",
+            "network_added": "Eklendi",
             "origin_verified": "WalletConnect tarafından doğrulandı",
             "accounts_title": "HESAPLARI SEÇ",
             "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
@@ -4196,7 +4198,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Kripto",
             "see_all_fiat": "Tüm fiat para birimlerini gör",
-            "network_suffix": "{{symbol}} · {{network}} ağı",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "Kullanılabilir varlık yok"
         },
         "provider": {

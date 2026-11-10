@@ -51,23 +51,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.md,
     },
-    iconContainer: {
-        position: 'relative',
-    },
-    // Network logo overlaid on the bottom-right of the asset icon, with a
-    // surface-colored ring so it reads as a separate badge.
-    networkBadge: {
-        position: 'absolute',
-        right: -theme.spacing.xs,
-        bottom: -theme.spacing.xs,
-        width: theme.spacing.lg,
-        height: theme.spacing.lg,
-        borderRadius: theme.borderRadius.full,
-        borderWidth: theme.borders.md,
-        borderColor: theme.colors.background,
-        backgroundColor: theme.colors.background,
-        overflow: 'hidden',
-    },
     rowTextContainer: {
         flex: 1,
         minWidth: 0,

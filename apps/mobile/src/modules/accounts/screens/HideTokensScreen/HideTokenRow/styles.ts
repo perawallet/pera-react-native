@@ -16,9 +16,6 @@ export const useStyles = makeStyles(theme => ({
     row: {
         paddingVertical: theme.spacing.md,
     },
-    footer: {
-        gap: theme.spacing.xs,
-    },
     note: {
         color: theme.colors.textGray,
     },

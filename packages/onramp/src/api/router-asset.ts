@@ -12,14 +12,21 @@
 
 import type { Decimal } from 'decimal.js'
 import { z } from 'zod'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
     displayUnitsToBaseUnits,
     toBigInt,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
-import type { RampQuoteKind, RampToken, RampTokenKind } from '../models'
+import type {
+    RampNetwork,
+    RampQuoteKind,
+    RampToken,
+    RampTokenKind,
+} from '../models'
 
 /** An integer in base units, as the router sends every amount. */
 export const baseUnitsSchema = z.string().regex(/^\d+$/)
@@ -84,6 +91,21 @@ const countryCodeOf = (item: RampAssetItem): Optional<string> => {
     return code && code.length >= 2 ? code.slice(0, 2).toUpperCase() : undefined
 }
 
+// The router labels chains its own way ("BSC Chain"), so a chain the wallet
+// runs takes the wallet's name, and its id lets the app draw the wallet's icon.
+const depositNetworkOf = (item: RampAssetItem): RampNetwork => {
+    const routerLabel = item.chain ?? ''
+    const resolved = getProvider().chains.byCaip2(
+        caip2OfRouterAsset(item.asset_id),
+    )
+    if (resolved === undefined) return { name: routerLabel, logo: null }
+    return {
+        name: chainDisplayNameOf(resolved.chainId) ?? routerLabel,
+        logo: null,
+        chainId: resolved.chainId,
+    }
+}
+
 export const toRampToken = (
     item: RampAssetItem,
     kind: RampTokenKind = inferKind(item),
@@ -96,10 +118,10 @@ export const toRampToken = (
         name: item.name ?? symbol,
         fractionDecimals: knownFractionDecimalsOf(item) ?? 0,
         logo: item.logo ?? item.logo_url ?? null,
-        network: {
-            name: kind === 'deposit' ? (item.chain ?? '') : '',
-            logo: null,
-        },
+        network:
+            kind === 'deposit'
+                ? depositNetworkOf(item)
+                : { name: '', logo: null },
         ...(kind === 'fiat' ? { countryCode: countryCodeOf(item) } : {}),
     }
 }

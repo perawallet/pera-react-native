@@ -34,22 +34,21 @@ export const useStyles = makeStyles(
                 color: theme.colors.textGray,
             },
             icon: {
-                width: theme.spacing['4xl'],
-                height: theme.spacing['4xl'],
-                borderRadius: theme.spacing['4xl'],
-                marginVertical: theme.spacing.md,
+                width: theme.spacing['3xl'],
+                height: theme.spacing['3xl'],
+                borderRadius: theme.spacing['3xl'],
             },
             iconContainer: {
-                width: theme.spacing['4xl'],
-                height: theme.spacing['4xl'],
-                borderRadius: theme.spacing['4xl'],
+                width: theme.spacing['3xl'],
+                height: theme.spacing['3xl'],
+                borderRadius: theme.spacing['3xl'],
                 justifyContent: 'center',
                 alignItems: 'center',
                 backgroundColor: theme.colors.layerGrayLighter,
             },
             headerContainer: {
                 alignItems: 'center',
-                gap: theme.spacing.xl,
+                gap: theme.spacing.lg,
             },
             titleContainer: {
                 alignItems: 'center',
@@ -88,13 +87,6 @@ export const useStyles = makeStyles(
                 textAlign: 'center',
                 marginTop: theme.spacing.xs,
             },
-            networksContainer: {
-                alignItems: 'center',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                gap: theme.spacing.sm,
-            },
             originVerified: {
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -103,14 +95,14 @@ export const useStyles = makeStyles(
             originVerifiedText: {
                 color: theme.colors.verifiedBannerContent,
             },
-            permissionsContainer: {
+            panelContainer: {
                 backgroundColor: theme.colors.layerGrayLighter,
                 borderRadius: theme.spacing.lg,
                 paddingHorizontal: theme.spacing.lg,
                 paddingBottom: theme.spacing.lg,
                 width: '100%',
             },
-            permissionsContent: {
+            panelContent: {
                 gap: theme.spacing.md,
                 paddingTop: theme.spacing.md,
             },
@@ -118,7 +110,6 @@ export const useStyles = makeStyles(
                 color: theme.colors.textGray,
             },
             accountSelectionContainer: {
-                marginTop: theme.spacing.lg,
                 alignSelf: 'flex-start',
             },
             permissionsTitle: {

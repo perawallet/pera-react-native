@@ -49,6 +49,7 @@ import {
 } from '@test-utils/database-setup'
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
+import { HideTokensScreen } from '@modules/accounts/screens/HideTokensScreen'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { USDC_TEST_ASSET } from './__fixtures__/assets'
 import {
@@ -575,5 +576,17 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.queryByTestId('asset_network_filter_all')).toBeNull()
         expect(screen.queryByTestId('asset_group_row_usdc')).toBeNull()
         expect(screen.getByTestId('asset_row_0')).toBeTruthy()
+    })
+
+    it('Given an account on two chains that take tokens unasked, when Hide Tokens opens, then each token carries its network on its icon', async () => {
+        useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
+        useAccountsStore.getState().setSelectedAccountId(THREE_CHAIN_ACCOUNT.id)
+
+        renderWithNavigation(HideTokensScreen, 'HideTokens')
+
+        const usdcRow = await screen.findByTestId(`asset_row_${ETH_USDC}`)
+        expect(
+            within(usdcRow).getByTestId('chain_avatar_badge_ethereum'),
+        ).toBeTruthy()
     })
 })

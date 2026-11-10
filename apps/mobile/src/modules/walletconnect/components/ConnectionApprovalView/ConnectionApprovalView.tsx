@@ -17,7 +17,7 @@ import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SiteSafetyGate } from '@modules/site-safety'
 import { useStyles } from '@components/ConnectionApproval/styles'
-import { ConnectionApprovalAccountRow } from './ConnectionApprovalAccountRow'
+import { ConnectionApprovalAccountRow } from '../ConnectionApprovalAccountRow'
 import { ConnectionApprovalViewHeader } from './ConnectionApprovalViewHeader'
 import {
     useConnectionApprovalView,
@@ -39,6 +39,7 @@ export const ConnectionApprovalView = ({
     const {
         accountRows,
         title,
+        peerName,
         requestedNetworks,
         handleAddNetwork,
         permissions,
@@ -85,6 +86,7 @@ export const ConnectionApprovalView = ({
                     <ConnectionApprovalViewHeader
                         peer={proposal.peer}
                         title={title}
+                        peerName={peerName}
                         requestedNetworks={requestedNetworks}
                         onAddNetwork={handleAddNetwork}
                         permissions={permissions}

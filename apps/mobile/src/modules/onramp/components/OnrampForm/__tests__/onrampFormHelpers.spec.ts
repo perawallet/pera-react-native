@@ -103,7 +103,7 @@ describe('buildPendingXoHistoryItem', () => {
 })
 
 describe('sourceNetworkLabelOf', () => {
-    it("names the source's chain as the router labels it", () => {
+    it("names the source's chain by its network", () => {
         const source = {
             ...token('deposit', 'USDC'),
             network: { name: 'Solana', logo: null },

@@ -14,10 +14,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
-import {
-    isSiteConnectionKind,
-    toUnifiedConnection,
-} from '../connectionsSettingsHelpers'
+import { toUnifiedConnection } from '../connectionsSettingsHelpers'
 
 const row: ConnectionSettingsRow = {
     id: 'conn-1',
@@ -39,9 +36,9 @@ describe('toUnifiedConnection', () => {
     // The unified list is kind-agnostic; the badge and copy branch on the
     // record's own kind, not on a label the mapper invents.
     it('carries the row kind through instead of relabelling it', () => {
-        expect(toUnifiedConnection(row, vi.fn(), noChainName).kind).toBe(
-            'walletconnect-v1',
-        )
+        expect(
+            toUnifiedConnection(row, vi.fn(), noChainName, vi.fn()).kind,
+        ).toBe('walletconnect-v1')
     })
 
     it('badges an EVM site with its chain’s name, so it reads apart from the same site’s Algorand row', () => {
@@ -55,11 +52,16 @@ describe('toUnifiedConnection', () => {
         }
 
         expect(
-            toUnifiedConnection(evmRow, vi.fn(), chainNameOf).badgeLabel,
+            toUnifiedConnection(evmRow, vi.fn(), chainNameOf, vi.fn())
+                .badgeLabel,
         ).toBe('Base')
         expect(
-            toUnifiedConnection({ ...row, kind: 'dapp' }, vi.fn(), chainNameOf)
-                .badgeLabel,
+            toUnifiedConnection(
+                { ...row, kind: 'dapp' },
+                vi.fn(),
+                chainNameOf,
+                vi.fn(),
+            ).badgeLabel,
         ).toBeUndefined()
     })
 
@@ -71,7 +73,8 @@ describe('toUnifiedConnection', () => {
         }
 
         expect(
-            toUnifiedConnection(evmRow, vi.fn(), () => 'Base').badgeLabel,
+            toUnifiedConnection(evmRow, vi.fn(), () => 'Base', vi.fn())
+                .badgeLabel,
         ).toBeUndefined()
         expect(
             toUnifiedConnection(
@@ -81,6 +84,7 @@ describe('toUnifiedConnection', () => {
                 },
                 vi.fn(),
                 noChainName,
+                vi.fn(),
             ).badgeLabel,
         ).toBeUndefined()
     })
@@ -88,17 +92,19 @@ describe('toUnifiedConnection', () => {
     it('revokes by the connection id', () => {
         const revoke = vi.fn()
 
-        toUnifiedConnection(row, revoke, noChainName).onRevoke()
+        toUnifiedConnection(row, revoke, noChainName, vi.fn()).onRevoke()
 
         expect(revoke).toHaveBeenCalledWith('conn-1')
     })
 })
 
-describe('isSiteConnectionKind', () => {
-    it('counts both injected providers as site connections and WalletConnect as neither', () => {
-        expect(isSiteConnectionKind('dapp')).toBe(true)
-        expect(isSiteConnectionKind('dapp-eip1193')).toBe(true)
-        expect(isSiteConnectionKind('walletconnect-v1')).toBe(false)
-        expect(isSiteConnectionKind('walletconnect-v2')).toBe(false)
+describe('toUnifiedConnection onOpen', () => {
+    it('opens the row it was made from', () => {
+        const open = vi.fn()
+
+        toUnifiedConnection(row, vi.fn(), noChainName, open).onOpen()
+
+        expect(open).toHaveBeenCalledTimes(1)
+        expect(open).toHaveBeenCalledWith(row)
     })
 })

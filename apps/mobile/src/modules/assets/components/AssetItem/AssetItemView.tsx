@@ -23,8 +23,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { AssetIcon } from '@components/AssetIcon'
-import { ChainAvatarBadge } from '@modules/chain-ui/icon'
+import { AssetIconWithNetwork } from '@components/AssetIconWithNetwork'
 import { useAssetItemView } from './useAssetItemView'
 import { useStyles } from './styles'
 
@@ -147,17 +146,14 @@ export const AssetItemView = ({
             {...rest}
             style={[styles.itemContainer, style]}
         >
-            {/* AssetIcon clips its own overflow, so the badge sits on a wrapper. */}
-            <PWView>
-                <AssetIcon
-                    asset={iconAsset?.asset ?? asset}
-                    chainId={iconAsset?.chainId ?? chainId}
-                    logoUrl={logoUrl}
-                    size={iconSize}
-                    shape={iconShape}
-                />
-                {showChainBadge ? <ChainAvatarBadge chainId={chainId} /> : null}
-            </PWView>
+            <AssetIconWithNetwork
+                asset={iconAsset?.asset ?? asset}
+                chainId={iconAsset?.chainId ?? chainId}
+                logoUrl={logoUrl}
+                size={iconSize}
+                shape={iconShape}
+                networkChainId={showChainBadge ? chainId : undefined}
+            />
             <PWView style={styles.infoContainer}>
                 <PWView style={styles.titleRow}>
                     <PWText

@@ -10,35 +10,24 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    getIconPixelSize,
-    PWBadge,
-    PWButton,
-    PWText,
-    PWView,
-} from '@components/core'
+import { getIconPixelSize, PWBadge, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainIcon } from '@modules/chain-ui/icon'
 import type { RequestedNetwork } from '../useConnectionApprovalView'
 import { useStyles } from './styles'
 
-export type RequestedNetworkChipProps = {
+type RequestedNetworkChipProps = {
     network: RequestedNetwork
-    onAdd: (chainId: ChainId) => void
 }
 
 export const RequestedNetworkChip = ({
     network,
-    onAdd,
 }: RequestedNetworkChipProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { chainId, name, isAdded, canAdd, isAdding, isTestnet } = network
-    const handleAdd = useCallback(() => onAdd(chainId), [onAdd, chainId])
+    const { chainId, name, isTestnet } = network
 
     return (
         <PWView
@@ -59,23 +48,6 @@ export const RequestedNetworkChip = ({
                 <PWBadge
                     variant='testnet'
                     value={t('walletconnect.request.networks_testnet')}
-                />
-            )}
-            {!isAdded && (
-                <PWText
-                    variant='caption'
-                    style={styles.notAdded}
-                >
-                    {t('walletconnect.request.network_not_added')}
-                </PWText>
-            )}
-            {canAdd && (
-                <PWButton
-                    variant='link'
-                    title={t('account_options.add_network')}
-                    onPress={handleAdd}
-                    isLoading={isAdding}
-                    testID={`wc_add_network_${chainId}`}
                 />
             )}
         </PWView>
