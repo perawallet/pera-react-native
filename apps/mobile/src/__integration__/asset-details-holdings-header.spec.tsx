@@ -174,7 +174,7 @@ describe('Flow: Asset details header leads with the fiat value', () => {
         useCurrenciesStore.getState().resetState()
     })
 
-    it('Given an Algorand asset with the chart shown, when it opens, then the fiat value leads, the token amount follows, and the change follows the chart period', async () => {
+    it('Given an Algorand asset with the chart shown, when it opens, then the fiat value shows, a tap swaps it for the token amount, and the change follows the chart period', async () => {
         useSettingsStore
             .getState()
             .setPreference(UserPreferences.chartVisible, true)
@@ -189,9 +189,20 @@ describe('Flow: Asset details header leads with the fiat value', () => {
             (await screen.findByTestId('asset_holdings_fiat_value'))
                 .textContent,
         ).toContain('2.50')
+        expect(screen.queryByTestId('asset_holdings_token_amount')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('asset_holdings_amount'))
+
         const token = screen.getByTestId('asset_holdings_token_amount')
         expect(token.textContent).toContain('2.5')
         expect(token.textContent).toContain('tUSD')
+        expect(screen.queryByTestId('asset_holdings_fiat_value')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('asset_holdings_amount'))
+
+        expect(
+            await screen.findByTestId('asset_holdings_fiat_value'),
+        ).toBeTruthy()
         expect(await trend()).toContain('25.00%')
 
         fireEvent.click(screen.getAllByText('chart.one_month.label')[0])
@@ -278,7 +289,7 @@ describe('Flow: Asset details header leads with the fiat value', () => {
         )
     })
 
-    it('Given an Ethereum token, when it opens, then the fiat value leads and the token amount follows', async () => {
+    it('Given an Ethereum token, when it opens, then the fiat value shows and a tap swaps it for the token amount', async () => {
         selectAccount(TWO_CHAIN_ACCOUNT)
 
         renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
@@ -287,12 +298,15 @@ describe('Flow: Asset details header leads with the fiat value', () => {
             (await screen.findByTestId('asset_holdings_fiat_value'))
                 .textContent,
         ).toContain('1.50')
+
+        fireEvent.click(screen.getByTestId('asset_holdings_amount'))
+
         const token = screen.getByTestId('asset_holdings_token_amount')
         expect(token.textContent).toContain('1.5')
         expect(token.textContent).toContain('USDC')
     })
 
-    it('Given a token with no price, when it opens, then the token amount leads with no fiat value or change line', async () => {
+    it('Given a token with no price, when it opens, then the token amount leads with no fiat value', async () => {
         selectAccount(TWO_CHAIN_ACCOUNT)
 
         renderDetails({ assetId: LOOKALIKE, chainId: 'ethereum' })
@@ -307,7 +321,6 @@ describe('Flow: Asset details header leads with the fiat value', () => {
                     .textContent,
             ).toContain('7')
         })
-        expect(within(header).queryByTestId('wealth_trend')).toBeNull()
         expect(within(header).queryByText('---')).toBeNull()
     })
 
@@ -322,6 +335,9 @@ describe('Flow: Asset details header leads with the fiat value', () => {
 
         const fiat = await screen.findByTestId('asset_holdings_fiat_value')
         expect(fiat.textContent).toContain('****')
+
+        fireEvent.click(screen.getByTestId('asset_holdings_amount'))
+
         expect(
             screen.getByTestId('asset_holdings_token_amount').textContent,
         ).toContain('****')

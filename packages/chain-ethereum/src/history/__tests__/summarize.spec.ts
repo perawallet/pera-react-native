@@ -105,6 +105,41 @@ describe('summarizeEthereumHistoryItem', () => {
         })
     })
 
+    it('reads an ETH receive once, not again as the EIP-7708 log that mirrors it', () => {
+        const mirror = '0xfffffffffffffffffffffffffffffffffffffffe'
+        const summary = summarize(
+            row({
+                from: PEER,
+                to: ME,
+                value: '100000000',
+                token_transfers: [
+                    {
+                        ...leg(PEER, ME, '100000000', {
+                            token_symbol: 'ETH',
+                            token_decimals: 18,
+                        }),
+                        asset_id: `eip155:1/erc20:${mirror}`,
+                        contract: mirror,
+                    },
+                ],
+                balance_impacts: [
+                    { asset_id: ETH_ID, amount: '100000000' },
+                    {
+                        asset_id: `eip155:1/erc20:${mirror}`,
+                        amount: '100000000',
+                    },
+                ],
+            }),
+        )
+
+        expect(summary).toMatchObject({
+            kind: 'transfer',
+            direction: 'in',
+            amount: { assetRef: NATIVE, value: new Decimal('100000000') },
+        })
+        expect(summary.balanceChanges).toBeUndefined()
+    })
+
     it('reads an ETH send to oneself as a self transfer', () => {
         const summary = summarize(row({ from: ME, to: ME, value: '5' }))
 

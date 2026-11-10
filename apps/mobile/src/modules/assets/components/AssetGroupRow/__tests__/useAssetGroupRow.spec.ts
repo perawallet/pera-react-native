@@ -27,15 +27,6 @@ import type {
 } from '../../../utils/groupedHoldings'
 import { useAssetGroupRow } from '../useAssetGroupRow'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, options?: { count?: number }) =>
-            key === 'account_details.assets.networks_count'
-                ? `${options?.count} networks`
-                : key,
-    }),
-}))
-
 type Holding = { scope: ChainScope; assetId: string }
 
 const USDC = { assetId: '31566704', name: 'USD Coin' } as PeraAsset
@@ -320,77 +311,6 @@ describe('useAssetGroupRow', () => {
 
             expect(result.verificationIcon).toBeNull()
             expect(result.isSuspicious).toBe(false)
-        })
-    })
-
-    describe('subtitle', () => {
-        it('names the symbol and how many networks hold it', () => {
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('algorand', USDC, '31566704'),
-                            member('ethereum', USDC, '0xA0b8'),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC · 2 networks')
-        })
-
-        it('names the network when every holding is on one', () => {
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('ethereum', USDC, '0xA0b8'),
-                            member('ethereum', USDC, '0xFF97'),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC · Ethereum')
-        })
-
-        it('counts a network once when two of its holdings share the group', () => {
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('algorand', USDC, '31566704'),
-                            member('ethereum', USDC, '0xA0b8'),
-                            member('ethereum', USDC, '0xFF97'),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC · 2 networks')
-        })
-
-        it('counts networks rather than showing an id every network shares', () => {
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('algorand', USDC, '753101315'),
-                            member('ethereum', USDC, '753101315'),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC · 2 networks')
         })
     })
 })

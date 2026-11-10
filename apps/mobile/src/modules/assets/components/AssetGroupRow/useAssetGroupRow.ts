@@ -17,10 +17,8 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import type {
     AssetFiatConverter,
     AssetFiatValue,
@@ -67,7 +65,6 @@ export type UseAssetGroupRowResult = {
     /** Null until every member has synced, unless one is already suspicious. */
     verificationIcon: Nullable<IconName>
     isSuspicious: boolean
-    subtitle: string
     chainIds: ChainId[]
     /** The chain of the member `icon` is drawn from. */
     iconChainId: Nullable<ChainId>
@@ -81,8 +78,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     item,
     convertFiat,
 }: UseAssetGroupRowParams<T>): UseAssetGroupRowResult => {
-    const { t } = useLanguage()
-    const { group, members } = item
+    const { members } = item
 
     const chainIds = useMemo(
         () => [...new Set(members.map(member => member.holding.scope.chainId))],
@@ -122,19 +118,6 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         )
     }, [members])
 
-    // Two tokens on one network can share a group; naming that network says
-    // more than a count of one, as on single-network rows.
-    const subtitle = useMemo(() => {
-        const [onlyChainId] = chainIds
-        const networks =
-            chainIds.length === 1 && onlyChainId
-                ? chainDisplayNameOf(onlyChainId)
-                : t('account_details.assets.networks_count', {
-                      count: chainIds.length,
-                  })
-        return `${group.symbol} · ${networks}`
-    }, [group.symbol, chainIds, t])
-
     const decimals = useMemo(
         () => Math.max(0, ...members.map(({ asset }) => asset?.decimals ?? 0)),
         [members],
@@ -146,7 +129,6 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         icon: iconMember?.asset ?? null,
         verificationIcon: tier ? getVerificationIcon(tier) : null,
         isSuspicious: tier === PeraAssetVerificationTier.suspicious,
-        subtitle,
         chainIds,
         iconChainId: iconMember?.holding.scope.chainId ?? null,
         decimals,

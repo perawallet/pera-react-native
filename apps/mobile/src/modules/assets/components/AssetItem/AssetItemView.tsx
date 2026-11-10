@@ -49,6 +49,8 @@ export type AssetItemViewProps = {
     showChainBadge?: boolean
     /** Limits the right-hand content to part of the row, for amounts whose unit has no length cap. */
     shouldCapRightSlot?: boolean
+    /** Lines the right-hand content up with the name rather than centring it on the row. */
+    shouldTopAlignRight?: boolean
     /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
     /** Account-only decorations. Default off so search rows stay clean. */
@@ -71,6 +73,7 @@ export const AssetItemView = ({
     iconSize = 'xl',
     showChainBadge = false,
     shouldCapRightSlot = false,
+    shouldTopAlignRight = false,
     logoUrl,
     showFavorite = false,
     showDeletedLabel = false,
@@ -108,8 +111,7 @@ export const AssetItemView = ({
                 </PWText>
             )
         }
-        if (subtitleOverride) return subtitleOverride
-        return (
+        const secondaryLine = (
             <PWText
                 // Account rows (copyableAssetId) have always shown the subtitle at
                 // body size, search rows at caption; kept as-is when the copy
@@ -120,6 +122,17 @@ export const AssetItemView = ({
             >
                 {secondaryText}
             </PWText>
+        )
+        if (!subtitleOverride) return secondaryLine
+        // An unvetted token's contract address stays on screen whatever
+        // replaces its subtitle.
+        return isUnverified ? (
+            <>
+                {subtitleOverride}
+                {secondaryLine}
+            </>
+        ) : (
+            subtitleOverride
         )
     }
     const subtitle = renderSubtitle()
@@ -195,6 +208,7 @@ export const AssetItemView = ({
                     style={[
                         styles.rightSlot,
                         shouldCapRightSlot && styles.rightSlotCapped,
+                        shouldTopAlignRight && styles.rightSlotTop,
                     ]}
                 >
                     {right}

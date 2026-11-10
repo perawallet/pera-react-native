@@ -389,7 +389,8 @@
             "suspicious_title": "Şüpheli token",
             "body": "Pera bu tokenı doğrulamadı. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
         },
-        "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
+        "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun",
+        "toggle_amount_hint": "Değer ile varlık miktarı arasında geçiş yapmak için dokun"
     },
     "accounts": {
         "legacyQuantum": {
@@ -416,7 +417,6 @@
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
             "hide_networks": "Ağları gizle",
-            "networks_count": "{{count}} ağ",
             "chain_network": "{{chain}} ağı"
         },
         "nfts": {
@@ -3488,6 +3488,8 @@
             "known_description": "{{name}} bilinen bir sözleşme",
             "known_spend_note": "{{name}} bilinen bir sözleşme. Bu tokeni yalnızca onayladığın bir işlem veya imza kapsamında hareket ettirebilir.",
             "known_unlimited_note": "Tutar sınırsız, bu yüzden bu token için {{name}} sözleşmesine tekrar onay vermen gerekmez.",
+            "unlimited_limit_note": "Pera bu tutarı düşüremez. Yalnızca ihtiyacın kadarını onaylamak için reddet ve uygulama izin veriyorsa daha küçük bir tutar belirle.",
+            "balance_label": "Bakiyen",
             "allow_title": "{{spender}} sözleşmesinin {{asset}} bakiyeni kullanmasına izin ver",
             "allow_title_assets": "{{spender}} sözleşmesinin varlıklarını kullanmasına izin ver",
             "allow_title_unknown": "Başka bir adresin {{asset}} bakiyeni kullanmasına izin ver",
@@ -3607,8 +3609,11 @@
         "predicted_failure": {
             "title": "Bu işlem büyük olasılıkla başarısız olacak",
             "body": "Pera işlemi en son blokta çalıştırdı ve başarısız oldu. Yine de imzalarsan ağ ücretini ödeyebilirsin.",
-            "reason": "Sözleşmenin gerekçesi: “{{reason}}”",
-            "acknowledge": "Büyük olasılıkla başarısız olacağını anlıyorum ve yine de imzalamak istiyorum"
+            "reason": "Sözleşmenin gerekçesi: “{{reason}}”"
+        },
+        "review_warnings": {
+            "summary": "Kontrol edilecek {{count}} şey var",
+            "acknowledge": "Riskleri anlıyorum ve yine de imzalamak istiyorum"
         }
     },
     "site_safety": {
@@ -3711,6 +3716,7 @@
             "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Gelişmiş",
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
@@ -4930,6 +4936,11 @@
             "title": "Sözleşme",
             "verified": "Doğrulanmış sözleşme",
             "matches_site": "{{domain}} ile eşleşiyor"
+        },
+        "review_warnings": {
+            "high_fee_title": "Alışılmadık şekilde yüksek ağ ücreti",
+            "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Normal ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
+            "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Normal ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
         },
         "simulation": {
             "title": "Tahmini değişiklikler",

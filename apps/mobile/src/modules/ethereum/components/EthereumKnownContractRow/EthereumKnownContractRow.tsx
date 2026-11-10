@@ -11,17 +11,17 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { EvmContractLabel } from '@perawallet/wallet-core-chain-ethereum'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import type { EthereumContractLabel } from '../../hooks/useEthereumContractLabel'
 import { isKnownContractSite } from '../../utils/isKnownContractSite'
 import { useStyles } from './styles'
 
 type EthereumKnownContractRowProps = {
-    knownContract: EvmContractLabel
+    knownContract: EthereumContractLabel
     address: string
     scope: ChainScope
     source?: SignRequestSource

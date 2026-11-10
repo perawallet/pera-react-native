@@ -25,7 +25,6 @@ import {
     useExpandableAssetGroup,
     type AssetGroupMemberIdentity,
 } from './useExpandableAssetGroup'
-import { useStyles } from './styles'
 
 export type ExpandableAssetGroupProps = {
     item: AssetGroupItem<AccountHoldingsLiteRow>
@@ -45,7 +44,6 @@ export const ExpandableAssetGroup = ({
     renderMember,
     headerStyle,
 }: ExpandableAssetGroupProps) => {
-    const styles = useStyles()
     const { shouldRenderMembers, memberIdentity } = useExpandableAssetGroup({
         item,
     })
@@ -59,17 +57,15 @@ export const ExpandableAssetGroup = ({
                 style={headerStyle}
             />
             <ExpandablePanel isExpanded={item.isExpanded}>
+                {/* No separator between members: each one's network header divides them. */}
                 {shouldRenderMembers
-                    ? item.members.map(({ holding }, index) => (
+                    ? item.members.map(({ holding }) => (
                           <React.Fragment
                               key={groupedHoldingItemKey({
                                   kind: 'holding',
                                   holding,
                               })}
                           >
-                              {index > 0 ? (
-                                  <PWView style={styles.separator} />
-                              ) : null}
                               {renderMember(holding, memberIdentity)}
                           </React.Fragment>
                       ))

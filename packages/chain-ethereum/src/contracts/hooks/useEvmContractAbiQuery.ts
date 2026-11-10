@@ -20,11 +20,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { evmChainOf } from '../../chains/table'
 import { fetchEvmContractAbi } from '../api/endpoints'
 import type { EvmContractAbiAnswer } from '../types'
-import { contractAbiQueryKey } from './querykeys'
-
-// The backend refreshes a proxy's implementation on its own schedule; this
-// only spares a review the same lookup twice in a row.
-const STALE_TIME_MS = 10 * 60_000
+import { CONTRACT_CACHE_TIME_MS, contractQueryKey } from './querykeys'
 
 export type UseEvmContractAbiQueryParams = {
     scope: ChainScope
@@ -45,7 +41,7 @@ export const useEvmContractAbiQuery = ({
 }: UseEvmContractAbiQueryParams): UseEvmContractAbiQueryResult => {
     const isQueryEnabled = isEnabled && !!address && isEvmChainId(scope.chainId)
     const query = useQuery({
-        queryKey: contractAbiQueryKey(scope, address ?? ''),
+        queryKey: contractQueryKey('abi', scope, address ?? ''),
         queryFn: () => {
             if (!address || !isEvmChainId(scope.chainId)) {
                 throw new Error('A verified ABI lookup needs an EVM contract')
@@ -61,7 +57,8 @@ export const useEvmContractAbiQuery = ({
         // reads as online; failing fast shows the call as not looked up.
         networkMode: 'always',
         retry: false,
-        staleTime: STALE_TIME_MS,
+        staleTime: CONTRACT_CACHE_TIME_MS,
+        gcTime: CONTRACT_CACHE_TIME_MS,
     })
     return {
         data: query.data,

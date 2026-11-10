@@ -155,6 +155,41 @@ describe('useAssetHoldings', () => {
         expect(result.current.isPriced).toBe(true)
     })
 
+    it('shows the value of a priced holding, then the token amount once toggled, then the value again', () => {
+        const { result } = render()
+
+        expect(result.current.isValueShown).toBe(true)
+        act(() => result.current.toggleAmount())
+        expect(result.current.isValueShown).toBe(false)
+        act(() => result.current.toggleAmount())
+        expect(result.current.isValueShown).toBe(true)
+    })
+
+    it('shows only the token amount of an unpriced holding, and hints at no toggle', () => {
+        price(null)
+        const { result } = render()
+
+        act(() => result.current.toggleAmount())
+
+        expect(result.current.isValueShown).toBe(false)
+        expect(result.current.amountHint).toBe(
+            'asset_details.copy_full_amount_hint',
+        )
+    })
+
+    it('hints at the toggle and the copy, but not the copy in privacy mode', () => {
+        expect(render().result.current.amountHint).toBe(
+            'asset_details.toggle_amount_hint. asset_details.copy_full_amount_hint',
+        )
+
+        vi.mocked(useSettings).mockReturnValue({
+            privacyMode: true,
+        } as ReturnType<typeof useSettings>)
+        expect(render().result.current.amountHint).toBe(
+            'asset_details.toggle_amount_hint',
+        )
+    })
+
     it('updates the period the chart and the change line share', () => {
         const { result } = render()
 

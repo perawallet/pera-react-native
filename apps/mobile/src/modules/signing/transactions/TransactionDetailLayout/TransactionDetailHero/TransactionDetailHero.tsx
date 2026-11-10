@@ -55,7 +55,7 @@ export const TransactionDetailHero = ({
                     variant='h1'
                 />
             )}
-            <TransactionStatusBadge status={status} />
+            {!!status && <TransactionStatusBadge status={status} />}
         </PWView>
     )
 }

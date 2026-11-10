@@ -37,12 +37,17 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
 // The real check reads SQLite and loads megabytes of bundled lists; specs that
 // exercise it unmock this.
 vi.mock('@perawallet/wallet-core-site-safety', async () => ({
-    // A pure leaf the app needs for real, loaded by path like the others here.
+    // Pure leaves the app needs for real, loaded by path like the others here.
     isSiteOfDapp: (
         await vi.importActual<
             typeof import('@packages/site-safety/src/wellKnownDapps')
         >('@packages/site-safety/src/wellKnownDapps')
     ).isSiteOfDapp,
+    toSiteHost: (
+        await vi.importActual<typeof import('@packages/site-safety/src/host')>(
+            '@packages/site-safety/src/host',
+        )
+    ).toSiteHost,
     useSiteSafetyQuery: vi.fn(() => ({
         verdict: { kind: 'clear' },
         isChecking: false,

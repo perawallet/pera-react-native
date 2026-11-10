@@ -389,7 +389,8 @@
             "suspicious_title": "Verdächtiges Token",
             "body": "Pera hat dieses Token nicht verifiziert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
         },
-        "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
+        "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren",
+        "toggle_amount_hint": "Tippe, um zwischen Wert und Asset-Betrag zu wechseln"
     },
     "accounts": {
         "legacyQuantum": {
@@ -416,7 +417,6 @@
             "network_filter_all": "Alle",
             "see_networks": "Netzwerke anzeigen",
             "hide_networks": "Netzwerke ausblenden",
-            "networks_count": "{{count}} Netzwerke",
             "chain_network": "{{chain}}-Netzwerk"
         },
         "nfts": {
@@ -3480,6 +3480,8 @@
             "known_description": "{{name}} ist ein bekannter Smart Contract",
             "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
             "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "unlimited_limit_note": "Pera kann diesen Betrag nicht senken. Wenn du nur so viel freigeben willst, wie du brauchst, lehne ab und lege in der App einen kleineren Betrag fest, falls sie das anbietet.",
+            "balance_label": "Dein Guthaben",
             "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
             "allow_title_assets": "{{spender}} erlauben, deine Assets zu verwenden",
             "allow_title_unknown": "Einer anderen Adresse erlauben, deine {{asset}} zu verwenden",
@@ -3599,8 +3601,11 @@
         "predicted_failure": {
             "title": "Diese Transaktion wird wahrscheinlich fehlschlagen",
             "body": "Pera hat sie anhand des neuesten Blocks ausgeführt und sie ist fehlgeschlagen. Wenn du trotzdem signierst, zahlst du möglicherweise trotzdem die Netzwerkgebühr.",
-            "reason": "Grund des Contracts: „{{reason}}“",
-            "acknowledge": "Ich verstehe, dass sie wahrscheinlich fehlschlägt, und möchte trotzdem signieren"
+            "reason": "Grund des Contracts: „{{reason}}“"
+        },
+        "review_warnings": {
+            "summary": "{{count}} Dinge zu prüfen",
+            "acknowledge": "Ich verstehe die Risiken und möchte trotzdem signieren"
         }
     },
     "site_safety": {
@@ -3703,6 +3708,7 @@
             "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Erweitert",
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
@@ -4930,6 +4936,11 @@
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",
             "matches_site": "Entspricht {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
+            "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
         },
         "simulation": {
             "title": "Geschätzte Änderungen",

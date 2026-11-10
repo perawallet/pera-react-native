@@ -12,10 +12,10 @@
 
 import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { nativeAssetFor, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { feeAssetAmountPropsOf } from './feeAssetAmountProps'
 import { useStyles } from './styles'
 
 export type FeeAmountProps = {
@@ -23,24 +23,26 @@ export type FeeAmountProps = {
     /** Base units of the chain's native asset. */
     amount: Decimal
     testID?: string
+    /** The asset amount and its fiat value share one wrapping row instead of stacking. */
+    isCompact?: boolean
 }
 
 // Wraps rather than truncates: a fee cut to "0.00000…" is the one value the user can't afford to lose.
-export const FeeAmount = ({ scope, amount, testID }: FeeAmountProps) => {
+export const FeeAmount = ({
+    scope,
+    amount,
+    testID,
+    isCompact = false,
+}: FeeAmountProps) => {
     const styles = useStyles()
-    const asset = nativeAssetFor(scope.chainId)
-    const wholeAmount = toWholeUnits(amount, asset)
+    const assetAmountProps = feeAssetAmountPropsOf(scope, amount)
+    const { asset, value: wholeAmount } = assetAmountProps
 
     return (
-        <PWView style={styles.feeAmount}>
+        <PWView style={isCompact ? styles.compactFeeAmount : styles.feeAmount}>
             <AssetAmount
-                chainId={scope.chainId}
-                asset={asset}
-                value={wholeAmount}
-                density='significant'
-                symbolPosition='end'
+                {...assetAmountProps}
                 alignRight
-                ignorePrivacyMode
                 truncate={false}
                 style={styles.amountText}
                 testID={testID}

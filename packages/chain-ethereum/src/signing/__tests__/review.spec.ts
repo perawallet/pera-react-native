@@ -67,11 +67,12 @@ const RECIPIENT = getAddress(TRANSFER.to as Address)
 const STRANGER: Address = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 const TOKEN_UNITS = 5_000_000n
 
+// Decoding off, as remote config can still set it: what every review must hold to without it.
 const CONTEXT: ReviewContext = {
     scope: MAINNET,
     heldAddresses: [SENDER],
     isWalletBuilt: false,
-    capabilities: evmCapabilityDefaults,
+    capabilities: { ...evmCapabilityDefaults, contractDecoding: false },
 }
 const WALLET_BUILT: ReviewContext = { ...CONTEXT, isWalletBuilt: true }
 
@@ -887,7 +888,6 @@ describe('ethereumReviewerAdapter', () => {
                 await reviewer.decoder.decode([transaction], context)
             }
 
-            expect(evmCapabilityDefaults.contractDecoding).toBe(false)
             expect(recogniseCall).not.toHaveBeenCalled()
         })
 
@@ -1075,7 +1075,7 @@ describe("a dApp's standard token calls", () => {
         })
     })
 
-    describe('under the shipped capability defaults', () => {
+    describe('with contractDecoding off', () => {
         it('reviews an unlimited approve as an approval with a danger warning, behind review', async () => {
             const { reviewed, summary } = await reviewOne(
                 unsigned(APPROVE),
@@ -1390,7 +1390,6 @@ describe('a call to a known contract', () => {
             V3_EXACT_IN_PERMIT_SWEEP,
         )
 
-        expect(evmCapabilityDefaults.contractDecoding).toBe(false)
         expect(summary).toEqual({
             kind: 'contract-call',
             title: { key: 'transactions.list_item.contract_call' },

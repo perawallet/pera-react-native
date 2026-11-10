@@ -72,9 +72,9 @@ vi.mock('../../../hooks/useRequestSiteSafety', () => ({
     useRequestSiteSafety: () => mockSiteSafety,
 }))
 
-const mockFailureGate = vi.hoisted(() => ({ isConfirmBlocked: false }))
-vi.mock('../../../hooks/usePredictedFailureGate', () => ({
-    usePredictedFailureGate: () => mockFailureGate,
+const mockRiskGate = vi.hoisted(() => ({ isConfirmBlocked: false }))
+vi.mock('../../../hooks/useReviewRiskGate', () => ({
+    useReviewRiskGate: () => mockRiskGate,
 }))
 
 const mockConfirmQuantumDappUsage = vi.fn()
@@ -146,7 +146,7 @@ describe('useSigningActionButtons', () => {
         mockAddressSafety.isConfirmBlocked = false
         mockAddressSafety.isListedAddressBlocking = false
         mockSiteSafety.isConfirmBlocked = false
-        mockFailureGate.isConfirmBlocked = false
+        mockRiskGate.isConfirmBlocked = false
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: undefined,
@@ -202,8 +202,8 @@ describe('useSigningActionButtons', () => {
         expect(mockNext).not.toHaveBeenCalled()
     })
 
-    it('holds signing while a predicted failure waits on acknowledgement, and signs once it is acknowledged', () => {
-        mockFailureGate.isConfirmBlocked = true
+    it('holds signing while a high-risk review warning waits on acknowledgement, and signs once it is acknowledged', () => {
+        mockRiskGate.isConfirmBlocked = true
 
         const { result, rerender } = renderHook(() => useSigningActionButtons())
 
@@ -215,7 +215,7 @@ describe('useSigningActionButtons', () => {
         expect(result.current.cannotSignNotice).toBeUndefined()
         expect(mockNext).not.toHaveBeenCalled()
 
-        mockFailureGate.isConfirmBlocked = false
+        mockRiskGate.isConfirmBlocked = false
         rerender()
         act(() => {
             result.current.handleSignAndSend()

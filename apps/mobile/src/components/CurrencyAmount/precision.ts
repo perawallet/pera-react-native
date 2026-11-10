@@ -36,7 +36,7 @@ export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
  * more than {@link ASSET_MAX_PRECISION} decimals (ETH, ERC-20s) follows
  * `assetFull` instead, so its row reads like its detail. A fiat amount
  * never extends: a non-zero one under a cent renders as `< 0.01` (`> -0.01`
- * when negative; see {@link resolveFiatFloor}).
+ * when negative; see {@link resolveAmountFloor}).
  * - `assetFull` — an asset amount on a detail surface: trims
  * {@link DEFAULT_PRECISION} → the asset's own `decimals`, capped at
  * {@link ASSET_MAX_PRECISION} (see `resolveAssetDisplayPrecision`).
@@ -51,6 +51,10 @@ export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
  * - `significant` — a small asset amount on a dense surface (a fee): keeps
  * {@link SIGNIFICANT_DIGITS} significant digits, between
  * {@link DEFAULT_PRECISION} and the asset's `decimals`. Pair with `assetDecimals`.
+ * - `list` — an asset amount in an asset list row, whatever its decimals:
+ * up to {@link LIST_MAX_PRECISION} dp, at least {@link DEFAULT_PRECISION},
+ * rounded down. A non-zero amount under 0.0001 renders as `< 0.0001`, so a
+ * dust balance can't crowd out the name.
  */
 export type PrecisionVariant =
     | 'noDecimal'
@@ -59,6 +63,7 @@ export type PrecisionVariant =
     | 'preferredFull'
     | 'unitPrice'
     | 'significant'
+    | 'list'
 
 export type ResolvedPrecision = {
     /** Max decimals retained before trailing zeros are trimmed. */
@@ -90,6 +95,8 @@ const resolveCompactPrecision = (value: Maybe<Decimal>): number => {
 }
 
 export const SIGNIFICANT_DIGITS = 3
+
+export const LIST_MAX_PRECISION = 4
 
 /**
  * Decimals that keep {@link SIGNIFICANT_DIGITS} significant digits of an
@@ -165,6 +172,14 @@ export const resolvePrecision = (
                 rounding: Decimal.ROUND_DOWN,
             }
         }
+        case 'list': {
+            return {
+                precision: LIST_MAX_PRECISION,
+                minPrecision: DEFAULT_PRECISION,
+                // Down, so a balance never reads as more than the account holds.
+                rounding: Decimal.ROUND_DOWN,
+            }
+        }
         case 'significant': {
             return {
                 precision: resolveSignificantPrecision(value, assetDecimals),
@@ -177,29 +192,40 @@ export const resolvePrecision = (
     }
 }
 
+const resolveFloorPlaces = (
+    variant: PrecisionVariant,
+    isFiat: boolean,
+): Nullable<number> => {
+    if (isFiat) {
+        return variant === 'compact' ||
+            variant === 'preferredFull' ||
+            variant === 'list'
+            ? DEFAULT_PRECISION
+            : null
+    }
+    return variant === 'list' ? LIST_MAX_PRECISION : null
+}
+
 /**
- * The smallest fiat amount a `compact` or `preferredFull` figure shows. A
- * non-zero fiat amount under it reads as "< 0.01" instead of extending to its
- * first significant digit, which only suits crypto. The floor keeps the
- * amount's sign, so a small loss gives -0.01 and reads as a lower bound
- * ("> -0.01") rather than losing its minus. `null` when the amount renders normally.
+ * The smallest amount a figure shows: 0.01 for fiat in `compact`,
+ * `preferredFull` and `list`, 0.0001 for an asset in `list`. A non-zero amount
+ * under it reads as "< 0.01" instead of extending to its first significant
+ * digit. The floor keeps the amount's sign, so a small loss gives -0.01 and
+ * reads as a lower bound ("> -0.01") rather than losing its minus. `null` when
+ * the amount renders normally.
  */
-export const resolveFiatFloor = (
+export const resolveAmountFloor = (
     variant: PrecisionVariant,
     isFiat: boolean,
     value: Maybe<Decimal>,
 ): Nullable<Decimal> => {
-    if (
-        (variant !== 'compact' && variant !== 'preferredFull') ||
-        !isFiat ||
-        value == null ||
-        value.isZero()
-    ) {
+    const places = resolveFloorPlaces(variant, isFiat)
+    if (places == null || value == null || value.isZero()) {
         return null
     }
     // Built on call, from a string, so a spec that mocks the shared package
     // without the Decimal helpers can still import this module.
-    const floor = new Decimal(`1e-${DEFAULT_PRECISION}`)
+    const floor = new Decimal(`1e-${places}`)
     if (!value.abs().lt(floor)) {
         return null
     }

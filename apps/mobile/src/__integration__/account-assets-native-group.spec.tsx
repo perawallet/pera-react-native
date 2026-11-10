@@ -193,12 +193,8 @@ describe('Flow: native ETH across networks in the asset list', () => {
 
         const group = await screen.findByTestId('asset_group_row_eth')
         expect(screen.queryByTestId('asset_row_native')).toBeNull()
-        // The shared id is the chains' placeholder, never shown.
-        expect(
-            within(group).getByText(
-                'ETH · account_details.assets.networks_count',
-            ),
-        ).toBeTruthy()
+        // The symbol alone on the amount: the shared id is the chains' placeholder.
+        expect(within(group).getAllByText(/(^| )ETH$/)).toHaveLength(1)
         expect(within(group).queryByText(/native/)).toBeNull()
         // Base holds none and has no price, so the total is Ethereum's alone.
         expect(within(group).getByText(/3,000\.00/)).toBeTruthy()
@@ -207,8 +203,9 @@ describe('Flow: native ETH across networks in the asset list', () => {
 
         const members = await screen.findAllByTestId('asset_row_native')
         expect(members).toHaveLength(2)
+        // Each member's network heads its row.
         const baseMember = members.find(member =>
-            within(member).queryByTestId('chain_label_base'),
+            within(member.parentElement!).queryByTestId('chain_label_base'),
         )
         expect(baseMember).toBeDefined()
         // A zero holding is worth zero, priced or not.

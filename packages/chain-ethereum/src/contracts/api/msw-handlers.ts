@@ -13,10 +13,13 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import type { Address } from 'viem'
 import { rejectUnauthenticated } from '../../assets/api/msw-handlers'
-import { contractAbiPath } from './endpoints'
-import type { EvmContractAbiResponse } from './schema'
+import { contractPath } from './endpoints'
+import type {
+    EvmContractAbiResponse,
+    EvmContractMetadataResponse,
+} from './schema'
 
-export type PeraEvmContractAbiFixtures = {
+export type PeraEvmContractFixtures = {
     /** Defaults to every host. */
     baseUrl?: string
     /**
@@ -24,7 +27,24 @@ export type PeraEvmContractAbiFixtures = {
      * not verified. A number fails every lookup with that status.
      */
     contractAbis?: Record<string, EvmContractAbiResponse> | number
+    /** Pera's curated metadata keyed by lowercase contract address; an address left out is unknown. */
+    contractMetadata?: Record<string, EvmContractMetadataResponse>
 }
+
+export const contractMetadataResponse = (
+    name: string,
+    projectName: string,
+    projectUrl: string,
+    verificationTier = 'verified',
+): EvmContractMetadataResponse => ({
+    name,
+    project: {
+        name: projectName,
+        url: projectUrl,
+        logo_png: null,
+        verification_tier: verificationTier,
+    },
+})
 
 export const verifiedAbiResponse = (
     abi: readonly unknown[],
@@ -45,23 +65,34 @@ const NOT_VERIFIED: EvmContractAbiResponse = {
     proxy: null,
 }
 
-/** The Pera backend's verified-ABI endpoint. */
-export const peraEvmContractAbiHandlers = ({
+/** The Pera backend's contracts endpoint, answering only the parts `include` asks for. */
+export const peraEvmContractHandlers = ({
     baseUrl = '*',
     contractAbis = {},
-}: PeraEvmContractAbiFixtures = {}): RequestHandler[] => [
+    contractMetadata = {},
+}: PeraEvmContractFixtures = {}): RequestHandler[] => [
     http.get(
-        `${baseUrl.replace(/\/+$/, '')}${contractAbiPath(':chainId', ':address')}`,
+        `${baseUrl.replace(/\/+$/, '')}${contractPath(':chainId', ':address')}`,
         ({ request, params }) => {
             const refused = rejectUnauthenticated(request)
             if (refused) return refused
             if (typeof contractAbis === 'number') {
                 return HttpResponse.json({}, { status: contractAbis })
             }
-            return HttpResponse.json(
-                contractAbis[String(params.address).toLowerCase()] ??
-                    NOT_VERIFIED,
-            )
+            const address = String(params.address).toLowerCase()
+            const include = (
+                new URL(request.url).searchParams.get('include') ??
+                'abi,metadata'
+            ).split(',')
+            return HttpResponse.json({
+                id: `eip155:${String(params.chainId)}:${address}`,
+                ...(include.includes('abi') && {
+                    abi: contractAbis[address] ?? NOT_VERIFIED,
+                }),
+                ...(include.includes('metadata') && {
+                    metadata: contractMetadata[address] ?? null,
+                }),
+            })
         },
     ),
 ]

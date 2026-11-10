@@ -389,7 +389,8 @@
             "suspicious_title": "Token suspeito",
             "body": "A Pera não verificou este token. Você não o solicitou e ele pode ser um golpe. Não interaja com sites ou links relacionados a ele."
         },
-        "copy_full_amount_hint": "Toque e segure para copiar o valor completo"
+        "copy_full_amount_hint": "Toque e segure para copiar o valor completo",
+        "toggle_amount_hint": "Toque para alternar entre o valor e a quantidade do ativo"
     },
     "accounts": {
         "legacyQuantum": {
@@ -416,7 +417,6 @@
             "network_filter_all": "Todas",
             "see_networks": "Ver redes",
             "hide_networks": "Ocultar redes",
-            "networks_count": "{{count}} redes",
             "chain_network": "Rede {{chain}}"
         },
         "nfts": {
@@ -3504,6 +3504,8 @@
             "known_description": "{{name}} é um contrato conhecido",
             "known_spend_note": "{{name}} é um contrato conhecido. Ele só pode movimentar este token como parte de uma transação ou assinatura que você aprovar.",
             "known_unlimited_note": "O valor é ilimitado, então você não vai precisar autorizar este token para {{name}} de novo.",
+            "unlimited_limit_note": "A Pera não pode reduzir este valor. Para aprovar só o necessário, recuse e defina um valor menor no aplicativo, se ele permitir.",
+            "balance_label": "Seu saldo",
             "allow_title": "Permitir que {{spender}} use seus {{asset}}",
             "allow_title_assets": "Permitir que {{spender}} use seus ativos",
             "allow_title_unknown": "Permitir que outro endereço use seus {{asset}}",
@@ -3624,8 +3626,11 @@
         "predicted_failure": {
             "title": "Esta transação provavelmente vai falhar",
             "body": "O Pera a executou no bloco mais recente e ela falhou. Se você assinar mesmo assim, ainda poderá pagar a taxa de rede.",
-            "reason": "Motivo do contrato: “{{reason}}”",
-            "acknowledge": "Entendo que provavelmente vai falhar e quero assinar mesmo assim"
+            "reason": "Motivo do contrato: “{{reason}}”"
+        },
+        "review_warnings": {
+            "summary": "{{count}} itens para conferir",
+            "acknowledge": "Entendo os riscos e quero assinar mesmo assim"
         }
     },
     "site_safety": {
@@ -3728,6 +3733,7 @@
             "nft_fallback": "{{collection}} · ID do token {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Avançado",
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
             "function_selector": "Seletor de função",
             "call_data": "Dados da chamada",
@@ -4958,6 +4964,11 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Corresponde a {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Taxa de rede muito acima do normal",
+            "high_fee_body": "{{domain}} definiu a taxa desta transação em mais do dobro do que o Pera usaria na configuração Normal. Você pagará no máximo <0/> (taxa máxima), geralmente menos.",
+            "high_fee_body_no_source": "O app que enviou isto definiu a taxa em mais do dobro do que o Pera usaria na configuração Normal. Você pagará no máximo <0/> (taxa máxima), geralmente menos."
         },
         "simulation": {
             "title": "Mudanças estimadas",

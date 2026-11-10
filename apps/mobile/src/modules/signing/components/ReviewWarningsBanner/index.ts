@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    reason: {
-        color: theme.colors.suspiciousBannerContent,
-    },
-}))
+export {
+    ReviewWarningsBanner,
+    type ReviewWarningsBannerProps,
+} from './ReviewWarningsBanner'
+export {
+    ReviewWarningText,
+    type ReviewWarningTextProps,
+} from './ReviewWarningText'
+export type { ReviewWarningItem } from './types'

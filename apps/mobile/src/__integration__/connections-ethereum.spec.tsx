@@ -112,6 +112,28 @@ import {
 } from '@test-utils/analytics-recorder'
 import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
+// The integration harness has no i18next instance, so <Trans> renders nothing;
+// echoing its key, values and components lets the specs read the copy it picks
+// and the amounts it embeds.
+vi.mock('react-i18next', async importOriginal => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    Trans: ({
+        i18nKey,
+        values,
+        components,
+    }: {
+        i18nKey?: string
+        values?: object
+        components?: React.ReactNode[]
+    }) => (
+        <>
+            {i18nKey}
+            {values ? JSON.stringify(values) : null}
+            {components}
+        </>
+    ),
+}))
+
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -861,11 +883,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     'ethereum_view_details',
                 )[0]
                 expect(
-                    fee.compareDocumentPosition(target) &
+                    target.compareDocumentPosition(viewDetails) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
                 expect(
-                    target.compareDocumentPosition(viewDetails) &
+                    viewDetails.compareDocumentPosition(fee) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
 
@@ -919,9 +941,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 expect(
                     screen.getAllByTestId('signing-confirm-slide'),
                 ).not.toHaveLength(0)
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
-            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
+            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee without blocking Confirm", async () => {
                 const walletKit = await settle()
                 renderSignReview()
 
@@ -941,6 +968,57 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     },
                     { timeout: 5000 },
                 )
+                const maxFee = screen.getAllByTestId('fee_summary_max')[0]
+                const warning = screen.getAllByTestId(
+                    'ethereum_high_fee_body',
+                )[0]
+                expect(warning.textContent).toContain(maxFee.textContent)
+                // No observed origin in this harness, so the sourceless copy.
+                expect(warning.textContent).toContain(
+                    'ethereum.review_warnings.high_fee_body_no_source',
+                )
+                expect(
+                    screen.queryByTestId('review_warnings_acknowledge'),
+                ).toBeNull()
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
+            })
+
+            it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    data: `0x3593564c${'0'.repeat(63)}1${'0'.repeat(64)}`,
+                    gas: '0x989680',
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('review_warnings_summary'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                for (const id of [
+                    'ethereum_high_fee_warning',
+                    'ethereum_contract_call_warning',
+                ]) {
+                    expect(screen.getAllByTestId(id)).not.toHaveLength(0)
+                }
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
             it('Given a call the node says would revert, when the dApp sends it with its own gas, then nothing is queued and the user is told why', async () => {
@@ -1113,7 +1191,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     return { walletKit, request }
                 }
 
-                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning, a note that Pera cannot lower it and no deadline, and approving it answers the dApp', async () => {
                     const { walletKit, request } = await reviewCall()
 
                     await waitFor(() => {
@@ -1131,6 +1209,17 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(
                         screen.getAllByText('signing.spend_approval.unlimited'),
                     ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-unlimited-note',
+                        ),
+                    ).not.toHaveLength(0)
+                    // An on-chain approve has no deadline; only a signed permit does.
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-deadline',
+                        ),
+                    ).toBeNull()
                     await waitFor(() => {
                         expect(screen.getAllByText('USDC')).not.toHaveLength(0)
                     })
@@ -1162,21 +1251,22 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     })
                 })
 
-                it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it stays an unrecognised contract call with the unknown-contract notice', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it reads as a send of the token with no unknown-contract notice', async () => {
                     await reviewCall(TRANSFER_DATA)
 
                     await waitFor(() => {
                         expect(
-                            screen.getAllByTestId(
-                                'ethereum_contract_call_warning',
-                            ),
+                            screen.getAllByText('transactions.list_item.send'),
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByText(
                             'transactions.list_item.contract_call',
                         ),
-                    ).not.toHaveLength(0)
+                    ).toBeNull()
                 })
             })
 

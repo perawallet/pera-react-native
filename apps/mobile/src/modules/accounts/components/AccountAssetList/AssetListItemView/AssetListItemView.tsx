@@ -14,7 +14,7 @@ import React from 'react'
 import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { PWView } from '@components/core'
+import { PWDivider, PWView } from '@components/core'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { type AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import {
@@ -31,9 +31,9 @@ import { useAssetListItemView } from './useAssetListItemView'
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
     chainId: ChainId
-    /** Listed under its group: shows as the group, naming its own network in the subtitle. */
+    /** Listed under its group: shows as the group, under a header naming its own network. */
     group?: AssetGroupMemberIdentity
-    /** The account spans more than one chain: the icon names its network (a group member names it in its subtitle). */
+    /** The account spans more than one chain: the icon names its network (a group member's header names it instead). */
     shouldShowChainBadge?: boolean
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
@@ -77,23 +77,25 @@ const AssetListItemViewBase = ({
         )
     }
 
-    const balance = (
-        <PWView style={styles.amountContainer}>
-            <AssetAmount
-                chainId={chainId}
-                asset={asset}
-                value={displayAmount}
-                density='compact'
-                isUnitShrinkable
-                style={styles.primaryAmount}
-                numberOfLines={1}
-            />
-            {/* Dynamic currency: usually the preferred currency, but ALGO-
-                denominated holdings fall back to the fiat currency when the
-                preferred currency is ALGO (see useAssetListFiatConverter). Must honor
-                fiat.displayCurrency, so this is CurrencyAmount (not
-                PreferredAmount, which would force the ALGO label onto a fiat
-                value). */}
+    const amount = (
+        <AssetAmount
+            chainId={chainId}
+            asset={asset}
+            value={displayAmount}
+            density='list'
+            variant='body'
+            style={styles.amount}
+            numberOfLines={1}
+        />
+    )
+    // An unpriced asset shows no value rather than a placeholder.
+    const value =
+        fiat.value == null ? undefined : (
+            // Dynamic currency: usually the preferred currency, but ALGO-
+            // denominated holdings fall back to the fiat currency when the
+            // preferred currency is ALGO (see useAssetListFiatConverter). Must
+            // honor fiat.displayCurrency, so this is CurrencyAmount (not
+            // PreferredAmount, which would force the ALGO label onto a fiat value).
             <CurrencyAmount
                 chainId={chainId}
                 currency={fiat.displayCurrency}
@@ -102,32 +104,45 @@ const AssetListItemViewBase = ({
                 value={fiat.value}
                 precision='compact'
                 showSymbol
-                variant='body'
-                style={styles.secondaryAmount}
+                style={styles.value}
                 numberOfLines={1}
             />
-        </PWView>
-    )
+        )
 
-    return (
+    const row = (
         <AssetItemView
             asset={asset}
             chainId={chainId}
             title={group?.name}
             iconAsset={group?.icon ?? undefined}
-            right={balance}
+            right={value}
             shouldCapRightSlot
-            subtitle={
-                isGroupMember ? <ChainLabel chainId={chainId} /> : undefined
-            }
+            shouldTopAlignRight
+            subtitle={amount}
             showChainBadge={shouldShowChainBadge && !isGroupMember}
             iconSize={isGroupMember ? 'md' : undefined}
             showFavorite
             showDeletedLabel
             copyableAssetId
             onPress={onPress}
-            style={[style, isGroupMember && styles.groupMember]}
+            style={isGroupMember ? styles.groupMember : style}
         />
+    )
+
+    if (!isGroupMember) {
+        return row
+    }
+    // The list's row margin stays off the wrapper: a member spaces itself
+    // (groupMember), and both would stack under it.
+    return (
+        <PWView>
+            <PWView style={styles.networkHeader}>
+                <PWDivider style={styles.networkHeaderLine} />
+                <ChainLabel chainId={chainId} />
+                <PWDivider style={styles.networkHeaderLine} />
+            </PWView>
+            {row}
+        </PWView>
     )
 }
 
