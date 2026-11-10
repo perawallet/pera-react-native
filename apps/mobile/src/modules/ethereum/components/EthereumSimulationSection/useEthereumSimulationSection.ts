@@ -19,14 +19,17 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    parseEvmNftAssetId,
     simulationRequestOf,
     useEvmTransactionSimulationQuery,
     type EvmApprovalChange,
+    type EvmAssetChange,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     isExternalCallbackSource,
@@ -152,6 +155,24 @@ const approvalOf = (
     }
 }
 
+// A position NFT is minted by the contract being called, which the store has no record of yet.
+const collectibleFallbackOf = (
+    change: EvmAssetChange,
+    asset: Optional<PeraAsset>,
+    knownContract: EthereumTransactionPresentation['knownContract'],
+    to: Optional<string>,
+): Optional<{ title: string; subtitle: string }> => {
+    if (asset || !knownContract || !to) return undefined
+    if (change.standard !== 'erc721' && change.standard !== 'erc1155') {
+        return undefined
+    }
+    const nft = parseEvmNftAssetId(change.assetId)
+    if (!nft || nft.contract.toLowerCase() !== to.toLowerCase()) {
+        return undefined
+    }
+    return { title: knownContract.name, subtitle: `#${nft.tokenId}` }
+}
+
 /**
  * What a dApp call is predicted to do to the signer, once its simulation
  * answers. Nothing here blocks the review: it reads `loading` until the answer
@@ -163,7 +184,7 @@ const approvalOf = (
 export const useEthereumSimulationSection = (
     presentation: EthereumTransactionPresentation,
 ): EthereumSimulationSectionState => {
-    const { view, scope } = presentation
+    const { view, scope, knownContract } = presentation
     const { currentRequest } = useSigningRequest()
     const nativeAsset = useNativeAsset(scope)
     const isDecoding = useChainCapability(scope.chainId, 'contractDecoding')
@@ -242,18 +263,25 @@ export const useEthereumSimulationSection = (
         const moved = answer.assetChanges.filter(
             change => !change.amount.isZero(),
         )
-        const items = moved.map(change =>
-            balanceImpactItemOf({
+        const items = moved.map(change => {
+            const asset =
+                change.assetId === nativeAsset.assetId
+                    ? nativeAsset
+                    : assets.get(change.assetId)
+            return balanceImpactItemOf({
                 assetId: change.assetId,
                 chainId: scope.chainId,
-                asset:
-                    change.assetId === nativeAsset.assetId
-                        ? nativeAsset
-                        : assets.get(change.assetId),
+                asset,
                 baseUnits: change.amount,
                 usdPrice: prices.get(change.assetId)?.usdPrice,
-            }),
-        )
+                collectibleFallback: collectibleFallbackOf(
+                    change,
+                    asset,
+                    knownContract,
+                    view.to,
+                ),
+            })
+        })
         // The decoded call's own review already shows its approval.
         const undecoded = answer.approvalChanges.filter(
             change => !isDecodedApproval(change, presentation.standardCall),
@@ -280,6 +308,8 @@ export const useEthereumSimulationSection = (
         isSimulationError,
         answer,
         presentation,
+        knownContract,
+        view.to,
         isAssetsPending,
         isPricesPending,
         scope.chainId,

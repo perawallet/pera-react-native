@@ -33,6 +33,8 @@ type BalanceImpactItemParams = {
     baseUnits: Decimal | bigint
     usdPrice?: Decimal
     isFullBalance?: boolean
+    /** Names an NFT the store has no record of yet; ignored once `asset` is set. */
+    collectibleFallback?: { title: string; subtitle: string }
 }
 
 export const balanceImpactItemOf = ({
@@ -42,10 +44,12 @@ export const balanceImpactItemOf = ({
     baseUnits,
     usdPrice,
     isFullBalance = false,
+    collectibleFallback,
 }: BalanceImpactItemParams): BalanceImpactItem => {
     const signed = new Decimal(baseUnits.toString())
+    const fallback = asset ? undefined : collectibleFallback
     const isCollectible =
-        asset?.peraMetadata?.type === PeraAssetType.collectible
+        !!fallback || asset?.peraMetadata?.type === PeraAssetType.collectible
     // Without metadata, still render with the id as the unit so the row
     // isn't blank while the asset syncs.
     const displayAsset: DisplayableAsset = asset ?? {
@@ -53,6 +57,11 @@ export const balanceImpactItemOf = ({
         unitName: assetId,
     }
     const collectible = asset?.peraMetadata?.collectible
+    const collectibleTitle =
+        fallback?.title ?? collectible?.title ?? asset?.name ?? `#${assetId}`
+    const collectibleSubtitle =
+        fallback?.subtitle ??
+        [collectible?.collection?.name, assetId].filter(Boolean).join(' · ')
 
     return {
         assetId,
@@ -60,19 +69,14 @@ export const balanceImpactItemOf = ({
         asset: displayAsset,
         isCollectible,
         isPureCollectible:
-            isCollectible && !!asset && isUniqueCollectible(asset),
+            !!fallback ||
+            (isCollectible && !!asset && isUniqueCollectible(asset)),
         direction: signed.gt(0) ? 'receive' : 'spend',
         amount: baseUnitsToDisplayUnits(signed.abs(), asset?.decimals ?? 0),
         isFullBalance,
         isNewAsset: false,
         usdPrice,
-        collectibleTitle: isCollectible
-            ? (collectible?.title ?? asset?.name ?? `#${assetId}`)
-            : undefined,
-        collectibleSubtitle: isCollectible
-            ? [collectible?.collection?.name, assetId]
-                  .filter(Boolean)
-                  .join(' · ')
-            : undefined,
+        collectibleTitle: isCollectible ? collectibleTitle : undefined,
+        collectibleSubtitle: isCollectible ? collectibleSubtitle : undefined,
     }
 }

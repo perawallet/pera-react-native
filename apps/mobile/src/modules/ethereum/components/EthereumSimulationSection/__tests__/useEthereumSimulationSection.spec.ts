@@ -320,6 +320,75 @@ describe('useEthereumSimulationSection', () => {
         expect(state.approvals).toEqual([])
     })
 
+    describe('a position NFT the store has no record of', () => {
+        const MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+        const MANAGER_NFT = `${MANAGER}/987654`
+        const mintOf = (assetId: string) =>
+            answering({
+                data: success({
+                    assetChanges: [
+                        {
+                            assetId,
+                            standard: 'erc721',
+                            amount: new Decimal(1),
+                        },
+                    ],
+                }),
+            })
+        const labelled = (to: string) =>
+            presentationOf(
+                {
+                    knownContract: {
+                        kind: 'uniswap-v3-position-manager',
+                        name: 'Uniswap V3 Positions',
+                        projectDomain: 'uniswap.org',
+                    },
+                },
+                { ...PRICED, to } as EthereumTransactionView,
+            )
+
+        it('is named after the known contract that was called, with its token id', () => {
+            mintOf(MANAGER_NFT)
+
+            const state = render(labelled(MANAGER))
+
+            expect(state.status).toBe('success')
+            if (state.status !== 'success') return
+            expect(state.receive[0]).toMatchObject({
+                isCollectible: true,
+                collectibleTitle: 'Uniswap V3 Positions',
+                collectibleSubtitle: '#987654',
+            })
+        })
+
+        it('is left as it was when another contract minted it', () => {
+            mintOf(`${COLLECTION}/7`)
+
+            const state = render(labelled(MANAGER))
+
+            expect(state.status).toBe('success')
+            if (state.status !== 'success') return
+            expect(state.receive[0].collectibleTitle).not.toBe(
+                'Uniswap V3 Positions',
+            )
+        })
+
+        it('is left as it was when the called contract has no label', () => {
+            mintOf(MANAGER_NFT)
+
+            const state = render(
+                presentationOf({}, {
+                    ...PRICED,
+                    to: MANAGER,
+                } as EthereumTransactionView),
+            )
+
+            expect(state.status).toBe('success')
+            if (state.status !== 'success') return
+            expect(state.receive[0].collectibleTitle).toBeUndefined()
+        })
+    })
+
     it('leaves out a delta of zero, which moves nothing', () => {
         answering({
             data: success({

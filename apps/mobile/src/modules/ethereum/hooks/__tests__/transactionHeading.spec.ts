@@ -102,6 +102,39 @@ describe('titleKeyOf', () => {
         ).toBe('transactions.list_item.wrap')
     })
 
+    it('titles a liquidity add and removal', () => {
+        expect(
+            titleKeyOf(
+                view({
+                    action: {
+                        kind: 'add-liquidity',
+                        deposits: [],
+                        position: { kind: 'new' },
+                    },
+                }),
+                null,
+                {
+                    kind: 'add-liquidity',
+                    deposits: [],
+                    position: { kind: 'new' },
+                },
+            ),
+        ).toBe('transactions.list_item.add_liquidity')
+        expect(
+            titleKeyOf(
+                view({
+                    action: {
+                        kind: 'remove-liquidity',
+                        tokenId: '7',
+                        isClosing: false,
+                    },
+                }),
+                null,
+                { kind: 'remove-liquidity', tokenId: '7', isClosing: false },
+            ),
+        ).toBe('transactions.list_item.remove_liquidity')
+    })
+
     it('lets an approval win over an action', () => {
         expect(
             titleKeyOf(view({ action: swapAction }), approval({}), swap),
