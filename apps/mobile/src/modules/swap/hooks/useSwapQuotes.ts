@@ -135,7 +135,7 @@ export const useSwapQuotes = ({
 
     // Pair the server said it can't quote (404) — don't re-fire on every
     // amount/dep change; only a pair/network change or reset() clears it.
-    // State (not a ref) so the error surfaces in render as isQuoteError.
+    // State (not a ref) so the failure surfaces in render as quoteFailure.
     const [notFoundPair, setNotFoundPair] = useState<Nullable<string>>(null)
     const pairKey = `${toScopeKey(scope)}:${fromAssetId}:${toScopeKey(receiveScope)}:${toAssetId}`
     const { chainId, networkId } = scope

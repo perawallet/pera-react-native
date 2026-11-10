@@ -148,6 +148,7 @@ export const useSwapAmountSection = ({
                 lastTypedAssetRef.current !== null &&
                 amount.equals(lastTypedAssetRef.current)
             if (isUserTyped) return
+            typedTextRef.current = null
             const fiat = assetToFiat?.(amount)
             setRawText(fiat ? fiat.toFixed(FIAT_DECIMAL_PLACES) : '')
         } else {

@@ -583,6 +583,37 @@ describe('useSwapAmountSection', () => {
             expect(result.current.displayValue).toBe('0.0079852331')
         })
 
+        it('restores the asset amount in the focused field after a fiat round trip', () => {
+            const onAmountChange = vi.fn()
+            const typed = new Decimal('1.5')
+            const { result, rerender } = renderHook(
+                (props: { amount: Decimal | null; isFiat: boolean }) =>
+                    useSwapAmountSection({
+                        ...payProps,
+                        amount: props.amount,
+                        onAmountChange,
+                        isLocalCurrencyInput: props.isFiat,
+                        assetToFiat,
+                    }),
+                {
+                    initialProps: {
+                        amount: null as Decimal | null,
+                        isFiat: false,
+                    },
+                },
+            )
+
+            act(() => result.current.handleFocus())
+            act(() => result.current.handleTextChange('1.5'))
+            rerender({ amount: typed, isFiat: false })
+            act(() => result.current.handleBlur())
+            rerender({ amount: typed, isFiat: true })
+            rerender({ amount: typed, isFiat: false })
+            act(() => result.current.handleFocus())
+
+            expect(result.current.displayValue).toBe('1.5')
+        })
+
         it('leaves a six-decimal amount unchanged', () => {
             mockAsset = original
 
