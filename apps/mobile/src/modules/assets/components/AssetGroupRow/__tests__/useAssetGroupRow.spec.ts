@@ -341,6 +341,23 @@ describe('useAssetGroupRow', () => {
             expect(result.current.subtitle).toBe('USDC · 2 networks')
         })
 
+        it('names the network when every holding is on one', () => {
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('ethereum', USDC, '0xA0b8'),
+                            member('ethereum', USDC, '0xFF97'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC · Ethereum')
+        })
+
         it('counts a network once when two of its holdings share the group', () => {
             const { result } = renderHook(() =>
                 useAssetGroupRow({

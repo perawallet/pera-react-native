@@ -17,6 +17,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -121,13 +122,18 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         )
     }, [members])
 
-    const subtitle = useMemo(
-        () =>
-            `${group.symbol} · ${t('account_details.assets.networks_count', {
-                count: chainIds.length,
-            })}`,
-        [group.symbol, chainIds, t],
-    )
+    // Two tokens on one network can share a group; naming that network says
+    // more than a count of one, as on single-network rows.
+    const subtitle = useMemo(() => {
+        const [onlyChainId] = chainIds
+        const networks =
+            chainIds.length === 1 && onlyChainId
+                ? chainDisplayNameOf(onlyChainId)
+                : t('account_details.assets.networks_count', {
+                      count: chainIds.length,
+                  })
+        return `${group.symbol} · ${networks}`
+    }, [group.symbol, chainIds, t])
 
     const decimals = useMemo(
         () => Math.max(0, ...members.map(({ asset }) => asset?.decimals ?? 0)),
