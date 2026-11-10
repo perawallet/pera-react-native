@@ -765,4 +765,21 @@ describe('hidesUnknownContractNotice', () => {
         ).toBe(false)
         expect(hidesUnknownContractNotice(undefined)).toBe(false)
     })
+
+    it('hides it for a new position and keeps it for an increase of an existing one', () => {
+        expect(
+            hidesUnknownContractNotice({
+                kind: 'add-liquidity',
+                deposits: [],
+                position: { kind: 'new' },
+            }),
+        ).toBe(true)
+        expect(
+            hidesUnknownContractNotice({
+                kind: 'add-liquidity',
+                deposits: [],
+                position: { kind: 'existing', tokenId: '7' },
+            }),
+        ).toBe(false)
+    })
 })

@@ -405,11 +405,19 @@ export const contractActionTitleKeyOf = (action: EvmContractAction): I18nKey =>
 /**
  * Whether a decoded action stands in for the unknown-contract notice. A swap
  * that pays a third party out of its output doesn't: the notice stays beside
- * the fee, so a fee can never be what silences it.
+ * the fee, so a fee can never be what silences it. Neither does an increase of
+ * an existing position: the manager doesn't check who owns it, so the calldata
+ * can't show the deposit is the signer's.
  */
 export const hidesUnknownContractNotice = (
     action: Optional<EvmContractAction>,
-): boolean => !!action && (action.kind !== 'swap' || action.fees.length === 0)
+): boolean => {
+    if (!action) return false
+    if (action.kind === 'swap') return action.fees.length === 0
+    return !(
+        action.kind === 'add-liquidity' && action.position.kind === 'existing'
+    )
+}
 
 /** A contract call's summary, titled for what its calldata proves it does. */
 export const contractActionSummary = (
