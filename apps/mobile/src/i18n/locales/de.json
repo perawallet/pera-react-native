@@ -4190,7 +4190,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Krypto",
             "see_all_fiat": "Alle Fiat-Währungen anzeigen",
-            "network_suffix": "{{symbol}} · {{network}}-Netzwerk",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "Keine Assets verfügbar"
         },
         "provider": {

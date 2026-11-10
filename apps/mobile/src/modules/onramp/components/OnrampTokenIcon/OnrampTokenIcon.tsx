@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { AssetIcon } from '@components/AssetIcon'
-import type { PWIconSize } from '@components/core'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { AssetIconWithNetwork } from '@components/AssetIconWithNetwork'
+import type { PWIconSize } from '@components/core'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 
@@ -21,23 +21,29 @@ export type OnrampTokenIconProps = {
     token: Nullable<RampToken>
     size?: PWIconSize
     shape?: 'circle' | 'square'
+    /** Test id of a network badge drawn from the router's logo. */
+    networkLogoTestID?: string
 }
 
 export const OnrampTokenIcon = ({
     token,
     size = 'md',
     shape = 'circle',
+    networkLogoTestID,
 }: OnrampTokenIconProps) => {
     const { scope } = useOnrampAccount()
     if (!token) return null
 
     return (
-        <AssetIcon
+        <AssetIconWithNetwork
             chainId={scope?.chainId ?? null}
             asset={buildDisplayableAssetFromRampToken(token, scope)}
             logoUrl={token.logo ?? undefined}
             size={size}
             shape={shape}
+            networkChainId={token.network.chainId}
+            networkLogoUrl={token.network.logo ?? undefined}
+            networkLogoTestID={networkLogoTestID}
         />
     )
 }

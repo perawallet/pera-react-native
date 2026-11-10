@@ -28,7 +28,7 @@ export type UseOnrampSenderAddressContentResult = {
     address: string
     setAddress: (value: string) => void
     clearAddress: () => void
-    /** The source's chain as the router names it, for the placeholder and the error. */
+    /** The source's chain, for the placeholder and the error. */
     networkLabel: string
     isValid: boolean
     /** An entry that can't be an address on the source's chain; empty is fine. */

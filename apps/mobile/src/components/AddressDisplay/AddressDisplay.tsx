@@ -109,7 +109,10 @@ export const AddressDisplay = ({
 
     const isUnifiedLayout = !!iconName || showSecondaryAddress
     const chainBadge = showChainBadge ? (
-        <ChainAvatarBadge chainId={chainId} />
+        <ChainAvatarBadge
+            chainId={chainId}
+            corner='left'
+        />
     ) : null
 
     let content: ReactNode

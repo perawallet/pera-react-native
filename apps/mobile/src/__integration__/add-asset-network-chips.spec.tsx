@@ -152,8 +152,12 @@ describe('Flow: Add Asset with a second chain registered', () => {
         })
         expect(screen.getByText('Ether')).toBeTruthy()
         expect(screen.getByTestId('add_asset_network_filter_all')).toBeTruthy()
-        expect(screen.getAllByTestId('chain_label_algorand')).toHaveLength(1)
-        expect(screen.getAllByTestId('chain_label_ethereum')).toHaveLength(2)
+        expect(
+            screen.getAllByTestId('chain_avatar_badge_algorand'),
+        ).toHaveLength(1)
+        expect(
+            screen.getAllByTestId('chain_avatar_badge_ethereum'),
+        ).toHaveLength(2)
         expect(
             screen.getByTestId('asset_search_item_add_31566704'),
         ).toBeTruthy()
@@ -184,7 +188,7 @@ describe('Flow: Add Asset with a second chain registered', () => {
         })
         expect(screen.getByText('Ether')).toBeTruthy()
         expect(screen.queryByText('USD Coin')).toBeNull()
-        expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+        expect(screen.queryByTestId('chain_avatar_badge_ethereum')).toBeNull()
 
         fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
             target: { value: 'dai' },
@@ -219,7 +223,7 @@ describe('Flow: Add Asset with a second chain registered', () => {
         })
         expect(screen.queryByText('Dai Stablecoin')).toBeNull()
         expect(screen.queryByTestId('add_asset_network_filter_all')).toBeNull()
-        expect(screen.queryByTestId('chain_label_algorand')).toBeNull()
+        expect(screen.queryByTestId('chain_avatar_badge_algorand')).toBeNull()
     })
 
     it('Given Algorand cannot manage assets, when results load, then no row offers the add action', async () => {

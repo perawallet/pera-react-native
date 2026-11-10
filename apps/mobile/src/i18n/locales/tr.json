@@ -4198,7 +4198,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Kripto",
             "see_all_fiat": "Tüm fiat para birimlerini gör",
-            "network_suffix": "{{symbol}} · {{network}} ağı",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "Kullanılabilir varlık yok"
         },
         "provider": {

@@ -12,28 +12,51 @@
 
 import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getIconPixelSize, PWView } from '@components/core'
+import { getIconPixelSize, PWImage, PWView } from '@components/core'
 import { ChainIcon } from '../ChainIcon'
 import { useStyles } from './styles'
 
 export type ChainAvatarBadgeProps = {
-    chainId: ChainId
-}
+    /** `left` is for an account avatar, whose right corner holds its backup badge. */
+    corner?: 'left' | 'right'
+    testID?: string
+} & (
+    | { chainId: ChainId; logoUrl?: never }
+    /** A network the wallet doesn't run has no icon of its own, so it is drawn from a URL. */
+    | { logoUrl: string; chainId?: never }
+)
 
-/** Pins to the bottom-left of its parent avatar, leaving the right corner to the backup badge. */
-export const ChainAvatarBadge = ({ chainId }: ChainAvatarBadgeProps) => {
-    const styles = useStyles()
+/** Pins a network's icon to a bottom corner of its parent avatar. */
+export const ChainAvatarBadge = ({
+    chainId,
+    logoUrl,
+    corner = 'right',
+    testID,
+}: ChainAvatarBadgeProps) => {
     const { theme } = useTheme()
+    const size = getIconPixelSize(theme, 'sm')
+    const styles = useStyles(size)
 
     return (
         <PWView
-            style={styles.badge}
-            testID={`chain_avatar_badge_${chainId}`}
+            style={[
+                styles.badge,
+                corner === 'left' ? styles.left : styles.right,
+            ]}
+            testID={testID ?? `chain_avatar_badge_${chainId ?? 'logo'}`}
         >
-            <ChainIcon
-                chainId={chainId}
-                size={getIconPixelSize(theme, 'sm')}
-            />
+            {chainId === undefined ? (
+                <PWImage
+                    source={{ uri: logoUrl }}
+                    style={styles.logo}
+                    showLoadingIndicator={false}
+                />
+            ) : (
+                <ChainIcon
+                    chainId={chainId}
+                    size={size}
+                />
+            )}
         </PWView>
     )
 }
