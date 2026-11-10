@@ -51,6 +51,12 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     ),
 )
 
+// The unserved portfolio answer reads stored holdings; none are stored here.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    getAccountHoldings: vi.fn(async () => []),
+}))
+
 const suites = (chain: EvmChain): void => {
     const SCOPE: ChainScope = evmScopeOf(chain)
     const ID = eip155IdOf(chain)
@@ -162,14 +168,14 @@ const suites = (chain: EvmChain): void => {
             },
             signers: { signing, watch },
             // This scope serves no assets or prices, so both answer without a
-            // request, the portfolio as no source; balance-history.spec
-            // covers the served path.
+            // request, the portfolio as an empty source since nothing is held;
+            // balance-history.spec covers the served path.
             history: {
                 addresses: [FUNDED],
                 assetId: USDC,
                 period: 'one-day',
                 handlers: [],
-                portfolio: null,
+                portfolio: [],
                 balance: [],
             },
             changeSignal: {

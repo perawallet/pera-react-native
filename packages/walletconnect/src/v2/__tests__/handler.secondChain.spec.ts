@@ -295,6 +295,26 @@ describe('a proposal spanning algorand and eip155', () => {
         })
     })
 
+    it('marks the chains a required namespace names as required', async () => {
+        const { proposals, propose } = await open()
+
+        await propose(bothRequired())
+
+        expect(proposals[0].requested.requiredChains).toEqual([
+            'algorand',
+            'ethereum',
+        ])
+    })
+
+    it('leaves a chain named only by an optional namespace out of the required ones', async () => {
+        const { proposals, propose } = await open()
+
+        await propose(OPTIONAL_ETHEREUM)
+
+        expect(proposals[0].requested.chains).toEqual(['algorand', 'ethereum'])
+        expect(proposals[0].requested.requiredChains).toEqual(['algorand'])
+    })
+
     it('lists only the chains that offer a signing method as permissions', async () => {
         const { proposals, propose } = await open()
 

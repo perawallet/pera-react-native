@@ -85,7 +85,7 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
         // Catches a dropped copy key in the header, which would leave the twin
         // looking materially different from the screen it copies. The headline
         // and the network chips take their copy from the approval hook and the
-        // chip, which this source scan does not read.
+        // networks panel, which this source scan does not read.
         //
         // The network badges are the documented exception (owner report,
         // 2026-07-30): TestnetIndicator already states the active network at

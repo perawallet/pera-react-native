@@ -11,8 +11,9 @@
  */
 
 // The account chart plots the account's total across every chain the headline
-// counts, so a chain that can't serve history makes the chart unavailable
-// rather than a partial line; one whose history fails is left out and named. Copy is asserted by key: this project renders
+// counts, so a chain holding value that can't serve history makes the chart
+// unavailable rather than a partial line; one holding nothing adds an empty
+// source, and one whose history fails is left out. Copy is asserted by key: this project renders
 // i18n keys.
 
 import {
@@ -313,7 +314,8 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         ).toBeNull()
     })
 
-    it('Given Ethereum serves no balance history, when the chart is shown, then it says the chart is unavailable rather than plotting Algorand alone', async () => {
+    it('Given Ethereum holds ether and serves no balance history, when the chart is shown, then it says the chart is unavailable rather than plotting Algorand alone', async () => {
+        await seedEthereumHolding('500000000000000000')
         serveHistory({
             algorand: [
                 { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
@@ -333,6 +335,27 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         // Asked, and answered "not enabled": not short-circuited before the backend.
         expect(requests.ethereum).toBeGreaterThan(0)
         expect(screen.queryByTestId('wealth_trend')).toBeNull()
+    })
+
+    it('Given Ethereum was just added, holds nothing and serves no balance history, when the chart is shown, then it plots Algorand with its change and never says unavailable', async () => {
+        serveHistory({
+            algorand: [
+                { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
+                { datetime: '2026-10-21T00:00:00Z', usd_value: '12' },
+            ],
+        })
+
+        renderHeader(true)
+
+        expect(
+            await screen.findByTestId('wealth_trend', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            }),
+        ).toBeTruthy()
+        expect(requests.ethereum).toBeGreaterThan(0)
+        expect(
+            screen.queryByText('common.network_unavailable.title'),
+        ).toBeNull()
     })
 
     it('Given Ethereum history fails, when the chart is shown, then it plots Algorand without naming Ethereum, and shows no change', async () => {

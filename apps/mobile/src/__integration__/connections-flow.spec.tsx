@@ -468,11 +468,11 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             ).toBeTruthy()
         })
         expect(
-            screen.getByText('walletconnect.request.title_network'),
+            screen.getByText('walletconnect.request.title_connect'),
         ).toBeTruthy()
         expect(
-            screen.queryByText('walletconnect.request.network_not_added'),
-        ).toBeNull()
+            screen.getByTestId('wc_requested_network_added_algorand'),
+        ).toBeTruthy()
         expect(
             screen.getByText(
                 addressCodecs
