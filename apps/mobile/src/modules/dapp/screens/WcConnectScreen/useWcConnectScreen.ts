@@ -16,7 +16,7 @@ import {
     firstUnreachableChainsNote,
     useAllAccounts,
     useSelectedAccountId,
-    useSigningAccounts,
+    useSigningAccountsOn,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -71,9 +71,11 @@ type UseWcConnectScreenResult = {
     chainNetwork?: ChainNetworkLabel
     /** The dApp registry's tier for the peer url, positive only when the requesting tab is that site. */
     verificationTier?: VerificationTier
+    /** Accounts with an address on `chainId` that something held can sign for. */
     accounts: WalletAccount[]
+    /** Account ids; each approves with its address on `chainId`. */
     selected: Set<string>
-    toggle: (address: string) => void
+    toggle: (accountId: string) => void
     canConnect: boolean
     isLoading: boolean
     isConnecting: boolean
@@ -98,14 +100,10 @@ type UseWcConnectScreenResult = {
 const initialSelection = (
     activeAccountId: Maybe<string>,
     accounts: WalletAccount[],
-    chainId: ChainId,
-): Set<string> => {
-    const active = activeAccountId
-        ? accounts.find(a => a.id === activeAccountId)
-        : undefined
-    const address = active && chainAccountOf(active, chainId)?.address
-    return address ? new Set([address]) : new Set()
-}
+): Set<string> =>
+    activeAccountId && accounts.some(a => a.id === activeAccountId)
+        ? new Set([activeAccountId])
+        : new Set()
 
 // Compared as ORIGINS: a peer url routinely carries a path or trailing slash
 // where `requesterOrigin` is bare. An unparseable url counts as distinct.
@@ -129,7 +127,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     // Every proposal reaching this window names one chain.
     const home = useHomeChainScope()
     const chainId = proposal?.requested.chains[0] ?? home.chainId
-    const accounts = useSigningAccounts(chainId)
+    const accounts = useSigningAccountsOn([chainId])
     const { t } = useLanguage()
     const allAccounts = useAllAccounts()
     const noAccountsNote = useMemo(
@@ -163,37 +161,50 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         if (hasSeededRef.current || !proposal || accounts.length === 0) return
         hasSeededRef.current = true
         if (proposal.requesterOrigin) return
-        setSelected(initialSelection(selectedAccountId, accounts, chainId))
-    }, [proposal, selectedAccountId, accounts, chainId])
+        setSelected(initialSelection(selectedAccountId, accounts))
+    }, [proposal, selectedAccountId, accounts])
     const [isConnecting, setIsConnecting] = useState(false)
     const isConfirmed = useApprovalConfirmedStore(state => state.isConfirmed)
 
-    const toggle = useCallback((address: string): void => {
+    const toggle = useCallback((accountId: string): void => {
         setSelected(prev => {
             const next = new Set(prev)
-            if (next.has(address)) {
-                next.delete(address)
+            if (next.has(accountId)) {
+                next.delete(accountId)
             } else {
-                next.add(address)
+                next.add(accountId)
             }
             return next
         })
     }, [])
 
+    // An account picked and then dropped from the list is not granted.
+    const addresses = useMemo(
+        () =>
+            [...selected].flatMap(id => {
+                const account = accounts.find(a => a.id === id)
+                const address =
+                    account && chainAccountOf(account, chainId)?.address
+                return address ? [address] : []
+            }),
+        [selected, accounts, chainId],
+    )
+
     const handleConnect = useCallback((): void => {
-        if (
-            !selected.size ||
-            !isArmed ||
-            !siteSafety.isApprovalAllowed ||
-            isConnecting
-        )
-            return
+        if (!isArmed || !siteSafety.isApprovalAllowed || isConnecting) return
+        if (addresses.length === 0) return
         setIsConnecting(true)
         // No `finally` reset: approve() settles the approval and closes this
         // window. A failed approve leaves the button spinning rather than
         // inviting a second grant against a half-completed handshake.
-        void approve([...selected])
-    }, [approve, selected, isArmed, siteSafety.isApprovalAllowed, isConnecting])
+        void approve(addresses)
+    }, [
+        approve,
+        addresses,
+        isArmed,
+        siteSafety.isApprovalAllowed,
+        isConnecting,
+    ])
 
     const isRequesterOriginDistinct = isDistinctFromPeerUrl(
         proposal?.requesterOrigin,
@@ -240,7 +251,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         selected,
         toggle,
         canConnect:
-            selected.size > 0 && isArmed && siteSafety.isApprovalAllowed,
+            addresses.length > 0 && isArmed && siteSafety.isApprovalAllowed,
         isLoading,
         isConnecting: isConnecting && !isConfirmed,
         isConfirmed,

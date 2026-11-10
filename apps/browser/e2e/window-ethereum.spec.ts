@@ -383,6 +383,12 @@ test.describe('signing from a connected dApp', () => {
         await startRequest('connect', { method: 'eth_requestAccounts' })
         const { approvalPage } = await openApproval()
         const connectButton = approvalPage.getByTestId('wc-connect-connect')
+        const firstRow = approvalPage
+            .locator('[data-testid^="wc_account_row_"]')
+            .first()
+        await expect(firstRow).toBeVisible({ timeout: 20_000 })
+        await expect(firstRow.getByTestId('chain_icon_ethereum')).toBeVisible()
+        const rowText = (await firstRow.textContent()) ?? ''
         await selectAccountAndArmConnect(approvalPage, connectButton)
         await connectButton.click()
         const connected = await outcomeOf('connect')
@@ -390,6 +396,10 @@ test.describe('signing from a connected dApp', () => {
         const accounts = connected.result as string[]
         expect(accounts).toHaveLength(1)
         address = accounts[0]
+        // The EVM codec shows 6 leading and 4 trailing characters.
+        expect(rowText.toLowerCase()).toContain(
+            `${address.slice(0, 6)}...${address.slice(-4)}`.toLowerCase(),
+        )
         await approvalPage.close().catch(() => {})
 
         await startRequest('chainId', { method: 'eth_chainId' })

@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
     approve: vi.fn(),
     reject: vi.fn(),
     useDappRequest: vi.fn(),
-    useSigningAccounts: vi.fn(),
+    useSigningAccountsOn: vi.fn(),
     useSelectedAccountId: vi.fn(),
     firstUnreachableChainsNote: vi.fn(),
     allAccounts: [] as unknown[],
@@ -74,7 +74,7 @@ vi.mock('@hooks/useApprovalArming.web', () => ({
 vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSigningAccounts: mocks.useSigningAccounts,
+    useSigningAccountsOn: mocks.useSigningAccountsOn,
     useSelectedAccountId: mocks.useSelectedAccountId,
     useAllAccounts: () => mocks.allAccounts,
     firstUnreachableChainsNote: mocks.firstUnreachableChainsNote,
@@ -136,7 +136,7 @@ const render = (approval: unknown = proposalApproval()) => {
 describe('useWcConnectScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
+        mocks.useSigningAccountsOn.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
         mocks.useSelectedAccountId.mockReturnValue({
             selectedAccountId: null,
         })
@@ -148,7 +148,7 @@ describe('useWcConnectScreen', () => {
     })
 
     it("explains an empty account list with the kind's note for the requested chain", () => {
-        mocks.useSigningAccounts.mockReturnValue([])
+        mocks.useSigningAccountsOn.mockReturnValue([])
         mocks.firstUnreachableChainsNote.mockReturnValue(
             'kind.unreachable_note',
         )
@@ -164,7 +164,7 @@ describe('useWcConnectScreen', () => {
     })
 
     it('falls back to the generic copy when no kind says why', () => {
-        mocks.useSigningAccounts.mockReturnValue([])
+        mocks.useSigningAccountsOn.mockReturnValue([])
 
         const { result } = render()
 
@@ -197,14 +197,18 @@ describe('useWcConnectScreen', () => {
         )
 
         expect(result.current.chainId).toBe('ethereum')
-        expect(mocks.useSigningAccounts).toHaveBeenLastCalledWith('ethereum')
+        expect(mocks.useSigningAccountsOn).toHaveBeenLastCalledWith([
+            'ethereum',
+        ])
     })
 
     it('stays on Algorand until a proposal has loaded', () => {
         const { result } = render(null)
 
         expect(result.current.chainId).toBe('algorand')
-        expect(mocks.useSigningAccounts).toHaveBeenLastCalledWith('algorand')
+        expect(mocks.useSigningAccountsOn).toHaveBeenLastCalledWith([
+            'algorand',
+        ])
     })
 
     describe('chain and network', () => {
@@ -305,11 +309,11 @@ describe('useWcConnectScreen', () => {
         })
     })
 
-    it('pre-selects the active account by its address on the proposal’s chain', () => {
+    it('pre-selects the active account when it has an address on the proposal’s chain', () => {
         mocks.useSelectedAccountId.mockReturnValue({
             selectedAccountId: 'account-evm',
         })
-        mocks.useSigningAccounts.mockReturnValue([
+        mocks.useSigningAccountsOn.mockReturnValue([
             {
                 ...ACCOUNT_A,
                 id: 'account-evm',
@@ -326,7 +330,7 @@ describe('useWcConnectScreen', () => {
             }),
         )
 
-        expect([...result.current.selected]).toEqual(['0xEVM'])
+        expect([...result.current.selected]).toEqual(['account-evm'])
     })
 
     it('cannot connect until an account is picked, then approves with exactly those accounts', () => {
@@ -335,7 +339,7 @@ describe('useWcConnectScreen', () => {
         expect(result.current.canConnect).toBe(false)
 
         act(() => {
-            result.current.toggle('BBBB')
+            result.current.toggle('account-b')
         })
         expect(result.current.canConnect).toBe(true)
 
@@ -343,6 +347,64 @@ describe('useWcConnectScreen', () => {
             result.current.handleConnect()
         })
         expect(mocks.approve).toHaveBeenCalledWith(['BBBB'])
+    })
+
+    it('approves an account by its address on the proposal’s chain, not its first chain', () => {
+        const universal = {
+            ...ACCOUNT_A,
+            chains: {
+                algorand: { address: 'AAAA', keyPairId: 'key-a' },
+                ethereum: { address: '0xAAAA', keyPairId: 'key-a' },
+            },
+        }
+        mocks.useSigningAccountsOn.mockReturnValue([universal])
+        const { result } = render(
+            proposalApproval({
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['ethereum'],
+                    methods: ['eth_accounts'],
+                },
+            }),
+        )
+
+        act(() => result.current.toggle('account-a'))
+        act(() => result.current.handleConnect())
+
+        expect(mocks.approve).toHaveBeenCalledWith(['0xAAAA'])
+    })
+
+    it('approves several accounts in the order they were picked', () => {
+        const { result } = render()
+
+        act(() => result.current.toggle('account-b'))
+        act(() => result.current.toggle('account-a'))
+        act(() => result.current.handleConnect())
+
+        expect(mocks.approve).toHaveBeenCalledWith(['BBBB', 'AAAA'])
+    })
+
+    it('does not approve a picked account that stopped being offered', () => {
+        const { result, rerender } = render()
+        act(() => result.current.toggle('account-a'))
+        act(() => result.current.toggle('account-b'))
+
+        mocks.useSigningAccountsOn.mockReturnValue([ACCOUNT_B])
+        rerender()
+        act(() => result.current.handleConnect())
+        expect(mocks.approve).toHaveBeenCalledWith(['BBBB'])
+    })
+
+    it('sends no grant when every picked account stopped being offered', () => {
+        const { result, rerender } = render()
+        act(() => result.current.toggle('account-a'))
+
+        mocks.useSigningAccountsOn.mockReturnValue([])
+        rerender()
+        act(() => result.current.handleConnect())
+
+        expect(mocks.approve).not.toHaveBeenCalled()
+        expect(result.current.canConnect).toBe(false)
     })
 
     describe('site safety', () => {
@@ -374,7 +436,7 @@ describe('useWcConnectScreen', () => {
             const { result } = render()
 
             act(() => {
-                result.current.toggle('BBBB')
+                result.current.toggle('account-b')
             })
             act(() => {
                 result.current.handleConnect()
@@ -412,7 +474,7 @@ describe('useWcConnectScreen', () => {
 
         it('swaps the spinner for the confirmed state', () => {
             const { result } = render()
-            act(() => result.current.toggle('BBBB'))
+            act(() => result.current.toggle('account-b'))
             act(() => result.current.handleConnect())
             expect(result.current.isConnecting).toBe(true)
 
@@ -424,7 +486,7 @@ describe('useWcConnectScreen', () => {
 
         it('does not approve a second time from the confirmed button', () => {
             const { result } = render()
-            act(() => result.current.toggle('BBBB'))
+            act(() => result.current.toggle('account-b'))
             act(() => result.current.handleConnect())
             act(() => useApprovalConfirmedStore.getState().setConfirmed())
 
@@ -448,10 +510,10 @@ describe('useWcConnectScreen', () => {
         const { result } = render()
 
         act(() => {
-            result.current.toggle('AAAA')
+            result.current.toggle('account-a')
         })
         act(() => {
-            result.current.toggle('AAAA')
+            result.current.toggle('account-a')
         })
 
         expect(result.current.canConnect).toBe(false)
@@ -463,7 +525,7 @@ describe('useWcConnectScreen', () => {
         })
         const { result } = render()
 
-        expect(result.current.selected.has('BBBB')).toBe(true)
+        expect(result.current.selected.has('account-b')).toBe(true)
         expect(result.current.canConnect).toBe(true)
     })
 
@@ -471,15 +533,15 @@ describe('useWcConnectScreen', () => {
         mocks.useSelectedAccountId.mockReturnValue({
             selectedAccountId: 'account-b',
         })
-        mocks.useSigningAccounts.mockReturnValue([])
+        mocks.useSigningAccountsOn.mockReturnValue([])
         const { result, rerender } = render()
 
         expect(result.current.selected.size).toBe(0)
 
-        mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
+        mocks.useSigningAccountsOn.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
         rerender()
 
-        expect(result.current.selected.has('BBBB')).toBe(true)
+        expect(result.current.selected.has('account-b')).toBe(true)
     })
 
     it('pre-checks nothing for a page-initiated proposal', () => {

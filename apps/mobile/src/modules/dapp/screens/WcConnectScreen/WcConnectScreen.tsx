@@ -16,21 +16,16 @@
 import React from 'react'
 import {
     PWButton,
-    PWCheckbox,
     PWFlatList,
     PWScreen,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@components/AccountDisplay'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { SiteSafetyGate } from '@modules/site-safety'
+import { ConnectionApprovalAccountRow } from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
@@ -70,25 +65,14 @@ export const WcConnectScreen = (): React.JSX.Element => {
         item,
     }: {
         item: WalletAccount
-    }): React.JSX.Element => {
-        const address = chainAccountOf(item, chainId)?.address ?? ''
-        return (
-            <PWTouchableOpacity
-                key={item.id}
-                style={styles.accountItem}
-                onPress={() => toggle(address)}
-            >
-                <AccountDisplay
-                    account={item}
-                    showChevron={false}
-                />
-                <PWCheckbox
-                    onPress={() => toggle(address)}
-                    checked={selected.has(address)}
-                />
-            </PWTouchableOpacity>
-        )
-    }
+    }): React.JSX.Element => (
+        <ConnectionApprovalAccountRow
+            account={item}
+            chainId={chainId}
+            isSelected={selected.has(item.id)}
+            onPress={toggle}
+        />
+    )
 
     if (isLoading || !peer) {
         return <FullScreenLoadingView />
