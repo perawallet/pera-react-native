@@ -60,7 +60,7 @@ export type EthereumTransactionPayload = {
     isPreview?: true
     /**
      * Set on a dApp's transaction whose gas limit and fees authorise, or would
-     * cost, more than twice what the wallet's own pricing would.
+     * cost, more than twice what the wallet would pay at its Fast preset.
      */
     hasHighFee?: true
     /**

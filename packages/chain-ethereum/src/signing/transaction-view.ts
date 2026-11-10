@@ -36,7 +36,7 @@ export type EthereumPricedView = {
     isPreview?: false
     nonce: number
     gas: bigint
-    /** A dApp's request whose gas limit and fees authorise over twice the wallet's own pricing. */
+    /** A dApp's request whose gas limit and fees authorise over twice what the wallet pays at its Fast preset. */
     hasHighFee?: true
     /**
      * Wei. What the transaction is expected to cost at request time, at the
