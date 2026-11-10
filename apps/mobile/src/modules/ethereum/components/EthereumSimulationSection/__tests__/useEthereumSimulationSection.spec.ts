@@ -339,7 +339,6 @@ describe('useEthereumSimulationSection', () => {
             presentationOf(
                 {
                     knownContract: {
-                        kind: 'uniswap-v3-position-manager',
                         name: 'Uniswap V3 Positions',
                         projectDomain: 'uniswap.org',
                     },
