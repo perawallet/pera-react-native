@@ -199,6 +199,24 @@ describe('useAssetGroupRow', () => {
         expect(result.current.iconChainId).toBeNull()
     })
 
+    it('lists a network once when two of its holdings share the group', () => {
+        const { result } = renderHook(() =>
+            useAssetGroupRow({
+                item: groupOf(
+                    [
+                        member('algorand', USDC, '31566704'),
+                        member('ethereum', USDC, '0xA0b8'),
+                        member('ethereum', USDC, '0xFF97'),
+                    ],
+                    null,
+                ),
+                convertFiat: toEur,
+            }),
+        )
+
+        expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
+    })
+
     describe('verification badge', () => {
         const badgeOf = (members: GroupedHoldingMember<Holding>[]) =>
             renderHook(() =>

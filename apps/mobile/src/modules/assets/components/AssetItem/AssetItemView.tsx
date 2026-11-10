@@ -31,6 +31,10 @@ export type AssetItemViewProps = {
     asset: DisplayableAsset
     /** The asset's chain; decides native-ness, and an id that is an address on it shows truncated by that chain's codec. */
     chainId: ChainId
+    /** Replaces the asset's name, such as with its cross-chain group's. */
+    title?: string
+    /** Draws the icon from another asset, such as its cross-chain group's. */
+    iconAsset?: { asset: DisplayableAsset; chainId: ChainId }
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
     /** Trails the name in the title row, such as the holding's network. */
@@ -59,6 +63,8 @@ export type AssetItemViewProps = {
 export const AssetItemView = ({
     asset,
     chainId,
+    title,
+    iconAsset,
     right,
     titleAccessory,
     subtitle: subtitleOverride,
@@ -141,8 +147,8 @@ export const AssetItemView = ({
             style={[styles.itemContainer, style]}
         >
             <AssetIconWithNetwork
-                asset={asset}
-                chainId={chainId}
+                asset={iconAsset?.asset ?? asset}
+                chainId={iconAsset?.chainId ?? chainId}
                 logoUrl={logoUrl}
                 size={iconSize}
                 shape={iconShape}
@@ -160,7 +166,7 @@ export const AssetItemView = ({
                         ellipsizeMode='tail'
                         numberOfLines={1}
                     >
-                        {displayName}
+                        {title ?? displayName}
                     </PWText>
                     {isFavorited ? (
                         <PWIcon

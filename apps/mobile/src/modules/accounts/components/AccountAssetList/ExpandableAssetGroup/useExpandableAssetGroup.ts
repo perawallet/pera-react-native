@@ -10,20 +10,38 @@
  limitations under the License
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
+import {
+    groupIconMemberOf,
+    type AssetGroupItem,
+    type GroupableHolding,
+} from '@modules/assets'
 
-export type UseExpandableAssetGroupParams = {
-    isExpanded: boolean
+// The backend curates a group's members, never matching them by name, so they
+// are one asset and can share its name and icon; only their network differs.
+export type AssetGroupMemberIdentity = {
+    name: string
+    /** The group header's icon; null until its member syncs, leaving members their own. */
+    icon: Nullable<{ asset: PeraAsset; chainId: ChainId }>
+}
+
+export type UseExpandableAssetGroupParams<T extends GroupableHolding> = {
+    item: AssetGroupItem<T>
 }
 
 export type UseExpandableAssetGroupResult = {
     shouldRenderMembers: boolean
+    memberIdentity: AssetGroupMemberIdentity
 }
 
-export const useExpandableAssetGroup = ({
-    isExpanded,
-}: UseExpandableAssetGroupParams): UseExpandableAssetGroupResult => {
+export const useExpandableAssetGroup = <T extends GroupableHolding>({
+    item,
+}: UseExpandableAssetGroupParams<T>): UseExpandableAssetGroupResult => {
+    const { isExpanded, group, members } = item
     const [wasExpanded, setWasExpanded] = useState(isExpanded)
     const [isCollapsing, setIsCollapsing] = useState(false)
 
@@ -45,5 +63,22 @@ export const useExpandableAssetGroup = ({
         return () => clearTimeout(timer)
     }, [isCollapsing])
 
-    return { shouldRenderMembers: isExpanded || isCollapsing }
+    const iconMember = groupIconMemberOf(members)
+    const iconAsset = iconMember?.asset ?? null
+    const iconChainId = iconMember?.holding.scope.chainId ?? null
+    const memberIdentity = useMemo(
+        (): AssetGroupMemberIdentity => ({
+            name: group.name,
+            icon:
+                iconAsset && iconChainId
+                    ? { asset: iconAsset, chainId: iconChainId }
+                    : null,
+        }),
+        [group.name, iconAsset, iconChainId],
+    )
+
+    return {
+        shouldRenderMembers: isExpanded || isCollapsing,
+        memberIdentity,
+    }
 }

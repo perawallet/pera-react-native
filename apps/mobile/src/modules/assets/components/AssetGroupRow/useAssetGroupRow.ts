@@ -19,7 +19,6 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
-import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
 import type {
     AssetFiatConverter,
     AssetFiatValue,
@@ -28,12 +27,13 @@ import type {
     AssetGroupItem,
     GroupableHolding,
 } from '../../utils/groupedHoldings'
+import {
+    groupIconMemberOf,
+    isNativeGroupHolding,
+} from '../../utils/groupIconMember'
 import { getVerificationIcon } from '../../utils/verification'
 
 const ONE = new Decimal(1)
-
-const isNativeHolding = ({ scope, assetId }: GroupableHolding): boolean =>
-    nativeAssetInfoOf({ chainId: scope.chainId, assetId }) !== undefined
 
 // `trusted` isn't a metadata tier: only a chain's native coin earns it, as on single rows.
 type GroupTier = PeraAssetVerificationTier | 'trusted'
@@ -81,7 +81,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     const { members } = item
 
     const chainIds = useMemo(
-        () => members.map(member => member.holding.scope.chainId),
+        () => [...new Set(members.map(member => member.holding.scope.chainId))],
         [members],
     )
 
@@ -99,7 +99,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     const tier = useMemo((): Nullable<GroupTier> => {
         const tiers = members.map(({ asset, holding }): Nullable<GroupTier> => {
             if (!asset) return null
-            return isNativeHolding(holding)
+            return isNativeGroupHolding(holding)
                 ? 'trusted'
                 : (asset.peraMetadata?.verificationTier ??
                       PeraAssetVerificationTier.unverified)
@@ -123,13 +123,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         [members],
     )
 
-    // The first network with a logo, so one logo-less row doesn't leave the
-    // whole group on initials. A native member draws its own mark, so it keeps
-    // the icon over a token's logo.
-    const iconMember =
-        members.find(({ holding }) => isNativeHolding(holding)) ??
-        members.find(({ asset }) => asset?.peraMetadata?.logo) ??
-        members[0]
+    const iconMember = groupIconMemberOf(members)
 
     return {
         icon: iconMember?.asset ?? null,

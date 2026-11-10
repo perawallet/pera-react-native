@@ -12,3 +12,4 @@
 
 export { ExpandableAssetGroup } from './ExpandableAssetGroup'
 export type { ExpandableAssetGroupProps } from './ExpandableAssetGroup'
+export type { AssetGroupMemberIdentity } from './useExpandableAssetGroup'

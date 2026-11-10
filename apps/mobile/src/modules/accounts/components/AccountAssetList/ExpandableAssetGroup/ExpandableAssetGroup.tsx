@@ -21,13 +21,19 @@ import {
     type AssetFiatConverter,
     type AssetGroupItem,
 } from '@modules/assets'
-import { useExpandableAssetGroup } from './useExpandableAssetGroup'
+import {
+    useExpandableAssetGroup,
+    type AssetGroupMemberIdentity,
+} from './useExpandableAssetGroup'
 
 export type ExpandableAssetGroupProps = {
     item: AssetGroupItem<AccountHoldingsLiteRow>
     convertFiat: AssetFiatConverter
     onToggleExpanded: () => void
-    renderMember: (holding: AccountHoldingsLiteRow) => ReactNode
+    renderMember: (
+        holding: AccountHoldingsLiteRow,
+        identity: AssetGroupMemberIdentity,
+    ) => ReactNode
     headerStyle?: StyleProp<ViewStyle>
 }
 
@@ -38,8 +44,8 @@ export const ExpandableAssetGroup = ({
     renderMember,
     headerStyle,
 }: ExpandableAssetGroupProps) => {
-    const { shouldRenderMembers } = useExpandableAssetGroup({
-        isExpanded: item.isExpanded,
+    const { shouldRenderMembers, memberIdentity } = useExpandableAssetGroup({
+        item,
     })
 
     return (
@@ -60,7 +66,7 @@ export const ExpandableAssetGroup = ({
                                   holding,
                               })}
                           >
-                              {renderMember(holding)}
+                              {renderMember(holding, memberIdentity)}
                           </React.Fragment>
                       ))
                     : null}

@@ -247,6 +247,20 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.queryByTestId('asset_details_stub')).toBeNull()
     })
 
+    it("Given the grouped row, when it is pressed, then each network's holding goes by the group's name", async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+
+        const group = await screen.findByTestId('asset_group_row_usdc')
+        fireEvent.click(group)
+
+        const algorandMember = await screen.findByTestId(
+            `asset_row_${USDC_TEST_ASSET.assetId}`,
+        )
+        expect(within(algorandMember).getByText(USDC_GROUP.name)).toBeTruthy()
+        expect(within(algorandMember).queryByText('Test Stablecoin')).toBeNull()
+    })
+
     it('Given the expanded group, when it is pressed again, then it collapses without opening any detail', async () => {
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         renderList(TWO_CHAIN_ACCOUNT)
