@@ -23,6 +23,7 @@ import { PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { AssetSelectionList } from '@modules/assets'
+import { scopedAssetKey } from '@utils/scopedAssetKey'
 import {
     useSwapToAssetSelectionList,
     type AvailableAssetWithBalance,
@@ -143,9 +144,8 @@ export const SwapToAssetSelectionList = ({
         <AssetSelectionList
             data={items}
             renderItem={renderItem}
-            // Ids repeat across chains: every EVM chain's native asset is 'native'.
             keyExtractor={item =>
-                `${toScopeKey(item.swapAsset.ref)}/${item.swapAsset.assetId}`
+                scopedAssetKey(item.swapAsset.ref, item.swapAsset.assetId)
             }
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
