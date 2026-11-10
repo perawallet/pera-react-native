@@ -17,15 +17,19 @@ import {
     LEDGER_BLE_SERVICE_UUIDS,
     isAppVersionAtLeast,
     resolveUsbDeviceModel,
+    usbLedgerDisplayName,
 } from '../constants'
 
 describe('resolveUsbDeviceModel', () => {
     test.each([
         [0x0001, 'nanoS'],
         [0x0004, 'nanoX'],
-        [0x4011, 'nanoSPlus'],
+        [0x4011, 'nanoX'],
+        [0x4015, 'nanoX'],
+        [0x5011, 'nanoSPlus'],
         [0x6011, 'stax'],
         [0x7011, 'flex'],
+        [0x8011, 'nanoGen5'],
     ])('maps product id %i to %s', (productId, model) => {
         expect(resolveUsbDeviceModel(productId)).toBe(model)
     })
@@ -36,6 +40,18 @@ describe('resolveUsbDeviceModel', () => {
             expect(resolveUsbDeviceModel(productId)).toBe('ledger')
         },
     )
+})
+
+describe('usbLedgerDisplayName', () => {
+    test.each([
+        ['nanoX', 'Ledger Nano X'],
+        ['nanoSPlus', 'Ledger Nano S Plus'],
+        ['flex', 'Ledger Flex'],
+        ['nanoGen5', 'Ledger Nano Gen5'],
+        ['ledger', 'Ledger (USB)'],
+    ] as const)('names %s as %s', (model, name) => {
+        expect(usbLedgerDisplayName(model)).toBe(name)
+    })
 })
 
 describe('resolveDeviceModel', () => {

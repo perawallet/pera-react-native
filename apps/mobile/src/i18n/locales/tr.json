@@ -542,6 +542,7 @@
         "type_algo25": "Algo25 hesabı",
         "type_watch": "İzleme hesabı",
         "type_ledger": "Ledger hesabı",
+        "ledger_usb_device": "Ledger (USB)",
         "type_multisig": "Paylaşılan hesap",
         "type_multisig_signers": "Paylaşılan · {{threshold}}/{{total}} imzalayan",
         "type_quantum": "Quantum hesabı",

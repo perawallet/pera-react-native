@@ -542,6 +542,7 @@
         "type_algo25": "Algo25-Konto",
         "type_watch": "Beobachtungskonto",
         "type_ledger": "Ledger-Konto",
+        "ledger_usb_device": "Ledger (USB)",
         "type_multisig": "Gemeinschaftskonto",
         "type_multisig_signers": "Gemeinsam · {{threshold}} von {{total}} Signierern",
         "type_quantum": "Quantum-Konto",

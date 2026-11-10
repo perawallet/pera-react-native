@@ -15,7 +15,7 @@ import { BackHandler } from 'react-native'
 
 import {
     chainAccountOf,
-    hardwareDetailsOf,
+    hardwareDeviceNameOf,
     isHardwareWalletAccount,
     accountKindIdOf,
     resolveAuthAccount,
@@ -283,9 +283,9 @@ export const useTransactionProcessingScreen =
 
         const isHardwareSender =
             !!signingAccount && isHardwareWalletAccount(signingAccount)
-        const hardwareDeviceName =
-            (signingAccount && hardwareDetailsOf(signingAccount)?.deviceName) ??
-            null
+        const hardwareDeviceName = signingAccount
+            ? hardwareDeviceNameOf(signingAccount)
+            : null
 
         const ledgerAppName = useMemo(
             () => (isHardwareSender ? ledgerAppNameFor(scope.chainId) : null),

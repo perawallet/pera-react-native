@@ -12,7 +12,7 @@
 
 import {
     findAccountByAddressOn,
-    hardwareDeviceOf,
+    hardwareDeviceNameOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -60,5 +60,5 @@ export const resolveHardwareDeviceName = (
         return null
     }
 
-    return hardwareDeviceOf(accountForSigning)?.device.deviceName ?? null
+    return hardwareDeviceNameOf(accountForSigning)
 }

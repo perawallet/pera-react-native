@@ -542,6 +542,7 @@
         "type_algo25": "Compte Algo25",
         "type_watch": "Compte de suivi",
         "type_ledger": "Compte Ledger",
+        "ledger_usb_device": "Ledger (USB)",
         "type_multisig": "Compte partagé",
         "type_multisig_signers": "Partagé · {{threshold}} signataires sur {{total}}",
         "type_quantum": "Compte quantique",

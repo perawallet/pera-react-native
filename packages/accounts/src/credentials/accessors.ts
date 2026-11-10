@@ -113,6 +113,18 @@ export const hardwareDetailsOf = (
         : undefined
 }
 
+// Android's USB HID module reports the /dev/bus/usb node path as the device
+// name, and accounts paired over USB stored it; it never reaches the UI.
+const SYSTEM_DEVICE_PATH = /^\/dev\//
+
+/** The device name to show for a hardware account, or null when it has none worth showing. */
+export const hardwareDeviceNameOf = (
+    account: WalletAccount,
+): Nullable<string> => {
+    const name = hardwareDeviceOf(account)?.device.deviceName
+    return name && !SYSTEM_DEVICE_PATH.test(name) ? name : null
+}
+
 /** Whether the account has a phrase to back up or reveal: every seed is mnemonic-backed, a standalone key only where its chain says so. */
 export const hasRecoverySeed = (account: WalletAccount): boolean => {
     const { custody } = account
