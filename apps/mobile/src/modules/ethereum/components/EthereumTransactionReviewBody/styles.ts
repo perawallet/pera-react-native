@@ -14,22 +14,25 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     header: {
-        alignItems: 'center',
-        justifyContent: 'center',
         gap: theme.spacing.md,
-        flexGrow: 1,
-        marginTop: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
     },
-    icon: {
-        marginTop: theme.spacing.md,
-    },
-    titleContainer: {
+    headerRow: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    headerText: {
+        flexShrink: 1,
         gap: theme.spacing.xs,
     },
     title: {
-        color: theme.colors.textGray,
-        flexWrap: 'nowrap',
+        color: theme.colors.textMain,
+    },
+    hero: {
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        marginTop: theme.spacing.md,
     },
     address: {
         gap: theme.spacing.md,
@@ -38,7 +41,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     amountContainer: {
-        marginTop: theme.spacing.md,
         alignItems: 'center',
     },
     amount: {
@@ -47,8 +49,8 @@ export const useStyles = makeStyles(theme => ({
     secondaryAmount: {
         color: theme.colors.textGray,
     },
-    highFeeNotice: {
-        marginBottom: theme.spacing.md,
+    feeAmount: {
+        color: theme.colors.textMain,
     },
     participants: {
         gap: theme.spacing.xs,

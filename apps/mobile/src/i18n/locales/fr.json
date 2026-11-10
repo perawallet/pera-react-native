@@ -389,7 +389,8 @@
             "suspicious_title": "Jeton suspect",
             "body": "Pera n’a pas vérifié ce jeton. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
         },
-        "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet"
+        "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet",
+        "toggle_amount_hint": "Appuyez pour basculer entre la valeur et le montant de l’actif"
     },
     "accounts": {
         "legacyQuantum": {
@@ -607,6 +608,7 @@
             "title": "Utiliser cette passphrase dans d’autres wallets",
             "evm": "Réseaux compatibles Ethereum : les wallets BIP39 standard, comme MetaMask, Uniswap ou Rabby, peuvent importer ces mots, et l’adresse de votre premier compte sera identique. Après l’import, il est possible que vous ne voyiez que cette première adresse. Certains wallets affichent vos autres adresses dès qu’elles ont été utilisées ; dans d’autres, vous devrez les ajouter manuellement. Elles apparaissent dans l’ordre dans lequel vous les avez créées dans Pera.",
             "algorand": "Algorand : fonctionne dans Pera et dans les autres wallets compatibles avec les wallets HD Algorand à 24 mots. Les anciens wallets Algorand à 25 mots ne peuvent pas l’importer.",
+            "algorand_twelve_word": "Algorand : fonctionne dans Pera. D’autres wallets Algorand n’acceptent parfois que les passphrases de 24 mots : vérifiez qu’un wallet prend en charge 12 mots avant de vous y fier. Les anciens wallets Algorand à 25 mots ne peuvent pas l’importer.",
             "warning": "Toute personne qui possède ces mots contrôle vos fonds sur tous les réseaux. Ne les saisissez jamais sur un site web et ne les partagez avec personne."
         }
     },
@@ -3116,7 +3118,8 @@
             "max_fee_for_preset": "Frais maximum ({{preset}})",
             "max_fee_info": "Le maximum que vous paierez si les frais du réseau augmentent. Vous payez généralement moins.",
             "wait_seconds": "~{{seconds}} s",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Affiche les options de frais"
         },
         "confirmation": {
             "add_to_contacts": "+ Ajouter aux contacts",
@@ -3485,6 +3488,8 @@
             "known_description": "{{name}} est un contrat connu",
             "known_spend_note": "{{name}} est un contrat connu. Il ne peut déplacer ce token que dans le cadre d’une transaction ou d’une signature que vous approuvez.",
             "known_unlimited_note": "Le montant est illimité : vous n’aurez pas à autoriser de nouveau ce token pour {{name}}.",
+            "unlimited_limit_note": "Pera ne peut pas réduire ce montant. Pour n’approuver que ce dont vous avez besoin, refusez et choisissez un montant plus petit dans l’application, si elle le permet.",
+            "balance_label": "Votre solde",
             "allow_title": "Autoriser {{spender}} à utiliser vos {{asset}}",
             "allow_title_assets": "Autoriser {{spender}} à utiliser vos actifs",
             "allow_title_unknown": "Autoriser une autre adresse à utiliser vos {{asset}}",
@@ -3604,8 +3609,11 @@
         "predicted_failure": {
             "title": "Cette transaction va probablement échouer",
             "body": "Pera l’a exécutée sur le dernier bloc et elle a échoué. Si vous signez quand même, vous pourriez tout de même payer les frais de réseau.",
-            "reason": "Motif du contrat : « {{reason}} »",
-            "acknowledge": "Je comprends qu’elle va probablement échouer et je veux signer quand même"
+            "reason": "Motif du contrat : « {{reason}} »"
+        },
+        "review_warnings": {
+            "summary": "{{count}} points à vérifier",
+            "acknowledge": "Je comprends les risques et je veux quand même signer"
         }
     },
     "site_safety": {
@@ -3708,6 +3716,7 @@
             "nft_fallback": "{{collection}} · ID du token {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Avancé",
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
             "function_selector": "Sélecteur de fonction",
             "call_data": "Données de l’appel",
@@ -3891,9 +3900,11 @@
         },
         "request": {
             "title": "{{name}} souhaite se connecter à votre compte",
-            "title_network": "{{name}} souhaite se connecter à votre compte {{network}}",
-            "title_networks": "{{name}} souhaite se connecter à vos comptes {{network}} et {{otherNetwork}}",
-            "network_not_added": "Non ajouté",
+            "title_connect": "{{name}} souhaite se connecter",
+            "networks_heading": "Réseaux",
+            "networks_more": "+{{count}}",
+            "networks_optional_note": "Facultatif. {{name}} fonctionne aussi sur ces réseaux.",
+            "network_added": "Ajouté",
             "origin_verified": "Vérifié par WalletConnect",
             "accounts_title": "SÉLECTIONNER LES COMPTES",
             "no_accounts": "Aucun de vos comptes ne peut se connecter sur ce réseau.",
@@ -4015,9 +4026,15 @@
             "swap_from_title": "Échanger depuis",
             "swap_to_title": "Échanger vers",
             "search_placeholder": "Rechercher par nom ou ID",
+            "search_placeholder_evm": "Rechercher par nom, symbole ou adresse de contrat",
+            "search_placeholder_all": "Rechercher par nom, symbole, ID ou adresse de contrat",
             "no_results_title": "Aucun actif correspondant",
             "no_results_body": "Aucun actif ne correspond à votre recherche",
-            "no_chain_results_body": "Aucun actif disponible sur ce réseau"
+            "no_chain_results_body": "Aucun actif disponible sur ce réseau",
+            "cross_network_empty_title": "Échange de {{asset}} vers {{network}} impossible",
+            "cross_network_empty_body": "{{asset}} sur {{payNetwork}} ne peut pas encore être échangé contre des actifs sur {{network}}. Pour en obtenir, payez avec un actif sur {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} sur {{payNetwork}} ne peut pas encore être échangé contre des actifs sur {{network}}. Pour en obtenir, passez à un compte sur {{network}} et payez avec l’un de ses actifs.",
+            "cross_network_empty_action": "Échanger sur {{network}}"
         },
         "configuration": {
             "title": "Paramètres du swap",
@@ -4181,7 +4198,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Crypto",
             "see_all_fiat": "Voir toutes les devises fiat",
-            "network_suffix": "{{symbol}} · réseau {{network}}",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "Aucun actif disponible"
         },
         "provider": {
@@ -4954,6 +4971,11 @@
             "title": "Contrat",
             "verified": "Contrat vérifié",
             "matches_site": "Correspond à {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Frais de réseau anormalement élevés",
+            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
+            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins."
         },
         "simulation": {
             "title": "Modifications estimées",

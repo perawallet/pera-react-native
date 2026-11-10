@@ -125,7 +125,7 @@ const TRANSACTION_SLIDE = 'signing-confirm-slide'
 const CHANGES = 'ethereum_simulation_changes'
 const UNAVAILABLE = 'ethereum_simulation_unavailable'
 const FAILURE_WARNING = 'predicted_failure_warning'
-const FAILURE_ACKNOWLEDGE = 'predicted_failure_acknowledge'
+const FAILURE_ACKNOWLEDGE = 'review_warnings_acknowledge'
 const UNCHECKED_NOTICE = 'ethereum_contract_call_warning'
 
 const ETHEREUM_ACCOUNT = {
@@ -384,8 +384,8 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         expect(changes.textContent).toContain('ETH')
         expect(changes.textContent).toContain('2.28296')
         // 0.001 ETH at $2,040 and 2.28296 USDC at $1.
-        expect(changes.textContent).toContain('ETH-0.001$ 2.04')
-        expect(changes.textContent).toContain('+2.28296$ 2.28')
+        expect(changes.textContent).toContain('-0.001 ETH$ 2.04')
+        expect(changes.textContent).toContain('+2.28296 USDC$ 2.28')
         expect(changes.textContent).toContain(
             'ethereum.simulation.estimate_note',
         )

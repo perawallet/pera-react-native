@@ -16,6 +16,7 @@ export {
     resolvePrecision,
     resolveSignificantPrecision,
     PREFERRED_MAX_PRECISION,
+    LIST_MAX_PRECISION,
     type PrecisionVariant,
     type ResolvedPrecision,
 } from './precision'

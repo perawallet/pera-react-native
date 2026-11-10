@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
+import { chainNetworkOf } from '@perawallet/wallet-core-chain-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWText, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetAmount } from '@components/AssetAmount'
-import { PreferredAmount } from '@components/PreferredAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { SourceMetadataBadge, useSpendApprovalTitle } from '@modules/signing'
@@ -29,23 +26,19 @@ type EthereumReviewHeaderProps = {
     verifiedOrigin?: string
 }
 
+/** Who asked, what for and on which network: the part of the review that stays on screen. */
 export const EthereumReviewHeader = ({
     presentation,
     source,
     verifiedOrigin,
 }: EthereumReviewHeaderProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
-    const {
-        titleKey,
-        iconName,
-        counterparty,
-        amount,
-        isAmountLoading,
-        isTransfer,
-        standardCall,
-    } = presentation
+    const { titleKey, iconName, standardCall } = presentation
+    const networkLabel = t(
+        'dapp.approval.chain_network',
+        chainNetworkOf(presentation.scope),
+    )
     const approvalTitle = useSpendApprovalTitle(
         standardCall?.kind === 'token-approval'
             ? standardCall.spendApproval
@@ -54,7 +47,10 @@ export const EthereumReviewHeader = ({
     )
 
     return (
-        <PWView style={styles.header}>
+        <PWView
+            style={styles.header}
+            testID='ethereum_review_header'
+        >
             {!!source && (
                 <SourceMetadataBadge
                     metadata={source}
@@ -62,60 +58,27 @@ export const EthereumReviewHeader = ({
                 />
             )}
 
-            <TransactionIcon
-                style={styles.icon}
-                name={iconName}
-                size='lg'
-            />
-
-            <PWView style={styles.titleContainer}>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {approvalTitle ?? t(titleKey)}
-                </PWText>
-                {isTransfer && !!counterparty && (
-                    <AddressDisplay
-                        style={styles.address}
-                        hugContent
-                        displayType='address-only'
-                        textProps={{ style: styles.addressText }}
-                        iconProps={{ color: theme.colors.textMain }}
-                        address={counterparty}
-                        scope={presentation.scope}
-                    />
-                )}
-            </PWView>
-
-            {isTransfer && (!!amount || isAmountLoading) && (
-                <PWView style={styles.amountContainer}>
-                    <AssetAmount
-                        chainId={presentation.scope.chainId}
-                        testID='ethereum_review_amount'
-                        asset={amount?.asset}
-                        value={amount?.value}
-                        isLoading={isAmountLoading}
-                        // The signer authorizes an outgoing transfer, so the
-                        // amount leaves their account.
-                        sign='-'
-                        showSymbol
-                        variant='h1'
-                        style={styles.amount}
-                        ignorePrivacyMode
-                    />
-                    {!!amount?.asset && !presentation.collectible && (
-                        <PreferredAmount
-                            sourceAmount={amount.value}
-                            sourceAssetId={amount.asset.assetId}
-                            scope={presentation.scope}
-                            variant='h4'
-                            style={styles.secondaryAmount}
-                            ignorePrivacyMode
-                        />
-                    )}
+            <PWView style={styles.headerRow}>
+                <TransactionIcon
+                    name={iconName}
+                    size='md'
+                />
+                <PWView style={styles.headerText}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                    >
+                        {approvalTitle ?? t(titleKey)}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.caption}
+                        testID='ethereum_review_network'
+                    >
+                        {networkLabel}
+                    </PWText>
                 </PWView>
-            )}
+            </PWView>
         </PWView>
     )
 }

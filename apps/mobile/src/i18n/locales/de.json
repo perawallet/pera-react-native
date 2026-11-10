@@ -389,7 +389,8 @@
             "suspicious_title": "Verdächtiges Token",
             "body": "Pera hat dieses Token nicht verifiziert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
         },
-        "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
+        "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren",
+        "toggle_amount_hint": "Tippe, um zwischen Wert und Asset-Betrag zu wechseln"
     },
     "accounts": {
         "legacyQuantum": {
@@ -607,6 +608,7 @@
             "title": "Passphrase in anderen Wallets verwenden",
             "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask, Uniswap oder Rabby können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Nach dem Import siehst du eventuell nur diese erste Adresse. Manche Wallets zeigen deine weiteren Adressen an, sobald sie verwendet wurden; in anderen musst du sie manuell hinzufügen. Sie erscheinen in der Reihenfolge, in der du sie in Pera erstellt hast.",
             "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
+            "algorand_twelve_word": "Algorand: funktioniert in Pera. Andere Algorand-Wallets akzeptieren möglicherweise nur Passphrasen mit 24 Wörtern. Prüfe daher, ob ein Wallet 12 Wörter unterstützt, bevor du dich darauf verlässt. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
             "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
     },
@@ -3108,7 +3110,8 @@
             "max_fee_for_preset": "Maximale Gebühr ({{preset}})",
             "max_fee_info": "Das Maximum, das du zahlst, falls die Netzwerkgebühren steigen. Meist zahlst du weniger.",
             "wait_seconds": "~{{seconds}} Sek.",
-            "wait_minutes": "~{{minutes}} Min."
+            "wait_minutes": "~{{minutes}} Min.",
+            "show_options": "Zeigt die Gebührenoptionen an"
         },
         "confirmation": {
             "add_to_contacts": "+ Zu Kontakten hinzufügen",
@@ -3477,6 +3480,8 @@
             "known_description": "{{name}} ist ein bekannter Smart Contract",
             "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
             "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "unlimited_limit_note": "Pera kann diesen Betrag nicht senken. Wenn du nur so viel freigeben willst, wie du brauchst, lehne ab und lege in der App einen kleineren Betrag fest, falls sie das anbietet.",
+            "balance_label": "Dein Guthaben",
             "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
             "allow_title_assets": "{{spender}} erlauben, deine Assets zu verwenden",
             "allow_title_unknown": "Einer anderen Adresse erlauben, deine {{asset}} zu verwenden",
@@ -3596,8 +3601,11 @@
         "predicted_failure": {
             "title": "Diese Transaktion wird wahrscheinlich fehlschlagen",
             "body": "Pera hat sie anhand des neuesten Blocks ausgeführt und sie ist fehlgeschlagen. Wenn du trotzdem signierst, zahlst du möglicherweise trotzdem die Netzwerkgebühr.",
-            "reason": "Grund des Contracts: „{{reason}}“",
-            "acknowledge": "Ich verstehe, dass sie wahrscheinlich fehlschlägt, und möchte trotzdem signieren"
+            "reason": "Grund des Contracts: „{{reason}}“"
+        },
+        "review_warnings": {
+            "summary": "{{count}} Dinge zu prüfen",
+            "acknowledge": "Ich verstehe die Risiken und möchte trotzdem signieren"
         }
     },
     "site_safety": {
@@ -3700,6 +3708,7 @@
             "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Erweitert",
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
@@ -3883,9 +3892,11 @@
         },
         "request": {
             "title": "{{name}} möchte sich mit deinem Konto verbinden",
-            "title_network": "{{name}} möchte sich mit deinem Konto auf {{network}} verbinden",
-            "title_networks": "{{name}} möchte sich mit deinen Konten auf {{network}} und {{otherNetwork}} verbinden",
-            "network_not_added": "Nicht hinzugefügt",
+            "title_connect": "{{name}} möchte sich verbinden",
+            "networks_heading": "Netzwerke",
+            "networks_more": "+{{count}}",
+            "networks_optional_note": "Optional. {{name}} funktioniert auch in diesen Netzwerken.",
+            "network_added": "Hinzugefügt",
             "origin_verified": "Von WalletConnect verifiziert",
             "accounts_title": "KONTEN AUSWÄHLEN",
             "no_accounts": "Keines deiner Konten kann sich in diesem Netzwerk verbinden.",
@@ -4007,9 +4018,15 @@
             "swap_from_title": "Tauschen von",
             "swap_to_title": "Tauschen zu",
             "search_placeholder": "Nach Name oder ID suchen",
+            "search_placeholder_evm": "Nach Name, Symbol oder Contract-Adresse suchen",
+            "search_placeholder_all": "Nach Name, Symbol, ID oder Contract-Adresse suchen",
             "no_results_title": "Keine passenden Assets",
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
-            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar"
+            "no_chain_results_body": "Keine Assets in diesem Netzwerk verfügbar",
+            "cross_network_empty_title": "Tausch von {{asset}} zu {{network}} nicht möglich",
+            "cross_network_empty_body": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, zahle stattdessen mit einem Asset auf {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} auf {{payNetwork}} kann noch nicht gegen Assets auf {{network}} getauscht werden. Um sie zu erhalten, wechsle zu einem Konto auf {{network}} und zahle mit einem seiner Assets.",
+            "cross_network_empty_action": "Auf {{network}} tauschen"
         },
         "configuration": {
             "title": "Tauscheinstellungen",
@@ -4173,7 +4190,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Krypto",
             "see_all_fiat": "Alle Fiat-Währungen anzeigen",
-            "network_suffix": "{{symbol}} · {{network}}-Netzwerk",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "Keine Assets verfügbar"
         },
         "provider": {
@@ -4954,6 +4971,11 @@
             "title": "Smart Contract",
             "verified": "Verifizierter Smart Contract",
             "matches_site": "Entspricht {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
+            "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
+            "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Normal“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
         },
         "simulation": {
             "title": "Geschätzte Änderungen",

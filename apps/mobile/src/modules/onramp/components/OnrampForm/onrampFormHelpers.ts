@@ -35,7 +35,7 @@ export const getExcludedPaymentMethodIds = (
 export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
     pair?.sourceToken.kind === 'fiat'
 
-/** The chain a source pays from, as the router names it; the token's own name when it gives none. */
+/** The chain a source pays from; the token's own name when it has none. */
 export const sourceNetworkLabelOf = (token: RampToken): string =>
     token.network.name !== '' ? token.network.name : token.name
 

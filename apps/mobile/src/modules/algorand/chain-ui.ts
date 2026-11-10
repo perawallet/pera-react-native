@@ -89,6 +89,9 @@ export const algorandChainUi: ChainUi = {
     passphraseCompatibilityKey: i18nKey(
         'view_passphrase.compatibility.algorand',
     ),
+    passphraseCompatibilityKeyByWordCount: {
+        12: i18nKey('view_passphrase.compatibility.algorand_twelve_word'),
+    },
     accountOptions: {
         ExpandedSection: AlgorandAccountSection,
         useHasExpandedSection: useHasAlgorandAccountSection,
@@ -101,6 +104,9 @@ export const algorandChainUi: ChainUi = {
         invalidAddressKey: i18nKey('onboarding.watch_account.invalid_address'),
     },
     addressSearchPlaceholder: i18nKey('address_entry.search_placeholder'),
+    swapAssetSearchPlaceholder: i18nKey(
+        'swap.asset_selection.search_placeholder',
+    ),
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.algorand'),
         bodyKey: i18nKey('address_entry.wrong_network.body.algorand'),

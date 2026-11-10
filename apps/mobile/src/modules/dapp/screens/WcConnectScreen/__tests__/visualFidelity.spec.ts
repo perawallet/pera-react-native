@@ -11,8 +11,8 @@
  */
 
 // Guards the ONE promise the web twin makes: it looks like mobile's
-// ConnectionApprovalView. The twin duplicates that component rather than
-// reusing it, and a duplicate with nothing holding it to its original silently
+// ConnectionApprovalView. The twin reuses mobile's account row and duplicates
+// the rest, and a duplicate with nothing holding it to its original silently
 // drifts — the twin gets a tweak, mobile doesn't, and "make it look the same"
 // quietly stops being true.
 //
@@ -32,10 +32,7 @@ const TWIN_DIR = join(__dirname, '..')
 const read = (path: string): string => readFileSync(path, 'utf8')
 
 const mobileHeader = read(join(MOBILE_DIR, 'ConnectionApprovalViewHeader.tsx'))
-// Mobile splits the account row into its own file; the twin renders it inline.
-const mobileView =
-    read(join(MOBILE_DIR, 'ConnectionApprovalView.tsx')) +
-    read(join(MOBILE_DIR, 'ConnectionApprovalAccountRow.tsx'))
+const mobileView = read(join(MOBILE_DIR, 'ConnectionApprovalView.tsx'))
 const twinHeader = read(join(TWIN_DIR, 'WcConnectHeader.tsx'))
 const twinView = read(join(TWIN_DIR, 'WcConnectScreen.tsx'))
 const twinStyles = read(join(TWIN_DIR, 'styles.ts'))
@@ -88,7 +85,7 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
         // Catches a dropped copy key in the header, which would leave the twin
         // looking materially different from the screen it copies. The headline
         // and the network chips take their copy from the approval hook and the
-        // chip, which this source scan does not read.
+        // networks panel, which this source scan does not read.
         //
         // The network badges are the documented exception (owner report,
         // 2026-07-30): TestnetIndicator already states the active network at
@@ -148,7 +145,8 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
             expect(twinHeader).toContain(component)
             expect(mobileHeader).toContain(component)
         }
-        expect(twinView).toContain('AccountDisplay')
-        expect(twinView).toContain('PWCheckbox')
+        expect(twinView).toContain('ConnectionApprovalAccountRow')
+        expect(mobileView).toContain('ConnectionApprovalAccountRow')
+        expect(twinView).not.toContain('AccountDisplay')
     })
 })

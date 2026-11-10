@@ -16,14 +16,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.lg,
     },
-    callData: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.sm,
-    },
-    callDataText: {
-        flex: 1,
-    },
     caption: {
         color: theme.colors.textGray,
     },

@@ -23,8 +23,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { AssetIcon } from '@components/AssetIcon'
-import { ChainAvatarBadge } from '@modules/chain-ui/icon'
+import { AssetIconWithNetwork } from '@components/AssetIconWithNetwork'
 import { useAssetItemView } from './useAssetItemView'
 import { useStyles } from './styles'
 
@@ -32,6 +31,10 @@ export type AssetItemViewProps = {
     asset: DisplayableAsset
     /** The asset's chain; decides native-ness, and an id that is an address on it shows truncated by that chain's codec. */
     chainId: ChainId
+    /** Replaces the asset's name, such as with its cross-chain group's. */
+    title?: string
+    /** Draws the icon from another asset, such as its cross-chain group's. */
+    iconAsset?: { asset: DisplayableAsset; chainId: ChainId }
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
     /** Trails the name in the title row, such as the holding's network. */
@@ -45,6 +48,8 @@ export type AssetItemViewProps = {
     showChainBadge?: boolean
     /** Limits the right-hand content to part of the row, for amounts whose unit has no length cap. */
     shouldCapRightSlot?: boolean
+    /** Lines the right-hand content up with the name rather than centring it on the row. */
+    shouldTopAlignRight?: boolean
     /** Logo URL forwarded to the asset icon, bypassing Prism optimization. */
     logoUrl?: string
     /** Account-only decorations. Default off so search rows stay clean. */
@@ -58,6 +63,8 @@ export type AssetItemViewProps = {
 export const AssetItemView = ({
     asset,
     chainId,
+    title,
+    iconAsset,
     right,
     titleAccessory,
     subtitle: subtitleOverride,
@@ -65,6 +72,7 @@ export const AssetItemView = ({
     iconSize = 'xl',
     showChainBadge = false,
     shouldCapRightSlot = false,
+    shouldTopAlignRight = false,
     logoUrl,
     showFavorite = false,
     showDeletedLabel = false,
@@ -102,8 +110,7 @@ export const AssetItemView = ({
                 </PWText>
             )
         }
-        if (subtitleOverride) return subtitleOverride
-        return (
+        const secondaryLine = (
             <PWText
                 // Account rows (copyableAssetId) have always shown the subtitle at
                 // body size, search rows at caption; kept as-is when the copy
@@ -114,6 +121,17 @@ export const AssetItemView = ({
             >
                 {secondaryText}
             </PWText>
+        )
+        if (!subtitleOverride) return secondaryLine
+        // An unvetted token's contract address stays on screen whatever
+        // replaces its subtitle.
+        return isUnverified ? (
+            <>
+                {subtitleOverride}
+                {secondaryLine}
+            </>
+        ) : (
+            subtitleOverride
         )
     }
     const subtitle = renderSubtitle()
@@ -128,17 +146,14 @@ export const AssetItemView = ({
             {...rest}
             style={[styles.itemContainer, style]}
         >
-            {/* AssetIcon clips its own overflow, so the badge sits on a wrapper. */}
-            <PWView>
-                <AssetIcon
-                    asset={asset}
-                    chainId={chainId}
-                    logoUrl={logoUrl}
-                    size={iconSize}
-                    shape={iconShape}
-                />
-                {showChainBadge ? <ChainAvatarBadge chainId={chainId} /> : null}
-            </PWView>
+            <AssetIconWithNetwork
+                asset={iconAsset?.asset ?? asset}
+                chainId={iconAsset?.chainId ?? chainId}
+                logoUrl={logoUrl}
+                size={iconSize}
+                shape={iconShape}
+                networkChainId={showChainBadge ? chainId : undefined}
+            />
             <PWView style={styles.infoContainer}>
                 <PWView style={styles.titleRow}>
                     <PWText
@@ -151,7 +166,7 @@ export const AssetItemView = ({
                         ellipsizeMode='tail'
                         numberOfLines={1}
                     >
-                        {displayName}
+                        {title ?? displayName}
                     </PWText>
                     {isFavorited ? (
                         <PWIcon
@@ -189,6 +204,7 @@ export const AssetItemView = ({
                     style={[
                         styles.rightSlot,
                         shouldCapRightSlot && styles.rightSlotCapped,
+                        shouldTopAlignRight && styles.rightSlotTop,
                     ]}
                 >
                     {right}

@@ -14,10 +14,20 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { describe, expect, it, vi } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useEthereumContractLabel } from '../../../../hooks/useEthereumContractLabel'
 import type { EthereumApprovalChangePresentation } from '../../useEthereumSimulationSection'
 import { useEthereumApprovalChangeRow } from '../useEthereumApprovalChangeRow'
 
 vi.mock('@hooks/useLanguage')
+vi.mock('../../../../hooks/useEthereumContractLabel', () => ({
+    useEthereumContractLabel: vi.fn(
+        (_scope: unknown, _address: unknown, bundled: unknown) =>
+            bundled ?? null,
+    ),
+}))
+
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 const USDC = { assetId: '0xUSDC', unitName: 'USDC' } as PeraAsset
 
@@ -34,7 +44,7 @@ const changeOf = (
 })
 
 const read = (change: EthereumApprovalChangePresentation) =>
-    renderHook(() => useEthereumApprovalChangeRow(change)).result.current
+    renderHook(() => useEthereumApprovalChangeRow(change, SCOPE)).result.current
 
 describe('useEthereumApprovalChangeRow', () => {
     describe('title', () => {
@@ -73,6 +83,26 @@ describe('useEthereumApprovalChangeRow', () => {
                 'ethereum.simulation.revoke_title_assets',
             )
         })
+    })
+
+    it("names the spender as Pera's curated label does, as the transaction's own approval would", () => {
+        vi.mocked(useEthereumContractLabel).mockReturnValueOnce({
+            name: 'Aave V3 Pool',
+        })
+
+        const result = read(changeOf())
+
+        expect(result.spenderName).toBe('Aave V3 Pool')
+        expect(result.notice).toEqual({
+            titleKey: 'signing.spend_approval.known_unlimited_note',
+            params: { name: 'Aave V3 Pool' },
+            isWarning: false,
+        })
+        expect(useEthereumContractLabel).toHaveBeenCalledWith(
+            SCOPE,
+            '0xSPENDER',
+            undefined,
+        )
     })
 
     describe('notice', () => {

@@ -33,17 +33,21 @@ export type FakeChainParams = {
     onramp?: boolean
     /** The chain's native asset id; `'0'` unless set. */
     nativeAssetId?: string
+    /** The chain's id unless set. */
+    displayName?: string
 }
 
-/** Registers a chain carrying only what ramp code reads: its id, one network, its native asset and `onramp`. */
+/** Registers a chain carrying only what ramp code reads: its id, name, one network, its native asset and `onramp`. */
 export const registerFakeChain = ({
     chainId,
     caip2,
     onramp = true,
     nativeAssetId = '0',
+    displayName = chainId,
 }: FakeChainParams): void => {
     const descriptor = {
         id: chainId,
+        displayName,
         nativeAsset: { ref: { chainId, assetId: nativeAssetId } },
         networks: [
             {

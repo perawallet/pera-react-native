@@ -41,6 +41,13 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-end',
         gap: theme.spacing.xs,
     },
+    compactFeeAmount: {
+        flexShrink: 1,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        gap: theme.spacing.xs,
+    },
     // alignItems places the text box; a wrapped amount's lines need their own alignment.
     amountText: {
         textAlign: 'right',
@@ -50,6 +57,9 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         gap: theme.spacing.md,
+    },
+    chevronExpanded: {
+        transform: [{ rotate: '180deg' }],
     },
     maxFeeLabel: {
         flexShrink: 1,

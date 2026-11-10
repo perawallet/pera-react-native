@@ -44,13 +44,15 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         minWidth: 0,
     },
-    tokenAmountContainer: {
+    amountRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: theme.spacing.xs,
         minWidth: 0,
     },
-    tokenAmount: {
-        color: theme.colors.textGray,
+    // The amount shrinks to fit; the toggle cue never does.
+    amountToggleIcon: {
+        flexShrink: 0,
     },
     tokenWarning: {
         marginBottom: theme.spacing.md,

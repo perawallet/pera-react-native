@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWText } from '@components/core'
 import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetItemView, AssetRowSkeleton } from '@modules/assets'
-import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
 
 export type HideTokenRowProps = {
@@ -25,7 +24,7 @@ export type HideTokenRowProps = {
     isHidden: boolean
     /** The suspicious filter keeps it out, so there is no toggle; the row says why. */
     isLocked: boolean
-    /** Names the token's network under it. */
+    /** Draws the token's network on its icon. */
     showsNetwork: boolean
     onToggle: (row: AccountHoldingsLiteRow) => void
 }
@@ -63,21 +62,17 @@ export const HideTokenRow = ({
                 )
             }
             footer={
-                showsNetwork || isLocked ? (
-                    <PWView style={styles.footer}>
-                        {showsNetwork ? <ChainLabel chainId={chainId} /> : null}
-                        {isLocked ? (
-                            <PWText
-                                variant='caption'
-                                style={styles.note}
-                                testID={`hide_tokens_filtered_${row.assetId}`}
-                            >
-                                {t('token_visibility.filtered_note')}
-                            </PWText>
-                        ) : null}
-                    </PWView>
+                isLocked ? (
+                    <PWText
+                        variant='caption'
+                        style={styles.note}
+                        testID={`hide_tokens_filtered_${row.assetId}`}
+                    >
+                        {t('token_visibility.filtered_note')}
+                    </PWText>
                 ) : undefined
             }
+            showChainBadge={showsNetwork}
             style={styles.row}
         />
     )

@@ -13,19 +13,23 @@
 import { useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useSwapChainFilter,
     type UseSwapChainFilterResult,
 } from '../../hooks/useSwapChainFilter'
 import { useSwapSourceChains } from '../../hooks/useSwapSourceChains'
+import { swapAssetSearchPlaceholderKey } from '../../utils/swapAssetSearchPlaceholderKey'
 
 export type UseSwapFromAssetSelectionListResult = UseSwapChainFilterResult & {
     isChainShown: boolean
+    searchPlaceholder: string
 }
 
 export const useSwapFromAssetSelectionList = (
     scope: ChainScope,
 ): UseSwapFromAssetSelectionListResult => {
+    const { t } = useLanguage()
     const sourceChainIds = useSwapSourceChains(useSelectedAccount())
     const chainIds = useMemo(
         () =>
@@ -40,5 +44,8 @@ export const useSwapFromAssetSelectionList = (
         ...filter,
         isChainShown:
             filter.selectedChainId === null && filter.chainOptions.length > 0,
+        searchPlaceholder: t(
+            swapAssetSearchPlaceholderKey(filter.visibleChainIds),
+        ),
     }
 }

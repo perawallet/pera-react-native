@@ -33,6 +33,7 @@ export type UseSpendApprovalWarningResult = {
     deadlineText: string
     /** Set when the spender is a well-known contract: the panel reads as information, not danger. */
     knownSpenderName?: string
+    isUnlimited: boolean
 }
 
 type RowCopy = {
@@ -89,7 +90,10 @@ export const useSpendApprovalWarning = (
             approval
         const isNftOnly = allowances.every(allowance => !!allowance.nft)
         const types: SpendRowType[] = ['spend']
-        if (allowances.some(allowance => allowance.amount === undefined)) {
+        const isUnlimited = allowances.some(
+            allowance => allowance.amount === undefined,
+        )
+        if (isUnlimited) {
             types.push('unlimited')
         }
         if (deadline === undefined) {
@@ -136,6 +140,7 @@ export const useSpendApprovalWarning = (
                 deadline === undefined
                     ? t('signing.spend_approval.never')
                     : formatDatetime(new Date(deadline)),
+            isUnlimited,
             ...(knownSpender && { knownSpenderName: knownSpender.name }),
         }
     }, [approval, t])

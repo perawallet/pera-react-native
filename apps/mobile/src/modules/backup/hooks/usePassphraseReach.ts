@@ -34,6 +34,8 @@ export type PassphraseLinkedAddress = {
 export type UsePassphraseReachParams = {
     /** Any address the account holds, such as the one the view-passphrase flow carries. */
     address: string
+    /** Length of the revealed phrase; picks a family's paragraph for that length where it has one. */
+    wordCount?: number
 }
 
 export type UsePassphraseReachResult = {
@@ -53,6 +55,7 @@ const SINGLE_NETWORK: UsePassphraseReachResult = {
 
 export const usePassphraseReach = ({
     address,
+    wordCount,
 }: UsePassphraseReachParams): UsePassphraseReachResult => {
     const account = useAccountsStore(
         state => findAccountByAnyChainAddress(state.accounts, address) ?? null,
@@ -81,9 +84,16 @@ export const usePassphraseReach = ({
         const families = new Set(
             seedChains.map(chainId => chains.get(chainId).descriptor.family),
         )
-        const compatibilityKeys = [...families].flatMap(
-            family => chainUiFor(family).passphraseCompatibilityKey ?? [],
-        )
+        const compatibilityKeys = [...families].flatMap(family => {
+            const ui = chainUiFor(family)
+            return (
+                (wordCount === undefined
+                    ? undefined
+                    : ui.passphraseCompatibilityKeyByWordCount?.[wordCount]) ??
+                ui.passphraseCompatibilityKey ??
+                []
+            )
+        })
 
         return {
             isMultiNetwork: true,
@@ -93,5 +103,5 @@ export const usePassphraseReach = ({
             linkedAddresses,
             compatibilityKeys,
         }
-    }, [account])
+    }, [account, wordCount])
 }

@@ -21,14 +21,19 @@ import {
     type AssetFiatConverter,
     type AssetGroupItem,
 } from '@modules/assets'
-import { useExpandableAssetGroup } from './useExpandableAssetGroup'
-import { useStyles } from './styles'
+import {
+    useExpandableAssetGroup,
+    type AssetGroupMemberIdentity,
+} from './useExpandableAssetGroup'
 
 export type ExpandableAssetGroupProps = {
     item: AssetGroupItem<AccountHoldingsLiteRow>
     convertFiat: AssetFiatConverter
     onToggleExpanded: () => void
-    renderMember: (holding: AccountHoldingsLiteRow) => ReactNode
+    renderMember: (
+        holding: AccountHoldingsLiteRow,
+        identity: AssetGroupMemberIdentity,
+    ) => ReactNode
     headerStyle?: StyleProp<ViewStyle>
 }
 
@@ -39,9 +44,8 @@ export const ExpandableAssetGroup = ({
     renderMember,
     headerStyle,
 }: ExpandableAssetGroupProps) => {
-    const styles = useStyles()
-    const { shouldRenderMembers } = useExpandableAssetGroup({
-        isExpanded: item.isExpanded,
+    const { shouldRenderMembers, memberIdentity } = useExpandableAssetGroup({
+        item,
     })
 
     return (
@@ -53,18 +57,16 @@ export const ExpandableAssetGroup = ({
                 style={headerStyle}
             />
             <ExpandablePanel isExpanded={item.isExpanded}>
+                {/* No separator between members: each one's network header divides them. */}
                 {shouldRenderMembers
-                    ? item.members.map(({ holding }, index) => (
+                    ? item.members.map(({ holding }) => (
                           <React.Fragment
                               key={groupedHoldingItemKey({
                                   kind: 'holding',
                                   holding,
                               })}
                           >
-                              {index > 0 ? (
-                                  <PWView style={styles.separator} />
-                              ) : null}
-                              {renderMember(holding)}
+                              {renderMember(holding, memberIdentity)}
                           </React.Fragment>
                       ))
                     : null}

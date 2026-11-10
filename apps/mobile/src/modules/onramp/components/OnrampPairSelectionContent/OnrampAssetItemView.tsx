@@ -28,6 +28,8 @@ export type OnrampAssetItemViewProps = {
     balance: Nullable<Decimal>
     asset: Nullable<PeraAsset>
     scope: ChainScope
+    /** Draws the token's network on its icon. */
+    showChainBadge?: boolean
 } & PWTouchableOpacityProps
 
 export const OnrampAssetItemView = ({
@@ -35,6 +37,7 @@ export const OnrampAssetItemView = ({
     balance,
     asset,
     scope,
+    showChainBadge = false,
     ...rest
 }: OnrampAssetItemViewProps) => {
     const { t } = useLanguage()
@@ -50,6 +53,7 @@ export const OnrampAssetItemView = ({
             scope={scope}
             logoUrl={token.logo ?? undefined}
             showBalance={balance !== null}
+            showChainBadge={showChainBadge}
             subtitle={
                 <PWText
                     variant='footnoteMedium'

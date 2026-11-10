@@ -31,4 +31,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
+    note: {
+        color: theme.colors.textGray,
+    },
 }))

@@ -91,6 +91,8 @@ export type RequestedNetwork = {
     name: string
     /** Some held account can sign on the chain. */
     isAdded: boolean
+    /** The dApp refuses a session without an account on this chain. */
+    isRequired: boolean
     /** Not added, but a held account that can reach the chain could add it. */
     canAdd: boolean
     /** The chain is being added to the accounts that can reach it. */
@@ -245,6 +247,9 @@ export const useConnectionApprovalView = (
                     chainId,
                     name: descriptor?.displayName ?? chainId,
                     isAdded,
+                    isRequired:
+                        proposal.requested.requiredChains?.includes(chainId) ??
+                        false,
                     canAdd:
                         !isAdded &&
                         accounts.some(account =>
@@ -262,34 +267,13 @@ export const useConnectionApprovalView = (
             accounts,
             addingChainId,
             proposal.requested.networks,
+            proposal.requested.requiredChains,
         ],
     )
-    const title = useMemo(() => {
-        const { chains } = getProvider()
-        const families = new Set<string>()
-        const names: string[] = []
-        for (const chainId of chainIds) {
-            if (!chains.has(chainId)) continue
-            const { family, displayName } = chains.get(chainId).descriptor
-            if (families.has(family)) continue
-            families.add(family)
-            names.push(displayName)
-        }
-        const [network, otherNetwork] = names
-        if (network === undefined) {
-            return t('walletconnect.request.title', { name: peerName })
-        }
-        return otherNetwork === undefined
-            ? t('walletconnect.request.title_network', {
-                  name: peerName,
-                  network,
-              })
-            : t('walletconnect.request.title_networks', {
-                  name: peerName,
-                  network,
-                  otherNetwork,
-              })
-    }, [chainIds, peerName, t])
+    const title = useMemo(
+        () => t('walletconnect.request.title_connect', { name: peerName }),
+        [peerName, t],
+    )
     const permissions = useMemo(
         () => toConnectionPermissions(proposal.requested.methods),
         [proposal.requested.methods],

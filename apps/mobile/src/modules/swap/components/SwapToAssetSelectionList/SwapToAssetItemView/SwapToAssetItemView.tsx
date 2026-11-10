@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { AccountAssetItemView } from '@modules/assets'
-import { ChainLabel } from '@modules/chain-ui/icon'
 
 import type { SwapAsset } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -83,11 +82,7 @@ export const SwapToAssetItemView = ({
             scope={scope}
             logoUrl={swapAsset.logo}
             showBalance={balance !== null}
-            subtitle={
-                isChainShown ? (
-                    <ChainLabel chainId={scope.chainId} />
-                ) : undefined
-            }
+            showChainBadge={isChainShown}
             {...rest}
         />
     )

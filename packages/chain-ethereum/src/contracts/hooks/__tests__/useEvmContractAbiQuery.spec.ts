@@ -31,10 +31,10 @@ import { setupServer } from 'msw/node'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PERA_URL } from '../../../__tests__/pera-backend'
 import {
-    peraEvmContractAbiHandlers,
+    peraEvmContractHandlers,
     verifiedAbiResponse,
 } from '../../api/msw-handlers'
-import { contractAbiQueryKey } from '../querykeys'
+import { contractQueryKey } from '../querykeys'
 import { useEvmContractAbiQuery } from '../useEvmContractAbiQuery'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
@@ -75,7 +75,7 @@ const newClient = () =>
 describe('useEvmContractAbiQuery', () => {
     it("returns the contract's verified ABI", async () => {
         server.use(
-            ...peraEvmContractAbiHandlers({
+            ...peraEvmContractHandlers({
                 baseUrl: PERA_URL,
                 contractAbis: {
                     [ROUTER.toLowerCase()]: verifiedAbiResponse(ABI),
@@ -104,7 +104,7 @@ describe('useEvmContractAbiQuery', () => {
     })
 
     it('asks nothing while disabled, and is not pending', async () => {
-        server.use(...peraEvmContractAbiHandlers({ baseUrl: PERA_URL }))
+        server.use(...peraEvmContractHandlers({ baseUrl: PERA_URL }))
 
         const { result } = renderHook(
             () =>
@@ -143,7 +143,7 @@ describe('useEvmContractAbiQuery', () => {
 
     it('reports an error when the backend fails', async () => {
         server.use(
-            ...peraEvmContractAbiHandlers({
+            ...peraEvmContractHandlers({
                 baseUrl: PERA_URL,
                 contractAbis: 503,
             }),
@@ -168,7 +168,7 @@ describe('useEvmContractAbiQuery', () => {
 
     it('asks even while the device reads as offline, so a review never waits on a paused lookup', async () => {
         onlineManager.setOnline(false)
-        server.use(...peraEvmContractAbiHandlers({ baseUrl: PERA_URL }))
+        server.use(...peraEvmContractHandlers({ baseUrl: PERA_URL }))
 
         const { result } = renderHook(
             () =>
@@ -187,7 +187,7 @@ describe('useEvmContractAbiQuery', () => {
     })
 
     it('shares one request between calls to the same contract', async () => {
-        server.use(...peraEvmContractAbiHandlers({ baseUrl: PERA_URL }))
+        server.use(...peraEvmContractHandlers({ baseUrl: PERA_URL }))
         const wrapper = wrapperWith(newClient())
 
         const { result } = renderHook(
@@ -213,10 +213,11 @@ describe('useEvmContractAbiQuery', () => {
     })
 })
 
-describe('contractAbiQueryKey', () => {
-    it('keys by chain, network and lowercase address', () => {
-        expect(contractAbiQueryKey(SCOPE, ROUTER)).toEqual([
-            'contract-abis',
+describe('contractQueryKey', () => {
+    it('keys by part, chain, network and lowercase address', () => {
+        expect(contractQueryKey('abi', SCOPE, ROUTER)).toEqual([
+            'evm-contracts',
+            'abi',
             'ethereum',
             'mainnet',
             ROUTER.toLowerCase(),

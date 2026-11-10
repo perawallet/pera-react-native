@@ -33,6 +33,16 @@ import {
 } from '@test-utils/ethereum-display-fixtures'
 import { useEthereumTransactionPresentation } from '../useEthereumTransactionPresentation'
 
+// The curated lookup is its own hook's to test; here only the bundled entry names a contract.
+vi.mock('../useEthereumContractLabel', () => ({
+    useEthereumContractLabel: (
+        _scope: unknown,
+        _address: unknown,
+        bundled: unknown,
+        isEnabled = true,
+    ) => (isEnabled ? (bundled ?? null) : null),
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -117,7 +127,7 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.reviewFee).not.toHaveProperty('estimate')
     })
 
-    it('formats the maximum fee as a warning only on a request flagged as paying far more than the wallet would', () => {
+    it('flags a high fee only on a request flagged as paying far more than the wallet would', () => {
         const flagged = {
             ...natives.transfer,
             transaction: {
@@ -133,8 +143,8 @@ describe('useEthereumTransactionPresentation', () => {
             useEthereumTransactionPresentation(flagged),
         )
 
-        expect(unflagged.current?.highFeeText).toBeNull()
-        expect(result.current?.highFeeText).toContain('ETH')
+        expect(unflagged.current?.hasHighFee).toBe(false)
+        expect(result.current?.hasHighFee).toBe(true)
     })
 
     it("shows a token transfer's recipient, not the contract, and the amount in the token's units", () => {

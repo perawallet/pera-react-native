@@ -18,7 +18,7 @@ import { useSwapToAssetSelectionList } from '../useSwapToAssetSelectionList'
 
 const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
 const mockTrackEvent = vi.hoisted(() => vi.fn())
-const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
+const mockUseAccountHoldingsAcrossChainsQuery = vi.hoisted(() => vi.fn())
 const mockUseSwapPairsInfiniteQuery = vi.hoisted(() => vi.fn())
 const mockGetQueryData = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
@@ -31,17 +31,52 @@ const mockUseQueryClient = vi.hoisted(() =>
 const mockGetAssetsQueryKey = vi.hoisted(() =>
     vi.fn(() => ['assets-query-key']),
 )
+const mockUseAssetsQuery = vi.hoisted(() => vi.fn())
+const mockNativeAssetFor = vi.hoisted(() => vi.fn())
+const mockSourceChains = vi.hoisted(() => ({ current: [] as string[] }))
+const mockT = vi.hoisted(() =>
+    vi.fn((key: string, params?: object) =>
+        params ? `${key}:${JSON.stringify(params)}` : key,
+    ),
+)
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: mockUseSelectedAccount,
-    addressOn: (account: { chains: { algorand?: { address: string } } }) =>
-        account.chains.algorand?.address,
-    useAccountBalancesQuery: mockUseAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery:
+        mockUseAccountHoldingsAcrossChainsQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     getAssetsQueryKey: mockGetAssetsQueryKey,
+    useAssetsQuery: mockUseAssetsQuery,
+    nativeAssetFor: mockNativeAssetFor,
     PeraAssetVerificationTier: {},
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    getChainDescriptor: (chainId: string) => ({
+        family: chainId === 'algorand' ? 'algorand' : 'evm',
+    }),
+    chainDisplayNameOf: (chainId: string) =>
+        chainId === 'algorand' ? 'Algorand' : 'Ethereum',
+}))
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: (family: string) => ({
+        swapAssetSearchPlaceholder:
+            family === 'algorand' ? 'placeholder.algorand' : 'placeholder.evm',
+    }),
+}))
+
+vi.mock('../../../hooks/useSwapSourceChains', () => ({
+    useSwapSourceChains: () => mockSourceChains.current,
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -126,32 +161,49 @@ const ETH_NATIVE = {
     logo: null,
 }
 
-const mockAssetBalances = [
-    { assetId: '31566704', amount: new Decimal('500') },
-    { assetId: '0', amount: new Decimal('1000000') },
+type HeldBalance = {
+    assetId: string
+    amount: Decimal
+    scope: { chainId: string; networkId: string }
+}
+
+const mockAssetBalances: HeldBalance[] = [
+    { assetId: '31566704', amount: new Decimal('500'), scope: ALGO_SCOPE },
+    { assetId: '0', amount: new Decimal('1000000'), scope: ALGO_SCOPE },
 ]
 
+const holdingsOf = (assetBalances: HeldBalance[]) => ({
+    assetBalances,
+    isPending: false,
+    isError: false,
+})
+
 const mockOnAssetSelected = vi.fn()
+const mockOnSwitchPayAsset = vi.fn()
 
 const defaultParams = {
     scope: ALGO_SCOPE,
     fromAssetId: '31566704',
     onAssetSelected: mockOnAssetSelected,
+    onSwitchPayAsset: mockOnSwitchPayAsset,
 }
 
 describe('useSwapToAssetSelectionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockDestinationScopes.current = [ALGO_SCOPE]
+        mockSourceChains.current = ['algorand', 'ethereum']
+        mockUseAssetsQuery.mockReturnValue({ data: new Map() })
+        mockNativeAssetFor.mockImplementation((chainId: string) => ({
+            assetId: chainId === 'algorand' ? '0' : 'native',
+        }))
         mockGetQueryData.mockReturnValue(undefined)
         mockUseSelectedAccount.mockReturnValue({
             chains: { algorand: { address: 'TEST_ADDRESS' } },
         })
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map([
-                ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
-            ]),
-        })
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
+            holdingsOf(mockAssetBalances),
+        )
         mockUseSwapPairsInfiniteQuery.mockReturnValue({
             assets: mockAvailableAssets,
             isLoading: false,
@@ -240,6 +292,61 @@ describe('useSwapToAssetSelectionList', () => {
         expect(algo?.balance?.toString()).toBe('1000000')
     })
 
+    it('shows the balance of a token held on another network', () => {
+        mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
+            holdingsOf([
+                ...mockAssetBalances,
+                { assetId: '0', amount: new Decimal('2'), scope: ETH_SCOPE },
+            ]),
+        )
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [...mockAvailableAssets, ETH_NATIVE],
+            isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+        const eth = result.current.items.find(
+            i => i.swapAsset.unitName === 'ETH',
+        )!
+        act(() => result.current.handleAssetSelected(eth))
+
+        expect(eth.balance?.toString()).toBe('2')
+        expect(mockOnAssetSelected).toHaveBeenCalledWith(
+            expect.objectContaining({ amount: new Decimal('2') }),
+            ETH_SCOPE,
+        )
+    })
+
+    it('shows no balance held on another network of the same chain', () => {
+        mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(
+            holdingsOf([
+                {
+                    assetId: '0',
+                    amount: new Decimal('2'),
+                    scope: { chainId: 'ethereum', networkId: 'sepolia' },
+                },
+            ]),
+        )
+        mockUseSwapPairsInfiniteQuery.mockReturnValue({
+            assets: [ETH_NATIVE],
+            isLoading: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+
+        const { result } = renderHook(() =>
+            useSwapToAssetSelectionList(defaultParams),
+        )
+
+        expect(result.current.items[0].balance).toBeNull()
+    })
+
     it('excludes asset when excludeAssetId is provided', () => {
         const { result } = renderHook(() =>
             useSwapToAssetSelectionList({
@@ -322,9 +429,7 @@ describe('useSwapToAssetSelectionList', () => {
 
     it('returns empty items when no account is selected', () => {
         mockUseSelectedAccount.mockReturnValue(null)
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map(),
-        })
+        mockUseAccountHoldingsAcrossChainsQuery.mockReturnValue(holdingsOf([]))
 
         const { result } = renderHook(() =>
             useSwapToAssetSelectionList(defaultParams),
@@ -409,7 +514,7 @@ describe('useSwapToAssetSelectionList', () => {
             )
         })
 
-        it('passes the scope of an asset on another chain, unbalanced and cached there', () => {
+        it('passes the scope of an unheld asset on another chain, unbalanced and cached there', () => {
             mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
             mockUseSwapPairsInfiniteQuery.mockReturnValue({
                 assets: [...mockAvailableAssets, ETH_NATIVE],
@@ -560,6 +665,223 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockOnAssetSelected).toHaveBeenCalledWith(
                 expect.objectContaining({ amount: new Decimal(0) }),
                 ALGO_SCOPE,
+            )
+        })
+    })
+    describe('cross-network empty state', () => {
+        const SPCX_ID = '0xspcx'
+        const ethParams = {
+            ...defaultParams,
+            scope: ETH_SCOPE,
+            fromAssetId: SPCX_ID,
+        }
+
+        beforeEach(() => {
+            mockDestinationScopes.current = [ETH_SCOPE, ALGO_SCOPE]
+            mockUseAssetsQuery.mockReturnValue({
+                data: new Map([[SPCX_ID, { unitName: 'SPCXx', name: 'SPCX' }]]),
+            })
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isSuccess: true,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+            })
+        })
+
+        it('explains the picked network and offers to swap on it', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            const state = result.current.crossNetworkEmptyState
+            const params =
+                '{"network":"Algorand","payNetwork":"Ethereum","asset":"SPCXx"}'
+            expect(state).toEqual({
+                title: `swap.asset_selection.cross_network_empty_title:${params}`,
+                body: `swap.asset_selection.cross_network_empty_body:${params}`,
+                actionLabel: `swap.asset_selection.cross_network_empty_action:${params}`,
+            })
+        })
+
+        it('covers the other direction, from Algorand into Ethereum', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList({
+                    ...defaultParams,
+                    fromAssetId: '0',
+                }),
+            )
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.crossNetworkEmptyState?.body).toContain(
+                '"network":"Ethereum","payNetwork":"Algorand","asset":"0"',
+            )
+            act(() => result.current.handleSwapOnSelectedNetwork())
+            expect(mockOnSwitchPayAsset).toHaveBeenCalledWith(
+                'native',
+                ETH_SCOPE,
+            )
+        })
+
+        it('falls back to the asset name, then its id, for the pay asset label', () => {
+            mockUseAssetsQuery.mockReturnValue({
+                data: new Map([[SPCX_ID, { name: 'SPCX' }]]),
+            })
+            const { result, rerender } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+            expect(result.current.crossNetworkEmptyState?.body).toContain(
+                '"asset":"SPCX"',
+            )
+
+            mockUseAssetsQuery.mockReturnValue({ data: new Map() })
+            rerender()
+            expect(result.current.crossNetworkEmptyState?.body).toContain(
+                `"asset":"${SPCX_ID}"`,
+            )
+        })
+
+        it('names no action when the account cannot pay on the picked network', () => {
+            mockSourceChains.current = ['ethereum']
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(
+                result.current.crossNetworkEmptyState?.actionLabel,
+            ).toBeNull()
+            expect(result.current.crossNetworkEmptyState?.body).toContain(
+                'cross_network_empty_body_other_account',
+            )
+
+            act(() => result.current.handleSwapOnSelectedNetwork())
+            expect(mockOnSwitchPayAsset).not.toHaveBeenCalled()
+        })
+
+        it('pays with the native asset of the picked network', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            act(() => result.current.handleSwapOnSelectedNetwork())
+
+            expect(mockOnSwitchPayAsset).toHaveBeenCalledWith('0', ALGO_SCOPE)
+        })
+
+        it('is null on the pay network own chip', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null on All', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null while a search is typed, so a miss reads as a search miss', () => {
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+            act(() => result.current.setSearchFilter('usd'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null while pairs are loading', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: true,
+                isSuccess: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+            })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null when the pairs fetch failed, since an empty list is not "no pairs"', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isSuccess: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+            })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null while more pairs may follow an empty page', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isSuccess: true,
+                hasNextPage: true,
+                fetchNextPage: mockFetchNextPage,
+            })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+
+        it('is null when the picked network has pairs', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: mockAvailableAssets,
+                isLoading: false,
+                isSuccess: true,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+            })
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(ethParams),
+            )
+            act(() => result.current.handleSelectChain('algorand'))
+
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+        })
+    })
+
+    describe('search placeholder', () => {
+        it('names every ID format on All and follows the picked chip', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            expect(result.current.searchPlaceholder).toBe(
+                'swap.asset_selection.search_placeholder_all',
+            )
+
+            act(() => result.current.handleSelectChain('ethereum'))
+            expect(result.current.searchPlaceholder).toBe('placeholder.evm')
+
+            act(() => result.current.handleSelectChain('algorand'))
+            expect(result.current.searchPlaceholder).toBe(
+                'placeholder.algorand',
             )
         })
     })

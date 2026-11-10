@@ -516,34 +516,31 @@ describe('Flow: send from an Ethereum account', () => {
         expect(sentRawTransactions).toHaveLength(1)
     })
 
-    describe('a MAX ether send', () => {
-        // 1 gwei base fee; tips of 1, 2 and 3 gwei for slow, normal and fast.
+    // 1 gwei base fee; tips of 1, 2 and 3 gwei for slow, normal and fast.
+    const serveTieredFeeHistory = () => {
         const GWEI = '0x3b9aca00'
         const TIPS: `0x${string}`[] = ['0x3b9aca00', '0x77359400', '0xb2d05e00']
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_feeHistory: {
+                        oldestBlock: '0x1',
+                        baseFeePerGas: [GWEI, GWEI],
+                        gasUsedRatio: [0.5],
+                        reward: [TIPS],
+                    },
+                    eth_sendRawTransaction: recordSentRawTransaction,
+                },
+            }),
+        )
+    }
+
+    describe('a MAX ether send', () => {
         const TEN_ETHER = new Decimal('10000000000000000000')
 
         beforeEach(() => {
-            server.use(
-                ...evmRpcHandlers({
-                    rpcUrl: RPC_URL,
-                    responses: {
-                        eth_feeHistory: {
-                            oldestBlock: '0x1',
-                            baseFeePerGas: [GWEI, GWEI],
-                            gasUsedRatio: [0.5],
-                            reward: [TIPS],
-                        },
-                        eth_sendRawTransaction: params => {
-                            sentRawTransactions.push(params[0] as string)
-                            const respond =
-                                DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
-                            return typeof respond === 'function'
-                                ? respond(params)
-                                : respond
-                        },
-                    },
-                }),
-            )
+            serveTieredFeeHistory()
         })
 
         it.each([
@@ -579,7 +576,7 @@ describe('Flow: send from an Ethereum account', () => {
         )
     })
 
-    it('Given an ether send, when the user reviews it, then each speed shows its wait and the review totals the send with its fee', async () => {
+    it('Given an ether send, when the user reviews it, then the fee shows Normal in one row, opens to each speed with its wait, and picking one closes it', async () => {
         selectSender(ETHEREUM_SENDER)
         useSendFundsStore
             .getState()
@@ -590,12 +587,18 @@ describe('Flow: send from an Ethereum account', () => {
 
         renderSendConfirmationStack()
 
+        const toggle = await screen.findByTestId('fee_preset_toggle')
+        expect(toggle.textContent).toContain('Normal')
+        expect(screen.queryByTestId('fee_preset_slow')).toBeNull()
+        expect(screen.getByTestId('fee_max_info')).toBeTruthy()
+
+        fireEvent.click(toggle)
+
         for (const preset of ['slow', 'normal', 'fast']) {
             expect(
                 await screen.findByTestId(`fee_preset_${preset}_wait`),
             ).toBeTruthy()
         }
-        expect(screen.getByTestId('fee_max_info')).toBeTruthy()
         const total = await screen.findByTestId('send_confirm_total')
         await waitFor(() => expect(total.textContent).toMatch(/0\.5\d*[1-9]/))
         expect(screen.queryByTestId('send_fee_shortfall')).toBeNull()
@@ -605,6 +608,30 @@ describe('Flow: send from an Ethereum account', () => {
         await waitFor(() =>
             expect(useSendFundsStore.getState().feePreset).toBe('slow'),
         )
+        expect(screen.queryByTestId('fee_preset_fast')).toBeNull()
+        expect(screen.getByTestId('fee_preset_toggle').textContent).toContain(
+            'Slow',
+        )
+    })
+
+    it('Given an ether send, when the user opens the fee, picks Fast and confirms, then the node gets a transaction priced at Fast', async () => {
+        serveTieredFeeHistory()
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+        fireEvent.click(await screen.findByTestId('fee_preset_toggle'))
+        fireEvent.click(await screen.findByTestId('fee_preset_fast'))
+        await confirmSend()
+
+        expect(sentRawTransactions).toHaveLength(1)
+        // 21000 gas at 2 x 1 gwei base fee plus the 3 gwei Fast tip; Normal would be 84000 gwei.
+        expect((await sentRecord())?.fee?.toFixed()).toBe('105000000000000')
     })
 
     it('Given an ERC-20 send, when the user confirms, then a token transfer call reaches the node', async () => {

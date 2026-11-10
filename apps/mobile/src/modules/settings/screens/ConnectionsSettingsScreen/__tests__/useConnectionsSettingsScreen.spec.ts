@@ -18,6 +18,12 @@ import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { capabilityState } from '@test-utils/capability-mock'
 
 const mockRequestBottomSheet = vi.fn()
+const mockNavigate = vi.fn()
+
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
+    useNavigation: () => ({ navigate: mockNavigate }),
+}))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
@@ -97,6 +103,24 @@ describe('useConnectionsSettingsScreen', () => {
         vi.clearAllMocks()
         capabilityState.reset()
         mockList([walletConnectRow, dappRow])
+    })
+
+    it('opens a site connection’s details screen with the row it came from', () => {
+        const evmRow: ConnectionSettingsRow = {
+            ...dappRow,
+            id: 'https://evm.example.com',
+            kind: 'dapp-eip1193',
+            networks: [{ chainId: 'base', networkId: 'mainnet' }],
+        }
+        mockList([evmRow])
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+
+        result.current.connections[0].onOpen()
+
+        expect(mockNavigate).toHaveBeenCalledWith('WalletConnectSettings', {
+            screen: 'WalletConnectSettingsDetails',
+            params: { connection: evmRow },
+        })
     })
 
     it('keeps existing connections listed but offers no new one while dappConnect is off', () => {

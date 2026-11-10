@@ -20,6 +20,7 @@ import {
 import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetListItemView } from '../AssetListItemView'
+import type { AssetGroupMemberIdentity } from '../ExpandableAssetGroup'
 import type { AssetFiatConverter } from '@modules/assets'
 import { useStyles } from './styles'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -33,8 +34,8 @@ export type SwipeableAssetItemProps = {
     chainId: ChainId
     /** Null leaves the row unswipeable. */
     swipeAction: Nullable<AssetRowSwipeAction>
-    /** Listed under its group: names its network in the subtitle. */
-    isGroupMember?: boolean
+    /** Listed under its group: shows as the group, naming its own network in the subtitle. */
+    group?: AssetGroupMemberIdentity
     shouldShowChainBadge?: boolean
     convertFiat: AssetFiatConverter
     onPress: (item: AccountHoldingsLiteRow) => void
@@ -48,7 +49,7 @@ const SwipeableAssetItemInner = ({
     item,
     chainId,
     swipeAction,
-    isGroupMember,
+    group,
     shouldShowChainBadge = false,
     convertFiat,
     onPress,
@@ -65,7 +66,7 @@ const SwipeableAssetItemInner = ({
             <AssetListItemView
                 holding={item}
                 chainId={chainId}
-                isGroupMember={isGroupMember}
+                group={group}
                 shouldShowChainBadge={shouldShowChainBadge}
                 convertFiat={convertFiat}
                 style={styles.itemContainer}
@@ -97,7 +98,7 @@ const SwipeableAssetItemInner = ({
                 <AssetListItemView
                     holding={item}
                     chainId={chainId}
-                    isGroupMember={isGroupMember}
+                    group={group}
                     shouldShowChainBadge={shouldShowChainBadge}
                     convertFiat={convertFiat}
                     style={styles.itemContainer}

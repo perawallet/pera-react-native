@@ -45,6 +45,18 @@ export const HD_TEST_MNEMONIC_12 =
 
 export const HD_TEST_MNEMONIC_12_WORDS = HD_TEST_MNEMONIC_12.split(' ')
 
+export const HD_TEST_MNEMONIC_12_INDICES = mnemonicWordsToIndices(
+    HD_TEST_MNEMONIC_12_WORDS,
+)!
+
+// A 12-word phrase with no repeated word, so a swap of two positions changes it.
+// The first BIP39 reference vector with 16 bytes of non-zero entropy.
+export const HD_TEST_MNEMONIC_12_DISTINCT =
+    'ozone drill grab fiber curtain grace pudding thank cruise elder eight picnic'
+
+export const HD_TEST_MNEMONIC_12_DISTINCT_WORDS =
+    HD_TEST_MNEMONIC_12_DISTINCT.split(' ')
+
 export const HD_12_ETHEREUM_ADDRESS_0 =
     '0x9858EfFD232B4033E47d90003D41EC34EcaEda94'
 

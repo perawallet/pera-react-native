@@ -174,14 +174,14 @@ describe('Flow: tokens an Ethereum account received', () => {
         useAssetPreferencesStore.getState().resetState()
     })
 
-    it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name, network and fiat value and no contract address or unverified label', async () => {
+    it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name, amount and fiat value and no contract address or unverified label', async () => {
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${TSLAX}`)
 
         expect(row.textContent).toContain('Tesla xStock')
-        expect(row.textContent).toContain('TESLA · Ethereum')
-        expect(row.textContent).toContain('TESLA0.00551')
+        // A list row stops at 4 dp, rounding down.
+        expect(row.textContent).toContain('0.0055 TESLA')
         expect(row.textContent).toContain('1.97')
         expect(row.textContent).not.toContain('0x8aD3')
         expect(row.textContent).not.toContain('asset.unverified_label')
@@ -194,8 +194,9 @@ describe('Flow: tokens an Ethereum account received', () => {
 
         expect(row.textContent).toContain('asset.unverified_label')
         expect(row.textContent).toContain('MYSTE · 0x2222')
-        expect(row.textContent).toContain('MYSTE1.00')
-        expect(row.textContent).toContain('---')
+        expect(row.textContent).toContain('1.00 MYSTE')
+        // No price: no value at all, not a placeholder.
+        expect(row.textContent).not.toContain('---')
     })
 
     it('Given a token Pera flags as suspicious, when the list renders, then it is not listed', async () => {

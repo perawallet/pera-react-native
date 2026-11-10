@@ -14,8 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-    addressOn,
-    useAccountBalancesQuery,
+    useAccountHoldingsAcrossChainsQuery,
     useSelectedAccount,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
@@ -39,8 +38,15 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { FilterOption } from '@components/FilterSelection'
+import { useLanguage } from '@hooks/useLanguage'
+import { scopedAssetKey } from '@utils/scopedAssetKey'
 import { useSwapChainFilter } from '../../hooks/useSwapChainFilter'
 import { useSwapDestinationScopes } from '../../hooks/useSwapDestinationScopes'
+import { swapAssetSearchPlaceholderKey } from '../../utils/swapAssetSearchPlaceholderKey'
+import {
+    useSwapCrossNetworkEmptyState,
+    type UseSwapCrossNetworkEmptyStateResult,
+} from './useSwapCrossNetworkEmptyState'
 
 export type AvailableAssetWithBalance = {
     swapAsset: SwapAsset
@@ -53,9 +59,10 @@ type UseSwapToAssetSelectionListParams = {
     isVisible?: boolean
     excludeAssetId?: string
     onAssetSelected: (asset: AssetWithAccountBalance, scope: ChainScope) => void
+    onSwitchPayAsset: (assetId: string, scope: ChainScope) => void
 }
 
-type UseSwapToAssetSelectionListResult = {
+type UseSwapToAssetSelectionListResult = UseSwapCrossNetworkEmptyStateResult & {
     items: AvailableAssetWithBalance[]
     searchFilter: string
     setSearchFilter: (value: string) => void
@@ -68,6 +75,7 @@ type UseSwapToAssetSelectionListResult = {
     isLoading: boolean
     handleEndReached: () => void
     handleAssetSelected: (item: AvailableAssetWithBalance) => void
+    searchPlaceholder: string
 }
 
 export const useSwapToAssetSelectionList = ({
@@ -76,8 +84,10 @@ export const useSwapToAssetSelectionList = ({
     isVisible,
     excludeAssetId,
     onAssetSelected,
+    onSwitchPayAsset,
 }: UseSwapToAssetSelectionListParams): UseSwapToAssetSelectionListResult => {
     const queryClient = useQueryClient()
+    const { t } = useLanguage()
     const [searchFilter, setSearchFilter] = useState('')
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
 
@@ -124,6 +134,7 @@ export const useSwapToAssetSelectionList = ({
     const {
         assets: availableAssets,
         isLoading,
+        isSuccess: isPairsSuccess,
         hasNextPage,
         fetchNextPage,
     } = useSwapPairsInfiniteQuery({
@@ -137,40 +148,34 @@ export const useSwapToAssetSelectionList = ({
         if (hasNextPage) fetchNextPage()
     }, [hasNextPage, fetchNextPage])
 
-    const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-        scope,
+    const { assetBalances } =
+        useAccountHoldingsAcrossChainsQuery(selectedAccount)
+
+    const balanceMap = useMemo(
+        (): Map<string, Decimal> =>
+            new Map(
+                assetBalances.map(item => [
+                    scopedAssetKey(item.scope, item.assetId),
+                    item.amount,
+                ]),
+            ),
+        [assetBalances],
     )
-
-    const selectedAddress = selectedAccount
-        ? addressOn(selectedAccount, scope)
-        : undefined
-
-    const balanceMap = useMemo((): Map<string, Decimal> => {
-        if (!selectedAddress) return new Map()
-        const assetBalances =
-            accountBalances.get(selectedAddress)?.assetBalances ?? []
-        return new Map(assetBalances.map(item => [item.assetId, item.amount]))
-    }, [accountBalances, selectedAddress])
 
     const items = useMemo((): AvailableAssetWithBalance[] => {
         const scopeKey = toScopeKey(scope)
-        // Asset ids are only unique within a scope: every EVM chain's native
-        // asset is 'native'.
         return availableAssets
+            .filter(
+                swapAsset =>
+                    toScopeKey(swapAsset.ref) !== scopeKey ||
+                    swapAsset.assetId !== excludeAssetId,
+            )
             .map(swapAsset => ({
                 swapAsset,
-                isOnScope: toScopeKey(swapAsset.ref) === scopeKey,
-            }))
-            .filter(
-                ({ swapAsset, isOnScope }) =>
-                    !isOnScope || swapAsset.assetId !== excludeAssetId,
-            )
-            .map(({ swapAsset, isOnScope }) => ({
-                swapAsset,
-                balance: isOnScope
-                    ? (balanceMap.get(swapAsset.assetId) ?? null)
-                    : null,
+                balance:
+                    balanceMap.get(
+                        scopedAssetKey(swapAsset.ref, swapAsset.assetId),
+                    ) ?? null,
             }))
     }, [availableAssets, balanceMap, excludeAssetId, scope])
 
@@ -233,6 +238,19 @@ export const useSwapToAssetSelectionList = ({
         [onAssetSelected, queryClient],
     )
 
+    const { crossNetworkEmptyState, handleSwapOnSelectedNetwork } =
+        useSwapCrossNetworkEmptyState({
+            scope,
+            fromAssetId,
+            destinationScopes,
+            selectedChainId,
+            isPairsSuccess,
+            hasNextPage,
+            isSearching: Boolean(searchFilter || debouncedSearchFilter),
+            hasItems: items.length > 0,
+            onSwitchPayAsset,
+        })
+
     return {
         items,
         searchFilter,
@@ -245,5 +263,8 @@ export const useSwapToAssetSelectionList = ({
         isLoading,
         handleEndReached,
         handleAssetSelected,
+        searchPlaceholder: t(swapAssetSearchPlaceholderKey(visibleChainIds)),
+        crossNetworkEmptyState,
+        handleSwapOnSelectedNetwork,
     }
 }

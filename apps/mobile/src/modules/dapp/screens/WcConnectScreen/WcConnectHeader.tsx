@@ -24,6 +24,7 @@ import {
 } from '@components/core'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
+import type { ChainNetworkLabel } from '@perawallet/wallet-core-chain-shared'
 import type { VerificationTier } from '@perawallet/wallet-core-projects'
 import { ProjectVerificationIcon } from '@modules/projects'
 import {
@@ -32,7 +33,6 @@ import {
     type ConnectionPermission,
 } from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
-import type { ChainNetworkLabel } from './useWcConnectScreen'
 
 export type WcConnectHeaderProps = {
     peer: ConnectionPeer
@@ -82,7 +82,7 @@ export const WcConnectHeader = ({
                     <PWIcon
                         name='wallet-connect'
                         variant='secondary'
-                        size='xl'
+                        size='lg'
                     />
                 </PWView>
             )}

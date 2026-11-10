@@ -33,7 +33,7 @@ import {
 } from '@theme/typography'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import {
-    resolveFiatFloor,
+    resolveAmountFloor,
     resolvePrecision,
     type PrecisionVariant,
 } from './precision'
@@ -71,12 +71,12 @@ type PrecisionProps =
     | {
           precision: Exclude<
               PrecisionVariant,
-              'assetFull' | 'significant' | 'compact'
+              'assetFull' | 'significant' | 'compact' | 'list'
           >
           assetDecimals?: never
       }
     | {
-          precision: 'assetFull' | 'significant' | 'compact'
+          precision: 'assetFull' | 'significant' | 'compact' | 'list'
           assetDecimals?: number
       }
 
@@ -121,6 +121,10 @@ export type CurrencyAmountProps = {
     sign?: string
     alignRight?: boolean
     showSymbol?: boolean
+    /**
+     * Defaults to after the amount for an asset ("1.23 ETH") and before it
+     * for a display currency ("$ 1.23") or a native-coin glyph ("¦ 1.23").
+     */
     symbolPosition?: 'start' | 'end'
     isLoading?: boolean
     rawValue?: Nullable<string>
@@ -168,7 +172,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         prefix,
         sign,
         showSymbol = true,
-        symbolPosition = 'start',
+        symbolPosition: symbolPositionProp,
         isLoading = false,
         rawValue,
         ignorePrivacyMode = false,
@@ -182,9 +186,9 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
 
     // Identity comes from the asset id alone; `currency` never earns the glyph.
     const isAssetMode = assetId != null
-    const fiatFloor = resolveFiatFloor(precisionVariant, isFiat, value)
+    const amountFloor = resolveAmountFloor(precisionVariant, isFiat, value)
     // A floored amount is formatted as the floor itself, behind a bound marker.
-    const flooredValue = fiatFloor ?? value
+    const flooredValue = amountFloor ?? value
     const { precision, minPrecision, rounding } = resolvePrecision(
         precisionVariant,
         assetDecimals,
@@ -212,6 +216,9 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         chainId === null || assetId === null
             ? undefined
             : nativeAssetGlyphOf({ chainId, assetId })
+    const symbolPosition =
+        symbolPositionProp ??
+        (isAssetMode && nativeGlyph === undefined ? 'end' : 'start')
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
     const { t, currentLanguage } = useLanguage()
@@ -264,13 +271,13 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         if (abbreviationUnit) {
             return t(ABBREVIATION_KEYS[abbreviationUnit], { amount: formatted })
         }
-        if (!fiatFloor) {
+        if (!amountFloor) {
             return formatted
         }
-        return `${fiatFloor.isNegative() ? '> ' : '< '}${formatted}`
+        return `${amountFloor.isNegative() ? '> ' : '< '}${formatted}`
     }, [
         shownValue,
-        fiatFloor,
+        amountFloor,
         shownPrecision,
         currency,
         shouldShowSymbolInFormat,

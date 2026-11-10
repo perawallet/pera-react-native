@@ -49,6 +49,7 @@ import {
 } from '@test-utils/database-setup'
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
 import { AccountAssetList } from '@modules/accounts/components/AccountAssetList'
+import { HideTokensScreen } from '@modules/accounts/screens/HideTokensScreen'
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { USDC_TEST_ASSET } from './__fixtures__/assets'
 import {
@@ -232,13 +233,32 @@ describe("Flow: One account's assets across chains", () => {
             `asset_row_${USDC_TEST_ASSET.assetId}`,
         )
         const ethereumMember = screen.getByTestId(`asset_row_${ETH_USDC}`)
+        // Each member's network heads its row.
         expect(
-            within(algorandMember).getByTestId('chain_label_algorand'),
+            within(algorandMember.parentElement!).getByTestId(
+                'chain_label_algorand',
+            ),
         ).toBeTruthy()
         expect(
-            within(ethereumMember).getByTestId('chain_label_ethereum'),
+            within(ethereumMember.parentElement!).getByTestId(
+                'chain_label_ethereum',
+            ),
         ).toBeTruthy()
         expect(screen.queryByTestId('asset_details_stub')).toBeNull()
+    })
+
+    it("Given the grouped row, when it is pressed, then each network's holding goes by the group's name", async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+
+        const group = await screen.findByTestId('asset_group_row_usdc')
+        fireEvent.click(group)
+
+        const algorandMember = await screen.findByTestId(
+            `asset_row_${USDC_TEST_ASSET.assetId}`,
+        )
+        expect(within(algorandMember).getByText(USDC_GROUP.name)).toBeTruthy()
+        expect(within(algorandMember).queryByText('Test Stablecoin')).toBeNull()
     })
 
     it('Given the expanded group, when it is pressed again, then it collapses without opening any detail', async () => {
@@ -295,11 +315,13 @@ describe("Flow: One account's assets across chains", () => {
         fireEvent.click(screen.getByTestId('asset_network_filter_base'))
 
         const native = await screen.findByTestId('asset_row_native')
-        // No read vouches for the zero, so neither the amount nor its value shows.
+        // No read vouches for the zero, so the amount is a placeholder and no value shows.
         expect(within(native).queryByText(/0\.00/)).toBeNull()
         expect(
-            within(native).getAllByText(UNKNOWN_AMOUNT_PLACEHOLDER),
-        ).toHaveLength(2)
+            within(native).getAllByText(
+                new RegExp(`^${UNKNOWN_AMOUNT_PLACEHOLDER}`),
+            ),
+        ).toHaveLength(1)
         // A native coin's subtitle is its bare unit, never `<unit> · native`.
         expect(within(native).queryByText(/native/)).toBeNull()
         // The read failed, so the zero is a placeholder, not an unfunded balance.
@@ -495,7 +517,9 @@ describe("Flow: One account's assets across chains", () => {
             `asset_row_${ETH_USDC}`,
         )
         expect(
-            within(ethereumMember).getAllByTestId('chain_label_ethereum'),
+            within(ethereumMember.parentElement!).getAllByTestId(
+                'chain_label_ethereum',
+            ),
         ).toHaveLength(1)
     })
 
@@ -552,5 +576,17 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.queryByTestId('asset_network_filter_all')).toBeNull()
         expect(screen.queryByTestId('asset_group_row_usdc')).toBeNull()
         expect(screen.getByTestId('asset_row_0')).toBeTruthy()
+    })
+
+    it('Given an account on two chains that take tokens unasked, when Hide Tokens opens, then each token carries its network on its icon', async () => {
+        useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
+        useAccountsStore.getState().setSelectedAccountId(THREE_CHAIN_ACCOUNT.id)
+
+        renderWithNavigation(HideTokensScreen, 'HideTokens')
+
+        const usdcRow = await screen.findByTestId(`asset_row_${ETH_USDC}`)
+        expect(
+            within(usdcRow).getByTestId('chain_avatar_badge_ethereum'),
+        ).toBeTruthy()
     })
 })

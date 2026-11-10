@@ -16,14 +16,10 @@ import {
     type AssetWithAccountBalance,
     type ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
-import {
-    toScopeKey,
-    type AssetRef,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
-import { ChainLabel } from '@modules/chain-ui/icon'
+import { scopedAssetKey } from '@utils/scopedAssetKey'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -44,15 +40,14 @@ export type AccountAssetSelectionListProps = {
     chainIds?: readonly ChainId[]
     /** Pinned under the search input, such as filter chips. */
     searchAccessory?: ReactNode
-    /** Rows name their network in place of the secondary line. */
+    /** Rows draw their network on the icon. */
     isChainShown?: boolean
     /** Shown when the list has nothing to offer, no search term is active and the read didn't fail. */
     emptyView?: ReactElement
 }
 
-// Ids repeat across chains: every EVM chain's native asset is 'native'.
 const keyOf = (item: ChainAssetBalance) =>
-    `${toScopeKey(item.scope)}/${item.assetId}`
+    scopedAssetKey(item.scope, item.assetId)
 
 export const AccountAssetSelectionList = ({
     onAssetSelected,
@@ -102,11 +97,7 @@ export const AccountAssetSelectionList = ({
                     // selectable.
                     disabled={isTransferBlocked}
                     showFrozenBadge={isTransferBlocked}
-                    subtitle={
-                        isChainShown ? (
-                            <ChainLabel chainId={item.scope.chainId} />
-                        ) : undefined
-                    }
+                    showChainBadge={isChainShown}
                     testID={
                         isChainShown
                             ? `asset-list-item-${item.scope.chainId}-${item.assetId}`

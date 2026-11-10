@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
@@ -58,11 +58,34 @@ export const AssetHoldings = ({
         setPeriod,
         selectedPoint,
         setSelectedPoint,
+        isValueShown,
+        toggleAmount,
+        amountHint,
         canCopyAmount,
-        copyAmountHint,
         handleCopyAmount,
         tokenWarning,
     } = useAssetHoldings({ account, asset, scope })
+
+    // A scrubbed point with no preferred value has no rate behind it: null renders the placeholder, never 0.
+    const value = selectedPoint ? (
+        <PreferredAmount
+            testID='asset_holdings_fiat_value'
+            variant='h1'
+            value={selectedPoint.preferredValue}
+            density='compact'
+            shouldFitWidth
+        />
+    ) : (
+        <PreferredAmount
+            testID='asset_holdings_fiat_value'
+            variant='h1'
+            sourceAmount={holdingAmount}
+            sourceAssetId={asset.assetId}
+            scope={scope}
+            density='compact'
+            shouldFitWidth
+        />
+    )
 
     return (
         <AssetTransactionList
@@ -98,59 +121,57 @@ export const AssetHoldings = ({
                         </PWView>
                     </PWView>
 
-                    {/* A scrubbed point with no preferred value has no rate behind it: null renders the placeholder, never 0. */}
-                    {isPriced &&
-                        (selectedPoint ? (
-                            <PreferredAmount
-                                testID='asset_holdings_fiat_value'
-                                variant='h1'
-                                value={selectedPoint.preferredValue}
-                                density='compact'
-                                shouldFitWidth
-                            />
-                        ) : (
-                            <PreferredAmount
-                                testID='asset_holdings_fiat_value'
-                                variant='h1'
-                                sourceAmount={holdingAmount}
-                                sourceAssetId={asset.assetId}
-                                scope={scope}
-                                density='compact'
-                                shouldFitWidth
-                            />
-                        ))}
-
                     <PWTouchableOpacity
-                        style={styles.tokenAmountContainer}
-                        activeOpacity={1}
-                        disabled={!canCopyAmount}
-                        onLongPress={handleCopyAmount}
-                        accessibilityHint={copyAmountHint}
+                        testID='asset_holdings_amount'
+                        style={styles.amountRow}
+                        activeOpacity={isPriced ? undefined : 1}
+                        disabled={!isPriced && !canCopyAmount}
+                        onPress={isPriced ? toggleAmount : undefined}
+                        // A display toggle: every tap must flip it back.
+                        allowRapidPress
+                        onLongPress={
+                            canCopyAmount ? handleCopyAmount : undefined
+                        }
+                        accessibilityHint={amountHint}
                     >
-                        <AssetAmount
-                            testID='asset_holdings_token_amount'
-                            chainId={scope.chainId}
-                            variant={isPriced ? 'bodyLarge' : 'h1'}
-                            style={isPriced ? styles.tokenAmount : undefined}
-                            value={tokenAmount}
-                            asset={asset}
-                            shouldFitWidth
-                        />
+                        {isValueShown ? (
+                            value
+                        ) : (
+                            <AssetAmount
+                                testID='asset_holdings_token_amount'
+                                chainId={scope.chainId}
+                                variant='h1'
+                                value={tokenAmount}
+                                asset={asset}
+                                shouldFitWidth
+                            />
+                        )}
+                        {isPriced && (
+                            <PWIcon
+                                name='chevron-up-down'
+                                size='md'
+                                style={styles.amountToggleIcon}
+                            />
+                        )}
                     </PWTouchableOpacity>
 
-                    {isPriced && (
-                        <PWView style={styles.trendContainer}>
-                            <WealthTrend
-                                holding={{
-                                    account,
-                                    assetId: asset.assetId,
-                                    scope,
-                                }}
-                                period={trendPeriod}
-                                selectedValue={selectedPoint?.preferredValue}
-                            />
-                        </PWView>
-                    )}
+                    {/* Follows the amount above: the value's change, or the amount held's. */}
+                    <PWView style={styles.trendContainer}>
+                        <WealthTrend
+                            holding={{
+                                account,
+                                assetId: asset.assetId,
+                                scope,
+                            }}
+                            amountOf={isValueShown ? undefined : asset}
+                            period={trendPeriod}
+                            selectedValue={
+                                isValueShown
+                                    ? selectedPoint?.preferredValue
+                                    : selectedPoint?.amount
+                            }
+                        />
+                    </PWView>
                 </PWView>
 
                 {hasBalanceHistory && (

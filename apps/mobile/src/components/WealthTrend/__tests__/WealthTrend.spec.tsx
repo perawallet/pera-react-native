@@ -90,6 +90,7 @@ const mockHoldingHistory = (
         data: values.map(value => ({
             datetime: new Date(0),
             preferredValue: value === null ? null : new Decimal(value),
+            amount: new Decimal(value ?? 0).div(100),
         })),
         isPending: false,
         isPaused: false,
@@ -277,6 +278,27 @@ describe('WealthTrend', () => {
             const { container } = renderHoldingTrend()
 
             expect(container.innerHTML).toBe('')
+        })
+
+        it("trends the amount held in the asset's units when given the asset", () => {
+            mockHoldingHistory([200, 250.1])
+
+            const { getByTestId } = render(
+                <WealthTrend
+                    holding={HOLDING}
+                    amountOf={{
+                        assetId: HOLDING.assetId,
+                        unitName: 'USDC',
+                        decimals: 6,
+                    }}
+                    period='one-month'
+                />,
+            )
+
+            // The unit trails the amount; the setup's formatCurrency mock also leads with it.
+            expect(getByTestId('wealth_trend').textContent).toMatch(
+                /^\+.*0\.501 USDC \(\+25\.05%\)$/,
+            )
         })
 
         it('shows nothing on a chain with no balance history', () => {

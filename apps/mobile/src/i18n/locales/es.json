@@ -389,7 +389,8 @@
             "suspicious_title": "Token sospechoso",
             "body": "Pera no ha verificado este token. No lo solicitaste y podría ser una estafa. No interactúes con sitios web ni enlaces relacionados con él."
         },
-        "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo"
+        "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo",
+        "toggle_amount_hint": "Toca para alternar entre el valor y la cantidad del activo"
     },
     "accounts": {
         "legacyQuantum": {
@@ -607,6 +608,7 @@
             "title": "Usar esta passphrase en otras wallets",
             "evm": "Redes compatibles con Ethereum: las wallets BIP39 estándar, como MetaMask, Uniswap o Rabby, pueden importar estas palabras, y la dirección de tu primera cuenta coincidirá. Después de importarlas, es posible que solo veas esa primera dirección. Algunas wallets muestran tus otras direcciones una vez que se han usado; en otras, tendrás que agregarlas manualmente. Aparecen en el orden en que las creaste en Pera.",
             "algorand": "Algorand: funciona en Pera y en otras wallets compatibles con las wallets HD de Algorand de 24 palabras. Las wallets de Algorand antiguas de 25 palabras no pueden importarla.",
+            "algorand_twelve_word": "Algorand: funciona en Pera. Otras wallets de Algorand pueden aceptar solo passphrases de 24 palabras, así que comprueba que una wallet admite 12 palabras antes de confiar en ella. Las wallets de Algorand antiguas de 25 palabras no pueden importarla.",
             "warning": "Cualquiera que tenga estas palabras controla tus fondos en todas las redes. Nunca las introduzcas en un sitio web ni las compartas con nadie."
         }
     },
@@ -3116,7 +3118,8 @@
             "max_fee_for_preset": "Comisión máxima ({{preset}})",
             "max_fee_info": "Lo máximo que pagarás si suben las comisiones de la red. Normalmente pagas menos.",
             "wait_seconds": "~{{seconds}} s",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Muestra las opciones de comisión"
         },
         "confirmation": {
             "add_to_contacts": "+ Añadir a contactos",
@@ -3485,6 +3488,8 @@
             "known_description": "{{name}} es un contrato conocido",
             "known_spend_note": "{{name}} es un contrato conocido. Solo puede mover este token como parte de una transacción o firma que apruebes.",
             "known_unlimited_note": "La cantidad es ilimitada, así que no tendrás que volver a autorizar este token para {{name}}.",
+            "unlimited_limit_note": "Pera no puede reducir esta cantidad. Para aprobar solo lo que necesitas, recházala y elige una cantidad menor en la aplicación, si lo permite.",
+            "balance_label": "Tu saldo",
             "allow_title": "Permitir que {{spender}} use tus {{asset}}",
             "allow_title_assets": "Permitir que {{spender}} use tus activos",
             "allow_title_unknown": "Permitir que otra dirección use tus {{asset}}",
@@ -3604,8 +3609,11 @@
         "predicted_failure": {
             "title": "Es probable que esta transacción falle",
             "body": "Pera la ejecutó con el último bloque y falló. Si firmas de todos modos, es posible que aun así pagues la comisión de red.",
-            "reason": "Motivo del contrato: «{{reason}}»",
-            "acknowledge": "Entiendo que probablemente falle y quiero firmar de todos modos"
+            "reason": "Motivo del contrato: «{{reason}}»"
+        },
+        "review_warnings": {
+            "summary": "{{count}} cosas que revisar",
+            "acknowledge": "Entiendo los riesgos y quiero firmar de todos modos"
         }
     },
     "site_safety": {
@@ -3708,6 +3716,7 @@
             "nft_fallback": "{{collection}} · ID del token {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Avanzado",
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
             "function_selector": "Selector de función",
             "call_data": "Datos de la llamada",
@@ -3891,9 +3900,11 @@
         },
         "request": {
             "title": "{{name}} quiere conectarse a tu cuenta",
-            "title_network": "{{name}} quiere conectarse a tu cuenta de {{network}}",
-            "title_networks": "{{name}} quiere conectarse a tus cuentas de {{network}} y {{otherNetwork}}",
-            "network_not_added": "No añadida",
+            "title_connect": "{{name}} quiere conectarse",
+            "networks_heading": "Redes",
+            "networks_more": "+{{count}}",
+            "networks_optional_note": "Opcional. {{name}} también funciona en estas redes.",
+            "network_added": "Añadida",
             "origin_verified": "Verificado por WalletConnect",
             "accounts_title": "SELECCIONAR CUENTAS",
             "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
@@ -4015,9 +4026,15 @@
             "swap_from_title": "Intercambiar desde",
             "swap_to_title": "Intercambiar a",
             "search_placeholder": "Buscar por nombre o ID",
+            "search_placeholder_evm": "Buscar por nombre, símbolo o dirección del contrato",
+            "search_placeholder_all": "Buscar por nombre, símbolo, ID o dirección del contrato",
             "no_results_title": "No hay activos coincidentes",
             "no_results_body": "Ningún activo coincide con tu búsqueda",
-            "no_chain_results_body": "No hay activos disponibles en esta red"
+            "no_chain_results_body": "No hay activos disponibles en esta red",
+            "cross_network_empty_title": "No se puede intercambiar {{asset}} a {{network}}",
+            "cross_network_empty_body": "{{asset}} en {{payNetwork}} aún no se puede intercambiar por activos en {{network}}. Para obtenerlos, paga con un activo en {{network}}.",
+            "cross_network_empty_body_other_account": "{{asset}} en {{payNetwork}} aún no se puede intercambiar por activos en {{network}}. Para obtenerlos, cambia a una cuenta en {{network}} y paga con uno de sus activos.",
+            "cross_network_empty_action": "Intercambiar en {{network}}"
         },
         "configuration": {
             "title": "Ajustes del swap",
@@ -4181,7 +4198,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Cripto",
             "see_all_fiat": "Ver todas las monedas fiat",
-            "network_suffix": "{{symbol}} · red {{network}}",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "No hay activos disponibles"
         },
         "provider": {
@@ -4954,6 +4971,11 @@
             "title": "Contrato",
             "verified": "Contrato verificado",
             "matches_site": "Coincide con {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Comisión de red inusualmente alta",
+            "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su ajuste Normal. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
+            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su ajuste Normal. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
         },
         "simulation": {
             "title": "Cambios estimados",

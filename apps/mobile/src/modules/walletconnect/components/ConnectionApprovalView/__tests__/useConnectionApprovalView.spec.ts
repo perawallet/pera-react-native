@@ -344,35 +344,18 @@ describe('useConnectionApprovalView', () => {
             ])
         })
 
-        it('names the one requested chain in the title', () => {
-            const { result } = renderHook(() =>
-                useConnectionApprovalView(proposalOn(['ethereum']) as never),
-            )
+        it.each([[['ethereum']], [['algorand', 'ethereum', 'base']], [[]]])(
+            'names only the dApp in the title when the proposal asks for %j',
+            chains => {
+                const { result } = renderHook(() =>
+                    useConnectionApprovalView(proposalOn(chains) as never),
+                )
 
-            expect(result.current.title).toBe(
-                'walletconnect.request.title_network',
-            )
-        })
-
-        it('names both families when the proposal spans two, and counts a family once', () => {
-            const { result } = renderHook(() =>
-                useConnectionApprovalView(
-                    proposalOn(['algorand', 'ethereum', 'base']) as never,
-                ),
-            )
-
-            expect(result.current.title).toBe(
-                'walletconnect.request.title_networks',
-            )
-        })
-
-        it('keeps the generic title when the proposal names no chain', () => {
-            const { result } = renderHook(() =>
-                useConnectionApprovalView(proposalOn([]) as never),
-            )
-
-            expect(result.current.title).toBe('walletconnect.request.title')
-        })
+                expect(result.current.title).toBe(
+                    'walletconnect.request.title_connect',
+                )
+            },
+        )
 
         it('marks a requested chain no held account signs on as not added, and offers adding it to accounts that can reach it', () => {
             eligible.current = ['base']
@@ -394,6 +377,44 @@ describe('useConnectionApprovalView', () => {
                 ['ethereum', true, false],
                 ['base', false, true],
             ])
+        })
+
+        it('marks the chains the dApp requires as required', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    makeProposal({
+                        requested: {
+                            networks: ['mainnet', 'mainnet'],
+                            chains: ['ethereum', 'base'],
+                            requiredChains: ['ethereum'],
+                            methods: [],
+                        },
+                    }) as never,
+                ),
+            )
+
+            expect(
+                result.current.requestedNetworks.map(
+                    ({ chainId, isRequired }) => [chainId, isRequired],
+                ),
+            ).toEqual([
+                ['ethereum', true],
+                ['base', false],
+            ])
+        })
+
+        it('marks no chain required when the protocol names none', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['ethereum', 'base']) as never,
+                ),
+            )
+
+            expect(
+                result.current.requestedNetworks.some(
+                    ({ isRequired }) => isRequired,
+                ),
+            ).toBe(false)
         })
 
         it('marks only the chain being added as adding', () => {

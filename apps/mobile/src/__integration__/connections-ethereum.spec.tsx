@@ -26,7 +26,14 @@ import {
     vi,
     type Mock,
 } from 'vitest'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 import { Address, Transaction, TransactionType } from 'algosdk'
@@ -54,6 +61,7 @@ import {
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
+    chainAccountOf,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -84,7 +92,7 @@ import {
     evmRpcHandlers,
     evmTransactionReceipt,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import { kmsCore } from '@perawallet/wallet-core-kms'
+import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import {
@@ -105,12 +113,38 @@ import { ConnectionsProvider } from '@modules/connections/shell'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { AnalyticsMetadataKey, WalletConnectEvent } from '@analytics'
 import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
-import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import {
+    ALGO25_TEST_ADDRESS,
+    HD_TEST_ADDRESS,
+    HD_TEST_MNEMONIC_24_INDICES,
+} from './__fixtures__/onboarding'
 import {
     recordAnalyticsEvents,
     type AnalyticsRecorder,
 } from '@test-utils/analytics-recorder'
 import { expectFlowEvents } from './__fixtures__/analytics-flows'
+
+// The integration harness has no i18next instance, so <Trans> renders nothing;
+// echoing its key, values and components lets the specs read the copy it picks
+// and the amounts it embeds.
+vi.mock('react-i18next', async importOriginal => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    Trans: ({
+        i18nKey,
+        values,
+        components,
+    }: {
+        i18nKey?: string
+        values?: object
+        components?: React.ReactNode[]
+    }) => (
+        <>
+            {i18nKey}
+            {values ? JSON.stringify(values) : null}
+            {components}
+        </>
+    ),
+}))
 
 // The integration setup registers whichever chains config enables, and v2
 // builds no client without a Reown project id.
@@ -387,7 +421,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             expectFlowEvents(analytics, 'walletConnectApprove', 'ethereum')
         })
 
-        it('Given an eip155 proposal, when the sheet opens, then it names the network, shows the account by its 0x address and lists the permissions in plain terms', async () => {
+        it("Given an eip155 proposal, when the sheet opens, then it names the network, shows the account by its 0x address and lists the permissions in plain terms, and badges the account's avatar with the Ethereum logo", async () => {
             await mountProvider()
             await propose({
                 requiredNamespaces: {
@@ -401,15 +435,25 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
 
             await selectRows(ETHEREUM_ACCOUNT)
 
+            const row = screen.getByTestId(
+                `wc_account_row_${ETHEREUM_ACCOUNT.id}`,
+            )
+            const avatarBadge = within(
+                within(row).getByTestId('account_avatar_badge'),
+            ).getByTestId('avatar_badge')
             expect(
-                screen.getByText('walletconnect.request.title_network'),
+                within(avatarBadge).getByTestId('chain_icon_ethereum'),
+            ).toBeTruthy()
+
+            expect(
+                screen.getByText('walletconnect.request.title_connect'),
             ).toBeTruthy()
             expect(
                 screen.getByTestId('wc_requested_network_ethereum'),
             ).toBeTruthy()
             expect(
-                screen.queryByText('walletconnect.request.network_not_added'),
-            ).toBeNull()
+                screen.getByTestId('wc_requested_network_added_ethereum'),
+            ).toBeTruthy()
             expect(
                 screen.getByText(
                     addressCodecs.get('ethereum').truncate(STORED_ETH_ADDRESS),
@@ -428,7 +472,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             }
         })
 
-        it('Given a wallet whose only account is an Algo25 account, when an eip155 proposal opens, then the network reads as not added with no way to add it', async () => {
+        it('Given a wallet whose only account is an Algo25 account, when an eip155 proposal opens, then the network is listed with no way to add it', async () => {
             useAccountsStore.getState().setAccounts([ALGORAND_ACCOUNT])
             await mountProvider()
             await propose(eip155Namespace('requiredNamespaces'))
@@ -439,13 +483,19 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeTruthy(),
             )
             expect(
-                screen.getByText('walletconnect.request.network_not_added'),
+                screen.getByTestId('wc_requested_network_item_ethereum'),
             ).toBeTruthy()
             expect(screen.queryByTestId('wc_add_network_ethereum')).toBeNull()
+            expect(
+                screen.queryByTestId('wc_requested_network_added_ethereum'),
+            ).toBeNull()
+            expect(
+                screen.queryByTestId('wc_requested_networks_optional_note'),
+            ).toBeNull()
             expect(screen.queryByText('Trading')).toBeNull()
         })
 
-        it('Given an HD account that has not added Ethereum, when an eip155 proposal opens, then the network reads as not added and offers adding it', async () => {
+        it('Given an HD account that has not added Ethereum, when an eip155 proposal opens, then the network offers adding it', async () => {
             useAccountsStore.getState().setAccounts([
                 {
                     ...ETHEREUM_ACCOUNT,
@@ -466,9 +516,6 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     screen.getByTestId('wc_add_network_ethereum'),
                 ).toBeTruthy(),
             )
-            expect(
-                screen.getByText('walletconnect.request.network_not_added'),
-            ).toBeTruthy()
         })
 
         it('Given an eip155-only proposal, when the user cancels, then the rejection is tracked on ethereum', async () => {
@@ -590,6 +637,68 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
 
         describe('a proposal naming several EVM chains', () => {
             const SWITCH_CONFIRM = 'walletconnect.switch_network.confirm'
+
+            it('Given an account holding Ethereum, whose custody can add Base, but not Base, when a proposal optionally naming Ethereum and Base opens, then the row shows both chips and the title names only the dApp; opening it shows Ethereum checked and Base under the optional note with Add, which adds Base to the account', async () => {
+                // Adding Base derives its key, so the seed must be a real one.
+                const { result: kms } = renderHook(() => useKMS())
+                await act(async () => {
+                    const rootKey = await kms.current.createHDWalletKey({
+                        mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+                    })
+                    useAccountsStore.getState().setAccounts([])
+                    await useAccountsStore
+                        .getState()
+                        .addChainAccount(
+                            rootKey!.seedKey.id,
+                            'ethereum',
+                            { account: 0, keyIndex: 0 },
+                            'HD',
+                        )
+                })
+                await mountProvider()
+                await propose({
+                    requiredNamespaces: {},
+                    optionalNamespaces: {
+                        eip155: {
+                            chains: [ETH_MAINNET, BASE_MAINNET],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                })
+
+                await waitFor(() =>
+                    expect(
+                        screen.getByTestId('wc_requested_network_base'),
+                    ).toBeTruthy(),
+                )
+                expect(
+                    screen.getByTestId('wc_requested_network_ethereum'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByText('walletconnect.request.title_connect'),
+                ).toBeTruthy()
+
+                fireEvent.click(
+                    screen.getByTestId('wc_requested_networks_toggle'),
+                )
+
+                expect(
+                    screen.getByTestId('wc_requested_network_added_ethereum'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId('wc_requested_networks_optional_note'),
+                ).toBeTruthy()
+                fireEvent.click(screen.getByTestId('wc_add_network_base'))
+
+                await waitFor(() =>
+                    expect(
+                        screen.getByTestId('wc_requested_network_added_base'),
+                    ).toBeTruthy(),
+                )
+                const [held] = useAccountsStore.getState().accounts
+                expect(chainAccountOf(held!, 'base')).toBeDefined()
+            })
 
             it('Given Ethereum, Base and a chain Pera lacks, when the user connects, then one eip155 namespace carries both served mainnets', async () => {
                 await mountProvider()
@@ -851,11 +960,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     'ethereum_view_details',
                 )[0]
                 expect(
-                    fee.compareDocumentPosition(target) &
+                    target.compareDocumentPosition(viewDetails) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
                 expect(
-                    target.compareDocumentPosition(viewDetails) &
+                    viewDetails.compareDocumentPosition(fee) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
 
@@ -909,9 +1018,14 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 expect(
                     screen.getAllByTestId('signing-confirm-slide'),
                 ).not.toHaveLength(0)
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
-            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
+            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee without blocking Confirm", async () => {
                 const walletKit = await settle()
                 renderSignReview()
 
@@ -931,6 +1045,57 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     },
                     { timeout: 5000 },
                 )
+                const maxFee = screen.getAllByTestId('fee_summary_max')[0]
+                const warning = screen.getAllByTestId(
+                    'ethereum_high_fee_body',
+                )[0]
+                expect(warning.textContent).toContain(maxFee.textContent)
+                // No observed origin in this harness, so the sourceless copy.
+                expect(warning.textContent).toContain(
+                    'ethereum.review_warnings.high_fee_body_no_source',
+                )
+                expect(
+                    screen.queryByTestId('review_warnings_acknowledge'),
+                ).toBeNull()
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
+            })
+
+            it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    data: `0x3593564c${'0'.repeat(63)}1${'0'.repeat(64)}`,
+                    gas: '0x989680',
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('review_warnings_summary'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                for (const id of [
+                    'ethereum_high_fee_warning',
+                    'ethereum_contract_call_warning',
+                ]) {
+                    expect(screen.getAllByTestId(id)).not.toHaveLength(0)
+                }
+                expect(
+                    isElementDisabled(
+                        screen.getAllByTestId('signing-confirm-slide')[0],
+                    ),
+                ).toBe(false)
             })
 
             it('Given a call the node says would revert, when the dApp sends it with its own gas, then nothing is queued and the user is told why', async () => {
@@ -1103,7 +1268,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     return { walletKit, request }
                 }
 
-                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning, a note that Pera cannot lower it and no deadline, and approving it answers the dApp', async () => {
                     const { walletKit, request } = await reviewCall()
 
                     await waitFor(() => {
@@ -1121,6 +1286,17 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(
                         screen.getAllByText('signing.spend_approval.unlimited'),
                     ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-unlimited-note',
+                        ),
+                    ).not.toHaveLength(0)
+                    // An on-chain approve has no deadline; only a signed permit does.
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-deadline',
+                        ),
+                    ).toBeNull()
                     await waitFor(() => {
                         expect(screen.getAllByText('USDC')).not.toHaveLength(0)
                     })
@@ -1152,21 +1328,22 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     })
                 })
 
-                it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it stays an unrecognised contract call with the unknown-contract notice', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it reads as a send of the token with no unknown-contract notice', async () => {
                     await reviewCall(TRANSFER_DATA)
 
                     await waitFor(() => {
                         expect(
-                            screen.getAllByTestId(
-                                'ethereum_contract_call_warning',
-                            ),
+                            screen.getAllByText('transactions.list_item.send'),
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByText(
                             'transactions.list_item.contract_call',
                         ),
-                    ).not.toHaveLength(0)
+                    ).toBeNull()
                 })
             })
 

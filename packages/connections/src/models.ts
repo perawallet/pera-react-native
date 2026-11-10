@@ -254,6 +254,12 @@ export interface ConnectionProposal {
          * the wallet serves; the approval sheet lists only accounts on these.
          */
         chains: ChainId[]
+        /**
+         * The subset of `chains` the dApp requires; a session without an
+         * account on one is refused. Absent when the protocol has no
+         * optional chains to tell apart.
+         */
+        requiredChains?: ChainId[]
         methods: string[]
     }
     expiresAt: number

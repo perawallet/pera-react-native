@@ -65,5 +65,8 @@ export const useStyles = makeStyles(theme => {
         rightSlotCapped: {
             maxWidth: '55%',
         },
+        rightSlotTop: {
+            alignSelf: 'flex-start',
+        },
     }
 })

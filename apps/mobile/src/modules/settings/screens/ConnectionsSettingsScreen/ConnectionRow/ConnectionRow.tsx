@@ -16,10 +16,11 @@ import {
     PWImage,
     PWText,
     PWTouchableIcon,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { isSiteConnectionKind } from '../connectionsSettingsHelpers'
+import { connectionKindCopy } from '@modules/settings/utils/connectionKindCopy'
 import { type UnifiedConnection } from '../useConnectionsSettingsScreen'
 import { useStyles } from './styles'
 
@@ -31,11 +32,12 @@ export type ConnectionRowProps = {
 export const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const isWalletConnect = !isSiteConnectionKind(connection.kind)
+    const copy = connectionKindCopy(connection.kind)
 
     return (
-        <PWView
+        <PWTouchableOpacity
             style={styles.connectionRow}
+            onPress={connection.onOpen}
             testID={`connection_row_${connection.id}`}
         >
             {connection.iconUrl ? (
@@ -45,7 +47,7 @@ export const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
                 />
             ) : (
                 <PWIcon
-                    name={isWalletConnect ? 'wallet-connect' : 'globe'}
+                    name={copy.fallbackIcon}
                     style={styles.icon}
                 />
             )}
@@ -60,14 +62,7 @@ export const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
                     </PWText>
                     <PWBadge
                         variant='secondary'
-                        value={
-                            connection.badgeLabel ??
-                            t(
-                                isWalletConnect
-                                    ? 'settings.connections.badge_wallet_connect'
-                                    : 'settings.connections.badge_dapp',
-                            )
-                        }
+                        value={connection.badgeLabel ?? t(copy.badgeKey)}
                     />
                 </PWView>
                 <PWText
@@ -84,6 +79,6 @@ export const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
                 onPress={() => onRevoke(connection)}
                 testID={`connection_revoke_${connection.id}`}
             />
-        </PWView>
+        </PWTouchableOpacity>
     )
 }

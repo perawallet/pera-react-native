@@ -28,6 +28,7 @@ import { useStyles } from './styles'
 import { useAccountDisplay } from './useAccountDisplay'
 
 import { AccountIcon, type AccountIconProps } from '@components/AccountIcon'
+import { AvatarBadge } from '@components/AvatarBadge'
 import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 
 /** Pera Card identity rendered in place of an account (header trigger). */
@@ -68,7 +69,7 @@ export type AccountDisplayProps = {
     secondaryContent?: ReactNode
     /** False drops the address, name-service name or type under the name; `badges` and `secondaryContent` still show. */
     shouldShowSecondaryLabel?: boolean
-    /** Takes the avatar's corner; the backup warning is not shown with it. */
+    /** Content for the avatar's bottom-right corner, drawn in the shared AvatarBadge. The backup warning is not shown with it. */
     avatarBadge?: ReactNode
 } & PWViewProps
 
@@ -166,7 +167,10 @@ export const AccountDisplay = ({
                         {...iconProps}
                     />
                     {showChainBadge && (
-                        <ChainAvatarBadge chainId={resolvedChainId} />
+                        <ChainAvatarBadge
+                            chainId={resolvedChainId}
+                            corner='left'
+                        />
                     )}
                     {!!avatarBadge && (
                         <PWView
@@ -176,7 +180,7 @@ export const AccountDisplay = ({
                             ]}
                             testID='account_avatar_badge'
                         >
-                            {avatarBadge}
+                            <AvatarBadge>{avatarBadge}</AvatarBadge>
                         </PWView>
                     )}
                     {!avatarBadge && showBackupBadge && (

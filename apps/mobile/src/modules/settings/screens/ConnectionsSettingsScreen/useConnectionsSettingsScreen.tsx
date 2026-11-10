@@ -11,6 +11,9 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useCapability } from '@hooks/useCapability'
@@ -18,8 +21,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
+import { connectionKindCopy } from '@modules/settings/utils/connectionKindCopy'
 import {
-    isSiteConnectionKind,
     toUnifiedConnection,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
@@ -45,6 +49,18 @@ export const useConnectionsSettingsScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
         const canConnect = useCapability({ anyChain: 'dappConnect' })
+        const navigation =
+            useNavigation<NativeStackNavigationProp<SettingsStackParamsList>>()
+
+        const openConnection = useCallback(
+            (row: ConnectionSettingsRow) => {
+                navigation.navigate('WalletConnectSettings', {
+                    screen: 'WalletConnectSettingsDetails',
+                    params: { connection: row },
+                })
+            },
+            [navigation],
+        )
 
         const connections = useMemo(
             () =>
@@ -54,43 +70,27 @@ export const useConnectionsSettingsScreen =
                             row,
                             revokeConnection,
                             chainDisplayNameOf,
+                            openConnection,
                         ),
                     )
                     .sort((a, b) => b.connectedAt - a.connectedAt),
-            [connectionRows, revokeConnection],
+            [connectionRows, revokeConnection, openConnection],
         )
 
         const confirmRevoke = useCallback(
             async (connection: UnifiedConnection) => {
-                // A dapp connection revokes a site's page-level access, not a
-                // paired WalletConnect session, so the copy differs.
-                const isWalletConnect = !isSiteConnectionKind(connection.kind)
+                const copy = connectionKindCopy(connection.kind)
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <ConfirmActionContent
                             icon='trash'
                             iconVariant='error'
-                            title={t(
-                                isWalletConnect
-                                    ? 'walletconnect.settings.delete_title'
-                                    : 'settings.connected_sites.revoke_title',
-                            )}
-                            message={t(
-                                isWalletConnect
-                                    ? 'walletconnect.settings.delete_body'
-                                    : 'settings.connected_sites.revoke_body',
-                                { origin: connection.subtitle },
-                            )}
-                            confirmLabel={t(
-                                isWalletConnect
-                                    ? 'common.delete.label'
-                                    : 'settings.connected_sites.revoke_confirm',
-                            )}
-                            cancelLabel={t(
-                                isWalletConnect
-                                    ? 'common.cancel.label'
-                                    : 'settings.connected_sites.revoke_cancel',
-                            )}
+                            title={t(copy.deleteTitleKey)}
+                            message={t(copy.deleteBodyKey, {
+                                origin: connection.subtitle,
+                            })}
+                            confirmLabel={t(copy.confirmKey)}
+                            cancelLabel={t(copy.cancelKey)}
                             confirmVariant='destructive'
                             testID='connections_settings_revoke_confirm_bottom_sheet'
                             confirmTestID='connections_settings_revoke_confirm_button'

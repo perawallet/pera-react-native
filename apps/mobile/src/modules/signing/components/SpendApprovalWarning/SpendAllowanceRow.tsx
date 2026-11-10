@@ -64,6 +64,7 @@ export const SpendAllowanceRow = ({
                     <AddressDisplay
                         address={nft?.collection ?? allowance.assetRef.assetId}
                         displayType='address-only'
+                        scope={scope}
                     />
                 </PWView>
             </KeyValueRow>

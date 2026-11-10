@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWText } from '@components/core'
 import { useStyles } from './styles'
 
 export type AvatarCountBadgeProps = {
@@ -21,15 +21,11 @@ export const AvatarCountBadge = ({ count }: AvatarCountBadgeProps) => {
     const styles = useStyles()
 
     return (
-        <PWView style={styles.ring}>
-            <PWView style={styles.disc}>
-                <PWText
-                    variant='captionSmall'
-                    style={styles.text}
-                >
-                    {count}
-                </PWText>
-            </PWView>
-        </PWView>
+        <PWText
+            variant='captionSmall'
+            style={styles.text}
+        >
+            {count}
+        </PWText>
     )
 }

@@ -10,28 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type {
-    AssetWithAccountBalance,
-    ChainAssetBalance,
-} from '@perawallet/wallet-core-accounts'
 import type {
     AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWView } from '@components/core'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapFromAssetSelectionList } from '../SwapFromAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
-import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
-
-/** The picked asset, on the scope it lives on. */
-export type SwapAssetSelection = {
-    assetId: string
-    scope: ChainScope
-}
+import { useSwapAssetSelectionContent } from './useSwapAssetSelectionContent'
 
 type BaseProps = {
     scope: ChainScope
@@ -47,30 +36,11 @@ export const SwapAssetSelectionContent = (
     const { scope, variant, excludeAsset } = props
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<SwapAssetSelection>()
-
-    const handleAssetSelected = useCallback(
-        (asset: AssetWithAccountBalance, assetScope: ChainScope) => {
-            const assetName =
-                asset.asset?.unitName ?? asset.asset?.name ?? asset.assetId
-            trackEvent(
-                variant === 'from'
-                    ? SwapEvent.SelectTopAsset
-                    : SwapEvent.SelectBottomAsset,
-                {
-                    [AnalyticsMetadataKey.ChainId]: assetScope.chainId,
-                    [AnalyticsMetadataKey.AssetName]: assetName,
-                },
-            )
-            resolve({ assetId: asset.assetId, scope: assetScope })
-        },
-        [resolve, variant],
-    )
-
-    const handleFromAssetSelected = useCallback(
-        (asset: ChainAssetBalance) => handleAssetSelected(asset, asset.scope),
-        [handleAssetSelected],
-    )
+    const {
+        handleAssetSelected,
+        handleFromAssetSelected,
+        handleSwitchPayAsset,
+    } = useSwapAssetSelectionContent(variant)
 
     const title =
         variant === 'from'
@@ -86,12 +56,10 @@ export const SwapAssetSelectionContent = (
                         scope={scope}
                         fromAssetId={props.fromAssetId}
                         onAssetSelected={handleAssetSelected}
+                        onSwitchPayAsset={handleSwitchPayAsset}
                         isVisible
                         excludeAssetId={excludeAsset?.assetId}
                         inBottomSheet
-                        searchPlaceholder={t(
-                            'swap.asset_selection.search_placeholder',
-                        )}
                         emptyResultTitle={t(
                             'swap.asset_selection.no_results_title',
                         )}
@@ -107,9 +75,6 @@ export const SwapAssetSelectionContent = (
                         scope={scope}
                         excludeAsset={excludeAsset}
                         onAssetSelected={handleFromAssetSelected}
-                        searchPlaceholder={t(
-                            'swap.asset_selection.search_placeholder',
-                        )}
                         emptyResultTitle={t(
                             'swap.asset_selection.no_results_title',
                         )}

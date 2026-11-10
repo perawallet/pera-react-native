@@ -346,6 +346,7 @@ describe('useSwapForm', () => {
             mockRequestBottomSheet.mockResolvedValueOnce({
                 assetId: '0',
                 scope: ETH_SCOPE,
+                side: 'receive',
             })
             const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -389,6 +390,7 @@ describe('useSwapForm', () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: 'native',
             scope: ETH_SCOPE,
+            side: 'pay',
         })
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -400,10 +402,27 @@ describe('useSwapForm', () => {
         expect(mockSetFromAsset).not.toHaveBeenCalled()
     })
 
+    it('moves the swap to the chain of a pay asset chosen from Swap To', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: 'native',
+            scope: ETH_SCOPE,
+            side: 'pay',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenReceiveAssetSelection()
+        })
+
+        expect(mockSetSourceAsset).toHaveBeenCalledWith('ethereum', 'native')
+        expect(mockSetToAsset).not.toHaveBeenCalled()
+    })
+
     it('keeps the source chain for a pay asset picked on it', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '31566704',
             scope: SCOPE,
+            side: 'pay',
         })
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -464,6 +483,7 @@ describe('useSwapForm', () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '123',
             scope: SCOPE,
+            side: 'pay',
         })
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -498,6 +518,7 @@ describe('useSwapForm', () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '123',
             scope: SCOPE,
+            side: 'pay',
         })
 
         const { result } = renderHook(() => useSwapForm(SCOPE))
@@ -678,6 +699,7 @@ describe('useSwapForm', () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '456',
             scope: SCOPE,
+            side: 'receive',
         })
 
         const { result } = renderHook(() => useSwapForm(SCOPE))
@@ -700,6 +722,7 @@ describe('useSwapForm', () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             assetId: '456',
             scope: SCOPE,
+            side: 'receive',
         })
         const { result } = renderHook(() => useSwapForm(SCOPE))
 

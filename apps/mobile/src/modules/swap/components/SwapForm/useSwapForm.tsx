@@ -494,6 +494,24 @@ export const useSwapForm = (
         applyPercentageAmount(100)
     }, [applyPercentageAmount])
 
+    const applyPaySelection = useCallback(
+        (selection: SwapAssetSelection) => {
+            if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
+                setSourceAsset(selection.scope.chainId, selection.assetId)
+                return
+            }
+            // Re-picking the current asset must be a full no-op: clearing the
+            // quotes without changing any quote input would strand the fetch
+            // state as loading with nothing in flight.
+            if (selection.assetId === fromAsset) return
+            setFromAsset(selection.assetId)
+            // The effect above also resets, but only after a paint; reset here
+            // too so no frame shows the old amount against the new asset.
+            resetAmounts()
+        },
+        [scope, setSourceAsset, fromAsset, setFromAsset, resetAmounts],
+    )
+
     const handleOpenPayAssetSelection = useCallback(async () => {
         trackEvent(SwapEvent.SelectFromToken, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
@@ -517,27 +535,14 @@ export const useSwapForm = (
             },
         })
         if (!selection) return
-        if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
-            setSourceAsset(selection.scope.chainId, selection.assetId)
-            return
-        }
-        // Re-picking the current asset must be a full no-op: clearing the
-        // quotes without changing any quote input would strand the fetch
-        // state as loading with nothing in flight.
-        if (selection.assetId === fromAsset) return
-        setFromAsset(selection.assetId)
-        // The effect above also resets, but only after a paint; reset here
-        // too so no frame shows the old amount against the new asset.
-        resetAmounts()
+        applyPaySelection(selection)
     }, [
         requestBottomSheet,
         scope,
         toAsset,
         receiveScope.chainId,
-        setFromAsset,
-        setSourceAsset,
         fromAsset,
-        resetAmounts,
+        applyPaySelection,
     ])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
@@ -564,11 +569,23 @@ export const useSwapForm = (
             },
         })
         if (!selection) return
+        if (selection.side === 'pay') {
+            applyPaySelection(selection)
+            return
+        }
         setToAsset(selection.assetId, selection.scope)
         setReceiveAmount(null)
         setSelectedProviderName(null)
         resetQuotes()
-    }, [requestBottomSheet, scope, fromAsset, setToAsset, toAsset, resetQuotes])
+    }, [
+        requestBottomSheet,
+        scope,
+        fromAsset,
+        setToAsset,
+        toAsset,
+        resetQuotes,
+        applyPaySelection,
+    ])
 
     const handleOpenReceivingAccount = useCallback(async () => {
         await requestBottomSheet<string>({

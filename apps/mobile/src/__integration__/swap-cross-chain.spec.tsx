@@ -25,13 +25,19 @@ import {
     vi,
 } from 'vitest'
 import React, { useEffect, useRef } from 'react'
-import { act, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook } from '@testing-library/react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 
 import { server } from '@test-utils/msw-server'
-import { createQueryClientWrapper } from '@test-utils/render'
+import {
+    createQueryClientWrapper,
+    fireEvent,
+    render,
+    screen,
+    within,
+} from '@test-utils/render'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -79,6 +85,7 @@ import {
     type SwapExecutionOutcome,
 } from '@modules/swap/hooks/useSwapExecution'
 import { useSwapToAssetSelectionList } from '@modules/swap/components/SwapToAssetSelectionList/useSwapToAssetSelectionList'
+import { SwapToAssetSelectionList } from '@modules/swap/components/SwapToAssetSelectionList'
 
 import { registerChainAdapters } from '../bootstrap/chain-adapters'
 import { addressOf } from './__fixtures__/accounts'
@@ -86,6 +93,7 @@ import {
     ALGO_SCOPE,
     ETH_ADDRESS,
     ETH_SCOPE,
+    seedHoldings,
 } from './__fixtures__/multichainHoldings'
 import {
     ALGORAND_MAINNET_CAIP2,
@@ -93,6 +101,19 @@ import {
     mockSwapOrderWithPayment,
     spyOnSwapSubmissionAndReports,
 } from './__fixtures__/swapRouter'
+
+// The integration setup registers whichever chains config enables.
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        config: {
+            ...actual.config,
+            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+        },
+    }
+})
 
 const ALGO_ID = `${ALGORAND_MAINNET_CAIP2}/asa:0`
 const ETH_ID = 'eip155:1/slip44:60'
@@ -246,6 +267,8 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
         useSwapTrackingStore.getState().resetState()
     })
     afterEach(() => {
+        // A mounted picker would re-render against the reset registry.
+        cleanup()
         host = null
         vi.restoreAllMocks()
         getProvider().chains.reset()
@@ -316,8 +339,7 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
     })
 
     describe('the receive picker', () => {
-        const openPicker = async (account: WalletAccount) => {
-            selectAccount(account)
+        const servePairs = () =>
             server.use(
                 mockSwapPairs({
                     response: {
@@ -338,12 +360,17 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
                     },
                 }),
             )
+
+        const openPicker = async (account: WalletAccount) => {
+            selectAccount(account)
+            servePairs()
             const { result } = renderHook(
                 () =>
                     useSwapToAssetSelectionList({
                         scope: ALGO_SCOPE,
                         fromAssetId: '0',
                         onAssetSelected: vi.fn(),
+                        onSwitchPayAsset: vi.fn(),
                     }),
                 { wrapper: createQueryClientWrapper() },
             )
@@ -377,6 +404,77 @@ describe('Flow: Cross-chain swap (Algorand into an own Ethereum address)', () =>
 
             expect(chainsOf(picker)).toEqual(['algorand'])
             expect(picker.current.chainOptions).toEqual([])
+        })
+
+        it('Given ETH held on the Ethereum address, when the list shows All, then each row keeps its symbol line under a network badge and ETH shows its balance', async () => {
+            await seedHoldings()
+            selectAccount(withEthereum(await seedAlgo25Signer()))
+            servePairs()
+
+            render(
+                <SwapToAssetSelectionList
+                    scope={ALGO_SCOPE}
+                    fromAssetId='0'
+                    onAssetSelected={vi.fn()}
+                    onSwitchPayAsset={vi.fn()}
+                    emptyResultTitle=''
+                    emptyResultBody=''
+                    emptyChainResultBody=''
+                />,
+            )
+
+            const usdcRow = await screen.findByTestId(
+                'swap-asset-item-31566704',
+            )
+            expect(within(usdcRow).getByText('USDC · 31566704')).toBeTruthy()
+            expect(
+                within(usdcRow).getByTestId('chain_avatar_badge_algorand'),
+            ).toBeTruthy()
+            const ethRow = screen.getByTestId(
+                `swap-asset-item-ethereum-${ETH_ASSET}`,
+            )
+            expect(
+                within(ethRow).getByTestId('chain_avatar_badge_ethereum'),
+            ).toBeTruthy()
+            await waitFor(() =>
+                expect(within(ethRow).getAllByText(/1\.5/).length).toBe(1),
+            )
+        })
+
+        it('Given Algorand and Ethereum pairs, when the Ethereum chip is picked, then the search asks for a contract address instead of an asset ID', async () => {
+            // Seeded holdings keep the Ethereum address from syncing over the network.
+            await seedHoldings()
+            selectAccount(withEthereum(await seedAlgo25Signer()))
+            servePairs()
+
+            render(
+                <SwapToAssetSelectionList
+                    scope={ALGO_SCOPE}
+                    fromAssetId='0'
+                    onAssetSelected={vi.fn()}
+                    onSwitchPayAsset={vi.fn()}
+                    emptyResultTitle=''
+                    emptyResultBody=''
+                    emptyChainResultBody=''
+                />,
+            )
+
+            expect(
+                await screen.findByPlaceholderText(
+                    'swap.asset_selection.search_placeholder_all',
+                ),
+            ).toBeTruthy()
+
+            fireEvent.click(screen.getByTestId('swap_to_chain_filter_ethereum'))
+
+            expect(
+                await screen.findByPlaceholderText(
+                    'swap.asset_selection.search_placeholder_evm',
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('chain_avatar_badge_ethereum'),
+            ).toBeNull()
         })
     })
 })

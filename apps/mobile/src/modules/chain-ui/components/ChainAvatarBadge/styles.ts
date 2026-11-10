@@ -13,14 +13,25 @@
 import { makeStyles } from '@rneui/themed'
 
 // The ring is the badge's own background-coloured border, which separates it from the avatar underneath.
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, size: number) => ({
     badge: {
         position: 'absolute',
         bottom: -theme.spacing.xxs,
-        left: -theme.spacing.xxs,
         backgroundColor: theme.colors.background,
         borderRadius: theme.borderRadius.full,
         borderWidth: theme.borders.md,
         borderColor: theme.colors.background,
+    },
+    left: {
+        left: -theme.spacing.xxs,
+    },
+    right: {
+        right: -theme.spacing.xxs,
+    },
+    logo: {
+        width: size,
+        height: size,
+        borderRadius: theme.borderRadius.full,
+        overflow: 'hidden',
     },
 }))

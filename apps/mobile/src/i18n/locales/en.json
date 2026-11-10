@@ -389,7 +389,8 @@
             "suspicious_title": "Suspicious token",
             "body": "Pera hasn't verified this token. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
         },
-        "copy_full_amount_hint": "Long press to copy the full amount"
+        "copy_full_amount_hint": "Long press to copy the full amount",
+        "toggle_amount_hint": "Tap to switch between the value and the asset amount"
     },
     "accounts": {
         "legacyQuantum": {
@@ -607,6 +608,7 @@
             "title": "Using this passphrase in other wallets",
             "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask, Uniswap or Rabby can import these words, and your first account's address will match. After importing, you may only see that first address. Some wallets show your other addresses once they've been used; in others, you'll need to add them manually. They appear in the order you created them in Pera.",
             "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
+            "algorand_twelve_word": "Algorand: works in Pera. Other Algorand wallets may only accept 24-word passphrases, so check that a wallet supports 12 words before relying on it there. Legacy 25-word Algorand wallets can't import it.",
             "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
     },
@@ -3116,7 +3118,8 @@
             "max_fee_for_preset": "Max fee ({{preset}})",
             "max_fee_info": "The most you'll pay if network fees rise. You're usually charged less.",
             "wait_seconds": "~{{seconds}} sec",
-            "wait_minutes": "~{{minutes}} min"
+            "wait_minutes": "~{{minutes}} min",
+            "show_options": "Shows the fee options"
         },
         "confirmation": {
             "add_to_contacts": "+ Add to Contacts",
@@ -3485,6 +3488,8 @@
             "known_description": "{{name}} is a well-known contract",
             "known_spend_note": "{{name}} is a well-known contract. It can only move this token as part of a transaction or signature you approve.",
             "known_unlimited_note": "The amount is unlimited, so you won't need to approve this token for {{name}} again.",
+            "unlimited_limit_note": "Pera can't lower this amount. To approve only what you need, reject this and set a smaller amount in the app, if it offers one.",
+            "balance_label": "Your balance",
             "allow_title": "Allow {{spender}} to use your {{asset}}",
             "allow_title_assets": "Allow {{spender}} to use your assets",
             "allow_title_unknown": "Allow another address to use your {{asset}}",
@@ -3604,8 +3609,11 @@
         "predicted_failure": {
             "title": "This transaction will likely fail",
             "body": "Pera ran it against the latest block and it failed. If you sign anyway, you may still pay the network fee.",
-            "reason": "The contract's reason: \"{{reason}}\"",
-            "acknowledge": "I understand it will likely fail and want to sign anyway"
+            "reason": "The contract's reason: \"{{reason}}\""
+        },
+        "review_warnings": {
+            "summary": "{{count}} things to check",
+            "acknowledge": "I understand the risks and want to sign anyway"
         }
     },
     "site_safety": {
@@ -3708,6 +3716,7 @@
             "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Advanced",
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
             "call_data": "Call Data",
@@ -3891,9 +3900,11 @@
         },
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "title_network": "{{name}} wants to connect to your {{network}} account",
-            "title_networks": "{{name}} wants to connect to your {{network}} and {{otherNetwork}} accounts",
-            "network_not_added": "Not added",
+            "title_connect": "{{name}} wants to connect",
+            "networks_heading": "Networks",
+            "networks_more": "+{{count}}",
+            "networks_optional_note": "Optional. {{name}} also works on these networks.",
+            "network_added": "Added",
             "origin_verified": "Verified by WalletConnect",
             "accounts_title": "SELECT ACCOUNTS",
             "no_accounts": "None of your accounts can connect on this network.",
@@ -4015,9 +4026,15 @@
             "swap_from_title": "Swap From",
             "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
+            "search_placeholder_evm": "Search by name, symbol or contract address",
+            "search_placeholder_all": "Search by name, symbol, ID or contract address",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term",
-            "no_chain_results_body": "No assets available on this network"
+            "no_chain_results_body": "No assets available on this network",
+            "cross_network_empty_title": "Can't swap {{asset}} to {{network}}",
+            "cross_network_empty_body": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, pay with an asset on {{network}} instead.",
+            "cross_network_empty_body_other_account": "{{asset}} on {{payNetwork}} can't be swapped for assets on {{network}} yet. To get them, switch to an account on {{network}} and pay with one of its assets.",
+            "cross_network_empty_action": "Swap on {{network}}"
         },
         "configuration": {
             "title": "Swap settings",
@@ -4181,7 +4198,7 @@
             "fiat_section": "Fiat",
             "crypto_section": "Crypto",
             "see_all_fiat": "See all fiat currencies",
-            "network_suffix": "{{symbol}} · {{network}} network",
+            "network_suffix": "{{symbol}} · {{network}}",
             "empty": "No assets available"
         },
         "provider": {
@@ -4954,6 +4971,11 @@
             "title": "Contract",
             "verified": "Verified contract",
             "matches_site": "Matches {{domain}}"
+        },
+        "review_warnings": {
+            "high_fee_title": "Unusually high network fee",
+            "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less.",
+            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less."
         },
         "simulation": {
             "title": "Estimated changes",

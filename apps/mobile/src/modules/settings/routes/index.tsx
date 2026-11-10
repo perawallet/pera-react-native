@@ -29,6 +29,7 @@ import { SettingsConfirmationScreen } from '@modules/settings/screens/SettingsCo
 import { SettingsLanguageScreen } from '@modules/settings/screens/SettingsLanguageScreen'
 import { fullScreenLayout } from '@layouts/index'
 import type { NavigatorScreenParams } from '@react-navigation/native'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     CloudBackupStackNavigator,
     type CloudBackupStackParamList,
@@ -55,7 +56,9 @@ export type SettingsStackParamsList = {
     SecuritySettings: undefined
     VaultSecuritySettings: undefined
     NotificationsSettings: undefined
-    WalletConnectSettings: undefined
+    WalletConnectSettings: Optional<
+        NavigatorScreenParams<WalletConnectSettingsStackParamsList>
+    >
     PasskeysSettings: undefined
     ConnectionsSettings: undefined
     CurrencySettings: undefined
