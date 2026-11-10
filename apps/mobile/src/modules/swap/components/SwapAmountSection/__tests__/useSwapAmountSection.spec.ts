@@ -11,14 +11,15 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useSwapAmountSection } from '../useSwapAmountSection'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
-const mockAsset = {
+let mockAsset = {
     assetId: '0',
     name: 'Algorand',
     unitName: 'ALGO',
@@ -505,6 +506,139 @@ describe('useSwapAmountSection', () => {
 
             expect(result.current.isFiatInput).toBe(false)
             expect(onAmountChange).toHaveBeenLastCalledWith(new Decimal(5))
+        })
+    })
+
+    describe('rounding to the display rule', () => {
+        const ERC20 = { ...mockAsset, unitName: 'SPCXx', decimals: 18 }
+        const exact = new Decimal('0.0079852331615467')
+        const payProps = {
+            scope: SCOPE,
+            variant: 'pay' as const,
+            assetId: '0',
+        }
+        const original = mockAsset
+
+        beforeEach(() => {
+            mockAsset = ERC20
+        })
+
+        afterEach(() => {
+            mockAsset = original
+        })
+
+        it('shows an app-filled 18-decimal amount at six decimals when blurred', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...payProps,
+                    amount: exact,
+                    onAmountChange: vi.fn(),
+                }),
+            )
+
+            expect(formatCurrency).toHaveBeenLastCalledWith(
+                new Decimal('0.007985'),
+                6,
+                '',
+                undefined,
+                false,
+                0,
+            )
+        })
+
+        it('seeds the focused field with the rounded amount', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...payProps,
+                    amount: exact,
+                    onAmountChange: vi.fn(),
+                }),
+            )
+
+            act(() => result.current.handleFocus())
+
+            expect(result.current.displayValue).toBe('0.007985')
+        })
+
+        it('keeps what the user typed across blur and refocus, and reports the exact value', () => {
+            const onAmountChange = vi.fn()
+            const { result, rerender } = renderHook(
+                (props: { amount: Decimal | null }) =>
+                    useSwapAmountSection({
+                        ...payProps,
+                        amount: props.amount,
+                        onAmountChange,
+                    }),
+                { initialProps: { amount: null as Decimal | null } },
+            )
+
+            act(() => result.current.handleFocus())
+            act(() => result.current.handleTextChange('0.0079852331'))
+            const emitted = onAmountChange.mock.calls.at(-1)?.[0] as Decimal
+            rerender({ amount: emitted })
+            act(() => result.current.handleBlur())
+            act(() => result.current.handleFocus())
+
+            expect(emitted).toEqual(new Decimal('0.0079852331'))
+            expect(result.current.displayValue).toBe('0.0079852331')
+        })
+
+        it('leaves a six-decimal amount unchanged', () => {
+            mockAsset = original
+
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...payProps,
+                    amount: new Decimal('1.234567'),
+                    onAmountChange: vi.fn(),
+                }),
+            )
+
+            expect(formatCurrency).toHaveBeenLastCalledWith(
+                new Decimal('1.234567'),
+                6,
+                '',
+                undefined,
+                false,
+                0,
+            )
+        })
+
+        it('rounds the receive figure down', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    scope: SCOPE,
+                    variant: 'receive',
+                    assetId: '0',
+                    amount: new Decimal('0.0079859999999999'),
+                }),
+            )
+
+            expect(formatCurrency).toHaveBeenLastCalledWith(
+                new Decimal('0.007985'),
+                6,
+                '',
+                undefined,
+                false,
+                0,
+            )
+        })
+
+        it('fills the field from a MAX amount without changing the amount itself', () => {
+            const onAmountChange = vi.fn()
+            const max = new Decimal('1.234567891234567891')
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    ...payProps,
+                    amount: max,
+                    onAmountChange,
+                }),
+            )
+
+            act(() => result.current.handleFocus())
+
+            expect(result.current.displayValue).toBe('1.234567')
+            expect(onAmountChange).not.toHaveBeenCalled()
         })
     })
 })

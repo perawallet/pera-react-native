@@ -17,6 +17,8 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { FIAT_DECIMAL_PLACES } from '@perawallet/wallet-core-currencies'
 import {
     formatCurrency,
+    resolveAssetDisplayPrecision,
+    roundAssetAmountForDisplay,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -68,10 +70,39 @@ const normalizeDecimalInput = (text: string): string => {
     return `${integerPart}.${fractionPart}`
 }
 
+// The field already holds this amount as the user typed it; reseeding would
+// replace their text with a rounded copy.
+const isTypedAmount = (text: string, amount: Decimal): boolean => {
+    try {
+        return new Decimal(text).equals(amount)
+    } catch {
+        return false
+    }
+}
+
 const constrainDecimals = (text: string, maxDecimals: number): string => {
     const dotIndex = text.indexOf('.')
     if (dotIndex === -1) return text
     return text.slice(0, dotIndex + 1 + maxDecimals)
+}
+
+const formatAssetAmountForDisplay = (
+    amount: Decimal,
+    decimals: Optional<number>,
+    locale: string,
+): string => {
+    if (decimals === undefined) {
+        return formatCurrency(amount, 0, '', locale, false, 0)
+    }
+    const rounded = roundAssetAmountForDisplay(amount, decimals)
+    return formatCurrency(
+        rounded,
+        resolveAssetDisplayPrecision(rounded, decimals),
+        '',
+        locale,
+        false,
+        0,
+    )
 }
 
 export const useSwapAmountSection = ({
@@ -101,11 +132,14 @@ export const useSwapAmountSection = ({
     const [rawText, setRawText] = useState(amount ? amount.toString() : '')
     const [isFocused, setIsFocused] = useState(false)
     const lastTypedAssetRef = useRef<Nullable<Decimal>>(null)
+    const typedTextRef = useRef<Nullable<string>>(null)
+    const decimals = asset?.decimals
 
     useEffect(() => {
         if (amount === null) {
             setRawText('')
             lastTypedAssetRef.current = null
+            typedTextRef.current = null
             return
         }
         if (isFocused) return
@@ -117,30 +151,31 @@ export const useSwapAmountSection = ({
             const fiat = assetToFiat?.(amount)
             setRawText(fiat ? fiat.toFixed(FIAT_DECIMAL_PLACES) : '')
         } else {
-            setRawText(amount.toString())
+            const typed = typedTextRef.current
+            if (typed !== null && isTypedAmount(typed, amount)) return
+            typedTextRef.current = null
+            setRawText(
+                decimals === undefined
+                    ? amount.toString()
+                    : roundAssetAmountForDisplay(amount, decimals).toFixed(),
+            )
         }
-    }, [amount, isFocused, isFiatInput, assetToFiat])
+    }, [amount, isFocused, isFiatInput, assetToFiat, decimals])
 
     const displayValue = useMemo(() => {
         if (!isPay) {
             if (!amount) return ''
-            return formatCurrency(
+            return formatAssetAmountForDisplay(
                 amount,
-                asset?.decimals ?? 0,
-                asset?.unitName ?? '',
+                asset?.decimals,
                 currentLanguage,
-                false,
-                0,
             )
         }
         if (isFocused || !amount || isFiatInput) return rawText
-        return formatCurrency(
+        return formatAssetAmountForDisplay(
             amount,
-            asset?.decimals ?? 0,
-            asset?.unitName ?? '',
+            asset?.decimals,
             currentLanguage,
-            false,
-            0,
         )
     }, [isPay, isFiatInput, isFocused, rawText, amount, asset, currentLanguage])
 
@@ -165,6 +200,7 @@ export const useSwapAmountSection = ({
                   )
                 : normalizeDecimalInput(text)
             setRawText(normalized)
+            typedTextRef.current = isFiatInput ? null : normalized
 
             if (normalized === '' || normalized === '.') {
                 onAmountChange(null)
