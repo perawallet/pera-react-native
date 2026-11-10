@@ -27,7 +27,6 @@ import {
     ETHEREUM_CHAIN_ID,
     readEthereumNative,
     type EthereumTransactionView,
-    type EvmContractLabel,
     type EvmNftItem,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -43,6 +42,7 @@ import {
     useEthereumContractAction,
     type EthereumContractActionPresentation,
 } from './useEthereumContractAction'
+import type { EthereumContractLabel } from './useEthereumContractLabel'
 import {
     useEthereumStandardCall,
     type EthereumAmount,
@@ -67,7 +67,7 @@ export type EthereumTransactionPresentation = {
     /** A call to a known contract whose calldata proves what it does; null for any other call. */
     contractAction: Nullable<EthereumContractActionPresentation>
     /** The well-known contract a call goes to, whether or not its action could be read. */
-    knownContract: Nullable<EvmContractLabel>
+    knownContract: Nullable<EthereumContractLabel>
     isContractActionLoading: boolean
     /** Moves value: a transfer view, or a contract call read as a token or NFT transfer. */
     isTransfer: boolean

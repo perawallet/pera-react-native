@@ -347,7 +347,7 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(kmsCore.sign).not.toHaveBeenCalled()
     })
 
-    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the spend-approval warning with the spender and an unlimited amount, and cancelling answers 4001', async () => {
+    it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the spend-approval warning with the spender, an unlimited amount and its deadline, and cancelling answers 4001', async () => {
         const walletKit = await connectSession()
 
         send(walletKit, 'eth_signTypedData_v4', [
@@ -364,6 +364,9 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(screen.getByTestId(SPEND_APPROVAL_AMOUNT).textContent).toContain(
             'signing.spend_approval.unlimited',
         )
+        expect(
+            screen.getByTestId('message-signing-spend-approval-deadline'),
+        ).toBeTruthy()
         fireEvent.click(screen.getByTestId(REJECT_BUTTON))
 
         const response = await answerOf(walletKit)
@@ -383,10 +386,10 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
                 expect(screen.getByTestId(SPEND_APPROVAL_WARNING)).toBeTruthy(),
             { timeout: 15_000 },
         )
-        // Checksummed, truncated by AddressDisplay.
+        // Checksummed and shortened as every EVM address is, not in Algorand's form.
         expect(
             screen.getByTestId(SPEND_APPROVAL_SPENDER).textContent,
-        ).toContain('0x709...c79C8')
+        ).toContain('0x7099...79C8')
         await waitFor(
             () =>
                 expect(

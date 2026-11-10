@@ -22,8 +22,8 @@ import {
     type PeraEvmHistoryFixtures,
 } from '../history/api/msw-handlers'
 import {
-    peraEvmContractAbiHandlers,
-    type PeraEvmContractAbiFixtures,
+    peraEvmContractHandlers,
+    type PeraEvmContractFixtures,
 } from '../contracts/api/msw-handlers'
 import {
     peraEvmSimulationHandlers,
@@ -46,7 +46,7 @@ export type ShouldRefreshRequest = {
 
 export type PeraEvmFixtures = PeraEvmAssetFixtures &
     PeraEvmHistoryFixtures &
-    PeraEvmContractAbiFixtures &
+    PeraEvmContractFixtures &
     PeraEvmSimulationFixtures & {
         /**
          * A number is the HTTP status the endpoint fails with. Defaults to the
@@ -128,6 +128,6 @@ export const peraEvmHandlers = ({
     ),
     ...peraEvmAssetHandlers(fixtures),
     ...peraEvmHistoryHandlers(fixtures),
-    ...peraEvmContractAbiHandlers(fixtures),
+    ...peraEvmContractHandlers(fixtures),
     ...peraEvmSimulationHandlers(fixtures),
 ]

@@ -11,6 +11,8 @@
  */
 
 import { PWView } from '@components/core'
+import { AssetAmount } from '@components/AssetAmount'
+import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     CollectionApprovalWarning,
@@ -19,6 +21,7 @@ import {
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { GrantRows } from './GrantRows'
 import { useStyles } from './styles'
+import { useEthereumApprovalDetails } from './useEthereumApprovalDetails'
 
 type EthereumApprovalDetailsProps = {
     presentation: EthereumTransactionPresentation
@@ -30,14 +33,30 @@ export const EthereumApprovalDetails = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { standardCall, scope } = presentation
+    const { tokenBalance } = useEthereumApprovalDetails(presentation)
 
     let content = null
     if (standardCall?.kind === 'token-approval') {
         content = standardCall.spendApproval ? (
-            <SpendApprovalWarning
-                approval={standardCall.spendApproval}
-                scope={scope}
-            />
+            <>
+                <SpendApprovalWarning
+                    approval={standardCall.spendApproval}
+                    scope={scope}
+                />
+                {!!tokenBalance && (
+                    <KeyValueRow
+                        testID='ethereum_approval_token_balance'
+                        title={t('signing.spend_approval.balance_label')}
+                    >
+                        <AssetAmount
+                            chainId={scope.chainId}
+                            asset={tokenBalance.asset}
+                            value={tokenBalance.amount}
+                            showSymbol
+                        />
+                    </KeyValueRow>
+                )}
+            </>
         ) : (
             <GrantRows
                 spenderTitle={t('signing.spend_approval.spender_label')}
@@ -52,6 +71,7 @@ export const EthereumApprovalDetails = ({
             <CollectionApprovalWarning
                 operator={standardCall.operator}
                 collection={standardCall.contract}
+                scope={scope}
             />
         ) : (
             <GrantRows

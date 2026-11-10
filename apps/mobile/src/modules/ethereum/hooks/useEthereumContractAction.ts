@@ -18,7 +18,6 @@ import type {
     EthereumTransactionView,
     EvmActionAsset,
     EvmContractAction,
-    EvmContractLabel,
     EvmSwapLeg,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
@@ -28,6 +27,10 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
+import {
+    useEthereumContractLabel,
+    type EthereumContractLabel,
+} from './useEthereumContractLabel'
 import type { EthereumAmount } from './useEthereumStandardCall'
 
 export type EthereumActionAmount = EthereumAmount & {
@@ -66,7 +69,7 @@ export type EthereumContractActionPresentation =
 
 export type UseEthereumContractActionResult = {
     contractAction: Nullable<EthereumContractActionPresentation>
-    knownContract: Nullable<EvmContractLabel>
+    knownContract: Nullable<EthereumContractLabel>
     isLoading: boolean
 }
 
@@ -214,7 +217,13 @@ export const useEthereumContractAction = (
 ): UseEthereumContractActionResult => {
     const isDecoding = useChainCapability(scope.chainId, 'contractDecoding')
     const isActive = isDecoding && !!view && !view.call
-    const knownContract = (isActive && view.knownContract) || null
+    // Only a contract call's target is looked up: a send's is the recipient, never Pera's business.
+    const knownContract = useEthereumContractLabel(
+        scope,
+        view?.to,
+        view?.knownContract,
+        isActive && view.kind === 'contract-call',
+    )
     const action = isActive ? view.action : undefined
     const nativeAsset = useNativeAsset(scope)
 

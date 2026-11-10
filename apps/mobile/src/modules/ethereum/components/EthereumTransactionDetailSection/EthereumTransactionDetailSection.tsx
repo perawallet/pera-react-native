@@ -11,8 +11,9 @@
  */
 
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
-import { PWText } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '@modules/signing'
@@ -21,6 +22,8 @@ import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
 import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
+import { EthereumRawCallRows } from './EthereumRawCallRows'
+import { useStyles } from './styles'
 
 const GWEI_DECIMALS = 9
 
@@ -32,12 +35,13 @@ type EthereumTransactionDetailSectionProps = {
     isAssetInCard?: boolean
 }
 
-/** What only an EVM transaction has: the token or NFT moved, the call and approval it made, its nonce, gas limit and per-gas fees, and the most it can cost before it is mined. */
+/** What only an EVM transaction has: the token or NFT moved and the call and approval it made, then under Advanced the raw call, nonce, gas limit and per-gas fees, and the most it can cost before it is mined. */
 export const EthereumTransactionDetailSection = ({
     presentation,
     isAmountInHero = !!presentation.amount?.asset,
     isAssetInCard = false,
 }: EthereumTransactionDetailSectionProps) => {
+    const styles = useStyles()
     const { t } = useLanguage()
     const gwei = {
         decimals: GWEI_DECIMALS,
@@ -69,7 +73,7 @@ export const EthereumTransactionDetailSection = ({
 
     let callDetails
     if (!isTransfer) {
-        // What the call was read as first, then the raw call it was read from.
+        // What the call was read as; the raw call it was read from is under Advanced.
         callDetails = (
             <>
                 {!!standardCall && (
@@ -114,44 +118,73 @@ export const EthereumTransactionDetailSection = ({
         )
     }
 
+    const hasAdvanced = !isTransfer || 'fee' in view
+    // The gas labels are long and their values short, so the label wraps rather than truncates.
+    const untruncated = { truncate: false }
+
     return (
         <TransactionDetailCard>
             {callDetails}
 
-            {'fee' in view && (
-                <>
-                    <KeyValueRow
-                        testID='ethereum_nonce'
-                        title={t('ethereum.pricing.nonce')}
+            {hasAdvanced && (
+                <TitledExpandablePanel
+                    title={t('transactions.contract_call.advanced')}
+                    hasVerticalChevron
+                >
+                    <PWView
+                        style={styles.advanced}
+                        testID='ethereum_detail_advanced'
                     >
-                        <PWText>{String(view.nonce)}</PWText>
-                    </KeyValueRow>
-                    <KeyValueRow
-                        testID='ethereum_gas_limit'
-                        title={t('ethereum.pricing.gas_limit')}
-                    >
-                        <PWText>{view.gas.toString()}</PWText>
-                    </KeyValueRow>
-                    <KeyValueRow
-                        testID='ethereum_max_fee_per_gas'
-                        title={t('ethereum.pricing.max_fee_per_gas')}
-                    >
-                        <PWText>
-                            {formatAssetAmount(view.fee.maxFeePerGas, gwei)}
-                        </PWText>
-                    </KeyValueRow>
-                    <KeyValueRow
-                        testID='ethereum_max_priority_fee_per_gas'
-                        title={t('ethereum.pricing.max_priority_fee_per_gas')}
-                    >
-                        <PWText>
-                            {formatAssetAmount(
-                                view.fee.maxPriorityFeePerGas,
-                                gwei,
-                            )}
-                        </PWText>
-                    </KeyValueRow>
-                </>
+                        {!isTransfer && (
+                            <EthereumRawCallRows presentation={presentation} />
+                        )}
+                        {'fee' in view && (
+                            <>
+                                <KeyValueRow
+                                    testID='ethereum_nonce'
+                                    title={t('ethereum.pricing.nonce')}
+                                >
+                                    <PWText>{String(view.nonce)}</PWText>
+                                </KeyValueRow>
+                                <KeyValueRow
+                                    testID='ethereum_gas_limit'
+                                    title={t('ethereum.pricing.gas_limit')}
+                                    titleProps={untruncated}
+                                >
+                                    <PWText>{view.gas.toString()}</PWText>
+                                </KeyValueRow>
+                                <KeyValueRow
+                                    testID='ethereum_max_fee_per_gas'
+                                    title={t(
+                                        'ethereum.pricing.max_fee_per_gas',
+                                    )}
+                                    titleProps={untruncated}
+                                >
+                                    <PWText>
+                                        {formatAssetAmount(
+                                            view.fee.maxFeePerGas,
+                                            gwei,
+                                        )}
+                                    </PWText>
+                                </KeyValueRow>
+                                <KeyValueRow
+                                    testID='ethereum_max_priority_fee_per_gas'
+                                    title={t(
+                                        'ethereum.pricing.max_priority_fee_per_gas',
+                                    )}
+                                    titleProps={untruncated}
+                                >
+                                    <PWText>
+                                        {formatAssetAmount(
+                                            view.fee.maxPriorityFeePerGas,
+                                            gwei,
+                                        )}
+                                    </PWText>
+                                </KeyValueRow>
+                            </>
+                        )}
+                    </PWView>
+                </TitledExpandablePanel>
             )}
 
             {!isMined && (

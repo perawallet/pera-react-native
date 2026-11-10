@@ -3480,6 +3480,8 @@
             "known_description": "{{name}} ist ein bekannter Smart Contract",
             "known_spend_note": "{{name}} ist ein bekannter Smart Contract. Er kann diesen Token nur im Rahmen einer Transaktion oder Signatur bewegen, die du bestätigst.",
             "known_unlimited_note": "Der Betrag ist unbegrenzt, daher musst du diesen Token für {{name}} nicht erneut freigeben.",
+            "unlimited_limit_note": "Pera kann diesen Betrag nicht senken. Wenn du nur so viel freigeben willst, wie du brauchst, lehne ab und lege in der App einen kleineren Betrag fest, falls sie das anbietet.",
+            "balance_label": "Dein Guthaben",
             "allow_title": "{{spender}} erlauben, deine {{asset}} zu verwenden",
             "allow_title_assets": "{{spender}} erlauben, deine Assets zu verwenden",
             "allow_title_unknown": "Einer anderen Adresse erlauben, deine {{asset}} zu verwenden",
@@ -3706,6 +3708,7 @@
             "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
+            "advanced": "Erweitert",
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -26,12 +27,14 @@ export type CollectionApprovalWarningProps = {
     /** The collection's contract address. */
     collection: string
     collectionName?: string
+    scope: ChainScope
 }
 
 export const CollectionApprovalWarning = ({
     operator,
     collection,
     collectionName,
+    scope,
 }: CollectionApprovalWarningProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -77,6 +80,7 @@ export const CollectionApprovalWarning = ({
                 <AddressDisplay
                     address={operator}
                     displayType='address-only'
+                    scope={scope}
                 />
             </KeyValueRow>
             <KeyValueRow
@@ -88,6 +92,7 @@ export const CollectionApprovalWarning = ({
                     <AddressDisplay
                         address={collection}
                         displayType='address-only'
+                        scope={scope}
                     />
                 </PWView>
             </KeyValueRow>

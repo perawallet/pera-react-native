@@ -54,6 +54,7 @@ const ENABLED = [
     'ledger',
     'nft',
     'nameService',
+    'contractDecoding',
     'cloudBackup',
 ]
 

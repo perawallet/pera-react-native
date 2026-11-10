@@ -11,35 +11,25 @@
  */
 
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import {
-    bottomSheetNotifier,
-    PWLoadingIndicator,
-    PWText,
-    PWTouchableIcon,
-    PWView,
-} from '@components/core'
+import { PWLoadingIndicator, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ChainNotice } from '@components/ChainNotice'
-import { ExpandableText } from '@components/ExpandableText'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useEthereumVerifiedCall } from '../../hooks/useEthereumVerifiedCall'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
-import { isCallUnexplained } from './contractCallNotice'
+import { contractCallNoticeOf, isCallUnexplained } from './contractCallNotice'
 import { EthereumVerifiedCallRows } from './EthereumVerifiedCallRows'
 import { useStyles } from './styles'
-
-// '0x', the 4-byte selector and the first 32-byte argument word, in hex.
-const CALL_DATA_PREVIEW_LENGTH = 74
 
 type EthereumContractCallDetailsProps = {
     presentation: EthereumTransactionPresentation
     /**
-     * `'review'` is the signing screen: the raw call is left to the details
-     * screen. `'detail'` shows the raw call inline.
+     * `'review'` is the signing screen, with the target and any value it
+     * sends. `'detail'` leaves the raw call to the details screen's Advanced
+     * section.
      */
     variant: 'review' | 'detail'
     /** Read only on `'review'`. */
@@ -56,61 +46,27 @@ export const EthereumContractCallDetails = ({
 }: EthereumContractCallDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { copyToClipboard } = useClipboard()
     const { view, value, contractAction, knownContract, scope } = presentation
     const isReview = variant === 'review'
+    // A detail still to be signed warns as the review's banner does; a mined
+    // call is past trusting anyone.
+    const notice =
+        !isReview && !('isMined' in view)
+            ? contractCallNoticeOf(source, verifiedOrigin)
+            : undefined
     // Only a review looks the name up; a transaction already made shows its call as recorded.
     const verifiedCall = useEthereumVerifiedCall(view, scope, isReview)
     const isExplained = !isCallUnexplained(presentation)
-
-    const selectorRow = !!view.selector && (
-        <KeyValueRow
-            testID='ethereum_contract_call_selector'
-            title={t('transactions.contract_call.function_selector')}
-        >
-            <PWText>{view.selector}</PWText>
-        </KeyValueRow>
-    )
-
-    const handleCopyCallData = () => {
-        void copyToClipboard(view.data, {
-            notifier: bottomSheetNotifier.current ?? undefined,
-        })
-    }
-
-    const callDataRow = (
-        <KeyValueRow
-            title={t('transactions.contract_call.call_data')}
-            verticalAlignment='top'
-        >
-            <PWView style={styles.callData}>
-                <PWView
-                    style={styles.callDataText}
-                    testID='ethereum_contract_call_data'
-                >
-                    <ExpandableText
-                        text={view.data}
-                        limit={CALL_DATA_PREVIEW_LENGTH}
-                    />
-                </PWView>
-                <PWTouchableIcon
-                    name='copy'
-                    size='sm'
-                    variant='secondary'
-                    accessibilityLabel={t('common.copy')}
-                    testID='ethereum_contract_call_data_copy'
-                    onPress={handleCopyCallData}
-                />
-            </PWView>
-        </KeyValueRow>
-    )
 
     return (
         <PWView style={styles.container}>
             {!isReview && !isExplained && (
                 <ChainNotice
                     kind='warning'
-                    titleKey='transactions.contract_call.warning'
+                    titleKey={
+                        notice?.titleKey ?? 'transactions.contract_call.warning'
+                    }
+                    params={notice?.params}
                     testID='ethereum_contract_call_warning'
                 />
             )}
@@ -125,7 +81,7 @@ export const EthereumContractCallDetails = ({
                 />
             )}
 
-            {!!view.to && (
+            {isReview && !!view.to && (
                 <KeyValueRow
                     testID='ethereum_contract_call_to'
                     title={t('transactions.common.to')}
@@ -138,18 +94,21 @@ export const EthereumContractCallDetails = ({
                 </KeyValueRow>
             )}
 
-            <KeyValueRow
-                testID='ethereum_contract_call_value'
-                title={t('transactions.common.amount')}
-            >
-                <AssetAmount
-                    chainId={scope.chainId}
-                    asset={value.asset}
-                    value={value.value}
-                    showSymbol
-                    ignorePrivacyMode
-                />
-            </KeyValueRow>
+            {/* A call that sends no native coin has no amount worth leading with. */}
+            {isReview && !view.value.isZero() && (
+                <KeyValueRow
+                    testID='ethereum_contract_call_value'
+                    title={t('transactions.common.amount')}
+                >
+                    <AssetAmount
+                        chainId={scope.chainId}
+                        asset={value.asset}
+                        value={value.value}
+                        showSymbol
+                        ignorePrivacyMode
+                    />
+                </KeyValueRow>
+            )}
 
             {verifiedCall.status === 'loading' && (
                 <KeyValueRow
@@ -175,13 +134,6 @@ export const EthereumContractCallDetails = ({
                 >
                     {t('transactions.contract_call.lookup_failed')}
                 </PWText>
-            )}
-
-            {!isReview && (
-                <>
-                    {selectorRow}
-                    {callDataRow}
-                </>
             )}
         </PWView>
     )

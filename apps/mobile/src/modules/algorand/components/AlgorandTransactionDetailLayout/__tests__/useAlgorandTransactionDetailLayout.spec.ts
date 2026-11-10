@@ -165,7 +165,7 @@ describe('useAlgorandTransactionDetailLayout', () => {
         expect(summary.amount?.asset.unitName).toBe('ALGO')
     })
 
-    it('Given an unsigned transaction, then it is pending with no id, time or round', () => {
+    it('Given an unsigned transaction, then it has no status, id, time or round', () => {
         const summary = summaryOf(
             viewOf('payment', {
                 id: '',
@@ -174,7 +174,7 @@ describe('useAlgorandTransactionDetailLayout', () => {
             }),
         )
 
-        expect(summary.status).toBe('pending')
+        expect(summary.status).toBeUndefined()
         expect(summary.transactionId).toBeUndefined()
         expect(summary.timestamp).toBeUndefined()
         expect(summary.block).toBeUndefined()

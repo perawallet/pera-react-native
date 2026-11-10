@@ -32,8 +32,11 @@ export const EthereumApprovalChangeRow = ({
 }: EthereumApprovalChangeRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { title, notice } = useEthereumApprovalChangeRow(change)
-    const { grant, spenderName } = change
+    const { title, notice, spenderName } = useEthereumApprovalChangeRow(
+        change,
+        scope,
+    )
+    const { grant } = change
 
     return (
         <PWView
