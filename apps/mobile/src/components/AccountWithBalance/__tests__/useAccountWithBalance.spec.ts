@@ -81,6 +81,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             mockHoldingSources(account),
         isWatchAccount: (account: WalletAccount) =>
             account.custody.kind === 'watch',
+        isLedgerAccount: (account: WalletAccount) =>
+            account.custody.kind === 'hardware' &&
+            account.custody.device.manufacturer === 'ledger',
         multisigParametersOf: (account: WalletAccount, chainId: string) =>
             mockMultisigParameters(account, chainId),
         useAuthorityOf: () => mockAuthority(),
@@ -598,6 +601,36 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.singleNetworkChainId).toBeUndefined()
+        })
+
+        it('names the chain of a Ledger account that sits on one, and shows it under the row', () => {
+            const ledger = {
+                ...ETH_ACCOUNT,
+                custody: {
+                    kind: 'hardware',
+                    device: { manufacturer: 'ledger' },
+                },
+            } as WalletAccount
+
+            const { result } = renderHook(() => useAccountWithBalance(ledger))
+
+            expect(result.current.singleNetworkChainId).toBe('ethereum')
+            expect(result.current.shouldShowSecondaryLabel).toBe(true)
+        })
+
+        it('is unset for a Ledger account that spans chains, which shows nothing under its name', () => {
+            const ledger = {
+                ...BOTH_CHAINS,
+                custody: {
+                    kind: 'hardware',
+                    device: { manufacturer: 'ledger' },
+                },
+            } as WalletAccount
+
+            const { result } = renderHook(() => useAccountWithBalance(ledger))
+
+            expect(result.current.singleNetworkChainId).toBeUndefined()
+            expect(result.current.shouldShowSecondaryLabel).toBe(false)
         })
 
         it('is unset for an account the wallet can sign for', () => {

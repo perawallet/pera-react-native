@@ -4376,8 +4376,9 @@
             "upgrade_watch_body_other": "{{count}} of these addresses are already in your wallet as watch accounts. Importing them will upgrade them to Ledger accounts that can sign transactions. Their names and settings will be kept.",
             "upgrade_watch_confirm": "Upgrade",
             "same_wallet_title": "Add to your existing Ledger account?",
-            "same_wallet_body": "An account from this Ledger is already in your wallet. Open the {{appName}} app on your Ledger so Pera can confirm both addresses come from the same Ledger, then continue. Or add this address as a separate account.",
-            "same_wallet_confirm": "Continue",
+            "same_wallet_body": "An account from this Ledger is already in your wallet. To add this address to it, open the {{appName}} app on your Ledger so Pera can confirm both addresses come from the same Ledger. Adding to the existing account keeps both addresses together. A separate account appears as its own entry in your account list.",
+            "same_wallet_body_separate_only": "An account from this Ledger is already in your wallet. You can add this address as a separate account, which appears as its own entry in your account list.",
+            "same_wallet_confirm": "Add to existing account",
             "same_wallet_separate": "Add as separate account"
         },
         "signing": {
