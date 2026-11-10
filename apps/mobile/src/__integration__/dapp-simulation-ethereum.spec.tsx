@@ -120,6 +120,11 @@ const SWAP_DATA = `0x7ff36ab5${'00'.repeat(32)}`
 const APPROVE_MAX_DATA = `0x095ea7b3${'00'.repeat(12)}000000000022d473030f116ddee9f6b43ac78ba3${'ff'.repeat(32)}`
 // deposit()
 const WRAP_DATA = '0xd0e30db0'
+const V3_POSITION_MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+const ADD_LIQUIDITY_VALUE = '0x98cb8c528000'
+// multicall([mint(USDC/WETH 0.05%, 353961 USDC, 0.000168 ETH, to the signer), refundETH()])
+const ADD_LIQUIDITY_DATA =
+    '0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000016488316456000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000000000001f4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2761a00000000000000000000000000000000000000000000000000000000000d89e600000000000000000000000000000000000000000000000000000000000566a9000000000000000000000000000000000000000000000000000098cb8c52800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000006b49d20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000412210e8a00000000000000000000000000000000000000000000000000000000'
 
 const TRANSACTION_SLIDE = 'signing-confirm-slide'
 const CHANGES = 'ethereum_simulation_changes'
@@ -398,6 +403,53 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         ).toBeTruthy()
         expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
         expect(screen.queryByTestId(FAILURE_WARNING)).toBeNull()
+        await expectSlideEnabled()
+    })
+
+    it("Given a Uniswap V3 liquidity add whose simulation spends USDC and ETH and mints an NFT Pera has no record of, when it is reviewed, then both tokens are spent and the position is received under the contract's name and token id", async () => {
+        const simulation = simulationSuccessResponse([
+            {
+                asset_id: 'eip155:1/slip44:60',
+                standard: 'native',
+                token_id: null,
+                amount: '-168000000000000',
+            },
+            {
+                asset_id: `eip155:1/erc20:${USDC.toLowerCase()}`,
+                standard: 'erc20',
+                token_id: null,
+                amount: '-353961',
+            },
+            {
+                asset_id: `eip155:1/erc721:${V3_POSITION_MANAGER.toLowerCase()}`,
+                standard: 'erc721',
+                token_id: '987654',
+                amount: '1',
+            },
+        ])
+
+        await review(
+            V3_POSITION_MANAGER,
+            ADD_LIQUIDITY_DATA,
+            simulation,
+            ADD_LIQUIDITY_VALUE,
+        )
+
+        const changes = await waitFor(() => screen.getByTestId(CHANGES), {
+            timeout: 15_000,
+        })
+        await waitFor(() => expect(changes.textContent).toContain('USDC'))
+        expect(changes.textContent).toContain(
+            'signing.balance_impact.spend_title',
+        )
+        expect(changes.textContent).toContain(
+            'signing.balance_impact.receive_title',
+        )
+        expect(changes.textContent).toContain('-0.353961 USDC')
+        expect(changes.textContent).toContain('-0.000168 ETH')
+        expect(changes.textContent).toContain('Uniswap V3 Positions')
+        expect(changes.textContent).toContain('#987654')
+        expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
         await expectSlideEnabled()
     })
 

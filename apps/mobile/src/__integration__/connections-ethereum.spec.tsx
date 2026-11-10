@@ -1064,6 +1064,47 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBe(false)
             })
 
+            it('Given a dApp that tips 1 gwei on a quiet network where Fast tips 1.5 gwei, when it is queued, then the review shows no high-fee warning', async () => {
+                const walletKit = await settle()
+                // Base 0.13 gwei; slow, normal and fast tips 0.01, 0.05 and 1.5 gwei.
+                server.use(
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_feeHistory: {
+                                oldestBlock: '0x1',
+                                baseFeePerGas: ['0x7bfa480', '0x7bfa480'],
+                                gasUsedRatio: [0.5],
+                                reward: [
+                                    ['0x989680', '0x2faf080', '0x59682f00'],
+                                ],
+                            },
+                        },
+                    }),
+                )
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    maxFeePerGas: '0x4aec4c40',
+                    maxPriorityFeePerGas: '0x3b9aca00',
+                })
+                await queued()
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('signing_transaction_review'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+
+                expect(
+                    screen.queryByTestId('ethereum_high_fee_warning'),
+                ).toBeNull()
+            })
+
             it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
                 const walletKit = await settle()
                 renderSignReview()
@@ -1316,6 +1357,17 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             ),
                         ).not.toHaveLength(0)
                     })
+                    // A transaction says so; "signature" is for signature requests.
+                    expect(
+                        screen.getAllByText(
+                            'signing.spend_approval.spend_warning_transaction',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByText(
+                            'signing.spend_approval.spend_warning',
+                        ),
+                    ).toBeNull()
 
                     await act(async () => {
                         await request.approve([], { txIds: [HASH] })
@@ -1326,6 +1378,82 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             result: HASH,
                         })
                     })
+                })
+
+                it('Given an unlimited USDC approval for the Uniswap V3 Position Manager, when it is reviewed, then it names Uniswap and reads as a well-known contract with a verified spender, no deadline and no signature copy', async () => {
+                    const MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+                    await reviewCall(
+                        `0x095ea7b3${MANAGER.slice(2).toLowerCase().padStart(64, '0')}${'f'.repeat(64)}`,
+                    )
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            /^signing\.spend_approval\.allow_title$/,
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByText(
+                            /^signing\.spend_approval\.allow_title_unknown/,
+                        ),
+                    ).toBeNull()
+                    expect(
+                        screen.getAllByText(
+                            'signing.spend_approval.known_title',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Uniswap V3 Positions'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-spender-verified',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-deadline',
+                        ),
+                    ).toBeNull()
+
+                    fireEvent.click(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-warning',
+                        )[0],
+                    )
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-row-spend',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'signing.spend_approval.known_spend_note',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByText(
+                            'signing.spend_approval.spend_warning',
+                        ),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByText(
+                            'signing.spend_approval.spend_warning_transaction',
+                        ),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-row-site-mismatch',
+                        ),
+                    ).toBeNull()
                 })
 
                 it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it reads as a send of the token with no unknown-contract notice', async () => {
@@ -1568,6 +1696,84 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     await waitFor(() => {
                         expect(screen.getAllByText('USDC')).not.toHaveLength(0)
                     })
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                })
+
+                // multicall([mint(USDC/WETH 0.05%, 353961 USDC, 0.000168 ETH, to the signer), refundETH()])
+                const ADD_LIQUIDITY_DATA =
+                    '0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000016488316456000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000000000001f4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2761a00000000000000000000000000000000000000000000000000000000000d89e600000000000000000000000000000000000000000000000000000000000566a9000000000000000000000000000000000000000000000000000098cb8c52800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000006b49d20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000412210e8a00000000000000000000000000000000000000000000000000000000'
+                const ADD_LIQUIDITY_VALUE = '0x98cb8c528000'
+                // multicall([decreaseLiquidity(987654), collect(987654, to the manager), unwrapWETH9(signer), sweepToken(USDC, signer), burn(987654)])
+                const REMOVE_LIQUIDITY_DATA =
+                    '0xac9650d80000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000180000000000000000000000000000000000000000000000000000000000000024000000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000000036000000000000000000000000000000000000000000000000000000000000000a40c49ccbe00000000000000000000000000000000000000000000000000000000000f120600000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b49d200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000084fc6f786500000000000000000000000000000000000000000000000000000000000f1206000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffff00000000000000000000000000000000ffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004449404b7c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000064df2ab5bb000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002442966c6800000000000000000000000000000000000000000000000000000000000f120600000000000000000000000000000000000000000000000000000000'
+                const V3_POSITION_MANAGER =
+                    '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+
+                it('Given a Uniswap V3 liquidity add paid partly in ether, when it is reviewed, then it is titled Add liquidity with the labelled manager, both deposits at most, the new position NFT and no unknown-contract notice', async () => {
+                    await reviewKnownCall(
+                        V3_POSITION_MANAGER,
+                        ADD_LIQUIDITY_DATA,
+                        ADD_LIQUIDITY_VALUE,
+                    )
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_position'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'transactions.list_item.add_liquidity',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Uniswap V3 Positions'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_deposit_0'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_deposit_1'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.deposit_at_most',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.new_position',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                })
+
+                it('Given a Uniswap V3 removal that unwraps, sweeps and burns, when it is reviewed, then it is titled Remove liquidity with the position number and says it closes the position', async () => {
+                    await reviewKnownCall(
+                        V3_POSITION_MANAGER,
+                        REMOVE_LIQUIDITY_DATA,
+                    )
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_position'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'transactions.list_item.remove_liquidity',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(screen.getAllByText('#987654')).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_action_closes_position',
+                        ),
+                    ).not.toHaveLength(0)
                     expect(
                         screen.queryByTestId('ethereum_contract_call_warning'),
                     ).toBeNull()
