@@ -11,10 +11,9 @@
  */
 
 // The account chart plots the account's total across every chain the headline
-// counts, so a chain holding value that can't serve history makes the chart
-// unavailable rather than a partial line; one holding nothing adds an empty
-// source, and one whose history fails is left out. Copy is asserted by key: this project renders
-// i18n keys.
+// counts. A chain holding nothing adds an empty source; one holding value whose
+// history fails or isn't served is left out while another chain plots. Copy is
+// asserted by key: this project renders i18n keys.
 
 import {
     afterAll,
@@ -314,7 +313,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         ).toBeNull()
     })
 
-    it('Given Ethereum holds ether and serves no balance history, when the chart is shown, then it says the chart is unavailable rather than plotting Algorand alone', async () => {
+    it('Given Ethereum holds ether and serves no balance history, when the chart is shown, then it plots Algorand without Ethereum, never says unavailable, and shows no change', async () => {
         await seedEthereumHolding('500000000000000000')
         serveHistory({
             algorand: [
@@ -322,18 +321,38 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
                 { datetime: '2026-10-21T00:00:00Z', usd_value: '12' },
             ],
         })
+        const queryClient = createTestQueryClient()
+        const historyQueries = () =>
+            queryClient.getQueryCache().findAll({
+                predicate: query =>
+                    isAccountBalancesHistoryQuery(query.queryKey),
+            })
 
-        renderHeader(true)
+        renderHeader(true, TWO_CHAIN_ACCOUNT, queryClient)
 
-        expect(
-            await screen.findByText(
-                'common.network_unavailable.title',
-                undefined,
-                { timeout: SLOW_WAIT_TIMEOUT_MS },
-            ),
-        ).toBeTruthy()
+        await waitFor(
+            () => {
+                expect(historyQueries().length).toBeGreaterThan(0)
+                expect(
+                    historyQueries().every(
+                        query => query.state.status === 'success',
+                    ),
+                ).toBe(true)
+                expect(
+                    historyQueries().some(query => query.state.data === null),
+                ).toBe(true)
+            },
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        await act(async () => {})
+
         // Asked, and answered "not enabled": not short-circuited before the backend.
         expect(requests.ethereum).toBeGreaterThan(0)
+        expect(
+            screen.queryByText('common.network_unavailable.title'),
+        ).toBeNull()
+        expect(screen.queryByText('common.error.title')).toBeNull()
+        expect(screen.queryByText('common.wealth_chart.empty_body')).toBeNull()
         expect(screen.queryByTestId('wealth_trend')).toBeNull()
     })
 
