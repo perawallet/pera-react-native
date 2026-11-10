@@ -389,7 +389,8 @@
             "suspicious_title": "Suspicious token",
             "body": "Pera hasn't verified this token. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
         },
-        "copy_full_amount_hint": "Long press to copy the full amount"
+        "copy_full_amount_hint": "Long press to copy the full amount",
+        "toggle_amount_hint": "Tap to switch between the value and the asset amount"
     },
     "accounts": {
         "legacyQuantum": {

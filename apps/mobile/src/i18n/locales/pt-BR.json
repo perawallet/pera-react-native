@@ -389,7 +389,8 @@
             "suspicious_title": "Token suspeito",
             "body": "A Pera não verificou este token. Você não o solicitou e ele pode ser um golpe. Não interaja com sites ou links relacionados a ele."
         },
-        "copy_full_amount_hint": "Toque e segure para copiar o valor completo"
+        "copy_full_amount_hint": "Toque e segure para copiar o valor completo",
+        "toggle_amount_hint": "Toque para alternar entre o valor e a quantidade do ativo"
     },
     "accounts": {
         "legacyQuantum": {

@@ -96,7 +96,7 @@ export const AccountAssetItemView = ({
                 asset={asset}
                 chainId={scope.chainId}
                 value={accountBalance.amount}
-                density='compact'
+                density='list'
                 isUnitShrinkable
                 style={styles.primaryAmount}
                 numberOfLines={1}

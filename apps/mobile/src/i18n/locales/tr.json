@@ -389,7 +389,8 @@
             "suspicious_title": "Şüpheli token",
             "body": "Pera bu tokenı doğrulamadı. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
         },
-        "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
+        "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun",
+        "toggle_amount_hint": "Değer ile varlık miktarı arasında geçiş yapmak için dokun"
     },
     "accounts": {
         "legacyQuantum": {

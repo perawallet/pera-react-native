@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    resolveFiatFloor,
+    resolveAmountFloor,
     resolvePrecision,
     resolveSignificantPrecision,
 } from '../precision'
@@ -191,12 +191,12 @@ describe('resolveSignificantPrecision', () => {
     })
 })
 
-describe('resolveFiatFloor', () => {
+describe('resolveAmountFloor', () => {
     it.each(['0.004', '0.0099'])(
         'floors a sub-cent fiat compact amount (%s) to 0.01',
         amount => {
             expect(
-                resolveFiatFloor(
+                resolveAmountFloor(
                     'compact',
                     true,
                     new Decimal(amount),
@@ -209,7 +209,7 @@ describe('resolveFiatFloor', () => {
         'keeps the sign of a negative sub-cent fiat amount (%s), flooring it to -0.01',
         amount => {
             expect(
-                resolveFiatFloor(
+                resolveAmountFloor(
                     'compact',
                     true,
                     new Decimal(amount),
@@ -220,7 +220,7 @@ describe('resolveFiatFloor', () => {
 
     it('leaves a negative amount of a cent or more to the normal rounding', () => {
         expect(
-            resolveFiatFloor('compact', true, new Decimal('-0.01')),
+            resolveAmountFloor('compact', true, new Decimal('-0.01')),
         ).toBeNull()
     })
 
@@ -228,24 +228,24 @@ describe('resolveFiatFloor', () => {
         'leaves %s to the normal compact rounding',
         amount => {
             expect(
-                resolveFiatFloor('compact', true, new Decimal(amount)),
+                resolveAmountFloor('compact', true, new Decimal(amount)),
             ).toBeNull()
         },
     )
 
     it('has no floor for an unknown value', () => {
-        expect(resolveFiatFloor('compact', true, null)).toBeNull()
+        expect(resolveAmountFloor('compact', true, null)).toBeNull()
     })
 
     it('keeps crypto on the extend-to-first-digit rule', () => {
         expect(
-            resolveFiatFloor('compact', false, new Decimal('0.004')),
+            resolveAmountFloor('compact', false, new Decimal('0.004')),
         ).toBeNull()
     })
 
     it('floors a sub-cent fiat detail amount to 0.01', () => {
         expect(
-            resolveFiatFloor(
+            resolveAmountFloor(
                 'preferredFull',
                 true,
                 new Decimal('0.004'),
@@ -253,9 +253,25 @@ describe('resolveFiatFloor', () => {
         ).toBe('0.01')
     })
 
+    it('floors a dust asset amount in a list row to 0.0001', () => {
+        expect(
+            resolveAmountFloor(
+                'list',
+                false,
+                new Decimal('0.000000000000012'),
+            )?.toString(),
+        ).toBe('0.0001')
+    })
+
+    it('leaves a list amount of 0.0001 or more alone', () => {
+        expect(
+            resolveAmountFloor('list', false, new Decimal('0.0001')),
+        ).toBeNull()
+    })
+
     it('leaves a unit price at its own precision', () => {
         expect(
-            resolveFiatFloor('unitPrice', true, new Decimal('0.000012')),
+            resolveAmountFloor('unitPrice', true, new Decimal('0.000012')),
         ).toBeNull()
     })
 })

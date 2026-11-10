@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    resolveFiatFloor,
+    resolveAmountFloor,
     resolvePrecision,
     type PrecisionVariant,
 } from '../precision'
@@ -121,11 +121,32 @@ describe('resolvePrecision + real formatNumber', () => {
 
     it("a fiat floor formats as one cent, keeping a negative amount's minus", () => {
         const floored = (amount: string) => {
-            const floor = resolveFiatFloor('compact', true, new Decimal(amount))
+            const floor = resolveAmountFloor(
+                'compact',
+                true,
+                new Decimal(amount),
+            )
             return format(floor?.toString() ?? amount, 'compact')
         }
         expect(floored('0.004')).toBe('0.01')
         expect(floored('-0.004')).toBe('-0.01')
+    })
+
+    it('list shows up to 4 dp, rounding down, whatever the decimals', () => {
+        expect(format('1.23456789', 'list', 18)).toBe('1.2345')
+        expect(format('1.234567', 'list', 6)).toBe('1.2345')
+        expect(format('0.00551', 'list', 18)).toBe('0.0055')
+        expect(format('1.5', 'list', 18)).toBe('1.50')
+    })
+
+    it('list floors a dust balance to 0.0001, keeping its minus', () => {
+        const floored = (amount: string, decimals: number) => {
+            const floor = resolveAmountFloor('list', false, new Decimal(amount))
+            return format(floor?.toString() ?? amount, 'list', decimals)
+        }
+        expect(floored('0.000000000000012345', 18)).toBe('0.0001')
+        expect(floored('0.000001', 6)).toBe('0.0001')
+        expect(floored('-0.00005', 18)).toBe('-0.0001')
     })
 
     it('significant shows a tiny fee to its first significant digits', () => {

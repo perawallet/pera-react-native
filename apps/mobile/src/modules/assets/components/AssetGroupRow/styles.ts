@@ -66,17 +66,13 @@ export const useStyles = makeStyles(theme => ({
     chevronExpanded: {
         transform: [{ rotate: '180deg' }],
     },
-    amountContainer: {
-        alignItems: 'flex-end',
+    // In line with the name, not centred on the icon.
+    valueContainer: {
+        alignSelf: 'flex-start',
         marginLeft: theme.spacing.md,
     },
-    primaryAmount: {
+    value: {
         ...getFontWeightVariant(theme, 'h4', 500),
         textAlign: 'right',
-    },
-    secondaryAmount: {
-        textAlign: 'right',
-        color: theme.colors.textGray,
-        alignSelf: 'flex-end',
     },
 }))

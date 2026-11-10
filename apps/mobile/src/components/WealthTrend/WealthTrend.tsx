@@ -26,7 +26,10 @@ import {
     usePortfolioHistoryQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { AssetAmount } from '@components/AssetAmount'
+import { LIST_MAX_PRECISION } from '@components/CurrencyAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import {
     useHistoryTrend,
@@ -42,7 +45,7 @@ export type WealthTrendHolding = {
 
 export type WealthTrendProps = {
     period: HistoryPeriod
-    /** A scrubbed chart point's value: the trend then runs from the chart's start to it. */
+    /** A scrubbed chart point's value (its amount with `amountOf`): the trend then runs from the chart's start to it. */
     selectedValue?: Maybe<Decimal>
 } & (
     | {
@@ -50,9 +53,12 @@ export type WealthTrendProps = {
           sources: AccountHoldingSource[]
           currencyScope: ChainScope
           holding?: never
+          amountOf?: never
       }
     | {
           holding: WealthTrendHolding
+          /** Set: trends the amount held, in this asset's units, rather than its value. */
+          amountOf?: MinimalAsset
           sources?: never
           currencyScope?: never
       }
@@ -76,7 +82,7 @@ const percentageTextOf = (
 }
 
 export const WealthTrend = (props: WealthTrendProps) => {
-    const { period, holding, selectedValue } = props
+    const { period, holding, amountOf, selectedValue } = props
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
@@ -107,6 +113,7 @@ export const WealthTrend = (props: WealthTrendProps) => {
             : portfolioHistory.isPartial ||
                   portfolioHistory.isUnavailableOnNetwork,
         selectedValue,
+        amountOf ? 'amount' : 'value',
     )
 
     if (privacyMode) return null
@@ -141,16 +148,32 @@ export const WealthTrend = (props: WealthTrendProps) => {
             style={directionStyle}
             numberOfLines={1}
         >
-            {/* Rounded like the direction, so a sub-cent move can't hit the fiat floor and print "< $0.01". */}
-            <PreferredAmount
-                isInline
-                prefix={sign}
-                value={trendAbsolute.abs().toDecimalPlaces(2)}
-                density='compact'
-                variant='bodyLarge'
-                weight={500}
-                style={directionStyle}
-            />
+            {/* Rounded like the direction, so a move under the last place can't hit the floor and print "< $0.01". */}
+            {amountOf && holding ? (
+                <AssetAmount
+                    isInline
+                    prefix={sign}
+                    asset={amountOf}
+                    chainId={holding.scope.chainId}
+                    value={trendAbsolute
+                        .abs()
+                        .toDecimalPlaces(LIST_MAX_PRECISION)}
+                    density='list'
+                    variant='bodyLarge'
+                    weight={500}
+                    style={directionStyle}
+                />
+            ) : (
+                <PreferredAmount
+                    isInline
+                    prefix={sign}
+                    value={trendAbsolute.abs().toDecimalPlaces(2)}
+                    density='compact'
+                    variant='bodyLarge'
+                    weight={500}
+                    style={directionStyle}
+                />
+            )}
             {percentageText && ` (${sign}${percentageText})`}
         </PWText>
     )
