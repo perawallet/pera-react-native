@@ -12,7 +12,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const loadWith = async (appEnvironment: string) => {
+const loadWith = async (appEnvironment: string, chainId = 'ethereum') => {
     vi.resetModules()
     vi.doMock('@perawallet/wallet-core-config', async importOriginal => {
         const actual =
@@ -25,7 +25,7 @@ const loadWith = async (appEnvironment: string) => {
         import('../chains/table'),
         import('../capability-defaults'),
     ])
-    const { row } = evmChainOf('ethereum')
+    const { row } = evmChainOf(chainId)
     return { row, supported: evmSupportedCapabilitiesOf(row) }
 }
 
@@ -66,5 +66,34 @@ describe('the swap capability', () => {
 
         expect(row.capabilities?.swap).toBe(false)
         expect(supported).toContain('swap')
+    })
+})
+
+describe.each([
+    ['base', '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'],
+    ['arbitrum', '0xaf88d065e77c8cC2239327C5EDB3A432268e5831'],
+])('the %s swap defaults', (chainId, usdc) => {
+    afterEach(() => {
+        vi.doUnmock('@perawallet/wallet-core-config')
+        vi.resetModules()
+    })
+
+    it.each(['development', 'staging'])('turn swap on in %s', async env => {
+        const { row } = await loadWith(env, chainId)
+
+        expect(row.capabilities?.swap).toBe(true)
+    })
+
+    it('turn swap off in production, where remote config can still switch it', async () => {
+        const { row, supported } = await loadWith('production', chainId)
+
+        expect(row.capabilities?.swap).toBe(false)
+        expect(supported).toContain('swap')
+    })
+
+    it('receive native USDC by default', async () => {
+        const { row } = await loadWith('development', chainId)
+
+        expect(row.defaultSwapReceiveAssetId).toBe(usdc)
     })
 })
