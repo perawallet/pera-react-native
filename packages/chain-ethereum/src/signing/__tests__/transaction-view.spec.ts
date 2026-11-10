@@ -155,6 +155,23 @@ const ACTIONS: EvmContractAction[] = [
         amount: new Decimal(10),
         isEntireBalance: false,
     },
+    {
+        kind: 'add-liquidity',
+        deposits: [
+            {
+                asset: { kind: 'token', contract: TOKEN },
+                maxAmount: new Decimal(10),
+            },
+            { asset: { kind: 'native' }, maxAmount: new Decimal(5) },
+        ],
+        position: { kind: 'new' },
+    },
+    {
+        kind: 'add-liquidity',
+        deposits: [],
+        position: { kind: 'existing', tokenId: '987654' },
+    },
+    { kind: 'remove-liquidity', tokenId: '987654', isClosing: true },
 ]
 
 const ACTION_VIEW: EthereumTransactionView = {
@@ -392,6 +409,53 @@ describe('the Ethereum transaction view', () => {
             {
                 ...ACTION_VIEW,
                 action: { kind: 'stake', amount: new Decimal(1) },
+            },
+        ],
+        [
+            'an add of three deposits',
+            {
+                ...ACTION_VIEW,
+                action: {
+                    kind: 'add-liquidity',
+                    deposits: Array.from({ length: 3 }, () => ({
+                        asset: { kind: 'native' },
+                        maxAmount: new Decimal(1),
+                    })),
+                    position: { kind: 'new' },
+                },
+            },
+        ],
+        [
+            'an increase whose token id is not a decimal',
+            {
+                ...ACTION_VIEW,
+                action: {
+                    kind: 'add-liquidity',
+                    deposits: [],
+                    position: { kind: 'existing', tokenId: '0x1' },
+                },
+            },
+        ],
+        [
+            'a removal whose token id is not a decimal',
+            {
+                ...ACTION_VIEW,
+                action: {
+                    kind: 'remove-liquidity',
+                    tokenId: '-1',
+                    isClosing: false,
+                },
+            },
+        ],
+        [
+            'a removal whose closing flag is not a boolean',
+            {
+                ...ACTION_VIEW,
+                action: {
+                    kind: 'remove-liquidity',
+                    tokenId: '1',
+                    isClosing: 'yes',
+                },
             },
         ],
         [

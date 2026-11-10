@@ -186,9 +186,15 @@ describe('knownSpenderOf', () => {
         })
     })
 
-    it('leaves the Uniswap position managers unlabelled, so an approval to one keeps its warning', () => {
-        expect(knownSpenderOf(1, V3_POSITIONS)).toBeUndefined()
-        expect(knownSpenderOf(1, V4_POSITIONS)).toBeUndefined()
+    it('labels both Uniswap position managers with the project domain', () => {
+        expect(knownSpenderOf(1, V3_POSITIONS)).toEqual({
+            name: 'Uniswap V3 Positions',
+            projectDomain: 'uniswap.org',
+        })
+        expect(knownSpenderOf(1, V4_POSITIONS)).toEqual({
+            name: 'Uniswap V4 Positions',
+            projectDomain: 'uniswap.org',
+        })
     })
 
     it('still labels the Universal Router', () => {

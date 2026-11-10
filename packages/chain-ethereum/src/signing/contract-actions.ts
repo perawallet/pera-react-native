@@ -20,6 +20,7 @@ import {
     size,
     slice,
     toFunctionSelector,
+    zeroAddress,
 } from 'viem'
 import type { AbiFunction, Address, Hex } from 'viem'
 import {
@@ -46,6 +47,8 @@ const TITLE_KEYS: Record<EvmContractAction['kind'], I18nKey> = {
     withdraw: i18nKey('transactions.list_item.withdraw'),
     borrow: i18nKey('transactions.list_item.borrow'),
     repay: i18nKey('transactions.list_item.repay'),
+    'add-liquidity': i18nKey('transactions.list_item.add_liquidity'),
+    'remove-liquidity': i18nKey('transactions.list_item.remove_liquidity'),
 }
 
 const CONTRACT_CALL_ICON = 'contract-call'
@@ -66,6 +69,24 @@ const AAVE_POOL_FUNCTIONS = parseAbi([
 
 const PERMIT2_FUNCTIONS = parseAbi([
     'function approve(address token, address spender, uint160 amount, uint48 expiration)',
+])
+
+const UNISWAP_V3_MULTICALL = parseAbi(['function multicall(bytes[] data)'])
+
+const UNISWAP_V3_POSITION_FUNCTIONS = parseAbi([
+    'struct MintParams { address token0; address token1; uint24 fee; int24 tickLower; int24 tickUpper; uint256 amount0Desired; uint256 amount1Desired; uint256 amount0Min; uint256 amount1Min; address recipient; uint256 deadline; }',
+    'struct IncreaseParams { uint256 tokenId; uint256 amount0Desired; uint256 amount1Desired; uint256 amount0Min; uint256 amount1Min; uint256 deadline; }',
+    'struct DecreaseParams { uint256 tokenId; uint128 liquidity; uint256 amount0Min; uint256 amount1Min; uint256 deadline; }',
+    'struct CollectParams { uint256 tokenId; address recipient; uint128 amount0Max; uint128 amount1Max; }',
+    'function mint(MintParams params)',
+    'function increaseLiquidity(IncreaseParams params)',
+    'function decreaseLiquidity(DecreaseParams params)',
+    'function collect(CollectParams params)',
+    'function burn(uint256 tokenId)',
+    'function refundETH()',
+    'function unwrapWETH9(uint256 amountMinimum, address recipient)',
+    'function sweepToken(address token, uint256 amountMinimum, address recipient)',
+    'function createAndInitializePoolIfNecessary(address token0, address token1, uint24 fee, uint160 sqrtPriceX96)',
 ])
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
@@ -160,6 +181,167 @@ const decodeAavePoolAction = (call: Call): Optional<EvmContractAction> => {
     }
 }
 
+type PositionCall = { name: string; args: readonly unknown[] }
+
+type MintParams = {
+    token0: Address
+    token1: Address
+    fee: number
+    amount0Desired: bigint
+    amount1Desired: bigint
+    recipient: Address
+}
+
+type TokenIdParams = { tokenId: bigint }
+
+type CollectParams = TokenIdParams & { recipient: Address }
+
+// The manager's own multicall is unwrapped one level: a nested one fails
+// `readFunction` because it is not in the allowed set.
+const positionCallsOf = (data: Hex): Optional<PositionCall[]> => {
+    const multicall = readFunction(UNISWAP_V3_MULTICALL, data)
+    const encoded = multicall ? (multicall.args[0] as readonly Hex[]) : [data]
+    const calls: PositionCall[] = []
+    for (const item of encoded) {
+        const read = readFunction(UNISWAP_V3_POSITION_FUNCTIONS, item)
+        if (!read) return undefined
+        calls.push(read)
+    }
+    return calls
+}
+
+const decodeLiquidityAdd = (
+    calls: PositionCall[],
+    call: Call,
+    wrappedNative: Optional<Address>,
+): Optional<EvmContractAction> => {
+    const mints = calls.filter(item => item.name === 'mint')
+    const increases = calls.filter(item => item.name === 'increaseLiquidity')
+    const refunds = calls.filter(item => item.name === 'refundETH')
+    const pools = calls.filter(
+        item => item.name === 'createAndInitializePoolIfNecessary',
+    )
+    if (mints.length + increases.length !== 1) return undefined
+    if (refunds.length > 1 || pools.length > 1) return undefined
+    // Anything else in the batch is a call this decoder doesn't know.
+    if (calls.length !== 1 + refunds.length + pools.length) return undefined
+    // Leftover ether is only returned to the signer by an explicit refund.
+    if (call.value > 0n && refunds.length === 0) return undefined
+
+    if (increases.length === 1) {
+        if (pools.length > 0) return undefined
+        const { tokenId } = increases[0].args[0] as TokenIdParams
+        return {
+            kind: 'add-liquidity',
+            deposits: [],
+            position: { kind: 'existing', tokenId: tokenId.toString() },
+        }
+    }
+
+    const mint = mints[0]
+    const params = mint.args[0] as MintParams
+    if (!areEvmAddressesEqual(params.recipient, call.from)) return undefined
+    if (areEvmAddressesEqual(params.token0, params.token1)) return undefined
+    if (pools.length === 1) {
+        const [token0, token1, fee] = pools[0].args as [
+            Address,
+            Address,
+            number,
+        ]
+        const isBeforeMint = calls.indexOf(pools[0]) < calls.indexOf(mint)
+        if (
+            !isBeforeMint ||
+            !areEvmAddressesEqual(token0, params.token0) ||
+            !areEvmAddressesEqual(token1, params.token1) ||
+            fee !== params.fee
+        ) {
+            return undefined
+        }
+    }
+
+    const sides = [
+        { token: params.token0, max: params.amount0Desired },
+        { token: params.token1, max: params.amount1Desired },
+    ]
+    const isWrapped = (token: Address) =>
+        !!wrappedNative && areEvmAddressesEqual(token, wrappedNative)
+    const isPaidInNative = call.value > 0n
+    if (isPaidInNative) {
+        const wrapped = sides.filter(side => isWrapped(side.token))
+        if (wrapped.length !== 1 || wrapped[0].max > call.value) {
+            return undefined
+        }
+    }
+    return {
+        kind: 'add-liquidity',
+        deposits: sides.map(side => ({
+            asset:
+                isPaidInNative && isWrapped(side.token)
+                    ? { kind: 'native' as const }
+                    : {
+                          kind: 'token' as const,
+                          contract: getAddress(side.token),
+                      },
+            maxAmount: toDecimal(side.max),
+        })),
+        position: { kind: 'new' },
+    }
+}
+
+const decodeLiquidityRemove = (
+    calls: PositionCall[],
+    call: Call,
+): Optional<EvmContractAction> => {
+    if (call.value !== 0n) return undefined
+    const [decrease, collect, ...rest] = calls
+    if (decrease?.name !== 'decreaseLiquidity') return undefined
+    if (collect?.name !== 'collect') return undefined
+    const { tokenId } = decrease.args[0] as TokenIdParams
+    const collected = collect.args[0] as CollectParams
+    if (collected.tokenId !== tokenId) return undefined
+
+    const burn = rest.at(-1)?.name === 'burn' ? rest.at(-1) : undefined
+    if (burn && (burn.args[0] as bigint) !== tokenId) return undefined
+    const payouts = burn ? rest.slice(0, -1) : rest
+    const isForSigner = (address: unknown) =>
+        areEvmAddressesEqual(address as Address, call.from)
+    const isPaidToSigner = (payout: PositionCall) =>
+        (payout.name === 'unwrapWETH9' && isForSigner(payout.args[1])) ||
+        (payout.name === 'sweepToken' && isForSigner(payout.args[2]))
+    if (!payouts.every(isPaidToSigner)) return undefined
+
+    // A zero recipient leaves the proceeds in the manager, where anyone can sweep
+    // them, so it is only safe when both an unwrap and a sweep pay the signer.
+    const isCollectedToSigner = isForSigner(collected.recipient)
+    const isLeftForPayouts =
+        areEvmAddressesEqual(collected.recipient, zeroAddress) &&
+        payouts.some(payout => payout.name === 'unwrapWETH9') &&
+        payouts.some(payout => payout.name === 'sweepToken')
+    if (!isCollectedToSigner && !isLeftForPayouts) return undefined
+
+    return {
+        kind: 'remove-liquidity',
+        tokenId: tokenId.toString(),
+        isClosing: !!burn,
+    }
+}
+
+const decodeUniswapV3PositionAction = (
+    call: Call,
+    wrappedNative: Optional<Address>,
+): Optional<EvmContractAction> => {
+    const calls = positionCallsOf(call.data)
+    if (!calls) return undefined
+    if (
+        calls.some(
+            item => item.name === 'mint' || item.name === 'increaseLiquidity',
+        )
+    ) {
+        return decodeLiquidityAdd(calls, call, wrappedNative)
+    }
+    return decodeLiquidityRemove(calls, call)
+}
+
 /**
  * What a call to a known contract does, or undefined unless its calldata
  * decodes exactly to an action this knows. Never throws.
@@ -180,8 +362,10 @@ export const decodeEvmContractAction = (
             case 'aave-v3-pool': {
                 return decodeAavePoolAction(call)
             }
+            case 'uniswap-v3-position-manager': {
+                return decodeUniswapV3PositionAction(call, wrappedNative)
+            }
             case 'uniswap-permit2':
-            case 'uniswap-v3-position-manager':
             case 'uniswap-v4-position-manager': {
                 return undefined
             }

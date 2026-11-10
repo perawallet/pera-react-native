@@ -80,6 +80,7 @@ export type {
     EvmActionAsset,
     EvmContractAction,
     EvmContractLabel,
+    EvmLiquidityPosition,
     EvmSwapFee,
     EvmSwapLeg,
 } from './signing/contract-action-types'

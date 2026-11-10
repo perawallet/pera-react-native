@@ -254,6 +254,16 @@ const isSwapFee = (value: unknown): boolean =>
         (value.size.bips as number) <= 10_000) ||
         (value.size.kind === 'amount' && Decimal.isDecimal(value.size.amount)))
 
+const isLiquidityDeposit = (value: unknown): boolean =>
+    isRecord(value) &&
+    isActionAsset(value.asset) &&
+    Decimal.isDecimal(value.maxAmount)
+
+const isLiquidityPosition = (value: unknown): boolean =>
+    isRecord(value) &&
+    (value.kind === 'new' ||
+        (value.kind === 'existing' && isDigits(value.tokenId)))
+
 const isContractAction = (value: unknown): boolean => {
     if (!isRecord(value)) return false
     switch (value.kind) {
@@ -277,6 +287,19 @@ const isContractAction = (value: unknown): boolean => {
                 isAddressValue(value.asset) &&
                 Decimal.isDecimal(value.amount) &&
                 typeof value.isEntireBalance === 'boolean'
+            )
+        }
+        case 'add-liquidity': {
+            return (
+                Array.isArray(value.deposits) &&
+                value.deposits.length <= 2 &&
+                value.deposits.every(isLiquidityDeposit) &&
+                isLiquidityPosition(value.position)
+            )
+        }
+        case 'remove-liquidity': {
+            return (
+                isDigits(value.tokenId) && typeof value.isClosing === 'boolean'
             )
         }
         default: {
