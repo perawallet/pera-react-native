@@ -85,9 +85,13 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
             .filter(([, isOn]) => isOn)
             .map(([capability]) => capability)
 
-        // The one row that defaults swap on, in this test environment.
+        // The rows that default swap on, in this test environment.
         const launch =
-            id === 'ethereum' ? [...ENABLED, 'swap', 'onramp'] : ENABLED
+            id === 'ethereum'
+                ? [...ENABLED, 'swap', 'onramp']
+                : id === 'base' || id === 'arbitrum'
+                  ? [...ENABLED, 'swap']
+                  : ENABLED
         expect(enabled.sort()).toEqual([...launch].sort())
     })
 
@@ -250,13 +254,13 @@ describe('a row override', () => {
     })
 
     it('keeps the shared defaults for a row without overrides', () => {
-        expect(evmChainModules.base.capabilityDefaults).toBe(
+        expect(evmChainModules.bsc.capabilityDefaults).toBe(
             evmCapabilityDefaults,
         )
-        expect(evmChainModules.base.supportedCapabilities).toBe(
+        expect(evmChainModules.bsc.supportedCapabilities).toBe(
             evmChainModules.ethereum.supportedCapabilities,
         )
-        expect(evmChainModules.base.capabilityRestrictions).toEqual({
+        expect(evmChainModules.bsc.capabilityRestrictions).toEqual({
             onramp: ['developer', 'developer-override'],
         })
     })
