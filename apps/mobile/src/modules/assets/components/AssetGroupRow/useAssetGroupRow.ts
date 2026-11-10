@@ -84,7 +84,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     const { group, members } = item
 
     const chainIds = useMemo(
-        () => members.map(member => member.holding.scope.chainId),
+        () => [...new Set(members.map(member => member.holding.scope.chainId))],
         [members],
     )
 
@@ -124,7 +124,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     const subtitle = useMemo(
         () =>
             `${group.symbol} · ${t('account_details.assets.networks_count', {
-                count: new Set(chainIds).size,
+                count: chainIds.length,
             })}`,
         [group.symbol, chainIds, t],
     )
