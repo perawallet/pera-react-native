@@ -15,7 +15,11 @@ import type {
     ChainScope,
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    useSigningRequest,
+    type SignRequestSource,
+} from '@perawallet/wallet-core-signing'
 import {
     useTransactionHeroTitle,
     type TransactionDetailSummary,
@@ -28,6 +32,9 @@ import {
 export type UseEthereumTransactionDetailBodyResult = {
     presentation: Nullable<EthereumTransactionPresentation>
     summary: Nullable<TransactionDetailSummary>
+    /** The request under review, so an approval's site check reads the same as on the review; unset for a mined transaction. */
+    source: Optional<SignRequestSource>
+    verifiedOrigin: Optional<string>
 }
 
 export const useEthereumTransactionDetailBody = (
@@ -36,13 +43,24 @@ export const useEthereumTransactionDetailBody = (
 ): UseEthereumTransactionDetailBodyResult => {
     const heroTitle = useTransactionHeroTitle()
     const presentation = useEthereumTransactionPresentation(transaction, scope)
+    const { currentRequest } = useSigningRequest()
+    const isUnderReview =
+        !!presentation && !('isMined' in presentation.view) && !!currentRequest
+    const source = isUnderReview ? currentRequest.sourceMetadata : undefined
+    const verifiedOrigin = isUnderReview
+        ? currentRequest.verifiedOrigin
+        : undefined
 
     return useMemo(() => {
-        if (!presentation) return { presentation, summary: null }
+        if (!presentation) {
+            return { presentation, summary: null, source, verifiedOrigin }
+        }
 
         const { amount, feePaid, view, isAmountLoading } = presentation
         return {
             presentation,
+            source,
+            verifiedOrigin,
             summary: {
                 scope: presentation.scope,
                 iconName: presentation.iconName,
@@ -62,5 +80,5 @@ export const useEthereumTransactionDetailBody = (
                     : undefined,
             },
         }
-    }, [presentation, heroTitle])
+    }, [presentation, heroTitle, source, verifiedOrigin])
 }
