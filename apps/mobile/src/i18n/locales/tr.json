@@ -4074,8 +4074,8 @@
             "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Tutar swap için çok yüksek. Daha düşük bir tutar dene.",
             "amount_invalid": "Bu tutar swap edilemiyor. Farklı bir tutar dene.",
-            "no_route": "{{from}} → {{to}} için swap rotası bulunamadı.",
-            "unsupported": "Bu token Pera’da swap edilemiyor.",
+            "no_route": "{{from}} → {{to}} için swap rotası bulunamadı. Başka bir token veya tutar dene.",
+            "unsupported": "Bu token Pera’da swap edilemiyor. Başka bir token seç.",
             "retry": "Tekrar dene"
         },
         "execution": {

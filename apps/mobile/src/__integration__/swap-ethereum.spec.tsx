@@ -548,7 +548,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         ).toBe(true)
     })
 
-    it('Given the router says the amount is too small, when the quote is refused, then the form names the minimum and offers neither Swap nor Retry', async () => {
+    it('Given the router says the amount is too small, when the quote is refused, then the form says the amount is too small and offers neither Swap nor Retry', async () => {
         await typeAmountOnTokenToEtherForm()
         server.use(
             mockCreateSwapQuotes({

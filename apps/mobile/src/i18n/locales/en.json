@@ -4074,8 +4074,8 @@
             "amount_too_high": "Amount too large to swap. The maximum is {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Amount too large to swap. Try a smaller amount.",
             "amount_invalid": "This amount can't be swapped. Try a different amount.",
-            "no_route": "No swap route found for {{from}} → {{to}}.",
-            "unsupported": "This token can't be swapped in Pera.",
+            "no_route": "No swap route found for {{from}} → {{to}}. Try a different token or amount.",
+            "unsupported": "This token can't be swapped in Pera. Choose a different token.",
             "retry": "Retry"
         },
         "execution": {

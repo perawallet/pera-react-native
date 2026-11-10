@@ -37,6 +37,9 @@ type UseSwapQuoteErrorResult = {
     canRetry: boolean
 }
 
+const labelOf = (asset: Optional<PeraAsset>, assetId: string): string =>
+    asset?.unitName ?? asset?.name ?? assetId
+
 type LimitParams = { limit: string; unit: string }
 
 // A minimum rounds up and a maximum down, so the limit shown is one the
@@ -67,12 +70,16 @@ export const useSwapQuoteError = ({
     receiveAssetId,
 }: UseSwapQuoteErrorParams): UseSwapQuoteErrorResult => {
     const { t, currentLanguage } = useLanguage()
-    const { data: payAssets } = useAssetsQuery(scope, [payAssetId])
-    const { data: receiveAssets } = useAssetsQuery(receiveScope, [
-        receiveAssetId,
-    ])
-    const payAsset: Optional<PeraAsset> = payAssets?.get(payAssetId)
-    const receiveAsset: Optional<PeraAsset> = receiveAssets?.get(receiveAssetId)
+    const { data: payAssets } = useAssetsQuery(scope, [payAssetId], {
+        fetchMissing: true,
+    })
+    const { data: receiveAssets } = useAssetsQuery(
+        receiveScope,
+        [receiveAssetId],
+        { fetchMissing: true },
+    )
+    const payAsset: Optional<PeraAsset> = payAssets.get(payAssetId)
+    const receiveAsset: Optional<PeraAsset> = receiveAssets.get(receiveAssetId)
     const network = chainDisplayNameOf(scope.chainId) ?? ''
 
     const limitParams = (
@@ -88,7 +95,7 @@ export const useSwapQuoteError = ({
                       rounding,
                       currentLanguage,
                   ),
-                  unit: payAsset.unitName ?? payAsset.name ?? payAssetId,
+                  unit: labelOf(payAsset, payAssetId),
               }
 
     const resolveMessage = (): string => {
@@ -117,11 +124,8 @@ export const useSwapQuoteError = ({
             }
             case 'no-route': {
                 return t('swap.quote.no_route', {
-                    from: payAsset?.unitName ?? payAsset?.name ?? payAssetId,
-                    to:
-                        receiveAsset?.unitName ??
-                        receiveAsset?.name ??
-                        receiveAssetId,
+                    from: labelOf(payAsset, payAssetId),
+                    to: labelOf(receiveAsset, receiveAssetId),
                 })
             }
             case 'unsupported': {

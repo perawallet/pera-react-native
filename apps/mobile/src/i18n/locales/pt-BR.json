@@ -4096,8 +4096,8 @@
             "amount_too_high": "Valor grande demais para converter. O máximo é {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Valor grande demais para converter. Tente um valor menor.",
             "amount_invalid": "Este valor não pode ser convertido. Tente outro valor.",
-            "no_route": "Nenhuma rota de conversão encontrada para {{from}} → {{to}}.",
-            "unsupported": "Este token não pode ser convertido na Pera.",
+            "no_route": "Nenhuma rota de conversão encontrada para {{from}} → {{to}}. Tente outro token ou outro valor.",
+            "unsupported": "Este token não pode ser convertido na Pera. Escolha outro token.",
             "retry": "Tentar novamente"
         },
         "execution": {

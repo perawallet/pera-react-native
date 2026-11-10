@@ -282,6 +282,8 @@ describe('useSwapQuotes', () => {
 
             rerender({ ...baseParams, payAmount: new Decimal(2) })
 
+            expect(result.current.quoteFailure).toBeNull()
+            expect(result.current.isQuoteFetching).toBe(true)
             await waitFor(() =>
                 expect(mockCreateQuotes).toHaveBeenCalledTimes(2),
             )

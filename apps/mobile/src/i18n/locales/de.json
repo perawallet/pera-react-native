@@ -4066,8 +4066,8 @@
             "amount_too_high": "Betrag zu groß für einen Tausch. Das Maximum beträgt {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Betrag zu groß für einen Tausch. Versuche einen kleineren Betrag.",
             "amount_invalid": "Dieser Betrag kann nicht getauscht werden. Versuche einen anderen Betrag.",
-            "no_route": "Keine Tauschroute für {{from}} → {{to}} gefunden.",
-            "unsupported": "Dieser Token kann in Pera nicht getauscht werden.",
+            "no_route": "Keine Tauschroute für {{from}} → {{to}} gefunden. Probiere einen anderen Token oder Betrag.",
+            "unsupported": "Dieser Token kann in Pera nicht getauscht werden. Wähle einen anderen Token.",
             "retry": "Erneut versuchen"
         },
         "execution": {

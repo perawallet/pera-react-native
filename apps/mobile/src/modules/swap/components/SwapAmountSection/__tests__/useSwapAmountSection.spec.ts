@@ -528,7 +528,7 @@ describe('useSwapAmountSection', () => {
         })
 
         it('shows an app-filled 18-decimal amount at six decimals when blurred', () => {
-            const { result } = renderHook(() =>
+            renderHook(() =>
                 useSwapAmountSection({
                     ...payProps,
                     amount: exact,
@@ -586,7 +586,7 @@ describe('useSwapAmountSection', () => {
         it('leaves a six-decimal amount unchanged', () => {
             mockAsset = original
 
-            const { result } = renderHook(() =>
+            renderHook(() =>
                 useSwapAmountSection({
                     ...payProps,
                     amount: new Decimal('1.234567'),
@@ -605,7 +605,7 @@ describe('useSwapAmountSection', () => {
         })
 
         it('rounds the receive figure down', () => {
-            const { result } = renderHook(() =>
+            renderHook(() =>
                 useSwapAmountSection({
                     scope: SCOPE,
                     variant: 'receive',
