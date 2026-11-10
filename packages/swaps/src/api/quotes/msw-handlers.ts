@@ -16,13 +16,14 @@ import {
     validateMockRequest,
     validateMockResponse,
 } from '@perawallet/wallet-core-shared/test-utils'
+import type { RouterErrorBody } from '../router-error'
 import { SWAP_ROUTER_PATH } from '../router-request'
 import {
     createSwapQuotesRequestSchema,
     createSwapQuotesResponseSchema,
 } from './schema'
 
-export type SwapRouterErrorBody = { error: string; code?: string }
+export type SwapRouterErrorBody = RouterErrorBody
 
 export type MockCreateSwapQuotesParams =
     | { response: z.input<typeof createSwapQuotesResponseSchema>; status?: 200 }

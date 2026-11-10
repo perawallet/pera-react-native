@@ -18,8 +18,8 @@ import {
     type Nullable,
     type Maybe,
 } from '@perawallet/wallet-core-shared'
+import { resolveRouterErrorBody } from '@perawallet/wallet-core-swaps'
 
-import { resolveRouterErrorBody } from '../api/router-error'
 import { unwrapNetworkError } from './unwrap'
 
 const GENERIC_FALLBACK = 'Something went wrong. Please try again.'

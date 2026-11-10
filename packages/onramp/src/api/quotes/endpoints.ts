@@ -17,11 +17,15 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { routerAccountId, routerRequest } from '@perawallet/wallet-core-swaps'
+import {
+    resolveRouterErrorBody,
+    routerAccountId,
+    routerRequest,
+    type RouterErrorBody,
+} from '@perawallet/wallet-core-swaps'
 
 import { RampAmountOutOfRangeError, type RampQuoteLimits } from '../../errors'
 import type { RampQuote, RampToken } from '../../models'
-import { resolveRouterErrorBody, type RouterErrorBody } from '../router-error'
 import { caip2OfRouterAsset, toBaseUnitString } from '../router-asset'
 import { createRampQuoteResponseSchema } from './schema'
 import { transformRampOffer } from './transformers'

@@ -15,9 +15,11 @@ import {
     validateMockRequest,
     validateMockResponse,
 } from '@perawallet/wallet-core-shared/test-utils'
-import { SWAP_ROUTER_PATH } from '@perawallet/wallet-core-swaps'
+import {
+    SWAP_ROUTER_PATH,
+    type RouterErrorBody,
+} from '@perawallet/wallet-core-swaps'
 
-import type { RouterErrorBody } from '../router-error'
 import {
     createRampQuoteRequestSchema,
     createRampQuoteResponseSchema,

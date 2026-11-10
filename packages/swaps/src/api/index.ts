@@ -16,6 +16,7 @@ export * from './quotes'
 export * from './orders'
 export * from './history'
 export { cursorOf, routerRequest, SWAP_ROUTER_PATH } from './router-request'
+export { resolveRouterErrorBody, type RouterErrorBody } from './router-error'
 export {
     routerAccountId,
     routerAssetIdOf,
