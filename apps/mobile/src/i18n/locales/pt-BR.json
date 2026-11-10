@@ -542,6 +542,7 @@
         "type_algo25": "Conta Algo25",
         "type_watch": "Conta de observação",
         "type_ledger": "Conta Ledger",
+        "ledger_usb_device": "Ledger (USB)",
         "type_multisig": "Conta compartilhada",
         "type_multisig_signers": "Compartilhada · {{threshold}} de {{total}} signatários",
         "type_quantum": "Conta Quantum",
