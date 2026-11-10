@@ -379,6 +379,44 @@ describe('useConnectionApprovalView', () => {
             ])
         })
 
+        it('marks the chains the dApp requires as required', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    makeProposal({
+                        requested: {
+                            networks: ['mainnet', 'mainnet'],
+                            chains: ['ethereum', 'base'],
+                            requiredChains: ['ethereum'],
+                            methods: [],
+                        },
+                    }) as never,
+                ),
+            )
+
+            expect(
+                result.current.requestedNetworks.map(
+                    ({ chainId, isRequired }) => [chainId, isRequired],
+                ),
+            ).toEqual([
+                ['ethereum', true],
+                ['base', false],
+            ])
+        })
+
+        it('marks no chain required when the protocol names none', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['ethereum', 'base']) as never,
+                ),
+            )
+
+            expect(
+                result.current.requestedNetworks.some(
+                    ({ isRequired }) => isRequired,
+                ),
+            ).toBe(false)
+        })
+
         it('marks only the chain being added as adding', () => {
             eligible.current = ['base']
             enabling.current = 'base'

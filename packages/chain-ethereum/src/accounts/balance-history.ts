@@ -477,7 +477,9 @@ export const createEthereumBalanceHistoryOps = (
         async (addresses, period, scope, signal) => {
             eip155ChainIdOf(scope, chain)
             // An empty source adds nothing to the sum, so a network
-            // holding nothing must not blank the chart.
+            // holding nothing must not blank the chart. A just-added network
+            // whose holdings haven't synced reads as empty too; the sync's
+            // changed-chart refresh redraws it within a minute.
             if (!hasServices(ctx, scope)) {
                 const unservedHoldings = await readHoldings(scope, addresses, {
                     isCounted: true,

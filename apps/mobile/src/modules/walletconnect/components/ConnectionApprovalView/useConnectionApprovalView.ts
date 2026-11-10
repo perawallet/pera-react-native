@@ -91,6 +91,8 @@ export type RequestedNetwork = {
     name: string
     /** Some held account can sign on the chain. */
     isAdded: boolean
+    /** The dApp refuses a session without an account on this chain. */
+    isRequired: boolean
     /** Not added, but a held account that can reach the chain could add it. */
     canAdd: boolean
     /** The chain is being added to the accounts that can reach it. */
@@ -245,6 +247,9 @@ export const useConnectionApprovalView = (
                     chainId,
                     name: descriptor?.displayName ?? chainId,
                     isAdded,
+                    isRequired:
+                        proposal.requested.requiredChains?.includes(chainId) ??
+                        false,
                     canAdd:
                         !isAdded &&
                         accounts.some(account =>
@@ -262,6 +267,7 @@ export const useConnectionApprovalView = (
             accounts,
             addingChainId,
             proposal.requested.networks,
+            proposal.requested.requiredChains,
         ],
     )
     const title = useMemo(

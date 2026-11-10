@@ -1374,6 +1374,15 @@ export const createWalletConnectV2Handler = (
             requested: {
                 networks,
                 chains: offered.map(({ chain }) => chain.chainId),
+                requiredChains: offered
+                    .filter(
+                        ({ chain }) =>
+                            requestedChains(
+                                chain.support,
+                                params.requiredNamespaces,
+                            ).length > 0,
+                    )
+                    .map(({ chain }) => chain.chainId),
                 methods,
             },
             // Seconds on the wire, milliseconds on the interface.

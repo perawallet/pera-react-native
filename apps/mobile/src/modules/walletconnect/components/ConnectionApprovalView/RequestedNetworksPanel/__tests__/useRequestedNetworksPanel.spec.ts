@@ -15,10 +15,15 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { RequestedNetwork } from '../../useConnectionApprovalView'
 import { useRequestedNetworksPanel } from '../useRequestedNetworksPanel'
 
-const network = (chainId: string, isAdded: boolean): RequestedNetwork => ({
+const network = (
+    chainId: string,
+    isAdded: boolean,
+    isRequired = false,
+): RequestedNetwork => ({
     chainId: chainId as ChainId,
     name: chainId,
     isAdded,
+    isRequired,
     canAdd: !isAdded,
     isAdding: false,
     isTestnet: false,
@@ -46,7 +51,10 @@ describe('useRequestedNetworksPanel', () => {
             'base',
         ])
         expect(result.current.hiddenNetworkCount).toBe(4)
-        expect(ids(result.current.addedNetworks)).toEqual(['ethereum', 'base'])
+        expect(ids(result.current.leadingNetworks)).toEqual([
+            'ethereum',
+            'base',
+        ])
         expect(ids(result.current.optionalNetworks)).toEqual([
             'bsc',
             'arbitrum',
@@ -89,6 +97,39 @@ describe('useRequestedNetworksPanel', () => {
         expect(result.current.hasOptionalNote).toBe(false)
     })
 
+    it('keeps a required network that is not added above the optional note', () => {
+        const requested = [
+            network('algorand', true),
+            network('bsc', false),
+            network('ethereum', false, true),
+        ]
+
+        const { result } = renderHook(() =>
+            useRequestedNetworksPanel(requested),
+        )
+
+        expect(ids(result.current.leadingNetworks)).toEqual([
+            'algorand',
+            'ethereum',
+        ])
+        expect(ids(result.current.optionalNetworks)).toEqual(['bsc'])
+        expect(result.current.hasOptionalNote).toBe(true)
+    })
+
+    it('starts open when a required network is not added yet', () => {
+        const requested = [
+            network('algorand', true),
+            network('ethereum', false, true),
+        ]
+
+        const { result } = renderHook(() =>
+            useRequestedNetworksPanel(requested),
+        )
+
+        expect(result.current.isInitiallyExpanded).toBe(true)
+        expect(result.current.hasOptionalNote).toBe(false)
+    })
+
     it('moves a network to the added group once it is added', () => {
         const { result, rerender } = renderHook(
             ({ requested }) => useRequestedNetworksPanel(requested),
@@ -106,7 +147,10 @@ describe('useRequestedNetworksPanel', () => {
             requested: [network('ethereum', true), network('base', true)],
         })
 
-        expect(ids(result.current.addedNetworks)).toEqual(['ethereum', 'base'])
+        expect(ids(result.current.leadingNetworks)).toEqual([
+            'ethereum',
+            'base',
+        ])
         expect(result.current.optionalNetworks).toEqual([])
     })
 })

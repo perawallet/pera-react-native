@@ -16,14 +16,14 @@ import type { RequestedNetwork } from '../useConnectionApprovalView'
 const MAX_COLLAPSED_NETWORK_CHIPS = 2
 
 type UseRequestedNetworksPanelResult = {
-    /** Networks a held account can already sign on, in proposal order. */
-    addedNetworks: RequestedNetwork[]
-    /** Requested networks no held account has yet, in proposal order. */
+    /** Added or dApp-required networks, listed above the optional note in proposal order. */
+    leadingNetworks: RequestedNetwork[]
+    /** Networks neither added nor required, in proposal order. */
     optionalNetworks: RequestedNetwork[]
     /** The chips shown on the closed row, added networks first. */
     collapsedNetworks: RequestedNetwork[]
     hiddenNetworkCount: number
-    /** Open from the start only when Add is the one way forward. */
+    /** Open from the start only when Add is the one way to a session. */
     isInitiallyExpanded: boolean
     hasOptionalNote: boolean
 }
@@ -33,21 +33,28 @@ export const useRequestedNetworksPanel = (
 ): UseRequestedNetworksPanelResult =>
     useMemo(() => {
         const addedNetworks = requestedNetworks.filter(({ isAdded }) => isAdded)
+        const leadingNetworks = requestedNetworks.filter(
+            ({ isAdded, isRequired }) => isAdded || isRequired,
+        )
         const optionalNetworks = requestedNetworks.filter(
-            ({ isAdded }) => !isAdded,
+            ({ isAdded, isRequired }) => !isAdded && !isRequired,
         )
-        const collapsedNetworks = [...addedNetworks, ...optionalNetworks].slice(
-            0,
-            MAX_COLLAPSED_NETWORK_CHIPS,
-        )
+        const collapsedNetworks = [
+            ...addedNetworks,
+            ...requestedNetworks.filter(({ isAdded }) => !isAdded),
+        ].slice(0, MAX_COLLAPSED_NETWORK_CHIPS)
         return {
-            addedNetworks,
+            leadingNetworks,
             optionalNetworks,
             collapsedNetworks,
             hiddenNetworkCount:
                 requestedNetworks.length - collapsedNetworks.length,
-            isInitiallyExpanded: addedNetworks.length === 0,
+            isInitiallyExpanded:
+                addedNetworks.length === 0 ||
+                requestedNetworks.some(
+                    ({ isAdded, isRequired }) => isRequired && !isAdded,
+                ),
             hasOptionalNote:
-                addedNetworks.length > 0 && optionalNetworks.length > 0,
+                leadingNetworks.length > 0 && optionalNetworks.length > 0,
         }
     }, [requestedNetworks])

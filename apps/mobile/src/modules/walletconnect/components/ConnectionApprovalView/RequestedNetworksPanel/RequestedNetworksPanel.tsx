@@ -37,7 +37,7 @@ export const RequestedNetworksPanel = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        addedNetworks,
+        leadingNetworks,
         optionalNetworks,
         collapsedNetworks,
         hiddenNetworkCount,
@@ -82,7 +82,7 @@ export const RequestedNetworksPanel = ({
             }
         >
             <PWView style={sharedStyles.panelContent}>
-                {addedNetworks.map(network => (
+                {leadingNetworks.map(network => (
                     <RequestedNetworkListItem
                         key={network.chainId}
                         network={network}
