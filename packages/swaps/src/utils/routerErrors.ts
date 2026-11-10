@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import {
     isChainRefusedError,
     isPeraNetworkError,
+    type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
@@ -39,36 +40,37 @@ export type SwapQuoteFailure =
     | { kind: 'unsupported' }
     | { kind: 'unavailable' }
 
-const toLimit = (value: Nullable<string> | undefined): Nullable<Decimal> =>
+const toLimit = (value: Maybe<string>): Nullable<Decimal> =>
     value === null || value === undefined ? null : new Decimal(value)
+
+const FAILURE_BY_CODE: Readonly<Record<string, SwapQuoteFailure>> = {
+    invalid_amount: { kind: 'invalid-amount' },
+    pair_not_supported: { kind: 'no-route' },
+    pair_restricted_in_country: { kind: 'unsupported' },
+    invalid_asset_id: { kind: 'unsupported' },
+    chain_not_enabled: { kind: 'unsupported' },
+}
 
 /** The one place the app reads a router quote refusal; anything it can't place is `unavailable`, which is retryable. */
 export const swapQuoteFailureOf = (error: unknown): SwapQuoteFailure => {
     const body = resolveRouterErrorBody(error)
     const code =
         body?.code ?? (isPeraNetworkError(error) ? error.backendCode : null)
-    switch (code) {
-        case 'amount_too_low':
-            return {
-                kind: 'amount-too-low',
-                minimum: toLimit(body?.source_amount_minimum),
-            }
-        case 'amount_too_high':
-            return {
-                kind: 'amount-too-high',
-                maximum: toLimit(body?.source_amount_maximum),
-            }
-        case 'invalid_amount':
-            return { kind: 'invalid-amount' }
-        case 'pair_not_supported':
-            return { kind: 'no-route' }
-        case 'pair_restricted_in_country':
-        case 'invalid_asset_id':
-        case 'chain_not_enabled':
-            return { kind: 'unsupported' }
-        default:
-            return isChainRefusedError(error)
-                ? { kind: 'unsupported' }
-                : { kind: 'unavailable' }
+    if (code === 'amount_too_low') {
+        return {
+            kind: 'amount-too-low',
+            minimum: toLimit(body?.source_amount_minimum),
+        }
     }
+    if (code === 'amount_too_high') {
+        return {
+            kind: 'amount-too-high',
+            maximum: toLimit(body?.source_amount_maximum),
+        }
+    }
+    const known = code ? FAILURE_BY_CODE[code] : undefined
+    if (known) return known
+    return isChainRefusedError(error)
+        ? { kind: 'unsupported' }
+        : { kind: 'unavailable' }
 }

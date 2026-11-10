@@ -37,7 +37,7 @@ type UseSwapQuoteErrorResult = {
     canRetry: boolean
 }
 
-type LimitParams = { amount: string; unit: string }
+type LimitParams = { limit: string; unit: string }
 
 // A minimum rounds up and a maximum down, so the limit shown is one the
 // router accepts.
@@ -82,7 +82,7 @@ export const useSwapQuoteError = ({
         limit === null || !payAsset
             ? null
             : {
-                  amount: formatLimit(
+                  limit: formatLimit(
                       limit,
                       payAsset.decimals,
                       rounding,
@@ -96,18 +96,26 @@ export const useSwapQuoteError = ({
             case 'amount-too-low': {
                 const limit = limitParams(failure.minimum, Decimal.ROUND_UP)
                 return limit
-                    ? t('swap.quote.amount_too_low', { network, ...limit })
+                    ? t('swap.quote.amount_too_low', {
+                          network,
+                          amount: limit.limit,
+                          unit: limit.unit,
+                      })
                     : t('swap.quote.amount_too_low_unknown', { network })
             }
             case 'amount-too-high': {
                 const limit = limitParams(failure.maximum, Decimal.ROUND_DOWN)
                 return limit
-                    ? t('swap.quote.amount_too_high', limit)
+                    ? t('swap.quote.amount_too_high', {
+                          amount: limit.limit,
+                          unit: limit.unit,
+                      })
                     : t('swap.quote.amount_too_high_unknown')
             }
-            case 'invalid-amount':
+            case 'invalid-amount': {
                 return t('swap.quote.amount_invalid')
-            case 'no-route':
+            }
+            case 'no-route': {
                 return t('swap.quote.no_route', {
                     from: payAsset?.unitName ?? payAsset?.name ?? payAssetId,
                     to:
@@ -115,10 +123,13 @@ export const useSwapQuoteError = ({
                         receiveAsset?.name ??
                         receiveAssetId,
                 })
-            case 'unsupported':
+            }
+            case 'unsupported': {
                 return t('swap.quote.unsupported')
-            case 'unavailable':
+            }
+            case 'unavailable': {
                 return t('swap.quote.quote_error')
+            }
         }
     }
 
