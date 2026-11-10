@@ -144,20 +144,63 @@ describe('usePortfolioHistoryQuery', () => {
         expect(result.current.data).toEqual([])
     })
 
-    it("is unavailable, without a request, when a source's chain has no history", () => {
+    it('charts the other chains and names one whose chain has no history, without asking it', async () => {
+        history.mockResolvedValue([point(1, '10')])
         chainsWithoutHistory.add(ETHEREUM.chainId)
-        const sources = [
-            { address: 'ALGO', scope: ALGORAND },
-            { address: '0xeth', scope: ETHEREUM },
-        ]
 
         const { result } = renderHook(
-            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(history).toHaveBeenCalledTimes(1)
+        expect(history).toHaveBeenCalledWith(
+            ['ALGO'],
+            'one-day',
+            ALGORAND,
+            expect.any(AbortSignal),
+        )
+        expect(result.current.isUnavailableOnNetwork).toBe(false)
+        expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId])
+        expect(result.current.isPartial).toBe(true)
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(20) },
+        ])
+    })
+
+    it('asks again only the chains that have history', async () => {
+        history.mockResolvedValue([point(1, '10')])
+        chainsWithoutHistory.add(ETHEREUM.chainId)
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        act(() => result.current.refetch())
+
+        await waitFor(() => expect(history).toHaveBeenCalledTimes(2))
+        expect(history).not.toHaveBeenCalledWith(
+            expect.anything(),
+            expect.anything(),
+            ETHEREUM,
+            expect.anything(),
+        )
+    })
+
+    it('is unavailable, without a request, when no chain has history', () => {
+        chainsWithoutHistory.add(ALGORAND.chainId)
+        chainsWithoutHistory.add(ETHEREUM.chainId)
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
             { wrapper },
         )
 
         expect(result.current.isUnavailableOnNetwork).toBe(true)
         expect(result.current.isPending).toBe(false)
+        expect(result.current.excludedChainIds).toEqual([])
         expect(history).not.toHaveBeenCalled()
     })
 
@@ -183,17 +226,87 @@ describe('usePortfolioHistoryQuery', () => {
         expect(result.current.data).toEqual([])
     })
 
-    it("is unavailable, not a partial chart, when a chain's network serves no history", async () => {
+    it('charts the other chains and names one whose network serves no history', async () => {
         history.mockImplementation(async (_addresses, _period, scope) =>
             scope.chainId === ETHEREUM.chainId ? null : [point(1, '10')],
         )
-        const sources = [
-            { address: 'ALGO', scope: ALGORAND },
-            { address: '0xeth', scope: ETHEREUM },
-        ]
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId]),
+        )
+        expect(result.current.isUnavailableOnNetwork).toBe(false)
+        expect(result.current.isPartial).toBe(true)
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.isError).toBe(false)
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(20) },
+        ])
+    })
+
+    it('names every chain it leaves out, whether its history failed or its network serves none', async () => {
+        const BASE: ChainScope = {
+            chainId: 'base' as ChainId,
+            networkId: 'mainnet',
+        }
+        history.mockImplementation(async (_addresses, _period, scope) => {
+            if (scope.chainId === ETHEREUM.chainId) {
+                throw new Error('history down')
+            }
+            if (scope.chainId === BASE.chainId) return null
+            return [point(1, '10')]
+        })
+        const sources = [...both, { address: '0xbase', scope: BASE }]
 
         const { result } = renderHook(
             () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.excludedChainIds).toEqual([
+                ETHEREUM.chainId,
+                BASE.chainId,
+            ]),
+        )
+        expect(result.current.isUnavailableOnNetwork).toBe(false)
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(20) },
+        ])
+    })
+
+    it('is unavailable when the chain beside one whose network serves no history has no points', async () => {
+        history.mockImplementation(async (_addresses, _period, scope) =>
+            scope.chainId === ETHEREUM.chainId ? null : [],
+        )
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(both, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.isUnavailableOnNetwork).toBe(true),
+        )
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.excludedChainIds).toEqual([])
+        expect(result.current.data).toEqual([])
+    })
+
+    it("is unavailable when the only chain's network serves no history", async () => {
+        history.mockResolvedValue(null)
+
+        const { result } = renderHook(
+            () =>
+                usePortfolioHistoryQuery(
+                    [{ address: '0xeth', scope: ETHEREUM }],
+                    'one-day',
+                    ALGORAND,
+                ),
             { wrapper },
         )
 
