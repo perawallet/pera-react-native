@@ -51,6 +51,7 @@ export {
     type GroupedHoldingItem,
     type GroupedHoldingMember,
 } from './utils/groupedHoldings'
+export { groupIconMemberOf } from './utils/groupIconMember'
 export { toChainFilterOptions } from './utils/toChainFilterOptions'
 export { extractDomain } from './utils/extractDomain'
 export { resolveTotalSupply } from './utils/resolveTotalSupply'

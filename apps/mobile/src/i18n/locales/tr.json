@@ -416,6 +416,7 @@
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
             "hide_networks": "Ağları gizle",
+            "networks_count": "{{count}} ağ",
             "chain_network": "{{chain}} ağı"
         },
         "nfts": {

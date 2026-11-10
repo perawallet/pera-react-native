@@ -27,6 +27,15 @@ import type {
 } from '../../../utils/groupedHoldings'
 import { useAssetGroupRow } from '../useAssetGroupRow'
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { count?: number }) =>
+            key === 'account_details.assets.networks_count'
+                ? `${options?.count} networks`
+                : key,
+    }),
+}))
+
 type Holding = { scope: ChainScope; assetId: string }
 
 const USDC = { assetId: '31566704', name: 'USD Coin' } as PeraAsset
@@ -297,60 +306,7 @@ describe('useAssetGroupRow', () => {
     })
 
     describe('subtitle', () => {
-        it('names the symbol and the id every network shares', () => {
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('algorand', USDC, '753101315'),
-                            member('ethereum', USDC, '753101315'),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC · 753101315')
-        })
-
-        it("names the symbol alone for a native coin, whose shared id is the chains' placeholder", () => {
-            const ether = { assetId: 'native', name: 'Ether' } as PeraAsset
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('ethereum', ether, 'native'),
-                            member('ethereum', ether, 'native'),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC')
-        })
-
-        it('names the symbol alone when the shared id is a contract address', () => {
-            const dai = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
-            const { result } = renderHook(() =>
-                useAssetGroupRow({
-                    item: groupOf(
-                        [
-                            member('ethereum', USDC, dai),
-                            member('ethereum', USDC, dai),
-                        ],
-                        null,
-                    ),
-                    convertFiat: toEur,
-                }),
-            )
-
-            expect(result.current.subtitle).toBe('USDC')
-        })
-
-        it('names the symbol alone when each network has its own id', () => {
+        it('names the symbol and how many networks hold it', () => {
             const { result } = renderHook(() =>
                 useAssetGroupRow({
                     item: groupOf(
@@ -364,7 +320,42 @@ describe('useAssetGroupRow', () => {
                 }),
             )
 
-            expect(result.current.subtitle).toBe('USDC')
+            expect(result.current.subtitle).toBe('USDC · 2 networks')
+        })
+
+        it('counts a network once when two of its holdings share the group', () => {
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('algorand', USDC, '31566704'),
+                            member('ethereum', USDC, '0xA0b8'),
+                            member('ethereum', USDC, '0xFF97'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC · 2 networks')
+        })
+
+        it('counts networks rather than showing an id every network shares', () => {
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('algorand', USDC, '753101315'),
+                            member('ethereum', USDC, '753101315'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC · 2 networks')
         })
     })
 })

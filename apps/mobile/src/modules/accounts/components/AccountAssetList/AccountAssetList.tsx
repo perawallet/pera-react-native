@@ -25,7 +25,10 @@ import { FilterSelection } from '@components/FilterSelection'
 import { SearchableList } from '@components/SearchableList'
 import { AssetRowSkeleton, groupedHoldingItemKey } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
-import { ExpandableAssetGroup } from './ExpandableAssetGroup'
+import {
+    ExpandableAssetGroup,
+    type AssetGroupMemberIdentity,
+} from './ExpandableAssetGroup'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
@@ -77,14 +80,14 @@ export const AccountAssetList = ({
     } = useAccountAssetList({ account, t })
 
     const renderHolding = useCallback(
-        (row: AccountHoldingsLiteRow, isGroupMember: boolean) => {
+        (row: AccountHoldingsLiteRow, group?: AssetGroupMemberIdentity) => {
             const { chainId } = row.scope
             return (
                 <SwipeableAssetItem
                     item={row}
                     chainId={chainId}
                     swipeAction={renderItemProps.swipeActionOf(row)}
-                    isGroupMember={isGroupMember}
+                    group={group}
                     shouldShowChainBadge={renderItemProps.shouldShowChainBadge}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
@@ -111,12 +114,12 @@ export const AccountAssetList = ({
                         onToggleExpanded={() =>
                             toggleGroupExpanded(item.group.id)
                         }
-                        renderMember={holding => renderHolding(holding, true)}
+                        renderMember={renderHolding}
                         headerStyle={styles.rowItem}
                     />
                 )
             }
-            return renderHolding(item.holding, false)
+            return renderHolding(item.holding)
         },
         [renderHolding, convertFiat, toggleGroupExpanded, styles.rowItem],
     )

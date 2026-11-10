@@ -416,6 +416,7 @@
             "network_filter_all": "Todas",
             "see_networks": "Ver redes",
             "hide_networks": "Ocultar redes",
+            "networks_count": "{{count}} redes",
             "chain_network": "Red de {{chain}}"
         },
         "nfts": {

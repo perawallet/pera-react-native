@@ -193,9 +193,12 @@ describe('Flow: native ETH across networks in the asset list', () => {
 
         const group = await screen.findByTestId('asset_group_row_eth')
         expect(screen.queryByTestId('asset_row_native')).toBeNull()
-        // The symbol alone, in the subtitle and on the amount: the shared id
-        // is the chains' placeholder.
-        expect(within(group).getAllByText('ETH')).toHaveLength(2)
+        // The shared id is the chains' placeholder, never shown.
+        expect(
+            within(group).getByText(
+                'ETH · account_details.assets.networks_count',
+            ),
+        ).toBeTruthy()
         expect(within(group).queryByText(/native/)).toBeNull()
         // Base holds none and has no price, so the total is Ethereum's alone.
         expect(within(group).getByText(/3,000\.00/)).toBeTruthy()

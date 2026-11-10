@@ -24,14 +24,15 @@ import {
     type AssetFiatConverter,
 } from '@modules/assets'
 import { ChainLabel } from '@modules/chain-ui/icon'
+import type { AssetGroupMemberIdentity } from '../ExpandableAssetGroup'
 import { useStyles } from './styles'
 import { useAssetListItemView } from './useAssetListItemView'
 
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
     chainId: ChainId
-    /** Listed under its group: names its network in the subtitle. */
-    isGroupMember?: boolean
+    /** Listed under its group: shows as the group, naming its own network in the subtitle. */
+    group?: AssetGroupMemberIdentity
     /** The account spans more than one chain: the icon names its network (a group member names it in its subtitle). */
     shouldShowChainBadge?: boolean
     /** List-level converter; the row converts its own value (observer-free). */
@@ -51,13 +52,14 @@ export type AssetListItemViewProps = {
 const AssetListItemViewBase = ({
     holding,
     chainId,
-    isGroupMember = false,
+    group,
     shouldShowChainBadge = false,
     convertFiat,
     onPress,
     style,
 }: AssetListItemViewProps) => {
     const styles = useStyles()
+    const isGroupMember = group !== undefined
 
     const { asset, displayAmount, fiat, fiatAssetId, collectibleItem } =
         useAssetListItemView({ holding, chainId, convertFiat })
@@ -111,6 +113,8 @@ const AssetListItemViewBase = ({
         <AssetItemView
             asset={asset}
             chainId={chainId}
+            title={group?.name}
+            iconAsset={group?.icon ?? undefined}
             right={balance}
             shouldCapRightSlot
             subtitle={
