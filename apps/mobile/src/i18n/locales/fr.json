@@ -4068,7 +4068,15 @@
             "confirm_swap": "Confirmer le swap",
             "slide_to_confirm": "Faites glisser pour confirmer",
             "high_price_impact_warning": "Ce swap a un impact important sur le prix. Vous pourriez recevoir sensiblement moins de tokens que prévu.",
-            "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer."
+            "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
+            "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
+            "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
+            "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "Montant trop élevé pour un swap. Essayez un montant plus faible.",
+            "amount_invalid": "Ce montant ne peut pas être échangé. Essayez un autre montant.",
+            "no_route": "Aucune route de swap trouvée pour {{from}} → {{to}}.",
+            "unsupported": "Ce token ne peut pas être échangé dans Pera.",
+            "retry": "Réessayer"
         },
         "execution": {
             "error_title": "Échec du swap",

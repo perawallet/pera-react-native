@@ -35,6 +35,7 @@ import {
     swapAdapterFor,
     useSwaps,
     type SwapQuote,
+    type SwapQuoteFailure,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import {
@@ -86,13 +87,14 @@ type UseSwapFormResult = {
     payBalance: Nullable<Decimal>
     receiveBalance: Nullable<Decimal>
     isQuoteFetching: boolean
-    isQuoteError: boolean
+    quoteFailure: Nullable<SwapQuoteFailure>
     selectedQuote: Nullable<SwapQuote>
     providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
     /** Pay amount exceeds what the account actually holds of the pay asset. */
     hasInsufficientBalance: boolean
     isLocalCurrencyInput: boolean
+    handleRetryQuote: () => void
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handlePayAmountFocus: () => void
     handleSwapDirection: () => void
@@ -204,7 +206,7 @@ export const useSwapForm = (
         allQuotes,
         quotedAmount,
         isQuoteFetching,
-        isQuoteError,
+        quoteFailure,
         reset: resetQuotes,
         refresh: refreshQuotes,
     } = useSwapQuotes({
@@ -816,12 +818,13 @@ export const useSwapForm = (
         payBalance: payAssetBalance?.amount ?? null,
         receiveBalance: receiveAssetBalance?.amount ?? null,
         isQuoteFetching,
-        isQuoteError,
+        quoteFailure,
         selectedQuote,
         providerSelectionMode,
         canSwap,
         hasInsufficientBalance,
         isLocalCurrencyInput,
+        handleRetryQuote: refreshQuotes,
         handlePayAmountChange,
         handlePayAmountFocus,
         handleSwapDirection,

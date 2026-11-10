@@ -99,9 +99,17 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { isSwapOrderSettled } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapOrderSettlement')
     >('@packages/swaps/src/utils/swapOrderSettlement')
+    const { swapQuoteFailureOf } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/routerErrors')
+    >('@packages/swaps/src/utils/routerErrors')
+    const { resolveRouterErrorBody } = await vi.importActual<
+        typeof import('@packages/swaps/src/api/router-error')
+    >('@packages/swaps/src/api/router-error')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
+        swapQuoteFailureOf,
+        resolveRouterErrorBody,
         formatSwapRate,
         swapRate,
         swapFeeOf,

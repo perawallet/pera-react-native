@@ -13,10 +13,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 const mockCreateQuotes = vi.fn()
 const mockResetQuoteMutation = vi.fn()
-let mockIsQuoteMutationError = false
 let mockAssetsQueryResult: {
     data: Map<string, unknown>
     isPending: boolean
@@ -25,14 +25,19 @@ let mockAssetsQueryResult: {
     isError: boolean
 }
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useCreateQuotesMutation: () => ({
-        mutateAsync: mockCreateQuotes,
-        isPending: false,
-        isError: mockIsQuoteMutationError,
-        reset: mockResetQuoteMutation,
-    }),
-}))
+vi.mock('@perawallet/wallet-core-swaps', async () => {
+    const { swapQuoteFailureOf } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/routerErrors')
+    >('@packages/swaps/src/utils/routerErrors')
+    return {
+        swapQuoteFailureOf,
+        useCreateQuotesMutation: () => ({
+            mutateAsync: mockCreateQuotes,
+            isPending: false,
+            reset: mockResetQuoteMutation,
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -58,6 +63,20 @@ const makeAssetsResult = (ids: string[]) => ({
     isError: false,
 })
 
+const OFFER = { provider: 'xo-v4' } as never
+
+const routerRefusal = (
+    status: number,
+    code: string,
+    extra: Record<string, unknown> = {},
+) =>
+    new PeraNetworkError(status >= 500 ? 'server' : 'client', {
+        status,
+        originalError: Object.assign(new Error('http'), {
+            data: { error: code, code, ...extra },
+        }),
+    })
+
 const baseParams = {
     scope: { chainId: 'algorand', networkId: 'testnet' } as const,
     swapperAddress: 'SWAPPER',
@@ -70,7 +89,6 @@ const baseParams = {
 describe('useSwapQuotes', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockIsQuoteMutationError = false
         mockAssetsQueryResult = makeAssetsResult(['0', '31566704'])
         mockUseAssetsQuery.mockImplementation(() => mockAssetsQueryResult)
         mockCreateQuotes.mockResolvedValue([])
@@ -148,12 +166,127 @@ describe('useSwapQuotes', () => {
         await waitFor(() => expect(mockCreateQuotes).toHaveBeenCalledTimes(1))
         await waitFor(() => expect(result.current.isQuoteError).toBe(true))
 
-        mockCreateQuotes.mockResolvedValue([])
+        mockCreateQuotes.mockResolvedValue([OFFER])
         act(() => result.current.reset())
 
         expect(result.current.isQuoteError).toBe(false)
         await waitFor(() => expect(mockCreateQuotes).toHaveBeenCalledTimes(2))
         await waitFor(() => expect(result.current.isQuoteError).toBe(false))
+    })
+
+    describe('quoteFailure', () => {
+        it('reports no route when the router answers with no offers', async () => {
+            mockCreateQuotes.mockResolvedValue([])
+
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+
+            await waitFor(() =>
+                expect(result.current.quoteFailure).toEqual({
+                    kind: 'no-route',
+                }),
+            )
+            expect(result.current.isQuoteFetching).toBe(false)
+        })
+
+        it('classifies a router refusal from its body', async () => {
+            mockCreateQuotes.mockRejectedValue(
+                routerRefusal(422, 'amount_too_low', {
+                    source_amount_minimum: '2000',
+                }),
+            )
+
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+
+            await waitFor(() =>
+                expect(result.current.quoteFailure).toEqual({
+                    kind: 'amount-too-low',
+                    minimum: new Decimal(2000),
+                }),
+            )
+        })
+
+        it('retries an unavailable route once on refresh and clears on success', async () => {
+            mockCreateQuotes.mockRejectedValueOnce(
+                routerRefusal(503, 'route_unavailable'),
+            )
+            mockCreateQuotes.mockResolvedValue([OFFER])
+
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+            await waitFor(() =>
+                expect(result.current.quoteFailure).toEqual({
+                    kind: 'unavailable',
+                }),
+            )
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+            act(() => result.current.refresh())
+
+            await waitFor(() => expect(result.current.quoteFailure).toBeNull())
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+            expect(result.current.allQuotes).toEqual([OFFER])
+        })
+
+        it('is cleared by reset()', async () => {
+            mockCreateQuotes.mockRejectedValue(
+                routerRefusal(503, 'route_unavailable'),
+            )
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+            await waitFor(() =>
+                expect(result.current.quoteFailure).not.toBeNull(),
+            )
+
+            mockCreateQuotes.mockImplementation(() => new Promise(() => {}))
+            act(() => result.current.reset())
+
+            expect(result.current.quoteFailure).toBeNull()
+        })
+
+        it('is unsupported for a pair asset missing on the network, without a request', async () => {
+            mockAssetsQueryResult = makeAssetsResult(['0'])
+
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+
+            await waitFor(() =>
+                expect(result.current.quoteFailure).toEqual({
+                    kind: 'unsupported',
+                }),
+            )
+            expect(mockCreateQuotes).not.toHaveBeenCalled()
+        })
+
+        it('is unsupported for the 404 tombstone', async () => {
+            mockCreateQuotes.mockRejectedValue({ response: { status: 404 } })
+
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+
+            await waitFor(() =>
+                expect(result.current.quoteFailure).toEqual({
+                    kind: 'unsupported',
+                }),
+            )
+        })
+
+        it('clears when the amount changes and the next request starts', async () => {
+            mockCreateQuotes.mockRejectedValueOnce(
+                routerRefusal(503, 'route_unavailable'),
+            )
+            mockCreateQuotes.mockImplementation(() => new Promise(() => {}))
+
+            const { result, rerender } = renderHook(
+                (props: typeof baseParams) => useSwapQuotes(props),
+                { initialProps: baseParams },
+            )
+            await waitFor(() =>
+                expect(result.current.quoteFailure).not.toBeNull(),
+            )
+
+            rerender({ ...baseParams, payAmount: new Decimal(2) })
+
+            await waitFor(() =>
+                expect(mockCreateQuotes).toHaveBeenCalledTimes(2),
+            )
+            expect(result.current.quoteFailure).toBeNull()
+        })
     })
 
     it('does not resolve pair assets while quoting is disabled', () => {

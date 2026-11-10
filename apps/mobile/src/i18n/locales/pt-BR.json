@@ -4090,7 +4090,15 @@
             "confirm_swap": "Confirmar conversão",
             "slide_to_confirm": "Arraste para confirmar",
             "high_price_impact_warning": "Esta conversão tem um impacto alto no preço. Você pode receber bem menos tokens do que o esperado.",
-            "quote_error": "Não foi possível obter cotações. Tente novamente."
+            "quote_error": "Não foi possível obter cotações. Tente novamente.",
+            "amount_too_low": "Valor pequeno demais para converter na {{network}}. O mínimo é {{amount}} {{unit}}.",
+            "amount_too_low_unknown": "Valor pequeno demais para converter na {{network}}. Tente um valor maior ou uma rede com taxas menores.",
+            "amount_too_high": "Valor grande demais para converter. O máximo é {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "Valor grande demais para converter. Tente um valor menor.",
+            "amount_invalid": "Este valor não pode ser convertido. Tente outro valor.",
+            "no_route": "Nenhuma rota de conversão encontrada para {{from}} → {{to}}.",
+            "unsupported": "Este token não pode ser convertido na Pera.",
+            "retry": "Tentar novamente"
         },
         "execution": {
             "error_title": "Falha na conversão",

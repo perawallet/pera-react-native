@@ -19,6 +19,7 @@ import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapReceivingAccountRow } from '../SwapReceivingAccountRow'
 import { SwapTrackedOrders } from '../SwapTrackedOrders'
 import { SwapFormControls } from './SwapFormControls'
+import { SwapQuoteError } from './SwapQuoteError'
 import { useSwapForm, type SwapFormInitialPayAmount } from './useSwapForm'
 import { useSwapLocalCurrency } from '../../hooks'
 import { useStyles } from './styles'
@@ -44,12 +45,13 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         payBalance,
         receiveBalance,
         isQuoteFetching,
-        isQuoteError,
+        quoteFailure,
         selectedQuote,
         providerSelectionMode,
         canSwap,
         hasInsufficientBalance,
         isLocalCurrencyInput,
+        handleRetryQuote,
         handlePayAmountChange,
         handlePayAmountFocus,
         handleSwapDirection,
@@ -135,18 +137,15 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                 </PWView>
             )}
 
-            {isQuoteError && (
-                <PWView
-                    style={styles.errorContainer}
-                    testID='swap_quote_error'
-                >
-                    <PWText
-                        variant='body'
-                        style={styles.errorText}
-                    >
-                        {t('swap.quote.quote_error')}
-                    </PWText>
-                </PWView>
+            {quoteFailure && (
+                <SwapQuoteError
+                    failure={quoteFailure}
+                    scope={scope}
+                    payAssetId={payAssetId}
+                    receiveScope={receiveScope}
+                    receiveAssetId={receiveAssetId}
+                    onRetry={handleRetryQuote}
+                />
             )}
 
             {selectedQuote && (

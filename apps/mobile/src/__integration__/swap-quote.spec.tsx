@@ -25,6 +25,7 @@ import { createQueryClientWrapper } from '@test-utils/render'
 import { mockCreateSwapQuotes } from '@perawallet/wallet-core-swaps/test-handlers'
 import {
     SwapQuoteMismatchError,
+    swapQuoteFailureOf,
     useCreateQuotesMutation,
     type SwapQuoteRequest,
 } from '@perawallet/wallet-core-swaps'
@@ -210,7 +211,53 @@ describe('Flow: Swap quote (router)', () => {
         await waitFor(() => expect(result.current.isError).toBe(true), {
             timeout: 5000,
         })
-        expect(result.current.error).toBeTruthy()
+        expect(swapQuoteFailureOf(result.current.error)).toEqual({
+            kind: 'no-route',
+        })
+    })
+
+    it('Given the router says the amount is below its minimum, when the user requests a quote, then the failure carries that minimum in base units', async () => {
+        server.use(
+            mockCreateSwapQuotes({
+                response: {
+                    error: 'Amount too low',
+                    code: 'amount_too_low',
+                    source_amount_minimum: '2000',
+                },
+                status: 422,
+            }),
+        )
+
+        const result = requestQuotes()
+
+        await waitFor(() => expect(result.current.isError).toBe(true), {
+            timeout: 5000,
+        })
+        expect(swapQuoteFailureOf(result.current.error)).toEqual({
+            kind: 'amount-too-low',
+            minimum: new Decimal(2000),
+        })
+    })
+
+    it('Given the router has the route switched off, when the user requests a quote, then the failure is retryable', async () => {
+        server.use(
+            mockCreateSwapQuotes({
+                response: {
+                    error: 'Route unavailable',
+                    code: 'route_unavailable',
+                },
+                status: 503,
+            }),
+        )
+
+        const result = requestQuotes()
+
+        await waitFor(() => expect(result.current.isError).toBe(true), {
+            timeout: 5000,
+        })
+        expect(swapQuoteFailureOf(result.current.error)).toEqual({
+            kind: 'unavailable',
+        })
     })
 
     it('Given a transport failure, when the quote mutation runs, then the error surfaces through TanStack Query rather than crashing the consumer', async () => {
