@@ -4368,8 +4368,9 @@
             "upgrade_watch_body_other": "{{count}} dieser Adressen befinden sich bereits als Beobachtungskonten in Ihrem Wallet. Durch den Import werden sie zu Ledger-Konten aktualisiert, die Transaktionen signieren können. Ihre Namen und Einstellungen bleiben erhalten.",
             "upgrade_watch_confirm": "Upgraden",
             "same_wallet_title": "Zu deinem bestehenden Ledger-Konto hinzufügen?",
-            "same_wallet_body": "Ein Konto von diesem Ledger ist bereits in deinem Wallet. Öffne die {{appName}}-App auf deinem Ledger, damit Pera bestätigen kann, dass beide Adressen vom selben Ledger stammen, und fahre dann fort. Oder füge diese Adresse als separates Konto hinzu.",
-            "same_wallet_confirm": "Weiter",
+            "same_wallet_body": "Ein Konto von diesem Ledger ist bereits in deinem Wallet. Um diese Adresse hinzuzufügen, öffne die {{appName}}-App auf deinem Ledger, damit Pera bestätigen kann, dass beide Adressen vom selben Ledger stammen. Beim Hinzufügen zum bestehenden Konto bleiben beide Adressen zusammen. Ein separates Konto erscheint als eigener Eintrag in deiner Kontoliste.",
+            "same_wallet_body_separate_only": "Ein Konto von diesem Ledger ist bereits in deinem Wallet. Du kannst diese Adresse als separates Konto hinzufügen, das als eigener Eintrag in deiner Kontoliste erscheint.",
+            "same_wallet_confirm": "Zum bestehenden Konto hinzufügen",
             "same_wallet_separate": "Als separates Konto hinzufügen"
         },
         "signing": {

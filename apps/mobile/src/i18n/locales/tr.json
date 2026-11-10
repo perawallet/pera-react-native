@@ -4376,8 +4376,9 @@
             "upgrade_watch_body_other": "Bu adreslerden {{count}} tanesi cüzdanında zaten izleme hesabı olarak var. İçe aktarmak, onları işlem imzalayabilen Ledger hesaplarına yükseltir. Adları ve ayarları korunur.",
             "upgrade_watch_confirm": "Yükselt",
             "same_wallet_title": "Mevcut Ledger hesabına eklensin mi?",
-            "same_wallet_body": "Bu Ledger’a ait bir hesap cüzdanında zaten var. Pera’nın iki adresin de aynı Ledger’dan geldiğini doğrulayabilmesi için Ledger’ında {{appName}} uygulamasını aç ve devam et. Ya da bu adresi ayrı bir hesap olarak ekle.",
-            "same_wallet_confirm": "Devam et",
+            "same_wallet_body": "Bu Ledger’a ait bir hesap cüzdanında zaten var. Bu adresi o hesaba eklemek için, Pera’nın iki adresin de aynı Ledger’dan geldiğini doğrulayabilmesi adına Ledger’ında {{appName}} uygulamasını aç. Mevcut hesaba eklemek iki adresi bir arada tutar. Ayrı bir hesap, hesap listende kendi satırı olarak görünür.",
+            "same_wallet_body_separate_only": "Bu Ledger’a ait bir hesap cüzdanında zaten var. Bu adresi ayrı bir hesap olarak ekleyebilirsin; hesap listende kendi satırı olarak görünür.",
+            "same_wallet_confirm": "Mevcut hesaba ekle",
             "same_wallet_separate": "Ayrı hesap olarak ekle"
         },
         "signing": {
