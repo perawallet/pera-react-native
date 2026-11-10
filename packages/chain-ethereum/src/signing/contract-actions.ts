@@ -20,7 +20,6 @@ import {
     size,
     slice,
     toFunctionSelector,
-    zeroAddress,
 } from 'viem'
 import type { AbiFunction, Address, Hex } from 'viem'
 import {
@@ -226,8 +225,11 @@ const decodeLiquidityAdd = (
     if (refunds.length > 1 || pools.length > 1) return undefined
     // Anything else in the batch is a call this decoder doesn't know.
     if (calls.length !== 1 + refunds.length + pools.length) return undefined
-    // Leftover ether is only returned to the signer by an explicit refund.
-    if (call.value > 0n && refunds.length === 0) return undefined
+    // Leftover ether is only returned to the signer by an explicit refund, and
+    // a refund ahead of the add would let the manager pull wrapped ether instead.
+    const isRefundLast = calls.at(-1)?.name === 'refundETH'
+    if (refunds.length === 1 && !isRefundLast) return undefined
+    if (call.value > 0n && !isRefundLast) return undefined
 
     if (increases.length === 1) {
         if (pools.length > 0) return undefined
@@ -312,13 +314,9 @@ const decodeLiquidityRemove = (
     if (!payouts.every(isPaidToSigner)) return undefined
 
     // A zero recipient leaves the proceeds in the manager, where anyone can sweep
-    // them, so it is only safe when both an unwrap and a sweep pay the signer.
-    const isCollectedToSigner = isForSigner(collected.recipient)
-    const isLeftForPayouts =
-        areEvmAddressesEqual(collected.recipient, zeroAddress) &&
-        payouts.some(payout => payout.name === 'unwrapWETH9') &&
-        payouts.some(payout => payout.name === 'sweepToken')
-    if (!isCollectedToSigner && !isLeftForPayouts) return undefined
+    // them, and neither collect nor decrease names the pool's tokens, so a later
+    // sweep can't be tied to them. Only a collect straight to the signer is proven.
+    if (!isForSigner(collected.recipient)) return undefined
 
     return {
         kind: 'remove-liquidity',

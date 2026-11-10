@@ -53,5 +53,5 @@ export const spenderSiteMismatchOf = (
     const origin = attestedOriginOf(source, verifiedOrigin)
     if (!projectDomain || !origin) return undefined
     if (isSiteOfDapp(origin, projectDomain)) return undefined
-    return stripUrlScheme(originOf(origin))
+    return stripUrlScheme(originOf(origin) ?? origin)
 }

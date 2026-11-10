@@ -123,6 +123,16 @@ describe('spenderSiteMismatchOf', () => {
         ).toBe('evil.example')
     })
 
+    it('still flags an attested origin that does not parse to a real one', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                undefined,
+                'chrome-extension://abcdef',
+            ),
+        ).toBe('abcdef')
+    })
+
     it('names the host of a valid Verify origin that is another site', () => {
         expect(
             spenderSiteMismatchOf(

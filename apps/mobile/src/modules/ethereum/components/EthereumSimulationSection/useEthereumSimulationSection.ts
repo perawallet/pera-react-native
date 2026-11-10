@@ -155,7 +155,7 @@ const approvalOf = (
     }
 }
 
-// A position NFT is minted by the contract being called, which the store has no record of yet.
+// An NFT of the contract being called, such as a position it just minted, which the store may not know yet.
 const collectibleFallbackOf = (
     change: EvmAssetChange,
     asset: Optional<PeraAsset>,
@@ -167,7 +167,7 @@ const collectibleFallbackOf = (
         return undefined
     }
     const nft = parseEvmNftAssetId(change.assetId)
-    if (!nft || nft.contract.toLowerCase() !== to.toLowerCase()) {
+    if (!nft || !sameAddress(nft.contract, to)) {
         return undefined
     }
     return { title: knownContract.name, subtitle: `#${nft.tokenId}` }

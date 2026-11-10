@@ -356,6 +356,15 @@ describe('decodeEvmContractAction', () => {
         const unwrapTo = (to: Address) => encode('unwrapWETH9', [0n, to])
         const sweepTo = (to: Address) => encode('sweepToken', [USDC, 0n, to])
         const burn = (tokenId = TOKEN_ID) => encode('burn', [tokenId])
+        const poolCreation = (
+            overrides: Partial<{ token1: Address; fee: number }> = {},
+        ) =>
+            encode('createAndInitializePoolIfNecessary', [
+                USDC,
+                overrides.token1 ?? WETH,
+                overrides.fee ?? 500,
+                2n ** 96n,
+            ])
 
         const expectedDeposits = [
             {
@@ -376,17 +385,10 @@ describe('decodeEvmContractAction', () => {
         })
 
         it('accepts a pool creation for the same pair ahead of the mint', () => {
-            const create = encode('createAndInitializePoolIfNecessary', [
-                USDC,
-                WETH,
-                500,
-                2n ** 96n,
-            ])
-
             expect(
                 decode(
                     MANAGER,
-                    multicall(create, mintCall(), refund),
+                    multicall(poolCreation(), mintCall(), refund),
                     ETH_VALUE,
                 ),
             ).toMatchObject({
@@ -427,12 +429,11 @@ describe('decodeEvmContractAction', () => {
             })
         })
 
-        it('reads a removal that unwraps, sweeps and burns as closing the position', () => {
+        it('reads a removal collected to the signer and burned as closing the position', () => {
             const data = multicall(
                 decreaseCall(),
-                collectCall(ZERO),
+                collectCall(SENDER),
                 unwrapTo(SENDER),
-                sweepTo(SENDER),
                 burn(),
             )
 
@@ -503,8 +504,7 @@ describe('decodeEvmContractAction', () => {
                 () =>
                     multicall(
                         decreaseCall(),
-                        collectCall(ZERO),
-                        unwrapTo(SENDER),
+                        collectCall(SENDER),
                         sweepTo(OTHER),
                     ),
                 0n,
@@ -512,6 +512,87 @@ describe('decodeEvmContractAction', () => {
             [
                 'a removal collected to the manager with no payouts',
                 () => multicall(decreaseCall(), collectCall(ZERO)),
+                0n,
+            ],
+            [
+                'a removal collected to the manager and paid out by an unwrap and a sweep',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(ZERO),
+                        unwrapTo(SENDER),
+                        sweepTo(SENDER),
+                    ),
+                0n,
+            ],
+            [
+                'a removal collected to the manager and paid out by an unwrap alone',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(ZERO),
+                        unwrapTo(SENDER),
+                    ),
+                0n,
+            ],
+            [
+                'a removal collecting another position',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(SENDER, TOKEN_ID + 1n),
+                    ),
+                0n,
+            ],
+            [
+                'a removal followed by a refund',
+                () => multicall(decreaseCall(), collectCall(SENDER), refund),
+                0n,
+            ],
+            [
+                'a refund ahead of the mint',
+                () => multicall(refund, mintCall()),
+                ETH_VALUE,
+            ],
+            [
+                'a refund ahead of the mint with no ether sent',
+                () => multicall(refund, mintCall()),
+                0n,
+            ],
+            [
+                'two refunds',
+                () => multicall(mintCall(), refund, refund),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation after the mint',
+                () => multicall(mintCall(), poolCreation(), refund),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation for another pair',
+                () =>
+                    multicall(
+                        poolCreation({ token1: OTHER }),
+                        mintCall(),
+                        refund,
+                    ),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation at another fee',
+                () =>
+                    multicall(poolCreation({ fee: 3000 }), mintCall(), refund),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation ahead of an increase',
+                () => multicall(poolCreation(), increaseCall()),
+                0n,
+            ],
+            [
+                'a mint of one token against itself',
+                () => multicall(mintCall({ token1: USDC })),
                 0n,
             ],
             [
