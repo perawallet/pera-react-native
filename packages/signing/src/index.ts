@@ -62,6 +62,7 @@ export {
     type MultisigSignerInput,
     type PQSigningInfo,
     type PlannerChainAdapter,
+    type SignedFor,
     type ProposeSignRequestFn,
     type ResolveHandoffOutcomeArgs,
     type ResolveMinFeeForSenderParams,
@@ -251,6 +252,7 @@ export {
     InvalidSignableDataError,
     NoLocalParticipantsError,
     ReviewRequiredError,
+    SignerKeyMissingError,
     SigningError,
     SourceError,
     SubmissionError,
@@ -263,8 +265,12 @@ export { walletConnectHandoffs } from './pipeline/walletConnectHandoffs'
 export type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 export { createSigningStrategySelector } from './pipeline/signing/getSigningStrategy'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
-export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
 export {
+    resolveGroupSigningAccount,
+    resolveSigningAccount,
+} from './machine/utils/resolveSigningAccount'
+export {
+    hasSignerCredential,
     resolveSignerCredential,
     type SignerCredential,
     type SignerCustody,

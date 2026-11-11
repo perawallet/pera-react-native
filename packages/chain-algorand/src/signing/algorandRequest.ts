@@ -11,13 +11,14 @@
  */
 
 import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     GenesisHashMismatchError,
     InvalidSignableDataError,
     isUnsignedTransactionRequest,
     type ChainSignerTransactions,
     type ReviewGroup,
+    type SignedFor,
     type TransactionSignRequest,
     type UnsignedTransactionSignRequest,
     type UnsignedTransactionsSignableData,
@@ -115,23 +116,66 @@ export const readAlgorandTransactionsData = (
     }
 }
 
-// An override naming any other account would key the group to one that signs nothing.
+export type AlgorandSigningSlot = { sender: string; signedFor: SignedFor }
+
+/**
+ * What the slot at `index` is signed for. An override naming any other account
+ * would key the group to one that signs nothing. One naming the payload's
+ * authorizer is that key: the chain checks the sender's auth address and never
+ * follows the authorizer's own rekey. That holds for an override naming the
+ * sender whose payload signs with the sender (an ARC-0001 `authAddr` equal to
+ * the sender): its own key signs. A multisig participant still signs for the
+ * account, so its rekey rules apply.
+ * @throws InvalidSignableDataError for an override the payload doesn't sign with.
+ */
+export const algorandSigningSlotOf = (
+    unsigned: UnsignedTransaction,
+    override: Optional<string>,
+    index: number,
+): AlgorandSigningSlot => {
+    const { transaction, signer, multisig } = readOrRefuse(unsigned)
+    const sender = transaction.sender.toString()
+    if (override === undefined) {
+        return { sender, signedFor: { address: sender, isSigner: false } }
+    }
+    if (override === sender) {
+        return {
+            sender,
+            signedFor: { address: sender, isSigner: signer === sender },
+        }
+    }
+    if (multisig?.addresses.includes(override)) {
+        return { sender, signedFor: { address: override, isSigner: false } }
+    }
+    if (override !== signer) {
+        throw new InvalidSignableDataError(
+            `${override} can't sign transaction ${index}, which ${signer} signs for ${sender}`,
+        )
+    }
+    return { sender, signedFor: { address: override, isSigner: true } }
+}
+
+/** Every slot of `request`, or null when one of them can't be signed as named. */
+export const algorandSigningSlotsOf = (
+    request: UnsignedTransactionSignRequest,
+): Nullable<AlgorandSigningSlot[]> => {
+    const overrides = algorandRequestDataOf(request)?.signerOverrides
+    try {
+        return request.txs.map((unsigned, index) =>
+            algorandSigningSlotOf(unsigned, overrides?.get(index), index),
+        )
+    } catch {
+        return null
+    }
+}
+
 export const algorandSignedForAddresses = (
     request: UnsignedTransactionSignRequest,
-): string[] => {
+): SignedFor[] => {
     const overrides = algorandRequestDataOf(request)?.signerOverrides
-    return request.txs.map((unsigned, index) => {
-        const { transaction, signer, multisig } = readOrRefuse(unsigned)
-        const sender = transaction.sender.toString()
-        const override = overrides?.get(index)
-        if (override === undefined) return sender
-        if (
-            ![sender, signer, ...(multisig?.addresses ?? [])].includes(override)
-        ) {
-            throw new InvalidSignableDataError(
-                `${override} can't sign transaction ${index}, which ${signer} signs for ${sender}`,
-            )
-        }
-        return override
-    })
+    return request.txs.map(
+        (unsigned, index) =>
+            algorandSigningSlotOf(unsigned, overrides?.get(index), index)
+                .signedFor,
+    )
 }

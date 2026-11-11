@@ -224,7 +224,7 @@ describe('transportActor', () => {
                 {
                     signingResults,
                     allAccounts: [ethereumAccount],
-                    isKeyedByPlanner: true,
+                    isKeyedBySigner: true,
                     createTransport: () => ({ send }),
                     scope: ETHEREUM_SEPOLIA,
                 },
@@ -520,7 +520,7 @@ describe('transportActor', () => {
             signingResults,
             source: { type: 'local' },
             signerAddress: ETH_SIGNER,
-            isKeyedByPlanner: true,
+            isKeyedBySigner: true,
             allAccounts: [ethAccount],
             createTransport: () => ({ send }),
             scope: SECOND_SCOPE,

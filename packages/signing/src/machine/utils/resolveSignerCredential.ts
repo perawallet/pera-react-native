@@ -35,6 +35,17 @@ export type SignerCredential = {
     scheme: SigningScheme
 }
 
+/**
+ * Whether `account` can sign on `chainId` itself, its delegation not followed:
+ * the one test of a missing own key, for the review and the pipeline alike.
+ */
+export const hasSignerCredential = (
+    account: WalletAccount,
+    chainId: ChainId,
+): boolean =>
+    account.custody.kind !== 'watch' &&
+    credentialScheme(account, getChainDescriptor(chainId)) !== null
+
 /** @throws CannotSignError when `account` has no signer on `chainId`. */
 export const resolveSignerCredential = (
     account: WalletAccount,
