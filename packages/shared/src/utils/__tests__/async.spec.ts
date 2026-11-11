@@ -24,6 +24,7 @@ import {
     settleBatch,
     timeoutErrorOf,
     withDeadline,
+    withLockIfFree,
     withTimeout,
 } from '../async'
 
@@ -597,5 +598,76 @@ describe('withDeadline', () => {
         )
 
         expect(wasAborted).toBe(true)
+    })
+})
+
+describe('withLockIfFree', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    it('Given no holder, when it is called, then fn runs and its value comes back', async () => {
+        const fn = vi.fn(async () => 'done')
+
+        expect(await withLockIfFree('lock-free', fn)).toBe('done')
+        expect(fn).toHaveBeenCalledOnce()
+    })
+
+    it('Given no Web Locks and a holder in this realm, when it is called again, then fn is skipped, and it runs again once the holder settles or throws', async () => {
+        vi.stubGlobal('navigator', {})
+        let release: () => void = () => {}
+        const holder = withLockIfFree(
+            'lock',
+            () => new Promise<void>(resolve => (release = resolve)),
+        )
+        const skipped = vi.fn(async () => 'second')
+
+        expect(await withLockIfFree('lock', skipped)).toBeUndefined()
+        expect(skipped).not.toHaveBeenCalled()
+
+        release()
+        await holder
+        expect(await withLockIfFree('lock', async () => 'after')).toBe('after')
+        await expect(
+            withLockIfFree('lock', async () => {
+                throw new Error('boom')
+            }),
+        ).rejects.toThrow('boom')
+        expect(await withLockIfFree('lock', async () => 'again')).toBe('again')
+    })
+
+    it('Given Web Locks, when it is called, then it asks for the name without waiting and skips fn when the manager grants none', async () => {
+        const request = vi.fn(
+            async (
+                _name: string,
+                _options: unknown,
+                callback: (lock: unknown) => Promise<unknown>,
+            ) => callback(null),
+        )
+        vi.stubGlobal('navigator', { locks: { request } })
+        const fn = vi.fn(async () => 'ran')
+
+        expect(await withLockIfFree('lock-web', fn)).toBeUndefined()
+
+        expect(request).toHaveBeenCalledWith(
+            'lock-web',
+            { ifAvailable: true },
+            expect.any(Function),
+        )
+        expect(fn).not.toHaveBeenCalled()
+    })
+
+    it('Given Web Locks that grant the lock, when it is called, then fn runs and its value comes back', async () => {
+        vi.stubGlobal('navigator', {
+            locks: {
+                request: async (
+                    _name: string,
+                    _options: unknown,
+                    callback: (lock: unknown) => Promise<unknown>,
+                ) => callback({ name: 'lock-web' }),
+            },
+        })
+
+        expect(await withLockIfFree('lock-web', async () => 7)).toBe(7)
     })
 })
