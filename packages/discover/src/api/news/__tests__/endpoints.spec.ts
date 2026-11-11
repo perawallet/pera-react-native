@@ -79,4 +79,25 @@ describe('fetchDiscoverNews', () => {
 
         expect(await fetchDiscoverNews('developer')).toEqual([])
     })
+
+    test('maps an explicit null banner to null', async () => {
+        mockQueryClient.mockResolvedValue({
+            data: {
+                next: null,
+                previous: null,
+                results: [
+                    {
+                        id: 'n3',
+                        title: 'Third',
+                        banner: null,
+                        publishing_datetime: '2026-10-29T00:00:00Z',
+                    },
+                ],
+            },
+        })
+
+        const [item] = await fetchDiscoverNews('live')
+
+        expect(item.banner).toBeNull()
+    })
 })

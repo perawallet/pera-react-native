@@ -17,6 +17,11 @@ import { fetchDiscoverNews } from '../api/news'
 import { getDiscoverNewsQueryKey } from './querykeys'
 import type { DiscoverNewsItem, DiscoverNewsItemRaw } from '../models/types'
 
+// Module-level so `select` keeps one identity: an inline closure would rebuild
+// every item (and its Date) on each render and defeat structural sharing.
+const toNewsItems = (items: DiscoverNewsItemRaw[]): DiscoverNewsItem[] =>
+    items.map(item => ({ ...item, publishedAt: new Date(item.publishedAt) }))
+
 export type UseDiscoverNewsQueryResult = UseQueryResult<DiscoverNewsItem[]>
 
 export const useDiscoverNewsQuery = (): UseDiscoverNewsQueryResult => {
@@ -27,11 +32,7 @@ export const useDiscoverNewsQuery = (): UseDiscoverNewsQueryResult => {
         queryFn: async ({ signal }): Promise<DiscoverNewsItemRaw[]> =>
             fetchDiscoverNews(deployment, signal),
         // The Date exists only after select, so the persisted cache holds strings.
-        select: (items): DiscoverNewsItem[] =>
-            items.map(item => ({
-                ...item,
-                publishedAt: new Date(item.publishedAt),
-            })),
+        select: toNewsItems,
         staleTime: config.reactQueryShortLivedStaleTime,
     })
 }

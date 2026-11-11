@@ -60,4 +60,24 @@ describe('useDiscoverNewsQuery', () => {
         expect(item?.publishedAt).toEqual(new Date(ISO))
         expect(item?.title).toBe('First')
     })
+
+    test('keeps the same data reference across a rerender', async () => {
+        vi.mocked(newsEndpoints.fetchDiscoverNews).mockResolvedValue([
+            { id: 'n1', title: 'First', banner: null, publishedAt: ISO },
+        ])
+
+        const { result, rerender } = renderHook(() => useDiscoverNewsQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => {
+            expect(result.current.data).toBeDefined()
+        })
+        const first = result.current.data
+
+        rerender()
+
+        expect(result.current.data).toBe(first)
+        expect(result.current.data?.[0]).toBe(first?.[0])
+    })
 })
