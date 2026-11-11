@@ -17,7 +17,10 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
-import { DiscoverDetailScreen } from '@modules/discover/routes'
+import {
+    DiscoverDetailScreen,
+    DiscoverSearchScreen,
+} from '@modules/discover/routes'
 import { withAgeGate } from '@components/AgeGated'
 import { BannersCarouselModalScreen } from '@modules/banners/routes'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -44,7 +47,7 @@ import { useIsOnboarding } from '@modules/onboarding'
 import { MigrationSplashScreen } from '@modules/migration'
 
 import type { RootStackParamList } from './types'
-import { fullScreenLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig/routes'
@@ -239,6 +242,16 @@ export const MainRoutes = () => {
                                 )}
                                 layout={fullScreenLayout}
                                 component={DiscoverDetailScreen}
+                            />
+                        )}
+                        {isAllowed({
+                            platform: 'discoverTab',
+                            anyChain: 'discover',
+                        }) && (
+                            <RootStack.Screen
+                                name='DiscoverSearch'
+                                layout={safeAreaLayout}
+                                component={DiscoverSearchScreen}
                             />
                         )}
                         <RootStack.Screen

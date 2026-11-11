@@ -37,6 +37,18 @@
         "dapp_row": {
             "favorite": "Favorilere ekle",
             "unfavorite": "Favorilerden kaldır"
+        },
+        "search": {
+            "placeholder": "Ara veya URL yaz",
+            "recent_title": "Son aramalar",
+            "clear_all": "Tümünü temizle",
+            "no_recent": "Son arama yok",
+            "filter_all": "Tümü",
+            "filter_markets": "Piyasalar",
+            "filter_dapps": "dApps",
+            "search_web": "Web’de ara",
+            "no_results": "Sonuç yok",
+            "assets_unavailable": "Varlık araması şu anda kullanılamıyor"
         }
     },
     "account_menu": {

@@ -37,6 +37,18 @@
         "dapp_row": {
             "favorite": "Adicionar aos favoritos",
             "unfavorite": "Remover dos favoritos"
+        },
+        "search": {
+            "placeholder": "Pesquisar ou digitar URL",
+            "recent_title": "Pesquisas recentes",
+            "clear_all": "Limpar tudo",
+            "no_recent": "Nenhuma pesquisa recente",
+            "filter_all": "Tudo",
+            "filter_markets": "Mercados",
+            "filter_dapps": "dApps",
+            "search_web": "Pesquisar na web",
+            "no_results": "Nenhum resultado",
+            "assets_unavailable": "A pesquisa de ativos está indisponível no momento"
         }
     },
     "account_menu": {
