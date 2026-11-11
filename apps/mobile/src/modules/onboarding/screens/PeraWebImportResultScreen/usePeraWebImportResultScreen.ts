@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import type { PWResultViewVariant } from '@components/core'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     usePeraWebImportFlowStore,
@@ -40,6 +41,7 @@ export const usePeraWebImportResultScreen =
         const { t } = useLanguage()
         const reset = usePeraWebImportFlowStore(state => state.reset)
         const { exitAccountFlow } = useExitAccountFlow()
+        const haptics = useHaptics()
 
         const importedCount = route.params?.importedCount ?? 0
         const skippedDuplicateCount = route.params?.skippedDuplicateCount ?? 0
@@ -83,6 +85,10 @@ export const usePeraWebImportResultScreen =
                 body: t('onboarding.pera_web_import.result.failed_body'),
             }
         }, [importedCount, skippedDuplicateCount, failedCount, t])
+
+        useEffect(() => {
+            if (variant === 'success') haptics.success()
+        }, [variant, haptics])
 
         const handleDone = useCallback(() => {
             // Wipes any decrypted seeds left in the flow store before

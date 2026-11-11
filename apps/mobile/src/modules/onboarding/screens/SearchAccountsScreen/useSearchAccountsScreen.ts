@@ -237,6 +237,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     setSelectedAccountId(account.id)
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,
+                        hasImportedAccounts: true,
                     })
                 }
             }
