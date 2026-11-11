@@ -155,7 +155,11 @@ export const algorandSigningSlotOf = (
     return { sender, signedFor: { address: override, isSigner: true } }
 }
 
-/** Every slot of `request`, or null when one of them can't be signed as named. */
+/**
+ * Every slot of `request`, or null when the pipeline will refuse the request
+ * anyway (a payload it can't read, another network's, or an override the
+ * payload doesn't sign with), so a review check has nothing to add.
+ */
 export const algorandSigningSlotsOf = (
     request: UnsignedTransactionSignRequest,
 ): Nullable<AlgorandSigningSlot[]> => {
@@ -164,8 +168,14 @@ export const algorandSigningSlotsOf = (
         return request.txs.map((unsigned, index) =>
             algorandSigningSlotOf(unsigned, overrides?.get(index), index),
         )
-    } catch {
-        return null
+    } catch (error) {
+        if (
+            error instanceof InvalidSignableDataError ||
+            error instanceof GenesisHashMismatchError
+        ) {
+            return null
+        }
+        throw error
     }
 }
 
