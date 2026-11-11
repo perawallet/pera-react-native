@@ -33,7 +33,6 @@ import { algorandMultisigOf } from '../accounts/multisig-participants'
 import {
     AccountTypes,
     algorandAddressOf,
-    algorandKeyOf,
     algorandKindIdOf,
     type AccountType,
     isStandaloneAccount,
@@ -148,17 +147,6 @@ export const serializeAlgorandMnemonicSecret = (
     }
     return null
 }
-
-// Quantum accounts export the same 25-word recovery phrase format as algo25,
-// so they back up through the identical key-scoped state.
-export const algorandMnemonicBackupKeyId = (
-    account: WalletAccount,
-): Nullable<string> =>
-    isStandaloneAccount(account) ||
-    isHDWalletAccount(account) ||
-    isQuantumAccount(account)
-        ? (algorandKeyOf(account) ?? null)
-        : null
 
 // Maps, not object literals: a wire `type` is untrusted input, and an object
 // lookup would answer for `constructor` and the other prototype keys.

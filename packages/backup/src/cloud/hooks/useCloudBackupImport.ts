@@ -907,7 +907,7 @@ const useImportContext = (
     const importAccount = useImportAccount(scope)
     const updateAccount = useUpdateAccount()
     const { keys, hasSeedWithEntropy, persistHDMasterKey } = useKMS()
-    const markBackedUp = useMarkMnemonicBackupComplete(scope.chainId)
+    const markBackedUp = useMarkMnemonicBackupComplete()
     // Reading the hook-subscribed snapshot would close over a single render's
     // account list, so back-to-back appends in the loop would clobber each
     // other. We always read+write the live store instead.

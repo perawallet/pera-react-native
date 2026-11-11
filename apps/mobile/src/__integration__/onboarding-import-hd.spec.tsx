@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
@@ -25,7 +25,12 @@ import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccounts
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { seedOf, useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    useMnemonicBackupStore,
+    useRequiresMnemonicBackup,
+} from '@perawallet/wallet-core-backup'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
@@ -125,6 +130,7 @@ const startHDImportThroughMnemonic = async (words: string[]) => {
 describe('Flow: Onboarding → Import HD wallet', () => {
     beforeEach(() => {
         resetTestKeystore()
+        useMnemonicBackupStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
         useOnboardingStore.getState().reset()
         vi.mocked(Notifier.showNotification).mockClear()
@@ -394,6 +400,15 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             expect.arrayContaining([addr0, addr1, addr2]),
         )
         expect(accounts).toHaveLength(3)
+        for (const account of accounts) {
+            expect(
+                useMnemonicBackupStore.getState().isBackedUp(seedOf(account)),
+            ).toBe(true)
+            const { result } = renderHook(() =>
+                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+            )
+            expect(result.current).toBe(false)
+        }
     })
 
     it('Given discovery finds three derived addresses, when the user deselects the first two, then only that address is persisted', async () => {
