@@ -38,6 +38,14 @@ export const useMnemonicBackupStore = create<MnemonicBackupStore>()(
                     },
                 })
             },
+            upgradeBackedUpKeyIds: (seedIdByKeyId: Record<string, string>) => {
+                const next = { ...get().backedUpKeyIds }
+                for (const [keyId, seedId] of Object.entries(seedIdByKeyId)) {
+                    delete next[keyId]
+                    next[seedId] = true
+                }
+                set({ backedUpKeyIds: next })
+            },
             isBackedUp: (keyId: Maybe<string>) => {
                 if (!keyId) return false
                 return !!get().backedUpKeyIds[keyId]

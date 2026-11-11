@@ -71,6 +71,24 @@ describe('mnemonicBackupStore', () => {
         expect(useMnemonicBackupStore.getState().backedUpKeyIds).toBe(before)
     })
 
+    test('upgradeBackedUpKeyIds swaps each key id for its seed id', async () => {
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
+        act(() => {
+            result.current.markBackedUp('child-0')
+            result.current.markBackedUp('other-seed')
+        })
+
+        act(() => {
+            result.current.upgradeBackedUpKeyIds({ 'child-0': 'seed-a' })
+        })
+
+        expect(result.current.backedUpKeyIds).toEqual({
+            'seed-a': true,
+            'other-seed': true,
+        })
+    })
+
     test('isBackedUp returns false for unknown id', async () => {
         const { useMnemonicBackupStore } = await import('../store')
         const { result } = renderHook(() => useMnemonicBackupStore())
