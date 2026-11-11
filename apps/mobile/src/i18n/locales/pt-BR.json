@@ -3276,7 +3276,8 @@
         },
         "advanced": {
             "launch_label": "Configuração de inicialização",
-            "confirmation_label": "Ação de confirmação"
+            "confirmation_label": "Ação de confirmação",
+            "haptics_label": "Feedback tátil"
         },
         "launch": {
             "synopsis": "Escolha em qual conta a Pera abre ao iniciar o app.",

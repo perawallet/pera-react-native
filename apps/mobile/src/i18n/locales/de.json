@@ -3252,7 +3252,8 @@
         },
         "advanced": {
             "launch_label": "Starteinstellung",
-            "confirmation_label": "Bestätigungsaktion"
+            "confirmation_label": "Bestätigungsaktion",
+            "haptics_label": "Haptisches Feedback"
         },
         "launch": {
             "synopsis": "Lege fest, mit welchem Konto Pera beim Start geöffnet wird.",

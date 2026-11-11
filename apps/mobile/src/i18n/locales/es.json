@@ -3260,7 +3260,8 @@
         },
         "advanced": {
             "launch_label": "Ajuste de inicio",
-            "confirmation_label": "Acción de confirmación"
+            "confirmation_label": "Acción de confirmación",
+            "haptics_label": "Respuesta háptica"
         },
         "launch": {
             "synopsis": "Elige con qué cuenta se abre Pera al iniciar la app.",

@@ -640,6 +640,9 @@ test('advanced preferences hides the confirmation-mode setting on web', async ()
     await expect(
         page.getByTestId('settings_advanced_confirmation_item'),
     ).toHaveCount(0)
+    await expect(
+        page.getByTestId('settings_advanced_haptics_toggle'),
+    ).toHaveCount(0)
 
     // Back to the settings root so the vault security tests below start from
     // the screen they expect. Both stacked screens render a header back
