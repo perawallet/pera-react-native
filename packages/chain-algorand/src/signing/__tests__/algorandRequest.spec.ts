@@ -22,6 +22,7 @@ import { algorandPlannerAdapter, algorandReviewerAdapter } from '../adapter'
 import {
     algorandRequestOf,
     algorandSignedForAddresses,
+    algorandSigningSlotsOf,
     algorandTransactionsOf,
     readAlgorandTransactionsData,
 } from '../algorandRequest'
@@ -187,6 +188,26 @@ describe('algorandSignedForAddresses', () => {
                 ),
             ),
         ).toThrow(InvalidSignableDataError)
+    })
+})
+
+describe('algorandSigningSlotsOf', () => {
+    // The pipeline refuses such a request itself, so a review check skips it.
+    it("is null for an override the payload doesn't sign with", () => {
+        expect(
+            algorandSigningSlotsOf({
+                ...neutralRequest({
+                    txs: [asUnsignedAlgorandTransaction(GROUP[0])],
+                }),
+                chainData: {
+                    algorand: {
+                        signerOverrides: new Map([
+                            [0, makeTestAddress(9).toString()],
+                        ]),
+                    },
+                },
+            } as Parameters<typeof algorandSigningSlotsOf>[0]),
+        ).toBeNull()
     })
 })
 
