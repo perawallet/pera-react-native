@@ -14,6 +14,7 @@ import { memo } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
 import { useStyles } from './styles'
 
 export type NumberPadProps = {
@@ -37,6 +38,7 @@ export const NumberPad = memo(
     ({ onPress, allowDecimal = true }: NumberPadProps) => {
         const styles = useStyles()
         const { theme } = useTheme()
+        const haptics = useHaptics()
 
         // Horizontal only: rows touch vertically, so vertical slop would let
         // a key claim presses landing inside its neighbor above (siblings are
@@ -69,7 +71,10 @@ export const NumberPad = memo(
                             return (
                                 <PWTouchableOpacity
                                     key={`numpad-key-${idx}-${keyIdx}`}
-                                    onPress={() => onPress(key)}
+                                    onPress={() => {
+                                        haptics.selection()
+                                        onPress(key)
+                                    }}
                                     style={styles.key}
                                     testID={keyTestID}
                                     allowRapidPress

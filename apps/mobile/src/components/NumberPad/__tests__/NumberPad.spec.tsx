@@ -14,6 +14,12 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NumberPad } from '../NumberPad'
 
+const mockHaptics = vi.hoisted(() => ({ selection: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('NumberPad', () => {
     it('renders keys', () => {
         const onPress = vi.fn()
@@ -28,6 +34,16 @@ describe('NumberPad', () => {
         render(<NumberPad onPress={onPress} />)
         fireEvent.click(screen.getByText('5'))
         expect(onPress).toHaveBeenCalledWith('5')
+    })
+
+    it('plays one selection haptic per key press, delete included', () => {
+        mockHaptics.selection.mockClear()
+        render(<NumberPad onPress={vi.fn()} />)
+
+        fireEvent.click(screen.getByText('5'))
+        fireEvent.click(screen.getByTestId('numpad_key_delete'))
+
+        expect(mockHaptics.selection).toHaveBeenCalledTimes(2)
     })
 
     it('registers rapid repeat presses of the same key', () => {

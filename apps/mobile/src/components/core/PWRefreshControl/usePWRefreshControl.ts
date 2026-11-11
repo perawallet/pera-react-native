@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useHaptics } from '@hooks/useHaptics'
 import { useNetworkStatus } from '@hooks/useNetworkStatusStore'
 import { useOfflineFeedbackStore } from '@hooks/useOfflineFeedbackStore'
 
@@ -32,8 +33,11 @@ export const usePWRefreshControl = ({
     const emphasizeOfflineStatus = useOfflineFeedbackStore(
         state => state.emphasizeOfflineStatus,
     )
+    const haptics = useHaptics()
 
     const handleRefresh = useCallback(() => {
+        // Offline pulls still crossed the threshold, so they get the tick too.
+        haptics.light()
         if (!hasInternet) {
             // Never dispatch a doomed request, but never no-op silently either:
             // re-expanding the offline explanation is the answer to the pull
@@ -43,7 +47,7 @@ export const usePWRefreshControl = ({
         }
 
         onRefresh()
-    }, [emphasizeOfflineStatus, hasInternet, onRefresh])
+    }, [emphasizeOfflineStatus, haptics, hasInternet, onRefresh])
 
     return {
         // Gated on connectivity so the spinner can't stick if the link drops mid-refresh.
