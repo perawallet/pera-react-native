@@ -4072,7 +4072,17 @@
             "confirm_swap": "Confirm Swap",
             "slide_to_confirm": "Slide To Confirm",
             "high_price_impact_warning": "This swap has a high price impact. You may receive significantly fewer tokens than expected.",
-            "quote_error": "Unable to get quotes. Please try again."
+            "quote_error": "Unable to get quotes. Please try again.",
+            "amount_too_low": "Amount too small to swap on {{network}}. The minimum is {{amount}} {{unit}}.",
+            "amount_too_low_unknown": "Amount too small to swap on {{network}}. Try a larger amount or a lower-fee network.",
+            "amount_too_high": "Amount too large to swap. The maximum is {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "Amount too large to swap. Try a smaller amount.",
+            "amount_invalid": "This amount can't be swapped. Try a different amount.",
+            "no_route": "No swap route found for {{from}} → {{to}}. Try a different token or amount.",
+            "unsupported": "This token can't be swapped in Pera. Choose a different token.",
+            "restricted": "This swap isn't available in your region.",
+            "network_unavailable": "Swaps aren't available on {{network}} right now.",
+            "retry": "Retry"
         },
         "execution": {
             "error_title": "Swap Failed",

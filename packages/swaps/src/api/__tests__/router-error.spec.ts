@@ -45,6 +45,16 @@ describe('resolveRouterErrorBody', () => {
         expect(body?.source_amount_maximum).toBeNull()
     })
 
+    it('reads the maximum a too-high refusal names', () => {
+        const body = resolveRouterErrorBody({
+            error: 'Too high',
+            code: 'amount_too_high',
+            source_amount_maximum: '5000000',
+        })
+
+        expect(body?.source_amount_maximum).toBe('5000000')
+    })
+
     it('reads a malformed limit as absent rather than dropping the error', () => {
         const body = resolveRouterErrorBody({
             error: 'Too low',

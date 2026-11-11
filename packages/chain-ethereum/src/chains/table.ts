@@ -32,6 +32,8 @@ const OP_STACK_GAS_PRICE_ORACLE = '0x420000000000000000000000000000000000000F'
 const GWEI = 1_000_000_000n
 
 const ETHEREUM_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+const ARBITRUM_USDC = '0xaf88d065e77c8cC2239327C5EDB3A432268e5831'
 
 export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
     {
@@ -69,6 +71,8 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         blockTimeMs: 2000,
         finality: { kind: 'confirmations', recommended: 10 },
         enabledByDefault: false,
+        capabilities: { swap: config.appEnvironment !== 'production' },
+        defaultSwapReceiveAssetId: BASE_USDC,
     },
     {
         id: 'bsc',
@@ -110,6 +114,8 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         blockTimeMs: 250,
         finality: { kind: 'confirmations', recommended: 20 },
         enabledByDefault: false,
+        capabilities: { swap: config.appEnvironment !== 'production' },
+        defaultSwapReceiveAssetId: ARBITRUM_USDC,
     },
     {
         id: 'avalanche',

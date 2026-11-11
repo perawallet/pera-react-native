@@ -4072,7 +4072,17 @@
             "confirm_swap": "Swap’ı onayla",
             "slide_to_confirm": "Onaylamak için kaydır",
             "high_price_impact_warning": "Bu swap’ın fiyat etkisi yüksek. Beklediğinden belirgin şekilde daha az token alabilirsin.",
-            "quote_error": "Teklifler alınamadı. Lütfen tekrar dene."
+            "quote_error": "Teklifler alınamadı. Lütfen tekrar dene.",
+            "amount_too_low": "Tutar, {{network}} ağında swap için çok düşük. Minimum {{amount}} {{unit}}.",
+            "amount_too_low_unknown": "Tutar, {{network}} ağında swap için çok düşük. Daha yüksek bir tutar veya daha düşük ücretli bir ağ dene.",
+            "amount_too_high": "Tutar swap için çok yüksek. Maksimum {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "Tutar swap için çok yüksek. Daha düşük bir tutar dene.",
+            "amount_invalid": "Bu tutar swap edilemiyor. Farklı bir tutar dene.",
+            "no_route": "{{from}} → {{to}} için swap rotası bulunamadı. Başka bir token veya tutar dene.",
+            "unsupported": "Bu token Pera’da swap edilemiyor. Başka bir token seç.",
+            "restricted": "Bu swap bölgende kullanılamıyor.",
+            "network_unavailable": "{{network}} ağında şu anda swap yapılamıyor.",
+            "retry": "Tekrar dene"
         },
         "execution": {
             "error_title": "Swap başarısız",

@@ -4072,7 +4072,17 @@
             "confirm_swap": "Confirmar swap",
             "slide_to_confirm": "Desliza para confirmar",
             "high_price_impact_warning": "Este swap tiene un alto impacto en el precio. Puedes recibir muchos menos tokens de lo esperado.",
-            "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo."
+            "quote_error": "No se pudieron obtener cotizaciones. Vuelve a intentarlo.",
+            "amount_too_low": "El importe es demasiado pequeño para un swap en {{network}}. El mínimo es {{amount}} {{unit}}.",
+            "amount_too_low_unknown": "El importe es demasiado pequeño para un swap en {{network}}. Prueba con un importe mayor o una red con comisiones más bajas.",
+            "amount_too_high": "El importe es demasiado grande para un swap. El máximo es {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "El importe es demasiado grande para un swap. Prueba con un importe menor.",
+            "amount_invalid": "Este importe no se puede intercambiar. Prueba con otro importe.",
+            "no_route": "No se encontró ninguna ruta de swap para {{from}} → {{to}}. Prueba con otro token o con otro importe.",
+            "unsupported": "Este token no se puede intercambiar en Pera. Elige otro token.",
+            "restricted": "Este intercambio no está disponible en tu región.",
+            "network_unavailable": "Los intercambios no están disponibles en {{network}} por ahora.",
+            "retry": "Reintentar"
         },
         "execution": {
             "error_title": "Swap fallido",

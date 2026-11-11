@@ -4064,7 +4064,17 @@
             "confirm_swap": "Tausch bestätigen",
             "slide_to_confirm": "Zum Bestätigen wischen",
             "high_price_impact_warning": "Dieser Tausch hat eine hohe Preisauswirkung. Du erhältst möglicherweise deutlich weniger Token als erwartet.",
-            "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut."
+            "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut.",
+            "amount_too_low": "Betrag zu klein für einen Tausch auf {{network}}. Das Minimum beträgt {{amount}} {{unit}}.",
+            "amount_too_low_unknown": "Betrag zu klein für einen Tausch auf {{network}}. Versuche einen höheren Betrag oder ein Netzwerk mit niedrigeren Gebühren.",
+            "amount_too_high": "Betrag zu groß für einen Tausch. Das Maximum beträgt {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "Betrag zu groß für einen Tausch. Versuche einen kleineren Betrag.",
+            "amount_invalid": "Dieser Betrag kann nicht getauscht werden. Versuche einen anderen Betrag.",
+            "no_route": "Keine Tauschroute für {{from}} → {{to}} gefunden. Probiere einen anderen Token oder Betrag.",
+            "unsupported": "Dieser Token kann in Pera nicht getauscht werden. Wähle einen anderen Token.",
+            "restricted": "Dieser Tausch ist in deiner Region nicht verfügbar.",
+            "network_unavailable": "Tauschen ist auf {{network}} derzeit nicht verfügbar.",
+            "retry": "Erneut versuchen"
         },
         "execution": {
             "error_title": "Tausch fehlgeschlagen",

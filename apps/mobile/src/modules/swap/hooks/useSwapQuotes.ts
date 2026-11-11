@@ -14,8 +14,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Keyboard } from 'react-native'
 import type { Decimal } from 'decimal.js'
 import {
+    swapQuoteFailureOf,
     useCreateQuotesMutation,
     type SwapQuote,
+    type SwapQuoteFailure,
 } from '@perawallet/wallet-core-swaps'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
@@ -53,15 +55,20 @@ type UseSwapQuotesParams = {
     slippage?: Nullable<string>
 }
 
+const UNSUPPORTED_FAILURE: SwapQuoteFailure = { kind: 'unsupported' }
+
 type UseSwapQuotesResult = {
     allQuotes: SwapQuote[]
     quotedAmount: Nullable<Decimal>
     isQuoteFetching: boolean
     /**
-     * True when the last quote attempt failed, the server reported the pair
-     * as unknown (404), or an asset of the pair doesn't exist on the active
+     * Why the last attempt for the current inputs gave no quote: the router
+     * refused or answered with no offers, the server reported the pair as
+     * unknown (404), or an asset of the pair doesn't exist on the active
      * network (e.g. a pair seeded on mainnet after switching to testnet).
+     * Null while quoting or once offers arrive.
      */
+    quoteFailure: Nullable<SwapQuoteFailure>
     isQuoteError: boolean
     /** Clears the quotes and resets the underlying mutation. */
     reset: () => void
@@ -93,7 +100,6 @@ export const useSwapQuotes = ({
     const {
         mutateAsync: createQuotes,
         isPending: isQuoteLoading,
-        isError: isQuoteMutationError,
         reset: resetQuoteMutation,
     } = useCreateQuotesMutation()
     const createQuotesRef = useRef(createQuotes)
@@ -101,6 +107,10 @@ export const useSwapQuotes = ({
 
     const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
     const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
+    // Tied to the amount it answered: during the debounce after an edit the
+    // old failure (and its Retry) must not sit next to the new amount.
+    const [failed, setFailed] =
+        useState<Nullable<{ failure: SwapQuoteFailure; amount: Decimal }>>(null)
 
     // Both assets must exist on the active network before quoting — a pair
     // seeded on another network (e.g. mainnet USDC after switching to
@@ -125,7 +135,7 @@ export const useSwapQuotes = ({
 
     // Pair the server said it can't quote (404) — don't re-fire on every
     // amount/dep change; only a pair/network change or reset() clears it.
-    // State (not a ref) so the error surfaces in render as isQuoteError.
+    // State (not a ref) so the failure surfaces in render as quoteFailure.
     const [notFoundPair, setNotFoundPair] = useState<Nullable<string>>(null)
     const pairKey = `${toScopeKey(scope)}:${fromAssetId}:${toScopeKey(receiveScope)}:${toAssetId}`
     const { chainId, networkId } = scope
@@ -137,11 +147,16 @@ export const useSwapQuotes = ({
         QUOTE_DEBOUNCE_MS,
         isDecimalEqual,
     )
+    // A dep of the quote effect: an edit undone inside the debounce leaves
+    // debouncedPayAmount unchanged, so only this settling re-runs the quote
+    // that the edit's reset() cleared.
+    const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
 
     const reset = useCallback(() => {
         setAllQuotes([])
         setQuotedAmount(null)
         setNotFoundPair(null)
+        setFailed(null)
         resetQuoteMutation()
     }, [resetQuoteMutation])
 
@@ -158,6 +173,8 @@ export const useSwapQuotes = ({
             setNotFoundPair(null)
             return
         }
+
+        setFailed(null)
 
         if (
             !enabled ||
@@ -183,6 +200,7 @@ export const useSwapQuotes = ({
             return
         }
         if (notFoundPair === pairKey) return
+        if (isDebouncing) return
 
         const amountInBaseUnits = displayUnitsToBaseUnits(
             debouncedPayAmount,
@@ -208,6 +226,16 @@ export const useSwapQuotes = ({
 
                 if (cancelled) return
 
+                if (result.length === 0) {
+                    setFailed({
+                        failure: { kind: 'no-route' },
+                        amount: debouncedPayAmount,
+                    })
+                    setAllQuotes([])
+                    setQuotedAmount(null)
+                    return
+                }
+
                 setAllQuotes(result)
                 setQuotedAmount(debouncedPayAmount)
                 Keyboard.dismiss()
@@ -215,6 +243,11 @@ export const useSwapQuotes = ({
                 if (cancelled) return
                 if (isNotFoundError(error)) {
                     setNotFoundPair(pairKey)
+                } else {
+                    setFailed({
+                        failure: swapQuoteFailureOf(error),
+                        amount: debouncedPayAmount,
+                    })
                 }
                 setAllQuotes([])
                 setQuotedAmount(null)
@@ -244,11 +277,18 @@ export const useSwapQuotes = ({
         isPairOnNetwork,
         notFoundPair,
         refreshNonce,
+        isDebouncing,
     ])
 
-    const isQuoteError =
-        isQuoteMutationError || isPairUnsupported || notFoundPair === pairKey
-    const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
+    const failureForAmount =
+        failed !== null && isDecimalEqual(payAmount, failed.amount)
+            ? failed.failure
+            : null
+    const quoteFailure: Nullable<SwapQuoteFailure> =
+        isPairUnsupported || notFoundPair === pairKey
+            ? UNSUPPORTED_FAILURE
+            : failureForAmount
+    const isQuoteError = quoteFailure !== null
     const hasUnresolvedQuote =
         payAmount !== null &&
         !payAmount.isZero() &&
@@ -262,6 +302,7 @@ export const useSwapQuotes = ({
         allQuotes,
         quotedAmount,
         isQuoteFetching,
+        quoteFailure,
         isQuoteError,
         reset,
         refresh,

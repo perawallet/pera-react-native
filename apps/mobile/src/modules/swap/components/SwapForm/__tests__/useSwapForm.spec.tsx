@@ -87,6 +87,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
             typeof import('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
         >('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
     ).pickBestByAmountOut,
+    swapQuoteFailureOf: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/swaps/src/utils/routerErrors')
+        >('../../../../../../../../packages/swaps/src/utils/routerErrors')
+    ).swapQuoteFailureOf,
     useSwaps: () => ({
         fromAsset: mockFromAsset,
         toAsset: mockToAsset,
@@ -287,6 +292,7 @@ vi.mock('../../SwapConfirmationContent', () => ({
 describe('useSwapForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockCreateQuotes.mockResolvedValue([])
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
@@ -1363,6 +1369,37 @@ describe('useSwapForm', () => {
             })
 
             expect(result.current.hasInsufficientBalance).toBe(false)
+        })
+    })
+
+    describe('quote failure', () => {
+        it('exposes why the router gave no quote', async () => {
+            mockCreateQuotes.mockResolvedValue([])
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(2))
+            })
+
+            expect(result.current.quoteFailure).toEqual({ kind: 'no-route' })
+        })
+
+        it('handleRetryQuote asks the router again for the same amount', async () => {
+            mockCreateQuotes.mockResolvedValue([])
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(2))
+            })
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+            await act(async () => {
+                result.current.handleRetryQuote()
+            })
+
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+            expect(mockCreateQuotes.mock.calls[1][0].sourceAmount).toEqual(
+                mockCreateQuotes.mock.calls[0][0].sourceAmount,
+            )
         })
     })
 })

@@ -425,6 +425,28 @@ const openConfirmation = async () => {
     fireEvent.click(await findEnabledByTestId('swap-button', FORM_TIMEOUT))
 }
 
+/** Takes the token → ether form to a typed amount, with no quote route stubbed. */
+const typeAmountOnTokenToEtherForm = async () => {
+    selectSender(ETHEREUM_SENDER)
+    await seedSenderEther('10000000000000000000')
+    await insertAssetHolding({
+        accountAddress: SENDER,
+        assetId: TOKEN,
+        scope: ETH_SCOPE,
+        amount: new Decimal('100000000'),
+    })
+    useSwapsStore.getState().setFromAsset(TOKEN)
+    useSwapsStore.getState().setToAsset(ETH_ASSET)
+}
+
+const renderFormAndType = async () => {
+    renderWithNavigation(SwapFormHost, 'SwapFormHost')
+    await waitFor(() => expect(host).not.toBeNull())
+    fireEvent.change(await screen.findByTestId('swap-pay-input'), {
+        target: { value: '12.5' },
+    })
+}
+
 describe('Flow: Swap from an Ethereum account', () => {
     beforeAll(async () => {
         await setupTestDatabase()
@@ -524,6 +546,76 @@ describe('Flow: Swap from an Ethereum account', () => {
         expect(
             isElementDisabled(screen.getByTestId('swap-confirm-slide')),
         ).toBe(true)
+    })
+
+    it('Given the router says the amount is too small, when the quote is refused, then the form says the amount is too small and offers neither Swap nor Retry', async () => {
+        await typeAmountOnTokenToEtherForm()
+        server.use(
+            mockCreateSwapQuotes({
+                response: {
+                    error: 'Amount too low',
+                    code: 'amount_too_low',
+                    source_amount_minimum: '2000',
+                },
+                status: 422,
+            }),
+        )
+
+        await renderFormAndType()
+
+        const error = await screen.findByTestId(
+            'swap_quote_error',
+            undefined,
+            FORM_TIMEOUT,
+        )
+        expect(error.textContent).toBe('swap.quote.amount_too_low')
+        expect(screen.queryByTestId('swap-button')).toBeNull()
+        expect(screen.queryByTestId('swap-quote-retry')).toBeNull()
+    })
+
+    it('Given the route is switched off, when the user taps Retry after it returns, then the error clears and the swap can be confirmed', async () => {
+        await typeAmountOnTokenToEtherForm()
+        server.use(
+            mockCreateSwapQuotes({
+                response: {
+                    error: 'Route unavailable',
+                    code: 'route_unavailable',
+                },
+                status: 503,
+            }),
+        )
+
+        await renderFormAndType()
+
+        const retry = await screen.findByTestId(
+            'swap-quote-retry',
+            undefined,
+            FORM_TIMEOUT,
+        )
+        expect(screen.getByText('swap.quote.quote_error')).toBeTruthy()
+        server.use(
+            mockCreateSwapQuotes({
+                response: { results: [tokenToEtherOffer] },
+            }),
+        )
+        fireEvent.click(retry)
+
+        await findEnabledByTestId('swap-button', FORM_TIMEOUT)
+        expect(screen.queryByTestId('swap_quote_error')).toBeNull()
+    })
+
+    it('Given the router answers with no offers, when the form quotes, then it says no route was found', async () => {
+        await typeAmountOnTokenToEtherForm()
+        server.use(mockCreateSwapQuotes({ response: { results: [] } }))
+
+        await renderFormAndType()
+
+        const error = await screen.findByTestId(
+            'swap_quote_error',
+            undefined,
+            FORM_TIMEOUT,
+        )
+        expect(error.textContent).toBe('swap.quote.no_route')
     })
 
     it('Given an account on two chains, when it picks an Ethereum asset in the pay picker, then the form moves to Ethereum and stays there', async () => {

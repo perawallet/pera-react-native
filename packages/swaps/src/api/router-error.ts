@@ -11,13 +11,14 @@
  */
 
 import { z } from 'zod'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
-
-import { unwrapNetworkError } from '../errors/unwrap'
-import { baseUnitsSchema } from './router-asset'
+import {
+    isPeraNetworkError,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 // A malformed limit must not hide the error it came with, so it reads as absent.
-const limitSchema = baseUnitsSchema.nullish().catch(undefined)
+const limitSchema = z.string().regex(/^\d+$/).nullish().catch(undefined)
 
 /** The `{ error, code }` body the swap router and the sponsor route answer with. */
 const routerErrorBodySchema = z.object({
@@ -33,7 +34,9 @@ export type RouterErrorBody = z.infer<typeof routerErrorBodySchema>
 export const resolveRouterErrorBody = (
     error: unknown,
 ): Nullable<RouterErrorBody> => {
-    const raw = unwrapNetworkError(error)
+    const raw = isPeraNetworkError(error)
+        ? (error.originalError ?? error)
+        : error
     const direct = routerErrorBodySchema.safeParse(raw)
     if (direct.success) return direct.data
     const data = (raw as Maybe<{ data?: unknown }>)?.data
