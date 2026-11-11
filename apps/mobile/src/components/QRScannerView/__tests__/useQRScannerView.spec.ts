@@ -33,6 +33,12 @@ vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     })),
 }))
 
+const mockScanLock = vi.fn()
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => ({ scanLock: mockScanLock }),
+}))
+
 const VALID_ADDRESS =
     'VCMJKWOY5P5P7SKMZFFOCEROPJCZOTIJMNIYNUCKH7LRO45JMJP6UYBIJA'
 
@@ -125,6 +131,85 @@ describe('useQRScannerView', () => {
         result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
         result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
         expect(onSuccess).toHaveBeenCalledTimes(1)
+    })
+
+    describe('scan lock haptic', () => {
+        it('plays once when a valid code locks', () => {
+            const { result } = renderHook(() =>
+                useQRScannerView({ isVisible: true, onSuccess: vi.fn() }),
+            )
+
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+
+            expect(mockScanLock).toHaveBeenCalledTimes(1)
+        })
+
+        it('plays once when the frame loop reports the code twice in one tick', () => {
+            const { result } = renderHook(() =>
+                useQRScannerView({ isVisible: true, onSuccess: vi.fn() }),
+            )
+
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+
+            expect(mockScanLock).toHaveBeenCalledTimes(1)
+        })
+
+        it('stays silent for a code the deeplink parser rejects', () => {
+            mockIsValidDeepLink.mockReturnValue(false)
+            const { result } = renderHook(() =>
+                useQRScannerView({ isVisible: true, onSuccess: vi.fn() }),
+            )
+
+            result.current.onBarcodeScanned([{ rawValue: 'not-a-deeplink' }])
+
+            expect(mockScanLock).not.toHaveBeenCalled()
+        })
+
+        it('does not repeat when a caller re-arms on the same code, but plays for a different one', () => {
+            let restart: () => void = () => {}
+            const onSuccess = vi.fn(
+                (_: string, restartScanning: () => void) => {
+                    restart = restartScanning
+                },
+            )
+            const { result } = renderHook(() =>
+                useQRScannerView({
+                    isVisible: true,
+                    onSuccess,
+                    skipDeepLinkHandler: true,
+                }),
+            )
+
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+            act(() => restart())
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+            expect(mockScanLock).toHaveBeenCalledTimes(1)
+
+            act(() => restart())
+            result.current.onBarcodeScanned([{ rawValue: 'another-code' }])
+            expect(mockScanLock).toHaveBeenCalledTimes(2)
+        })
+
+        it('plays again for the same code after the scanner is closed and reopened', () => {
+            const onSuccess = vi.fn()
+            const { result, rerender } = renderHook(
+                ({ isVisible }) =>
+                    useQRScannerView({
+                        isVisible,
+                        onSuccess,
+                        skipDeepLinkHandler: true,
+                    }),
+                { initialProps: { isVisible: true } },
+            )
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+
+            rerender({ isVisible: false })
+            rerender({ isVisible: true })
+            result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+
+            expect(mockScanLock).toHaveBeenCalledTimes(2)
+        })
     })
 
     // The camera stills as soon as a code is accepted, so without this flag a

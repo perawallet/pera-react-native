@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import {
     runOnJS,
     useAnimatedReaction,
@@ -31,14 +32,27 @@ export type BalanceChartPressState = {
  *
  * The strip and dot render straight from shared values and never come through
  * here, so the only consumer is the header text — hence the throttling in
- * useChartSelectionReporter.
+ * useChartSelectionReporter. `onHighlightChange` is for the haptic tick, passed
+ * by one caller per chart (the two hooks per chart see the same press state).
  */
 export const useChartPressSelection = <T>(
     pressState: BalanceChartPressState,
     series: Optional<T[]>,
     onSelectionChanged: (item: Nullable<T>) => void,
+    onHighlightChange?: () => void,
 ): void => {
     const report = useChartSelectionReporter(series, onSelectionChanged)
+
+    // The tick rides the hop that already reports a changed index, so scrubbing
+    // costs no extra UI-to-JS crossing. It runs per index change; only the
+    // selection report is throttled.
+    const handleIndexChange = useCallback(
+        (index: number) => {
+            onHighlightChange?.()
+            report(index)
+        },
+        [onHighlightChange, report],
+    )
 
     useAnimatedReaction(
         () => ({
@@ -53,7 +67,7 @@ export const useChartPressSelection = <T>(
                 return
             }
             if (previous?.isActive && current.index === previous.index) return
-            runOnJS(report)(current.index)
+            runOnJS(handleIndexChange)(current.index)
         },
     )
 }

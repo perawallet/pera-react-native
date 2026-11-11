@@ -58,6 +58,7 @@ export const BackupCodeEntry = ({
         length: SYNC_CODE_LENGTH,
         // A new title means a new step, so the dots must not carry over.
         resetKey: title,
+        hasError,
     })
 
     return (
