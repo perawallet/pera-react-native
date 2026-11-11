@@ -32,11 +32,7 @@ export {
     setOpenSubmissionStatus,
     type SetOpenSubmissionStatusParams,
 } from './repository'
-export {
-    subscribeToSubmissionLedger,
-    watchSubmissionOutcome,
-    type SubmissionOutcome,
-} from './ledger-events'
+export { subscribeToSubmissionLedger } from './ledger-events'
 export { SubmissionAttemptsSchema, TransactionBatchesSchema } from './schema'
 export {
     DELEGATION_SUBMISSION_FLOW,

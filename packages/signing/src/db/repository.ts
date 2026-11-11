@@ -47,11 +47,7 @@ import {
     type ChainSubmissionData,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    forgetSettled,
-    notifySubmissionLedgerChanged,
-    notifySubmissionSettled,
-} from './ledger-events'
+import { notifySubmissionLedgerChanged } from './ledger-events'
 import {
     ReviewApprovalsSchema,
     SubmissionAttemptsSchema,
@@ -173,7 +169,6 @@ export const recordSubmissionAttempt = async ({
             replacesAttemptId: replacesAttemptId ?? null,
         })
         .run()
-    forgetSettled(txIds)
     notifySubmissionLedgerChanged()
     return id
 }
@@ -195,14 +190,6 @@ export const resolveSubmissionAttempt = async ({
         .where(eq(SubmissionAttemptsSchema.id, id))
         .run()
     notifySubmissionLedgerChanged()
-    const row = await db
-        .select({ txIdsJson: SubmissionAttemptsSchema.txIdsJson })
-        .from(SubmissionAttemptsSchema)
-        .where(eq(SubmissionAttemptsSchema.id, id))
-        .get()
-    if (row) {
-        notifySubmissionSettled(JSON.parse(row.txIdsJson) as string[], status)
-    }
 }
 
 export type SetOpenSubmissionStatusParams = {
