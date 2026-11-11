@@ -1447,6 +1447,11 @@
         }
     },
     "peraCard": {
+        "service_unavailable": {
+            "title": "Pera Card geçici olarak kullanılamıyor",
+            "body": "Lütfen birkaç dakika sonra tekrar dene.",
+            "body_with_reference": "Lütfen birkaç dakika sonra tekrar dene. Referans: {{reference}}"
+        },
         "account": {
             "navigation_title": "Pera Card",
             "linked_to": "{{name}} hesabına bağlı",

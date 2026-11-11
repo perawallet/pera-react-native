@@ -34,6 +34,7 @@ import {
     isConnectivityError,
     isPeraNetworkError,
     type Maybe,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,7 +56,45 @@ export type CardErrorToastKeys = {
     shouldUseBackendMessage?: boolean
 }
 
-export type CardErrorCopy = { titleKey: I18nKey; bodyKey: I18nKey }
+export type CardErrorCopy = {
+    titleKey: I18nKey
+    bodyKey: I18nKey
+    bodyValues?: Record<string, string>
+}
+
+// Enough of Baanx's correlation id for support to match the logged call; the
+// whole UUID is too long to read off a toast.
+const REFERENCE_LENGTH = 8
+
+// Stock server texts that tell the user nothing; any other message Baanx sends
+// with a 5xx is its own explanation and is shown as is.
+const GENERIC_SERVER_MESSAGES = new Set([
+    'internal server error',
+    'internal error',
+    'server error',
+    'bad gateway',
+    'service unavailable',
+    'gateway timeout',
+    'gateway time-out',
+    'something went wrong',
+    'an error occurred',
+    'an unexpected error occurred',
+    'unexpected error',
+    'unknown error',
+    'error',
+])
+
+const isGenericServerMessage = (message: Optional<string>): boolean => {
+    if (!message) return true
+    const normalized = message
+        .trim()
+        .toLowerCase()
+        .replace(/[.!]+$/, '')
+    return (
+        GENERIC_SERVER_MESSAGES.has(normalized) ||
+        normalized.startsWith('request failed with status code')
+    )
+}
 
 // Direct Baanx/AB calls surface ky's TimeoutError; proxied ones arrive wrapped.
 const isTimeoutError = (error: unknown): boolean =>
@@ -165,6 +204,25 @@ export const resolveCardErrorCopy = (
             bodyKey: i18nKey('peraCard.account.insufficient_algo_body'),
         }
     }
+    if (
+        apiError?.status !== undefined &&
+        apiError.status >= 500 &&
+        isGenericServerMessage(apiError.message)
+    ) {
+        const reference = apiError.correlationId?.slice(0, REFERENCE_LENGTH)
+        return reference
+            ? {
+                  titleKey: i18nKey('peraCard.service_unavailable.title'),
+                  bodyKey: i18nKey(
+                      'peraCard.service_unavailable.body_with_reference',
+                  ),
+                  bodyValues: { reference },
+              }
+            : {
+                  titleKey: i18nKey('peraCard.service_unavailable.title'),
+                  bodyKey: i18nKey('peraCard.service_unavailable.body'),
+              }
+    }
     return undefined
 }
 
@@ -199,7 +257,7 @@ export const useCardErrorToast = ({
             const copy = resolveCardErrorCopy(error, scope, apiError)
             if (copy === null) return
             if (copy) {
-                errorToast(t(copy.titleKey), t(copy.bodyKey))
+                errorToast(t(copy.titleKey), t(copy.bodyKey, copy.bodyValues))
                 return
             }
             if (!shouldUseBackendMessage) {

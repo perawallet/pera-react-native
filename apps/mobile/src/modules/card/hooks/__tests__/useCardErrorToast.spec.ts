@@ -235,6 +235,28 @@ describe('useCardErrorToast', () => {
         )
     })
 
+    it("shows the unavailable copy instead of Baanx's server-error text", async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current({
+                response: {
+                    status: 502,
+                    headers: new Headers({
+                        'x-correlation-id':
+                            '1a2b3c4d-5e6f-4a1b-9c2d-0e1f2a3b4c5d',
+                    }),
+                },
+                data: { message: 'Internal server error' },
+            })
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.service_unavailable.title',
+            expect.not.stringContaining('Internal server error'),
+        )
+    })
+
     it('stays silent when the user declined the signing prompt', async () => {
         const { result } = renderHook(() => useCardErrorToast())
 
@@ -327,7 +349,58 @@ describe('resolveCardErrorCopy', () => {
     it('returns undefined for errors it cannot name', () => {
         expect(resolveCardErrorCopy(new Error('boom'), SCOPE)).toBeUndefined()
         expect(
-            resolveCardErrorCopy(new Error('boom'), SCOPE, { status: 500 }),
+            resolveCardErrorCopy(new Error('boom'), SCOPE, { status: 403 }),
         ).toBeUndefined()
+    })
+
+    it('names a server error as unavailable, with the start of the correlation id as a reference', () => {
+        expect(
+            resolveCardErrorCopy(new Error('HTTP 503'), SCOPE, {
+                status: 503,
+                correlationId: '1a2b3c4d-5e6f-4a1b-9c2d-0e1f2a3b4c5d',
+            }),
+        ).toEqual({
+            titleKey: 'peraCard.service_unavailable.title',
+            bodyKey: 'peraCard.service_unavailable.body_with_reference',
+            bodyValues: { reference: '1a2b3c4d' },
+        })
+    })
+
+    it.each([
+        'Internal server error',
+        'Internal Server Error.',
+        'Bad Gateway',
+        'Service Unavailable',
+        'something went wrong',
+        'Request failed with status code 500',
+    ])('treats the generic server message %j as no message', message => {
+        expect(
+            resolveCardErrorCopy(new Error('HTTP 500'), SCOPE, {
+                status: 500,
+                message,
+            }),
+        ).toEqual({
+            titleKey: 'peraCard.service_unavailable.title',
+            bodyKey: 'peraCard.service_unavailable.body',
+        })
+    })
+
+    it("leaves a server error that carries Baanx's own explanation to the caller", () => {
+        expect(
+            resolveCardErrorCopy(new Error('HTTP 503'), SCOPE, {
+                status: 503,
+                message: 'Registration is temporarily unavailable',
+                correlationId: '1a2b3c4d-5e6f-4a1b-9c2d-0e1f2a3b4c5d',
+            }),
+        ).toBeUndefined()
+    })
+
+    it('leaves the reference out when the server error has no correlation id', () => {
+        expect(
+            resolveCardErrorCopy(new Error('HTTP 500'), SCOPE, { status: 500 }),
+        ).toEqual({
+            titleKey: 'peraCard.service_unavailable.title',
+            bodyKey: 'peraCard.service_unavailable.body',
+        })
     })
 })

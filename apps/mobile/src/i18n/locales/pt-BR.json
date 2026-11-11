@@ -1447,6 +1447,11 @@
         }
     },
     "peraCard": {
+        "service_unavailable": {
+            "title": "O Pera Card está temporariamente indisponível",
+            "body": "Tente novamente em alguns minutos.",
+            "body_with_reference": "Tente novamente em alguns minutos. Referência: {{reference}}"
+        },
         "account": {
             "navigation_title": "Pera Card",
             "linked_to": "Vinculado a {{name}}",
