@@ -197,6 +197,7 @@ export {
     decodeArbitraryDataForDisplay,
     getDelegatedUnsignableReason,
     resolveAllSignerAddresses,
+    resolveSigningAccounts,
     reviewedAddressesOf,
     reviewerChainAdapters,
     type ArbitraryDataDisplay,

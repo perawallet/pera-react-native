@@ -21,8 +21,12 @@ import type { SignRequest } from '@perawallet/wallet-core-signing'
 import {
     getRekeyedUnsignableReason,
     resolveAllSignerAddresses,
+    resolveSigningAccounts,
 } from '../getRekeyedUnsignableReason'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
+import { generateMultisigAddress } from '../../multisig/address'
+import { encodeTransactionRaw } from '../../blockchain/utils/transact'
+import { decodeUnsignedAlgorandTransaction } from '../unsignedTransaction'
 import { Address } from 'algosdk'
 import {
     asUnsignedAlgorandTransaction,
@@ -32,12 +36,14 @@ import {
     makeUnsignedAlgorandTransaction,
 } from './transactions'
 
+const SCOPE = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
 const OK_SENDER = makeTestAddress(10).toString()
 const REKEYED_EXTERNAL = makeTestAddress(11).toString()
 const REKEYED_TO_WATCH = makeTestAddress(12).toString()
 const EXTERNAL_AUTH = makeTestAddress(13).toString()
 const WATCH_AUTH = makeTestAddress(14).toString()
 const UNKNOWN = makeTestAddress(15).toString()
+const UNKNOWN_HELD = makeTestAddress(16).toString()
 
 const accounts = [
     {
@@ -89,20 +95,38 @@ beforeEach(() => {
     seedAuthority(REKEYED_TO_WATCH, WATCH_AUTH)
 })
 
+const paymentFrom = (sender: string) =>
+    makeTestPaymentTx(Address.fromString(sender), {
+        receiver: makeTestAddress(7),
+        genesisHash: MAINNET_GENESIS_HASH,
+    })
+
 const txRequest = (senders: string[], overrides: object = {}): SignRequest =>
     ({
         id: 'r1',
         type: 'transactions',
         transport: 'network',
         txs: senders.map(sender =>
-            asUnsignedAlgorandTransaction(
-                makeTestPaymentTx(Address.fromString(sender), {
-                    receiver: makeTestAddress(7),
-                    genesisHash: MAINNET_GENESIS_HASH,
-                }),
-            ),
+            asUnsignedAlgorandTransaction(paymentFrom(sender)),
         ),
         ...overrides,
+    }) as SignRequest
+
+// ARC-0001 `signers: [signer]` for `sender`: the payload carries the named
+// signer as its authority, as `enqueueArc0001SignRequest` builds it.
+const namedSignerRequest = (sender: string, signer: string): SignRequest =>
+    ({
+        id: 'r1',
+        type: 'transactions',
+        transport: 'network',
+        txs: [
+            asUnsignedAlgorandTransaction(paymentFrom(sender), {
+                authorizer: signer,
+            }),
+        ],
+        chainData: {
+            algorand: { signerOverrides: new Map([[0, signer]]) },
+        },
     }) as SignRequest
 
 describe('getRekeyedUnsignableReason', () => {
@@ -145,17 +169,122 @@ describe('getRekeyedUnsignableReason', () => {
         })
     })
 
-    it('honors per-index signer overrides', () => {
-        const request = txRequest([OK_SENDER], {
+    // The wallet stamps a rekeyed sender's payload with its authority, so an
+    // override naming the sender there signs for it through that rekey.
+    it('checks an override naming the sender as the sender, following its rekey', () => {
+        const request = {
+            id: 'r1',
+            type: 'transactions',
+            transport: 'network',
+            txs: [
+                asUnsignedAlgorandTransaction(paymentFrom(REKEYED_EXTERNAL), {
+                    authorizer: EXTERNAL_AUTH,
+                }),
+            ],
             chainData: {
                 algorand: { signerOverrides: new Map([[0, REKEYED_EXTERNAL]]) },
             },
-        })
+        } as SignRequest
         expect(getRekeyedUnsignableReason(request, accounts)).toEqual({
             kind: 'authMissing',
             senderAddress: REKEYED_EXTERNAL,
             authAddress: EXTERNAL_AUTH,
         })
+    })
+
+    // ARC-0001 `authAddr` equal to the sender: its own key signs, so the rekey
+    // to an account the wallet doesn't hold is no obstacle.
+    it('checks an authAddr naming the sender against its own key, not its rekey', () => {
+        expect(
+            getRekeyedUnsignableReason(
+                namedSignerRequest(REKEYED_EXTERNAL, REKEYED_EXTERNAL),
+                accounts,
+            ),
+        ).toBeNull()
+    })
+
+    // A dApp's escrow rekeyed to REKEYED_EXTERNAL: its own key signs, whatever
+    // REKEYED_EXTERNAL is itself rekeyed to.
+    it("doesn't follow the rekey of an account named to sign another's transaction", () => {
+        expect(
+            getRekeyedUnsignableReason(
+                namedSignerRequest(UNKNOWN, REKEYED_EXTERNAL),
+                accounts,
+            ),
+        ).toBeNull()
+    })
+
+    it("reports an account named to sign another's transaction whose own key the wallet doesn't hold", () => {
+        expect(
+            getRekeyedUnsignableReason(
+                namedSignerRequest(UNKNOWN, WATCH_AUTH),
+                accounts,
+            ),
+        ).toEqual({
+            kind: 'authKeyMissing',
+            senderAddress: UNKNOWN,
+            authAddress: WATCH_AUTH,
+        })
+    })
+
+    // The pipeline's own test (`hasSignerCredential`): a key on another chain
+    // signs nothing here.
+    it('reports a named signer whose only key is on another chain', () => {
+        const otherChainKeyed = {
+            id: 'other-chain-keyed',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                [ALGORAND_CHAIN_ID]: { address: UNKNOWN_HELD },
+                other: { address: 'OTHER', keyPairId: 'kp-other' },
+            },
+        } as unknown as WalletAccount
+
+        expect(
+            getRekeyedUnsignableReason(
+                namedSignerRequest(UNKNOWN, UNKNOWN_HELD),
+                [...accounts, otherChainKeyed],
+            ),
+        ).toEqual({
+            kind: 'authKeyMissing',
+            senderAddress: UNKNOWN,
+            authAddress: UNKNOWN_HELD,
+        })
+    })
+
+    // A participant signs for the joint account, not as its authority, so the
+    // planner follows its rekey and the review must check it the same way.
+    it("checks a multisig participant's override through the participant's rekey", () => {
+        const participants = [REKEYED_EXTERNAL, OK_SENDER]
+        const joint = generateMultisigAddress(1, 1, participants)
+        const unsigned = decodeUnsignedAlgorandTransaction(
+            encodeTransactionRaw(paymentFrom(joint)),
+            SCOPE,
+            { version: 1, threshold: 1, addresses: participants },
+        )
+        const request = {
+            id: 'r1',
+            type: 'transactions',
+            transport: 'network',
+            txs: [unsigned],
+            chainData: {
+                algorand: { signerOverrides: new Map([[0, REKEYED_EXTERNAL]]) },
+            },
+        } as unknown as SignRequest
+
+        expect(getRekeyedUnsignableReason(request, accounts)).toEqual({
+            kind: 'authMissing',
+            senderAddress: REKEYED_EXTERNAL,
+            authAddress: EXTERNAL_AUTH,
+        })
+    })
+
+    it('reports nothing for an override the payload does not sign with, which the pipeline refuses', () => {
+        const request = txRequest([UNKNOWN], {
+            chainData: {
+                algorand: { signerOverrides: new Map([[0, WATCH_AUTH]]) },
+            },
+        })
+        expect(getRekeyedUnsignableReason(request, accounts)).toBeNull()
     })
 
     it('covers arbitrary-data signers', () => {
@@ -199,6 +328,32 @@ describe('getRekeyedUnsignableReason', () => {
         expect(
             getRekeyedUnsignableReason(txRequest([UNKNOWN]), accounts),
         ).toBeNull()
+    })
+})
+
+describe('resolveSigningAccounts', () => {
+    const addressesOf = (signers: WalletAccount[]) =>
+        signers.map(signer => signer.chains[ALGORAND_CHAIN_ID]?.address)
+
+    beforeEach(() => seedAuthority(REKEYED_EXTERNAL, OK_SENDER))
+
+    it("resolves a sender's own signer through its rekey", () => {
+        expect(
+            addressesOf(
+                resolveSigningAccounts(txRequest([REKEYED_EXTERNAL]), accounts),
+            ),
+        ).toEqual([OK_SENDER])
+    })
+
+    it("keeps a named signer itself, not the account it's rekeyed to", () => {
+        expect(
+            addressesOf(
+                resolveSigningAccounts(
+                    namedSignerRequest(UNKNOWN, REKEYED_EXTERNAL),
+                    accounts,
+                ),
+            ),
+        ).toEqual([REKEYED_EXTERNAL])
     })
 })
 

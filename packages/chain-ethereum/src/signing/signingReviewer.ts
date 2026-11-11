@@ -15,6 +15,7 @@ import type {
     TransactionNative,
     TransactionReviewer,
 } from '@perawallet/wallet-core-chain-contract'
+import { getSignerFor } from '@perawallet/wallet-core-accounts'
 import { decodePrintableUtf8 } from '@perawallet/wallet-core-shared'
 import {
     bridgeTransactionReviewer,
@@ -22,6 +23,7 @@ import {
     isUnsignedTransactionRequest,
     type ArbitraryDataDisplay,
     type ReviewerChainAdapter,
+    type SignRequest,
     type SingleTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { EvmChain } from '../chains/types'
@@ -63,6 +65,18 @@ const decodeArbitraryDataForDisplay = (data: string): ArbitraryDataDisplay => {
         : { kind: 'text', text }
 }
 
+const signerAddressesOf = (request: SignRequest, chain: EvmChain): string[] => {
+    if (!isTransactionRequest(request)) return []
+    if (!isUnsignedTransactionRequest(request)) return []
+    return request.txs.flatMap(unsigned => {
+        try {
+            return [readEvmTransaction(unsigned, chain).from]
+        } catch {
+            return []
+        }
+    })
+}
+
 /** Decoder, warnings and policy are the chain-contract reviewer's, so review behaves the same whichever registry serves it. */
 export const createEvmSigningReviewerAdapter = (
     chain: EvmChain,
@@ -74,17 +88,11 @@ export const createEvmSigningReviewerAdapter = (
     classifyRequestStructure: items => (items.length > 1 ? 'list' : 'single'),
     // The reviewer's warnings already cover every transaction.
     aggregateTransactionWarnings: () => [],
-    resolveAllSignerAddresses: request => {
-        if (!isTransactionRequest(request)) return []
-        if (!isUnsignedTransactionRequest(request)) return []
-        return request.txs.flatMap(unsigned => {
-            try {
-                return [readEvmTransaction(unsigned, chain).from]
-            } catch {
-                return []
-            }
-        })
-    },
+    resolveAllSignerAddresses: request => signerAddressesOf(request, chain),
+    resolveSigningAccounts: (request, accounts) =>
+        signerAddressesOf(request, chain).flatMap(
+            address => getSignerFor(address, accounts, chain.row.id) ?? [],
+        ),
     // No rekeying on Ethereum.
     getDelegatedUnsignableReason: () => null,
     decodeArbitraryDataForDisplay,
