@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-projects
-vi.mock('@perawallet/wallet-core-projects', () => ({
+vi.mock('@perawallet/wallet-core-projects', async () => ({
     useProjectByUrlQuery: vi.fn(() => ({
         data: null,
         isLoading: false,
@@ -31,6 +31,17 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
         isLoading: false,
         isError: false,
         error: null,
+    })),
+    projectQueryKeys: (
+        await vi.importActual<
+            typeof import('@packages/projects/src/hooks/querykeys')
+        >('@packages/projects/src/hooks/querykeys')
+    ).projectQueryKeys,
+    useDiscoverProjectsQuery: vi.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        refetch: vi.fn(async () => undefined),
     })),
 }))
 

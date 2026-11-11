@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { hasPeraBackend } from '@perawallet/wallet-core-config'
 import { projectListResponseSchema, type ProjectApiResponse } from './schema'
@@ -38,6 +41,37 @@ export const fetchProjectByUrl = async (
         method: 'GET',
         url: '/v1/projects/',
         params: { url: sourceUrl },
+        signal,
+    })
+
+    const validated = projectListResponseSchema.parse(response.data)
+    return transformProjectList(validated)
+}
+
+export type DiscoverPlatform = 'ios' | 'android'
+
+export type FetchDiscoverProjectsParams = {
+    deployment: WalletMode
+    platform: DiscoverPlatform
+    chains?: readonly string[]
+    signal?: AbortSignal
+}
+
+export const fetchDiscoverProjects = async (
+    params: FetchDiscoverProjectsParams,
+): Promise<PeraProject[]> => {
+    const { deployment, platform, chains, signal } = params
+
+    const response = await queryClient<ProjectApiResponse[]>({
+        backend: 'pera',
+        deployment,
+        method: 'GET',
+        url: '/v1/discover/projects/',
+        params: {
+            platform,
+            order: '-popularity',
+            ...(chains?.length ? { chains: chains.join(',') } : {}),
+        },
         signal,
     })
 

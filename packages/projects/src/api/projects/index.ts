@@ -10,4 +10,10 @@
  limitations under the License
  */
 
-export { fetchProjectByUrl, type FetchProjectByUrlParams } from './endpoints'
+export {
+    fetchProjectByUrl,
+    fetchDiscoverProjects,
+    type FetchProjectByUrlParams,
+    type FetchDiscoverProjectsParams,
+    type DiscoverPlatform,
+} from './endpoints'

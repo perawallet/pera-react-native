@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { fetchProjectByUrl } from '../endpoints'
+import { fetchDiscoverProjects, fetchProjectByUrl } from '../endpoints'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -65,6 +65,7 @@ describe('fetchProjectByUrl', () => {
                 backgroundImage: 'https://test.com/bg.png',
                 categories: [],
                 popularityScore: 10,
+                chains: [],
             },
         ])
     })
@@ -110,5 +111,69 @@ describe('fetchProjectByUrl', () => {
             expect(result).toHaveLength(1)
             expect(mockQueryClient).toHaveBeenCalledTimes(1)
         })
+    })
+})
+
+describe('fetchDiscoverProjects', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    test('sends the platform, popularity order and joined chains', async () => {
+        mockQueryClient.mockResolvedValue({
+            data: [
+                {
+                    id: 'p1',
+                    name: 'Uniswap',
+                    url: 'https://app.uniswap.org',
+                    description: 'A DEX',
+                    short_description: 'DEX',
+                    logo_png: 'https://app.uniswap.org/logo.png',
+                    verification_tier: 'verified',
+                    chains: ['eip155:1'],
+                },
+            ],
+        })
+
+        const result = await fetchDiscoverProjects({
+            deployment: 'live',
+            platform: 'ios',
+            chains: ['b', 'a'],
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith({
+            backend: 'pera',
+            deployment: 'live',
+            method: 'GET',
+            url: '/v1/discover/projects/',
+            params: { platform: 'ios', order: '-popularity', chains: 'b,a' },
+            signal: undefined,
+        })
+        expect(result).toEqual([
+            expect.objectContaining({
+                id: 'p1',
+                name: 'Uniswap',
+                chains: ['eip155:1'],
+            }),
+        ])
+    })
+
+    test('omits the chains param when no chain is given', async () => {
+        mockQueryClient.mockResolvedValue({ data: [] })
+
+        await fetchDiscoverProjects({
+            deployment: 'live',
+            platform: 'android',
+            chains: [],
+        })
+
+        const call = mockQueryClient.mock.calls[0][0] as {
+            params: Record<string, string>
+        }
+        expect(call.params).toEqual({
+            platform: 'android',
+            order: '-popularity',
+        })
+        expect('chains' in call.params).toBe(false)
     })
 })

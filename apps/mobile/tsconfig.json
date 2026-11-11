@@ -61,6 +61,9 @@
       "@packages/*": [
         "../../packages/*"
       ],
+      "@perawallet/wallet-core-projects/test-handlers": [
+        "../../packages/projects/src/test-handlers.ts"
+      ],
       "@perawallet/wallet-core-card/test-handlers": [
         "../../packages/card/src/test-handlers.ts"
       ],
