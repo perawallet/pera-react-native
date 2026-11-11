@@ -39,12 +39,20 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     }
 })
 
+const mockDebounce = vi.hoisted(() => ({ isReal: false }))
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...original,
-        useDebouncedValue: <T>(value: T) => value,
+        useDebouncedValue: <T>(
+            value: T,
+            delay?: number,
+            isEqual?: (a: T, b: T) => boolean,
+        ) =>
+            mockDebounce.isReal
+                ? original.useDebouncedValue(value, delay, isEqual)
+                : value,
     }
 })
 
@@ -89,6 +97,7 @@ const baseParams = {
 describe('useSwapQuotes', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockDebounce.isReal = false
         mockAssetsQueryResult = makeAssetsResult(['0', '31566704'])
         mockUseAssetsQuery.mockImplementation(() => mockAssetsQueryResult)
         mockCreateQuotes.mockResolvedValue([])
@@ -291,6 +300,59 @@ describe('useSwapQuotes', () => {
                 expect(mockCreateQuotes).toHaveBeenCalledTimes(2),
             )
             expect(result.current.quoteFailure).toBeNull()
+        })
+
+        it('re-quotes an amount edited and restored inside the debounce', async () => {
+            mockDebounce.isReal = true
+            const { result, rerender } = renderHook(
+                (props: typeof baseParams) => useSwapQuotes(props),
+                { initialProps: baseParams },
+            )
+            await waitFor(
+                () =>
+                    expect(result.current.quoteFailure).toEqual({
+                        kind: 'no-route',
+                    }),
+                { timeout: 2000 },
+            )
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+            rerender({ ...baseParams, payAmount: new Decimal(12) })
+            act(() => result.current.reset())
+            rerender(baseParams)
+            act(() => result.current.reset())
+
+            await waitFor(
+                () =>
+                    expect(result.current.quoteFailure).toEqual({
+                        kind: 'no-route',
+                    }),
+                { timeout: 2000 },
+            )
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+        })
+
+        it('asks once for an edited amount, after it settles', async () => {
+            mockDebounce.isReal = true
+            const { rerender } = renderHook(
+                (props: typeof baseParams) => useSwapQuotes(props),
+                { initialProps: baseParams },
+            )
+            await waitFor(
+                () => expect(mockCreateQuotes).toHaveBeenCalledTimes(1),
+                { timeout: 2000 },
+            )
+
+            rerender({ ...baseParams, payAmount: new Decimal(2) })
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+            await waitFor(
+                () => expect(mockCreateQuotes).toHaveBeenCalledTimes(2),
+                { timeout: 2000 },
+            )
+            expect(mockCreateQuotes.mock.calls[1][0].sourceAmount).toEqual(
+                new Decimal(2_000_000),
+            )
         })
     })
 

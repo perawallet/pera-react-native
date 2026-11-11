@@ -147,6 +147,10 @@ export const useSwapQuotes = ({
         QUOTE_DEBOUNCE_MS,
         isDecimalEqual,
     )
+    // A dep of the quote effect: an edit undone inside the debounce leaves
+    // debouncedPayAmount unchanged, so only this settling re-runs the quote
+    // that the edit's reset() cleared.
+    const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
 
     const reset = useCallback(() => {
         setAllQuotes([])
@@ -196,6 +200,7 @@ export const useSwapQuotes = ({
             return
         }
         if (notFoundPair === pairKey) return
+        if (isDebouncing) return
 
         const amountInBaseUnits = displayUnitsToBaseUnits(
             debouncedPayAmount,
@@ -272,6 +277,7 @@ export const useSwapQuotes = ({
         isPairOnNetwork,
         notFoundPair,
         refreshNonce,
+        isDebouncing,
     ])
 
     const failureForAmount =
@@ -283,7 +289,6 @@ export const useSwapQuotes = ({
             ? UNSUPPORTED_FAILURE
             : failureForAmount
     const isQuoteError = quoteFailure !== null
-    const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
     const hasUnresolvedQuote =
         payAmount !== null &&
         !payAmount.isZero() &&
