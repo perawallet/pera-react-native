@@ -25,7 +25,6 @@ import {
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { mockDiscoverProjects } from '@perawallet/wallet-core-projects/test-handlers'
-import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useWebViewStore } from '@modules/webview'
@@ -85,6 +84,21 @@ const pickFilter = (filter: 'all' | 'markets' | 'dapps') => {
 }
 
 const lastWebView = () => useWebViewStore.getState().openWebViews.at(-1)
+
+// Waits out the debounce and both searches, so no timer or query update lands
+// after the test body ends.
+const settled = async () => {
+    await waitFor(
+        () => {
+            expect(screen.queryByTestId('discover_search_loading')).toBeNull()
+        },
+        { timeout: 4000 },
+    )
+    // Lets React Query's batched notifications land inside act.
+    await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0))
+    })
+}
 
 const waitForResults = async () => {
     await waitFor(
@@ -159,7 +173,6 @@ describe('Flow: Discover search', () => {
 
     afterEach(() => {
         vi.restoreAllMocks()
-        useRemoteConfigStore.getState().resetState()
     })
 
     it('Given the user types uni, then All lists the web search, the dApp and the asset, and each chip narrows the list', async () => {
@@ -196,9 +209,10 @@ describe('Flow: Discover search', () => {
         })
     })
 
-    it('Given a result with no project behind it, when the user types plain text and submits, then DuckDuckGo opens', async () => {
+    it('Given plain text typed, when the user submits, then DuckDuckGo opens', async () => {
         renderSearch()
         typeQuery('uni')
+        await settled()
         submit()
 
         expect(lastWebView()?.url).toBe('https://duckduckgo.com/?q=uni')
@@ -211,6 +225,7 @@ describe('Flow: Discover search', () => {
     it('Given the user types a domain, when the typed-url row is starred, then a favorite named after the host is stored', async () => {
         renderSearch()
         typeQuery('uniswap.org')
+        await settled()
 
         fireEvent.click(
             await screen.findByTestId('discover_search_typed_url_star'),
@@ -226,6 +241,7 @@ describe('Flow: Discover search', () => {
     it('Given a starred typed domain, when it is submitted, then it opens with a favorite hook that removes the favorite', async () => {
         renderSearch()
         typeQuery('uniswap.org')
+        await settled()
         fireEvent.click(
             await screen.findByTestId('discover_search_typed_url_star'),
         )
@@ -248,9 +264,41 @@ describe('Flow: Discover search', () => {
         ).toBe(false)
     })
 
+    it('Given a typed domain that is also a directory dApp, then only the typed-url row shows for it', async () => {
+        renderSearch()
+        typeQuery('app.uniswap.org')
+        await settled()
+
+        expect(screen.getByTestId('discover_search_typed_url')).toBeTruthy()
+        expect(screen.queryByTestId(DAPP_ROW)).toBeNull()
+
+        pickFilter('dapps')
+        expect(screen.getByTestId(DAPP_ROW)).toBeTruthy()
+    })
+
+    it('Given a submitted domain in recents, when it is reopened, then it keeps the in-browser star', async () => {
+        const first = renderSearch()
+        typeQuery('uniswap.org')
+        await settled()
+        submit()
+        first.unmount()
+        useWebViewStore.getState().clearWebViews()
+
+        renderSearch()
+        fireEvent.click(
+            screen.getByTestId(
+                `discover_search_recent_${recentSearchKey({ kind: 'url', url: 'https://uniswap.org' })}`,
+            ),
+        )
+
+        expect(lastWebView()?.url).toBe('https://uniswap.org')
+        expect(lastWebView()?.favorite).toBeDefined()
+    })
+
     it('Given recent searches, when the screen remounts, then they are listed, and Clear all empties them', async () => {
         const first = renderSearch()
         typeQuery('uni')
+        await settled()
         submit()
         first.unmount()
 
@@ -289,6 +337,7 @@ describe('Flow: Discover search', () => {
 
         pickFilter('dapps')
         expect(screen.queryByText('add_asset.partial_results')).toBeNull()
+        await settled()
     })
 
     it('Given asset search is unavailable on both chains, then the notice shows on All and Markets while the dApp still lists', async () => {
@@ -319,5 +368,6 @@ describe('Flow: Discover search', () => {
             screen.queryByText('discover.search.assets_unavailable'),
         ).toBeNull()
         expect(screen.getByTestId(DAPP_ROW)).toBeTruthy()
+        await settled()
     })
 })

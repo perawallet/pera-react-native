@@ -253,6 +253,15 @@ describe('useDiscoverSearchScreen', () => {
             expect(result.current.assetResults).toEqual([])
         })
 
+        it('drops the dapp row for the typed domain on All, keeping it on dApps', () => {
+            const { result } = setup()
+            typeQuery(result, 'app.uniswap.org')
+            expect(result.current.typedUrl).toBe('https://app.uniswap.org')
+            expect(result.current.dappResults).toEqual([])
+            act(() => result.current.setFilter('dapps'))
+            expect(result.current.dappResults).toHaveLength(1)
+        })
+
         it('offers three chips', () => {
             const { result } = setup()
             expect(result.current.filterOptions.map(o => o.value)).toEqual([
@@ -346,6 +355,31 @@ describe('useDiscoverSearchScreen', () => {
                     chain_id: 'algorand',
                 },
             )
+        })
+
+        it('reopens a searched domain as a dapp, keeping the star, and a DuckDuckGo search as a plain page', () => {
+            const { result } = setup()
+            act(() =>
+                result.current.openRecent({
+                    kind: 'url',
+                    url: 'https://uniswap.org',
+                }),
+            )
+            expect(openDapp).toHaveBeenCalledWith(
+                dappFromUrl('https://uniswap.org'),
+                null,
+            )
+            expect(openWebPage).not.toHaveBeenCalled()
+            act(() =>
+                result.current.openRecent({
+                    kind: 'url',
+                    url: 'https://duckduckgo.com/?q=uniswap.org',
+                }),
+            )
+            expect(openWebPage).toHaveBeenCalledWith(
+                'https://duckduckgo.com/?q=uniswap.org',
+            )
+            expect(openDapp).toHaveBeenCalledTimes(1)
         })
 
         it('reopens each kind of recent', () => {

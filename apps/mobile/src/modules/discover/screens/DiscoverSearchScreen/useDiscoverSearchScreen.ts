@@ -48,6 +48,8 @@ import { looksLikeUrl } from '../../utils/looksLikeUrl'
 import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
 import { dappFromUrl } from '../../utils/toDiscoverDapp'
 
+const WEB_SEARCH_URL_PREFIX = 'https://duckduckgo.com/?q='
+
 export type DiscoverSearchFilter = 'all' | 'markets' | 'dapps'
 
 export type UseDiscoverSearchScreenResult = {
@@ -128,11 +130,6 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
         () => filterDappsByQuery(directory.projects, debounced),
         [directory.projects, debounced],
     )
-    const dappResults = useMemo(
-        () => (filter === 'markets' ? [] : matchedDapps),
-        [filter, matchedDapps],
-    )
-
     // Every chip shares one asset query, so a chip change never refetches.
     const assetSearch = useAssetSearchAcrossScopesQuery(debounced, scopes, {
         enabled: debounced.trim().length > 0,
@@ -147,6 +144,14 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
             looksLikeUrl(query) ? toValidatedBrowserUrl(query.trim()) : null,
         [query],
     )
+
+    // The typed-URL row already stands for a directory dApp at the same url.
+    const dappResults = useMemo(() => {
+        if (filter === 'markets') return []
+        if (typedUrl === null || filter !== 'all') return matchedDapps
+        const typedKey = normalizeDappUrl(typedUrl)
+        return matchedDapps.filter(d => normalizeDappUrl(d.url) !== typedKey)
+    }, [filter, matchedDapps, typedUrl])
 
     const verifiedUrls = directory.verifiedUrls
     const isVerified = useCallback(
@@ -193,7 +198,7 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
     }, [typedUrl, pushRecent, openDappPage])
 
     const openWebSearch = useCallback(() => {
-        const url = `https://duckduckgo.com/?q=${encodeURIComponent(query.trim())}`
+        const url = `${WEB_SEARCH_URL_PREFIX}${encodeURIComponent(query.trim())}`
         pushRecent({ kind: 'url', url })
         trackEvent(DiscoverEvent.SearchResultTap, { [Key.DappUrl]: url })
         openWebPage(url)
@@ -237,7 +242,13 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
                     trackEvent(DiscoverEvent.SearchResultTap, {
                         [Key.DappUrl]: recent.url,
                     })
-                    openWebPage(recent.url)
+                    // A searched domain reopens as the typed-URL row opens it, so
+                    // the in-browser star survives; a DuckDuckGo search stays plain.
+                    const dapp = recent.url.startsWith(WEB_SEARCH_URL_PREFIX)
+                        ? null
+                        : dappFromUrl(recent.url)
+                    if (dapp === null) openWebPage(recent.url)
+                    else openDappPage(dapp, null)
                     return
                 }
                 case 'dapp': {

@@ -253,11 +253,13 @@ export const DiscoverSearchScreen = () => {
             }
             case 'loading': {
                 return (
-                    <LoadingView
-                        variant='skeleton'
-                        size='sm'
-                        count={LOADING_ROW_COUNT}
-                    />
+                    <PWView testID='discover_search_loading'>
+                        <LoadingView
+                            variant='skeleton'
+                            size='sm'
+                            count={LOADING_ROW_COUNT}
+                        />
+                    </PWView>
                 )
             }
         }
