@@ -29,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
 export type SwapExecutionStatus =
@@ -131,6 +132,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
 
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
+    const { watchOutcome, handleSubmitError, playFailure } =
+        useTransactionOutcomeHaptics()
     const { mutateAsync: executeSwap, reset: resetMutation } =
         useExecuteSwapMutation()
     const cancelRequestedRef = useRef(false)
@@ -278,6 +281,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setStatus(STATUS_BY_RESULT[result.kind])
             if (result.kind === 'success') {
                 setTxIds(result.txIds)
+                // One haptic per swap: a multi-group or approve-then-swap run
+                // settles on its last transaction.
+                const lastTxId = result.txIds.at(-1)
+                if (lastTxId !== undefined) watchOutcome(lastTxId)
                 return { kind: 'success' }
             }
             if (result.kind === 'user-rejected') {
@@ -289,6 +296,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             if (result.kind === 'failed') {
                 const { phase } = result.failure
+                // Only a verdict buzzes: a reverted transaction, or a node
+                // refusal. No answer is watched instead, and anything that
+                // failed before the network saw it stays silent.
+                if (result.failure.reason === 'reverted') {
+                    playFailure()
+                } else if (result.failure.reason === 'submission-failed') {
+                    handleSubmitError(result.failure.error)
+                }
                 const { message, title } = describeFailure(result.failure)
                 setError({ phase, message })
                 return title === undefined
@@ -297,7 +312,15 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             return { kind: result.kind }
         },
-        [executeSwap, t, getMessage, describeFailure],
+        [
+            executeSwap,
+            t,
+            getMessage,
+            describeFailure,
+            watchOutcome,
+            handleSubmitError,
+            playFailure,
+        ],
     )
 
     const reset = useCallback(() => {

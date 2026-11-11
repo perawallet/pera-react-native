@@ -49,6 +49,7 @@ import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import {
     clearTabResumeIntent,
     completeTabResume,
@@ -109,6 +110,8 @@ export const useTransactionProcessingScreen =
         const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
+        const { watchOutcome, handleSubmitError } =
+            useTransactionOutcomeHaptics()
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
@@ -206,6 +209,7 @@ export const useTransactionProcessingScreen =
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,
                     })
+                    watchOutcome(txId)
                     completeTabResume(
                         isAwaitingConfirmation
                             ? {
@@ -231,6 +235,7 @@ export const useTransactionProcessingScreen =
                         navigation.goBack()
                         return
                     }
+                    handleSubmitError(error)
                     trackEvent(TransactionsEvent.Failed, {
                         [AnalyticsMetadataKey.ChainId]: scope.chainId,
                         [AnalyticsMetadataKey.ErrorCode]:

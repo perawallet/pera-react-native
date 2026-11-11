@@ -44,6 +44,18 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/native-stack', () => ({}))
 
+const { mockWatchOutcome, mockHandleSubmitError } = vi.hoisted(() => ({
+    mockWatchOutcome: vi.fn(),
+    mockHandleSubmitError: vi.fn(),
+}))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({
+        watchOutcome: mockWatchOutcome,
+        handleSubmitError: mockHandleSubmitError,
+    }),
+}))
+
 const { mockExecute, mockUseTransactionSendFlow } = vi.hoisted(() => {
     const mockExecute = vi.fn()
     return {
@@ -192,6 +204,37 @@ describe('useClaimProcessingScreen', () => {
                     variant: mode,
                 }),
             )
+        })
+
+        it('watches the submitted transaction for its outcome haptic', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-123')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await waitFor(() =>
+                expect(mockWatchOutcome).toHaveBeenCalledWith('tx-id-123'),
+            )
+        })
+
+        it('hands a failed submit to the submit-error haptic', async () => {
+            const executeError = new Error('Network error')
+            mockExecute.mockRejectedValueOnce(executeError)
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+            expect(mockHandleSubmitError).toHaveBeenCalledWith(executeError)
+            expect(mockWatchOutcome).not.toHaveBeenCalled()
+        })
+
+        it('plays no transaction haptic when the user cancels', async () => {
+            mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+            expect(mockHandleSubmitError).not.toHaveBeenCalled()
+            expect(mockWatchOutcome).not.toHaveBeenCalled()
         })
 
         it('goes back without an error toast when the user cancels the signing overlay', async () => {

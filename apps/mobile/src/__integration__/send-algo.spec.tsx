@@ -34,9 +34,11 @@ import {
 } from '@testing-library/react'
 import i18n from 'i18next'
 import { http, HttpResponse } from 'msw'
+import * as Haptics from 'expo-haptics'
 import { Notifier } from 'react-native-notifier'
 import { useNavigation } from '@react-navigation/native'
 
+import { decodeSignedTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { server } from '@test-utils/msw-server'
 import { navigationRef } from '@routes/navigationRef'
 import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
@@ -60,6 +62,8 @@ import {
     useKMS,
     type Algo25KeyResult,
 } from '@perawallet/wallet-core-kms'
+import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
 import { useSendFundsStore } from '@modules/transactions'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
@@ -214,16 +218,25 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // algod with a signed transaction.
         // The screen on show while algod receives the broadcast.
         let screenAtBroadcast = ''
-        const sendSpy = vi.fn(() => {
+        // Echoes the posted transaction's own id, as a real node does: the
+        // confirmation haptic is keyed by it.
+        const sendSpy = vi.fn(async ({ request }: { request: Request }) => {
             screenAtBroadcast = document.body.textContent ?? ''
+            const posted = new Uint8Array(await request.arrayBuffer())
             return HttpResponse.json(
-                {
-                    txId: 'TESTTXID0000000000000000000000000000000000000000000000',
-                },
+                { txId: decodeSignedTransaction(posted).txn.txID() },
                 { status: 200 },
             )
         })
-        server.use(http.post('*/v2/transactions', sendSpy))
+        server.use(
+            http.post('*/v2/transactions', sendSpy),
+            // The default answers 404 so a fabricated txid never confirms;
+            // this test is about the confirmation, so confirm at once.
+            mockAlgodPendingTransaction({
+                status: 200,
+                response: { 'confirmed-round': 101 },
+            }),
+        )
 
         renderSendConfirmationStack()
 
@@ -258,6 +271,15 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         // Algod POST happened with the signed, grouped transaction.
         expect(sendSpy).toHaveBeenCalled()
+
+        // The success haptic belongs to the on-chain confirmation, which the
+        // background wait settles after the screen has already advanced.
+        await waitFor(() =>
+            expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+                Haptics.NotificationFeedbackType.Success,
+            ),
+        )
+        expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1)
 
         // Sender state survived the screen transitions.
         expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
@@ -517,9 +539,51 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
         })
         expectFlowEvents(analytics, 'sendFailed', 'algorand')
+
+        // A node refusal is one failure haptic, never a success.
+        expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1)
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+            Haptics.NotificationFeedbackType.Error,
+        )
+    })
+
+    it('Given a send algod accepted but the chain has not confirmed, when the success screen renders, then no success haptic plays yet', async () => {
+        await seedAlgo25Sender()
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
+        vi.mocked(Haptics.notificationAsync).mockClear()
+
+        // The baseline pending-transaction handler 404s, so the background
+        // wait never confirms: the screen advances, the haptic must not.
+        server.use(
+            http.post('*/v2/transactions', async ({ request }) => {
+                const posted = new Uint8Array(await request.arrayBuffer())
+                return HttpResponse.json(
+                    { txId: decodeSignedTransaction(posted).txn.txID() },
+                    { status: 200 },
+                )
+            }),
+        )
+
+        renderSendConfirmationStack()
+        fireEvent.click(
+            await findEnabledByTestId('send_confirm_button', { timeout: 5000 }),
+        )
+        await waitFor(
+            () => expect(screen.getByTestId('send_success')).toBeTruthy(),
+            { timeout: 10_000 },
+        )
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        expect(Haptics.notificationAsync).not.toHaveBeenCalled()
     })
 
     it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces the status-unknown notice and leaves for History without reaching success', async () => {
+        vi.mocked(Haptics.notificationAsync).mockClear()
         await seedAlgo25Sender()
         useSendFundsStore
             .getState()
@@ -578,6 +642,40 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             'TabBar',
             expect.objectContaining({ screen: 'Home' }),
         )
+
+        // The send may still land, so the unknown outcome is no failure buzz.
+        expect(Haptics.notificationAsync).not.toHaveBeenCalled()
+
+        // Once the reconciler finds it confirmed, that is the one success buzz.
+        server.use(
+            mockAlgodPendingTransaction({
+                status: 200,
+                response: { 'confirmed-round': 101 },
+            }),
+            http.get('*/v2/transactions/:txId', ({ params }) =>
+                HttpResponse.json({
+                    'current-round': 101,
+                    transaction: {
+                        id: String(params.txId),
+                        sender: ALGO25_TEST_ADDRESS,
+                        fee: 1000,
+                        'first-valid': 1000,
+                        'last-valid': 2000,
+                        'tx-type': 'pay',
+                        'confirmed-round': 101,
+                        'round-time': Math.floor(Date.now() / 1000),
+                    },
+                }),
+            ),
+        )
+        await reconcileOpenSubmissions(ALGORAND_CHAIN_ID)
+
+        await waitFor(() =>
+            expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+                Haptics.NotificationFeedbackType.Success,
+            ),
+        )
+        expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1)
     })
 
     it('Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure', async () => {

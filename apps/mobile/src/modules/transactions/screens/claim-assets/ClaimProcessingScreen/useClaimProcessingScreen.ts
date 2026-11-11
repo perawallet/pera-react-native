@@ -34,6 +34,7 @@ import {
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 
 export const useClaimProcessingScreen = () => {
     const navigation =
@@ -45,6 +46,7 @@ export const useClaimProcessingScreen = () => {
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
     const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
+    const { watchOutcome, handleSubmitError } = useTransactionOutcomeHaptics()
 
     const { remove: removeAssetInboxQueries } = useAssetInboxInvalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
@@ -98,6 +100,7 @@ export const useClaimProcessingScreen = () => {
                     transactionId: txId,
                     variant: mode,
                 })
+                watchOutcome(txId)
             })
             .catch(error => {
                 if (error instanceof UserRejectedSigningError) {
@@ -105,6 +108,7 @@ export const useClaimProcessingScreen = () => {
                     navigation.goBack()
                     return
                 }
+                handleSubmitError(error)
                 showError(error, undefined, {
                     notifier: bottomSheetNotifier.current ?? undefined,
                 })

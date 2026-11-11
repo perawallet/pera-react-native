@@ -186,6 +186,18 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
+const { mockWatchOutcome, mockHandleSubmitError } = vi.hoisted(() => ({
+    mockWatchOutcome: vi.fn(),
+    mockHandleSubmitError: vi.fn(),
+}))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({
+        watchOutcome: mockWatchOutcome,
+        handleSubmitError: mockHandleSubmitError,
+    }),
+}))
+
 // One `t` across renders, as react-i18next's is, so memoised callbacks that
 // depend on it keep their identity.
 const { mockT } = vi.hoisted(() => ({
@@ -297,6 +309,46 @@ describe('useAddAssetView', () => {
             optInError,
             'add_asset.opt_in.failed_title',
         )
+    })
+
+    it('watches the opt-in transaction for its outcome haptic', async () => {
+        mockOptIn.mockResolvedValueOnce({ txIds: ['tx-a', 'tx-b'] })
+        mockRequestByType.mockResolvedValueOnce('confirm')
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
+
+        await act(async () => {
+            await result.current.handleRequestAdd(TEST_ASSET)
+        })
+
+        expect(mockWatchOutcome).toHaveBeenCalledTimes(1)
+        expect(mockWatchOutcome).toHaveBeenCalledWith('tx-b')
+        expect(mockHandleSubmitError).not.toHaveBeenCalled()
+    })
+
+    it('hands a failed opt-in to the submit-error haptic, but not a cancelled one', async () => {
+        const optInError = new Error('Network error')
+        mockOptIn
+            .mockRejectedValueOnce(optInError)
+            .mockRejectedValueOnce(new UserRejectedSigningError())
+        mockRequestByType.mockResolvedValue('confirm')
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
+
+        await act(async () => {
+            await result.current.handleRequestAdd(TEST_ASSET)
+        })
+        expect(mockHandleSubmitError).toHaveBeenCalledWith(optInError)
+
+        mockHandleSubmitError.mockClear()
+        await act(async () => {
+            await result.current.handleRequestAdd(TEST_ASSET)
+        })
+
+        expect(mockHandleSubmitError).not.toHaveBeenCalled()
+        expect(mockWatchOutcome).not.toHaveBeenCalled()
     })
 
     it('keeps handleRequestAdd across renders, so the list rows aren’t rebuilt', () => {
