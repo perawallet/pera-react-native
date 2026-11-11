@@ -15,6 +15,7 @@ import {
     getSignerFor,
     useAllAccounts,
     usesNonPrimaryScheme,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
@@ -34,6 +35,11 @@ export type UseQuantumDappWarningResult = {
         addresses: string[],
         chainId: ChainId,
     ) => Promise<QuantumDappWarningDecision>
+    /** The same, for the accounts whose keys sign, already resolved. */
+    confirmQuantumDappSigners: (
+        signers: WalletAccount[],
+        chainId: ChainId,
+    ) => Promise<QuantumDappWarningDecision>
 }
 
 export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
@@ -42,23 +48,17 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
     const { getPreference, setPreference } = usePreferences()
     const { request } = useBottomSheet()
 
-    const confirmQuantumDappUsage = useCallback(
+    const confirmQuantumDappSigners = useCallback(
         async (
-            addresses: string[],
+            signers: WalletAccount[],
             chainId: ChainId,
         ): Promise<QuantumDappWarningDecision> => {
             if (!isEnabled) return 'continue'
             if (getPreference(UserPreferences.quantumDappWarningAcknowledged))
                 return 'continue'
 
-            // The same predicate as the fee resolver: the scheme premium and the
-            // non-primary signature follow the effective signer, so a rekey to a
-            // quantum auth counts too.
-            const hasNonPrimarySigner = addresses.some(address => {
-                const signer = getSignerFor(address, accounts, chainId)
-                return signer !== null && usesNonPrimaryScheme(signer, chainId)
-            })
-            if (!hasNonPrimarySigner) return 'continue'
+            if (!signers.some(signer => usesNonPrimaryScheme(signer, chainId)))
+                return 'continue'
 
             const result = await request<QuantumDappWarningDecision>({
                 contents: <QuantumDappWarningSheet />,
@@ -78,8 +78,22 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
             setPreference(UserPreferences.quantumDappWarningAcknowledged, true)
             return 'continue'
         },
-        [isEnabled, accounts, getPreference, setPreference, request],
+        [isEnabled, getPreference, setPreference, request],
     )
 
-    return { confirmQuantumDappUsage }
+    // The same predicate as the fee resolver: the scheme premium and the
+    // non-primary signature follow the effective signer, so a rekey to a
+    // quantum auth counts too.
+    const confirmQuantumDappUsage = useCallback(
+        (addresses: string[], chainId: ChainId) =>
+            confirmQuantumDappSigners(
+                addresses.flatMap(
+                    address => getSignerFor(address, accounts, chainId) ?? [],
+                ),
+                chainId,
+            ),
+        [accounts, confirmQuantumDappSigners],
+    )
+
+    return { confirmQuantumDappUsage, confirmQuantumDappSigners }
 }

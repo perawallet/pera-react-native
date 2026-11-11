@@ -39,6 +39,7 @@ import {
     buildTransactionSignRequest,
     renderSignReview,
     seedAlgo25Signer,
+    seedQuantumSigner,
     drainPendingSignRequests,
     fireEvent,
     screen,
@@ -54,10 +55,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-import { decodeSignedTransaction } from 'algosdk'
+import { decodeSignedTransaction, generateAccount } from 'algosdk'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    toUnsignedAlgorandTransaction,
+    withAlgorandAuthorizer,
+} from '@perawallet/wallet-core-chain-algorand/signing'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
+import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 
 // The rekeyed sender holds no key of its own — only the auth account can
 // produce a signature, so a completed sign is itself proof of auth routing.
@@ -254,5 +262,129 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
             { timeout: 10_000 },
         )
         expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
+    })
+
+    // ARC-0001 `signers: [B]` for a sender the wallet doesn't hold (a dApp
+    // escrow rekeyed to B). B is itself rekeyed to C, but the chain checks the
+    // escrow's authority, so B's own key must sign: C's would be rejected.
+    describe('a dApp naming a rekeyed account as the signer', () => {
+        const ESCROW_ADDRESS = generateAccount().addr.toString()
+
+        const buildNamedSignerRequest = (namedSigner: string) => {
+            const transaction = buildPaymentTransaction({
+                sender: ESCROW_ADDRESS,
+                receiver: namedSigner,
+            })
+            return buildTransactionSignRequest({
+                txs: [transaction],
+                overrides: {
+                    txs: [
+                        withAlgorandAuthorizer(
+                            toUnsignedAlgorandTransaction(
+                                transaction,
+                                getSelectedScope(ALGORAND_CHAIN_ID),
+                            ),
+                            namedSigner,
+                        ),
+                    ],
+                    chainData: {
+                        algorand: {
+                            signerOverrides: new Map([[0, namedSigner]]),
+                        },
+                    },
+                },
+            })
+        }
+
+        const confirmAndReadSigned = async (
+            built: ReturnType<typeof buildNamedSignerRequest>,
+        ) => {
+            const { confirm } = renderSignReview(built.request)
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('signing-confirm-slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            confirm()
+            await waitFor(
+                () => {
+                    expect(built.approve).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(built.error).not.toHaveBeenCalled()
+            const delivered = built.approve.mock
+                .calls[0][0] as SignedTransaction[]
+            return decodeSignedTransaction(delivered[0].bytes)
+        }
+
+        const spyOnKeystoreSign = () => {
+            const signSpy = vi
+                .spyOn(getProvider().key.store, 'sign')
+                .mockResolvedValue(new Uint8Array(64).fill(7))
+            onTestFinished(() => signSpy.mockRestore())
+        }
+
+        it('Given the named signer is rekeyed to a Ledger, when the user confirms, then the named signer signs with its own key and the Ledger is never asked', async () => {
+            const namedSigner = await seedAlgo25Signer()
+            useAccountsStore
+                .getState()
+                .setAccounts([namedSigner, ledgerAccount])
+            seedAuthority(AUTH_ADDRESS, LEDGER_ADDRESS)
+            spyOnKeystoreSign()
+
+            const signed = await confirmAndReadSigned(
+                buildNamedSignerRequest(AUTH_ADDRESS),
+            )
+
+            expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
+            expect(signed.txn.sender.toString()).toBe(ESCROW_ADDRESS)
+            expect(pendingSignature).toBeNull()
+        })
+
+        it('Given the named signer is rekeyed to a quantum account, when the user confirms, then no quantum warning shows and the named signer signs with its own key', async () => {
+            await seedAlgo25Signer()
+            await seedQuantumSigner()
+            seedAuthority(AUTH_ADDRESS, QUANTUM_TEST_ADDRESS)
+            spyOnKeystoreSign()
+
+            const signed = await confirmAndReadSigned(
+                buildNamedSignerRequest(AUTH_ADDRESS),
+            )
+
+            expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
+            expect(signed.sig?.length).toBe(64)
+        })
+
+        it("Given the named signer's own key isn't in the wallet, then the review explains that and shows no confirm control", async () => {
+            const authSigner = await seedAlgo25Signer()
+            const namedSigner: WalletAccount = {
+                id: 'named-signer',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: REKEYED_SENDER_ADDRESS } },
+                name: 'Named signer',
+            }
+            seedAuthority(REKEYED_SENDER_ADDRESS, AUTH_ADDRESS)
+            useAccountsStore.getState().setAccounts([namedSigner, authSigner])
+
+            renderSignReview(
+                buildNamedSignerRequest(REKEYED_SENDER_ADDRESS).request,
+            )
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText(
+                            'signing.cannot_sign.signer_key_missing_body',
+                        ),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
+        })
     })
 })

@@ -16,12 +16,14 @@ import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     chainIdOfSignRequest,
     getDelegatedUnsignableReason,
     isExternalCallbackSource,
     isSignRequestMultisigUnsignable,
-    resolveAllSignerAddresses,
+    resolveSigningAccounts,
+    type DelegatedUnsignableReason,
     type SignRequest,
     type SigningPipelineEvent,
     useSigningPipeline,
@@ -68,6 +70,15 @@ export type UseSigningActionButtonsResult = {
     isConfirmBlocked: boolean
 }
 
+const DELEGATED_REASON_BODY: Record<
+    DelegatedUnsignableReason['kind'],
+    I18nKey
+> = {
+    authMissing: i18nKey('signing.cannot_sign.rekeyed_auth_missing_body'),
+    authIsWatch: i18nKey('signing.cannot_sign.rekeyed_auth_watch_body'),
+    authKeyMissing: i18nKey('signing.cannot_sign.signer_key_missing_body'),
+}
+
 const preferenceKeyMap: Record<GuardedWarningType, string> = {
     rekey: UserPreferences.rekeySupportEnabled,
     'asset-freeze': UserPreferences.assetFreezeSupportEnabled,
@@ -84,7 +95,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         useNavigation<StackNavigationProp<SigningStackParamList>>()
     const { getPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { confirmQuantumDappUsage } = useQuantumDappWarning()
+    const { confirmQuantumDappSigners } = useQuantumDappWarning()
     const {
         isListedAddressBlocking,
         isConfirmBlocked: isAddressConfirmBlocked,
@@ -182,12 +193,9 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         if (delegatedReason) {
             return {
                 title: t('signing.cannot_sign.title'),
-                body: t(
-                    delegatedReason.kind === 'authMissing'
-                        ? 'signing.cannot_sign.rekeyed_auth_missing_body'
-                        : 'signing.cannot_sign.rekeyed_auth_watch_body',
-                    { authAddress: delegatedReason.authAddress },
-                ),
+                body: t(DELEGATED_REASON_BODY[delegatedReason.kind], {
+                    authAddress: delegatedReason.authAddress,
+                }),
             }
         }
         return undefined
@@ -227,12 +235,14 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 currentRequest &&
                 isExternalCallbackSource(currentRequest.sourceType)
             ) {
-                const decision = await confirmQuantumDappUsage(
-                    resolveAllSignerAddresses(
-                        chainIdOfSignRequest(currentRequest),
+                const chainId = chainIdOfSignRequest(currentRequest)
+                const decision = await confirmQuantumDappSigners(
+                    resolveSigningAccounts(
+                        chainId,
                         currentRequest,
+                        allAccounts,
                     ),
-                    chainIdOfSignRequest(currentRequest),
+                    chainId,
                 )
                 if (decision === 'cancel') {
                     if (walletConnectTxPayload) {
@@ -285,7 +295,8 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         cannotSignNotice,
         isConfirmBlocked,
         currentRequest,
-        confirmQuantumDappUsage,
+        confirmQuantumDappSigners,
+        allAccounts,
         guardedWarningType,
         pipeline,
         requestBottomSheet,

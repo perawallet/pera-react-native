@@ -184,6 +184,15 @@ export interface ReviewerChainAdapter {
         authorizerByIndex?: Map<number, string>,
     ): TransactionWarning[]
     resolveAllSignerAddresses(request: SignRequest): string[]
+    /**
+     * The held accounts whose keys sign `request`, as the planner keys them
+     * (a signer named for another account's transaction is itself, not its
+     * delegate).
+     */
+    resolveSigningAccounts(
+        request: SignRequest,
+        accounts: WalletAccount[],
+    ): WalletAccount[]
     getDelegatedUnsignableReason(
         request: SignRequest,
         accounts: WalletAccount[],
@@ -228,6 +237,11 @@ export const resolveAllSignerAddresses: WithChain<
     ReviewerChainAdapter['resolveAllSignerAddresses']
 > = (chainId, ...args) =>
     reviewerChainAdapters.get(chainId).resolveAllSignerAddresses(...args)
+
+export const resolveSigningAccounts: WithChain<
+    ReviewerChainAdapter['resolveSigningAccounts']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).resolveSigningAccounts(...args)
 
 export const getDelegatedUnsignableReason: WithChain<
     ReviewerChainAdapter['getDelegatedUnsignableReason']
