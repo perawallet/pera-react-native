@@ -468,6 +468,7 @@ describe('call batch execution', () => {
                 if (position === 0) return batch
                 await updateTransactionBatch({
                     id: batch.id,
+                    expected: batch,
                     txIds,
                     signedRaw: signedRaw ?? null,
                     position,
@@ -737,6 +738,7 @@ describe('call batch execution', () => {
             node.sent.set(approval.id as Hex, '0x')
             await updateTransactionBatch({
                 id: stale.id,
+                expected: stale,
                 txIds: [approval.id],
                 signedRaw: null,
                 position: 1,
@@ -807,6 +809,7 @@ describe('call batch execution', () => {
             })
             await updateTransactionBatch({
                 id: recorded.id,
+                expected: recorded,
                 txIds: recorded.txIds,
                 signedRaw: null,
                 position: 1,

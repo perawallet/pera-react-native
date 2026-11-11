@@ -223,8 +223,9 @@ export const startEthereumCallBatch = async (
  * Runs a batch from the position it reached until it settles or a receipt
  * outlasts the wait. Each call's hash and signed bytes are recorded before it
  * is sent, so a restart rebroadcasts the same bytes rather than signing a
- * second transaction. Resolves with the row as it was left; a batch already
- * running here, or no longer running, is returned untouched.
+ * second transaction. Resolves with the row as this run left it; a batch already
+ * running here, or no longer running, is returned untouched. A run whose write
+ * another context beat stops there, leaving the row to that context.
  */
 export const runEthereumCallBatch = async (
     ctx: ChainContext,
@@ -266,19 +267,26 @@ const run = async (
     // device, and resending or rebuilding it would only fail the same way.
     const attempted = new Set<string>()
 
+    // False only when the row ends up different from the state written. Another
+    // context may have written the identical state already (the plain advance
+    // after a receipt), which still returns true, so a stale run is not always
+    // detected here; signing is guarded by the sign lock and the re-save in
+    // `signNext`, never by this return value alone.
     const save = async (
         txIds: string[],
         position: number,
         outcome: TransactionBatchOutcome,
         signedRaw: Nullable<string> = null,
-    ): Promise<void> => {
-        await updateTransactionBatch({
+    ): Promise<boolean> => {
+        const didLand = await updateTransactionBatch({
             id: batch.id,
+            expected: current,
             txIds,
             signedRaw,
             position,
             outcome,
         })
+        if (!didLand) return false
         current = { ...current, txIds, signedRaw, position, outcome }
         // A settled batch signs nothing more, so its review vouches for nothing.
         if (outcome !== 'running') {
@@ -474,7 +482,7 @@ const run = async (
                 await save(current.txIds, position, 'failed')
                 break
             }
-            await save(reached, position, 'running')
+            if (!(await save(reached, position, 'running'))) break
             continue
         }
         if (verdict === 'reverted' || verdict === 'failed') {
@@ -482,11 +490,12 @@ const run = async (
             break
         }
         const isLast = position === calls.length - 1
-        await save(
+        const isAdvanced = await save(
             current.txIds,
             isLast ? position : position + 1,
             isLast ? 'confirmed' : 'running',
         )
+        if (!isAdvanced) break
     }
     return current
 }
