@@ -17,7 +17,11 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakePlannerAdapter } from '../../__tests__/fakePlannerAdapter'
-import { algo25Account, multisigAccount } from '../../__tests__/accounts'
+import {
+    algo25Account,
+    multisigAccount,
+    watchAccount,
+} from '../../__tests__/accounts'
 import type { DappResolveResult } from '../../chain-adapter'
 import { useDappSignRequestResolver } from '../useDappSignRequestResolver'
 
@@ -30,7 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useSigningAccounts: () => mockAccounts(),
-    useAllAccounts: () => mockAccounts(),
+    useAllAccounts: () => [...mockAccounts(), watchAccount('W')],
 }))
 
 const resolved: DappResolveResult = { payload: { toSign: [] } }
@@ -47,7 +51,7 @@ describe('useDappSignRequestResolver', () => {
         registerFakePlannerAdapter({ resolveDappRequest: resolve })
     })
 
-    it('binds the wallet signing and multisig addresses into the planner call', () => {
+    it('binds the wallet signing, held and multisig addresses into the planner call', () => {
         const { result } = renderHook(() => useDappSignRequestResolver(SCOPE))
         const request = { payload: { transactions: [{ txn: 'abc' }] } }
 
@@ -58,6 +62,7 @@ describe('useDappSignRequestResolver', () => {
             signableAddresses: new Set(['A', 'MSIG1']),
             multisigAddresses: new Set(['MSIG1']),
             authorizedAddresses: undefined,
+            heldAddresses: new Set(['A', 'MSIG1', 'W']),
             maxTransactions: undefined,
         })
     })

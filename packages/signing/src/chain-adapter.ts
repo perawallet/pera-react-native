@@ -369,6 +369,12 @@ export type DappResolveContext = {
      */
     authorizedAddresses?: Set<string>
     /**
+     * Every address the wallet holds on the chain, signable or not. A signer
+     * the dApp names signs with its own key, so it only needs to be held;
+     * defaults to `signableAddresses`.
+     */
+    heldAddresses?: ReadonlySet<string>
+    /**
      * Local multisig addresses. A transaction such an address sends is signed
      * as the multisig itself, whatever signer the dApp names: the dApp can't
      * enumerate the wallet's local participants, so the propose flow collects

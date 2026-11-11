@@ -247,6 +247,8 @@ export interface SourceMetadata {
         payloadId: number
         indicesToSign: number[]
         totalLength: number
+        /** Index → the dApp's own `stxn`, returned as is in that slot. */
+        passthrough?: Record<number, string>
     }
 }
 
