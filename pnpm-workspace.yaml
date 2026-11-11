@@ -167,11 +167,6 @@ minimumReleaseAge: 10080
 
 auditConfig:
   ignoreGhsas:
-    # node-forge has no patched release (first_patched_version: null; 1.4.1,
-    # which the override floors to, doesn't fix it). Its only consumers are
-    # @expo/cli and @expo/code-signing-certificates, dev/build tooling that never
-    # ships to a device. Drop this entry once a fix lands.
-    - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
     # braces has no patched release (first_patched_version: null; npm's latest
     # is 3.0.3). Its only consumer is micromatch under metro-file-map and
     # @expo/metro-file-map, which match our own build globs, never user input,
@@ -444,9 +439,9 @@ overrides:
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0
-  # Eleven advisories patched in 1.4.1 (TLS, PKCS#12, X.509, AES-GCM, PEM); the
-  # one it leaves open is in auditConfig.ignoreGhsas.
-  node-forge@<1.4.1: 1.4.1
+  # @expo/cli's range still admits releases with open TLS, PKCS#12, X.509,
+  # AES-GCM, PEM and http-header advisories; 1.4.3 is the first clean one.
+  node-forge@<1.4.3: 1.4.3
   # One copy of each crypto library per major, enforced by
   # pera/single-copy-packages. The 1.x lines are closed (1.9.7 and 1.8.0 are
   # their last releases), and every 1.x consumer imports only subpaths and
