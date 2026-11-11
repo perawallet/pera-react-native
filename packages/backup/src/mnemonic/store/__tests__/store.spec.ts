@@ -56,6 +56,21 @@ describe('mnemonicBackupStore', () => {
         expect(result.current.backedUpKeyIds).toEqual({ 'entropy-1': true })
     })
 
+    test('markBackedUp on an id already marked keeps the same record', async () => {
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
+        act(() => {
+            result.current.markBackedUp('entropy-1')
+        })
+        const before = useMnemonicBackupStore.getState().backedUpKeyIds
+
+        act(() => {
+            result.current.markBackedUp('entropy-1')
+        })
+
+        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toBe(before)
+    })
+
     test('isBackedUp returns false for unknown id', async () => {
         const { useMnemonicBackupStore } = await import('../store')
         const { result } = renderHook(() => useMnemonicBackupStore())

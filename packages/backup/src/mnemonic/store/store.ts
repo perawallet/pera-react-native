@@ -30,6 +30,7 @@ export const useMnemonicBackupStore = create<MnemonicBackupStore>()(
         (set, get) => ({
             ...initialState,
             markBackedUp: (keyId: string) => {
+                if (get().backedUpKeyIds[keyId]) return
                 set({
                     backedUpKeyIds: {
                         ...get().backedUpKeyIds,
