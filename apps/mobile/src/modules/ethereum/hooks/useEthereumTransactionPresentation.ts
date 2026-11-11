@@ -96,7 +96,7 @@ export type EthereumTransactionPresentation = {
     maxFee: Nullable<EthereumAmount>
     /** Null on a batch call not yet reached and on a mined transaction. */
     reviewFee: Nullable<EthereumReviewFee>
-    /** A dApp's gas limit and fees authorise far more than the wallet's own pricing would. */
+    /** A dApp's gas limit and fees authorise far more than the wallet's Fast preset would. */
     hasHighFee: boolean
     /** `view.feePaid` in ether, on a transaction already on chain whose history gave a fee; whoever paid it. */
     feePaid: Nullable<EthereumAmount>

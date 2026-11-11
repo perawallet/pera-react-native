@@ -257,6 +257,368 @@ describe('decodeEvmContractAction', () => {
         expect(decode(PERMIT2, '0x87517c45')).toBeUndefined()
         expect(decode(ROUTER, '0x')).toBeUndefined()
     })
+
+    describe('Uniswap V3 position manager', () => {
+        const MANAGER: Address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+        const V4_MANAGER: Address = '0xbD216513d74C8cf14cf4747E6AaA6420FF64ee9e'
+        const ETH_VALUE = 168n * 10n ** 12n
+        const USDC_AMOUNT = 353_961n
+        const TOKEN_ID = 987_654n
+
+        const MANAGER_ABI = parseAbi([
+            'struct MintParams { address token0; address token1; uint24 fee; int24 tickLower; int24 tickUpper; uint256 amount0Desired; uint256 amount1Desired; uint256 amount0Min; uint256 amount1Min; address recipient; uint256 deadline; }',
+            'struct IncreaseParams { uint256 tokenId; uint256 amount0Desired; uint256 amount1Desired; uint256 amount0Min; uint256 amount1Min; uint256 deadline; }',
+            'struct DecreaseParams { uint256 tokenId; uint128 liquidity; uint256 amount0Min; uint256 amount1Min; uint256 deadline; }',
+            'struct CollectParams { uint256 tokenId; address recipient; uint128 amount0Max; uint128 amount1Max; }',
+            'function mint(MintParams params)',
+            'function increaseLiquidity(IncreaseParams params)',
+            'function decreaseLiquidity(DecreaseParams params)',
+            'function collect(CollectParams params)',
+            'function burn(uint256 tokenId)',
+            'function refundETH()',
+            'function unwrapWETH9(uint256 amountMinimum, address recipient)',
+            'function sweepToken(address token, uint256 amountMinimum, address recipient)',
+            'function createAndInitializePoolIfNecessary(address token0, address token1, uint24 fee, uint160 sqrtPriceX96)',
+            'function selfPermit(address token, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)',
+            'function multicall(bytes[] data)',
+        ])
+
+        const encode = (functionName: string, args: unknown[] = []): Hex =>
+            encodeFunctionData({
+                abi: MANAGER_ABI,
+                functionName,
+                args,
+            } as Parameters<typeof encodeFunctionData>[0])
+
+        const multicall = (...calls: Hex[]) => encode('multicall', [calls])
+
+        // USDC sorts below WETH, so it is token0.
+        const mintCall = (
+            overrides: Partial<{
+                recipient: Address
+                amount0Desired: bigint
+                amount1Desired: bigint
+                token1: Address
+            }> = {},
+        ) =>
+            encode('mint', [
+                {
+                    token0: USDC,
+                    token1: WETH,
+                    fee: 500,
+                    tickLower: -887_270,
+                    tickUpper: 887_270,
+                    amount0Desired: USDC_AMOUNT,
+                    amount1Desired: ETH_VALUE,
+                    amount0Min: 0n,
+                    amount1Min: 0n,
+                    recipient: SENDER,
+                    deadline: 1_800_000_000n,
+                    ...overrides,
+                },
+            ])
+
+        const increaseCall = () =>
+            encode('increaseLiquidity', [
+                {
+                    tokenId: TOKEN_ID,
+                    amount0Desired: 5n,
+                    amount1Desired: 6n,
+                    amount0Min: 0n,
+                    amount1Min: 0n,
+                    deadline: 1_800_000_000n,
+                },
+            ])
+
+        const decreaseCall = (tokenId = TOKEN_ID) =>
+            encode('decreaseLiquidity', [
+                {
+                    tokenId,
+                    liquidity: 1000n,
+                    amount0Min: 0n,
+                    amount1Min: 0n,
+                    deadline: 1_800_000_000n,
+                },
+            ])
+
+        const collectCall = (recipient: Address, tokenId = TOKEN_ID) =>
+            encode('collect', [
+                {
+                    tokenId,
+                    recipient,
+                    amount0Max: 2n ** 128n - 1n,
+                    amount1Max: 2n ** 128n - 1n,
+                },
+            ])
+
+        const ZERO: Address = '0x0000000000000000000000000000000000000000'
+        const refund = encode('refundETH')
+        const unwrapTo = (to: Address) => encode('unwrapWETH9', [0n, to])
+        const sweepTo = (to: Address) => encode('sweepToken', [USDC, 0n, to])
+        const burn = (tokenId = TOKEN_ID) => encode('burn', [tokenId])
+        const poolCreation = (
+            overrides: Partial<{ token1: Address; fee: number }> = {},
+        ) =>
+            encode('createAndInitializePoolIfNecessary', [
+                USDC,
+                overrides.token1 ?? WETH,
+                overrides.fee ?? 500,
+                2n ** 96n,
+            ])
+
+        const expectedDeposits = [
+            {
+                asset: { kind: 'token', contract: USDC },
+                maxAmount: dec(USDC_AMOUNT),
+            },
+            { asset: { kind: 'native' }, maxAmount: dec(ETH_VALUE) },
+        ]
+
+        it('reads a mint paid partly in ether as an add into a new position', () => {
+            const data = multicall(mintCall(), refund)
+
+            expect(decode(MANAGER, data, ETH_VALUE)).toEqual({
+                kind: 'add-liquidity',
+                deposits: expectedDeposits,
+                position: { kind: 'new' },
+            })
+        })
+
+        it('accepts a pool creation for the same pair ahead of the mint', () => {
+            expect(
+                decode(
+                    MANAGER,
+                    multicall(poolCreation(), mintCall(), refund),
+                    ETH_VALUE,
+                ),
+            ).toMatchObject({
+                kind: 'add-liquidity',
+                position: { kind: 'new' },
+            })
+        })
+
+        it('reads the wrapped side as a token when no ether is sent', () => {
+            expect(decode(MANAGER, mintCall())).toEqual({
+                kind: 'add-liquidity',
+                deposits: [
+                    expectedDeposits[0],
+                    {
+                        asset: { kind: 'token', contract: WETH },
+                        maxAmount: dec(ETH_VALUE),
+                    },
+                ],
+                position: { kind: 'new' },
+            })
+        })
+
+        it('reads an increase as an add to an existing position with no deposits', () => {
+            expect(decode(MANAGER, increaseCall())).toEqual({
+                kind: 'add-liquidity',
+                deposits: [],
+                position: { kind: 'existing', tokenId: TOKEN_ID.toString() },
+            })
+        })
+
+        it('reads a decrease with a collect to the signer as a removal that keeps the position', () => {
+            const data = multicall(decreaseCall(), collectCall(SENDER))
+
+            expect(decode(MANAGER, data)).toEqual({
+                kind: 'remove-liquidity',
+                tokenId: TOKEN_ID.toString(),
+                isClosing: false,
+            })
+        })
+
+        it('reads a removal collected to the signer and burned as closing the position', () => {
+            const data = multicall(
+                decreaseCall(),
+                collectCall(SENDER),
+                unwrapTo(SENDER),
+                burn(),
+            )
+
+            expect(decode(MANAGER, data)).toEqual({
+                kind: 'remove-liquidity',
+                tokenId: TOKEN_ID.toString(),
+                isClosing: true,
+            })
+        })
+
+        it.each([
+            [
+                'a mint paying the position to someone else',
+                () => mintCall({ recipient: OTHER }),
+                0n,
+            ],
+            ['ether without a refund', () => multicall(mintCall()), ETH_VALUE],
+            [
+                'ether with no wrapped side',
+                () => multicall(mintCall({ token1: OTHER }), refund),
+                ETH_VALUE,
+            ],
+            [
+                'less ether than the wrapped side asks for',
+                () => multicall(mintCall(), refund),
+                ETH_VALUE - 1n,
+            ],
+            [
+                'a nested multicall',
+                () => multicall(multicall(mintCall(), refund)),
+                ETH_VALUE,
+            ],
+            [
+                'an inner call the decoder does not know',
+                () =>
+                    multicall(
+                        encode('selfPermit', [
+                            USDC,
+                            1n,
+                            1n,
+                            27,
+                            ZERO_WORD,
+                            ZERO_WORD,
+                        ]),
+                        mintCall(),
+                    ),
+                0n,
+            ],
+            ['a trailing byte', () => `${mintCall()}00` as Hex, 0n],
+            [
+                'a collect with no removal',
+                () => multicall(collectCall(SENDER)),
+                0n,
+            ],
+            ['two mints', () => multicall(mintCall(), mintCall()), 0n],
+            [
+                'a removal that sends ether',
+                () => multicall(decreaseCall(), collectCall(SENDER)),
+                1n,
+            ],
+            [
+                'a removal collected to someone else',
+                () => multicall(decreaseCall(), collectCall(OTHER)),
+                0n,
+            ],
+            [
+                'a removal that sweeps to someone else',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(SENDER),
+                        sweepTo(OTHER),
+                    ),
+                0n,
+            ],
+            [
+                'a removal collected to the manager with no payouts',
+                () => multicall(decreaseCall(), collectCall(ZERO)),
+                0n,
+            ],
+            [
+                'a removal collected to the manager and paid out by an unwrap and a sweep',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(ZERO),
+                        unwrapTo(SENDER),
+                        sweepTo(SENDER),
+                    ),
+                0n,
+            ],
+            [
+                'a removal collected to the manager and paid out by an unwrap alone',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(ZERO),
+                        unwrapTo(SENDER),
+                    ),
+                0n,
+            ],
+            [
+                'a removal collecting another position',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(SENDER, TOKEN_ID + 1n),
+                    ),
+                0n,
+            ],
+            [
+                'a removal followed by a refund',
+                () => multicall(decreaseCall(), collectCall(SENDER), refund),
+                0n,
+            ],
+            [
+                'a refund ahead of the mint',
+                () => multicall(refund, mintCall()),
+                ETH_VALUE,
+            ],
+            [
+                'a refund ahead of the mint with no ether sent',
+                () => multicall(refund, mintCall()),
+                0n,
+            ],
+            [
+                'two refunds',
+                () => multicall(mintCall(), refund, refund),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation after the mint',
+                () => multicall(mintCall(), poolCreation(), refund),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation for another pair',
+                () =>
+                    multicall(
+                        poolCreation({ token1: OTHER }),
+                        mintCall(),
+                        refund,
+                    ),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation at another fee',
+                () =>
+                    multicall(poolCreation({ fee: 3000 }), mintCall(), refund),
+                ETH_VALUE,
+            ],
+            [
+                'a pool creation ahead of an increase',
+                () => multicall(poolCreation(), increaseCall()),
+                0n,
+            ],
+            [
+                'a mint of one token against itself',
+                () => multicall(mintCall({ token1: USDC })),
+                0n,
+            ],
+            [
+                'a burn of another position',
+                () =>
+                    multicall(
+                        decreaseCall(),
+                        collectCall(SENDER),
+                        burn(TOKEN_ID + 1n),
+                    ),
+                0n,
+            ],
+        ] as const)('gives nothing for %s', (_name, build, value) => {
+            expect(decode(MANAGER, build(), value)).toBeUndefined()
+        })
+
+        it('gives nothing for a call to the V4 position manager', () => {
+            expect(
+                decodeEvmContractAction(
+                    call(V4_MANAGER, mintCall()),
+                    contractAt(V4_MANAGER),
+                    WETH,
+                ),
+            ).toBeUndefined()
+        })
+    })
 })
 
 describe('decodePermit2Approval', () => {
@@ -296,6 +658,8 @@ describe('contractActionTitleKeyOf', () => {
         ['withdraw', 'transactions.list_item.withdraw'],
         ['borrow', 'transactions.list_item.borrow'],
         ['repay', 'transactions.list_item.repay'],
+        ['add-liquidity', 'transactions.list_item.add_liquidity'],
+        ['remove-liquidity', 'transactions.list_item.remove_liquidity'],
     ] as const)('titles a %s', (kind, key) => {
         const action = {
             kind,
@@ -400,5 +764,22 @@ describe('hidesUnknownContractNotice', () => {
             ),
         ).toBe(false)
         expect(hidesUnknownContractNotice(undefined)).toBe(false)
+    })
+
+    it('hides it for a new position and keeps it for an increase of an existing one', () => {
+        expect(
+            hidesUnknownContractNotice({
+                kind: 'add-liquidity',
+                deposits: [],
+                position: { kind: 'new' },
+            }),
+        ).toBe(true)
+        expect(
+            hidesUnknownContractNotice({
+                kind: 'add-liquidity',
+                deposits: [],
+                position: { kind: 'existing', tokenId: '7' },
+            }),
+        ).toBe(false)
     })
 })

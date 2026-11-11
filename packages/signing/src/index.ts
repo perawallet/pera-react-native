@@ -103,7 +103,10 @@ export {
 } from './models'
 
 export { chainIdOfSignRequest, scopeOfSignRequest } from './models/chain'
-export { SigningRequestScopeProvider } from './hooks/SigningRequestScope'
+export {
+    SigningRequestScopeProvider,
+    useScopedSignRequestId,
+} from './hooks/SigningRequestScope'
 export type {
     HardwareChildSnapshot,
     HardwareSigningOperation,

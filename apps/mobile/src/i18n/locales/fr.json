@@ -3475,6 +3475,7 @@
         },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
+            "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "nft_spend_warning": "Cette signature permet à une autre adresse de déplacer ce NFT depuis votre compte sans vous redemander votre accord.",
             "spend_warning_bold": "Ne signez que si vous faites confiance à cette application.",
             "spender_caption": "Adresse autorisée : {{address}}",
@@ -3489,6 +3490,7 @@
             "known_description": "{{name}} est un contrat connu",
             "known_spend_note": "{{name}} est un contrat connu. Il ne peut déplacer ce token que dans le cadre d’une transaction ou d’une signature que vous approuvez.",
             "known_unlimited_note": "Le montant est illimité : vous n’aurez pas à autoriser de nouveau ce token pour {{name}}.",
+            "known_site_mismatch": "{{name}} appartient à {{domain}}, mais cette demande provient de {{site}}.",
             "unlimited_limit_note": "Pera ne peut pas réduire ce montant. Pour n’approuver que ce dont vous avez besoin, refusez et choisissez un montant plus petit dans l’application, si elle le permet.",
             "balance_label": "Votre solde",
             "allow_title": "Autoriser {{spender}} à utiliser vos {{asset}}",
@@ -4927,7 +4929,11 @@
             "fee": "Frais",
             "fee_share": "{{percent}} du résultat de l’échange",
             "fee_recipient": "Versés à",
-            "base_units": "unités de base"
+            "base_units": "unités de base",
+            "deposit_at_most": "Vous déposez au maximum",
+            "position": "Position",
+            "new_position": "NFT de la nouvelle position",
+            "closes_position": "Ferme la position et brûle son NFT"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4943,8 +4949,8 @@
         },
         "review_warnings": {
             "high_fee_title": "Frais de réseau anormalement élevés",
-            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
-            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins."
+            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
+            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins."
         },
         "simulation": {
             "title": "Modifications estimées",

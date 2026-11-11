@@ -44,6 +44,17 @@ export type EvmSwapFee = {
           }
 }
 
+export type EvmLiquidityDeposit = {
+    asset: EvmActionAsset
+    /** Base units: the most the position manager can take (`amountNDesired`), not what it will. */
+    maxAmount: Decimal
+}
+
+export type EvmLiquidityPosition =
+    | { kind: 'new' }
+    /** `tokenId` is a decimal uint256. */
+    | { kind: 'existing'; tokenId: string }
+
 /** What a call to a known contract does, read from calldata that re-encodes to exactly itself. */
 export type EvmContractAction =
     | {
@@ -65,6 +76,19 @@ export type EvmContractAction =
           amount: Decimal
           /** Set when the call asks for the whole balance or debt. */
           isEntireBalance: boolean
+      }
+    | {
+          kind: 'add-liquidity'
+          /** In pool token order, at most two; empty on an increase, whose calldata doesn't name the tokens. */
+          deposits: EvmLiquidityDeposit[]
+          position: EvmLiquidityPosition
+      }
+    | {
+          kind: 'remove-liquidity'
+          /** A decimal uint256. */
+          tokenId: string
+          /** Set when the call also burns the position's NFT. */
+          isClosing: boolean
       }
 
 /** The part of a known contract the review carries. */

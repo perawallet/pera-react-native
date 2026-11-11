@@ -3475,6 +3475,7 @@
         },
         "spend_approval": {
             "spend_warning": "Esta firma permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
+            "spend_warning_transaction": "Esta transacción permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
             "nft_spend_warning": "Esta firma permite que otra dirección mueva este NFT de tu cuenta sin volver a preguntarte.",
             "spend_warning_bold": "Firma solo si confías en esta aplicación.",
             "spender_caption": "Dirección autorizada: {{address}}",
@@ -3489,6 +3490,7 @@
             "known_description": "{{name}} es un contrato conocido",
             "known_spend_note": "{{name}} es un contrato conocido. Solo puede mover este token como parte de una transacción o firma que apruebes.",
             "known_unlimited_note": "La cantidad es ilimitada, así que no tendrás que volver a autorizar este token para {{name}}.",
+            "known_site_mismatch": "{{name}} pertenece a {{domain}}, pero esta solicitud viene de {{site}}.",
             "unlimited_limit_note": "Pera no puede reducir esta cantidad. Para aprobar solo lo que necesitas, recházala y elige una cantidad menor en la aplicación, si lo permite.",
             "balance_label": "Tu saldo",
             "allow_title": "Permitir que {{spender}} use tus {{asset}}",
@@ -4927,7 +4929,11 @@
             "fee": "Comisión",
             "fee_share": "{{percent}} del resultado del intercambio",
             "fee_recipient": "Pagada a",
-            "base_units": "unidades base"
+            "base_units": "unidades base",
+            "deposit_at_most": "Depositas como máximo",
+            "position": "Posición",
+            "new_position": "NFT de posición nueva",
+            "closes_position": "Cierra la posición y quema su NFT"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4943,8 +4949,8 @@
         },
         "review_warnings": {
             "high_fee_title": "Comisión de red inusualmente alta",
-            "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su ajuste Normal. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
-            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su ajuste Normal. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
+            "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
+            "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
         },
         "simulation": {
             "title": "Cambios estimados",

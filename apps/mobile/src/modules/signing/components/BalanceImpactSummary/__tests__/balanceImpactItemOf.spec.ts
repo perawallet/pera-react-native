@@ -102,6 +102,46 @@ describe('balanceImpactItemOf', () => {
         expect(item.amount).toEqual(new Decimal(5))
     })
 
+    it('names an NFT with no record from the fallback, as a collectible', () => {
+        const item = balanceImpactItemOf({
+            assetId: NFT.assetId,
+            chainId: 'ethereum',
+            asset: undefined,
+            baseUnits: new Decimal(1),
+            collectibleFallback: {
+                title: 'Uniswap V3 Positions',
+                subtitle: '#7',
+            },
+        })
+
+        expect(item).toMatchObject({
+            isCollectible: true,
+            isPureCollectible: true,
+            collectibleTitle: 'Uniswap V3 Positions',
+            collectibleSubtitle: '#7',
+            direction: 'receive',
+        })
+    })
+
+    it('ignores the fallback once the asset has a record', () => {
+        const item = balanceImpactItemOf({
+            assetId: USDC.assetId,
+            chainId: 'ethereum',
+            asset: USDC,
+            baseUnits: new Decimal(1),
+            collectibleFallback: {
+                title: 'Uniswap V3 Positions',
+                subtitle: '#7',
+            },
+        })
+
+        expect(item).toMatchObject({
+            isCollectible: false,
+            isPureCollectible: false,
+        })
+        expect(item.collectibleTitle).toBeUndefined()
+    })
+
     it('titles a collectible from its metadata and names its collection', () => {
         const item = balanceImpactItemOf({
             assetId: NFT.assetId,
