@@ -1073,6 +1073,15 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            # The mobile builds run this inside build:packages; this workflow
+            # doesn't use it.
+            pnpm check:autodraw-hash
+        title: Check AutoDraw template pin
+    - script@1:
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
             # Unlike the mobile build (which only needs `packages/*`), the
             # browser extension also depends on workspace packages under
             # `extensions/*` (platform-chrome, vault-chrome, ledger-web-*).

@@ -172,6 +172,18 @@ case "$PROFILE" in
       # nothing surfaces at runtime. The warning is the only signal.
       "FIREBASE_VAPID_KEY"
     )
+    # The extension ships Pera Card too: the same AutoDraw pins as ios/android.
+    required_global+=(
+      "CARD_AUTODRAW_TEMPLATE_HASH"
+      "TESTNET_CARD_W3CARD_APP_ID"
+      "TESTNET_CARD_KILLSWITCH_APP_ID"
+      "TESTNET_CARD_AUTODRAW_PROGRAM_HASH"
+    )
+    optional_global+=(
+      "MAINNET_CARD_W3CARD_APP_ID"
+      "MAINNET_CARD_KILLSWITCH_APP_ID"
+      "MAINNET_CARD_AUTODRAW_PROGRAM_HASH"
+    )
     ;;
   *)
     echo "ERROR: unknown VALIDATE_PROFILE '$PROFILE'" >&2
