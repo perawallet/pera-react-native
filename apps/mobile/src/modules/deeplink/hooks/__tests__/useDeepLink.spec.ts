@@ -1507,9 +1507,8 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-            screen: 'Discover',
-            params: { path: '/test' },
+        expect(mockNavigate).toHaveBeenCalledWith('DiscoverDetail', {
+            path: '/test',
         })
     })
 
@@ -1529,7 +1528,6 @@ describe('useDeepLink', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Discover',
-            params: { path: undefined },
         })
         expect(mockErrorToast).not.toHaveBeenCalled()
     })

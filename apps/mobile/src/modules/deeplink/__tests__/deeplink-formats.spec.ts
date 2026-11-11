@@ -746,11 +746,10 @@ const cases: Case[] = [
     ...newPair(
         'Discover Path',
         `discover-path/?path=${DISCOVER_PATH}`,
-        { kind: 'navigate', screen: 'TabBar' },
+        { kind: 'navigate', screen: 'DiscoverDetail' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-                screen: 'Discover',
-                params: { path: DISCOVER_PATH },
+            expect(mockNavigate).toHaveBeenCalledWith('DiscoverDetail', {
+                path: DISCOVER_PATH,
             })
         },
     ),
@@ -761,7 +760,6 @@ const cases: Case[] = [
         () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Discover',
-                params: { path: undefined },
             })
         },
     ),
@@ -957,11 +955,10 @@ const cases: Case[] = [
     {
         name: 'Old: Discover (perawallet://discover?path=…)',
         url: `perawallet://discover?path=${DISCOVER_PATH}`,
-        expect: { kind: 'navigate', screen: 'TabBar' },
+        expect: { kind: 'navigate', screen: 'DiscoverDetail' },
         extra: () => {
-            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-                screen: 'Discover',
-                params: { path: DISCOVER_PATH },
+            expect(mockNavigate).toHaveBeenCalledWith('DiscoverDetail', {
+                path: DISCOVER_PATH,
             })
         },
     },
@@ -1015,7 +1012,7 @@ const cases: Case[] = [
     {
         name: 'Old applink: discover path',
         url: `https://perawallet.app/qr/perawallet/discover?path=${DISCOVER_PATH}`,
-        expect: { kind: 'navigate', screen: 'TabBar' },
+        expect: { kind: 'navigate', screen: 'DiscoverDetail' },
     },
 
     // -- Pera Web Import (QR-only) -----------------------------------

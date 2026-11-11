@@ -16,6 +16,7 @@ import { isSafeRelativePath } from '@modules/webview'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigateToScreen } from '../navigateToScreen'
+import { discoverPathTarget } from './discoverPathTarget'
 
 export type DiscoverPathDeeplinkHandler = (params: {
     path?: string
@@ -26,8 +27,8 @@ export type DiscoverPathDeeplinkHandler = (params: {
 
 /**
  * Validates the discover path against the same safe-relative-path check
- * the Discover screen runs (defense in depth) before navigating into the
- * Discover tab with the path forwarded as a route param.
+ * the Discover screen runs (defense in depth) before routing to
+ * the Discover home, the interim WebView or native asset details.
  */
 export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
     const { errorToast } = useToast()
@@ -47,10 +48,27 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                 onError?.()
                 return false
             }
-            navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                screen: 'Discover',
-                params: { path },
-            })
+            const target = discoverPathTarget(path)
+            if (target.kind === 'home') {
+                navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                    screen: 'Discover',
+                })
+            } else if (target.kind === 'webview') {
+                navigateToScreen(replaceCurrentScreen, 'DiscoverDetail', {
+                    path: target.path,
+                })
+            } else {
+                navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                    screen: 'Home',
+                    params: {
+                        screen: 'AssetDetails',
+                        params: {
+                            assetId: target.assetId,
+                            chainId: target.chainId,
+                        },
+                    },
+                })
+            }
             return true
         },
         [errorToast, t],
