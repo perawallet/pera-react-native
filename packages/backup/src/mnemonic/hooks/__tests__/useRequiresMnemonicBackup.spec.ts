@@ -171,9 +171,9 @@ describe('useRequiresMnemonicBackup', () => {
 
         expect(result.current).toBe(false)
         const { useMnemonicBackupStore } = await import('../../store')
-        expect(useMnemonicBackupStore.getState().backedUpKeyIds['seed-a']).toBe(
-            true,
-        )
+        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
+            'seed-a': true,
+        })
     })
 
     test('requires nothing of a local account whose key has no seed', async () => {

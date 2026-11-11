@@ -29,34 +29,36 @@ export const useRequiresMnemonicBackup = (
     chainId: ChainId,
 ): boolean => {
     const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
-    const markBackedUp = useMnemonicBackupStore(state => state.markBackedUp)
+    const upgradeBackedUpKeyIds = useMnemonicBackupStore(
+        state => state.upgradeBackedUpKeyIds,
+    )
     const keys = useKeystoreKeys()
 
     // A mark made under a signing child key counts for its seed; a mark whose
-    // key is gone matches no seed. `legacySeedIds` are the seeds such marks
-    // resolve to that carry no mark of their own yet.
-    const { backedUpSeedIds, legacySeedIds } = useMemo(() => {
+    // key is gone matches no seed. `upgrades` maps each such child key to its
+    // seed so the mark can be saved under the seed instead.
+    const { backedUpSeedIds, upgrades } = useMemo(() => {
         const seedIds = new Set<string>()
-        const legacy = new Set<string>()
+        const seedIdByKeyId: Record<string, string> = {}
         for (const markedId of Object.keys(backedUpKeyIds)) {
             try {
                 const seedId = resolveSeedKeyFrom(keys, markedId).id
                 seedIds.add(seedId)
-                if (!backedUpKeyIds[seedId]) legacy.add(seedId)
+                if (seedId !== markedId) seedIdByKeyId[markedId] = seedId
             } catch {
                 continue
             }
         }
-        return { backedUpSeedIds: seedIds, legacySeedIds: [...legacy] }
+        return { backedUpSeedIds: seedIds, upgrades: seedIdByKeyId }
     }, [backedUpKeyIds, keys])
 
     // A child-key mark dies with its key when the account is removed, so it is
     // rewritten under the seed as soon as the keystore can resolve it. This
     // runs here, not in the store's migrate, which runs before the keystore
-    // has loaded. Marking is idempotent, so concurrent rows converge.
+    // has loaded. Rows race to write the same upgrade, which is idempotent.
     useEffect(() => {
-        legacySeedIds.forEach(seedId => markBackedUp(seedId))
-    }, [legacySeedIds, markBackedUp])
+        if (Object.keys(upgrades).length > 0) upgradeBackedUpKeyIds(upgrades)
+    }, [upgrades, upgradeBackedUpKeyIds])
 
     if (!account || !backupChainAdapters.has(chainId)) return false
 
