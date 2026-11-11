@@ -16,6 +16,7 @@ import {
     uniformIntBelow,
 } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
 
 const OPTIONS_PER_QUESTION = 3
 
@@ -81,6 +82,7 @@ export const useBackupQuiz = (
         buildQuestions(correctPairs, distractorPool),
     )
     const [hasError, setHasError] = useState(false)
+    const haptics = useHaptics()
 
     // Compare correctPairs by *content* — callers commonly rebuild the array
     // every render (e.g. `picks ?? []`), so depending on reference identity
@@ -100,14 +102,20 @@ export const useBackupQuiz = (
         // eslint-disable-next-line react-hooks/exhaustive-deps -- key encodes correctPairs content
     }, [correctPairsKey, distractorPool])
 
-    const onSelect = useCallback((questionIdx: number, word: string) => {
-        setHasError(false)
-        setItems(prev =>
-            prev.map((item, i) =>
-                i === questionIdx ? { ...item, selectedWord: word } : item,
-            ),
-        )
-    }, [])
+    const onSelect = useCallback(
+        (questionIdx: number, word: string) => {
+            // Identical for every word: a right/wrong feel per tap would let the
+            // quiz be passed by trial and error without the phrase.
+            haptics.selection()
+            setHasError(false)
+            setItems(prev =>
+                prev.map((item, i) =>
+                    i === questionIdx ? { ...item, selectedWord: word } : item,
+                ),
+            )
+        },
+        [haptics],
+    )
 
     const isFilled = useMemo(
         () =>
