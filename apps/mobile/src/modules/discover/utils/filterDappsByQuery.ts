@@ -12,7 +12,7 @@
 
 import type { PeraProject } from '@perawallet/wallet-core-projects'
 import type { DiscoverDapp } from '../types'
-import { toDiscoverDapp } from './toDiscoverDapp'
+import { toDiscoverDapp, uniqueDappsByUrl } from './toDiscoverDapp'
 
 const matches = (project: PeraProject, needle: string): boolean =>
     (project.name ?? '').toLowerCase().includes(needle) ||
@@ -25,11 +25,12 @@ export const filterDappsByQuery = (
 ): DiscoverDapp[] => {
     const needle = query.trim().toLowerCase()
     if (needle === '') return []
-    return projects
+    const dapps = projects
         .filter(project => matches(project, needle))
         .sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
         .flatMap(project => {
             const dapp = toDiscoverDapp(project)
             return dapp === null ? [] : [dapp]
         })
+    return uniqueDappsByUrl(dapps)
 }

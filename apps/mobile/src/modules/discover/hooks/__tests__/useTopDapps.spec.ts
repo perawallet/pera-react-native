@@ -69,6 +69,21 @@ describe('useTopDapps', () => {
         ])
     })
 
+    it('drops a duplicate url before slicing to four', () => {
+        mockQuery([
+            listed(1),
+            { ...listed(1), name: 'App 1 again', url: 'https://APP1.io/' },
+            ...[2, 3, 4, 5].map(listed),
+        ])
+        const { result } = renderHook(() => useTopDapps('ethereum'))
+        expect(result.current.dapps.map(d => d.name)).toEqual([
+            'App 1',
+            'App 2',
+            'App 3',
+            'App 4',
+        ])
+    })
+
     it('exposes the verified urls', () => {
         mockQuery([
             {

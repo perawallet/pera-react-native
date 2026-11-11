@@ -28,6 +28,7 @@ export type SearchRow =
     | { key: string; kind: 'asset'; result: ScopedAssetSearchResult }
     | { key: string; kind: 'incomplete' }
     | { key: string; kind: 'unavailable' }
+    | { key: string; kind: 'dappsUnavailable' }
     | { key: string; kind: 'noResults' }
     | { key: string; kind: 'loading' }
 
@@ -41,6 +42,7 @@ type RowsInput = Pick<
     | 'dappResults'
     | 'assetResults'
     | 'isLoadingDapps'
+    | 'isDappSearchUnavailable'
     | 'isLoadingAssets'
     | 'isAssetSearchIncomplete'
     | 'isAssetSearchUnavailable'
@@ -82,6 +84,12 @@ export const toSearchRows = (input: RowsInput): SearchRow[] => {
                 : { key: 'typed-url', kind: 'typedUrl', url: input.typedUrl },
         )
     }
+    // dApps are not searched under Markets.
+    const isDappsUnavailable =
+        input.filter !== 'markets' && input.isDappSearchUnavailable
+    if (isDappsUnavailable) {
+        rows.push({ key: 'dapps-unavailable', kind: 'dappsUnavailable' })
+    }
     for (const dapp of input.dappResults) {
         rows.push({ key: `dapp:${dapp.url}`, kind: 'dapp', dapp })
     }
@@ -106,6 +114,7 @@ export const toSearchRows = (input: RowsInput): SearchRow[] => {
         rows.push({ key: 'loading', kind: 'loading' })
     } else if (
         !isUnavailable &&
+        !isDappsUnavailable &&
         input.dappResults.length === 0 &&
         input.assetResults.length === 0
     ) {

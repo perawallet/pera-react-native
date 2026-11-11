@@ -241,6 +241,16 @@ export const DiscoverSearchScreen = () => {
                     />
                 )
             }
+            case 'dappsUnavailable': {
+                return (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='discover.search.dapps_unavailable'
+                        style={styles.notice}
+                        testID='discover_search_dapps_unavailable'
+                    />
+                )
+            }
             case 'noResults': {
                 return (
                     <PWText

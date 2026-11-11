@@ -12,8 +12,8 @@
 
 import { create } from 'zustand'
 import {
-    assetRefKey,
     type AssetRef,
+    type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     guardedPersist,
@@ -30,6 +30,8 @@ export type RecentSearch =
     | {
           kind: 'asset'
           ref: AssetRef
+          /** The network the asset was found on; the same id differs per network. */
+          networkId: NetworkId
           name: string
           unitName: string
           logo: Nullable<string>
@@ -46,8 +48,27 @@ export const recentSearchKey = (item: RecentSearch): string => {
             return `dapp:${normalizeDappUrl(item.dapp.url) ?? item.dapp.url}`
         }
         case 'asset': {
-            return `asset:${assetRefKey(item.ref)}`
+            return `asset:${item.ref.chainId}/${item.networkId}/${item.ref.assetId}`
         }
+    }
+}
+
+// Version 1 asset recents had no networkId, so they cannot be matched to a
+// network: drop them and keep the url and dapp recents.
+const migrateRecents = (
+    persisted: unknown,
+    version: number,
+): RecentSearchesState => {
+    if (version === 2) return persisted as RecentSearchesState
+    if (version !== 1) return initialState
+    const items = (persisted as Nullable<Partial<RecentSearchesState>>)?.items
+    if (!Array.isArray(items)) return initialState
+    return {
+        items: items.filter(
+            item =>
+                (item as RecentSearch).kind !== 'asset' ||
+                typeof (item as { networkId?: unknown }).networkId === 'string',
+        ),
     }
 }
 
@@ -88,12 +109,9 @@ export const useDiscoverRecentSearchesStore = create<
         }),
         {
             name: STORE_NAME,
-            version: 1,
+            version: 2,
             storage: () => getProvider().keyValueStorage,
-            migrate: (persisted, version) =>
-                version === 1
-                    ? (persisted as RecentSearchesState)
-                    : initialState,
+            migrate: (persisted, version) => migrateRecents(persisted, version),
             partialize: state => ({ items: state.items }),
         },
     ),

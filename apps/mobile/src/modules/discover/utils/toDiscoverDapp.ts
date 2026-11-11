@@ -54,6 +54,19 @@ export const dappFromUrl = (url: string): Nullable<DiscoverDapp> => {
     }
 }
 
+/** Keeps the first dApp per normalised url, so a duplicate project never repeats a row or key. */
+export const uniqueDappsByUrl = (
+    dapps: readonly DiscoverDapp[],
+): DiscoverDapp[] => {
+    const seen = new Set<string>()
+    return dapps.filter(dapp => {
+        const key = normalizeDappUrl(dapp.url) ?? dapp.url
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+}
+
 export const dappsByNormalizedUrl = (
     projects: readonly PeraProject[],
 ): Record<string, DiscoverDapp> => {

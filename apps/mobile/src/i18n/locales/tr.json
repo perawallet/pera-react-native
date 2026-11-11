@@ -52,10 +52,11 @@
             "no_recent": "Son arama yok",
             "filter_all": "Tümü",
             "filter_markets": "Piyasalar",
-            "filter_dapps": "dApps",
+            "filter_dapps": "dApp’ler",
             "search_web": "Web’de ara",
             "no_results": "Sonuç yok",
-            "assets_unavailable": "Varlık araması şu anda kullanılamıyor"
+            "assets_unavailable": "Varlık araması şu anda kullanılamıyor",
+            "dapps_unavailable": "dApp araması şu anda kullanılamıyor"
         }
     },
     "account_menu": {

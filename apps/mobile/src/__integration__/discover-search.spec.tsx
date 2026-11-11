@@ -370,4 +370,31 @@ describe('Flow: Discover search', () => {
         expect(screen.getByTestId(DAPP_ROW)).toBeTruthy()
         await settled()
     })
+
+    it('Given the directory fails with no cache, then the dApps notice shows on All and dApps instead of No results', async () => {
+        server.use(mockDiscoverProjects({ response: [], status: 500 }))
+        renderSearch()
+        typeQuery('zzz')
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText('discover.search.dapps_unavailable'),
+                ).toBeTruthy()
+            },
+            { timeout: 4000 },
+        )
+
+        pickFilter('dapps')
+        expect(
+            screen.getByText('discover.search.dapps_unavailable'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('discover_search_no_results')).toBeNull()
+
+        pickFilter('markets')
+        expect(
+            screen.queryByText('discover.search.dapps_unavailable'),
+        ).toBeNull()
+        await settled()
+    })
 })

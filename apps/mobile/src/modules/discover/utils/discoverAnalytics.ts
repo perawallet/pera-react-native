@@ -21,6 +21,18 @@ export type DappEventPayload = {
     [Key.ChainId]?: ChainId
 }
 
+/** Origin and path only: a typed url's query string and hash may carry user text or secrets. */
+export const stripUrlQueryAndHash = (url: string): string => {
+    const end = url.search(/[?#]/)
+    return end === -1 ? url : url.slice(0, end)
+}
+
+/** The payload for a url the user typed; never the query or hash. */
+export const typedUrlEventPayload = (dapp: DiscoverDapp): DappEventPayload => ({
+    ...dappEventPayload(dapp, null),
+    [Key.DappUrl]: stripUrlQueryAndHash(dapp.url),
+})
+
 export const dappEventPayload = (
     dapp: DiscoverDapp,
     chain: Nullable<ChainId>,

@@ -73,6 +73,57 @@ describe('useDiscoverRecentSearchesStore', () => {
         expect(recentSearchKey(urlItem('not a url'))).toBe('url:not a url')
     })
 
+    test('the same asset on two networks is two entries with network keys', () => {
+        const asset = (networkId: 'mainnet' | 'testnet'): RecentSearch => ({
+            kind: 'asset',
+            ref: { chainId: 'algorand', assetId: '31566704' },
+            networkId,
+            name: 'USD Coin',
+            unitName: 'USDC',
+            logo: null,
+        })
+        expect(recentSearchKey(asset('mainnet'))).toBe(
+            'asset:algorand/mainnet/31566704',
+        )
+        expect(recentSearchKey(asset('testnet'))).toBe(
+            'asset:algorand/testnet/31566704',
+        )
+        const { push } = useDiscoverRecentSearchesStore.getState()
+        push(asset('mainnet'))
+        push(asset('testnet'))
+        push(asset('mainnet'))
+        expect(useDiscoverRecentSearchesStore.getState().items).toEqual([
+            asset('mainnet'),
+            asset('testnet'),
+        ])
+    })
+
+    test('rehydrating version 1 data drops asset recents without a network', async () => {
+        const storage = getProvider().keyValueStorage
+        await storage.setItem(
+            'discover-recent-searches-store',
+            JSON.stringify({
+                version: 1,
+                state: {
+                    items: [
+                        urlItem('https://a.io'),
+                        {
+                            kind: 'asset',
+                            ref: { chainId: 'algorand', assetId: '1' },
+                            name: 'Old',
+                            unitName: 'OLD',
+                            logo: null,
+                        },
+                    ],
+                },
+            }),
+        )
+        await useDiscoverRecentSearchesStore.persist.rehydrate()
+        expect(useDiscoverRecentSearchesStore.getState().items).toEqual([
+            urlItem('https://a.io'),
+        ])
+    })
+
     test('remove drops only the matching item', () => {
         const { push, remove } = useDiscoverRecentSearchesStore.getState()
         push(urlItem('https://a.io'))

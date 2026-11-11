@@ -22,6 +22,11 @@ describe('formatNewsDate', () => {
         )
     })
 
+    it('returns an empty string for an invalid date instead of throwing', () => {
+        vi.mocked(getActiveLocale).mockReturnValue('en-GB')
+        expect(formatNewsDate(new Date('not a date'))).toBe('')
+    })
+
     it('orders the parts per locale', () => {
         vi.mocked(getActiveLocale).mockReturnValue('en-US')
         expect(formatNewsDate(new Date('2026-11-09T10:00:00Z'))).toBe(

@@ -55,7 +55,8 @@
             "filter_dapps": "dApps",
             "search_web": "Im Web suchen",
             "no_results": "Keine Ergebnisse",
-            "assets_unavailable": "Die Asset-Suche ist momentan nicht verfügbar"
+            "assets_unavailable": "Die Asset-Suche ist momentan nicht verfügbar",
+            "dapps_unavailable": "Die dApp-Suche ist momentan nicht verfügbar"
         }
     },
     "account_menu": {

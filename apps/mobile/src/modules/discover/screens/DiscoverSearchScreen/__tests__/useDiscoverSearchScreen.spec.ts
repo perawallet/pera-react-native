@@ -97,6 +97,15 @@ const typeQuery = (
     })
 }
 
+const expectNoQueryInAnalytics = () => {
+    for (const [, payload] of vi.mocked(trackEvent).mock.calls) {
+        const serialised = JSON.stringify(payload)
+        expect(serialised).not.toContain('q=')
+        expect(serialised).not.toContain('?')
+        expect(serialised).not.toContain('#')
+    }
+}
+
 const recents = () => useDiscoverRecentSearchesStore.getState().items
 
 describe('useDiscoverSearchScreen', () => {
@@ -150,9 +159,10 @@ describe('useDiscoverSearchScreen', () => {
             expect(trackEvent).toHaveBeenCalledWith(
                 DiscoverEvent.SearchResultTap,
                 {
-                    dapp_url: 'https://duckduckgo.com/?q=uni',
+                    dapp_url: 'https://duckduckgo.com/',
                 },
             )
+            expectNoQueryInAnalytics()
         })
 
         it('opens DuckDuckGo with the encoded text for javascript:alert(1)', () => {
@@ -167,6 +177,33 @@ describe('useDiscoverSearchScreen', () => {
                 kind: 'url',
                 url: `https://duckduckgo.com/?q=${encodeURIComponent('javascript:alert(1)')}`,
             })
+        })
+
+        it('keeps the typed text out of analytics for a web search', () => {
+            const { result } = setup()
+            typeQuery(result, 'secret words')
+            act(() => result.current.submit())
+            expect(trackEvent).toHaveBeenCalledWith(
+                DiscoverEvent.SearchResultTap,
+                {
+                    dapp_url: 'https://duckduckgo.com/',
+                },
+            )
+            expectNoQueryInAnalytics()
+        })
+
+        it('strips the query and hash from a typed url sent to analytics', () => {
+            const { result } = setup()
+            typeQuery(result, 'uniswap.org/swap?token=secret#frag')
+            act(() => result.current.submit())
+            expect(trackEvent).toHaveBeenCalledWith(
+                DiscoverEvent.SearchResultTap,
+                {
+                    dapp_name: 'uniswap.org',
+                    dapp_url: 'https://uniswap.org/swap',
+                },
+            )
+            expectNoQueryInAnalytics()
         })
 
         it('opens http://evil.com on DuckDuckGo, never as a typed url', () => {
@@ -344,6 +381,7 @@ describe('useDiscoverSearchScreen', () => {
             expect(recents()[0]).toEqual({
                 kind: 'asset',
                 ref: { chainId: 'algorand', assetId: '31566704' },
+                networkId: 'mainnet',
                 name: 'USD Coin',
                 unitName: 'USDC',
                 logo: 'https://pera.test/usdc.png',
@@ -380,6 +418,29 @@ describe('useDiscoverSearchScreen', () => {
                 'https://duckduckgo.com/?q=uniswap.org',
             )
             expect(openDapp).toHaveBeenCalledTimes(1)
+            expect(trackEvent).toHaveBeenLastCalledWith(
+                DiscoverEvent.SearchResultTap,
+                { dapp_url: 'https://duckduckgo.com/' },
+            )
+            expectNoQueryInAnalytics()
+        })
+
+        it('strips the query from a reopened typed-url recent in analytics', () => {
+            const { result } = setup()
+            act(() =>
+                result.current.openRecent({
+                    kind: 'url',
+                    url: 'https://uniswap.org/swap?token=secret',
+                }),
+            )
+            expect(trackEvent).toHaveBeenCalledWith(
+                DiscoverEvent.SearchResultTap,
+                {
+                    dapp_name: 'uniswap.org',
+                    dapp_url: 'https://uniswap.org/swap',
+                },
+            )
+            expectNoQueryInAnalytics()
         })
 
         it('reopens each kind of recent', () => {
@@ -400,6 +461,7 @@ describe('useDiscoverSearchScreen', () => {
                 result.current.openRecent({
                     kind: 'asset',
                     ref: { chainId: 'algorand', assetId: '1' },
+                    networkId: 'mainnet',
                     name: 'X',
                     unitName: 'X',
                     logo: null,
@@ -413,6 +475,57 @@ describe('useDiscoverSearchScreen', () => {
                 },
             })
             expect(trackEvent).toHaveBeenCalledTimes(3)
+        })
+    })
+
+    describe('asset recents per network', () => {
+        const assetRecent = (networkId: 'mainnet' | 'testnet') =>
+            ({
+                kind: 'asset',
+                ref: { chainId: 'algorand', assetId: '1' },
+                networkId,
+                name: 'X',
+                unitName: 'X',
+                logo: null,
+            }) as const
+
+        it('shows an asset recent from the selected network only', () => {
+            useDiscoverRecentSearchesStore.setState({
+                items: [assetRecent('testnet'), assetRecent('mainnet')],
+            })
+            const { result } = setup()
+            expect(result.current.recents).toEqual([assetRecent('mainnet')])
+        })
+
+        it('hides an asset recent whose chain no longer has asset search', () => {
+            useDiscoverRecentSearchesStore.setState({
+                items: [assetRecent('mainnet')],
+            })
+            vi.mocked(useCapableChainIds).mockReturnValue([])
+            const { result } = setup()
+            expect(result.current.recents).toEqual([])
+        })
+    })
+
+    describe('directory error', () => {
+        it('reports dapp search unavailable when the directory failed with no cache', () => {
+            vi.mocked(useDiscoverDirectory).mockReturnValue({
+                projects: [],
+                verifiedUrls: new Set(),
+                isLoading: false,
+                isError: true,
+            })
+            expect(setup().result.current.isDappSearchUnavailable).toBe(true)
+        })
+
+        it('keeps searching a cached list when a refetch failed', () => {
+            vi.mocked(useDiscoverDirectory).mockReturnValue({
+                projects: [uniswap],
+                verifiedUrls: new Set(),
+                isLoading: false,
+                isError: true,
+            })
+            expect(setup().result.current.isDappSearchUnavailable).toBe(false)
         })
     })
 

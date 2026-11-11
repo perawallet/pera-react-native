@@ -29,9 +29,8 @@ export type UseDiscoverDirectoryResult = {
     isError: boolean
 }
 
-// The every-discover-chain list shared by search and the migration. Home keys
-// per chip; this all-chains key is a documented deviation from the spec's
-// "one query shared with Home".
+// The every-discover-chain project list that search filters locally. Home
+// queries per chain chip instead, so the two use different query keys.
 export const useDiscoverDirectory = ({
     isEnabled = true,
 }: UseDiscoverDirectoryParams = {}): UseDiscoverDirectoryResult => {

@@ -75,4 +75,22 @@ describe('filterDappsByQuery', () => {
             filterDappsByQuery(projects, '  tinyman ').map(d => d.name),
         ).toEqual(['Tinyman'])
     })
+
+    it('keeps the most popular of projects sharing a normalised url', () => {
+        const dupes = [
+            project({
+                name: 'Low',
+                url: 'https://dupe.io/',
+                popularityScore: 1,
+            }),
+            project({
+                name: 'High',
+                url: 'https://DUPE.io',
+                popularityScore: 8,
+            }),
+        ]
+        expect(filterDappsByQuery(dupes, 'dupe').map(d => d.name)).toEqual([
+            'High',
+        ])
+    })
 })

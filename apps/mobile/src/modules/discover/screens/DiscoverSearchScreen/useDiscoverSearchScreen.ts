@@ -15,6 +15,7 @@ import {
     useAssetSearchAcrossScopesQuery,
     type ScopedAssetSearchResult,
 } from '@perawallet/wallet-core-assets'
+import { toScopeKey } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
 import {
     logger,
@@ -42,13 +43,19 @@ import {
     type RecentSearch,
 } from '../../store/useDiscoverRecentSearchesStore'
 import type { DiscoverDapp } from '../../types'
-import { dappEventPayload } from '../../utils/discoverAnalytics'
+import {
+    dappEventPayload,
+    stripUrlQueryAndHash,
+    typedUrlEventPayload,
+} from '../../utils/discoverAnalytics'
 import { filterDappsByQuery } from '../../utils/filterDappsByQuery'
 import { looksLikeUrl } from '../../utils/looksLikeUrl'
 import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
 import { dappFromUrl } from '../../utils/toDiscoverDapp'
 
 const WEB_SEARCH_URL_PREFIX = 'https://duckduckgo.com/?q='
+// Analytics never receives the searched text, only that the web search ran.
+const WEB_SEARCH_EVENT_PAYLOAD = { [Key.DappUrl]: 'https://duckduckgo.com/' }
 
 export type DiscoverSearchFilter = 'all' | 'markets' | 'dapps'
 
@@ -67,6 +74,7 @@ export type UseDiscoverSearchScreenResult = {
     assetResults: ScopedAssetSearchResult[]
     showChains: boolean
     isLoadingDapps: boolean
+    isDappSearchUnavailable: boolean
     isLoadingAssets: boolean
     isAssetSearchIncomplete: boolean
     isAssetSearchUnavailable: boolean
@@ -95,10 +103,26 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
     const discoverChainIds = useDiscoverChainIds()
     const scopes = useSelectedScopes(useCapableChainIds('assetSearch'))
     const favorites = useDiscoverFavoritesStore(s => s.favorites)
-    const recents = useDiscoverRecentSearchesStore(s => s.items)
+    const storedRecents = useDiscoverRecentSearchesStore(s => s.items)
     const pushRecent = useDiscoverRecentSearchesStore(s => s.push)
     const removeRecent = useDiscoverRecentSearchesStore(s => s.remove)
     const clearRecents = useDiscoverRecentSearchesStore(s => s.clear)
+
+    // An asset recent is only valid on the network it was found on, and only
+    // while its chain still supports asset search.
+    const recents = useMemo(() => {
+        const searchableScopes = new Set(scopes.map(toScopeKey))
+        return storedRecents.filter(
+            recent =>
+                recent.kind !== 'asset' ||
+                searchableScopes.has(
+                    toScopeKey({
+                        chainId: recent.ref.chainId,
+                        networkId: recent.networkId,
+                    }),
+                ),
+        )
+    }, [storedRecents, scopes])
 
     const [query, setQuery] = useState('')
     const [filter, setFilter] = useState<DiscoverSearchFilter>('all')
@@ -192,7 +216,7 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
             return
         }
         pushRecent({ kind: 'url', url: typedUrl })
-        trackEvent(DiscoverEvent.SearchResultTap, dappEventPayload(dapp, null))
+        trackEvent(DiscoverEvent.SearchResultTap, typedUrlEventPayload(dapp))
         // The in-app browser star toggles the typed-URL favorite.
         openDappPage(dapp, null)
     }, [typedUrl, pushRecent, openDappPage])
@@ -200,7 +224,7 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
     const openWebSearch = useCallback(() => {
         const url = `${WEB_SEARCH_URL_PREFIX}${encodeURIComponent(query.trim())}`
         pushRecent({ kind: 'url', url })
-        trackEvent(DiscoverEvent.SearchResultTap, { [Key.DappUrl]: url })
+        trackEvent(DiscoverEvent.SearchResultTap, WEB_SEARCH_EVENT_PAYLOAD)
         openWebPage(url)
     }, [query, pushRecent, openWebPage])
 
@@ -221,6 +245,7 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
             pushRecent({
                 kind: 'asset',
                 ref: { chainId: scope.chainId, assetId: asset.assetId },
+                networkId: scope.networkId,
                 name: asset.name ?? '',
                 unitName: asset.unitName ?? '',
                 logo: asset.peraMetadata?.logo ?? null,
@@ -239,14 +264,29 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
             pushRecent(recent)
             switch (recent.kind) {
                 case 'url': {
-                    trackEvent(DiscoverEvent.SearchResultTap, {
-                        [Key.DappUrl]: recent.url,
-                    })
                     // A searched domain reopens as the typed-URL row opens it, so
                     // the in-browser star survives; a DuckDuckGo search stays plain.
-                    const dapp = recent.url.startsWith(WEB_SEARCH_URL_PREFIX)
-                        ? null
-                        : dappFromUrl(recent.url)
+                    const isWebSearch = recent.url.startsWith(
+                        WEB_SEARCH_URL_PREFIX,
+                    )
+                    const dapp = isWebSearch ? null : dappFromUrl(recent.url)
+                    if (isWebSearch) {
+                        trackEvent(
+                            DiscoverEvent.SearchResultTap,
+                            WEB_SEARCH_EVENT_PAYLOAD,
+                        )
+                    } else {
+                        trackEvent(
+                            DiscoverEvent.SearchResultTap,
+                            dapp === null
+                                ? {
+                                      [Key.DappUrl]: stripUrlQueryAndHash(
+                                          recent.url,
+                                      ),
+                                  }
+                                : typedUrlEventPayload(dapp),
+                        )
+                    }
                     if (dapp === null) openWebPage(recent.url)
                     else openDappPage(dapp, null)
                     return
@@ -311,6 +351,9 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
         assetResults,
         showChains: discoverChainIds.length > 1,
         isLoadingDapps: directory.isLoading,
+        // An errored query with a cached list still searches that list.
+        isDappSearchUnavailable:
+            directory.isError && directory.projects.length === 0,
         isLoadingAssets: assetSearch.isLoading,
         isAssetSearchIncomplete: assetSearch.isIncomplete,
         isAssetSearchUnavailable: assetSearch.isUnavailable,

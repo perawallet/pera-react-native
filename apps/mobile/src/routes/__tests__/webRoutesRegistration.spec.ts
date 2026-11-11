@@ -54,8 +54,7 @@ const routesByCapability = {
     sharedAccounts: ['Multisig'],
     peraCard: ['PeraCard'],
     staking: ['Staking'],
-    // The asset-detail Markets link pushes DiscoverDetail over the current
-    // screen; the native Discover home opens DiscoverSearch the same way.
+    // DiscoverDetail and DiscoverSearch are pushed over the current screen.
     discoverTab: ['DiscoverDetail', 'DiscoverSearch'],
 } as const
 

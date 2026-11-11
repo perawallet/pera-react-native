@@ -115,7 +115,9 @@ export const DiscoverHomeScreen = () => {
                 refreshControl={
                     <PWRefreshControl
                         isRefreshing={home.isRefreshing}
-                        onRefresh={home.refresh}
+                        onRefresh={() => {
+                            void home.refresh()
+                        }}
                     />
                 }
             >
