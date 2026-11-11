@@ -67,7 +67,7 @@ const fakeDriver: LedgerAppDriver = {
 
 const NANO_S_PLUS_DEVICE = {
     vendorId: 0x2c_97,
-    productId: 0x40_11,
+    productId: 0x50_11,
     productName: 'Nano S Plus',
 }
 
@@ -138,6 +138,16 @@ describe('LedgerWebUsbService', () => {
         })
 
         stop()
+    })
+
+    test('scan names a device by its model when the browser gives no product name', () => {
+        emitScannedDevice({ ...NANO_S_PLUS_DEVICE, productName: '' })
+        const onDevice = vi.fn()
+        new LedgerWebUsbService().createTransportProvider().scan(onDevice)
+
+        expect(onDevice).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'Ledger Nano S Plus' }),
+        )
     })
 
     test('scan ignores non-"add" events', () => {

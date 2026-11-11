@@ -507,6 +507,135 @@ describe('useEthereumContractAction', () => {
         })
     })
 
+    describe('a liquidity action', () => {
+        const MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+        const MANAGER_LABEL: EvmContractLabel = {
+            kind: 'uniswap-v3-position-manager',
+            name: 'Uniswap V3 Positions',
+            projectDomain: 'uniswap.org',
+        }
+        const addNew: EvmContractAction = {
+            kind: 'add-liquidity',
+            deposits: [
+                {
+                    asset: { kind: 'token', contract: USDC },
+                    maxAmount: new Decimal(353_961),
+                },
+                {
+                    asset: { kind: 'native' },
+                    maxAmount: new Decimal(168n * 10n ** 12n),
+                },
+            ],
+            position: { kind: 'new' },
+        }
+        const liquidityView = (action: EvmContractAction) =>
+            viewWith(action, { to: MANAGER, knownContract: MANAGER_LABEL })
+
+        it('shows an add’s deposits in display units, each at most, with the position', () => {
+            mockRecords({ [USDC]: USDC_RECORD })
+
+            const { contractAction, knownContract } = render(
+                liquidityView(addNew),
+            )
+
+            expect(contractAction).toEqual({
+                kind: 'add-liquidity',
+                deposits: [
+                    {
+                        asset: USDC_RECORD,
+                        value: new Decimal('0.353961'),
+                        isBaseUnits: false,
+                        bound: 'at-most',
+                    },
+                    {
+                        asset: expect.objectContaining({ unitName: 'ETH' }),
+                        value: new Decimal('0.000168'),
+                        isBaseUnits: false,
+                        bound: 'at-most',
+                    },
+                ],
+                position: { kind: 'new' },
+            })
+            expect(knownContract).toEqual(MANAGER_LABEL)
+        })
+
+        it('keeps a deposit whose token has no record in raw base units, flagged', () => {
+            const { contractAction } = render(liquidityView(addNew))
+
+            expect(contractAction).toMatchObject({
+                deposits: [
+                    {
+                        asset: null,
+                        value: new Decimal(353_961),
+                        isBaseUnits: true,
+                    },
+                    { isBaseUnits: false },
+                ],
+            })
+        })
+
+        it('reads the second deposit’s token when the first is native', () => {
+            mockRecords({ [DAI]: DAI_RECORD })
+
+            const { contractAction } = render(
+                liquidityView({
+                    ...addNew,
+                    deposits: [
+                        {
+                            asset: { kind: 'native' },
+                            maxAmount: new Decimal(10n ** 18n),
+                        },
+                        {
+                            asset: { kind: 'token', contract: DAI },
+                            maxAmount: new Decimal(10n ** 18n),
+                        },
+                    ],
+                } as EvmContractAction),
+            )
+
+            expect(contractAction).toMatchObject({
+                deposits: [
+                    { asset: expect.objectContaining({ unitName: 'ETH' }) },
+                    { asset: DAI_RECORD, value: new Decimal(1) },
+                ],
+            })
+        })
+
+        it('passes an existing position and a removal’s details through', () => {
+            const increase = render(
+                liquidityView({
+                    kind: 'add-liquidity',
+                    deposits: [],
+                    position: { kind: 'existing', tokenId: '42' },
+                }),
+            )
+            const removal = render(
+                liquidityView({
+                    kind: 'remove-liquidity',
+                    tokenId: '42',
+                    isClosing: true,
+                }),
+            )
+
+            expect(increase.contractAction).toEqual({
+                kind: 'add-liquidity',
+                deposits: [],
+                position: { kind: 'existing', tokenId: '42' },
+            })
+            expect(removal.contractAction).toEqual({
+                kind: 'remove-liquidity',
+                tokenId: '42',
+                isClosing: true,
+            })
+        })
+
+        it('reads nothing while contractDecoding is off', () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+
+            expect(render(liquidityView(addNew)).contractAction).toBeNull()
+        })
+    })
+
     it('labels a known contract whose call it cannot read', () => {
         const { contractAction, knownContract } = render(viewWith(undefined))
 

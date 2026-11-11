@@ -71,7 +71,13 @@ export const EthereumTransactionReview = ({
 
     let callDetails = null
     if (standardCall && !isTransfer) {
-        callDetails = <EthereumApprovalDetails presentation={presentation} />
+        callDetails = (
+            <EthereumApprovalDetails
+                presentation={presentation}
+                source={source}
+                verifiedOrigin={verifiedOrigin}
+            />
+        )
     } else if (contractAction) {
         callDetails = (
             <EthereumContractActionDetails

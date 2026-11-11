@@ -38,7 +38,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
     const importAccount = useImportAccount(scope)
     const { createHdWalletAccountForSeed } = useCreateAccount(scope)
     const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
-    const markAccountBackedUp = useMarkMnemonicBackupComplete(scope.chainId)
+    const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const [isMigrating, setIsMigrating] = useState(false)
     const [result, setResult] = useState<Nullable<MigrationRunResult>>(null)
     const [error, setError] = useState<Nullable<Error>>(null)

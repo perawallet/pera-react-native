@@ -40,6 +40,7 @@ import {
     chainAccountOf,
     custodyOf,
     hardwareDetailsOf,
+    hardwareDeviceNameOf,
     hardwareDeviceOf,
     hasCustody,
     hasRecoverySeed,
@@ -128,6 +129,24 @@ describe('accessors', () => {
             accountIndex: 0,
         })
         expect(hardwareDetailsOf(testAccount('local'))).toBeUndefined()
+    })
+
+    test.each([
+        ['Ledger Gen5 Eric', 'Ledger Gen5 Eric'],
+        ['/dev/bus/usb/001/002', null],
+        ['', null],
+    ])('hardwareDeviceNameOf shows %j as %j', (deviceName, shown) => {
+        const account = testAccount('hardware')
+        const withName = {
+            ...account,
+            custody: {
+                ...TEST_CUSTODY.hardware,
+                device: { ...TEST_CUSTODY.hardware.device, deviceName },
+            },
+        } as typeof account
+
+        expect(hardwareDeviceNameOf(withName)).toBe(shown)
+        expect(hardwareDeviceNameOf(testAccount('watch'))).toBeNull()
     })
 
     test('a chain the account is not on has no entry, address or key', () => {

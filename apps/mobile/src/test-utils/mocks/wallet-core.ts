@@ -620,6 +620,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                   }
                 : undefined,
         ),
+        hardwareDeviceNameOf: vi.fn((account: any) => {
+            const name =
+                account?.custody?.kind === 'hardware'
+                    ? account.custody.device.deviceName
+                    : undefined
+            return name && !name.startsWith('/dev/') ? name : null
+        }),
         hardwareDetailsOf: vi.fn((account: any) =>
             account?.custody?.kind === 'hardware'
                 ? {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -25,10 +26,15 @@ import { useEthereumApprovalDetails } from './useEthereumApprovalDetails'
 
 type EthereumApprovalDetailsProps = {
     presentation: EthereumTransactionPresentation
+    source?: SignRequestSource
+    /** Origin the platform observed (never dApp-asserted). */
+    verifiedOrigin?: string
 }
 
 export const EthereumApprovalDetails = ({
     presentation,
+    source,
+    verifiedOrigin,
 }: EthereumApprovalDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -42,6 +48,9 @@ export const EthereumApprovalDetails = ({
                 <SpendApprovalWarning
                     approval={standardCall.spendApproval}
                     scope={scope}
+                    requestKind='transaction'
+                    source={source}
+                    verifiedOrigin={verifiedOrigin}
                 />
                 {!!tokenBalance && (
                     <KeyValueRow

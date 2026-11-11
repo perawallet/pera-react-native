@@ -52,6 +52,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
 })
 
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import { fakeChildKey, fakeSeedKey } from '../../../__tests__/fakeKeystore'
+import {
+    testKeystore,
+    type TestKeyStore,
+} from '../../../__tests__/secp256k1TestKeyStore'
 import { useMnemonicBackupStore } from '../../store'
 import { useShouldPromptMnemonicBackup } from '../useShouldPromptMnemonicBackup'
 
@@ -253,6 +258,9 @@ describe('useShouldPromptMnemonicBackup', () => {
 
     test('prompts a funded, never-backed-up Algorand account through the real backup state', async () => {
         await installRealRequiresBackup()
+        testKeystore.store = {
+            state: { keys: [fakeSeedKey('seed'), fakeChildKey('kp', 'seed')] },
+        } as unknown as TestKeyStore
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>

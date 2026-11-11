@@ -59,15 +59,15 @@ const fakeDriver: LedgerAppDriver = {
 // productId and deviceName — there is no stable per-device id — so
 // descriptorId() falls back to the model-wide productId. Fixtures mirror that.
 const NANO_S_PLUS_DESCRIPTOR = {
-    productId: 0x4011,
+    productId: 0x5011,
     vendorId: 0x2c97,
-    deviceName: 'Nano S Plus',
+    deviceName: '/dev/bus/usb/001/002',
 }
 
 const NANO_X_DESCRIPTOR = {
-    productId: 0x0004,
+    productId: 0x4011,
     vendorId: 0x2c97,
-    deviceName: 'Nano X',
+    deviceName: '/dev/bus/usb/001/003',
 }
 
 const connectToFirstDevice = async (
@@ -100,7 +100,7 @@ describe('RNLedgerUsbService', () => {
         expect(provider.transportType).toBe('usb')
     })
 
-    test('scan emits "add" events as devices tagged transportType "usb"', () => {
+    test('scan emits "add" events as devices tagged transportType "usb", named by model rather than the Android device path', () => {
         let observer: { next: (event: unknown) => void } = { next: () => {} }
         const unsubscribe = vi.fn()
         transportListenMock.mockImplementation(subscription => {
@@ -119,7 +119,8 @@ describe('RNLedgerUsbService', () => {
             expect.objectContaining({
                 manufacturer: 'ledger',
                 transportType: 'usb',
-                name: expect.stringContaining('Nano'),
+                model: 'nanoSPlus',
+                name: 'Ledger Nano S Plus',
             }),
         )
 
@@ -141,7 +142,7 @@ describe('RNLedgerUsbService', () => {
         expect(onDevice).not.toHaveBeenCalled()
     })
 
-    test('scan skips a descriptor with neither deviceId nor productId, and names the rest by model when the OS gives no name', () => {
+    test('scan skips a descriptor with neither deviceId nor productId, and names an unrecognized model generically', () => {
         let observer: { next: (event: unknown) => void } = { next: () => {} }
         transportListenMock.mockImplementation(subscription => {
             observer = subscription
@@ -154,14 +155,14 @@ describe('RNLedgerUsbService', () => {
         observer.next({ type: 'add', descriptor: { vendorId: 0x2c97 } })
         observer.next({
             type: 'add',
-            descriptor: { ...NANO_X_DESCRIPTOR, deviceName: null },
+            descriptor: { ...NANO_X_DESCRIPTOR, productId: 0x9911 },
         })
 
         expect(onDevice).toHaveBeenCalledTimes(1)
         expect(onDevice).toHaveBeenCalledWith(
             expect.objectContaining({
-                id: String(NANO_X_DESCRIPTOR.productId),
-                name: expect.stringMatching(/^Ledger /),
+                id: String(0x9911),
+                name: 'Ledger (USB)',
             }),
         )
     })

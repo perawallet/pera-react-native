@@ -13,9 +13,7 @@
 # Bidali/Baanx base URLs and the card USDC asset ids all carry safe non-empty
 # defaults in packages/config/src/main.ts; APP_STORE_APPLE_ID and the
 # Firebase Web SDK/GA4/Sentry vars are iOS- and browser-extension-only (see
-# device.ts / platform-chrome's services); MAINNET_BAANX_CLIENT_KEY has no
-# corresponding Bitrise secret at all (mainnet card isn't live — see main.ts's
-# mainnetBaanxTenantId TODO).
+# device.ts / platform-chrome's services).
 _android_secrets: &android_secrets
   - ANDROID_KEYSTORE_BASE64
   - ANDROID_KEYSTORE_PASSWORD
@@ -51,10 +49,13 @@ _android_secrets: &android_secrets
   # Required by main's tools/dev/validate-env.sh: an empty pin fails closed on the
   # device, so auto funding would silently never work in the release.
   - CARD_AUTODRAW_TEMPLATE_HASH
-  # Card: testnet Baanx x-client-key (public identifier, not the server-only
-  # x-secret-key). tools/dev/setup-env-secrets.sh only aliases the testnet key —
-  # mainnet card isn't live yet (see main.ts's mainnetBaanxTenantId TODO).
+  # Card: Baanx x-client-key (public identifier, not the server-only
+  # x-secret-key) and the mainnet tenant id. The mainnet pair is stored bare:
+  # Baanx prod serves both staging and production builds. The testnet tenant
+  # has a code default.
   - TESTNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_TENANT_ID
 
 # The backend, Bidali and card config tools/dev/generate-config.sh bakes into every
 # client, repeated per platform below because YAML can't merge sequences. See
@@ -100,6 +101,8 @@ _ios_secrets: &ios_secrets
   - GOOGLE_IOS_CLIENT_ID
   - IOS_ICLOUD_CONTAINER_ID
   - TESTNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_TENANT_ID
 
 # tools/dev/validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
 # names as optional because the extension degrades without them. They are
@@ -121,6 +124,8 @@ _web_secrets: &web_secrets
   - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_TENANT_ID
   - FIREBASE_API_KEY
   - FIREBASE_AUTH_DOMAIN
   - FIREBASE_DATABASE_URL
@@ -155,6 +160,8 @@ _web_production_secrets: &web_production_secrets
   - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
   - TESTNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_CLIENT_KEY
+  - MAINNET_BAANX_TENANT_ID
   - FIREBASE_API_KEY
   - FIREBASE_AUTH_DOMAIN
   - FIREBASE_DATABASE_URL

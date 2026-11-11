@@ -111,6 +111,19 @@ describe('resolveHardwareDeviceName', () => {
         ).toBe('Nano X')
     })
 
+    it('returns null for a Ledger paired over USB whose stored name is the Android device path', () => {
+        const sender = withAuthority(
+            ledgerFixture('SENDER', 0, {
+                deviceId: 'dev-1',
+                deviceName: '/dev/bus/usb/001/002',
+            }),
+        )
+
+        expect(
+            resolveHardwareDeviceName([group('SENDER')], [sender], 'algorand'),
+        ).toBeNull()
+    })
+
     it('returns null when the signer account is unknown', () => {
         expect(
             resolveHardwareDeviceName([group('SENDER')], [], 'algorand'),

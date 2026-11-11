@@ -16,6 +16,7 @@ import {
     type WalletAccount,
     accountChainOptions,
     hardwareDetailsOf,
+    hardwareDeviceNameOf,
     hdIndexOf,
     isLedgerAccount,
     useCapabilityChainResolver,
@@ -97,6 +98,16 @@ export const useAccountInfoCard = ({
     )
     const accountType = useAccountTypeLabel(account)
 
+    // A USB account whose saved name was unusable still needs a heading.
+    const ledgerDeviceLabel = useMemo(() => {
+        if (!hardwareDetails) return ''
+        const name = hardwareDeviceNameOf(account)
+        if (name) return name
+        return hardwareDetails.transportType === 'usb'
+            ? t('account_info.ledger_usb_device')
+            : ''
+    }, [account, hardwareDetails, t])
+
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
     }, [])
@@ -125,11 +136,8 @@ export const useAccountInfoCard = ({
                 number: hdSeedGroupIndex + 1,
             })
         }
-        if (hardwareDetails) {
-            return hardwareDetails.deviceName
-        }
-        return ''
-    }, [isHDWallet, hardwareDetails, hdSeedGroupIndex, t])
+        return ledgerDeviceLabel
+    }, [isHDWallet, ledgerDeviceLabel, hdSeedGroupIndex, t])
 
     const structureSubtitle =
         isHDWallet && isMultichain
@@ -237,12 +245,19 @@ export const useAccountInfoCard = ({
                 params: {
                     chainId: scanChainId,
                     deviceId: hardwareDetails.deviceId,
-                    deviceName: hardwareDetails.deviceName,
+                    deviceName: ledgerDeviceLabel,
                     transportType: hardwareDetails.transportType,
                 },
             })
         }
-    }, [account, isHDWallet, hardwareDetails, scanChainId, onClose])
+    }, [
+        account,
+        isHDWallet,
+        hardwareDetails,
+        ledgerDeviceLabel,
+        scanChainId,
+        onClose,
+    ])
 
     return {
         isExpanded,

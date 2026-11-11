@@ -254,13 +254,7 @@ export const findKnownEvmContract = (
         areEvmAddressesEqual(contract.address, address),
     )
 
-// Known for naming, never trusted as a spender: an approval to one keeps the unknown-spender warning.
-const NON_SPENDER_KINDS: readonly KnownEvmContractKind[] = [
-    'uniswap-v3-position-manager',
-    'uniswap-v4-position-manager',
-]
-
-/** A spend approval's `knownSpender`, when `spender` is in the registry as a spender. */
+/** A spend approval's `knownSpender`, when `spender` is in the registry. */
 export const knownSpenderOf = (
     eip155ChainId: Optional<number>,
     spender: string,
@@ -269,7 +263,7 @@ export const knownSpenderOf = (
         eip155ChainId === undefined || !isAddress(spender)
             ? undefined
             : findKnownEvmContract(eip155ChainId, spender)
-    if (!known || NON_SPENDER_KINDS.includes(known.kind)) return undefined
+    if (!known) return undefined
     return {
         name: known.name,
         ...(known.projectDomain && { projectDomain: known.projectDomain }),

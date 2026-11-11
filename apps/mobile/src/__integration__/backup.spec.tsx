@@ -32,9 +32,13 @@ import { Notifier } from 'react-native-notifier'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
+    deriveHdAccount,
+    seedOf,
+    signingKeyOn,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     mnemonicWordsToIndices,
     useKMS,
@@ -43,6 +47,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import {
+    useMarkMnemonicBackupComplete,
     useMnemonicBackupStore,
     useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
@@ -58,19 +63,16 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
-    HD_TEST_ADDRESS,
     HD_TEST_MNEMONIC_12_DISTINCT,
     HD_TEST_MNEMONIC_12_DISTINCT_WORDS,
     HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_WORDS,
-    deriveTestHDAddress,
 } from './__fixtures__/onboarding'
-import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
+import { addressOf } from './__fixtures__/accounts'
 
 // Mint an algo25 key from the pinned `ALGO25_TEST_MNEMONIC` and register
-// the resulting WalletAccount in the store, returning the keyPairId the
-// keystore handed back so the mnemonic-backup invariants can be asserted
-// against the same id the screens write to.
+// the resulting WalletAccount in the store. The account holds the signing
+// child, as in production; backup state is read back under its seed.
 const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
@@ -86,7 +88,7 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
         chains: {
             algorand: {
                 address: ALGO25_TEST_ADDRESS,
-                keyPairId: key!.seedKey.id ?? '',
+                keyPairId: key!.signKeyId,
             },
         },
         name: 'Algo25 Test',
@@ -94,6 +96,29 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     useAccountsStore.getState().setAccounts([account])
     useAccountsStore.getState().setSelectedAccountId(account.id)
     return account
+}
+
+const deriveHdWalletAccount = async (
+    seedKeyId: string,
+    id: string,
+    keyIndex: number,
+): Promise<WalletAccount> => {
+    const derived = await deriveHdAccount(
+        getSelectedScope(ALGORAND_CHAIN_ID),
+        seedKeyId,
+        { account: 0, keyIndex },
+    )
+    return {
+        id,
+        custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex } },
+        chains: {
+            algorand: {
+                address: derived.address,
+                keyPairId: derived.keyPairId,
+            },
+        },
+        name: id,
+    }
 }
 
 type SeededHDAccounts = {
@@ -104,10 +129,9 @@ type SeededHDAccounts = {
 }
 
 // Mint an HD root key and register the master account plus two siblings
-// derived at keyIndex=1 and keyIndex=2. All three accounts share the same
-// keyPairId, so the mnemonic-backup store keys their state on a single id
-// (see getMnemonicBackupKeyId). That shared keying is the property the
-// sibling-dedup test exercises.
+// derived at keyIndex=1 and keyIndex=2. Each account holds its own derived
+// child key, as in production, so the siblings share backup state only
+// through the seed they derive from.
 const seedHDWalletAccounts = async (params?: {
     mnemonic: string
 }): Promise<SeededHDAccounts> => {
@@ -121,44 +145,9 @@ const seedHDWalletAccounts = async (params?: {
         expect(rootKey).not.toBeNull()
     })
     const rootKeyId = rootKey!.seedKey.id ?? ''
-    const [rootAddress, s1Address, s2Address] = await Promise.all([
-        params ? deriveTestHDAddress(0, 0, mnemonic) : HD_TEST_ADDRESS,
-        deriveTestHDAddress(0, 1, mnemonic),
-        deriveTestHDAddress(0, 2, mnemonic),
-    ])
-
-    const rootAccount: WalletAccount = {
-        id: 'hd-root',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 0 },
-        },
-        chains: {
-            algorand: { address: rootAddress, keyPairId: rootKeyId },
-        },
-        name: 'HD Root',
-    }
-    const sibling1: WalletAccount = {
-        id: 'hd-s1',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 1 },
-        },
-        chains: { algorand: { address: s1Address, keyPairId: rootKeyId } },
-        name: 'HD Sibling 1',
-    }
-    const sibling2: WalletAccount = {
-        id: 'hd-s2',
-        custody: {
-            kind: 'local',
-            seed: 'bip39',
-            hd: { account: 0, keyIndex: 2 },
-        },
-        chains: { algorand: { address: s2Address, keyPairId: rootKeyId } },
-        name: 'HD Sibling 2',
-    }
+    const rootAccount = await deriveHdWalletAccount(rootKeyId, 'hd-root', 0)
+    const sibling1 = await deriveHdWalletAccount(rootKeyId, 'hd-s1', 1)
+    const sibling2 = await deriveHdWalletAccount(rootKeyId, 'hd-s2', 2)
     useAccountsStore.getState().setAccounts([rootAccount, sibling1, sibling2])
     useAccountsStore.getState().setSelectedAccountId(rootAccount.id)
     return { rootAccount, sibling1, sibling2, rootKeyId }
@@ -279,7 +268,7 @@ describe('Flow: Account backup', () => {
     it('Given an algo25 account, when the user walks the full backup flow and answers verification correctly, then the wallet root is marked backed up and the success screen renders', async () => {
         const account = await seedAlgo25Account()
         expect(
-            useMnemonicBackupStore.getState().isBackedUp(keyPairIdOf(account)),
+            useMnemonicBackupStore.getState().isBackedUp(seedOf(account)!),
         ).toBe(false)
 
         renderBackupStack(addressOf(account))
@@ -315,7 +304,7 @@ describe('Flow: Account backup', () => {
             expect(screen.getByTestId('backup_success_done')).toBeTruthy()
         })
         expect(
-            useMnemonicBackupStore.getState().isBackedUp(keyPairIdOf(account)),
+            useMnemonicBackupStore.getState().isBackedUp(seedOf(account)!),
         ).toBe(true)
     })
 
@@ -432,6 +421,66 @@ describe('Flow: Account backup', () => {
         expect(requires.result.current).toBe(false)
     })
 
+    it('Given an HD wallet whose root was backed up, when another account is added to it, then `useRequiresMnemonicBackup` reads false for the new account', async () => {
+        const { rootAccount } = await seedHDWalletAccounts()
+        const { result: mark } = renderHook(() =>
+            useMarkMnemonicBackupComplete(),
+        )
+        act(() => mark.current(rootAccount))
+
+        const added = await deriveHdWalletAccount(
+            seedOf(rootAccount)!,
+            'hd-s3',
+            3,
+        )
+        useAccountsStore
+            .getState()
+            .setAccounts([...useAccountsStore.getState().accounts, added])
+
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(added, ALGORAND_CHAIN_ID),
+        )
+        expect(result.current).toBe(false)
+    })
+
+    it('Given a backup saved under the key of one derived account, when its siblings are read, then none requires a backup', async () => {
+        const { rootAccount, sibling1, sibling2 } = await seedHDWalletAccounts()
+        useMnemonicBackupStore
+            .getState()
+            .markBackedUp(signingKeyOn(rootAccount, ALGORAND_CHAIN_ID)!)
+
+        const requires = renderHook(
+            ({ account }: { account: WalletAccount }) =>
+                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+            { initialProps: { account: rootAccount } },
+        )
+        expect(requires.result.current).toBe(false)
+        requires.rerender({ account: sibling1 })
+        expect(requires.result.current).toBe(false)
+        requires.rerender({ account: sibling2 })
+        expect(requires.result.current).toBe(false)
+    })
+
+    it('Given two HD wallets, when one is backed up, then the other still requires a backup', async () => {
+        const first = await seedHDWalletAccounts()
+        const second = await seedHDWalletAccounts({
+            mnemonic: HD_TEST_MNEMONIC_12_DISTINCT,
+        })
+        const { result: mark } = renderHook(() =>
+            useMarkMnemonicBackupComplete(),
+        )
+        act(() => mark.current(first.rootAccount))
+
+        const requires = renderHook(
+            ({ account }: { account: WalletAccount }) =>
+                useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+            { initialProps: { account: first.sibling1 } },
+        )
+        expect(requires.result.current).toBe(false)
+        requires.rerender({ account: second.rootAccount })
+        expect(requires.result.current).toBe(true)
+    })
+
     it('Given the user submits a wrong answer in verification, when they tap continue, then the backup store stays clear and the success screen does not mount', async () => {
         const account = await seedAlgo25Account()
 
@@ -478,7 +527,7 @@ describe('Flow: Account backup', () => {
         expect(screen.queryByTestId('backup_success_done')).toBeNull()
         expect(screen.getByTestId('backup_verification_next')).toBeTruthy()
         expect(
-            useMnemonicBackupStore.getState().isBackedUp(keyPairIdOf(account)),
+            useMnemonicBackupStore.getState().isBackedUp(seedOf(account)!),
         ).toBe(false)
     })
 

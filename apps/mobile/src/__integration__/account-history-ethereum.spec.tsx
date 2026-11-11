@@ -423,6 +423,18 @@ describe('Flow: History on an Ethereum account', () => {
         beforeEach(() => server.events.on('request:start', trackRpc))
         afterEach(() => server.events.removeListener('request:start', trackRpc))
 
+        // A row opened late in a test leaves its node read running past the
+        // assertions; drain it here, or it lands in the next test's rpcRequests.
+        let queryClient = createTestQueryClient()
+        beforeEach(() => {
+            queryClient = createTestQueryClient()
+        })
+        afterEach(async () => {
+            await waitFor(() => expect(queryClient.isFetching()).toBe(0), {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+        })
+
         // Stands in for the tab bar, so the route an NFT opens can be read.
         const TabBarProbe = () => (
             <div data-testid='tab_bar_route'>
@@ -432,6 +444,7 @@ describe('Flow: History on an Ethereum account', () => {
 
         const renderHistory = () =>
             renderWithNavigation(AccountHistory, 'AccountHistory', {
+                queryClient,
                 additionalScreens: [
                     {
                         name: 'TransactionDetails',

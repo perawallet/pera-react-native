@@ -125,6 +125,68 @@ describe('decodedCallSummary', () => {
         expect(summary.subtitle).toBeUndefined()
     })
 
+    describe('a pending Uniswap V3 mint', () => {
+        const MANAGER: Address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+        const MANAGER_ABI = parseAbi([
+            'struct MintParams { address token0; address token1; uint24 fee; int24 tickLower; int24 tickUpper; uint256 amount0Desired; uint256 amount1Desired; uint256 amount0Min; uint256 amount1Min; address recipient; uint256 deadline; }',
+            'function mint(MintParams params)',
+            'function refundETH()',
+            'function multicall(bytes[] data)',
+        ])
+        const mint = encodeFunctionData({
+            abi: MANAGER_ABI,
+            functionName: 'mint',
+            args: [
+                {
+                    token0: USDT,
+                    token1: WETH,
+                    fee: 500,
+                    tickLower: -887_270,
+                    tickUpper: 887_270,
+                    amount0Desired: 353_961n,
+                    amount1Desired: 168n * 10n ** 12n,
+                    amount0Min: 0n,
+                    amount1Min: 0n,
+                    recipient: SENDER,
+                    deadline: 1_800_000_000n,
+                },
+            ],
+        })
+        const data = encodeFunctionData({
+            abi: MANAGER_ABI,
+            functionName: 'multicall',
+            args: [
+                [
+                    mint,
+                    encodeFunctionData({
+                        abi: MANAGER_ABI,
+                        functionName: 'refundETH',
+                    }),
+                ],
+            ],
+        })
+        const value = 168n * 10n ** 12n
+
+        it('is titled Add liquidity with the Uniswap V3 Positions subtitle while decoding', () => {
+            const summary = summarize({ to: MANAGER, data, value })
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.add_liquidity',
+            )
+            expect(summary.subtitle?.params).toEqual({
+                title: 'Uniswap V3 Positions',
+            })
+        })
+
+        it('is a contract interaction when decoding is off', () => {
+            const summary = summarize({ to: MANAGER, data, value }, false)
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.contract_interaction',
+            )
+        })
+    })
+
     it('names a wrapped native deposit while decoding', () => {
         const data = encodeFunctionData({
             abi: parseAbi(['function deposit()']),

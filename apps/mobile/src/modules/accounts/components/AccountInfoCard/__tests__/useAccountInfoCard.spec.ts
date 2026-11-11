@@ -238,6 +238,38 @@ describe('useAccountInfoCard', () => {
         ])
     })
 
+    test('Ledger account paired over USB with the Android device path as its name: headed and scanned as Ledger (USB)', () => {
+        const usbAccount: HardwareWalletAccount = {
+            ...ledgerAccount,
+            custody: {
+                ...ledgerAccount.custody,
+                device: {
+                    ...ledgerAccount.custody.device,
+                    deviceName: '/dev/bus/usb/001/002',
+                    transportType: 'usb',
+                },
+            },
+        }
+        const { result } = renderHook(() =>
+            useAccountInfoCard({ account: usbAccount, onClose: vi.fn() }),
+        )
+
+        expect(result.current.structureLabel).toBe(
+            'account_info.ledger_usb_device',
+        )
+        act(() => {
+            result.current.handleScanAddresses()
+        })
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'AddAccount',
+            expect.objectContaining({
+                params: expect.objectContaining({
+                    deviceName: 'account_info.ledger_usb_device',
+                }),
+            }),
+        )
+    })
+
     test("Ledger account with sub-addresses: the device's first account is the main one", () => {
         const subLedgerAccount: HardwareWalletAccount = {
             name: 'Ledger Account #2',

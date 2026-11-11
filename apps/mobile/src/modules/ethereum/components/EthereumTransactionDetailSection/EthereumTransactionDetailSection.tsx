@@ -11,6 +11,7 @@
  */
 
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
@@ -33,6 +34,9 @@ type EthereumTransactionDetailSectionProps = {
     isAmountInHero?: boolean
     /** A transfer's asset and amount are shown in their own card, so only its holder is listed here. */
     isAssetInCard?: boolean
+    /** The request the transaction is under review in; a history record has none. */
+    source?: SignRequestSource
+    verifiedOrigin?: string
 }
 
 /** What only an EVM transaction has: the token or NFT moved and the call and approval it made, then under Advanced the raw call, nonce, gas limit and per-gas fees, and the most it can cost before it is mined. */
@@ -40,6 +44,8 @@ export const EthereumTransactionDetailSection = ({
     presentation,
     isAmountInHero = !!presentation.amount?.asset,
     isAssetInCard = false,
+    source,
+    verifiedOrigin,
 }: EthereumTransactionDetailSectionProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -77,9 +83,12 @@ export const EthereumTransactionDetailSection = ({
         callDetails = (
             <>
                 {!!standardCall && (
-                    <EthereumApprovalDetails presentation={presentation} />
+                    <EthereumApprovalDetails
+                        presentation={presentation}
+                        source={source}
+                        verifiedOrigin={verifiedOrigin}
+                    />
                 )}
-                {/* The detail screen is opened without the request, so it has no origin to match: the site match shows on the review only. */}
                 {!standardCall && !!contractAction && (
                     <EthereumContractActionDetails
                         presentation={presentation}

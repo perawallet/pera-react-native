@@ -542,6 +542,7 @@
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
+        "ledger_usb_device": "Ledger (USB)",
         "type_multisig": "Shared Account",
         "type_multisig_signers": "Shared · {{threshold}} of {{total}} signers",
         "type_quantum": "Quantum Account",
@@ -3474,6 +3475,7 @@
         },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
+            "spend_warning_transaction": "This transaction lets another address move tokens out of your account without asking you again.",
             "nft_spend_warning": "This signature lets another address move this NFT out of your account without asking you again.",
             "spend_warning_bold": "Only sign if you trust this application.",
             "spender_caption": "Spender: {{address}}",
@@ -3488,6 +3490,7 @@
             "known_description": "{{name}} is a well-known contract",
             "known_spend_note": "{{name}} is a well-known contract. It can only move this token as part of a transaction or signature you approve.",
             "known_unlimited_note": "The amount is unlimited, so you won't need to approve this token for {{name}} again.",
+            "known_site_mismatch": "{{name}} belongs to {{domain}}, but this request comes from {{site}}.",
             "unlimited_limit_note": "Pera can't lower this amount. To approve only what you need, reject this and set a smaller amount in the app, if it offers one.",
             "balance_label": "Your balance",
             "allow_title": "Allow {{spender}} to use your {{asset}}",
@@ -4934,7 +4937,11 @@
             "fee": "Fee",
             "fee_share": "{{percent}} of the swap output",
             "fee_recipient": "Paid to",
-            "base_units": "base units"
+            "base_units": "base units",
+            "deposit_at_most": "You deposit at most",
+            "position": "Position",
+            "new_position": "New position NFT",
+            "closes_position": "Closes the position and burns its NFT"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4950,8 +4957,8 @@
         },
         "review_warnings": {
             "high_fee_title": "Unusually high network fee",
-            "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less.",
-            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Normal setting. You'll pay at most <0/> (max fee), usually less."
+            "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less.",
+            "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less."
         },
         "simulation": {
             "title": "Estimated changes",

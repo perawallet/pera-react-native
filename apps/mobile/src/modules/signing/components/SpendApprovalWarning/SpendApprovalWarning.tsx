@@ -15,6 +15,7 @@ import type {
     ChainScope,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -24,27 +25,44 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { SpendAllowanceRow } from './SpendAllowanceRow'
 import { SpendApprovalWarningContent } from './SpendApprovalWarningContent'
 import { useStyles } from './styles'
-import { useSpendApprovalWarning } from './useSpendApprovalWarning'
+import {
+    useSpendApprovalWarning,
+    type SpendApprovalRequestKind,
+} from './useSpendApprovalWarning'
 
 export type SpendApprovalWarningProps = {
     approval: SpendApproval
     scope: ChainScope
-    /** A signed permit carries a deadline; an on-chain `approve` has none to show. */
-    showsDeadline?: boolean
+    requestKind: SpendApprovalRequestKind
+    source?: SignRequestSource
+    /** Origin the platform observed (never dApp-asserted). */
+    verifiedOrigin?: string
 }
 
 export const SpendApprovalWarning = ({
     approval,
     scope,
-    showsDeadline = false,
+    requestKind,
+    source,
+    verifiedOrigin,
 }: SpendApprovalWarningProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { rows, deadlineText, knownSpenderName, isUnlimited } =
-        useSpendApprovalWarning(approval)
+    const {
+        rows,
+        deadlineText,
+        knownSpenderName,
+        isTrusted,
+        showsDeadline,
+        isUnlimited,
+    } = useSpendApprovalWarning(approval, {
+        requestKind,
+        source,
+        verifiedOrigin,
+    })
     const { request: requestBottomSheet } = useBottomSheet()
 
-    const title = knownSpenderName
+    const title = isTrusted
         ? t('signing.spend_approval.known_title')
         : t('transactions.warning.title')
 
@@ -71,7 +89,7 @@ export const SpendApprovalWarning = ({
                 title={title}
                 titleWeight='h4'
                 description={
-                    knownSpenderName
+                    isTrusted && knownSpenderName
                         ? t('signing.spend_approval.known_description', {
                               name: knownSpenderName,
                           })
@@ -81,7 +99,7 @@ export const SpendApprovalWarning = ({
                 }
                 leftIcon='info'
                 rightIcon='chevron-right'
-                variant={knownSpenderName ? 'default' : 'error'}
+                variant={isTrusted ? 'default' : 'error'}
                 paddingStyle='dense'
                 style={styles.panelButton}
                 testID='message-signing-spend-approval-warning'

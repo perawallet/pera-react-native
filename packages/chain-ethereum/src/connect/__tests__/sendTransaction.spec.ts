@@ -626,7 +626,7 @@ describe('buildEthereumSendTransaction', () => {
         expect(view).toMatchObject({ hasHighFee: true })
     })
 
-    it('flags a legacy gasPrice just under twice the preset max fee, which would still cost several times the normal price', async () => {
+    it('flags a legacy gasPrice just under twice the Fast max fee, which would still cost over twice the Fast price', async () => {
         useRpc()
         const params = validate({
             ...ok,
@@ -641,7 +641,7 @@ describe('buildEthereumSendTransaction', () => {
             params.request,
         )
 
-        // 9.5 gwei against a 3 gwei normal price: under twice the 5 gwei cap, over three times the cost.
+        // 9.5 gwei against a 4 gwei Fast price: under twice the 6 gwei cap, over twice the cost.
         expect(payloadOf(built).maxFeePerGas).toBe(parseGwei('9.5'))
         expect(built.payload).toMatchObject({ hasHighFee: true })
     })
@@ -656,6 +656,70 @@ describe('buildEthereumSendTransaction', () => {
         )
 
         expect(built.payload).toMatchObject({ hasHighFee: true })
+    })
+
+    describe('on a quiet network where Fast tips far above Normal', () => {
+        // Base 0.13 gwei; slow, normal and fast tips 0.01, 0.05 and 1.5 gwei.
+        const useQuietRpc = () =>
+            useRpc({
+                eth_estimateGas: '0xfde8',
+                eth_feeHistory: {
+                    oldestBlock: '0x1',
+                    baseFeePerGas: [
+                        toHex(parseGwei('0.13')),
+                        toHex(parseGwei('0.13')),
+                    ],
+                    gasUsedRatio: [0.5],
+                    reward: [
+                        [
+                            parseGwei('0.01'),
+                            parseGwei('0.05'),
+                            parseGwei('1.5'),
+                        ].map(tip => toHex(tip)),
+                    ],
+                },
+            })
+        const build = (fields: Partial<EthereumSendTransactionRequest>) =>
+            buildEthereumSendTransaction(
+                ctx,
+                ETHEREUM,
+                request({ data: '0xa9059cbb', ...fields }),
+            )
+
+        it('flags nothing on a dApp that tips 1 gwei and caps at 1.257 gwei with the estimated gas', async () => {
+            useQuietRpc()
+
+            const built = await build({
+                maxFeePerGas: parseGwei('1.257'),
+                maxPriorityFeePerGas: parseGwei('1'),
+            })
+
+            expect(payloadOf(built).gas).toBe(78_000n)
+            expect(built.payload).not.toHaveProperty('hasHighFee')
+        })
+
+        it('flags fees above twice the Fast preset', async () => {
+            useQuietRpc()
+
+            const built = await build({
+                maxFeePerGas: parseGwei('4'),
+                maxPriorityFeePerGas: parseGwei('1'),
+            })
+
+            expect(built.payload).toMatchObject({ hasHighFee: true })
+        })
+
+        it('flags a gas limit above twice the estimate at Fast prices', async () => {
+            useQuietRpc()
+
+            const built = await build({
+                gas: 200_000n,
+                maxFeePerGas: parseGwei('1.76'),
+                maxPriorityFeePerGas: parseGwei('1.5'),
+            })
+
+            expect(built.payload).toMatchObject({ hasHighFee: true })
+        })
     })
 
     it("flags nothing on a request at the wallet's own pricing, or one modestly above it", async () => {
