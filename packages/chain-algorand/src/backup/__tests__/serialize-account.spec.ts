@@ -24,7 +24,6 @@ import {
 import {
     AlgorandBackupKinds,
     algorandBackupLocalKindOf,
-    algorandMnemonicBackupKeyId,
     serializeAlgorandAccount,
     serializeAlgorandMnemonicSecret,
 } from '../serialize-account'
@@ -177,32 +176,6 @@ describe('serializeAlgorandMnemonicSecret', () => {
         ['a watch', watchAccount(ADDRESS)],
     ])('writes no mnemonic secret for %s account', (_, account) => {
         expect(serializeAlgorandMnemonicSecret(account, MNEMONIC)).toBeNull()
-    })
-})
-
-describe('algorandMnemonicBackupKeyId', () => {
-    it.each([
-        ['algo25', standaloneAccount(ADDRESS, { keyPairId: 'kp' })],
-        ['hd', hdAccount(ADDRESS, { keyPairId: 'kp' })],
-        ['quantum', quantumAccount(ADDRESS, { keyPairId: 'kp' })],
-    ])('keys a %s account by its signing key', (_, account) => {
-        expect(algorandMnemonicBackupKeyId(account)).toBe('kp')
-    })
-
-    it.each([
-        ['hardware', hardwareAccount(ADDRESS)],
-        ['multisig', multisigAccount(ADDRESS, null)],
-        ['watch', watchAccount(ADDRESS)],
-    ])('has no backup key for a %s account', (_, account) => {
-        expect(algorandMnemonicBackupKeyId(account)).toBeNull()
-    })
-
-    it('has no backup key for a local account that lost its key', () => {
-        expect(
-            algorandMnemonicBackupKeyId(
-                standaloneAccount(ADDRESS, { keyPairId: null }),
-            ),
-        ).toBeNull()
     })
 })
 

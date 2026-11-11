@@ -14,14 +14,21 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    createFakeKeystore,
+    fakeChildKey,
+    fakeSeedKey,
+} from '../../../__tests__/fakeKeystore'
 
-const mockUseAccountsStore = vi.fn()
+const keystore = createFakeKeystore()
+const mockWarn = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...original,
+        logger: { ...original.logger, warn: mockWarn },
         registerStore: vi.fn(),
     }
 })
@@ -40,145 +47,99 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             }),
         },
     }),
+    getKeystoreStore: () => keystore.store,
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const original =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...original,
-        useAccountsStore: (selector: (state: unknown) => unknown) =>
-            mockUseAccountsStore(selector),
-    }
+const localAccount = (
+    id: string,
+    keyPairId: string,
+    custody: WalletAccount['custody'],
+): WalletAccount => ({
+    id,
+    custody,
+    chains: { algorand: { address: `ADDR-${id}`, keyPairId } },
 })
 
 describe('useMarkMnemonicBackupComplete', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
         vi.resetModules()
-        mockUseAccountsStore.mockReset()
-        const { registerFakeBackupAdapter } =
-            await import('../../../__tests__/fakeBackupAdapter')
-        registerFakeBackupAdapter()
+        mockWarn.mockClear()
+        keystore.setKeys([
+            fakeSeedKey('seed-a'),
+            fakeChildKey('a-child-0', 'seed-a'),
+            fakeChildKey('a-child-1', 'seed-a'),
+            fakeSeedKey('seed-b'),
+            fakeChildKey('b-child-0', 'seed-b'),
+            fakeChildKey('raw-key'),
+        ])
     })
 
-    test('marks the wallet root id when account is Algo25', async () => {
+    const markAll = async (accounts: WalletAccount[]) => {
         const { useMnemonicBackupStore } = await import('../../store')
         const { useMarkMnemonicBackupComplete } =
             await import('../useMarkMnemonicBackupComplete')
-
-        const account: WalletAccount = {
-            id: 'account-1',
-            custody: { kind: 'local', seed: null },
-            chains: { algorand: { address: 'ADDR', keyPairId: 'kp-1' } },
-        }
-
-        mockUseAccountsStore.mockReturnValue([account])
-
-        const { result } = renderHook(() =>
-            useMarkMnemonicBackupComplete('algorand'),
-        )
+        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
         act(() => {
-            result.current(account)
+            accounts.forEach(account => result.current(account))
         })
+        return useMnemonicBackupStore.getState().backedUpKeyIds
+    }
 
-        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
-            'kp-1': true,
-        })
+    test('marks the seed, not the signing child, of an algo25 account', async () => {
+        const marked = await markAll([
+            localAccount('algo', 'b-child-0', { kind: 'local', seed: null }),
+        ])
+
+        expect(marked).toEqual({ 'seed-b': true })
     })
 
-    test('marks all HD siblings sharing the same wallet root', async () => {
-        const { useMnemonicBackupStore } = await import('../../store')
-        const { useMarkMnemonicBackupComplete } =
-            await import('../useMarkMnemonicBackupComplete')
-        const a1: WalletAccount = {
-            id: 'a1-2',
-            custody: {
+    test('marks the one seed shared by every HD sibling', async () => {
+        const hd = (id: string, keyPairId: string, keyIndex: number) =>
+            localAccount(id, keyPairId, {
                 kind: 'local',
                 seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            chains: { algorand: { address: 'HD1', keyPairId: 'kp-shared' } },
-        }
-        const a2: WalletAccount = {
-            id: 'a2-3',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 1 },
-            },
-            chains: { algorand: { address: 'HD2', keyPairId: 'kp-shared' } },
-        }
-        const a3: WalletAccount = {
-            id: 'a3-4',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            chains: { algorand: { address: 'HD3', keyPairId: 'kp-other' } },
-        }
+                hd: { account: 0, keyIndex },
+            })
 
-        mockUseAccountsStore.mockReturnValue([a1, a2, a3])
+        const marked = await markAll([
+            hd('hd-0', 'a-child-0', 0),
+            hd('hd-1', 'a-child-1', 1),
+        ])
 
-        const { result } = renderHook(() =>
-            useMarkMnemonicBackupComplete('algorand'),
-        )
-        act(() => {
-            result.current(a1)
-        })
-
-        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
-            'kp-shared': true,
-        })
+        expect(marked).toEqual({ 'seed-a': true })
     })
 
-    test('is a no-op for accounts without backup concept', async () => {
-        const { useMnemonicBackupStore } = await import('../../store')
-        const { useMarkMnemonicBackupComplete } =
-            await import('../useMarkMnemonicBackupComplete')
-
+    test.each([
+        ['watch', { kind: 'watch' }],
+        ['multisig', { kind: 'multisig' }],
+    ] as const)('records nothing for a %s account', async (_, custody) => {
         const account: WalletAccount = {
-            id: 'account-5',
-            custody: { kind: 'watch' },
-            chains: { algorand: { address: 'WATCH' } },
+            id: 'no-seed',
+            custody,
+            chains: { algorand: { address: 'ADDR' } },
         }
 
-        mockUseAccountsStore.mockReturnValue([account])
-
-        const { result } = renderHook(() =>
-            useMarkMnemonicBackupComplete('algorand'),
-        )
-        act(() => {
-            result.current(account)
-        })
-
-        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
+        expect(await markAll([account])).toEqual({})
     })
 
-    test('throws, and records nothing, on a chain with no backup adapter', async () => {
-        const { useMnemonicBackupStore } = await import('../../store')
-        const { useMarkMnemonicBackupComplete } =
-            await import('../useMarkMnemonicBackupComplete')
+    test('records nothing, and warns, for a local account whose key resolves no seed', async () => {
+        const marked = await markAll([
+            localAccount('raw', 'raw-key', { kind: 'local', seed: null }),
+        ])
 
-        const account: WalletAccount = {
-            id: 'account-evm',
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
+        expect(marked).toEqual({})
+        expect(mockWarn).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not warn for accounts that never have a seed', async () => {
+        await markAll([
+            {
+                id: 'watch',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'ADDR' } },
             },
-            chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
-        }
+        ])
 
-        mockUseAccountsStore.mockReturnValue([account])
-
-        const { result } = renderHook(() =>
-            useMarkMnemonicBackupComplete('ethereum'),
-        )
-
-        expect(() => result.current(account)).toThrow()
-        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
+        expect(mockWarn).not.toHaveBeenCalled()
     })
 })
