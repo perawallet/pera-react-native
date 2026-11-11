@@ -376,6 +376,7 @@ export const useInputScreen = () => {
     ])
 
     const showExceedsBalance = useCallback(() => {
+        haptics.error()
         errorToast(
             t('send_funds.input.exceeds_max_title'),
             t('send_funds.input.exceeds_max_body'),
@@ -383,7 +384,7 @@ export const useInputScreen = () => {
                 notifier: bottomSheetNotifier.current ?? undefined,
             },
         )
-    }, [errorToast, t])
+    }, [errorToast, t, haptics])
 
     const handleNext = useCallback(async () => {
         const amountValue =
@@ -524,15 +525,6 @@ export const useInputScreen = () => {
                 ) {
                     return
                 }
-                // Next only checks the amount on press, so the crossing is caught
-                // here; MAX, close-out and prefills set the field directly and stay silent.
-                if (
-                    canCheckAmount &&
-                    new Decimal(newValue).gt(maxAmount) &&
-                    !(current && new Decimal(current).gt(maxAmount))
-                ) {
-                    haptics.error()
-                }
                 setValueAndRef(newValue)
             } else {
                 if (current?.length) {
@@ -545,7 +537,7 @@ export const useInputScreen = () => {
                 }
             }
         },
-        [setValueAndRef, canCheckAmount, maxAmount, haptics],
+        [setValueAndRef],
     )
 
     // A pasted amount replaces the current one, but only when it reads one way:
