@@ -41,6 +41,7 @@ import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useHaptics } from '@hooks/useHaptics'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -146,6 +147,7 @@ export const useInputScreen = () => {
     }, [])
     const { errorToast } = useToast()
     const { t } = useLanguage()
+    const haptics = useHaptics()
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -522,6 +524,15 @@ export const useInputScreen = () => {
                 ) {
                     return
                 }
+                // Next only checks the amount on press, so the crossing is caught
+                // here; MAX, close-out and prefills set the field directly and stay silent.
+                if (
+                    canCheckAmount &&
+                    new Decimal(newValue).gt(maxAmount) &&
+                    !(current && new Decimal(current).gt(maxAmount))
+                ) {
+                    haptics.error()
+                }
                 setValueAndRef(newValue)
             } else {
                 if (current?.length) {
@@ -534,7 +545,7 @@ export const useInputScreen = () => {
                 }
             }
         },
-        [setValueAndRef],
+        [setValueAndRef, canCheckAmount, maxAmount, haptics],
     )
 
     // A pasted amount replaces the current one, but only when it reads one way:

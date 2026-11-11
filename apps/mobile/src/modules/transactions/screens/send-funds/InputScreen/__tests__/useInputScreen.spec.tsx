@@ -176,6 +176,12 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ error: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()
@@ -477,6 +483,66 @@ describe('useInputScreen', () => {
             result.current.handleKey()
         })
         expect(result.current.cryptoValue).toBeFalsy()
+    })
+
+    describe('the error haptic on a keypad amount', () => {
+        const type = (
+            result: { current: ReturnType<typeof useInputScreen> },
+            keys: string,
+        ) => {
+            for (const key of keys) {
+                act(() => {
+                    result.current.handleKey(key)
+                })
+            }
+        }
+
+        it('plays once when the typed amount first passes MAX, not on later digits', () => {
+            const { result } = renderHook(() => useInputScreen())
+
+            type(result, '99.899')
+            expect(mockHaptics.error).not.toHaveBeenCalled()
+
+            type(result, '1')
+            expect(mockHaptics.error).toHaveBeenCalledTimes(1)
+
+            type(result, '1')
+            expect(mockHaptics.error).toHaveBeenCalledTimes(1)
+        })
+
+        it('plays again after backspacing under MAX and crossing again', () => {
+            const { result } = renderHook(() => useInputScreen())
+
+            type(result, '99.9')
+            act(() => {
+                result.current.handleKey()
+            })
+            type(result, '9')
+
+            expect(mockHaptics.error).toHaveBeenCalledTimes(2)
+        })
+
+        it('stays silent before the balance has loaded', () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: undefined,
+                isPending: true,
+            })
+            const { result } = renderHook(() => useInputScreen())
+
+            type(result, '99999')
+
+            expect(mockHaptics.error).not.toHaveBeenCalled()
+        })
+
+        it('stays silent when the field is filled directly rather than typed', () => {
+            const { result } = renderHook(() => useInputScreen())
+
+            act(() => {
+                result.current.setCryptoValue('150')
+            })
+
+            expect(mockHaptics.error).not.toHaveBeenCalled()
+        })
     })
 
     it('validates input on next (error if empty)', async () => {
