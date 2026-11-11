@@ -12,21 +12,26 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-        },
-        webview: {
-            flexGrow: 1,
-            backgroundColor: theme.colors.background,
-        },
-        loadingContainer: {
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.background,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    content: {
+        gap: theme.spacing.md,
+        paddingTop: theme.spacing.md,
+    },
+    title: {
+        paddingBottom: theme.spacing.xs,
+    },
+    section: {
+        gap: theme.spacing.sm,
+    },
+    chips: {
+        paddingVertical: theme.spacing.xs,
+    },
+    emptyDapps: {
+        paddingVertical: theme.spacing.lg,
+    },
+    newsCard: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: news card width (about two thirds of a phone screen, so the next card peeks)
+        width: 240,
+        marginRight: theme.spacing.md,
+    },
+}))

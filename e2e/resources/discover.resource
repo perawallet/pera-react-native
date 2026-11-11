@@ -1,6 +1,6 @@
 *** Settings ***
-Documentation       Discover is a full-screen WebView of a remote site behind the shared age gate. Only
-...                 the native shell is asserted; in-page content would need a webview context.
+Documentation       Discover is a native home (search, Top dApps, News) behind the shared age gate. Only
+...                 the home screen's presence is asserted; its lists come from the live API.
 Resource            settings.resource
 
 
@@ -12,8 +12,7 @@ ${MORE_BUTTON}              tid=more_button
 # The declaration's buttons have no testID (ConfirmActionContent takes no confirmTestID here).
 ${AGE_GATE_CONFIRM}         xpath=//*[@text='I am 18 or older' or @label='I am 18 or older']
 ${AGE_GATE_RETRY}           tid=age-gate-retry
-${WEBVIEW_OFFLINE}          tid=pw-webview-offline
-${WEBVIEW_TIMEOUT}          tid=pw-webview-timeout
+${DISCOVER_HOME}            tid=discover_home_screen
 # The Debug Tools row to Manage Cache has no testID.
 ${DEBUG_TOOLS_MANAGE_CACHE}     xpath=//*[@text='Manage Cache' or @label='Manage Cache']
 ${CLEAR_ONE_TIME_FLAGS}         tid=manage_cache_clear_flags_button
@@ -38,13 +37,11 @@ Open Past Age Gate
     Fail    ${destination} did not appear after opening ${entry}.
 
 Open Discover
-    Open Past Age Gate    ${DISCOVER_TAB}    ${WEBVIEW}
+    Open Past Age Gate    ${DISCOVER_TAB}    ${DISCOVER_HOME}
 
-Discover Page Should Be Loaded
-    Wait Until Page Contains Element    ${WEBVIEW}    timeout=60s
+Discover Home Should Be Loaded
+    Wait Until Page Contains Element    ${DISCOVER_HOME}    timeout=60s
     Page Should Not Contain Element    ${AGE_GATE_RETRY}
-    Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
-    Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
 
 Clear One-Time Flags
     [Documentation]    Developer > Debug Tools > Manage Cache: resets the age declaration and every

@@ -34,6 +34,13 @@
         }
     },
     "discover": {
+        "home": {
+            "title": "Entdecken",
+            "top_dapps": "Top-dApps",
+            "news": "Neuigkeiten",
+            "dapps_error": "Die empfohlenen dApps konnten nicht geladen werden",
+            "dapps_empty": "Noch keine dApps auf {{chain}}"
+        },
         "dapp_row": {
             "favorite": "Zu Favoriten hinzufügen",
             "unfavorite": "Aus Favoriten entfernen"
@@ -335,7 +342,6 @@
         "markets": {
             "something_went_wrong_title": "Etwas ist schiefgelaufen",
             "something_went_wrong_body": "Die Details dieses Assets konnten nicht geladen werden. Bitte überprüfe deine Verbindung und versuche es erneut.",
-            "title": "Märkte",
             "stats": "Statistiken",
             "price": "Preis",
             "total_supply": "Gesamtangebot",

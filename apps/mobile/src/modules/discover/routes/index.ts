@@ -12,4 +12,4 @@
 
 export { DiscoverDetailScreen } from '../screens/DiscoverDetailScreen'
 export { DiscoverSearchScreen } from '../screens/DiscoverSearchScreen'
-export { DiscoverScreen } from '../screens/DiscoverScreen'
+export { DiscoverHomeScreen } from '../screens/DiscoverHomeScreen'

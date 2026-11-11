@@ -34,6 +34,13 @@
         }
     },
     "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "Top dApps",
+            "news": "News",
+            "dapps_error": "Failed loading featured dApps",
+            "dapps_empty": "No dApps on {{chain}} yet"
+        },
         "dapp_row": {
             "favorite": "Add to favorites",
             "unfavorite": "Remove from favorites"
@@ -335,7 +342,6 @@
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
-            "title": "Markets",
             "stats": "Statistics",
             "price": "Price",
             "total_supply": "Total Supply",

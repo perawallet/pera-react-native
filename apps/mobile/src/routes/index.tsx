@@ -237,9 +237,7 @@ export const MainRoutes = () => {
                         }) && (
                             <RootStack.Screen
                                 name='DiscoverDetail'
-                                options={headeredScreen(
-                                    'asset_details.markets.title',
-                                )}
+                                options={headeredScreen('tabbar.discover')}
                                 layout={fullScreenLayout}
                                 component={DiscoverDetailScreen}
                             />

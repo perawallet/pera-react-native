@@ -10,4 +10,12 @@
  limitations under the License
  */
 
-export { DiscoverScreen } from './DiscoverScreen'
+import { getActiveLocale } from '@perawallet/wallet-core-shared'
+
+/** The spec's `dd MMM yyyy`, with the parts ordered per locale. */
+export const formatNewsDate = (date: Date): string =>
+    new Intl.DateTimeFormat(getActiveLocale(), {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    }).format(date)

@@ -34,6 +34,13 @@
         }
     },
     "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "dApps destacadas",
+            "news": "Noticias",
+            "dapps_error": "No se pudieron cargar las dApps destacadas",
+            "dapps_empty": "Aún no hay dApps en {{chain}}"
+        },
         "dapp_row": {
             "favorite": "Añadir a favoritos",
             "unfavorite": "Quitar de favoritos"
@@ -335,7 +342,6 @@
         "markets": {
             "something_went_wrong_title": "Algo salió mal",
             "something_went_wrong_body": "No pudimos cargar los detalles de este activo. Comprueba tu conexión e inténtalo de nuevo.",
-            "title": "Mercados",
             "stats": "Estadísticas",
             "price": "Precio",
             "total_supply": "Suministro total",
