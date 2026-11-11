@@ -12,7 +12,6 @@
 
 import { modelsv2, SignedTransaction } from 'algosdk'
 import {
-    getSignerFor,
     usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -34,6 +33,7 @@ import {
     type EmptySignatureFields,
 } from '../connect/emptySignatures'
 import { type AlgorandNetworkId } from '../network-id'
+import { signingAccountFor } from './signingAccountFor'
 import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 
 // Runs before the review sheet shows; past it the group is bumped as if
@@ -135,12 +135,13 @@ export const findFundedIndices = async ({
     )
     const signerAt = (index: number): Nullable<WalletAccount> => {
         const subsetIndex = subsetIndexOf.get(index)
-        const authorizer =
-            (subsetIndex === undefined
+        return signingAccountFor(
+            transactions[index].sender.toString(),
+            subsetIndex === undefined
                 ? undefined
-                : signerOverrides?.get(subsetIndex)) ??
-            transactions[index].sender.toString()
-        return getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
+                : signerOverrides?.get(subsetIndex),
+            accounts,
+        )
     }
 
     // A co-signed partition is never bumped, so it needs no check.

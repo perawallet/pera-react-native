@@ -11,7 +11,6 @@
  */
 
 import {
-    getSignerFor,
     usesNonPrimaryScheme,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -22,9 +21,14 @@ import {
 } from '../blockchain'
 
 import { Transaction } from 'algosdk'
-import { bytesToHex, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    bytesToHex,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { FeeAdjustment } from '@perawallet/wallet-core-signing'
 
+import { signingAccountFor } from './signingAccountFor'
 import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
@@ -86,15 +90,19 @@ export type AssignMinimumFeesToGroupParams = {
     fundedIndices?: ReadonlySet<number>
 }
 
-/** Effective authorizer for the signable slot at `subsetIndex`. */
-const resolveAuthorizer = (
+/** The account whose key signs the signable slot at `subsetIndex`. */
+const resolveSigner = (
     transactions: PeraTransaction[],
     signableIndices: number[],
     signerOverrides: Optional<Map<number, string>>,
     subsetIndex: number,
-): string =>
-    signerOverrides?.get(subsetIndex) ??
-    transactions[signableIndices[subsetIndex]].sender.toString()
+    accounts: WalletAccount[],
+): Nullable<WalletAccount> =>
+    signingAccountFor(
+        transactions[signableIndices[subsetIndex]].sender.toString(),
+        signerOverrides?.get(subsetIndex),
+        accounts,
+    )
 
 /**
  * Cheap local precheck: does any signable slot resolve to a quantum signer?
@@ -112,13 +120,13 @@ export const groupHasQuantumSigner = ({
     'transactions' | 'signableIndices' | 'signerOverrides' | 'accounts'
 >): boolean =>
     signableIndices.some((_, subsetIndex) => {
-        const authorizer = resolveAuthorizer(
+        const signer = resolveSigner(
             transactions,
             signableIndices,
             signerOverrides,
             subsetIndex,
+            accounts,
         )
-        const signer = getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
         return (
             signer !== null && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
         )
@@ -207,13 +215,13 @@ export const assignMinimumFeesToGroup = ({
         const groupIndex = signableIndices[i]
         if (fundedIndices?.has(groupIndex)) continue
         const tx = transactions[groupIndex]
-        const authorizer = resolveAuthorizer(
+        const signer = resolveSigner(
             transactions,
             signableIndices,
             signerOverrides,
             i,
+            accounts,
         )
-        const signer = getSignerFor(authorizer, accounts, ALGORAND_CHAIN_ID)
         if (signer === null || !usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID))
             continue
         if (tx.group && coSignedGroupKeys.has(bytesToHex(tx.group))) continue

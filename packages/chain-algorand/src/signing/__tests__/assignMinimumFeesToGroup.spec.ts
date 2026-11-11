@@ -269,6 +269,32 @@ describe('assignMinimumFeesToGroup', () => {
         ).toBe(true)
     })
 
+    test("prices a named signer by its own key, not the quantum account it's rekeyed to", () => {
+        // A dApp escrow rekeyed to the algo25 account: the algo25 key signs,
+        // whatever the algo25 account is itself rekeyed to.
+        seedAuthority(algoAddress.toString(), quantumAddress.toString())
+        const transactions = [makePayment(externalAddress, 1000n)]
+        const signerOverrides = new Map([[0, algoAddress.toString()]])
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions,
+            signableIndices: [0],
+            signerOverrides,
+            accounts: [algo25(), quantum()],
+        })
+
+        expect(result.adjustments).toEqual([])
+        expect(
+            groupHasQuantumSigner({
+                transactions,
+                signableIndices: [0],
+                signerOverrides,
+                accounts: [algo25(), quantum()],
+            }),
+        ).toBe(false)
+    })
+
     test('leaves quantum custody with no key on Algorand untouched', () => {
         const transactions = [makePayment(quantumAddress, 1000n)]
         // It still resolves as a signer: its key on another chain counts.
