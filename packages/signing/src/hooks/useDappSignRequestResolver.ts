@@ -56,6 +56,10 @@ export const useDappSignRequestResolver = (
         () => addressesOn(signingAccounts, scope),
         [signingAccounts, scope],
     )
+    const heldAddresses = useMemo(
+        () => addressesOn(allAccounts, scope),
+        [allAccounts, scope],
+    )
     const multisigAddresses = useMemo(
         () =>
             addressesOn(
@@ -70,8 +74,9 @@ export const useDappSignRequestResolver = (
                 signableAddresses,
                 multisigAddresses,
                 authorizedAddresses: options.authorizedAddresses,
+                heldAddresses,
                 maxTransactions: options.maxTransactions,
             }),
-        [scope, signableAddresses, multisigAddresses],
+        [scope, signableAddresses, multisigAddresses, heldAddresses],
     )
 }

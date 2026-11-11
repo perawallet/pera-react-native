@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import { decodeTransactions } from '../utils/transact'
-import { decodeFromBase64, toError } from '@perawallet/wallet-core-shared'
+import {
+    decodeSignedTransaction,
+    decodeTransactions,
+    encodeTransactionRaw,
+} from '../utils/transact'
+import {
+    bytesEqual,
+    decodeFromBase64,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import type { ZodError } from 'zod'
 
 import type { DappResolveContext } from '@perawallet/wallet-core-signing'
@@ -101,7 +109,9 @@ export const resolveArc0001SignTxnRequest = (
 
     const toSign: Arc0001ResolvedTransaction[] = []
     const signerOverrides = new Map<number, string>()
+    const passthrough = new Map<number, string>()
     let requestedCount = 0
+    const heldAddresses = context.heldAddresses ?? context.signableAddresses
 
     for (let i = 0; i < transactions.length; i++) {
         const entry = transactions[i]
@@ -109,38 +119,53 @@ export const resolveArc0001SignTxnRequest = (
         const sender = encodeAlgorandAddress(decoded.sender.publicKey)
         const entrySigner = resolveEntrySigner(entry, sender, i)
 
-        if (entrySigner.kind === 'do-not-sign') continue
+        if (entrySigner.kind === 'do-not-sign') {
+            if (entry.stxn !== undefined) {
+                passthrough.set(i, verifiedStxn(entry.stxn, decoded, i))
+            }
+            continue
+        }
         requestedCount++
 
         // Multisig sender short-circuits the `signers` hint — sign with
         // the multisig address itself so the transport selector picks the
         // propose branch and collects participant signatures via the
         // backend.
-        const resolvedSigner: Arc0001SignerKind =
-            context.multisigAddresses?.has(sender)
-                ? { kind: 'single', address: sender }
-                : entrySigner
+        const isMultisigSender = context.multisigAddresses?.has(sender) ?? false
+        const resolvedSigner: Arc0001SignerKind = isMultisigSender
+            ? { kind: 'single', address: sender }
+            : entrySigner
 
         const candidate = resolvedSigner.address
+        const isNamed =
+            !isMultisigSender &&
+            (entry.authAddr !== undefined || entry.signers !== undefined)
+        // A named signer signs with its own key, so being held is enough; its
+        // own rekey, which can make it unsignable for itself, doesn't apply.
+        const canSign = isNamed
+            ? heldAddresses.has(candidate)
+            : context.signableAddresses.has(candidate)
+        const isAuthorized =
+            context.authorizedAddresses === undefined ||
+            context.authorizedAddresses.has(candidate)
 
-        // A candidate the wallet holds but that isn't authorized in this
-        // context is SKIPPED, not rejected by name. Throwing an error that
-        // named the address relayed that address verbatim to the dApp over the
-        // WalletConnect bridge — a zero-interaction, batchable oracle for
-        // enumerating the wallet's other signable accounts.
-        // Skipping keeps session binding intact (the address never enters
-        // `toSign`, so it's never signed for) while making the outcome
-        // byte-identical to "the wallet holds none of these", via the single
-        // generic error below.
-        if (
-            context.authorizedAddresses !== undefined &&
-            context.signableAddresses.has(candidate) &&
-            !context.authorizedAddresses.has(candidate)
-        ) {
+        if (!canSign || !isAuthorized) {
+            // ARC-0025 fails the whole request when a requested signature
+            // can't be given. One message for every case: naming the address,
+            // or answering a held-but-unauthorized one differently, would let
+            // a dApp enumerate the wallet's other accounts over the bridge.
+            if (isNamed) {
+                throw new Arc0001Error(
+                    Arc0001ErrorCode.Unauthorized,
+                    'the wallet cannot sign every requested transaction',
+                )
+            }
+            // Deliberately lenient: dApps such as Folks Finance leave
+            // `signers` off their contract's own transactions instead of
+            // sending `signers: []`, so a sender the wallet can't sign for is
+            // left to the dApp rather than failing the group.
             continue
         }
-
-        if (!context.signableAddresses.has(candidate)) continue
 
         const toSignIndex = toSign.length
         toSign.push({
@@ -150,7 +175,9 @@ export const resolveArc0001SignTxnRequest = (
             sender,
             signer: resolvedSigner,
         })
-        if (candidate !== sender) {
+        // An `authAddr` naming the sender itself is recorded too: the sender's
+        // own key signs, not whatever the wallet last saw it rekeyed to.
+        if (candidate !== sender || (isNamed && entry.authAddr !== undefined)) {
             signerOverrides.set(toSignIndex, candidate)
         }
     }
@@ -167,7 +194,39 @@ export const resolveArc0001SignTxnRequest = (
         )
     }
 
-    return { allDecoded, toSign, signerOverrides }
+    return { allDecoded, toSign, signerOverrides, passthrough }
+}
+
+// ARC-0001: an `stxn` is returned as is, but only for exactly the `txn` it
+// claims to sign; its signature is the dApp's business.
+const verifiedStxn = (
+    stxn: string,
+    decoded: PeraTransaction,
+    index: number,
+): string => {
+    let signedTxn: ReturnType<typeof decodeSignedTransaction>
+    try {
+        signedTxn = decodeSignedTransaction(decodeFromBase64(stxn))
+    } catch {
+        throw new Arc0001Error(
+            Arc0001ErrorCode.InvalidInput,
+            `stxn at index ${index} is not a signed transaction`,
+            { index, field: 'stxn' },
+        )
+    }
+    if (
+        !bytesEqual(
+            encodeTransactionRaw(signedTxn.txn),
+            encodeTransactionRaw(decoded),
+        )
+    ) {
+        throw new Arc0001Error(
+            Arc0001ErrorCode.InvalidInput,
+            `stxn at index ${index} signs a different transaction than txn`,
+            { index, field: 'stxn' },
+        )
+    }
+    return stxn
 }
 
 // ARC-0001 errors carry a single { code, message, data } — collapse zod's
@@ -236,29 +295,31 @@ const resolveEntrySigner = (
     }
 
     if (entry.signers && entry.signers.length === 0) {
-        if (entry.stxn !== undefined) {
-            throw new Arc0001Error(
-                Arc0001ErrorCode.Unsupported,
-                `pre-signed transaction passthrough (stxn) is not supported (entry index ${index})`,
-                { index, field: 'stxn' },
-            )
-        }
         return { kind: 'do-not-sign' }
     }
 
+    if (entry.stxn !== undefined) {
+        throw new Arc0001Error(
+            Arc0001ErrorCode.InvalidInput,
+            `stxn is only allowed with signers: [] (entry index ${index})`,
+            { index, field: 'stxn' },
+        )
+    }
+
+    // `msig` was refused above, and more than one signer needs it.
     if (entry.signers && entry.signers.length > 1) {
         throw new Arc0001Error(
-            Arc0001ErrorCode.Unsupported,
-            `multi-signer (multisig) signing is not supported (entry index ${index})`,
+            Arc0001ErrorCode.InvalidInput,
+            `more than one signer needs msig (entry index ${index})`,
             { index, field: 'signers' },
         )
     }
 
     if (entry.signers && entry.signers.length === 1) {
         const requested = entry.signers[0]
-        // Permissive: signers[0] without authAddr is treated as an implicit
-        // authAddr override (Folks-Finance shape). Strict only when both
-        // are given.
+        // ARC-0001 rejects signers[0] other than the sender without authAddr.
+        // Accepted as an implicit authAddr on purpose: Folks Finance names the
+        // user this way for its escrows, which are rekeyed to the user.
         if (entry.authAddr !== undefined && requested !== entry.authAddr) {
             throw new Arc0001Error(
                 Arc0001ErrorCode.InvalidInput,

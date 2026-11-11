@@ -60,8 +60,10 @@ const refuse = (reason: string): never => {
 
 // Chain-neutral transactions are reviewed as the Algorand transactions they
 // carry, read through the planner's trust boundary. The payload names its own
-// signers, so each one the wallet holds is listed for the user to approve,
-// and an authority a wallet sender isn't rekeyed to is refused.
+// signers, so each one the wallet holds is listed for the user to approve.
+// An authority a wallet sender isn't rekeyed to is refused unless the request
+// named it (`isKeyedBySigner`): ARC-0001 signs with a dApp's `authAddr` even
+// then, since a transaction earlier in the group may rekey the sender.
 const algorandTransactionsOf = (
     data: UnsignedTransactionsSignableData,
     context: AnalysisContext,
@@ -79,7 +81,7 @@ const algorandTransactionsOf = (
         const senderAccount = context.accounts.find(
             a => algorandAddressOf(a) === sender,
         )
-        if (senderAccount) {
+        if (senderAccount && !data.isKeyedBySigner) {
             const authority =
                 authorityOf(senderAccount, context.scope) ?? sender
             if (authority !== read.signer) {

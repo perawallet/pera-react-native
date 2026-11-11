@@ -13,8 +13,10 @@
 import { describe, it, expect } from 'vitest'
 import {
     Address,
+    SignedTransaction,
     Transaction,
     TransactionType,
+    encodeMsgpack,
     encodeUnsignedTransaction,
     msgpackRawDecodeAsMap,
     msgpackRawEncode,
@@ -47,6 +49,13 @@ const makePayment = (sender: Address, amount: bigint = 1n): Transaction =>
         suggestedParams: baseParams,
         paymentParams: { receiver: addrB, amount },
     })
+
+const signedTxnOf = (tx: Transaction): string =>
+    encodeToBase64(
+        encodeMsgpack(
+            new SignedTransaction({ txn: tx, sig: new Uint8Array(64).fill(7) }),
+        ),
+    )
 
 const wrap = (
     tx: Transaction,
@@ -138,14 +147,33 @@ describe('resolveArc0001SignTxnRequest', () => {
             expect(result.toSign[0].index).toBe(1)
         })
 
-        it('rejects with 4200 when stxn is provided (passthrough unsupported)', () => {
+        it('passes a matching stxn straight through for the dApp to submit', () => {
+            const tx = makePayment(addrA)
+            const stxn = signedTxnOf(tx)
+
+            const result = resolveArc0001SignTxnRequest(
+                { transactions: [wrap(tx, { signers: [], stxn })] },
+                { signableAddresses: new Set([addrA.toString()]) },
+            )
+
+            expect(result.toSign).toHaveLength(0)
+            expect(result.passthrough).toEqual(new Map([[0, stxn]]))
+        })
+
+        it.each([
+            ['is not a signed transaction', () => 'AAAA'],
+            [
+                'signs a different transaction than txn',
+                () => signedTxnOf(makePayment(addrA, 2n)),
+            ],
+        ])('rejects with 4300 an stxn that %s', (_, stxnOf) => {
             expect(() =>
                 resolveArc0001SignTxnRequest(
                     {
                         transactions: [
                             wrap(makePayment(addrA), {
                                 signers: [],
-                                stxn: 'AAAA',
+                                stxn: stxnOf(),
                             }),
                         ],
                     },
@@ -153,7 +181,24 @@ describe('resolveArc0001SignTxnRequest', () => {
                 ),
             ).toThrow(
                 expect.objectContaining({
-                    code: Arc0001ErrorCode.Unsupported,
+                    code: Arc0001ErrorCode.InvalidInput,
+                }),
+            )
+        })
+    })
+
+    describe('stxn on a transaction the wallet is asked to sign', () => {
+        it('rejects with 4300', () => {
+            const tx = makePayment(addrA)
+
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    { transactions: [wrap(tx, { stxn: signedTxnOf(tx) })] },
+                    { signableAddresses: new Set([addrA.toString()]) },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.InvalidInput,
                 }),
             )
         })
@@ -243,21 +288,84 @@ describe('resolveArc0001SignTxnRequest', () => {
             )
         })
 
-        it('skips when signers[0] is valid but the wallet cannot sign for it', () => {
+        // ARC-25 fails a request whose requested signature the wallet can't
+        // give; skipping it would hand the dApp a group that can't commit.
+        it('fails the whole request when a named signer is not held, without naming it', () => {
+            const capture = (): Arc0001Error => {
+                try {
+                    resolveArc0001SignTxnRequest(
+                        {
+                            transactions: [
+                                wrap(makePayment(addrA), {
+                                    signers: [addrA.toString()],
+                                }),
+                                wrap(makePayment(addrB)),
+                            ],
+                        },
+                        { signableAddresses: new Set([addrB.toString()]) },
+                    )
+                } catch (error) {
+                    return error as Arc0001Error
+                }
+                throw new Error('expected a throw')
+            }
+
+            const error = capture()
+
+            expect(error.code).toBe(Arc0001ErrorCode.Unauthorized)
+            expect(error.message).not.toContain(addrA.toString())
+            expect(error.data).toBeUndefined()
+        })
+
+        // The named key signs itself, so its own rekey (which makes it
+        // unsignable through delegation) doesn't matter.
+        it('signs with a held named signer even when its rekey makes it unsignable for itself', () => {
+            const result = resolveArc0001SignTxnRequest(
+                {
+                    transactions: [
+                        wrap(makePayment(addrA), {
+                            signers: [addrB.toString()],
+                        }),
+                    ],
+                },
+                {
+                    signableAddresses: new Set(),
+                    heldAddresses: new Set([addrB.toString()]),
+                },
+            )
+
+            expect(result.toSign.map(t => t.index)).toEqual([0])
+            expect(result.signerOverrides.get(0)).toBe(addrB.toString())
+        })
+
+        it('records authAddr equal to the sender, so the sender signs with its own key', () => {
+            const result = resolveArc0001SignTxnRequest(
+                {
+                    transactions: [
+                        wrap(makePayment(addrA), {
+                            authAddr: addrA.toString(),
+                        }),
+                    ],
+                },
+                { signableAddresses: new Set([addrA.toString()]) },
+            )
+
+            expect(result.signerOverrides.get(0)).toBe(addrA.toString())
+        })
+
+        it('does not record signers[0] equal to the sender without authAddr', () => {
             const result = resolveArc0001SignTxnRequest(
                 {
                     transactions: [
                         wrap(makePayment(addrA), {
                             signers: [addrA.toString()],
                         }),
-                        wrap(makePayment(addrB)),
                     ],
                 },
-                { signableAddresses: new Set([addrB.toString()]) },
+                { signableAddresses: new Set([addrA.toString()]) },
             )
 
-            expect(result.toSign).toHaveLength(1)
-            expect(result.toSign[0].index).toBe(1)
+            expect(result.signerOverrides.size).toBe(0)
         })
     })
 
@@ -282,6 +390,27 @@ describe('resolveArc0001SignTxnRequest', () => {
             ).toThrow(
                 expect.objectContaining({
                     code: Arc0001ErrorCode.Unsupported,
+                }),
+            )
+        })
+    })
+
+    describe('signers: [a, b] without msig', () => {
+        it('rejects with 4300', () => {
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    {
+                        transactions: [
+                            wrap(makePayment(addrA), {
+                                signers: [addrA.toString(), addrB.toString()],
+                            }),
+                        ],
+                    },
+                    { signableAddresses: new Set([addrA.toString()]) },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.InvalidInput,
                 }),
             )
         })
@@ -497,6 +626,41 @@ describe('resolveArc0001SignTxnRequest', () => {
             expect(heldButUnauthorized.message).toBe(notHeldAtAll.message)
             expect(heldButUnauthorized.message).not.toContain(addrA.toString())
             expect(heldButUnauthorized.data).toBeUndefined()
+        })
+
+        it('gives a named held-but-unauthorized signer the SAME error as a named unheld one', () => {
+            const context = {
+                signableAddresses: new Set([
+                    addrA.toString(),
+                    addrB.toString(),
+                ]),
+                authorizedAddresses: new Set([addrA.toString()]),
+            }
+            const capture = (signer: Address): Arc0001Error => {
+                try {
+                    resolveArc0001SignTxnRequest(
+                        {
+                            transactions: [
+                                wrap(makePayment(addrA)),
+                                wrap(makePayment(addrC), {
+                                    signers: [signer.toString()],
+                                }),
+                            ],
+                        },
+                        context,
+                    )
+                } catch (error) {
+                    return error as Arc0001Error
+                }
+                throw new Error('expected a throw')
+            }
+
+            const heldButUnauthorized = capture(addrB)
+            const notHeldAtAll = capture(addrC)
+
+            expect(heldButUnauthorized.message).toBe(notHeldAtAll.message)
+            expect(heldButUnauthorized.code).toBe(notHeldAtAll.code)
+            expect(heldButUnauthorized.message).not.toContain(addrB.toString())
         })
 
         it('resolves an authorized entry and skips a held-but-unauthorized one without throwing', () => {

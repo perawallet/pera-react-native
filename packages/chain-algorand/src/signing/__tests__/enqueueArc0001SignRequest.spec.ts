@@ -124,6 +124,7 @@ const resolvedWithSlots = (
         ),
         toSign,
         signerOverrides: new Map(),
+        passthrough: new Map(),
     }
 }
 
@@ -206,6 +207,7 @@ const resolvedFor = (
         },
     })),
     signerOverrides: new Map(),
+    passthrough: new Map(),
 })
 
 describe('enqueueArc0001SignRequest', () => {
@@ -327,6 +329,34 @@ describe('enqueueArc0001SignRequest', () => {
             b64(1),
             null,
             b64(2),
+        ])
+    })
+
+    it("returns the dApp's own stxn in its slot when nothing else is signed", async () => {
+        const transport = makeTransport()
+        const resolved = makeResolved(0, 2)
+        resolved.passthrough.set(1, 'dapp-stxn')
+
+        await enqueue(resolved, transport)
+
+        expect(transport.respondWithResult).toHaveBeenCalledWith([
+            null,
+            'dapp-stxn',
+        ])
+    })
+
+    it("returns the dApp's own stxn beside the wallet's signatures", async () => {
+        const transport = makeTransport()
+        const resolved = resolvedWithSlots(3, [0])
+        resolved.passthrough.set(2, 'dapp-stxn')
+
+        await enqueue(resolved, transport)
+        await enqueuedRequest().approve([signedBytes(1)])
+
+        expect(transport.respondWithResult).toHaveBeenCalledWith([
+            b64(1),
+            null,
+            'dapp-stxn',
         ])
     })
 

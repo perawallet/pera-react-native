@@ -113,6 +113,22 @@ describe('algorandHandoffDeliveryOf', () => {
         })
     })
 
+    it("carries the dApp's own stxns, so a resumed answer returns them too", () => {
+        const request = requestWith([tx1], {
+            payloadId: 77,
+            signableIndices: [1],
+            totalLength: 2,
+            passthrough: { 0: 'dapp-stxn' },
+        })
+
+        expect(algorandHandoffDeliveryOf(request)).toEqual({
+            payloadId: 77,
+            indicesToSign: [1],
+            totalLength: 2,
+            passthrough: { 0: 'dapp-stxn' },
+        })
+    })
+
     it('is undefined for a request no dApp waits on', () => {
         expect(
             algorandHandoffDeliveryOf(
