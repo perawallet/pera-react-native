@@ -57,6 +57,12 @@ vi.mock('@hooks/useIsDataSigningBlocked', () => ({
         mockIsQuantumDataSigningBlocked(request),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ medium: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 const buildRequest = (sourceType: string) => ({
     id: 'req-1',
     type: 'arbitrary-data',
@@ -108,6 +114,18 @@ describe('useArbitraryDataSigningScreen', () => {
             'algorand',
         )
         expect(mockPipeline.next).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.medium).toHaveBeenCalledTimes(1)
+    })
+
+    it('plays the light haptic when the request is rejected', () => {
+        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+
+        act(() => {
+            result.current.handleReject()
+        })
+
+        expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
     })
 
     it('rejects the request when the quantum dApp warning is cancelled', async () => {
@@ -120,6 +138,8 @@ describe('useArbitraryDataSigningScreen', () => {
 
         expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
         expect(mockPipeline.next).not.toHaveBeenCalled()
+        expect(mockHaptics.medium).not.toHaveBeenCalled()
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
     })
 
     it('does not consult the quantum dApp warning for non-dApp requests', async () => {

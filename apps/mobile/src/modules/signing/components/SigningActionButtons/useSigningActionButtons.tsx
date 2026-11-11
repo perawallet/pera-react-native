@@ -12,6 +12,7 @@
 
 import React, { useCallback, useMemo, useState } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -75,6 +76,7 @@ const preferenceKeyMap: Record<GuardedWarningType, string> = {
 export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { showError } = useErrorToast()
     const { t } = useLanguage()
+    const haptics = useHaptics()
     const { currentRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
 
@@ -239,6 +241,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                             walletConnectTxPayload,
                         )
                     }
+                    haptics.light()
                     pipeline.fail()
                     return
                 }
@@ -274,9 +277,11 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                     walletConnectTxPayload,
                 )
             }
+            haptics.medium()
             pipeline.next()
         })()
     }, [
+        haptics,
         cannotSignNotice,
         isConfirmBlocked,
         currentRequest,
@@ -295,8 +300,9 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 walletConnectTxPayload,
             )
         }
+        haptics.light()
         pipeline.fail()
-    }, [pipeline, walletConnectTxPayload])
+    }, [haptics, pipeline, walletConnectTxPayload])
 
     const cosignKind =
         pipeline.resolved?.kind.type === 'transactions'

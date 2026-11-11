@@ -341,7 +341,11 @@ export {
 
 export { useHardwareSigningStore } from './store/hardwareSigningStore'
 export { signTransactionsInBackground } from './background-signing'
-export { isSignRequestPending, rehydrateSigningStore } from './store'
+export {
+    isSignRequestPending,
+    rehydrateSigningStore,
+    wasRestoredFromStorage,
+} from './store'
 
 export {
     BLE_CLASS_ERROR_KINDS,

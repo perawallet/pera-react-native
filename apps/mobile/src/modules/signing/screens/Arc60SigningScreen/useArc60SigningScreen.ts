@@ -31,6 +31,7 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CardEvent } from '@analytics'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
@@ -72,6 +73,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
     const pipeline = useSigningPipeline()
+    const haptics = useHaptics()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const request =
         (pipeline.currentRequest as Optional<AuthDataSignRequest>) ?? null
@@ -124,14 +126,17 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
                     scope.chainId,
                 )
                 if (decision === 'cancel') {
+                    haptics.light()
                     pipeline.fail()
                     return
                 }
             }
 
+            haptics.medium()
             pipeline.next()
         })()
     }, [
+        haptics,
         pipeline,
         isCardRequest,
         request,
@@ -143,8 +148,9 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const handleReject = useCallback(() => {
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxClose)
+        haptics.light()
         pipeline.fail()
-    }, [pipeline, isCardRequest])
+    }, [haptics, pipeline, isCardRequest])
 
     const handleDetailsPress = useCallback(() => {
         navigation.navigate('Arc60SigningDetails')

@@ -77,6 +77,12 @@ vi.mock('../../../hooks/useReviewRiskGate', () => ({
     useReviewRiskGate: () => mockRiskGate,
 }))
 
+const mockHaptics = vi.hoisted(() => ({ medium: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 const mockConfirmQuantumDappUsage = vi.fn()
 vi.mock('@hooks/useQuantumDappWarning', () => ({
     useQuantumDappWarning: () => ({
@@ -171,6 +177,7 @@ describe('useSigningActionButtons', () => {
         })
 
         expect(mockNext).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.medium).toHaveBeenCalledTimes(1)
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
@@ -185,6 +192,7 @@ describe('useSigningActionButtons', () => {
 
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(mockNext).not.toHaveBeenCalled()
+        expect(mockHaptics.medium).not.toHaveBeenCalled()
         expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
     })
 
@@ -575,6 +583,7 @@ describe('useSigningActionButtons', () => {
                 wcPayload,
             )
             expect(mockFail).toHaveBeenCalledTimes(1)
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
         })
 
         it('tracks TransactionConfirmed only after the security guard is confirmed', async () => {
@@ -800,6 +809,8 @@ describe('useSigningActionButtons', () => {
 
             expect(mockFail).toHaveBeenCalledTimes(1)
             expect(mockNext).not.toHaveBeenCalled()
+            expect(mockHaptics.medium).not.toHaveBeenCalled()
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
             expect(trackEvent).toHaveBeenCalledWith('wc_transaction_declined', {
                 dapp_name: '',
                 dapp_url: '',
