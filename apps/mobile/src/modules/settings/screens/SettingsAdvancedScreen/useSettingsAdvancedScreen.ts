@@ -12,15 +12,20 @@
 
 import { useCallback } from 'react'
 import { useAnalyticsConsent } from '@perawallet/wallet-core-settings'
+import { useHapticFeedbackSetting } from '@hooks/useHapticFeedbackSetting'
 
 export type UseSettingsAdvancedScreenResult = {
     isAnalyticsEnabled: boolean
     handleAnalyticsToggle: (isEnabled: boolean) => void
+    isHapticFeedbackEnabled: boolean
+    handleHapticFeedbackToggle: (isEnabled: boolean) => void
 }
 
 export const useSettingsAdvancedScreen =
     (): UseSettingsAdvancedScreenResult => {
         const { consent, setConsent } = useAnalyticsConsent()
+        const { isEnabled: isHapticFeedbackEnabled, setIsEnabled } =
+            useHapticFeedbackSetting()
 
         const handleAnalyticsToggle = useCallback(
             (isEnabled: boolean) =>
@@ -31,5 +36,7 @@ export const useSettingsAdvancedScreen =
         return {
             isAnalyticsEnabled: consent === 'granted',
             handleAnalyticsToggle,
+            isHapticFeedbackEnabled,
+            handleHapticFeedbackToggle: setIsEnabled,
         }
     }

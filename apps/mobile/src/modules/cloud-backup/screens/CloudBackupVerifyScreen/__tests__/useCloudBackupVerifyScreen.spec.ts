@@ -103,9 +103,10 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('expo-haptics', () => ({
-    notificationAsync: vi.fn(),
-    NotificationFeedbackType: { Error: 'error' },
+const mockHaptics = vi.hoisted(() => ({ error: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
 }))
 
 beforeEach(() => {
@@ -178,6 +179,18 @@ describe('useCloudBackupVerifyScreen', () => {
         expect((useBackupQuiz as Mock).mock.calls[0][2]).toBe(
             registerBackupMock,
         )
+    })
+
+    test('plays the error haptic on a wrong answer', () => {
+        mockHaptics.error.mockClear()
+        renderHook(() => useCloudBackupVerifyScreen())
+        const onWrong = (useBackupQuiz as Mock).mock.calls[0][3]
+
+        act(() => {
+            onWrong()
+        })
+
+        expect(mockHaptics.error).toHaveBeenCalledTimes(1)
     })
 
     // Fixed positions leave a 27-combination quiz that can be ground through

@@ -3260,7 +3260,8 @@
         },
         "advanced": {
             "launch_label": "Paramètre de démarrage",
-            "confirmation_label": "Action de confirmation"
+            "confirmation_label": "Action de confirmation",
+            "haptics_label": "Retour haptique"
         },
         "launch": {
             "synopsis": "Choisissez le compte sur lequel Pera s’ouvre au démarrage de l’application.",

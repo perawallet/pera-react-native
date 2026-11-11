@@ -3260,7 +3260,8 @@
         },
         "advanced": {
             "launch_label": "Başlangıç ayarı",
-            "confirmation_label": "Onay yöntemi"
+            "confirmation_label": "Onay yöntemi",
+            "haptics_label": "Dokunsal geri bildirim"
         },
         "launch": {
             "synopsis": "Uygulamayı açtığında Pera'nın hangi hesapla açılacağını seç.",

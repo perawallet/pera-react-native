@@ -28,8 +28,12 @@ export const SettingsAdvancedScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useAppNavigation()
-    const { isAnalyticsEnabled, handleAnalyticsToggle } =
-        useSettingsAdvancedScreen()
+    const {
+        isAnalyticsEnabled,
+        handleAnalyticsToggle,
+        isHapticFeedbackEnabled,
+        handleHapticFeedbackToggle,
+    } = useSettingsAdvancedScreen()
 
     return (
         <PWScreen testID='settings_advanced_screen'>
@@ -49,6 +53,22 @@ export const SettingsAdvancedScreen = () => {
                         style={styles.row}
                         testID='settings_advanced_confirmation_item'
                     />
+                )}
+                {routeCapabilities.hapticFeedback && (
+                    <PWView style={styles.toggleRow}>
+                        <PWIcon name='phone' />
+                        <PWText
+                            style={styles.toggleLabel}
+                            truncate
+                        >
+                            {t('settings.advanced.haptics_label')}
+                        </PWText>
+                        <PWSwitch
+                            value={isHapticFeedbackEnabled}
+                            onValueChange={handleHapticFeedbackToggle}
+                            testID='settings_advanced_haptics_toggle'
+                        />
+                    </PWView>
                 )}
                 {routeCapabilities.analyticsConsent && (
                     <PWView style={styles.toggleRow}>
