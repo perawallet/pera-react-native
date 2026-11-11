@@ -51,7 +51,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import type { Database } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { testChainContext } from '../../../__tests__/context'
+import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
 import { ETHEREUM } from '../../../__tests__/evm-chains'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { evmCapabilityDefaults } from '../../../capability-defaults'
@@ -824,6 +824,265 @@ describe('call batch execution', () => {
             expect(await readBatch()).toMatchObject({
                 outcome: 'failed',
                 position: 1,
+            })
+            expect(signTransaction).not.toHaveBeenCalled()
+            expect(node.sentCount()).toBe(0)
+        })
+    })
+
+    describe('across extension contexts', () => {
+        const SECOND_REALM_RPC_URL = 'https://second-context.rpc.test/'
+        const heldLocks = new Set<string>()
+        let realmB: typeof import('../executor')
+        let depsB: CallBatchExecutorDeps
+        const ctxB = {
+            ...ctx,
+            getEndpoints: () => ({ mainnet: [SECOND_REALM_RPC_URL] }),
+            timeouts: { readMs: 10_000, submitMs: 10_000 },
+        }
+
+        const recordFirstSigned = async (position: number) => {
+            const prepared = await prepareEthereumCallBatch(ctx, ETHEREUM, {
+                from: SENDER,
+                calls: [APPROVE, SWAP],
+            })
+            const first = await signAsSender(prepared.first)
+            const row = await recordTransactionBatch({
+                scope: MAINNET,
+                sender: SENDER,
+                batchId: 'batch-1',
+                approvalToken: APPROVAL.token,
+                payload: PAYLOAD,
+                txIds: [first.id],
+                signedRaw: bytesToHex(first.bytes),
+            })
+            if (position === 0) return { first, row }
+            const advanced = {
+                txIds: [first.id],
+                signedRaw: null,
+                position,
+                outcome: 'running' as const,
+            }
+            await updateTransactionBatch({
+                id: row.id,
+                expected: row,
+                ...advanced,
+            })
+            return { first, row: { ...row, ...advanced } }
+        }
+
+        beforeEach(async () => {
+            heldLocks.clear()
+            // Web Locks are shared by every context of an extension origin;
+            // this fake grants a name to one holder and refuses it to the rest.
+            vi.stubGlobal('navigator', {
+                locks: {
+                    request: async (
+                        name: string,
+                        _options: unknown,
+                        callback: (lock: unknown) => Promise<unknown>,
+                    ) => {
+                        if (heldLocks.has(name)) return callback(null)
+                        heldLocks.add(name)
+                        try {
+                            return await callback({ name })
+                        } finally {
+                            heldLocks.delete(name)
+                        }
+                    },
+                },
+            })
+            // A second module instance is a second JS realm: its own
+            // in-memory guard, over the one database.
+            vi.resetModules()
+            const database = await import('@perawallet/wallet-core-database')
+            await database.initializeDatabase({
+                getDatabase: async () => db,
+            } as unknown as Parameters<typeof initializeDatabase>[0])
+            realmB = await import('../executor')
+            depsB = { ...deps, confirmationTimeoutMs: 10_000 }
+        })
+
+        afterEach(() => {
+            vi.unstubAllGlobals()
+        })
+
+        it('Given another context is still waiting on the first call receipt, when this one runs the batch to its end, then the second call is signed and sent once and the late context changes nothing', async () => {
+            const node = fakeNode({
+                rpcUrls: [TEST_RPC_URL, SECOND_REALM_RPC_URL],
+            })
+            const hold = node.holdReceipts(SECOND_REALM_RPC_URL)
+            const { first, row } = await recordFirstSigned(0)
+            node.sent.set(first.id as Hex, bytesToHex(first.bytes))
+            const signTransaction = vi.fn(signAsSender)
+            const late = realmB.runEthereumCallBatch(ctxB, ETHEREUM, row, {
+                ...depsB,
+                signTransaction,
+            })
+            await vi.waitFor(() => expect(hold.isWaiting()).toBe(true))
+
+            await runEthereumCallBatch(ctx, ETHEREUM, row, {
+                ...deps,
+                signTransaction,
+            })
+            const leftByFirst = await readBatch()
+            hold.release()
+            await late
+
+            expect(leftByFirst).toMatchObject({
+                outcome: 'confirmed',
+                position: 1,
+            })
+            expect(await readBatch()).toEqual(leftByFirst)
+            expect(signTransaction).toHaveBeenCalledOnce()
+            expect(node.sentCount()).toBe(1)
+        })
+
+        it('Given two contexts wait on the first call receipt and one advances the row and is mid-signing, when the other is released, then it carries on to the same position but signs nothing', async () => {
+            const node = fakeNode({
+                rpcUrls: [TEST_RPC_URL, SECOND_REALM_RPC_URL],
+            })
+            const holdA = node.holdReceipts(TEST_RPC_URL)
+            const holdB = node.holdReceipts(SECOND_REALM_RPC_URL)
+            const { first, row } = await recordFirstSigned(0)
+            node.sent.set(first.id as Hex, bytesToHex(first.bytes))
+            let releaseSigning: () => void = () => {}
+            const signing = new Promise<void>(resolve => {
+                releaseSigning = resolve
+            })
+            const signTransaction = vi.fn(
+                async (...args: Parameters<typeof signAsSender>) => {
+                    await signing
+                    return signAsSender(...args)
+                },
+            )
+            const runA = runEthereumCallBatch(ctx, ETHEREUM, row, {
+                ...deps,
+                signTransaction,
+            })
+            const runB = realmB.runEthereumCallBatch(ctxB, ETHEREUM, row, {
+                ...depsB,
+                signTransaction,
+            })
+            await vi.waitFor(() => {
+                expect(holdA.isWaiting()).toBe(true)
+                expect(holdB.isWaiting()).toBe(true)
+            })
+
+            // A advances to position 1 and sits inside signing, holding the lock.
+            holdA.release()
+            await vi.waitFor(() => expect(signTransaction).toHaveBeenCalled())
+            // B's advance writes the state A already wrote, so it is not refused.
+            holdB.release()
+            await runB
+            releaseSigning()
+            await runA
+
+            expect(signTransaction).toHaveBeenCalledOnce()
+            expect(node.sentCount()).toBe(1)
+            expect(await readBatch()).toMatchObject({
+                outcome: 'confirmed',
+                position: 1,
+            })
+        })
+
+        it('Given another context is signing the next call, when this one reaches it, then it signs nothing and the call is signed and sent once', async () => {
+            const node = fakeNode({
+                rpcUrls: [TEST_RPC_URL, SECOND_REALM_RPC_URL],
+            })
+            const { first, row } = await recordFirstSigned(1)
+            node.sent.set(first.id as Hex, bytesToHex(first.bytes))
+            let releaseSigning: () => void = () => {}
+            const signing = new Promise<void>(resolve => {
+                releaseSigning = resolve
+            })
+            const signTransaction = vi.fn(
+                async (...args: Parameters<typeof signAsSender>) => {
+                    await signing
+                    return signAsSender(...args)
+                },
+            )
+            const signedByOther = runEthereumCallBatch(ctx, ETHEREUM, row, {
+                ...deps,
+                signTransaction,
+            })
+            await vi.waitFor(() => expect(signTransaction).toHaveBeenCalled())
+
+            await realmB.runEthereumCallBatch(ctxB, ETHEREUM, row, {
+                ...depsB,
+                signTransaction,
+            })
+            releaseSigning()
+            await signedByOther
+
+            expect(signTransaction).toHaveBeenCalledOnce()
+            expect(node.sentCount()).toBe(1)
+            expect(await readBatch()).toMatchObject({ outcome: 'confirmed' })
+        })
+
+        it('Given this context waits on the app unlock while another signs the call, when it is unlocked, then it signs nothing', async () => {
+            const node = fakeNode({
+                rpcUrls: [TEST_RPC_URL, SECOND_REALM_RPC_URL],
+            })
+            const { first, row } = await recordFirstSigned(1)
+            node.sent.set(first.id as Hex, bytesToHex(first.bytes))
+            let unlock: () => void = () => {}
+            const unlocked = new Promise<void>(resolve => {
+                unlock = resolve
+            })
+            const whenUnlocked = vi.fn(() => unlocked)
+            const signTransaction = vi.fn(signAsSender)
+            const waiting = realmB.runEthereumCallBatch(ctxB, ETHEREUM, row, {
+                ...depsB,
+                whenUnlocked,
+                signTransaction,
+            })
+            await vi.waitFor(() => expect(whenUnlocked).toHaveBeenCalled())
+
+            await runEthereumCallBatch(ctx, ETHEREUM, row, {
+                ...deps,
+                signTransaction,
+            })
+            unlock()
+            await waiting
+
+            expect(signTransaction).toHaveBeenCalledOnce()
+            expect(node.sentCount()).toBe(1)
+            expect(await readBatch()).toMatchObject({ outcome: 'confirmed' })
+        })
+
+        it('Given another context saved the next call while this one waited on a receipt, when this one finishes waiting, then the saved hash and bytes are not erased', async () => {
+            const node = fakeNode({
+                rpcUrls: [TEST_RPC_URL, SECOND_REALM_RPC_URL],
+            })
+            const hold = node.holdReceipts(SECOND_REALM_RPC_URL)
+            const { first, row } = await recordFirstSigned(0)
+            node.sent.set(first.id as Hex, bytesToHex(first.bytes))
+            const signTransaction = vi.fn(signAsSender)
+            const late = realmB.runEthereumCallBatch(ctxB, ETHEREUM, row, {
+                ...depsB,
+                signTransaction,
+            })
+            await vi.waitFor(() => expect(hold.isWaiting()).toBe(true))
+            const nextHash = `0x${'bb'.repeat(32)}`
+            const nextBytes = `0x${'cc'.repeat(40)}`
+            await updateTransactionBatch({
+                id: row.id,
+                expected: row,
+                txIds: [first.id, nextHash],
+                signedRaw: nextBytes,
+                position: 1,
+                outcome: 'running',
+            })
+
+            hold.release()
+            await late
+
+            expect(await readBatch()).toMatchObject({
+                txIds: [first.id, nextHash],
+                signedRaw: nextBytes,
+                position: 1,
+                outcome: 'running',
             })
             expect(signTransaction).not.toHaveBeenCalled()
             expect(node.sentCount()).toBe(0)

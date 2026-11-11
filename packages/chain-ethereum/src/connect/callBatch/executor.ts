@@ -24,6 +24,7 @@ import {
 import { whenAppUnlocked } from '@perawallet/wallet-core-security'
 import {
     logger,
+    withLockIfFree,
     type Optional,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -108,9 +109,13 @@ const signInBackground = async (
     return signed
 }
 
-// Batches this app instance is running, so a sync tick never starts a second
-// run of one the approval already started.
+// Batches this JS realm is running, so a sync tick never stacks a second run of
+// one the approval already started. Other realms (extension popup, tab,
+// offscreen document) are kept apart by the conditional row write and the
+// per-batch sign lock.
 const runningBatches = new Set<string>()
+
+const SIGN_LOCK_PREFIX = 'pera-call-batch-sign:'
 
 const toPayload = ({
     calls,
@@ -299,6 +304,62 @@ const run = async (
                 },
             )
         }
+        return true
+    }
+
+    // Runs under the batch's sign lock. Saving the row as it stands first lands only
+    // while no other context has moved it, so a context that waited out an
+    // unlock or the lock cannot sign a call another one already signed.
+    const signNext = async (
+        position: number,
+        reached: string[],
+    ): Promise<Optional<Unsent>> => {
+        if (
+            !(await save(current.txIds, position, 'running', current.signedRaw))
+        ) {
+            return undefined
+        }
+        let unsigned: UnsignedTransaction
+        let signed: SignedTransaction
+        try {
+            unsigned = await buildEthereumSendTransaction(
+                batchCtx,
+                chain,
+                calls[position],
+            )
+            const { maxFeePerGas } = readEvmTransaction(
+                unsigned,
+                chain,
+            ).transaction
+            if (maxFeePerGas > ceilingOf(batch)) {
+                throw new Error(
+                    'The network fee rose past what the batch review allows',
+                )
+            }
+            // The review listed the batch's calls in order, so a call's
+            // position in the batch is its place on the review.
+            signed = await signTransaction(unsigned, {
+                token: batch.approvalToken,
+                positions: [position],
+            })
+        } catch (error) {
+            logger.warn('[ethereum] a batched call could not be signed', {
+                batchId: batch.batchId,
+                position,
+                error,
+            })
+            await save(reached, position, 'failed')
+            return undefined
+        }
+        const isSaved = await save(
+            [...reached, signed.id],
+            position,
+            'running',
+            bytesToHex(signed.bytes),
+        )
+        return isSaved
+            ? { signed, entry: historyEntryOf(unsigned), isRecorded: false }
+            : undefined
     }
 
     // `deferred`: refused before the node saw it for a wallet-side reason
@@ -386,49 +447,14 @@ const run = async (
                 break
             }
             await whenUnlocked()
-            let unsigned: UnsignedTransaction
-            let signed: SignedTransaction
-            try {
-                unsigned = await buildEthereumSendTransaction(
-                    batchCtx,
-                    chain,
-                    calls[position],
-                )
-                const { maxFeePerGas } = readEvmTransaction(
-                    unsigned,
-                    chain,
-                ).transaction
-                if (maxFeePerGas > ceilingOf(batch)) {
-                    throw new Error(
-                        'The network fee rose past what the batch review allows',
-                    )
-                }
-                // The review listed the batch's calls in order, so a call's
-                // position in the batch is its place on the review.
-                signed = await signTransaction(unsigned, {
-                    token: batch.approvalToken,
-                    positions: [position],
-                })
-            } catch (error) {
-                logger.warn('[ethereum] a batched call could not be signed', {
-                    batchId: batch.batchId,
-                    position,
-                    error,
-                })
-                await save(reached, position, 'failed')
-                break
-            }
-            await save(
-                [...reached, signed.id],
-                position,
-                'running',
-                bytesToHex(signed.bytes),
+            // Not held across the unlock above: the offscreen document never
+            // unlocks, and would pin the lock for every context.
+            const next = await withLockIfFree(
+                `${SIGN_LOCK_PREFIX}${batch.id}`,
+                () => signNext(position, reached),
             )
-            unsent = {
-                signed,
-                entry: historyEntryOf(unsigned),
-                isRecorded: false,
-            }
+            if (next === undefined) break
+            unsent = next
             continue
         }
 
