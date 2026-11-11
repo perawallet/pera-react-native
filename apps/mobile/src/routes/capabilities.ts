@@ -43,6 +43,7 @@ export const routeCapabilities: RouteCapabilities = {
     storeRating: true,
     confirmationModeSetting: true,
     analyticsConsent: true,
+    hapticFeedback: true,
     developerSettings: true,
     developerGallery: isDeveloperGalleryIncluded,
     migrationDevTools: isMigrationDevToolsIncluded,

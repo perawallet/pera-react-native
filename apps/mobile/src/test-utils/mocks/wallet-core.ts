@@ -441,6 +441,9 @@ vi.mock('@perawallet/wallet-core-settings', () => {
             getPreference: vi.fn(),
             setPreference: vi.fn(),
         })),
+        useSettingsStore: {
+            getState: () => ({ getPreference: vi.fn() }),
+        },
         useNotificationPreferences: vi.fn(() => ({
             disabledAccounts: [],
             setAccountEnabled: vi.fn(),

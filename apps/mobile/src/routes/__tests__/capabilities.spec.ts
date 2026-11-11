@@ -92,6 +92,7 @@ describe('route capabilities', () => {
             // separate WalletConnect menu entry on web.
             connectionsSettings: true,
             ledgerUsb: true,
+            hapticFeedback: false,
         })
     })
 
