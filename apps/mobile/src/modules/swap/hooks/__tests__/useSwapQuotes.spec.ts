@@ -221,9 +221,12 @@ describe('useSwapQuotes', () => {
 
             act(() => result.current.refresh())
 
-            await waitFor(() => expect(result.current.quoteFailure).toBeNull())
+            // The retry clears the failure before its request resolves, so wait on the quotes.
+            await waitFor(() =>
+                expect(result.current.allQuotes).toEqual([OFFER]),
+            )
+            expect(result.current.quoteFailure).toBeNull()
             expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
-            expect(result.current.allQuotes).toEqual([OFFER])
         })
 
         it('is cleared by reset()', async () => {
