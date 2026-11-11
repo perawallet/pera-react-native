@@ -322,7 +322,7 @@ An Algorand request is checked and grouped by the Algorand transactions it carri
 over the full group, and one group per account each transaction signs for, whose rekey is followed
 once. The planner adapter's `signedForAddresses` decides that key, and refuses a signer override
 that names neither the sender nor an account the payload signs with. An override naming the payload's
-authority (ARC-0001 `signers` for a dApp escrow rekeyed to a wallet account) keys the group by that
+authority (ARC-0001 `authAddr` for a dApp escrow rekeyed to a wallet account) keys the group by that
 signer instead (`isKeyedBySigner`): the chain checks only the sender's auth address, so the
 authority's own rekey must not be followed.
 
@@ -330,10 +330,10 @@ dApp requests (WalletConnect `algo_signTxn` per ARC-0025, and the webview bridge
 signing rules in `resolveArc0001SignTxnRequest`: an `authAddr` signs with that key even when the
 wallet's records say the sender isn't rekeyed to it, including an `authAddr` equal to the sender; a
 signer the request names that the wallet can't use fails the whole request with one error that
-doesn't name it; and `signers: []` returns the dApp's own `stxn` when it matches `txn`. Two
-deviations are deliberate, both because Folks Finance sends these shapes: `signers: [X]` without
-`authAddr` is taken as `authAddr: X`, and a transaction with no `signers` whose sender the wallet
-can't sign for is left `null` instead of failing the request.
+doesn't name it; `signers: [X]` without `authAddr` is rejected unless X is the sender and the sender
+isn't rekeyed; and `signers: []` returns the dApp's own `stxn` when it matches `txn`. One deviation
+is deliberate: a transaction with no `signers` whose sender the wallet can't sign for is left `null`
+instead of failing the request, because `@perawallet/connect` 1.5.2 and older drop `signers: []`.
 Every Algorand signer and guard reads the transaction from the payload through
 `readAlgorandTransaction`, the trust boundary for a payload a dApp may have built.
 

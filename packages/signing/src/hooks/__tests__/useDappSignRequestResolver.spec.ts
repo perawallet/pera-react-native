@@ -28,6 +28,7 @@ import { useDappSignRequestResolver } from '../useDappSignRequestResolver'
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const mockAccounts = vi.fn<() => WalletAccount[]>()
+const mockIsDelegated = vi.fn<(account: WalletAccount) => boolean>()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -35,6 +36,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useSigningAccounts: () => mockAccounts(),
     useAllAccounts: () => [...mockAccounts(), watchAccount('W')],
+    isDelegatedAccount: (account: WalletAccount) => mockIsDelegated(account),
 }))
 
 const resolved: DappResolveResult = { payload: { toSign: [] } }
@@ -47,6 +49,7 @@ describe('useDappSignRequestResolver', () => {
             algo25Account('A'),
             multisigAccount('MSIG1'),
         ])
+        mockIsDelegated.mockReturnValue(false)
         resolve.mockClear()
         registerFakePlannerAdapter({ resolveDappRequest: resolve })
     })
@@ -63,8 +66,23 @@ describe('useDappSignRequestResolver', () => {
             multisigAddresses: new Set(['MSIG1']),
             authorizedAddresses: undefined,
             heldAddresses: new Set(['A', 'MSIG1', 'W']),
+            delegatedAddresses: new Set(),
             maxTransactions: undefined,
         })
+    })
+
+    it('binds the held accounts another account signs for as delegatedAddresses', () => {
+        const delegated = algo25Account('R')
+        mockAccounts.mockReturnValue([algo25Account('A'), delegated])
+        mockIsDelegated.mockImplementation(account => account === delegated)
+        const { result } = renderHook(() => useDappSignRequestResolver(SCOPE))
+
+        result.current({ payload: { transactions: [] } })
+
+        expect(resolve).toHaveBeenCalledWith(
+            { payload: { transactions: [] } },
+            expect.objectContaining({ delegatedAddresses: new Set(['R']) }),
+        )
     })
 
     it('passes authorizedAddresses and maxTransactions through', () => {

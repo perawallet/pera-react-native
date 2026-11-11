@@ -264,7 +264,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
         expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
     })
 
-    // ARC-0001 `signers: [B]` for a sender the wallet doesn't hold (a dApp
+    // ARC-0001 `authAddr: B` for a sender the wallet doesn't hold (a dApp
     // escrow rekeyed to B). B is itself rekeyed to C, but the chain checks the
     // escrow's authority, so B's own key must sign: C's would be rejected.
     describe('a dApp naming a rekeyed account as the signer', () => {

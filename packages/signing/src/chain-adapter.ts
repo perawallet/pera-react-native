@@ -375,6 +375,11 @@ export type DappResolveContext = {
      */
     heldAddresses?: ReadonlySet<string>
     /**
+     * Held addresses that another account signs for. A dApp naming one as
+     * its own signer, without naming the account that signs, is rejected.
+     */
+    delegatedAddresses?: ReadonlySet<string>
+    /**
      * Local multisig addresses. A transaction such an address sends is signed
      * as the multisig itself, whatever signer the dApp names: the dApp can't
      * enumerate the wallet's local participants, so the propose flow collects
