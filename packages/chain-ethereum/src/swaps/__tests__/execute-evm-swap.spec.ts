@@ -372,7 +372,7 @@ describe('executeEvmSwap', () => {
         const result = await run(context)
 
         expect(result).toMatchObject({
-            failure: { phase: 'submission', reason: 'submission-failed' },
+            failure: { phase: 'submission', reason: 'reverted' },
         })
         expect(node.sentCount()).toBe(1)
         await flushCancelReport()
@@ -469,7 +469,7 @@ describe('executeEvmSwap', () => {
         const result = await run(context)
 
         expect(result).toMatchObject({
-            failure: { phase: 'submission', reason: 'submission-failed' },
+            failure: { phase: 'submission', reason: 'reverted' },
         })
         expect(context.reportOrder).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -188,7 +188,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 // An offline failure surfaces its own copy — never the algod
                 // fallback, which would blame the node for a request that
                 // never reached it.
-                case 'submission-failed': {
+                case 'submission-failed':
+                case 'reverted': {
                     const copy = resolveErrorCopy(
                         failure.error,
                         t,
