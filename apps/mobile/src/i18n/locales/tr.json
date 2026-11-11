@@ -33,6 +33,12 @@
             "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },
+    "discover": {
+        "dapp_row": {
+            "favorite": "Favorilere ekle",
+            "unfavorite": "Favorilerden kaldır"
+        }
+    },
     "account_menu": {
         "title": "Hesaplar",
         "sort": "Sırala",

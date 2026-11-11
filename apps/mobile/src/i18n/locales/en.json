@@ -33,6 +33,12 @@
             "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },
+    "discover": {
+        "dapp_row": {
+            "favorite": "Add to favorites",
+            "unfavorite": "Remove from favorites"
+        }
+    },
     "account_menu": {
         "title": "Accounts",
         "sort": "Sort",

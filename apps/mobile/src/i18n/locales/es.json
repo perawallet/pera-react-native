@@ -33,6 +33,12 @@
             "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}"
         }
     },
+    "discover": {
+        "dapp_row": {
+            "favorite": "Añadir a favoritos",
+            "unfavorite": "Quitar de favoritos"
+        }
+    },
     "account_menu": {
         "title": "Cuentas",
         "sort": "Ordenar",

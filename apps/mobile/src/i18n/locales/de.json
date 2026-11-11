@@ -33,6 +33,12 @@
             "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
         }
     },
+    "discover": {
+        "dapp_row": {
+            "favorite": "Zu Favoriten hinzufügen",
+            "unfavorite": "Aus Favoriten entfernen"
+        }
+    },
     "account_menu": {
         "title": "Konten",
         "sort": "Sortieren",

@@ -33,6 +33,12 @@
             "requester_verified_a11y_origin": "Verificado: esta solicitação veio da aba do seu navegador em {{origin}}"
         }
     },
+    "discover": {
+        "dapp_row": {
+            "favorite": "Adicionar aos favoritos",
+            "unfavorite": "Remover dos favoritos"
+        }
+    },
     "account_menu": {
         "title": "Contas",
         "sort": "Ordenar",
