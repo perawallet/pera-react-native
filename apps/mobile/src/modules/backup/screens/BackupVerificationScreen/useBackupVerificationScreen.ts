@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import * as Haptics from 'expo-haptics'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import {
     useNavigation,
@@ -27,6 +26,7 @@ import {
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -77,6 +77,7 @@ export const useBackupVerificationScreen =
         const markBackupComplete = useMarkMnemonicBackupComplete()
         const { t } = useLanguage()
         const { errorToast } = useToast()
+        const haptics = useHaptics()
 
         useEffect(() => {
             trackEvent(OnboardingEvent.VerifyPassphrase)
@@ -89,11 +90,9 @@ export const useBackupVerificationScreen =
         }, [account, markBackupComplete, navigation])
 
         const onWrong = useCallback(() => {
-            void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Error,
-            )
+            haptics.error()
             errorToast(t('backup.verification.error_message'), '')
-        }, [errorToast, t])
+        }, [errorToast, haptics, t])
 
         const correctPairs = useMemo(() => picks ?? [], [picks])
 
