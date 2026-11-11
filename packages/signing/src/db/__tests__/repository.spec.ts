@@ -33,6 +33,7 @@ import {
     getUnsyncedSubmissionSpends,
     pruneResolvedSubmissionAttempts,
     subscribeToSubmissionLedger,
+    watchSubmissionOutcome,
     LANDABLE_SUBMISSION_STATUSES,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
@@ -620,6 +621,33 @@ describe('submission ledger repository', () => {
 
             // Unknown stays open, so it changes nothing a reader holds back.
             expect(listener).toHaveBeenCalledTimes(2)
+        })
+
+        it('reports the settled attempt to a watcher of any of its txIds', async () => {
+            const id = await record({ txIds: ['watch-a', 'watch-b'] })
+            const onOutcome = vi.fn()
+            watchSubmissionOutcome('watch-b', onOutcome)
+
+            await resolveSubmissionAttempt({ db, id, status: 'confirmed' })
+
+            expect(onOutcome).toHaveBeenCalledWith('confirmed')
+        })
+
+        it('answers a watcher of a retried txId only from the retry, not the refused attempt', async () => {
+            const first = await record({ txIds: ['retry-a'] })
+            await resolveSubmissionAttempt({ db, id: first, status: 'failed' })
+            const retry = await record({ txIds: ['retry-a'] })
+            const onOutcome = vi.fn()
+
+            watchSubmissionOutcome('retry-a', onOutcome)
+            expect(onOutcome).not.toHaveBeenCalled()
+
+            await resolveSubmissionAttempt({
+                db,
+                id: retry,
+                status: 'confirmed',
+            })
+            expect(onOutcome).toHaveBeenCalledWith('confirmed')
         })
 
         it('still records when a subscriber throws', async () => {
