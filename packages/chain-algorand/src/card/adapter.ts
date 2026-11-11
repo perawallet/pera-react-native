@@ -36,6 +36,8 @@ import {
     algorandDelegationRequests,
     BAANX_ALGORAND_NETWORK,
 } from './delegation'
+import { algorandAutoDraw } from './escrow/killswitch'
+import { resolveEscrowChainConfig } from './escrow/lsig'
 import { algorandEscrowWithdrawals } from './escrow/withdrawal'
 import { buildAlgorandManualDeposit } from './manualDeposit'
 import { useAlgorandCardAutoDraw } from './useAlgorandCardAutoDraw'
@@ -111,6 +113,16 @@ export const algorandCardAdapter: CardChainAdapter = {
         }
         const { explorerUrl } = getAlgorandChainConfig(scope)
         return explorerUrl ? `${explorerUrl}/tx/${hash}` : null
+    },
+    isAutoDrawEnabled: async (scope, ownerAddress) => {
+        if (settlementAsset(scope) === null) return false
+        const network = algorandNetworkOf(scope)
+        if (!algorandAutoDraw.isConfigured(network)) return false
+        return algorandAutoDraw.isEnabled({
+            network,
+            sender: ownerAddress,
+            asset: resolveEscrowChainConfig(network).assetId,
+        })
     },
     useAutoDraw: useAlgorandCardAutoDraw,
     withdrawal: {

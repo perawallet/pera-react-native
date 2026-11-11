@@ -158,6 +158,7 @@ cardContractTests(() => algorandCardAdapter, {
     foreignLegNetwork: 'linea',
     autoDraw: {
         account: algorandAccount(ADDRESS),
+        address: ADDRESS,
         cardAddress: ADDRESS,
         // The switch's per-(account, asset) box exists exactly while it is on.
         arrangeState: enabled =>

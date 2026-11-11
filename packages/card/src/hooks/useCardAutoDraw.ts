@@ -11,9 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { cardAdapterFor } from '../chain-adapter'
+import { cardQueryKeys } from './querykeys'
 
 export type UseCardAutoDrawResult = {
     /** Registers the delegation, then switches auto-draw on chain. */
@@ -28,15 +30,31 @@ export const useCardAutoDraw = (scope: ChainScope): UseCardAutoDrawResult => {
     // The chain picks the hook, so a scope must not change chain while mounted.
     const useAutoDraw = cardAdapterFor(scope).useAutoDraw
     const operations = useAutoDraw()
+    const queryClient = useQueryClient()
+
+    // A cached read from before the switch would otherwise undo it once the
+    // stored funding type is reconciled against the chain.
+    const rereadSwitch = useCallback(
+        () =>
+            queryClient.invalidateQueries({
+                queryKey: cardQueryKeys.autoDrawEnabledAll(scope),
+            }),
+        [queryClient, scope],
+    )
 
     const enableAutoDraw = useCallback(
-        (account: WalletAccount, cardAddress: string) =>
-            operations.enableAutoDraw(account, cardAddress, scope),
-        [operations, scope],
+        async (account: WalletAccount, cardAddress: string) => {
+            await operations.enableAutoDraw(account, cardAddress, scope)
+            await rereadSwitch()
+        },
+        [operations, scope, rereadSwitch],
     )
     const disableAutoDraw = useCallback(
-        (account: WalletAccount) => operations.disableAutoDraw(account, scope),
-        [operations, scope],
+        async (account: WalletAccount) => {
+            await operations.disableAutoDraw(account, scope)
+            await rereadSwitch()
+        },
+        [operations, scope, rereadSwitch],
     )
 
     return useMemo(

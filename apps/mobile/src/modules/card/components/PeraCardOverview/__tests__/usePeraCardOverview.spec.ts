@@ -114,9 +114,11 @@ const mockWithdraw = vi.hoisted(() => ({
     isCancelling: false,
 }))
 const mockWithdrawErrorToast = vi.fn()
+const mockSyncFundingType = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../hooks', async () => ({
     ...(await vi.importActual<object>('../../../hooks')),
+    useSyncCardFundingTypeFromChain: mockSyncFundingType,
     useCardEscrowBalance: () => ({
         balance: new Decimal(mockState.cardBalance),
         isLoading: mockState.isWalletsLoading,
@@ -302,6 +304,12 @@ describe('usePeraCardOverview', () => {
         expect(result.current.balance.toString()).toBe('0')
         expect(result.current.credits.rewards.toString()).toBe('0')
         expect(result.current.credits.refunds.toString()).toBe('0')
+    })
+
+    it('brings the stored funding type in line with the chain', () => {
+        renderHook(() => usePeraCardOverview())
+
+        expect(mockSyncFundingType).toHaveBeenCalled()
     })
 
     it("exposes the escrow account's USDC as the card balance", () => {

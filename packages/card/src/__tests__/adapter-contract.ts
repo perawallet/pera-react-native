@@ -55,6 +55,8 @@ export interface CardContractFixtures {
     foreignLegNetwork: string
     autoDraw: {
         account: WalletAccount
+        /** The account's address on this chain, which the switch is keyed by. */
+        address: string
         cardAddress: string
         /** Makes the chain report auto-draw as already on (or off) for the account. */
         arrangeState(enabled: boolean): void
@@ -111,6 +113,9 @@ export const cardContractTests = (
                 const scope = fixtures.unconfiguredScope!
 
                 expect(adapter.settlementAsset(scope)).toBeNull()
+                await expect(
+                    adapter.isAutoDrawEnabled(scope, fixtures.autoDraw.address),
+                ).resolves.toBe(false)
                 await expect(
                     adapter.buildManualDeposit(fixtures.deposit.params, scope),
                 ).rejects.toThrow(
@@ -204,6 +209,20 @@ export const cardContractTests = (
                 ),
             ).toEqual(expect.stringContaining('HASH'))
         })
+
+        it.each([true, false])(
+            'reads auto-draw as %s when the chain says so',
+            async enabled => {
+                fixtures.autoDraw.arrangeState(enabled)
+
+                await expect(
+                    makeAdapter().isAutoDrawEnabled(
+                        fixtures.scope,
+                        fixtures.autoDraw.address,
+                    ),
+                ).resolves.toBe(enabled)
+            },
+        )
 
         it('does not submit again when auto-draw is already on', async () => {
             const { account, cardAddress } = fixtures.autoDraw

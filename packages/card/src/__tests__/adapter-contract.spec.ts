@@ -53,6 +53,7 @@ const adapter = fakeCardAdapter({
         },
     },
     settlementAsset: scope => (isConfigured(scope) ? '1' : null),
+    isAutoDrawEnabled: async scope => isConfigured(scope) && isAutoDrawOn,
     buildManualDeposit: async (_params, scope) => {
         if (!isConfigured(scope)) throw new CardEscrowNotConfiguredError()
         return [chainNeutral(scope)]
@@ -104,6 +105,7 @@ cardContractTests(() => adapter, {
     foreignLegNetwork: 'other',
     autoDraw: {
         account,
+        address: 'FUNDING',
         cardAddress: 'CARD',
         arrangeState: enabled => {
             isAutoDrawOn = enabled

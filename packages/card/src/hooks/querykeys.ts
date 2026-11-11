@@ -34,6 +34,10 @@ export const cardQueryKeys = {
         [MODULE_PREFIX, 'transactions', { scope, ...(filters ?? {}) }] as const,
     pendingWithdrawal: (scope: ChainScope, ownerAddress: Nullable<string>) =>
         [MODULE_PREFIX, 'pending-withdrawal', { scope, ownerAddress }] as const,
+    autoDrawEnabledAll: (scope: ChainScope) =>
+        [MODULE_PREFIX, 'auto-draw-enabled', { scope }] as const,
+    autoDrawEnabled: (scope: ChainScope, ownerAddress: Nullable<string>) =>
+        [MODULE_PREFIX, 'auto-draw-enabled', { scope }, ownerAddress] as const,
     usdcBalance: (scope: ChainScope, address: string) =>
         [MODULE_PREFIX, 'usdc-balance', { scope, address }] as const,
     // bigints are stringified: React Query hashes keys with JSON.stringify.
