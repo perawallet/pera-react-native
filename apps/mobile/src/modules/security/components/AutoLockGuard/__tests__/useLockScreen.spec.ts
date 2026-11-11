@@ -29,6 +29,12 @@ const { mockPerformDuressWipe } = vi.hoisted(() => ({
     mockPerformDuressWipe: vi.fn(),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@modules/security/hooks/useDuressWipe', () => ({
     useDuressWipe: () => ({ performDuressWipe: mockPerformDuressWipe }),
 }))
@@ -168,6 +174,30 @@ describe('useLockScreen', () => {
             await vi.waitFor(() => expect(mockOnUnlock).toHaveBeenCalled())
         })
 
+        it('plays the light haptic when a biometric unlock succeeds', async () => {
+            mockUnlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() => expect(mockOnUnlock).toHaveBeenCalled())
+
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+        })
+
+        it('plays no haptic when the unwrap reports a mismatch', async () => {
+            mockUnlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() =>
+                expect(mockUnlockWithBiometrics).toHaveBeenCalled(),
+            )
+
+            expect(mockHaptics.light).not.toHaveBeenCalled()
+        })
+
         it('stays locked when the unwrap reports a mismatch', async () => {
             mockUnlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
 
@@ -247,6 +277,7 @@ describe('useLockScreen', () => {
 
             expect(mockVerifyPin).toHaveBeenCalledWith('1234')
             expect(mockOnUnlock).toHaveBeenCalled()
+            expect(mockHaptics.light).not.toHaveBeenCalled()
         })
 
         it('keeps the unlock flag up through a duress wipe, then unlocks and clears it', async () => {

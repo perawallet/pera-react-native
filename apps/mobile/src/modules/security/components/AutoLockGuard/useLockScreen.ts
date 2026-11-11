@@ -14,6 +14,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { AppState, type NativeEventSubscription } from 'react-native'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDuressWipe } from '@modules/security/hooks/useDuressWipe'
 import { useShakeToLockHandler } from '@modules/security/hooks/useShakeToLockHandler'
@@ -51,6 +52,7 @@ export const useLockScreen = ({
     } = usePinCode()
     const { unlockWithBiometrics } = useBiometrics()
     const { performDuressWipe } = useDuressWipe()
+    const haptics = useHaptics()
 
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
@@ -111,6 +113,7 @@ export const useLockScreen = ({
         onUnlock,
         t,
         isLockedOut,
+        haptics,
     })
     promptRef.current = {
         unlockWithBiometrics,
@@ -119,6 +122,7 @@ export const useLockScreen = ({
         onUnlock,
         t,
         isLockedOut,
+        haptics,
     }
 
     useEffect(() => {
@@ -177,6 +181,9 @@ export const useLockScreen = ({
             setIsBiometricUnlockInProgress(false)
             if (outcome.kind === 'ok') {
                 void promptRef.current.resetFailedAttempts()
+                // Biometric only: the PIN path stays silent so a duress unlock
+                // is indistinguishable from a real one to an onlooker.
+                promptRef.current.haptics.light()
                 promptRef.current.onUnlock()
                 return
             }
