@@ -38,6 +38,12 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('../../PassphraseAcknowledgeContent', () => ({
     PassphraseAcknowledgeContent: () => null,
 }))
@@ -63,6 +69,7 @@ describe('useViewPassphraseFlow', () => {
         })
 
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockHaptics.warning).not.toHaveBeenCalled()
     })
 
     it('opens the acknowledge sheet once the PIN gate passes', async () => {
@@ -75,6 +82,7 @@ describe('useViewPassphraseFlow', () => {
         })
 
         expect(mockRequirePinVerification).toHaveBeenCalled()
+        expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(
             mockRequestBottomSheet.mock.calls[0]![0].contents.props.address,

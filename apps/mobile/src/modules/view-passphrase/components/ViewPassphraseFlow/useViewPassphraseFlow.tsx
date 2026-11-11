@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
+import { useHaptics } from '@hooks/useHaptics'
 import {
     PassphraseAcknowledgeContent,
     type PassphraseAcknowledgeContentResult,
@@ -33,11 +34,13 @@ export type UseViewPassphraseFlowResult = {
 export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
     const { requirePinVerification } = useRequirePinVerification()
     const { request: requestBottomSheet } = useBottomSheet()
+    const haptics = useHaptics()
 
     const openViewPassphraseFlow = useCallback(
         async (address: string) => {
             if (!(await requirePinVerification())) return
 
+            haptics.warning()
             const ack =
                 await requestBottomSheet<PassphraseAcknowledgeContentResult>({
                     contents: (
@@ -60,7 +63,7 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
                 },
             })
         },
-        [requirePinVerification, requestBottomSheet],
+        [requirePinVerification, requestBottomSheet, haptics],
     )
 
     return { openViewPassphraseFlow }

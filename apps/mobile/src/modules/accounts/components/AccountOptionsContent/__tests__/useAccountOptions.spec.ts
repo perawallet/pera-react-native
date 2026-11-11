@@ -128,6 +128,12 @@ vi.mock('@modules/view-passphrase', () => ({
     }),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({
         copyToClipboard: mockCopyToClipboard,
@@ -1091,6 +1097,30 @@ describe('useAccountOptions', () => {
             // Inline confirmation: signing accounts see the backup warning first.
             expect(result.current.removeConfirmView).toBe('backup-warning')
             expect(mockRemoveAccount).not.toHaveBeenCalled()
+        })
+
+        it('plays the warning haptic once when remove opens, not on its later steps', async () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await act(async () => {
+                await sheetOptionsOf(result.current)
+                    .find(o => o.id === 'remove-account')
+                    ?.onPress()
+            })
+            expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
+
+            await act(async () => {
+                result.current.handleConfirmBackupWarning()
+            })
+
+            expect(result.current.removeConfirmView).toBe('remove-confirm')
+            expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
         })
 
         it('skips the backup warning and goes straight to remove confirm for a watch account', async () => {

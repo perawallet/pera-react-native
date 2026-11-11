@@ -28,6 +28,12 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 const mockErrorToast = vi.fn()
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         errorToast: mockErrorToast,
@@ -142,6 +148,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         mockSourceAccount.custody = { kind: 'local', seed: null }
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
+        mockHaptics.warning.mockClear()
         capturedSigningHandler = null
         mockIsUnderfunded = false
     })
@@ -176,6 +183,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         })
 
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
         expect(mockSubmitAsync).not.toHaveBeenCalled()
     })
 
@@ -324,6 +332,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         })
 
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockHaptics.warning).not.toHaveBeenCalled()
         expect(mockSubmitAsync).not.toHaveBeenCalled()
     })
 
