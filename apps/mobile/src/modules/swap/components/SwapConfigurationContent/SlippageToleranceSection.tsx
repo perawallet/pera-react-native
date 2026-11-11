@@ -24,12 +24,14 @@ import { useStyles } from './styles'
 type SlippageToleranceSectionProps = {
     text: string
     onTextChange: (text: string) => void
+    onOptionSelect: (text: string) => void
     isError: boolean
 }
 
 export const SlippageToleranceSection = ({
     text,
     onTextChange,
+    onOptionSelect,
     isError,
 }: SlippageToleranceSectionProps) => {
     const { t } = useLanguage()
@@ -83,7 +85,7 @@ export const SlippageToleranceSection = ({
                     key={CUSTOM_SLIPPAGE_KEY}
                     label={t('swap.configuration.custom')}
                     isSelected={isCustomSelected}
-                    onPress={() => onTextChange('')}
+                    onPress={() => onOptionSelect('')}
                     testID='swap-config-slippage-chip-custom'
                 />
                 {SLIPPAGE_PRESETS.map(preset => (
@@ -93,7 +95,7 @@ export const SlippageToleranceSection = ({
                         isSelected={
                             !isCustomSelected && selectedValue === preset
                         }
-                        onPress={() => onTextChange(String(preset))}
+                        onPress={() => onOptionSelect(String(preset))}
                         testID={`swap-config-slippage-chip-${preset}`}
                     />
                 ))}

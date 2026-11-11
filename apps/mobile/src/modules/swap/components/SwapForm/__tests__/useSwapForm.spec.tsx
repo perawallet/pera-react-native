@@ -43,6 +43,12 @@ vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ isFocused: () => mockIsFocused }),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ error: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: mockSuccessToast,
@@ -331,6 +337,7 @@ describe('useSwapForm', () => {
             expect(result.current.isChainShown).toBe(true)
             expect(result.current.isReceivingAccountShown).toBe(true)
             expect(mockSetFromAsset).not.toHaveBeenCalled()
+            expect(mockHaptics.light).not.toHaveBeenCalled()
         })
 
         it('hides the receive asset from the pay picker on its own chain only', async () => {
@@ -464,6 +471,16 @@ describe('useSwapForm', () => {
         })
 
         expect(result.current.payAmount).toEqual(new Decimal(5))
+    })
+
+    it('plays the light haptic when the assets are flipped', () => {
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        act(() => {
+            result.current.handleSwapDirection()
+        })
+
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
     })
 
     it('handleSwapDirection swaps assets and amounts', () => {
@@ -666,6 +683,38 @@ describe('useSwapForm', () => {
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         })
+    })
+
+    it('plays no error haptic when a flip carries an amount past the new pay asset holding', async () => {
+        mockCreateQuotes.mockResolvedValue([
+            {
+                provider: 'tinyman',
+                amountOut: new Decimal('7000000'),
+                assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+                assetOut: {
+                    assetId: '31566704',
+                    unitName: 'USDC',
+                    decimals: 6,
+                },
+            },
+        ])
+        mockPayBalance = new Decimal(100)
+        const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+        mockPayBalance = new Decimal(3)
+        act(() => {
+            result.current.handleSwapDirection()
+        })
+        mockFromAsset = '31566704'
+        mockToAsset = '0'
+        rerender()
+
+        expect(result.current.hasInsufficientBalance).toBe(true)
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.error).not.toHaveBeenCalled()
     })
 
     it('handleSwapDirection carries the amounts across the pair change', async () => {
@@ -1317,6 +1366,40 @@ describe('useSwapForm', () => {
 
             expect(result.current.hasInsufficientBalance).toBe(true)
             expect(result.current.canSwap).toBe(false)
+        })
+
+        it('plays the error haptic once when the amount crosses the holding, not while it stays over', () => {
+            mockPayBalance = new Decimal(50)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(60))
+            })
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(70))
+            })
+
+            expect(mockHaptics.error).toHaveBeenCalledTimes(1)
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(10))
+            })
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(80))
+            })
+
+            expect(mockHaptics.error).toHaveBeenCalledTimes(2)
+        })
+
+        it('plays no error haptic for an amount within the holding', () => {
+            mockPayBalance = new Decimal(50)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(50))
+            })
+
+            expect(mockHaptics.error).not.toHaveBeenCalled()
         })
 
         it('allows an amount within the holding', () => {

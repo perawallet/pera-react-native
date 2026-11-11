@@ -34,6 +34,8 @@ import {
     useSwapSourceCostQuery,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { useHaptics } from '@hooks/useHaptics'
+import { useHapticOnCrossing } from '@hooks/useHapticOnCrossing'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
@@ -99,6 +101,7 @@ export const useSwapConfirmation = ({
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const haptics = useHaptics()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
@@ -223,6 +226,8 @@ export const useSwapConfirmation = ({
             ) ?? false,
         [quote.priceImpact],
     )
+
+    useHapticOnCrossing(hasHighPriceImpact, haptics.warning)
 
     const priceImpactDisplay = useMemo(() => {
         if (!quote.priceImpact) return null
