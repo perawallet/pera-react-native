@@ -83,9 +83,12 @@ case "$PROFILE" in
       "TESTNET_CARD_KILLSWITCH_APP_ID"
       "TESTNET_CARD_AUTODRAW_PROGRAM_HASH"
     )
-    # Mainnet card apps are not deployed; an empty mainnet pin is the intended
-    # fail-closed state until they are. USDC ids have code defaults.
+    # Warn, not fail: an empty mainnet value fails closed on the device and the
+    # card stays behind its remote-config gate, so a release need not wait on
+    # them. USDC ids have code defaults.
     optional_global+=(
+      "MAINNET_BAANX_CLIENT_KEY"
+      "MAINNET_BAANX_TENANT_ID"
       "MAINNET_CARD_W3CARD_APP_ID"
       "MAINNET_CARD_KILLSWITCH_APP_ID"
       "MAINNET_CARD_AUTODRAW_PROGRAM_HASH"
@@ -129,9 +132,12 @@ case "$PROFILE" in
       "TESTNET_CARD_KILLSWITCH_APP_ID"
       "TESTNET_CARD_AUTODRAW_PROGRAM_HASH"
     )
-    # Mainnet card apps are not deployed; an empty mainnet pin is the intended
-    # fail-closed state until they are. USDC ids have code defaults.
+    # Warn, not fail: an empty mainnet value fails closed on the device and the
+    # card stays behind its remote-config gate, so a release need not wait on
+    # them. USDC ids have code defaults.
     optional_global+=(
+      "MAINNET_BAANX_CLIENT_KEY"
+      "MAINNET_BAANX_TENANT_ID"
       "MAINNET_CARD_W3CARD_APP_ID"
       "MAINNET_CARD_KILLSWITCH_APP_ID"
       "MAINNET_CARD_AUTODRAW_PROGRAM_HASH"

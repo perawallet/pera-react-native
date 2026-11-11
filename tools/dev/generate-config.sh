@@ -276,6 +276,8 @@ append_config "MAINNET_BAANX_BASE_URL" "mainnetBaanxBaseUrl" "string"
 append_config "TESTNET_BAANX_BASE_URL" "testnetBaanxBaseUrl" "string"
 append_config "MAINNET_BAANX_CLIENT_KEY" "mainnetBaanxClientKey" "string"
 append_config "TESTNET_BAANX_CLIENT_KEY" "testnetBaanxClientKey" "string"
+append_config "MAINNET_BAANX_TENANT_ID" "mainnetBaanxTenantId" "string"
+append_config "TESTNET_BAANX_TENANT_ID" "testnetBaanxTenantId" "string"
 
 # On-chain card ids: the app ids and USDC asset id the AutoDraw LogicSig TEAL
 # template is rendered against, plus the hash the compiled program is pinned to.
