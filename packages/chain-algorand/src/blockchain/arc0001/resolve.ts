@@ -140,14 +140,32 @@ export const resolveArc0001SignTxnRequest = (
         const isNamed =
             !isMultisigSender &&
             (entry.authAddr !== undefined || entry.signers !== undefined)
-        // A named signer signs with its own key, so being held is enough; its
-        // own rekey, which can make it unsignable for itself, doesn't apply.
-        const canSign = isNamed
+        // An `authAddr` signs with its own key, so being held is enough: its
+        // own rekey doesn't apply.
+        const signsWithOwnKey = isNamed && entry.authAddr !== undefined
+        const canSign = signsWithOwnKey
             ? heldAddresses.has(candidate)
             : context.signableAddresses.has(candidate)
         const isAuthorized =
             context.authorizedAddresses === undefined ||
             context.authorizedAddresses.has(candidate)
+
+        // ARC-0001: `signers: [sender]` asks for the sender's own key, so a
+        // rekeyed sender without `authAddr` is rejected rather than signed
+        // through its rekey. Only for authorized senders, so the answer
+        // reveals nothing about the wallet's other accounts.
+        if (
+            isNamed &&
+            !signsWithOwnKey &&
+            isAuthorized &&
+            context.delegatedAddresses?.has(candidate)
+        ) {
+            throw new Arc0001Error(
+                Arc0001ErrorCode.InvalidInput,
+                `signers[0] is rekeyed and needs authAddr (entry index ${i})`,
+                { index: i, field: 'signers' },
+            )
+        }
 
         if (!canSign || !isAuthorized) {
             // ARC-0025 fails the whole request when a requested signature
@@ -160,10 +178,9 @@ export const resolveArc0001SignTxnRequest = (
                     'the wallet cannot sign every requested transaction',
                 )
             }
-            // Deliberately lenient: dApps such as Folks Finance leave
-            // `signers` off their contract's own transactions instead of
-            // sending `signers: []`, so a sender the wallet can't sign for is
-            // left to the dApp rather than failing the group.
+            // Deliberately lenient where ARC-0001 fails the request:
+            // @perawallet/connect 1.5.2 and older drop `signers: []`, so a
+            // dApp's "don't sign" transactions arrive with no `signers`.
             continue
         }
 
@@ -175,9 +192,7 @@ export const resolveArc0001SignTxnRequest = (
             sender,
             signer: resolvedSigner,
         })
-        // An `authAddr` naming the sender itself is recorded too: the sender's
-        // own key signs, not whatever the wallet last saw it rekeyed to.
-        if (candidate !== sender || (isNamed && entry.authAddr !== undefined)) {
+        if (signsWithOwnKey) {
             signerOverrides.set(toSignIndex, candidate)
         }
     }
@@ -317,13 +332,17 @@ const resolveEntrySigner = (
 
     if (entry.signers && entry.signers.length === 1) {
         const requested = entry.signers[0]
-        // ARC-0001 rejects signers[0] other than the sender without authAddr.
-        // Accepted as an implicit authAddr on purpose: Folks Finance names the
-        // user this way for its escrows, which are rekeyed to the user.
         if (entry.authAddr !== undefined && requested !== entry.authAddr) {
             throw new Arc0001Error(
                 Arc0001ErrorCode.InvalidInput,
                 `signers[0] (${requested}) disagrees with authAddr (${entry.authAddr}) at index ${index}`,
+                { index, field: 'signers' },
+            )
+        }
+        if (entry.authAddr === undefined && requested !== sender) {
+            throw new Arc0001Error(
+                Arc0001ErrorCode.InvalidInput,
+                `signers[0] (${requested}) is not the sender and authAddr is missing at index ${index}`,
                 { index, field: 'signers' },
             )
         }

@@ -245,26 +245,89 @@ describe('resolveArc0001SignTxnRequest', () => {
             expect(result.signerOverrides.get(0)).toBe(addrB.toString())
         })
 
-        it('treats signers[0] as an implicit authAddr when authAddr is absent (Folks-Finance shape)', () => {
-            // Spec-strict reading would reject this; we accept it to keep
-            // rekeyed-contract dApps working — see resolve.ts.
+        it('rejects with 4300 when signers[0] is not the sender and authAddr is absent', () => {
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    {
+                        transactions: [
+                            wrap(makePayment(addrA), {
+                                signers: [addrC.toString()],
+                            }),
+                        ],
+                    },
+                    { signableAddresses: new Set([addrC.toString()]) },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.InvalidInput,
+                    data: expect.objectContaining({
+                        index: 0,
+                        field: 'signers',
+                    }),
+                }),
+            )
+        })
+
+        it('rejects with 4300 when signers[0] is a rekeyed sender and authAddr is absent', () => {
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    {
+                        transactions: [
+                            wrap(makePayment(addrA), {
+                                signers: [addrA.toString()],
+                            }),
+                        ],
+                    },
+                    {
+                        signableAddresses: new Set([addrA.toString()]),
+                        delegatedAddresses: new Set([addrA.toString()]),
+                    },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.InvalidInput,
+                    data: expect.objectContaining({
+                        index: 0,
+                        field: 'signers',
+                    }),
+                }),
+            )
+        })
+
+        it('answers a rekeyed but unauthorized sender like any account it cannot sign for', () => {
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    {
+                        transactions: [
+                            wrap(makePayment(addrA), {
+                                signers: [addrA.toString()],
+                            }),
+                        ],
+                    },
+                    {
+                        signableAddresses: new Set([addrA.toString()]),
+                        delegatedAddresses: new Set([addrA.toString()]),
+                        authorizedAddresses: new Set([addrB.toString()]),
+                    },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.Unauthorized,
+                }),
+            )
+        })
+
+        it('signs a rekeyed sender through its rekey when signers is absent', () => {
             const result = resolveArc0001SignTxnRequest(
+                { transactions: [wrap(makePayment(addrA))] },
                 {
-                    transactions: [
-                        wrap(makePayment(addrA), {
-                            signers: [addrC.toString()],
-                        }),
-                    ],
+                    signableAddresses: new Set([addrA.toString()]),
+                    delegatedAddresses: new Set([addrA.toString()]),
                 },
-                { signableAddresses: new Set([addrC.toString()]) },
             )
 
-            expect(result.toSign).toHaveLength(1)
-            expect(result.toSign[0].signer).toEqual({
-                kind: 'single',
-                address: addrC.toString(),
-            })
-            expect(result.signerOverrides.get(0)).toBe(addrC.toString())
+            expect(result.toSign.map(t => t.index)).toEqual([0])
+            expect(result.signerOverrides.size).toBe(0)
         })
 
         it('rejects with 4300 when authAddr is given and signers[0] disagrees', () => {
@@ -324,7 +387,7 @@ describe('resolveArc0001SignTxnRequest', () => {
                 {
                     transactions: [
                         wrap(makePayment(addrA), {
-                            signers: [addrB.toString()],
+                            authAddr: addrB.toString(),
                         }),
                     ],
                 },
@@ -351,6 +414,30 @@ describe('resolveArc0001SignTxnRequest', () => {
             )
 
             expect(result.signerOverrides.get(0)).toBe(addrA.toString())
+        })
+
+        // signers: [sender] asks for the sender's own key, so a held sender
+        // the wallet can't sign for (watch-only) fails the request.
+        it('fails the whole request when signers names a held sender it cannot sign for', () => {
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    {
+                        transactions: [
+                            wrap(makePayment(addrA), {
+                                signers: [addrA.toString()],
+                            }),
+                        ],
+                    },
+                    {
+                        signableAddresses: new Set(),
+                        heldAddresses: new Set([addrA.toString()]),
+                    },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.Unauthorized,
+                }),
+            )
         })
 
         it('does not record signers[0] equal to the sender without authAddr', () => {
@@ -643,7 +730,7 @@ describe('resolveArc0001SignTxnRequest', () => {
                             transactions: [
                                 wrap(makePayment(addrA)),
                                 wrap(makePayment(addrC), {
-                                    signers: [signer.toString()],
+                                    authAddr: signer.toString(),
                                 }),
                             ],
                         },

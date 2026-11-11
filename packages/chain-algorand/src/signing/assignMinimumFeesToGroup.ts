@@ -39,7 +39,7 @@ export type AlgorandAssignFeeParams = {
     transactions: PeraTransaction[]
     /** Indices into `transactions` the wallet will sign; defaults to all */
     signableIndices?: number[]
-    /** Subset-position → authorizer address (ARC-0001 `signers`) */
+    /** Subset-position → authorizer address (ARC-0001 `authAddr`) */
     signerOverrides?: Map<number, string>
     /** A dApp set the fees, so they may already price this wallet's signers. */
     isExternallyPriced?: boolean
@@ -77,7 +77,7 @@ export type AssignMinimumFeesToGroupParams = {
     transactions: PeraTransaction[]
     /** Indices into `transactions` the wallet will sign */
     signableIndices: number[]
-    /** Subset-position → authorizer address (ARC-0001 `signers`) */
+    /** Subset-position → authorizer address (ARC-0001 `authAddr`) */
     signerOverrides?: Map<number, string>
     accounts: WalletAccount[]
     /** Network suggested minimum fee in µAlgo (algod suggestedParams.minFee) */
