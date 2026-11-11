@@ -141,9 +141,16 @@ describe('useSwapQuoteError', () => {
     it.each([
         ['invalid-amount', 'swap.quote.amount_invalid'],
         ['unsupported', 'swap.quote.unsupported'],
+        ['restricted', 'swap.quote.restricted'],
         ['unavailable', 'swap.quote.quote_error'],
     ] as const)('shows the copy for %s', (kind, key) => {
         expect(render({ kind }).message).toBe(key)
+    })
+
+    it('names the network a swap is off on', () => {
+        expect(render({ kind: 'network-unavailable' }).message).toBe(
+            `swap.quote.network_unavailable|${JSON.stringify({ network: 'Ethereum' })}`,
+        )
     })
 
     it.each([
@@ -152,6 +159,8 @@ describe('useSwapQuoteError', () => {
         [{ kind: 'invalid-amount' }, false],
         [{ kind: 'no-route' }, false],
         [{ kind: 'unsupported' }, false],
+        [{ kind: 'restricted' }, false],
+        [{ kind: 'network-unavailable' }, false],
         [{ kind: 'unavailable' }, true],
     ] as const)('offers Retry for %j: %s', (failure, canRetry) => {
         expect(render(failure).canRetry).toBe(canRetry)

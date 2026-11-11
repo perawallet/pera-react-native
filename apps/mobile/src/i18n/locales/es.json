@@ -4079,6 +4079,8 @@
             "amount_invalid": "Este importe no se puede intercambiar. Prueba con otro importe.",
             "no_route": "No se encontró ninguna ruta de swap para {{from}} → {{to}}. Prueba con otro token o con otro importe.",
             "unsupported": "Este token no se puede intercambiar en Pera. Elige otro token.",
+            "restricted": "Este intercambio no está disponible en tu región.",
+            "network_unavailable": "Los intercambios no están disponibles en {{network}} por ahora.",
             "retry": "Reintentar"
         },
         "execution": {

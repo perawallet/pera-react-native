@@ -131,6 +131,12 @@ export const useSwapQuoteError = ({
             case 'unsupported': {
                 return t('swap.quote.unsupported')
             }
+            case 'restricted': {
+                return t('swap.quote.restricted')
+            }
+            case 'network-unavailable': {
+                return t('swap.quote.network_unavailable', { network })
+            }
             case 'unavailable': {
                 return t('swap.quote.quote_error')
             }

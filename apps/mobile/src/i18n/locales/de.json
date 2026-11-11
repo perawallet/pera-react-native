@@ -4071,6 +4071,8 @@
             "amount_invalid": "Dieser Betrag kann nicht getauscht werden. Versuche einen anderen Betrag.",
             "no_route": "Keine Tauschroute für {{from}} → {{to}} gefunden. Probiere einen anderen Token oder Betrag.",
             "unsupported": "Dieser Token kann in Pera nicht getauscht werden. Wähle einen anderen Token.",
+            "restricted": "Dieser Tausch ist in deiner Region nicht verfügbar.",
+            "network_unavailable": "Tauschen ist auf {{network}} derzeit nicht verfügbar.",
             "retry": "Erneut versuchen"
         },
         "execution": {

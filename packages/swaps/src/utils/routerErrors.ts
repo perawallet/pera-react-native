@@ -38,6 +38,8 @@ export type SwapQuoteFailure =
     | { kind: 'invalid-amount' }
     | { kind: 'no-route' }
     | { kind: 'unsupported' }
+    | { kind: 'restricted' }
+    | { kind: 'network-unavailable' }
     | { kind: 'unavailable' }
 
 const toLimit = (value: Maybe<string>): Nullable<Decimal> =>
@@ -46,9 +48,9 @@ const toLimit = (value: Maybe<string>): Nullable<Decimal> =>
 const FAILURE_BY_CODE: Readonly<Record<string, SwapQuoteFailure>> = {
     invalid_amount: { kind: 'invalid-amount' },
     pair_not_supported: { kind: 'no-route' },
-    pair_restricted_in_country: { kind: 'unsupported' },
+    pair_restricted_in_country: { kind: 'restricted' },
     invalid_asset_id: { kind: 'unsupported' },
-    chain_not_enabled: { kind: 'unsupported' },
+    chain_not_enabled: { kind: 'network-unavailable' },
 }
 
 /** The one place the app reads a router quote refusal; anything it can't place is `unavailable`, which is retryable. */
@@ -71,6 +73,6 @@ export const swapQuoteFailureOf = (error: unknown): SwapQuoteFailure => {
     const known = code ? FAILURE_BY_CODE[code] : undefined
     if (known) return known
     return isChainRefusedError(error)
-        ? { kind: 'unsupported' }
+        ? { kind: 'network-unavailable' }
         : { kind: 'unavailable' }
 }

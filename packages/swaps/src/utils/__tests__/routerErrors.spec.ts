@@ -49,9 +49,9 @@ describe('swapQuoteFailureOf', () => {
     it.each([
         [422, 'invalid_amount', { kind: 'invalid-amount' }],
         [422, 'pair_not_supported', { kind: 'no-route' }],
-        [403, 'pair_restricted_in_country', { kind: 'unsupported' }],
+        [403, 'pair_restricted_in_country', { kind: 'restricted' }],
         [422, 'invalid_asset_id', { kind: 'unsupported' }],
-        [422, 'chain_not_enabled', { kind: 'unsupported' }],
+        [422, 'chain_not_enabled', { kind: 'network-unavailable' }],
         [503, 'route_unavailable', { kind: 'unavailable' }],
         [503, 'upstream_unavailable', { kind: 'unavailable' }],
         [429, 'upstream_rate_limited', { kind: 'unavailable' }],
@@ -120,13 +120,15 @@ describe('swapQuoteFailureOf', () => {
         expect(swapQuoteFailureOf(error)).toEqual({ kind: 'unavailable' })
     })
 
-    it('treats a refusal raised before sending for a refused chain as unsupported', () => {
+    it('treats a refusal raised before sending for a refused chain as network-unavailable', () => {
         const error = new PeraServiceUnavailableError(
             { chainId: 'base', networkId: 'mainnet' },
             undefined,
             { isChainRefused: true },
         )
 
-        expect(swapQuoteFailureOf(error)).toEqual({ kind: 'unsupported' })
+        expect(swapQuoteFailureOf(error)).toEqual({
+            kind: 'network-unavailable',
+        })
     })
 })

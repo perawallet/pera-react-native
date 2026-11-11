@@ -4079,6 +4079,8 @@
             "amount_invalid": "Bu tutar swap edilemiyor. Farklı bir tutar dene.",
             "no_route": "{{from}} → {{to}} için swap rotası bulunamadı. Başka bir token veya tutar dene.",
             "unsupported": "Bu token Pera’da swap edilemiyor. Başka bir token seç.",
+            "restricted": "Bu swap bölgende kullanılamıyor.",
+            "network_unavailable": "{{network}} ağında şu anda swap yapılamıyor.",
             "retry": "Tekrar dene"
         },
         "execution": {

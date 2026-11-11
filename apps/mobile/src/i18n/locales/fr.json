@@ -4077,8 +4077,10 @@
             "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",
             "amount_too_high_unknown": "Montant trop élevé pour un swap. Essayez un montant plus faible.",
             "amount_invalid": "Ce montant ne peut pas être échangé. Essayez un autre montant.",
-            "no_route": "Aucune route de swap trouvée pour {{from}} → {{to}}. Essaie un autre token ou un autre montant.",
-            "unsupported": "Ce token ne peut pas être échangé dans Pera. Choisis un autre token.",
+            "no_route": "Aucune route de swap trouvée pour {{from}} → {{to}}. Essayez un autre token ou un autre montant.",
+            "unsupported": "Ce token ne peut pas être échangé dans Pera. Choisissez un autre token.",
+            "restricted": "Cet échange n’est pas disponible dans votre région.",
+            "network_unavailable": "Les échanges ne sont pas disponibles sur {{network}} pour le moment.",
             "retry": "Réessayer"
         },
         "execution": {

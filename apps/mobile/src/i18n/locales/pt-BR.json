@@ -4101,6 +4101,8 @@
             "amount_invalid": "Este valor não pode ser convertido. Tente outro valor.",
             "no_route": "Nenhuma rota de conversão encontrada para {{from}} → {{to}}. Tente outro token ou outro valor.",
             "unsupported": "Este token não pode ser convertido na Pera. Escolha outro token.",
+            "restricted": "Esta conversão não está disponível na sua região.",
+            "network_unavailable": "As conversões não estão disponíveis na rede {{network}} no momento.",
             "retry": "Tentar novamente"
         },
         "execution": {
