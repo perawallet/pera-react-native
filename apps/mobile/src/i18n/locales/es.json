@@ -3552,6 +3552,7 @@
             "body": "Esta es una cuenta compartida y ninguna de sus cuentas firmantes está en tu wallet. Añade una cuenta firmante para firmar transacciones por ella.",
             "rekeyed_auth_missing_body": "Esta cuenta está con rekey a {{authAddress}}, que no está en esta wallet, por lo que no puede firmar transacciones. Importa la cuenta auth para firmar por ella.",
             "rekeyed_auth_watch_body": "Esta cuenta está con rekey a una cuenta de solo observación, que no tiene clave de firma. Importa la clave de la cuenta auth para firmar por ella.",
+            "signer_key_missing_body": "Esta transacción debe firmarse con la clave propia de {{authAddress}}, que no está en esta wallet.",
             "signer_missing_body": "Esta solicitud necesita la firma de una cuenta que no está en tu wallet, así que no se puede firmar aquí."
         },
         "transaction_request_faq": {

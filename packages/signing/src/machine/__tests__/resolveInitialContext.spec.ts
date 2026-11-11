@@ -17,6 +17,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import {
@@ -60,12 +61,14 @@ import {
     algo25Account,
     ledgerAccount,
     multisigAccount,
+    watchAccount,
 } from '../../__tests__/accounts'
 import {
     CannotSignError,
     HardwareWalletError,
     GenesisHashMismatchError,
     InvalidSignableDataError,
+    SignerKeyMissingError,
     SigningError,
 } from '../../pipeline/errors'
 
@@ -1101,7 +1104,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
     const ledgerAuth = () =>
         ledgerAccount(authAddr.toString(), 0, {}, { id: 'auth' })
 
-    it('groups each transaction under the account it signs for, following its signer override', () => {
+    it('groups each transaction under the account it signs for, or under the signer its override names', () => {
         const { neutral } = bothShapes(fullGroup())
 
         const context = resolveInitialContext(withAccounts(neutral))
@@ -1118,7 +1121,123 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
         expect(context.groupSigners).toEqual(
             new Map([
                 [USER_ADDRESS, { custody: 'local', scheme: 'ed25519' }],
-                [authAddr.toString(), { custody: 'local', scheme: 'ed25519' }],
+                [
+                    `${authAddr.toString()}#signer`,
+                    { custody: 'local', scheme: 'ed25519' },
+                ],
+            ]),
+        )
+    })
+
+    // An account rekeyed elsewhere still signs with its own key a transaction
+    // it is named to sign: the chain never follows a rekey chain.
+    it("keys a named signer to its own key, not to the account it's rekeyed to", () => {
+        const { neutral } = bothShapes(fullGroup())
+        const ledgerAddr = makeTestAddress(5).toString()
+        seedAuthority(authAddr.toString(), ledgerAddr)
+        onTestFinished(() => seedAuthority(authAddr.toString(), null))
+
+        const context = resolveInitialContext({
+            ...withAccounts(neutral),
+            allAccounts: [
+                userAccount,
+                algo25Account(authAddr.toString(), { id: 'auth' }),
+                ledgerAccount(ledgerAddr, 0, {}, { id: 'ledger' }),
+            ],
+        })
+
+        expect(context.signableGroups?.[1].data).toMatchObject({
+            isKeyedBySigner: true,
+        })
+        expect(
+            context.groupSigners?.get(`${authAddr.toString()}#signer`),
+        ).toEqual({ custody: 'local', scheme: 'ed25519' })
+    })
+
+    it("refuses up front a named signer whose own key the wallet doesn't hold", () => {
+        const { neutral } = bothShapes(fullGroup())
+        const ledgerAddr = makeTestAddress(5).toString()
+        seedAuthority(authAddr.toString(), ledgerAddr)
+        onTestFinished(() => seedAuthority(authAddr.toString(), null))
+
+        expect(() =>
+            resolveInitialContext({
+                ...withAccounts(neutral),
+                allAccounts: [
+                    userAccount,
+                    watchAccount(authAddr.toString(), { id: 'auth' }),
+                    ledgerAccount(ledgerAddr, 0, {}, { id: 'ledger' }),
+                ],
+            }),
+        ).toThrow(SignerKeyMissingError)
+    })
+
+    it('refuses a named signer whose only key is on another chain, as the review does', () => {
+        const { neutral } = bothShapes(fullGroup())
+        const otherChainKeyed = {
+            id: 'auth',
+            name: '',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                algorand: { address: authAddr.toString() },
+                ethereum: { address: '0xAUTH', keyPairId: 'key-eth' },
+            },
+        } as unknown as WalletAccount
+
+        expect(() =>
+            resolveInitialContext({
+                ...withAccounts(neutral),
+                allAccounts: [userAccount, otherChainKeyed],
+            }),
+        ).toThrow(SignerKeyMissingError)
+    })
+
+    it('keeps an account signing for itself apart from the same account named to sign for another', () => {
+        const group = groupTransactions([
+            makePayment(authAddr, 1n),
+            makePayment(strangerAddr, 2n),
+        ])
+        const signerOverrides = new Map([[1, authAddr.toString()]])
+        const request: TransactionSignRequest = {
+            id: 'req-both',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            txs: group.map(txn => asUnsignedAlgorandTransaction(txn)),
+            chainData: { algorand: { signerOverrides } },
+        }
+        const ledgerAddr = makeTestAddress(5).toString()
+        seedAuthority(authAddr.toString(), ledgerAddr)
+        onTestFinished(() => seedAuthority(authAddr.toString(), null))
+
+        const context = resolveInitialContext({
+            ...baseInput(request),
+            hardwareWalletRegistry: {} as never,
+            allAccounts: [
+                algo25Account(authAddr.toString(), { id: 'auth' }),
+                ledgerAccount(ledgerAddr, 0, {}, { id: 'ledger' }),
+            ],
+        })
+
+        expect(
+            context.signableGroups?.map(g => [
+                g.signerAddress,
+                g.originalIndices,
+            ]),
+        ).toEqual([
+            [authAddr.toString(), [0]],
+            [authAddr.toString(), [1]],
+        ])
+        expect(context.groupSigners).toEqual(
+            new Map([
+                [
+                    authAddr.toString(),
+                    { custody: 'hardware', scheme: 'ed25519' },
+                ],
+                [
+                    `${authAddr.toString()}#signer`,
+                    { custody: 'local', scheme: 'ed25519' },
+                ],
             ]),
         )
     })
@@ -1203,6 +1322,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
                             rawTransactionsBase64: ['raw-3'],
                         },
                     },
+                    isKeyedBySigner: true,
                 },
             }),
         ])
@@ -1213,7 +1333,7 @@ describe('resolveInitialContext: Algorand chain-neutral requests', () => {
             new Map([
                 [USER_ADDRESS, { custody: 'local', scheme: 'ed25519' }],
                 [
-                    authAddr.toString(),
+                    `${authAddr.toString()}#signer`,
                     { custody: 'hardware', scheme: 'ed25519' },
                 ],
             ]),

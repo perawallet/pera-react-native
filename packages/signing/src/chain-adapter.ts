@@ -86,10 +86,25 @@ export type GroupTransactionItem = {
 
 export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
 
+/**
+ * `authKeyMissing`: the request names `authAddress` itself as the signer, and
+ * the wallet doesn't hold that account's own key.
+ */
 export type DelegatedUnsignableReason = {
-    kind: 'authMissing' | 'authIsWatch'
+    kind: 'authMissing' | 'authIsWatch' | 'authKeyMissing'
     senderAddress: string
     authAddress: string
+}
+
+/** What a chain-neutral transaction is grouped under for signing. */
+export type SignedFor = {
+    address: string
+    /**
+     * `address` is the key the transaction names to sign it, not the account
+     * it signs for, so that account's own rekey is never followed: rekeys
+     * don't chain.
+     */
+    isSigner: boolean
 }
 
 /** What an address a review shows is to the transaction. */
@@ -830,7 +845,7 @@ export interface PlannerChainAdapter {
      */
     signedForAddresses(
         request: UnsignedTransactionSignRequest,
-    ): Optional<string[]>
+    ): Optional<SignedFor[]>
     /**
      * The chain data of a group {@link signedForAddresses} keys by account:
      * `indices` are the group's slots in `request.txs`.

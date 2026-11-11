@@ -80,7 +80,9 @@ describe('buildResolvedSignRequest', () => {
                 transport: 'network',
                 txs: [{}],
             } as TransactionSignRequest,
-            signableGroups: [{ signerAddress: 'A123' }],
+            signableGroups: [
+                { signerAddress: 'A123', data: { type: 'transactions' } },
+            ],
             deps,
         } as unknown as SigningMachineContext
 
@@ -124,7 +126,9 @@ describe('buildResolvedSignRequest', () => {
                     },
                 },
             } as TransactionSignRequest,
-            signableGroups: [{ signerAddress: 'A123' }],
+            signableGroups: [
+                { signerAddress: 'A123', data: { type: 'transactions' } },
+            ],
             deps,
         } as unknown as SigningMachineContext
 
@@ -161,7 +165,9 @@ describe('buildResolvedSignRequest', () => {
                 ['A123', { custody: 'local', scheme: 'ed25519' }],
             ]),
             request: authDataRequest,
-            signableGroups: [{ signerAddress: 'A123' }],
+            signableGroups: [
+                { signerAddress: 'A123', data: { type: 'transactions' } },
+            ],
             deps,
         } as unknown as SigningMachineContext
 
@@ -191,7 +197,9 @@ describe('buildResolvedSignRequest', () => {
                 ['A123', { custody: 'local', scheme: 'ed25519' }],
             ]),
             request: authDataRequest,
-            signableGroups: [{ signerAddress: 'A123' }],
+            signableGroups: [
+                { signerAddress: 'A123', data: { type: 'transactions' } },
+            ],
             deps,
         } as unknown as SigningMachineContext
 
@@ -235,7 +243,9 @@ describe('buildResolvedSignRequest', () => {
                 ['A123', { custody: 'local', scheme: 'ed25519' }],
             ]),
             request,
-            signableGroups: [{ signerAddress: 'A123' }],
+            signableGroups: [
+                { signerAddress: 'A123', data: { type: 'transactions' } },
+            ],
             deps,
         } as unknown as SigningMachineContext
 

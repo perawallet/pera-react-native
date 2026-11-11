@@ -15,6 +15,7 @@ import '../../../__tests__/registerAlgorandAccounts'
 import type {
     AnalyzedSignableGroup,
     LocalKeySignerInput,
+    UnsignedTransactionsSignableData,
 } from '@perawallet/wallet-core-signing'
 import { signLocalKeyGroups } from '../signLocalKeyGroups'
 import {
@@ -231,6 +232,30 @@ describe('signLocalKeyGroups', () => {
             const [, , accountUsed] = signTransactions.mock.calls[0]
             expect(algorandAddressOf(accountUsed)).toBe(AUTH)
             expect(results[0].signers[0].address).toBe(AUTH)
+        })
+
+        it("signs with a named signer's own key, never the account it's rekeyed to", async () => {
+            const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
+            const group = buildGroup('local')
+            const input = buildInput({
+                groups: [
+                    {
+                        ...group,
+                        data: {
+                            ...(group.data as UnsignedTransactionsSignableData),
+                            isKeyedBySigner: true,
+                        },
+                    },
+                ],
+                allAccounts: [participantAccount, authAccount],
+                signTransactions,
+            })
+
+            const results = await signLocalKeyGroups(input)
+
+            const [, , accountUsed] = signTransactions.mock.calls[0]
+            expect(algorandAddressOf(accountUsed)).toBe(PARTICIPANT)
+            expect(results[0].signers[0].address).toBe(PARTICIPANT)
         })
     })
 })

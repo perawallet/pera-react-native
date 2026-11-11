@@ -20,7 +20,7 @@ import {
     isTransactionRequest,
     reviewGroupOf,
 } from '../models'
-import { isInteractiveSource } from '../pipeline/types'
+import { groupSignerKeyOf, isInteractiveSource } from '../pipeline/types'
 import { messageSignerChainAdapters } from '../message-signer'
 import type {
     ResolvedSignRequest,
@@ -108,7 +108,10 @@ export const buildResolvedSignRequest = (
 
     if (!signerAddress || !groupSigners) return null
 
-    const signerType = groupSigners.get(signerAddress)?.custody
+    const firstGroup = context.signableGroups?.[0]
+    const signerType = groupSigners.get(
+        firstGroup ? groupSignerKeyOf(firstGroup) : signerAddress,
+    )?.custody
     if (!signerType) return null
 
     const signerAccount = findAccountByAddressOn(

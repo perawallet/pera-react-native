@@ -349,8 +349,8 @@ it can't prove stays an unrecognised contract call that the app can't sign witho
 
 A request's `signer` is the address whose key produces the signature, not the account it is for:
 the planner reads it from the payload (Ethereum's `from`; Algorand's sender, rekey authority, or one
-request per multisig participant). A group keyed by that signer (`isKeyedByPlanner`) never has its
-rekey followed a second time. Only keys
+request per multisig participant). A group keyed by that signer (`isKeyedBySigner`, which includes
+every `isKeyedByPlanner` group) never has its rekey followed a second time. Only keys
 the review lists as `signableAddresses` sign, so a payload can't add a signer the user never
 approved: Algorand's reviewer lists every planned signer the wallet holds and refuses an authority a
 wallet sender isn't rekeyed to. A listed key the wallet can't use locally is left to its holder.
