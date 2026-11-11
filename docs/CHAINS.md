@@ -16,6 +16,7 @@ Each chain ships a `ChainModule` (`packages/chain-contract/src/models/module.ts`
 | ------------------------ | ------------------------------------------------------------------------------------------- |
 | `descriptor`             | Id, family, networks and their CAIP-2 ids, signing schemes, URI schemes, `enabledByDefault` |
 | `capabilityDefaults`     | A boolean for every capability: the build layer before env overrides                        |
+| `supportedCapabilities`  | Every capability the chain has code for; no override can switch on any other                |
 | `capabilityRestrictions` | The developer modes a capability is off in                                                  |
 | `register(ctx)`          | Adds the chain's adapter to every feature registry it implements                            |
 | `remoteConfigDefaults`   | Chain-specific remote-config keys; the names are a wire contract and never change           |
@@ -82,24 +83,27 @@ another. Each one resolves per chain in `resolveCapabilityWithSource`
 4. **Remote.** The `capabilities` object in `chain_<id>_overrides`.
 5. **Build.** `capabilityDefaults`, replaced by `CHAIN_<ID>_CAPABILITIES` when that is set.
 
-A layer whose value isn't a boolean falls through rather than being coerced. How a capability
+A layer whose value isn't a boolean falls through rather than being coerced. No layer switches on a
+capability outside the module's `supportedCapabilities`: the developer and remote layers drop that
+`true`, and `registerChainSetup` throws at startup on a build layer that has one. How a capability
 combines with the platform gate and app flags is in
 [Architecture: Turning features off per platform](ARCHITECTURE.md#turning-features-off-per-platform).
 
 ## The parity rule
 
-A chain may enable a capability only if it registers an adapter in every registry that capability
+A chain may support a capability only if it registers an adapter in every registry that capability
 needs. `CAPABILITY_ADAPTERS` (`packages/chain-contract/src/capabilities/adapters.ts`) is the map:
 `send` needs `transfer`, `transactionPlanner` and `broadcaster`; `nft` needs `accounts` and `assets`.
 A capability with no entry needs no chain adapter of its own.
 
 `capabilityAdapterContractTests` (`packages/chain-contract/src/__tests__/capability-adapter-contract.ts`)
-checks it, and also that every registered chain has a boolean default for every capability.
+checks it for every capability a chain supports or enables, and also that every registered chain has a
+boolean default for every capability and supports every capability it enables.
 `apps/mobile/src/__integration__/capability-parity.spec.ts` runs it at the composition root with every
 chain enabled.
 
-The test reads the build layer only. A remote `capabilities` entry can turn on a capability whose
-adapter the chain lacks, so use remote config to switch capabilities off, not on.
+Because overrides can't reach past `supportedCapabilities`, remote config can switch a supported
+capability on as safely as off.
 
 ## Chain UI slots
 
@@ -129,8 +133,9 @@ Each chain has a remote-config string `chain_<id>_overrides` (`chainOverridesKey
 - It works for every id in `CHAIN_IDS`, including a chain this build doesn't register.
 - An empty string, invalid JSON or a schema mismatch means no overrides: one `warn` per distinct bad
   value, never a throw.
-- Unknown capability names and non-boolean values are dropped one by one, so an older build still
-  honours `enabled: false` next to a capability it doesn't know.
+- Unknown capability names, non-boolean values and a `true` for a capability the chain doesn't
+  support are dropped one by one, so an older build still honours `enabled: false` next to a
+  capability it doesn't know.
 - A saved Feature Flags value for the same key beats the remote one, including `enabled`, wherever
   config overrides aren't ignored.
 
@@ -140,8 +145,9 @@ unavailable, background sync and submission reconciliation skip it
 (`packages/background/src/service/sync-service.ts`), account sync and new-account eligibility leave it
 out, and a deeplink to it resolves to `chain-unavailable`.
 
-The switch is all or nothing, for every user on every build. Opening a chain in stages is a release
-decision; see [Release](RELEASE.md).
+The switch is all or nothing, for every user on every build, and it can only take a chain away.
+Shipping a chain to users is a build decision: the chain goes into a channel's `CHAINS` (see
+[Build knobs](#build-knobs)).
 
 ## Build knobs
 
@@ -149,18 +155,20 @@ The build bakes these into `packages/config/src/generated-env.ts` through
 `tools/dev/generate-config.sh`, which loads the root `.env` (gitignored) and an optional
 `PERA_ENV_OVERLAY`. `turbo.json` lists them in `globalEnv` so a change invalidates the cache.
 
-| Knob                          | Effect                                                                                                          | Fails when                                                         |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `CHAINS`                      | Comma list of chain ids the build registers. Unset means `algorand`.                                            | An unknown id (`packages/config/src/main.ts` parses it at import). |
-| `CHAIN_<ID>_CAPABILITIES`     | Comma list replacing the chain's build layer: exactly these capabilities are on, every other one is off.        | An unknown capability name.                                        |
-| `<CHAIN>_<NET>_RPC_URL`       | The one JSON-RPC URL for an EVM network. No default and no fallback; a network without one is left out.         | `CHAINS` lists the chain and any of its networks has no URL.       |
-| `<CHAIN>_<NET>_PERA_SERVICES` | Comma list of the Pera services the backend serves for the network. Empty means no Pera backend for that scope. | A service outside `EVM_PERA_SERVICES`.                             |
+| Knob                          | Effect                                                                                                          | Fails when                                                                     |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `CHAINS`                      | Comma list of chain ids the build registers. Unset means `algorand`.                                            | An unknown id (`packages/config/src/main.ts` parses it at import).             |
+| `CHAIN_<ID>_CAPABILITIES`     | Comma list replacing the chain's build layer: exactly these capabilities are on, every other one is off.        | An unknown capability name, or at startup one the chain doesn't support.       |
+| `<CHAIN>_<NET>_RPC_URL`       | Comma list of an EVM network's JSON-RPC URLs: the main node, then at most one public fallback. No default.      | `CHAINS` lists the chain and any of its networks has no URL, or more than two. |
+| `<CHAIN>_<NET>_PERA_SERVICES` | Comma list of the Pera services the backend serves for the network. Empty means no Pera backend for that scope. | A service outside `EVM_PERA_SERVICES`.                                         |
 
 The per-network variable names come from the chain package table, `tools/dev/chain-packages.cjs`,
 whose EVM entry reads `packages/chain-contract/src/models/evm-networks.json`. The build script reads
 the table, and `scopeConfigKeys` in `packages/config/src/main.ts` names the same keys for the app.
 `packages/config/README.md` covers the schema and how each CI channel sets `CHAINS`;
-`tools/__tests__/bitrise-chains.test.sh` pins the CI values.
+`tools/__tests__/bitrise-chains.test.sh` pins the CI values. How the client fails over between RPC
+URLs, how they are checked before a build is signed, and which are pinned is in
+[Architecture: How a chain reaches its backends](ARCHITECTURE.md#how-a-chain-reaches-its-backends).
 
 `CHAINS` also decides what Metro bundles: unless it lists one of a chain package's chains, that
 package's `mobileStubbedModules` in the table resolve to their `.stub.ts` twins, so for EVM viem stays
@@ -177,13 +185,17 @@ hyphenated id would bake its capability list under a key the app never reads. Th
 Most EVM wiring reads `evm-networks.json` and the chain table, so the list is short.
 
 - [ ] `packages/chain-contract/src/models/identity.ts`: append the id to `CHAIN_IDS`. Append only:
-      device registration's refusal fallback drops the last chain first.
+      device registration's refusal fallback drops the last chain first. Add it to the exact
+      `ChainId` union in `src/models/__tests__/identity.test-d.ts`.
 - [ ] `packages/chain-contract/src/models/evm-networks.json`: the mainnet and testnet networks, each
       with its `tier` and `eip155ChainId`.
 - [ ] `packages/chain-ethereum/src/chains/table.ts`: an `EvmChainRow` with native asset and SLIP-44
       coin type, explorer per network, fee strategy, block time, finality, `enabledByDefault: false`,
       and any per-chain `capabilities` or `restrictions`. Update `src/chains/__tests__/table.spec.ts`
-      and `src/__tests__/evm-chains.ts` where they enumerate rows.
+      and `src/__tests__/evm-chains.ts` where they enumerate rows, and add the id to `evmChainIds` in
+      `packages/chain-ethereum/vitest.setup.ts`, or the package's specs throw for it.
+- [ ] `packages/chain-ethereum/src/signing/known-contracts.ts`: the mainnet's well-known routers and
+      spenders under its EIP-155 id. Optional; without them, approvals on the chain name no contract.
 - [ ] A fee strategy the existing kinds don't cover: `EvmFeeStrategy` in `src/chains/types.ts`,
       `src/transfer/fees.ts` and `src/transfer/submission.ts`, and [EVM fees](EVM_FEES.md).
 - [ ] `lanekeep/rules/no-chain-identity-in-shared-packages.ts`: add the id to its copy of `CHAIN_IDS`;
@@ -191,6 +203,9 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
 - [ ] `apps/mobile/assets/icons/chains/<id>.svg`, and `apps/mobile/src/modules/ethereum/chain-icons.ts`:
       `EVM_CHAIN_ICONS` is partial (a missing logo falls back to initials), `EVM_NATIVE_ASSET_ICONS` is
       total and won't compile without the new chain.
+- [ ] `apps/mobile/src/modules/ethereum/native-coin-about.ts`: an `EVM_NATIVE_COIN_ABOUT` entry, also
+      total. A native coin not listed yet needs its `asset_details.about.native_description.<coin>`
+      text in every locale bundle (`apps/mobile/src/i18n/locales/`).
 - [ ] `apps/mobile/src/modules/ethereum/chain-ui.ts`: an `evmChainUiOverrides` entry, only where the
       chain's UI differs from the family's.
 - [ ] `turbo.json`: add `<ID>_*` to `globalEnv`.
@@ -204,10 +219,11 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
       `tools/dev/capture-op-predeploys.sh`).
 - [ ] Your `.env`: the id in `CHAINS` and an RPC URL per network, or `generate-config.sh` fails.
 - [ ] Outside the repo: the Pera backend must accept the chain id for device registration and serve
-      the services listed; the `chain_<id>_overrides` key needs no code.
+      the services listed; the `chain_<id>_overrides` and `enable_ssl_pinning_<id>_rpc` remote keys
+      need no code.
 
-No change: composition roots, translations (chain names come from the row's `displayName`), Ledger,
-WalletConnect, derivation paths, `apps/mobile/package.json`.
+No change: composition roots, chain-name translations (names come from the row's `displayName`),
+Ledger, WalletConnect, derivation paths, `apps/mobile/package.json`.
 
 ## Adding a chain family
 
@@ -218,7 +234,7 @@ and `registerChain`, and everything else is a `package.json` subpath export.
 
 - [ ] `packages/chain-contract/src/models/identity.ts`: append to `CHAIN_IDS` and `CHAIN_FAMILIES`
       (append only: a contact's backup record is keyed on its first family in this order), and add a
-      `NativeNetworkRef` member.
+      `NativeNetworkRef` member. Update the exact unions in `src/models/__tests__/identity.test-d.ts`.
 - [ ] `packages/chain-contract/src/models/domain.ts`: a member for the family in every family-keyed
       union, and a `SigningScheme` if it signs on a new curve.
 
@@ -228,7 +244,8 @@ and `registerChain`, and everything else is a `package.json` subpath export.
       vite and vitest configs, `src/module.ts`, `src/register.ts`, `src/capability-defaults.ts` and
       `src/test-handlers.ts`. `pnpm-workspace.yaml` picks it up; `tools/check-layer-tiers.mjs` checks
       its dependencies.
-- [ ] An adapter for every registry `CAPABILITY_ADAPTERS` lists against each capability it enables.
+- [ ] The module's `supportedCapabilities`, and an adapter for every registry `CAPABILITY_ADAPTERS`
+      lists against each of them.
 - [ ] A new curve: a keystore shim under `extensions/provider/src/keystore/shims/` and a library-seam
       rule like `lanekeep/rules/secp256k1-library-seam.ts`. See [Security](SECURITY.md#evm).
 
