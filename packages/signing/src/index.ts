@@ -309,6 +309,7 @@ export {
     TransactionBatchesSchema,
     type TransactionBatch,
     type TransactionBatchOutcome,
+    type TransactionBatchState,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getUnsyncedSubmissionSpends,

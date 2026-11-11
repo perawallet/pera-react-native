@@ -117,6 +117,7 @@ describe('transaction batches', () => {
         await updateTransactionBatch({
             db,
             id: recorded.id,
+            expected: recorded,
             txIds: recorded.txIds,
             signedRaw: null,
             position: 0,
@@ -157,18 +158,20 @@ describe('transaction batches', () => {
         })
     })
 
-    it('Given a running batch, when it is updated, then the hashes, position and outcome are kept', async () => {
-        const { id } = await record()
+    it('Given a running batch, when a write expecting it lands, then it reports true and the hashes, position and outcome are kept', async () => {
+        const recorded = await record()
 
-        await updateTransactionBatch({
+        const didLand = await updateTransactionBatch({
             db,
-            id,
+            id: recorded.id,
+            expected: recorded,
             txIds: ['0xhash1', '0xhash2'],
             signedRaw: null,
             position: 1,
             outcome: 'reverted',
         })
 
+        expect(didLand).toBe(true)
         expect(
             await findTransactionBatch({
                 db,
@@ -184,12 +187,100 @@ describe('transaction batches', () => {
         })
     })
 
+    it('Given a row a newer write moved on, when a write still expecting the recorded row arrives, then it reports false and the saved hash and bytes stay', async () => {
+        const recorded = await record()
+        await updateTransactionBatch({
+            db,
+            id: recorded.id,
+            expected: recorded,
+            txIds: ['0xhash1', '0xhash2'],
+            signedRaw: '0xsigned2',
+            position: 1,
+            outcome: 'running',
+        })
+
+        const didLand = await updateTransactionBatch({
+            db,
+            id: recorded.id,
+            expected: recorded,
+            txIds: ['0xhash1'],
+            signedRaw: null,
+            position: 1,
+            outcome: 'running',
+        })
+
+        expect(didLand).toBe(false)
+        expect(
+            await getTransactionBatch({ db, id: recorded.id }),
+        ).toMatchObject({
+            txIds: ['0xhash1', '0xhash2'],
+            signedRaw: '0xsigned2',
+            position: 1,
+            outcome: 'running',
+        })
+    })
+
+    it('Given a row with no signed bytes, when a write expects null bytes, then it lands', async () => {
+        const recorded = await record()
+        const unsigned = { ...recorded, signedRaw: null, position: 1 }
+        await updateTransactionBatch({
+            db,
+            id: recorded.id,
+            expected: recorded,
+            txIds: recorded.txIds,
+            signedRaw: null,
+            position: 1,
+            outcome: 'running',
+        })
+
+        const didLand = await updateTransactionBatch({
+            db,
+            id: recorded.id,
+            expected: unsigned,
+            txIds: ['0xhash1', '0xhash2'],
+            signedRaw: '0xsigned2',
+            position: 1,
+            outcome: 'running',
+        })
+
+        expect(didLand).toBe(true)
+        expect(
+            await getTransactionBatch({ db, id: recorded.id }),
+        ).toMatchObject({ signedRaw: '0xsigned2' })
+    })
+
+    it('Given a write that already landed, when the same write is applied again, then it reports true and changes nothing', async () => {
+        const recorded = await record()
+        const write = {
+            db,
+            id: recorded.id,
+            expected: recorded,
+            txIds: ['0xhash1', '0xhash2'],
+            signedRaw: '0xsigned2',
+            position: 1,
+            outcome: 'running' as const,
+        }
+        await updateTransactionBatch(write)
+
+        const didLand = await updateTransactionBatch(write)
+
+        expect(didLand).toBe(true)
+        expect(
+            await getTransactionBatch({ db, id: recorded.id }),
+        ).toMatchObject({
+            txIds: ['0xhash1', '0xhash2'],
+            signedRaw: '0xsigned2',
+            position: 1,
+        })
+    })
+
     it('Given batches in several states and chains, when the running ones are read, then only that chain running ones come back, oldest first', async () => {
         const first = await record({ batchId: 'a' })
         const settled = await record({ batchId: 'b' })
         await updateTransactionBatch({
             db,
             id: settled.id,
+            expected: settled,
             txIds: settled.txIds,
             signedRaw: null,
             position: 0,

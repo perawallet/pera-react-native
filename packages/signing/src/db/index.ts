@@ -50,4 +50,5 @@ export {
     type SubmissionStatus,
     type TransactionBatch,
     type TransactionBatchOutcome,
+    type TransactionBatchState,
 } from './types'
