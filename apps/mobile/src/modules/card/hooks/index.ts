@@ -70,6 +70,7 @@ export {
     type UseCardFundingSourcePickerParams,
 } from './useCardFundingSourcePicker'
 export { useIsCardAutoFundingActive } from './useIsCardAutoFundingActive'
+export { useSyncCardFundingTypeFromChain } from './useSyncCardFundingTypeFromChain'
 export {
     useEscrowCardCreation,
     type UseEscrowCardCreationResult,

@@ -152,6 +152,12 @@ export interface CardChainAdapter {
         legNetwork: string,
         scope: ChainScope,
     ): Nullable<string>
+    /**
+     * Whether auto-draw is switched on chain for the funding account. The draw
+     * only works while it is, and it is the one record of the funding type
+     * that every device sees. False on a scope with no card deployment.
+     */
+    isAutoDrawEnabled(scope: ChainScope, ownerAddress: string): Promise<boolean>
     useAutoDraw(): CardAutoDrawOperations
     withdrawal: CardEscrowWithdrawals
 }

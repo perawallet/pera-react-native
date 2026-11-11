@@ -47,6 +47,21 @@ vi.mock('@modules/security', async () => ({
     }),
 }))
 
+// The on-chain switch the overview reconciles the stored funding type against.
+// Unanswered by default, so a test states the chain only when it matters.
+const chain = vi.hoisted(() => ({
+    isEnabled: undefined as boolean | undefined,
+    updatedAt: 0,
+}))
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+    useCardAutoDrawEnabledQuery: () => chain,
+}))
+const arrangeChain = (isEnabled: boolean) => {
+    chain.isEnabled = isEnabled
+    chain.updatedAt = 1
+}
+
 // __DEV__ is false in the test env, so the kill-switch would default off; force
 // it on to exercise the Auto flow.
 vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
@@ -127,10 +142,13 @@ describe('Flow: Card funding type switch', () => {
         })
         useCardSessionStore.getState().setAuthenticated(true)
         server.use(activeCardStatus)
+        chain.isEnabled = undefined
+        chain.updatedAt = 0
     })
 
     it('disables auto-draw and persists Manual when switching Auto → Manual', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Auto)
+        arrangeChain(true)
 
         renderWithNavigation(PeraCardOverview, 'Overview')
         await openFundingTypeSheet()
@@ -189,6 +207,23 @@ describe('Flow: Card funding type switch', () => {
         expect(
             await screen.findByTestId('card_select_funding_type_sheet'),
         ).toBeTruthy()
+    })
+
+    it('shows the funding type on chain when this device recorded another, as on a restored card', async () => {
+        useCardStore.getState().setSelectedFundingType(FundingType.Manual)
+        arrangeChain(true)
+
+        renderWithNavigation(PeraCardOverview, 'Overview')
+
+        await waitFor(() =>
+            expect(useCardStore.getState().selectedFundingType).toBe(
+                FundingType.Auto,
+            ),
+        )
+        expect(
+            (await screen.findByTestId('pera_card_overview_funding_type_row'))
+                .textContent,
+        ).toContain('funding_type_enabled_auto')
     })
 
     it('offers Connect on Card Details when no funding account is linked, with no funding type row', async () => {

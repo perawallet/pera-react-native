@@ -11,12 +11,15 @@
  */
 
 // @vitest-environment jsdom
+import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
 import { useCardAutoDraw } from '../useCardAutoDraw'
+import { cardQueryKeys } from '../querykeys'
 
 const SCOPES: ChainScope[] = [
     { chainId: 'algorand', networkId: 'testnet' } as const,
@@ -27,17 +30,48 @@ const account = { address: 'FUNDING' } as WalletAccount
 const enableAutoDraw = vi.fn(async () => undefined)
 const disableAutoDraw = vi.fn(async () => undefined)
 
+let queryClient: QueryClient
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+)
+
 describe.each(SCOPES)('useCardAutoDraw ($chainId)', SCOPE => {
     beforeEach(() => {
         vi.clearAllMocks()
+        queryClient = new QueryClient()
         registerFakeCardAdapter({
             chainId: SCOPE.chainId,
             autoDraw: { enableAutoDraw, disableAutoDraw },
         })
     })
 
+    it('re-reads the on-chain switch after enabling and after disabling', async () => {
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
+
+        await result.current.enableAutoDraw(account, 'CARD')
+        await result.current.disableAutoDraw(account)
+
+        expect(invalidate).toHaveBeenCalledTimes(2)
+        expect(invalidate).toHaveBeenCalledWith({
+            queryKey: cardQueryKeys.autoDrawEnabledAll(SCOPE),
+        })
+    })
+
+    it('leaves the cached switch alone when the change fails', async () => {
+        enableAutoDraw.mockRejectedValueOnce(new Error('enable failed'))
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
+
+        await expect(
+            result.current.enableAutoDraw(account, 'CARD'),
+        ).rejects.toThrow('enable failed')
+
+        expect(invalidate).not.toHaveBeenCalled()
+    })
+
     it('forwards the account, card address and scope when enabling', async () => {
-        const { result } = renderHook(() => useCardAutoDraw(SCOPE))
+        const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
 
         await result.current.enableAutoDraw(account, 'CARD')
 
@@ -45,7 +79,7 @@ describe.each(SCOPES)('useCardAutoDraw ($chainId)', SCOPE => {
     })
 
     it('forwards the account and scope when disabling', async () => {
-        const { result } = renderHook(() => useCardAutoDraw(SCOPE))
+        const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
 
         await result.current.disableAutoDraw(account)
 
@@ -55,7 +89,7 @@ describe.each(SCOPES)('useCardAutoDraw ($chainId)', SCOPE => {
     it("propagates the adapter's rejection", async () => {
         enableAutoDraw.mockRejectedValueOnce(new Error('enable failed'))
         disableAutoDraw.mockRejectedValueOnce(new Error('disable failed'))
-        const { result } = renderHook(() => useCardAutoDraw(SCOPE))
+        const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
 
         await expect(
             result.current.enableAutoDraw(account, 'CARD'),
