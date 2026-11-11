@@ -13,20 +13,20 @@
 import { useCallback } from 'react'
 import {
     SubmissionError,
-    watchSubmissionOutcome,
+    UserRejectedSigningError,
 } from '@perawallet/wallet-core-signing'
 import { useHaptics } from '@hooks/useHaptics'
 
+// Every haptic here plays alongside the UI that shows the result, never on a
+// background on-chain settle the user can't see.
 export type UseTransactionOutcomeHapticsResult = {
-    /** Plays txSuccess or txError once the submitted transaction confirms or fails on chain. */
-    watchOutcome: (txId: string) => void
+    playSuccess: () => void
     /**
-     * Classifies a submit error: a node refusal plays txError; no answer
-     * leaves the transaction watched, since it may still land. Cancels and
-     * pre-submit failures stay silent.
+     * Call where the error is shown: plays txError, except for a cancel or an
+     * unknown outcome, which may still land.
      */
     handleSubmitError: (error: unknown) => void
-    /** Plays txError for a failure that is already final on chain, such as a revert. */
+    /** Plays txError for a shown failure with no error to classify, such as a revert. */
     playFailure: () => void
 }
 
@@ -34,26 +34,23 @@ export const useTransactionOutcomeHaptics =
     (): UseTransactionOutcomeHapticsResult => {
         const { txSuccess, txError } = useHaptics()
 
-        const watchOutcome = useCallback(
-            (txId: string) =>
-                watchSubmissionOutcome(txId, outcome =>
-                    outcome === 'confirmed' ? txSuccess() : txError(),
-                ),
-            [txSuccess, txError],
-        )
-
         const handleSubmitError = useCallback(
             (error: unknown) => {
-                if (!(error instanceof SubmissionError)) return
-                if (error.classification === 'rejected-by-node') {
-                    txError()
+                if (error instanceof UserRejectedSigningError) return
+                if (
+                    error instanceof SubmissionError &&
+                    error.classification === 'unknown-outcome'
+                ) {
                     return
                 }
-                const txId = error.txIds.at(-1)
-                if (txId !== undefined) watchOutcome(txId)
+                txError()
             },
-            [txError, watchOutcome],
+            [txError],
         )
 
-        return { watchOutcome, handleSubmitError, playFailure: txError }
+        return {
+            playSuccess: txSuccess,
+            handleSubmitError,
+            playFailure: txError,
+        }
     }

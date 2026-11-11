@@ -110,8 +110,7 @@ export const useTransactionProcessingScreen =
         const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
-        const { watchOutcome, handleSubmitError } =
-            useTransactionOutcomeHaptics()
+        const { handleSubmitError } = useTransactionOutcomeHaptics()
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
@@ -209,7 +208,6 @@ export const useTransactionProcessingScreen =
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,
                     })
-                    watchOutcome(txId)
                     completeTabResume(
                         isAwaitingConfirmation
                             ? {

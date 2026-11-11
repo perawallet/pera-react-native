@@ -81,7 +81,7 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
     const optInByChain = useOptInByChain()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
-    const { watchOutcome, handleSubmitError } = useTransactionOutcomeHaptics()
+    const { playSuccess, handleSubmitError } = useTransactionOutcomeHaptics()
     const { t } = useLanguage()
 
     return useCallback(
@@ -118,12 +118,8 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
             //    InsufficientBalanceForOptInError, which showError renders as a
             //    readable message.
             try {
-                const { txIds } = await optIn({
-                    sender,
-                    assetId: BigInt(assetId),
-                })
-                const txId = txIds.at(-1)
-                if (txId !== undefined) watchOutcome(txId)
+                await optIn({ sender, assetId: BigInt(assetId) })
+                playSuccess()
                 showToast({
                     title: t('add_asset.opt_in.success_title'),
                     body: t('add_asset.opt_in.success_body_generic'),
@@ -140,7 +136,7 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
             optInByChain,
             showToast,
             showError,
-            watchOutcome,
+            playSuccess,
             handleSubmitError,
             t,
         ],

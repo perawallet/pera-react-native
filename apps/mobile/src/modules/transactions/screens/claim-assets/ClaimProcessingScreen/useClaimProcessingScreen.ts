@@ -46,7 +46,7 @@ export const useClaimProcessingScreen = () => {
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
     const account = useFindAccountByAddress(accountAddress ?? '', scope)
     const { showError } = useErrorToast()
-    const { watchOutcome, handleSubmitError } = useTransactionOutcomeHaptics()
+    const { handleSubmitError } = useTransactionOutcomeHaptics()
 
     const { remove: removeAssetInboxQueries } = useAssetInboxInvalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
@@ -100,7 +100,6 @@ export const useClaimProcessingScreen = () => {
                     transactionId: txId,
                     variant: mode,
                 })
-                watchOutcome(txId)
             })
             .catch(error => {
                 if (error instanceof UserRejectedSigningError) {

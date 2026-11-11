@@ -47,14 +47,14 @@ vi.mock('@hooks/useErrorToast', () => ({
 }))
 vi.mock('@hooks/useLanguage')
 
-const { mockWatchOutcome, mockHandleSubmitError } = vi.hoisted(() => ({
-    mockWatchOutcome: vi.fn(),
+const { mockPlaySuccess, mockHandleSubmitError } = vi.hoisted(() => ({
+    mockPlaySuccess: vi.fn(),
     mockHandleSubmitError: vi.fn(),
 }))
 
 vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
     useTransactionOutcomeHaptics: () => ({
-        watchOutcome: mockWatchOutcome,
+        playSuccess: mockPlaySuccess,
         handleSubmitError: mockHandleSubmitError,
     }),
 }))
@@ -180,7 +180,7 @@ describe('useAssetOptInDeeplink', () => {
         expect(mockShowToast).not.toHaveBeenCalled()
     })
 
-    it('watches the opt-in transaction for its outcome haptic', async () => {
+    it('plays the success haptic with the success toast', async () => {
         mockRequestByType.mockResolvedValueOnce('confirm')
         const { result } = renderHook(() => useAssetOptInDeeplink())
 
@@ -192,7 +192,7 @@ describe('useAssetOptInDeeplink', () => {
             })
         })
 
-        expect(mockWatchOutcome).toHaveBeenCalledWith('TX1')
+        expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
         expect(mockHandleSubmitError).not.toHaveBeenCalled()
     })
 
@@ -219,7 +219,7 @@ describe('useAssetOptInDeeplink', () => {
         await run()
 
         expect(mockHandleSubmitError).not.toHaveBeenCalled()
-        expect(mockWatchOutcome).not.toHaveBeenCalled()
+        expect(mockPlaySuccess).not.toHaveBeenCalled()
     })
 
     it('does nothing on a chain whose assets need no opt-in', async () => {

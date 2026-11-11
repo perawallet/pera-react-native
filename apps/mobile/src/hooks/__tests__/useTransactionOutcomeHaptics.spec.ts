@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => {
         constructor(
             message: string,
             readonly classification: string = 'rejected-by-node',
-            readonly txIds: string[] = [],
         ) {
             super(message)
         }
@@ -29,13 +28,12 @@ const mocks = vi.hoisted(() => {
         UserRejectedSigningError,
         txSuccess: vi.fn(),
         txError: vi.fn(),
-        watchSubmissionOutcome: vi.fn(),
     }
 })
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     SubmissionError: mocks.SubmissionError,
-    watchSubmissionOutcome: mocks.watchSubmissionOutcome,
+    UserRejectedSigningError: mocks.UserRejectedSigningError,
 }))
 
 vi.mock('@hooks/useHaptics', () => ({
@@ -52,70 +50,23 @@ describe('useTransactionOutcomeHaptics', () => {
         vi.clearAllMocks()
     })
 
-    it('plays txSuccess when the watched transaction confirms', () => {
+    it('plays txSuccess on playSuccess', () => {
         const { result } = renderHook(() => useTransactionOutcomeHaptics())
 
-        result.current.watchOutcome('tx-1')
-        const [txId, onOutcome] = mocks.watchSubmissionOutcome.mock.calls[0]
-        // Watching alone is not a result: nothing plays until the outcome lands.
-        expect(mocks.txSuccess).not.toHaveBeenCalled()
-        expect(mocks.txError).not.toHaveBeenCalled()
-        onOutcome('confirmed')
+        result.current.playSuccess()
 
-        expect(txId).toBe('tx-1')
         expect(mocks.txSuccess).toHaveBeenCalledTimes(1)
         expect(mocks.txError).not.toHaveBeenCalled()
-    })
-
-    it('plays txError when the watched transaction fails', () => {
-        const { result } = renderHook(() => useTransactionOutcomeHaptics())
-
-        result.current.watchOutcome('tx-1')
-        mocks.watchSubmissionOutcome.mock.calls[0][1]('failed')
-
-        expect(mocks.txError).toHaveBeenCalledTimes(1)
-        expect(mocks.txSuccess).not.toHaveBeenCalled()
     })
 
     it('plays txError when the node rejected the submission', () => {
         const { result } = renderHook(() => useTransactionOutcomeHaptics())
 
         result.current.handleSubmitError(
-            new mocks.SubmissionError('refused', 'rejected-by-node', ['tx-9']),
+            new mocks.SubmissionError('refused', 'rejected-by-node'),
         )
 
         expect(mocks.txError).toHaveBeenCalledTimes(1)
-        expect(mocks.watchSubmissionOutcome).not.toHaveBeenCalled()
-    })
-
-    it('watches the transaction instead of failing it when no node answered', () => {
-        const { result } = renderHook(() => useTransactionOutcomeHaptics())
-
-        result.current.handleSubmitError(
-            new mocks.SubmissionError('no answer', 'unknown-outcome', [
-                'tx-1',
-                'tx-2',
-            ]),
-        )
-
-        expect(mocks.txError).not.toHaveBeenCalled()
-        expect(mocks.watchSubmissionOutcome).toHaveBeenCalledWith(
-            'tx-2',
-            expect.any(Function),
-        )
-        mocks.watchSubmissionOutcome.mock.calls[0][1]('confirmed')
-        expect(mocks.txSuccess).toHaveBeenCalledTimes(1)
-    })
-
-    it('stays silent when no node answered and there is no txId to watch', () => {
-        const { result } = renderHook(() => useTransactionOutcomeHaptics())
-
-        result.current.handleSubmitError(
-            new mocks.SubmissionError('no answer', 'unknown-outcome', []),
-        )
-
-        expect(mocks.txError).not.toHaveBeenCalled()
-        expect(mocks.watchSubmissionOutcome).not.toHaveBeenCalled()
     })
 
     it('plays txError for a failure already final on chain', () => {
@@ -126,14 +77,25 @@ describe('useTransactionOutcomeHaptics', () => {
         expect(mocks.txError).toHaveBeenCalledTimes(1)
     })
 
-    it('stays silent for a user cancel or any other error', () => {
+    it('plays txError for a failure before the network saw it', () => {
+        const { result } = renderHook(() => useTransactionOutcomeHaptics())
+
+        result.current.handleSubmitError(new Error('build failed'))
+
+        expect(mocks.txError).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays silent for no answer or a user cancel', () => {
         const { result } = renderHook(() => useTransactionOutcomeHaptics())
 
         result.current.handleSubmitError(
+            new mocks.SubmissionError('no answer', 'unknown-outcome'),
+        )
+        result.current.handleSubmitError(
             new mocks.UserRejectedSigningError('cancelled'),
         )
-        result.current.handleSubmitError(new Error('build failed'))
 
         expect(mocks.txError).not.toHaveBeenCalled()
+        expect(mocks.txSuccess).not.toHaveBeenCalled()
     })
 })

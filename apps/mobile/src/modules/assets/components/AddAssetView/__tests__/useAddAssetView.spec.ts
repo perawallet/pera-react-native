@@ -186,14 +186,14 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-const { mockWatchOutcome, mockHandleSubmitError } = vi.hoisted(() => ({
-    mockWatchOutcome: vi.fn(),
+const { mockPlaySuccess, mockHandleSubmitError } = vi.hoisted(() => ({
+    mockPlaySuccess: vi.fn(),
     mockHandleSubmitError: vi.fn(),
 }))
 
 vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
     useTransactionOutcomeHaptics: () => ({
-        watchOutcome: mockWatchOutcome,
+        playSuccess: mockPlaySuccess,
         handleSubmitError: mockHandleSubmitError,
     }),
 }))
@@ -311,7 +311,7 @@ describe('useAddAssetView', () => {
         )
     })
 
-    it('watches the opt-in transaction for its outcome haptic', async () => {
+    it('plays the success haptic with the success toast', async () => {
         mockOptIn.mockResolvedValueOnce({ txIds: ['tx-a', 'tx-b'] })
         mockRequestByType.mockResolvedValueOnce('confirm')
         const { result } = renderHook(() =>
@@ -322,8 +322,7 @@ describe('useAddAssetView', () => {
             await result.current.handleRequestAdd(TEST_ASSET)
         })
 
-        expect(mockWatchOutcome).toHaveBeenCalledTimes(1)
-        expect(mockWatchOutcome).toHaveBeenCalledWith('tx-b')
+        expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
         expect(mockHandleSubmitError).not.toHaveBeenCalled()
     })
 
@@ -348,7 +347,7 @@ describe('useAddAssetView', () => {
         })
 
         expect(mockHandleSubmitError).not.toHaveBeenCalled()
-        expect(mockWatchOutcome).not.toHaveBeenCalled()
+        expect(mockPlaySuccess).not.toHaveBeenCalled()
     })
 
     it('keeps handleRequestAdd across renders, so the list rows aren’t rebuilt', () => {

@@ -132,8 +132,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
 
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
-    const { watchOutcome, handleSubmitError, playFailure } =
-        useTransactionOutcomeHaptics()
+    const { handleSubmitError, playFailure } = useTransactionOutcomeHaptics()
     const { mutateAsync: executeSwap, reset: resetMutation } =
         useExecuteSwapMutation()
     const cancelRequestedRef = useRef(false)
@@ -235,6 +234,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         reason: 'prepare-failed',
                         error,
                     })
+                    playFailure()
                     setStatus('error')
                     setError({ phase: 'prepare', message })
                     return title === undefined
@@ -268,6 +268,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     throw error
                 }
                 const copy = resolveErrorCopy(error, t, undefined, getMessage)
+                playFailure()
                 setStatus('error')
                 setError({ phase: 'prepare', message: copy.body })
                 return {
@@ -281,10 +282,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             setStatus(STATUS_BY_RESULT[result.kind])
             if (result.kind === 'success') {
                 setTxIds(result.txIds)
-                // One haptic per swap: a multi-group or approve-then-swap run
-                // settles on its last transaction.
-                const lastTxId = result.txIds.at(-1)
-                if (lastTxId !== undefined) watchOutcome(lastTxId)
                 return { kind: 'success' }
             }
             if (result.kind === 'user-rejected') {
@@ -296,13 +293,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             if (result.kind === 'failed') {
                 const { phase } = result.failure
-                // Only a verdict buzzes: a reverted transaction, or a node
-                // refusal. No answer is watched instead, and anything that
-                // failed before the network saw it stays silent.
-                if (result.failure.reason === 'reverted') {
-                    playFailure()
-                } else if (result.failure.reason === 'submission-failed') {
+                if (result.failure.reason === 'submission-failed') {
                     handleSubmitError(result.failure.error)
+                } else {
+                    playFailure()
                 }
                 const { message, title } = describeFailure(result.failure)
                 setError({ phase, message })
@@ -317,7 +311,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             t,
             getMessage,
             describeFailure,
-            watchOutcome,
             handleSubmitError,
             playFailure,
         ],

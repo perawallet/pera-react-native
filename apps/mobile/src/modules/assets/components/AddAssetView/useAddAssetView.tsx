@@ -235,7 +235,7 @@ export const useAddAssetView = (
     const { optIn } = useAssetOptInMutation(addScope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
-    const { watchOutcome, handleSubmitError } = useTransactionOutcomeHaptics()
+    const { playSuccess, handleSubmitError } = useTransactionOutcomeHaptics()
     const { requestByType } = useBottomSheet()
 
     const {
@@ -303,13 +303,12 @@ export const useAddAssetView = (
             setOptingInKeys(prev => withKey(prev, key))
 
             try {
-                const { txIds } = await optIn({
+                await optIn({
                     sender,
                     assetId: BigInt(assetId),
                 })
-                const txId = txIds.at(-1)
-                if (txId !== undefined) watchOutcome(txId)
                 setRecentlyOptedInKeys(prev => withKey(prev, key))
+                playSuccess()
                 showToast({
                     title: t('add_asset.opt_in.success_title'),
                     body: assetDisplayName
@@ -340,7 +339,7 @@ export const useAddAssetView = (
             showToast,
             t,
             showError,
-            watchOutcome,
+            playSuccess,
             handleSubmitError,
         ],
     )
