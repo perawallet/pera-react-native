@@ -30,6 +30,11 @@ const attestedOriginOf = (
         ? source.verification.verifiedOrigin
         : undefined)
 
+/** Verify rated the request's site against it; no origin is proven, but nothing should read as trusted. */
+export const isFlaggedByVerify = (source?: SignRequestSource): boolean =>
+    source?.verification?.status === 'mismatch' ||
+    source?.verification?.status === 'scam'
+
 /** Whether the request comes from the contract's own project site. */
 export const isKnownContractSite = (
     projectDomain: Optional<string>,

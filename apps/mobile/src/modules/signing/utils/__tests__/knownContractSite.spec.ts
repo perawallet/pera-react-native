@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import {
+    isFlaggedByVerify,
     isKnownContractSite,
     spenderSiteMismatchOf,
 } from '../knownContractSite'
@@ -167,5 +168,28 @@ describe('spenderSiteMismatchOf', () => {
         expect(
             spenderSiteMismatchOf(undefined, undefined, 'https://evil.example'),
         ).toBeUndefined()
+    })
+})
+
+describe('isFlaggedByVerify', () => {
+    it.each(['mismatch', 'scam'] as const)(
+        'is true when Verify rates %s',
+        status => {
+            expect(isFlaggedByVerify(verified(status))).toBe(true)
+        },
+    )
+
+    it.each(['valid', 'unknown'] as const)(
+        'is false when Verify rates %s',
+        status => {
+            expect(isFlaggedByVerify(verified(status))).toBe(false)
+        },
+    )
+
+    it('is false with no Verify result', () => {
+        expect(isFlaggedByVerify({ url: 'https://app.uniswap.org' })).toBe(
+            false,
+        )
+        expect(isFlaggedByVerify()).toBe(false)
     })
 })

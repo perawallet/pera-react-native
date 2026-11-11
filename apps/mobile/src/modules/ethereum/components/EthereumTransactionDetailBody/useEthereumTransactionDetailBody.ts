@@ -17,6 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
+    useScopedSignRequestId,
     useSigningRequest,
     type SignRequestSource,
 } from '@perawallet/wallet-core-signing'
@@ -32,7 +33,7 @@ import {
 export type UseEthereumTransactionDetailBodyResult = {
     presentation: Nullable<EthereumTransactionPresentation>
     summary: Nullable<TransactionDetailSummary>
-    /** The request under review, so an approval's site check reads the same as on the review; unset for a mined transaction. */
+    /** The signing sheet's own request, so an approval's site check reads the same as on the review; unset for a mined transaction or outside the sheet. */
     source: Optional<SignRequestSource>
     verifiedOrigin: Optional<string>
 }
@@ -44,8 +45,14 @@ export const useEthereumTransactionDetailBody = (
     const heroTitle = useTransactionHeroTitle()
     const presentation = useEthereumTransactionPresentation(transaction, scope)
     const { currentRequest } = useSigningRequest()
+    // Outside the signing sheet's scope `currentRequest` is the queue head, which
+    // may be another dApp's request, so only the sheet's own request lends its origin.
+    const scopedRequestId = useScopedSignRequestId()
     const isUnderReview =
-        !!presentation && !('isMined' in presentation.view) && !!currentRequest
+        !!presentation &&
+        !('isMined' in presentation.view) &&
+        !!currentRequest &&
+        currentRequest.id === scopedRequestId
     const source = isUnderReview ? currentRequest.sourceMetadata : undefined
     const verifiedOrigin = isUnderReview
         ? currentRequest.verifiedOrigin

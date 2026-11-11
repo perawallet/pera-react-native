@@ -20,7 +20,10 @@ import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { spenderSiteMismatchOf } from '../../utils/knownContractSite'
+import {
+    isFlaggedByVerify,
+    spenderSiteMismatchOf,
+} from '../../utils/knownContractSite'
 
 export type SpendApprovalWarningRow = {
     type:
@@ -50,7 +53,7 @@ export type UseSpendApprovalWarningResult = {
     deadlineText: string
     /** Set when the spender is a well-known contract, even one asked for from another site. */
     knownSpenderName?: string
-    /** A well-known spender and no attested other site: the panel reads as information, not danger. */
+    /** A well-known spender, no attested other site and no Verify flag: the panel reads as information, not danger. */
     isTrusted: boolean
     /** A signed permit carries a deadline; an on-chain `approve` has none to show. */
     showsDeadline: boolean
@@ -91,7 +94,8 @@ const ROW_COPY: Record<SpendRowType, RowCopy> = {
 
 const NFT_SPEND_MESSAGE = i18nKey('signing.spend_approval.nft_spend_warning')
 
-// On-chain approvals only build fungible allowances, so the NFT copy stays signature-only.
+// A transaction's approval reaches this panel only from a fungible approve or increaseAllowance;
+// setApprovalForAll and an NFT approve review as their own kinds, so the NFT copy stays signature-only.
 const TRANSACTION_SPEND_MESSAGE = i18nKey(
     'signing.spend_approval.spend_warning_transaction',
 )
@@ -125,7 +129,8 @@ export const useSpendApprovalWarning = (
                   verifiedOrigin,
               )
             : undefined
-        const isTrusted = !!knownSpender && !mismatchedSite
+        const isTrusted =
+            !!knownSpender && !mismatchedSite && !isFlaggedByVerify(source)
         const isNftOnly = allowances.every(allowance => !!allowance.nft)
         const types: SpendRowType[] = ['spend']
         const isUnlimited = allowances.some(

@@ -260,6 +260,36 @@ describe('an unlimited approval sent as a transaction', () => {
             )
         })
 
+        it.each(['mismatch', 'scam'] as const)(
+            'is not trusted, with the danger copy, when Verify rates the request %s',
+            status => {
+                const { result } = renderHook(() =>
+                    useSpendApprovalWarning(
+                        approval({ knownSpender: PERMIT2 }),
+                        {
+                            ...TRANSACTION,
+                            source: {
+                                url: 'https://app.uniswap.org',
+                                verification: {
+                                    status,
+                                    verifiedOrigin: 'https://evil.example',
+                                },
+                            },
+                        },
+                    ),
+                )
+
+                expect(result.current.isTrusted).toBe(false)
+                expect(result.current.rows).toEqual([
+                    expect.objectContaining({
+                        type: 'spend',
+                        message:
+                            'signing.spend_approval.spend_warning_transaction',
+                    }),
+                ])
+            },
+        )
+
         it('is not trusted for an unknown spender asked for from a matching site', () => {
             const { result } = renderHook(() =>
                 useSpendApprovalWarning(approval(), {
