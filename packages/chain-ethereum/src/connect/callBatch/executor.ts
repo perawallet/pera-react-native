@@ -109,10 +109,8 @@ const signInBackground = async (
     return signed
 }
 
-// Batches this JS realm is running, so a sync tick never stacks a second run of
-// one the approval already started. Other realms (extension popup, tab,
-// offscreen document) are kept apart by the conditional row write and the
-// per-batch sign lock.
+// Per JS realm only: a sync tick never stacks a second run of one batch. Other
+// extension contexts are kept apart by the conditional row write and sign lock.
 const runningBatches = new Set<string>()
 
 const SIGN_LOCK_PREFIX = 'pera-call-batch-sign:'
@@ -272,11 +270,9 @@ const run = async (
     // device, and resending or rebuilding it would only fail the same way.
     const attempted = new Set<string>()
 
-    // False only when the row ends up different from the state written. Another
-    // context may have written the identical state already (the plain advance
-    // after a receipt), which still returns true, so a stale run is not always
-    // detected here; signing is guarded by the sign lock and the re-save in
-    // `signNext`, never by this return value alone.
+    // True also when another context already wrote this identical state, so a
+    // stale run is not always caught here: signing is guarded by the sign lock
+    // and the re-save in `signNext`, never by this return value alone.
     const save = async (
         txIds: string[],
         position: number,

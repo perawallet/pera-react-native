@@ -172,10 +172,9 @@ export const createConcurrencyLimit = (limit: number): ConcurrencyLimit => {
 const heldLocks = new Set<string>()
 
 /**
- * Runs `fn` while holding the lock `name`, or resolves `undefined` without
- * running it while another holder has it. Web Locks are shared by every page
- * and worker of one origin; a runtime without them holds the lock within this
- * realm only.
+ * Runs `fn` under the lock `name`, or resolves `undefined` if another holder has
+ * it. Web Locks span every page and worker of an origin; without them the lock
+ * holds within this realm only.
  */
 export const withLockIfFree = async <T>(
     name: string,
