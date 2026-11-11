@@ -17,6 +17,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { createTestQueryClient } from '@test-utils/render'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import {
     resetTestDatabase,
@@ -33,6 +34,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import {
     useNetworkStore,
     useSelectedScope,
@@ -40,6 +42,7 @@ import {
 import { type LegacyNetwork } from '@perawallet/wallet-core-chain-contract'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { addressOf } from './__fixtures__/accounts'
+import { ALGO25_TEST_MNEMONIC_INDICES } from './__fixtures__/onboarding'
 
 const TESTNET_SCOPE = {
     chainId: ALGORAND_CHAIN_ID,
@@ -57,13 +60,27 @@ const ACCOUNT_A: WalletAccount = {
     name: 'Funder',
 }
 
-const ACCOUNT_B: WalletAccount = {
-    id: 'reactivity-b',
-    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
-    chains: {
-        algorand: { address: 'B'.repeat(58), keyPairId: 'reactivity-b-key' },
-    },
-    name: 'Needs backup',
+// Backup state is keyed by an account's seed, so the account needs a real
+// key in the keystore to be promptable at all.
+let accountB: WalletAccount
+
+const mintNeedsBackupAccount = async (): Promise<WalletAccount> => {
+    const { result: kms } = renderHook(() => useKMS())
+    let signKeyId = ''
+    await act(async () => {
+        const key = await kms.current.createAlgo25Key({
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
+        })
+        signKeyId = key.signKeyId
+    })
+    return {
+        id: 'reactivity-b',
+        custody: { kind: 'local', seed: null },
+        chains: {
+            algorand: { address: 'B'.repeat(58), keyPairId: signKeyId },
+        },
+        name: 'Needs backup',
+    }
 }
 
 const seedUnfunded = async (
@@ -95,11 +112,13 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
     beforeEach(async () => {
         await resetTestDatabase()
         await seedAlgoAsset(NETWORK)
-        useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+        resetTestKeystore()
+        accountB = await mintNeedsBackupAccount()
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, accountB])
     })
 
     it('Given an unfunded never-backed-up account, when its ALGO holding is refreshed and account queries invalidated (the post-send path), then the prompt flips to true', async () => {
-        await seedUnfunded(addressOf(ACCOUNT_B))
+        await seedUnfunded(addressOf(accountB))
 
         const queryClient = createTestQueryClient()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -111,7 +130,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         const { result } = renderHook(
             () =>
                 useShouldPromptMnemonicBackup(
-                    ACCOUNT_B,
+                    accountB,
                     useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             { wrapper },
@@ -123,7 +142,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         // persist fresh chain state, then invalidate the account's queries.
         await act(async () => {
             await refreshAccountHoldings({
-                accountAddress: addressOf(ACCOUNT_B),
+                accountAddress: addressOf(accountB),
                 scope: {
                     chainId: ALGORAND_CHAIN_ID,
                     networkId: NETWORK,
@@ -136,7 +155,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
                 ],
             })
             invalidateAccountQueriesForAddresses(queryClient, [
-                addressOf(ACCOUNT_B),
+                addressOf(accountB),
             ])
         })
 
@@ -144,10 +163,10 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
     })
 
     it('Given an account funded only on testnet, when mainnet is the selected network, then the prompt is still true', async () => {
-        await seedUnfunded(addressOf(ACCOUNT_B))
-        await seedUnfunded(addressOf(ACCOUNT_B), 'testnet')
+        await seedUnfunded(addressOf(accountB))
+        await seedUnfunded(addressOf(accountB), 'testnet')
         await refreshAccountHoldings({
-            accountAddress: addressOf(ACCOUNT_B),
+            accountAddress: addressOf(accountB),
             scope: TESTNET_SCOPE,
             holdings: [
                 {
@@ -168,7 +187,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         const { result } = renderHook(
             () =>
                 useShouldPromptMnemonicBackup(
-                    ACCOUNT_B,
+                    accountB,
                     useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             { wrapper },
@@ -178,7 +197,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
     })
 
     it('Given an unfunded never-backed-up account, when another account is rekeyed to it (store update from the post-confirmation account fetch), then the prompt flips to true', async () => {
-        await seedUnfunded(addressOf(ACCOUNT_B))
+        await seedUnfunded(addressOf(accountB))
 
         const queryClient = createTestQueryClient()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -190,7 +209,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
         const { result } = renderHook(
             () =>
                 useShouldPromptMnemonicBackup(
-                    ACCOUNT_B,
+                    accountB,
                     useSelectedScope(ALGORAND_CHAIN_ID),
                 ),
             { wrapper },
@@ -200,7 +219,7 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
 
         // What fetchAndPersistAccount does when it sees the new auth-addr.
         act(() => {
-            seedAuthority(addressOf(ACCOUNT_A), addressOf(ACCOUNT_B), {
+            seedAuthority(addressOf(ACCOUNT_A), addressOf(accountB), {
                 chainId: ALGORAND_CHAIN_ID,
                 networkId: NETWORK,
             } as const)
