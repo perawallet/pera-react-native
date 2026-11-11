@@ -9,18 +9,18 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 import {
-    chainAccountOf,
+    useFindAccountByAddress,
     useSignerFor,
     usesNonPrimaryScheme,
 } from '@perawallet/wallet-core-accounts'
+import { isPostQuantumScheme } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     encodeAlgorandAddress,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useCapability } from '@hooks/useCapability'
 
@@ -28,33 +28,19 @@ type UseQuantumFeeExplainerResult = {
     isQuantumFee: boolean
 }
 
-const authorizerAddressOf = (
-    transaction: Optional<AlgorandTransactionView>,
-    resolved: ReturnType<typeof useSigningPipeline>['resolved'],
-): Optional<string> => {
-    if (transaction) {
-        return transaction.authAddr?.publicKey
-            ? encodeAlgorandAddress(transaction.authAddr.publicKey)
-            : transaction.sender
-    }
-    if (!resolved) return undefined
-    return chainAccountOf(resolved.signerAccount, ALGORAND_CHAIN_ID)?.address
-}
-
 /**
  * Decides whether the quantum-fee explainer affordance should appear next to a
  * rendered transaction fee. The fee is higher for Quantum accounts, so the
- * explainer only shows when the effective signer is a Quantum account.
+ * explainer only shows when the key that signs is a Quantum key.
  *
- * Resolve the authorizer exactly as the fee is priced
- * (`assignMinimumFeesToGroup` → `getSignerFor`): ARC-0001 authAddr override,
- * else the sender, then one rekey hop. Reading the authorizer's own type makes
- * the copy contradict the fee once an account is rekeyed across the quantum
- * boundary — a rekeyed-away Quantum account pays 0.001.
+ * Resolved as the fee is priced (`signingAccountFor`): a named `authAddr`
+ * signs with its own key, never its rekey; otherwise the sender's signer, one
+ * rekey hop away. Reading the sender's own type instead makes the copy
+ * contradict the fee once an account is rekeyed across the quantum boundary.
  *
  * - Per-transaction (SingleTransactionScreen): resolves from the transaction.
- * - Group total (TransactionListFooter, no transaction): uses the pipeline's
- *   resolved primary signer address.
+ * - Group total (TransactionListFooter, no transaction): reads the credentials
+ *   the signing pipeline resolved for its groups.
  */
 export const useQuantumFeeExplainer = (
     transaction?: AlgorandTransactionView,
@@ -63,15 +49,31 @@ export const useQuantumFeeExplainer = (
     // after remote config switches `quantumAccounts` off.
     const enabled = useCapability({ platform: 'quantum' })
     const { resolved } = useSigningPipeline()
+    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
-    const authorizerAddress = authorizerAddressOf(transaction, resolved)
+    const namedSigner = transaction?.authAddr?.publicKey
+        ? encodeAlgorandAddress(transaction.authAddr.publicKey)
+        : undefined
+    const namedAccount = useFindAccountByAddress(namedSigner ?? '', scope)
+    const senderSigner = useSignerFor(
+        namedSigner === undefined ? transaction?.sender : undefined,
+        ALGORAND_CHAIN_ID,
+    )
 
-    const signer = useSignerFor(authorizerAddress, ALGORAND_CHAIN_ID)
+    if (!enabled) return { isQuantumFee: false }
 
-    const isQuantumFee =
-        enabled &&
-        signer !== null &&
-        usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID)
+    if (!transaction) {
+        const credentials = [...(resolved?.groupSigners.values() ?? [])]
+        return {
+            isQuantumFee: credentials.some(credential =>
+                isPostQuantumScheme(credential.scheme),
+            ),
+        }
+    }
 
-    return { isQuantumFee }
+    const signer = namedSigner === undefined ? senderSigner : namedAccount
+    return {
+        isQuantumFee:
+            !!signer && usesNonPrimaryScheme(signer, ALGORAND_CHAIN_ID),
+    }
 }

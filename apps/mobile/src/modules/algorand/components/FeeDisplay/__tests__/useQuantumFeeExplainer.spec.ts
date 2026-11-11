@@ -173,10 +173,18 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(false)
     })
 
-    it('returns true for a group total whose pipeline signer is quantum', () => {
-        useAccountsStore.getState().setAccounts([quantumAccount()])
+    // The pipeline's own credentials: a named signer's group is keyed to its
+    // own key, so a rekey to a quantum account doesn't make its fee quantum.
+    it('returns true for a group total signed by a quantum key', () => {
         ;(useSigningPipeline as Mock).mockReturnValue({
-            resolved: { signerAccount: quantumAccount() },
+            resolved: {
+                groupSigners: new Map([
+                    [
+                        QUANTUM_ADDRESS,
+                        { custody: 'local', scheme: 'falcon-1024' },
+                    ],
+                ]),
+            },
         })
 
         const { result } = renderHook(() => useQuantumFeeExplainer())
@@ -184,10 +192,13 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(true)
     })
 
-    it('returns false for a group total whose pipeline signer is standard', () => {
-        useAccountsStore.getState().setAccounts([standardAccount()])
+    it('returns false for a group total signed only by ed25519 keys', () => {
         ;(useSigningPipeline as Mock).mockReturnValue({
-            resolved: { signerAccount: standardAccount() },
+            resolved: {
+                groupSigners: new Map([
+                    [STANDARD_ADDRESS, { custody: 'local', scheme: 'ed25519' }],
+                ]),
+            },
         })
 
         const { result } = renderHook(() => useQuantumFeeExplainer())
@@ -195,15 +206,42 @@ describe('useQuantumFeeExplainer', () => {
         expect(result.current.isQuantumFee).toBe(false)
     })
 
-    it('returns false for a group total whose quantum signer is rekeyed to a standard account', () => {
+    it('returns false for a group total whose named signer is rekeyed to a quantum account', () => {
         useAccountsStore
             .getState()
-            .setAccounts([quantumAccount(STANDARD_ADDRESS), standardAccount()])
+            .setAccounts([standardAccount(QUANTUM_ADDRESS), quantumAccount()])
         ;(useSigningPipeline as Mock).mockReturnValue({
-            resolved: { signerAccount: quantumAccount(STANDARD_ADDRESS) },
+            resolved: {
+                signerAccount: standardAccount(QUANTUM_ADDRESS),
+                groupSigners: new Map([
+                    [
+                        `${STANDARD_ADDRESS}#signer`,
+                        { custody: 'local', scheme: 'ed25519' },
+                    ],
+                ]),
+            },
         })
 
         const { result } = renderHook(() => useQuantumFeeExplainer())
+
+        expect(result.current.isQuantumFee).toBe(false)
+    })
+
+    // ARC-0001: a named authAddr signs with its own key, never its rekey.
+    it('returns false when a named authAddr is rekeyed to a quantum account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([standardAccount(QUANTUM_ADDRESS), quantumAccount()])
+        ;(encodeAlgorandAddress as Mock).mockReturnValue(STANDARD_ADDRESS)
+
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(
+                buildTransaction({
+                    sender: FOREIGN_ADDRESS,
+                    authAddr: { publicKey: new Uint8Array([1]) },
+                } as Partial<PeraDisplayableTransaction>),
+            ),
+        )
 
         expect(result.current.isQuantumFee).toBe(false)
     })
