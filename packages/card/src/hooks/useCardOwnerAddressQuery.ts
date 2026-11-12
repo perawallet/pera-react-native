@@ -46,7 +46,13 @@ export const useCardOwnerAddressQuery = (
             return cardAdapterFor(scope).findCardOwner(scope, wallets)
         },
         staleTime: config.reactQueryShortLivedStaleTime,
+        // The key is per scope, not per user, so an answer cached before a
+        // logout could name someone else's account.
+        refetchOnMount: 'always',
         enabled: isAuthenticated && (options?.enabled ?? true),
     })
-    return { ownerAddress: query.data ?? null, isLoading: query.isLoading }
+    return {
+        ownerAddress: query.isFetchedAfterMount ? (query.data ?? null) : null,
+        isLoading: query.isLoading,
+    }
 }

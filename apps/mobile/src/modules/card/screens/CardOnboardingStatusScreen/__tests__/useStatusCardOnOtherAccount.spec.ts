@@ -20,7 +20,7 @@ const ISSUED_CARD = { id: 'card-1', status: 'ACTIVE', panLast4: '4680' }
 let mockIsAuthenticated = true
 let mockEscrowCardAddress: string | null = null
 let mockCard: typeof ISSUED_CARD | null | undefined = ISSUED_CARD
-let mockIsStatusError = false
+let mockIsFetchedAfterMount = true
 let mockIsFocused = true
 const mockCardStatusQuery = vi.fn()
 const mockReplace = vi.fn()
@@ -37,7 +37,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         ) => selector({ escrowCardAddress: mockEscrowCardAddress }),
         useCardStatusQuery: (...args: unknown[]) => {
             mockCardStatusQuery(...args)
-            return { data: mockCard, isError: mockIsStatusError }
+            return {
+                data: mockCard,
+                isFetchedAfterMount: mockIsFetchedAfterMount,
+            }
         },
     }
 })
@@ -57,7 +60,7 @@ describe('useStatusCardOnOtherAccount', () => {
         mockIsAuthenticated = true
         mockEscrowCardAddress = null
         mockCard = ISSUED_CARD
-        mockIsStatusError = false
+        mockIsFetchedAfterMount = true
         mockIsFocused = true
     })
 
@@ -96,6 +99,7 @@ describe('useStatusCardOnOtherAccount', () => {
 
     it('holds creation while Baanx has not answered', () => {
         mockCard = undefined
+        mockIsFetchedAfterMount = false
 
         const { result } = renderHook(() => useStatusCardOnOtherAccount(SCOPE))
 
@@ -103,9 +107,22 @@ describe('useStatusCardOnOtherAccount', () => {
         expect(mockReplace).not.toHaveBeenCalled()
     })
 
+    it('ignores a card cached before this mount, which may be a previous user', () => {
+        mockIsFetchedAfterMount = false
+
+        const { result } = renderHook(() => useStatusCardOnOtherAccount(SCOPE))
+
+        expect(result.current.isCardOnOtherAccount).toBe(false)
+        expect(result.current.isCardLookupPending).toBe(true)
+        expect(mockReplace).not.toHaveBeenCalled()
+        expect(mockCardStatusQuery).toHaveBeenCalledWith(SCOPE, {
+            enabled: true,
+            refetchOnMount: 'always',
+        })
+    })
+
     it('lets creation proceed when the card status cannot be read', () => {
         mockCard = undefined
-        mockIsStatusError = true
 
         const { result } = renderHook(() => useStatusCardOnOtherAccount(SCOPE))
 
@@ -122,6 +139,7 @@ describe('useStatusCardOnOtherAccount', () => {
         expect(result.current.isCardLookupPending).toBe(false)
         expect(mockCardStatusQuery).toHaveBeenCalledWith(SCOPE, {
             enabled: false,
+            refetchOnMount: 'always',
         })
     })
 
@@ -133,6 +151,7 @@ describe('useStatusCardOnOtherAccount', () => {
         expect(result.current.isCardOnOtherAccount).toBe(false)
         expect(mockCardStatusQuery).toHaveBeenCalledWith(SCOPE, {
             enabled: false,
+            refetchOnMount: 'always',
         })
     })
 })

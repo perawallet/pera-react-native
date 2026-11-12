@@ -30,6 +30,7 @@ vi.mock('../../api/delegation', async () => ({
 }))
 
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
+import { cardQueryKeys } from '../querykeys'
 import { useCardOwnerAddressQuery } from '../useCardOwnerAddressQuery'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'testnet' }
@@ -63,6 +64,26 @@ describe('useCardOwnerAddressQuery', () => {
 
         await waitFor(() => expect(result.current.ownerAddress).toBe('OWNER'))
         expect(adapter.findCardOwner).toHaveBeenCalledWith(SCOPE, WALLETS)
+    })
+
+    it('never shows an owner cached before it mounted, which may be a previous user', () => {
+        mocks.fetchExternalWallets.mockReturnValue(new Promise(() => {}))
+        registerFakeCardAdapter()
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        client.setQueryData(cardQueryKeys.cardOwner(SCOPE), 'PREVIOUS_OWNER')
+
+        const { result } = renderHook(() => useCardOwnerAddressQuery(SCOPE), {
+            wrapper: ({ children }: { children: React.ReactNode }) => (
+                <QueryClientProvider client={client}>
+                    {children}
+                </QueryClientProvider>
+            ),
+        })
+
+        expect(result.current.ownerAddress).toBeNull()
+        expect(mocks.fetchExternalWallets).toHaveBeenCalled()
     })
 
     it('stays empty when no card on this chain is on record', async () => {

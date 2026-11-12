@@ -40,14 +40,17 @@ export const useStatusCardOnOtherAccount = (
         state => state.escrowCardAddress !== null,
     )
     const shouldLookForCard = isAuthenticated && !hasEscrowCard
-    const { data: card, isError } = useCardStatusQuery(scope, {
+    // The status key is per scope, not per user, and logout only invalidates
+    // it, so a card cached before this mount may be a previous user's.
+    const { data: card, isFetchedAfterMount } = useCardStatusQuery(scope, {
         enabled: shouldLookForCard,
+        refetchOnMount: 'always',
     })
-    const isCardOnOtherAccount = shouldLookForCard && !!card
-    // An unreachable status endpoint fails open: blocking every first-card
-    // user on a Baanx outage is worse, and creation needs Baanx anyway.
-    const isCardLookupPending =
-        shouldLookForCard && card === undefined && !isError
+    const isCardOnOtherAccount =
+        shouldLookForCard && isFetchedAfterMount && !!card
+    // A failed read also counts as fetched, so a Baanx outage fails open:
+    // blocking every first-card user is worse, and creation needs Baanx anyway.
+    const isCardLookupPending = shouldLookForCard && !isFetchedAfterMount
 
     const isFocused = useIsFocused()
     const stackNavigation =
