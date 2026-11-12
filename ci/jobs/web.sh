@@ -28,6 +28,8 @@ export BITRISE_BUILD_NUMBER="$BUILD_NUMBER"
 export APP_VERSION="${BITRISE_GIT_TAG#v}"
 
 APP_ENV="$ENVIRONMENT" pnpm run generate:config
+# The mobile builds run this inside build:packages; this build doesn't use it.
+pnpm check:autodraw-hash
 
 # Unlike the mobile build, the extension also depends on workspace packages
 # under extensions/*. --filter=...browser walks the real dependency graph, so
