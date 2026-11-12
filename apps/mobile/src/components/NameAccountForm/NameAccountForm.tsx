@@ -13,6 +13,7 @@
 import type { ReactNode } from 'react'
 import {
     PWButton,
+    PWIcon,
     PWInput,
     PWLoadingOverlay,
     PWScreen,
@@ -33,7 +34,14 @@ export type NameAccountFormProps = {
     isLoading: boolean
     isDisabled?: boolean
     errorMessage?: string
+    /** Shown above the input. */
+    label?: string
+    /** Shown below the input, beside an info icon. */
+    hint?: string
+    /** Shown above the input. */
     children?: ReactNode
+    /** Shown below the input. */
+    belowInput?: ReactNode
 }
 
 export const NameAccountForm = ({
@@ -47,7 +55,10 @@ export const NameAccountForm = ({
     isLoading,
     isDisabled,
     errorMessage,
+    label,
+    hint,
     children,
+    belowInput,
 }: NameAccountFormProps) => {
     const styles = useStyles()
 
@@ -77,6 +88,10 @@ export const NameAccountForm = ({
 
                 {children}
 
+                {label ? (
+                    <PWText style={styles.secondaryText}>{label}</PWText>
+                ) : null}
+
                 <PWInput
                     containerStyle={styles.input}
                     inputContainerStyle={styles.inputContainer}
@@ -100,6 +115,24 @@ export const NameAccountForm = ({
                         ) : undefined
                     }
                 />
+
+                {hint ? (
+                    <PWView style={styles.hint}>
+                        <PWIcon
+                            name='info'
+                            size='sm'
+                            variant='secondary'
+                        />
+                        <PWText
+                            variant='caption'
+                            style={styles.secondaryText}
+                        >
+                            {hint}
+                        </PWText>
+                    </PWView>
+                ) : null}
+
+                {belowInput}
             </PWScreen>
 
             <PWLoadingOverlay

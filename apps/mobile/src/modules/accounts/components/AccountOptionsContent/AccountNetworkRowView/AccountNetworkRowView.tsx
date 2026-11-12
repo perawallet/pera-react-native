@@ -146,7 +146,7 @@ export const AccountNetworkRowView = ({
                         variant='helper'
                         icon='plus'
                         paddingStyle='dense'
-                        title={t('account_options.add_network')}
+                        title={t('account_options.enable_network')}
                         isLoading={networks.addingChainId === chainId}
                         isDisabled={
                             networks.addingChainId !== undefined &&

@@ -67,7 +67,7 @@ export const RequestedNetworkListItem = ({
                 <PWIcon
                     name='check'
                     accessibilityLabel={t(
-                        'walletconnect.request.network_added',
+                        'walletconnect.request.network_enabled',
                     )}
                     testID={`wc_requested_network_added_${chainId}`}
                 />
@@ -75,7 +75,7 @@ export const RequestedNetworkListItem = ({
                 canAdd && (
                     <PWButton
                         variant='link'
-                        title={t('account_options.add_network')}
+                        title={t('account_options.enable_network')}
                         onPress={handleAdd}
                         isLoading={isAdding}
                         testID={`wc_add_network_${chainId}`}

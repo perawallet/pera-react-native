@@ -20,7 +20,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, type RequestHandler } from 'msw'
 
 import {
@@ -189,6 +195,88 @@ const theOnlyAccount = (): WalletAccount => {
     return accounts[0]!
 }
 
+// A sheet header's close icon is an svg whose onPress jsdom never dispatches.
+const pressIcon = (testID: string): void => {
+    const icon = screen.getByTestId(testID) as unknown as Record<
+        string,
+        { onPress: () => void }
+    >
+    const propsKey = Object.keys(icon).find(key =>
+        key.startsWith('__reactProps'),
+    )!
+    act(() => icon[propsKey]!.onPress())
+}
+
+// Imports the recovery phrase active on Ethereum and Base, up to naming it,
+// once discovery has added Base.
+const importRecoveryPhraseUntilNaming = async (): Promise<void> => {
+    server.use(
+        ...handlersFor(['ethereum', 'base'], await firstHdEthereumAddress()),
+    )
+    renderWithNavigation(OnboardingScreen, 'Onboarding', {
+        additionalScreens: [
+            importAccountOptionsScreen,
+            { name: 'ImportInfo', component: ImportInfoScreen },
+            { name: 'ImportAccount', component: ImportAccountScreen },
+            { name: 'SearchAccounts', component: SearchAccountsScreen },
+            {
+                name: 'ImportSelectAddresses',
+                component: ImportSelectAddressesScreen,
+            },
+            {
+                name: 'ImportRekeyedAddresses',
+                component: ImportRekeyedAddressesScreen,
+            },
+            nameAccountScreen,
+        ],
+    })
+
+    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
+    fireEvent.click(
+        await waitFor(() =>
+            screen.getByTestId('import_account_options_recover_wallet_button'),
+        ),
+    )
+    fireEvent.click(
+        await waitFor(() =>
+            screen.getByTestId('import_options_hd_wallet_button'),
+        ),
+    )
+    fireEvent.click(
+        await waitFor(() => screen.getByTestId('import_info_recover_button')),
+    )
+    await waitFor(() => screen.getByTestId('import_account_word_input_0'))
+    HD_TEST_MNEMONIC_24_WORDS.forEach((word, index) => {
+        fireEvent.change(
+            screen.getByTestId(`import_account_word_input_${index}`),
+            { target: { value: word } },
+        )
+    })
+    await waitFor(() =>
+        expect(
+            isElementDisabled(
+                screen.getByTestId('import_account_import_button'),
+            ),
+        ).toBe(false),
+    )
+    fireEvent.click(screen.getByTestId('import_account_import_button'))
+    fireEvent.click(
+        await waitFor(
+            () => screen.getByTestId('import_select_addresses_continue_button'),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        ),
+    )
+
+    await waitFor(
+        () =>
+            expect(
+                chainAccountOf(useAccountsStore.getState().accounts[0]!, 'base')
+                    ?.enabledBy,
+            ).toBe('discovery'),
+        { timeout: SLOW_WAIT_TIMEOUT_MS },
+    )
+}
+
 const finishNaming = async (): Promise<void> => {
     await waitFor(() => screen.getByTestId('name_account_finish_button'), {
         timeout: SLOW_WAIT_TIMEOUT_MS,
@@ -280,84 +368,41 @@ describe('Flow: adding an account lands it on its default chains', () => {
         expect(chainAccountOf(account, 'ethereum')?.enabledBy).toBe('created')
     })
 
-    it('Given a recovery phrase active on Ethereum and Base, when it is imported, then one account holds Algorand and Ethereum, and Base joins through discovery', async () => {
-        server.use(
-            ...handlersFor(
-                ['ethereum', 'base'],
-                await firstHdEthereumAddress(),
-            ),
-        )
+    it('Given the user changes the networks while naming, when they create a wallet, then the account holds just the chosen networks', async () => {
         renderWithNavigation(OnboardingScreen, 'Onboarding', {
-            additionalScreens: [
-                importAccountOptionsScreen,
-                { name: 'ImportInfo', component: ImportInfoScreen },
-                { name: 'ImportAccount', component: ImportAccountScreen },
-                { name: 'SearchAccounts', component: SearchAccountsScreen },
-                {
-                    name: 'ImportSelectAddresses',
-                    component: ImportSelectAddressesScreen,
-                },
-                {
-                    name: 'ImportRekeyedAddresses',
-                    component: ImportRekeyedAddressesScreen,
-                },
-                nameAccountScreen,
-            ],
+            additionalScreens: [nameAccountScreen],
         })
 
-        fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByTestId(
-                    'import_account_options_recover_wallet_button',
-                ),
-            ),
-        )
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByTestId('import_options_hd_wallet_button'),
-            ),
-        )
-        fireEvent.click(
-            await waitFor(() =>
-                screen.getByTestId('import_info_recover_button'),
-            ),
-        )
-        await waitFor(() => screen.getByTestId('import_account_word_input_0'))
-        HD_TEST_MNEMONIC_24_WORDS.forEach((word, index) => {
-            fireEvent.change(
-                screen.getByTestId(`import_account_word_input_${index}`),
-                { target: { value: word } },
-            )
-        })
-        await waitFor(() =>
-            expect(
-                isElementDisabled(
-                    screen.getByTestId('import_account_import_button'),
-                ),
-            ).toBe(false),
-        )
-        fireEvent.click(screen.getByTestId('import_account_import_button'))
-        fireEvent.click(
-            await waitFor(
-                () =>
-                    screen.getByTestId(
-                        'import_select_addresses_continue_button',
-                    ),
-                { timeout: SLOW_WAIT_TIMEOUT_MS },
-            ),
-        )
-
+        fireEvent.click(screen.getByTestId('onboarding_create_wallet_button'))
         await waitFor(
-            () =>
-                expect(
-                    chainAccountOf(
-                        useAccountsStore.getState().accounts[0]!,
-                        'base',
-                    )?.enabledBy,
-                ).toBe('discovery'),
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
+            () => screen.getByTestId('name_account_network_ethereum'),
+            {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            },
         )
+        fireEvent.click(screen.getByTestId('name_account_edit_networks_button'))
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByTestId('choose_networks_toggle_ethereum'),
+            ),
+        )
+        fireEvent.click(screen.getByTestId('choose_networks_toggle_base'))
+        fireEvent.click(screen.getByTestId('choose_networks_toggle_algorand'))
+        // The pills follow each toggle while the sheet is still open.
+        expect(screen.getByTestId('name_account_network_base')).toBeTruthy()
+        expect(screen.queryByTestId('name_account_network_ethereum')).toBeNull()
+        expect(screen.queryByTestId('name_account_network_algorand')).toBeNull()
+        pressIcon('choose_networks_header-close')
+
+        await finishNaming()
+
+        const account = theOnlyAccount()
+        expect(Object.keys(account.chains)).toEqual(['base'])
+        expect(chainAccountOf(account, 'base')?.enabledBy).toBe('created')
+    })
+
+    it('Given a recovery phrase active on Ethereum and Base, when it is imported, then one account holds Algorand and Ethereum, Ethereum is marked active, and Base joins through discovery', async () => {
+        await importRecoveryPhraseUntilNaming()
         await finishNaming()
         await waitFor(() =>
             expect(useOnboardingStore.getState().isOnboarding).toBe(false),
@@ -367,10 +412,43 @@ describe('Flow: adding an account lands it on its default chains', () => {
         expect(chainAccountOf(account, 'algorand')?.address).toBe(
             HD_TEST_ADDRESS,
         )
-        expect(chainAccountOf(account, 'ethereum')?.enabledBy).toBe('created')
+        expect(chainAccountOf(account, 'ethereum')?.enabledBy).toBe('discovery')
         expect(chainAccountOf(account, 'base')?.enabledBy).toBe('discovery')
         expect(Object.keys(account.chains).sort()).toEqual(
             ['algorand', 'base', 'ethereum'].sort(),
+        )
+    })
+
+    it('Given a recovery phrase active on Ethereum and Base, when the user turns off Algorand while naming, then the account keeps the active chains and drops Algorand', async () => {
+        await importRecoveryPhraseUntilNaming()
+
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByTestId('name_account_edit_networks_button'),
+            ),
+        )
+        fireEvent.click(
+            await waitFor(() =>
+                screen.getByTestId('choose_networks_toggle_algorand'),
+            ),
+        )
+        expect(
+            screen.queryByTestId('choose_networks_toggle_ethereum'),
+        ).toBeNull()
+        expect(screen.queryByTestId('choose_networks_toggle_base')).toBeNull()
+        pressIcon('choose_networks_header-close')
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId('name_account_network_algorand'),
+            ).toBeNull(),
+        )
+        await finishNaming()
+
+        await waitFor(() =>
+            expect(Object.keys(theOnlyAccount().chains).sort()).toEqual([
+                'base',
+                'ethereum',
+            ]),
         )
     })
 

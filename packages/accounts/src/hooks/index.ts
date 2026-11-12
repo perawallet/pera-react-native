@@ -61,6 +61,7 @@ export * from './useLedgerDelegatedScan'
 export * from './useIsDelegationAvailable'
 export * from './useAccountCapabilityScope'
 export * from './useAccountChainOptions'
+export * from './useDisableChains'
 export * from './useEnableChain'
 export * from './useHDImportSession'
 export {

@@ -542,9 +542,9 @@
         "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
         "view_private_key": "Özel anahtarı görüntüle",
         "networks_title": "Ağlar",
-        "add_network": "Ekle",
-        "add_network_error": "Bu ağ eklenemedi",
-        "add_network_success": "{{network}} ağı eklendi",
+        "enable_network": "Etkinleştir",
+        "enable_network_error": "Bu ağ etkinleştirilemedi",
+        "enable_network_success": "{{network}} ağı etkinleştirildi",
         "see_all_networks": "Tüm ağları gör",
         "view_passphrase": "Passphrase’i görüntüle",
         "network_options": "Diğer seçenekler"
@@ -2437,7 +2437,13 @@
         "name_account": {
             "title": "Hesabına ad ver",
             "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir ad ver. Bu adlar yalnızca cihazında saklanır ve yalnızca senin görebileceğin bilgilerdir.",
-            "finish_button": "Hesap oluşturmayı tamamla"
+            "finish_button": "Hesap oluşturmayı tamamla",
+            "setup_title": "Hesabını kur",
+            "setup_description": "Bu hesapla kullanmak istediğin adı ve ağları seç.",
+            "name_label": "Ad",
+            "name_hint": "Bu adı yalnızca sen görebilirsin",
+            "networks_label": "Ağlar",
+            "edit_networks": "Ağları düzenle"
         },
         "import_select_addresses": {
             "title": "Eklenecek adresleri seç",
@@ -2954,7 +2960,9 @@
     },
     "chain_selection": {
         "title": "Ağ seç",
-        "add_action": "Ekle"
+        "enable_action": "Etkinleştir",
+        "disable_action": "Devre dışı bırak",
+        "required": "Gerekli"
     },
     "receive_funds": {
         "account_selection": {
@@ -3938,7 +3946,7 @@
             "networks_heading": "Ağlar",
             "networks_more": "+{{count}}",
             "networks_optional_note": "İsteğe bağlı. {{name}} bu ağlarda da çalışır.",
-            "network_added": "Eklendi",
+            "network_enabled": "Etkin",
             "origin_verified": "WalletConnect tarafından doğrulandı",
             "accounts_title": "HESAPLARI SEÇ",
             "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",

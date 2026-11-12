@@ -56,7 +56,7 @@ export const ChainSelectionList = ({
                                 variant='helper'
                                 icon='plus'
                                 paddingStyle='dense'
-                                title={t('chain_selection.add_action')}
+                                title={t('chain_selection.enable_action')}
                                 isLoading={enablingChainId === chainId}
                                 isDisabled={
                                     enablingChainId !== undefined &&

@@ -542,9 +542,9 @@
         "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela",
         "view_private_key": "Ver chave privada",
         "networks_title": "Redes",
-        "add_network": "Adicionar",
-        "add_network_error": "Não foi possível adicionar esta rede",
-        "add_network_success": "Rede {{network}} adicionada",
+        "enable_network": "Ativar",
+        "enable_network_error": "Não foi possível ativar esta rede",
+        "enable_network_success": "Rede {{network}} ativada",
         "see_all_networks": "Ver todas as redes",
         "view_passphrase": "Ver passphrase",
         "network_options": "Mais opções"
@@ -2441,7 +2441,13 @@
         "name_account": {
             "title": "Dê um nome à sua conta",
             "description": "Dê um nome à sua conta para identificá-la facilmente ao usar a Pera Wallet. Esses nomes são armazenados localmente e só podem ser vistos por você.",
-            "finish_button": "Concluir criação da conta"
+            "finish_button": "Concluir criação da conta",
+            "setup_title": "Configure sua conta",
+            "setup_description": "Escolha um nome e as redes que você quer usar com esta conta.",
+            "name_label": "Nome",
+            "name_hint": "Só você pode ver este nome",
+            "networks_label": "Redes",
+            "edit_networks": "Editar redes"
         },
         "import_select_addresses": {
             "title": "Selecione os endereços a adicionar",
@@ -2970,7 +2976,9 @@
     },
     "chain_selection": {
         "title": "Escolher rede",
-        "add_action": "Adicionar"
+        "enable_action": "Ativar",
+        "disable_action": "Desativar",
+        "required": "Obrigatória"
     },
     "receive_funds": {
         "account_selection": {
@@ -3960,7 +3968,7 @@
             "networks_heading": "Redes",
             "networks_more": "+{{count}}",
             "networks_optional_note": "Opcional. {{name}} também funciona nestas redes.",
-            "network_added": "Adicionada",
+            "network_enabled": "Ativada",
             "origin_verified": "Verificado pelo WalletConnect",
             "accounts_title": "SELECIONAR CONTAS",
             "no_accounts": "Nenhuma das suas contas pode se conectar nesta rede.",

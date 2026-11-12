@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+    accountChainOptions,
     accountNameKindOf,
     clearPendingAccountRollback,
     consumePendingAccountRollback,
@@ -23,10 +24,14 @@ import {
     isHardwareWalletAccount,
     isWatchAccount,
     getAllAccounts,
+    hdIndexOf,
     useAllAccounts,
     useCreateAccount,
+    useDisableChains,
+    useEnableChain,
     useSelectedAccountId,
     useUpdateAccount,
+    withSelectedChains,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
@@ -43,9 +48,15 @@ import {
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { displayChainOption } from '@utils/chainOptionDisplay'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    ChooseNetworksContent,
+    type ChooseNetworkRow,
+} from './ChooseNetworksContent'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -75,11 +86,20 @@ const storedRecordOf = (
         : findAccountByAddressOn(accounts, chainId, address)
 }
 
+// Chains discovery found activity on: an imported account keeps these.
+const activeChainsOf = (account: WalletAccount): ChainId[] =>
+    (Object.keys(account.chains) as ChainId[]).filter(
+        id => chainAccountOf(account, id)?.enabledBy === 'discovery',
+    )
+
 export const useNameAccountScreen = () => {
     const route = useRoute<NameAccountScreenRouteProp>()
 
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
+    const enableChain = useEnableChain()
+    const disableChains = useDisableChains()
+    const { request } = useBottomSheet()
     const home = useHomeChainScope()
     const { setSelectedAccountId } = useSelectedAccountId()
     const { t } = useLanguage()
@@ -124,6 +144,32 @@ export const useNameAccountScreen = () => {
     const baseTitle = named && !isUnnamed(named) ? named.name : suggestedName
     const accountTitle = isTakenByAnother(baseTitle) ? suggestedName : baseTitle
 
+    // Offered only for an HD account, the one kind that spans chain families.
+    const networkRows = useMemo(
+        (): ChooseNetworkRow[] =>
+            named && hdIndexOf(named)
+                ? accountChainOptions(named, () => true, 'all').map(option => {
+                      const { chainId, displayName, address } =
+                          displayChainOption(option)
+                      return { chainId, displayName, address }
+                  })
+                : [],
+        [named],
+    )
+    const isChoosingNetworks = networkRows.length > 1
+    const requiredChainIds = useMemo(
+        () => (storedAccount ? activeChainsOf(storedAccount) : []),
+        [storedAccount],
+    )
+    const [chosenChainIds, setChosenChainIds] = useState<Optional<ChainId[]>>()
+    const selectedChainIds = useMemo(() => {
+        const chosen =
+            chosenChainIds ?? (Object.keys(named?.chains ?? {}) as ChainId[])
+        return networkRows
+            .map(row => row.chainId)
+            .filter(id => requiredChainIds.includes(id) || chosen.includes(id))
+    }, [chosenChainIds, named, networkRows, requiredChainIds])
+
     const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
 
@@ -135,6 +181,22 @@ export const useNameAccountScreen = () => {
 
     const handleNameChange = (value: string) => {
         setWalletDisplay(value)
+    }
+
+    const handleEditNetworks = () => {
+        void request({
+            // Snapshots: the screen merges each change with the chains a
+            // stored account gains from discovery while the sheet is open.
+            contents: (
+                <ChooseNetworksContent
+                    rows={networkRows}
+                    selectedChainIds={selectedChainIds}
+                    requiredChainIds={requiredChainIds}
+                    onChange={setChosenChainIds}
+                />
+            ),
+            options: { size: 'modal' },
+        })
     }
 
     useEffect(() => {
@@ -159,18 +221,40 @@ export const useNameAccountScreen = () => {
             // Wait for the next frame to ensure UI updates (overlay appears) before heavy work
             await new Promise(resolve => requestAnimationFrame(resolve))
 
-            const targetAccount: WalletAccount =
+            const draft: WalletAccount =
                 account ||
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
-            const stored = storedRecordOf(
-                getAllAccounts(),
-                targetAccount,
-                chainId,
-            )
+            const stored = storedRecordOf(getAllAccounts(), draft, chainId)
+            const targetAccount =
+                isChoosingNetworks && !stored
+                    ? await withSelectedChains(draft, selectedChainIds)
+                    : draft
 
             if (stored) {
                 updateAccount({ ...stored, name: trimmedName })
+                if (isChoosingNetworks) {
+                    // Enabled first, so dropping the rest never empties the account.
+                    for (const id of selectedChainIds) {
+                        if (!chainAccountOf(stored, id)) {
+                            await enableChain(stored.id, id, 'user')
+                        }
+                    }
+                    // Read again: discovery may have found activity since.
+                    const current =
+                        getAllAccounts().find(a => a.id === stored.id) ?? stored
+                    const active = activeChainsOf(current)
+                    const dropped = (
+                        Object.keys(current.chains) as ChainId[]
+                    ).filter(
+                        id =>
+                            !selectedChainIds.includes(id) &&
+                            !active.includes(id),
+                    )
+                    if (dropped.length > 0) {
+                        await disableChains(stored.id, dropped)
+                    }
+                }
             } else {
                 await saveAccount({ ...targetAccount, name: trimmedName })
             }
@@ -210,5 +294,8 @@ export const useNameAccountScreen = () => {
         chainId,
         nameError,
         isFinishDisabled,
+        isChoosingNetworks,
+        selectedChainIds,
+        handleEditNetworks,
     }
 }
