@@ -30,6 +30,8 @@ vi.mock('@modules/webview/components/PWWebView', () => ({
 
 const { DiscoverScreen } =
     await import('@modules/discover/screens/DiscoverScreen/DiscoverScreen')
+const { DiscoverTabScreen } =
+    await import('@modules/discover/screens/DiscoverTabScreen/DiscoverTabScreen')
 const { DiscoverDetailScreen } =
     await import('@modules/discover/screens/DiscoverDetailScreen/DiscoverDetailScreen')
 
@@ -74,6 +76,16 @@ describe('Flow: Discover — webview URL building', () => {
         await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
 
         expect(webViewSpy).toHaveBeenLastCalledWith(config.discoverBaseUrl)
+    })
+
+    it('Given an Algorand-only build, when the Discover tab mounts, then it loads the Discover web app', async () => {
+        renderWithNavigation(DiscoverTabScreen, 'Discover', {
+            initialParams: { path: 'markets/algo' },
+        })
+
+        await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
+
+        expect(webViewSpy).toHaveBeenLastCalledWith(`${baseUrl}/markets/algo`)
     })
 
     it('Given no path param, when Discover mounts, then the bare discover base URL is used', async () => {

@@ -33,6 +33,32 @@
             "requester_verified_a11y_origin": "Vérifié : cette demande provient de votre onglet de navigateur sur {{origin}}"
         }
     },
+    "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "dApps populaires",
+            "news": "Actualités",
+            "dapps_error": "Échec du chargement des dApps en vedette",
+            "dapps_empty": "Aucune dApp sur {{chain}} pour le moment"
+        },
+        "dapp_row": {
+            "favorite": "Ajouter aux favoris",
+            "unfavorite": "Retirer des favoris"
+        },
+        "search": {
+            "placeholder": "Rechercher ou saisir une URL",
+            "recent_title": "Recherches récentes",
+            "clear_all": "Tout effacer",
+            "no_recent": "Aucune recherche récente",
+            "filter_all": "Tout",
+            "filter_markets": "Marchés",
+            "filter_dapps": "dApps",
+            "search_web": "Rechercher sur le web",
+            "no_results": "Aucun résultat",
+            "assets_unavailable": "La recherche d’actifs est indisponible pour le moment",
+            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment"
+        }
+    },
     "account_menu": {
         "title": "Comptes",
         "sort": "Trier",
@@ -317,7 +343,6 @@
         "markets": {
             "something_went_wrong_title": "Une erreur est survenue",
             "something_went_wrong_body": "Nous n’avons pas pu charger les détails de cet actif. Vérifiez votre connexion et réessayez.",
-            "title": "Marchés",
             "stats": "Statistiques",
             "price": "Prix",
             "total_supply": "Offre totale",

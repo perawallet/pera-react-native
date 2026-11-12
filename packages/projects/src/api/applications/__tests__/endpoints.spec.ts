@@ -71,6 +71,7 @@ describe('fetchApplication', () => {
                 backgroundImage: 'https://test.com/bg.png',
                 categories: [],
                 popularityScore: 10,
+                chains: [],
             },
         })
     })

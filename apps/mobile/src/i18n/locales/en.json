@@ -33,6 +33,32 @@
             "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },
+    "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "Top dApps",
+            "news": "News",
+            "dapps_error": "Failed loading featured dApps",
+            "dapps_empty": "No dApps on {{chain}} yet"
+        },
+        "dapp_row": {
+            "favorite": "Add to favorites",
+            "unfavorite": "Remove from favorites"
+        },
+        "search": {
+            "placeholder": "Search or Type URL",
+            "recent_title": "Recent searches",
+            "clear_all": "Clear all",
+            "no_recent": "No recent searches",
+            "filter_all": "All",
+            "filter_markets": "Markets",
+            "filter_dapps": "dApps",
+            "search_web": "Search on the web",
+            "no_results": "No results",
+            "assets_unavailable": "Asset search is unavailable right now",
+            "dapps_unavailable": "dApp search is unavailable right now"
+        }
+    },
     "account_menu": {
         "title": "Accounts",
         "sort": "Sort",
@@ -317,7 +343,6 @@
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
-            "title": "Markets",
             "stats": "Statistics",
             "price": "Price",
             "total_supply": "Total Supply",

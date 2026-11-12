@@ -19,6 +19,7 @@ export type ProjectCategory = {
 }
 
 export type PeraProject = {
+    id?: string
     name?: string
     url?: string
     description?: string
@@ -30,6 +31,8 @@ export type PeraProject = {
     backgroundImage?: string
     categories?: ProjectCategory[]
     popularityScore?: number
+    /** CAIP-2 chain ids the project is tagged with; [] when untagged. */
+    chains: string[]
 }
 
 export type PeraApplication = {

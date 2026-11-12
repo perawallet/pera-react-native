@@ -11,11 +11,16 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     navigateToScreen: vi.fn(),
     errorToast: vi.fn(),
+    isMultichain: true,
+}))
+
+vi.mock('@hooks/useIsNativeDiscover', () => ({
+    useIsNativeDiscover: () => mocks.isMultichain,
 }))
 
 vi.mock('../../navigateToScreen', () => ({
@@ -31,21 +36,46 @@ vi.mock('@hooks/useLanguage')
 import { useDiscoverPathDeeplink } from '../useDiscoverPathDeeplink'
 
 describe('useDiscoverPathDeeplink', () => {
-    it('navigates into the Discover tab when the capability is on', () => {
-        const { result } = renderHook(() => useDiscoverPathDeeplink())
-        const handled = result.current({
-            path: '/markets',
-            sourceUrl: 'perawallet://discover?path=/markets',
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mocks.isMultichain = true
+    })
+
+    const run = (path?: string) =>
+        renderHook(() => useDiscoverPathDeeplink()).result.current({
+            path,
+            sourceUrl: 'perawallet://discover',
             replaceCurrentScreen: false,
         })
-        expect(handled).toBe(true)
+
+    it('opens the Discover home for no path', () => {
+        expect(run(undefined)).toBe(true)
         expect(mocks.navigateToScreen).toHaveBeenCalledWith(false, 'TabBar', {
             screen: 'Discover',
-            params: { path: '/markets' },
         })
     })
 
-    it('rejects an unsafe path before considering the capability', () => {
+    it('opens the WebView detail for a regular path', () => {
+        expect(run('/markets')).toBe(true)
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+            false,
+            'DiscoverDetail',
+            { path: '/markets' },
+        )
+    })
+
+    it('opens native asset details for a token-detail path', () => {
+        expect(run('token-detail/31566704')).toBe(true)
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(false, 'TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'AssetDetails',
+                params: { assetId: '31566704', chainId: 'algorand' },
+            },
+        })
+    })
+
+    it('rejects an unsafe path with a toast', () => {
         const onError = vi.fn()
         const { result } = renderHook(() => useDiscoverPathDeeplink())
         const handled = result.current({
@@ -55,6 +85,41 @@ describe('useDiscoverPathDeeplink', () => {
             onError,
         })
         expect(handled).toBe(false)
+        expect(mocks.errorToast).toHaveBeenCalled()
+        expect(onError).toHaveBeenCalled()
         expect(mocks.navigateToScreen).not.toHaveBeenCalled()
+    })
+
+    describe('on an Algorand-only build', () => {
+        beforeEach(() => {
+            mocks.isMultichain = false
+        })
+
+        it('hands a path to the Discover web app in its tab', () => {
+            expect(run('token-detail/31566704')).toBe(true)
+            expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+                false,
+                'TabBar',
+                {
+                    screen: 'Discover',
+                    params: { path: 'token-detail/31566704' },
+                },
+            )
+        })
+
+        it('opens the Discover tab for no path', () => {
+            expect(run(undefined)).toBe(true)
+            expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+                false,
+                'TabBar',
+                { screen: 'Discover', params: { path: undefined } },
+            )
+        })
+
+        it('still rejects an unsafe path', () => {
+            expect(run('//evil.com')).toBe(false)
+            expect(mocks.errorToast).toHaveBeenCalled()
+            expect(mocks.navigateToScreen).not.toHaveBeenCalled()
+        })
     })
 })

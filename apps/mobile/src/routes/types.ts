@@ -71,6 +71,7 @@ export type RootStackParamList = {
     /** Discover page pushed over the current screen; `path` is a relative
      * Discover route (e.g. `token-detail/ALGO`), validated on load. */
     DiscoverDetail: { path: string }
+    DiscoverSearch: undefined
     BannersCarouselModal: Optional<{ bannerId?: string }>
     GroupTransactionList: {
         groupId: string

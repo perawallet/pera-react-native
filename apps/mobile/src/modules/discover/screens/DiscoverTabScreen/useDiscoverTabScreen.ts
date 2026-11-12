@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { isNativeAssetId } from '@perawallet/wallet-core-assets'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 
-// Discover serves ALGO from a dedicated `token-detail/ALGO` route; `token-detail/0`
-// falls through to the generic asset page, whose `/discover/assets/0/` fetch 404s.
-export const toDiscoverTokenDetailPath = (
-    assetId: string,
-    chainId: ChainId,
-): string =>
-    `token-detail/${isNativeAssetId(chainId, assetId) ? 'ALGO' : assetId}`
+export type UseDiscoverTabScreenResult = {
+    /** The build registers more than one chain (`CHAINS`), so Discover is native. */
+    isNative: boolean
+}
+
+export const useDiscoverTabScreen = (): UseDiscoverTabScreenResult => {
+    return { isNative: useIsNativeDiscover() }
+}

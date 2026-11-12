@@ -29,6 +29,10 @@ import type { AccountDetailsRequiredPayloads } from './contexts/account-details'
 import type { AccountOptionsRequiredPayloads } from './contexts/account-options'
 import type { MultisigRequiredPayloads } from './contexts/multisig'
 import type { VaultRequiredPayloads } from './contexts/vault'
+import type {
+    DiscoverOptionalPayloads,
+    DiscoverRequiredPayloads,
+} from './contexts/discover'
 
 /**
  * Events that REQUIRE a payload — composed from each context's required-payload
@@ -53,10 +57,12 @@ export interface RequiredEventPayloads
         AccountDetailsRequiredPayloads,
         AccountOptionsRequiredPayloads,
         MultisigRequiredPayloads,
-        VaultRequiredPayloads {}
+        VaultRequiredPayloads,
+        DiscoverRequiredPayloads {}
 
 /** Events that MAY carry a payload (all fields optional). */
-export type OptionalEventPayloads = NotificationsOptionalPayloads
+export type OptionalEventPayloads = NotificationsOptionalPayloads &
+    DiscoverOptionalPayloads
 
 /** Event names that require a payload argument. */
 export type RequiredPayloadEvent = keyof RequiredEventPayloads

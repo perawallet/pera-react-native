@@ -17,7 +17,11 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
-import { DiscoverDetailScreen } from '@modules/discover/routes'
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
+import {
+    DiscoverDetailScreen,
+    DiscoverSearchScreen,
+} from '@modules/discover/routes'
 import { withAgeGate } from '@components/AgeGated'
 import { BannersCarouselModalScreen } from '@modules/banners/routes'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -44,7 +48,7 @@ import { useIsOnboarding } from '@modules/onboarding'
 import { MigrationSplashScreen } from '@modules/migration'
 
 import type { RootStackParamList } from './types'
-import { fullScreenLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig/routes'
@@ -66,6 +70,8 @@ const RootStack = createNativeStackNavigator<RootStackParamList>()
 // Age-gated at the navigator so the screen (and its data fetching) only mounts
 // for users who pass the gate; blocked users see the restricted view instead.
 const GatedStakingScreen = withAgeGate(StakingScreen)
+// A discover-path deeplink pushes this route directly, past the gated tab.
+const GatedDiscoverDetailScreen = withAgeGate(DiscoverDetailScreen)
 
 export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
@@ -76,6 +82,8 @@ export const MainRoutes = () => {
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
+    // Search belongs to the native Discover, which only a multichain build shows.
+    const isNativeDiscover = useIsNativeDiscover()
     const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
 
     return (
@@ -234,13 +242,22 @@ export const MainRoutes = () => {
                         }) && (
                             <RootStack.Screen
                                 name='DiscoverDetail'
-                                options={headeredScreen(
-                                    'asset_details.markets.title',
-                                )}
+                                options={headeredScreen('tabbar.discover')}
                                 layout={fullScreenLayout}
-                                component={DiscoverDetailScreen}
+                                component={GatedDiscoverDetailScreen}
                             />
                         )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverSearch'
+                                    layout={safeAreaLayout}
+                                    component={DiscoverSearchScreen}
+                                />
+                            )}
                         <RootStack.Screen
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}

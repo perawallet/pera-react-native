@@ -18,12 +18,17 @@ vi.unmock('@perawallet/wallet-extension-platform')
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { withAgeGate } from '@components/AgeGated'
-import { DiscoverScreen } from '@modules/discover/routes'
+import {
+    DiscoverDetailScreen,
+    DiscoverHomeScreen,
+} from '@modules/discover/routes'
 import { useAgeGateStore } from '@perawallet/wallet-core-device'
 
 // The gate is applied at the navigator via withAgeGate (screens no longer
 // self-wrap), so exercise the gated screen as it is registered in the routes.
-const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
+const GatedDiscoverScreen = withAgeGate(DiscoverHomeScreen)
+// A discover-path deeplink pushes the detail route directly, past the tab.
+const GatedDiscoverDetailScreen = withAgeGate(DiscoverDetailScreen)
 
 describe('Flow: Discover — age gate', () => {
     beforeEach(() => {
@@ -53,6 +58,16 @@ describe('Flow: Discover — age gate', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('age-gate-retry')).toBeTruthy()
+        })
+    })
+
+    it('Given age is unknown, when a deeplink opens the Discover detail page, then the self-declaration sheet appears first', async () => {
+        renderWithNavigation(GatedDiscoverDetailScreen, 'DiscoverDetail', {
+            initialParams: { path: 'markets' },
+        })
+
+        await waitFor(() => {
+            expect(screen.getByTestId('age-gate-declaration')).toBeTruthy()
         })
     })
 })

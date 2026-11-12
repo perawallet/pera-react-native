@@ -10,4 +10,24 @@
  limitations under the License
  */
 
-export { toDiscoverTokenDetailPath } from './utils/tokenDetailPath'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    card: {
+        borderRadius: theme.spacing.md,
+        overflow: 'hidden',
+        backgroundColor: theme.colors.layerGray,
+    },
+    banner: {
+        width: '100%',
+        aspectRatio: 2,
+        backgroundColor: theme.colors.layerGray,
+    },
+    body: {
+        gap: theme.spacing.xs,
+        padding: theme.spacing.lg,
+    },
+    date: {
+        color: theme.colors.textGray,
+    },
+}))

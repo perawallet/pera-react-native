@@ -33,6 +33,32 @@
             "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}"
         }
     },
+    "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "dApps destacadas",
+            "news": "Noticias",
+            "dapps_error": "No se pudieron cargar las dApps destacadas",
+            "dapps_empty": "Aún no hay dApps en {{chain}}"
+        },
+        "dapp_row": {
+            "favorite": "Añadir a favoritos",
+            "unfavorite": "Quitar de favoritos"
+        },
+        "search": {
+            "placeholder": "Buscar o escribir URL",
+            "recent_title": "Búsquedas recientes",
+            "clear_all": "Borrar todo",
+            "no_recent": "Sin búsquedas recientes",
+            "filter_all": "Todo",
+            "filter_markets": "Mercados",
+            "filter_dapps": "dApps",
+            "search_web": "Buscar en la web",
+            "no_results": "Sin resultados",
+            "assets_unavailable": "La búsqueda de activos no está disponible en este momento",
+            "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento"
+        }
+    },
     "account_menu": {
         "title": "Cuentas",
         "sort": "Ordenar",
@@ -317,7 +343,6 @@
         "markets": {
             "something_went_wrong_title": "Algo salió mal",
             "something_went_wrong_body": "No pudimos cargar los detalles de este activo. Comprueba tu conexión e inténtalo de nuevo.",
-            "title": "Mercados",
             "stats": "Estadísticas",
             "price": "Precio",
             "total_supply": "Suministro total",

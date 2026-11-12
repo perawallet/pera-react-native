@@ -14,3 +14,16 @@ export {
     useDiscoverWebView,
     type UseDiscoverWebViewResult,
 } from './useDiscoverWebView'
+export { useDiscoverChainIds } from './useDiscoverChainIds'
+export { useDiscoverCaip2s } from './useDiscoverCaip2s'
+export {
+    useDiscoverDirectory,
+    type UseDiscoverDirectoryParams,
+    type UseDiscoverDirectoryResult,
+} from './useDiscoverDirectory'
+export { useTopDapps, type UseTopDappsResult } from './useTopDapps'
+export {
+    useToggleDiscoverFavorite,
+    type UseToggleDiscoverFavoriteResult,
+} from './useToggleDiscoverFavorite'
+export { useOpenDapp, type UseOpenDappResult } from './useOpenDapp'

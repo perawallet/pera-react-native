@@ -33,6 +33,32 @@
             "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },
+    "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "Popüler dApp’ler",
+            "news": "Haberler",
+            "dapps_error": "Öne çıkan dApp’ler yüklenemedi",
+            "dapps_empty": "{{chain}} ağında henüz dApp yok"
+        },
+        "dapp_row": {
+            "favorite": "Favorilere ekle",
+            "unfavorite": "Favorilerden kaldır"
+        },
+        "search": {
+            "placeholder": "Ara veya URL yaz",
+            "recent_title": "Son aramalar",
+            "clear_all": "Tümünü temizle",
+            "no_recent": "Son arama yok",
+            "filter_all": "Tümü",
+            "filter_markets": "Piyasalar",
+            "filter_dapps": "dApp’ler",
+            "search_web": "Web’de ara",
+            "no_results": "Sonuç yok",
+            "assets_unavailable": "Varlık araması şu anda kullanılamıyor",
+            "dapps_unavailable": "dApp araması şu anda kullanılamıyor"
+        }
+    },
     "account_menu": {
         "title": "Hesaplar",
         "sort": "Sırala",
@@ -317,7 +343,6 @@
         "markets": {
             "something_went_wrong_title": "Bir şeyler ters gitti",
             "something_went_wrong_body": "Bu varlığın detaylarını yükleyemedik. Lütfen bağlantını kontrol edip tekrar dene.",
-            "title": "Piyasalar",
             "stats": "İstatistikler",
             "price": "Fiyat",
             "total_supply": "Toplam arz",

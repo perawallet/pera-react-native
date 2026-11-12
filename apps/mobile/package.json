@@ -68,6 +68,7 @@
     "@perawallet/wallet-core-deeplinks": "workspace:*",
     "@perawallet/wallet-core-dev-fixtures": "workspace:*",
     "@perawallet/wallet-core-device": "workspace:*",
+    "@perawallet/wallet-core-discover": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-ledger": "workspace:*",

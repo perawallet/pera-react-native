@@ -70,6 +70,8 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     banners: 'persist',
     currencies: 'persist',
     'delegation-transaction-fee': 'persist',
+    // Public news and catalog content, no PII.
+    discover: 'persist',
     multisig: 'persist',
     names: 'persist',
     notifications: 'persist',

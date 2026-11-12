@@ -19,6 +19,7 @@ const categorySimpleSchema = z.object({
 })
 
 export const projectResponseSchema = z.object({
+    id: z.string().optional(),
     name: z.string(),
     url: z.string(),
     description: z.string(),
@@ -30,6 +31,7 @@ export const projectResponseSchema = z.object({
     background_image: z.string().optional().nullable(),
     categories: z.array(categorySimpleSchema).optional().nullable(),
     popularity_score: z.number().optional().nullable(),
+    chains: z.array(z.string()).optional().nullable(),
 })
 
 export const projectListResponseSchema = z.array(projectResponseSchema)

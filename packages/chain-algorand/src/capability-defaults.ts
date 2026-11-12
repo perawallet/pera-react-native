@@ -75,4 +75,5 @@ export const algorandCapabilityRestrictions: ChainCapabilityRestrictions = {
     peraWebImport: PERA_BACKED,
     notifications: PERA_BACKED,
     assetInbox: PERA_BACKED,
+    discover: PERA_BACKED,
 }

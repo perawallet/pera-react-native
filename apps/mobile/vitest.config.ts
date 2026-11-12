@@ -163,7 +163,6 @@ const distResolvedPackages = new Set([
     '@perawallet/wallet-core-hardware-wallet',
     '@perawallet/wallet-core-migrate',
     '@perawallet/wallet-core-passkeys',
-    '@perawallet/wallet-core-projects',
     '@perawallet/wallet-core-search',
     '@perawallet/wallet-extension-vault-chrome',
     '@perawallet/wallet-extension-ledger-web-ble',
@@ -176,6 +175,7 @@ const distResolvedPackages = new Set([
 const distResolvedRoots = new Set([
     '@perawallet/wallet-core-card',
     '@perawallet/wallet-core-names',
+    '@perawallet/wallet-core-projects',
 ])
 
 // @rneui/base loads its rating images with CommonJS `require('./x.png')` inside
