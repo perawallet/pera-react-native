@@ -657,7 +657,7 @@ describe('account holdings repository', () => {
             expect(await idsOf({})).toContain('200')
         })
 
-        it('hideSuspicious keeps a suspicious row on a chain where the user opts in to each asset', async () => {
+        it('hideSuspicious drops a suspicious row on a chain where the user opts in to each asset', async () => {
             registerFakeNativeAsset(6, { requiresAssetOptIn: true })
             await upsertAssets({
                 db,
@@ -674,7 +674,7 @@ describe('account holdings repository', () => {
                 scope: MAINNET_SCOPE,
             })
 
-            expect(await idsOf({ hideSuspicious: true })).toContain('200')
+            expect(await idsOf({ hideSuspicious: true })).not.toContain('200')
         })
 
         it('excludeHidden leaves out a token the user hid, whatever else is kept', async () => {

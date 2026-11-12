@@ -44,7 +44,6 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
-import { isOptInChain } from '../chainProtocol'
 import {
     useOtherRegisteredChainIds,
     useRegisteredChainIds,
@@ -158,11 +157,9 @@ export const summarizeHoldings = (
         }
         const nativeAssetValue = nativeAssetValueOf()
         // Listed, but never counted: a flagged token's price isn't one to trust, and a hidden one is the user's to keep out.
-        // An opt-in chain's asset was chosen by the user, so it counts.
         const isCounted =
             !holding.isHidden &&
-            (isOptInChain(chainId) ||
-                asset.peraMetadata?.verificationTier !== 'suspicious')
+            asset.peraMetadata?.verificationTier !== 'suspicious'
         if (isCounted) {
             if (nativeAssetValue) {
                 nativeValue = nativeValue.plus(nativeAssetValue)
