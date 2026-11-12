@@ -56,13 +56,19 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 // vi.resetModules() each mock can load its own copy: the review's useNavigation
 // then misses the signing sheet's stack and the technical details never open.
 // Both stack packages are pointed at the one copy @react-navigation/native gives.
+// The setup's mock of @react-navigation/native adds the test navigator, which its own types don't declare.
+const mockedStackOf = async () =>
+    (
+        (await import('@react-navigation/native')) as unknown as Pick<
+            typeof import('@react-navigation/native-stack'),
+            'createNativeStackNavigator'
+        >
+    ).createNativeStackNavigator
 vi.mock('@react-navigation/native-stack', async () => ({
-    createNativeStackNavigator: (await import('@react-navigation/native'))
-        .createNativeStackNavigator,
+    createNativeStackNavigator: await mockedStackOf(),
 }))
 vi.mock('@react-navigation/stack', async () => ({
-    createStackNavigator: (await import('@react-navigation/native'))
-        .createNativeStackNavigator,
+    createStackNavigator: await mockedStackOf(),
 }))
 
 vi.resetModules()
