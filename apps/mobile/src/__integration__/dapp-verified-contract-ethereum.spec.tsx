@@ -346,7 +346,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         )
         expect(
             screen.getByTestId('ethereum_verified_call_source').textContent,
-        ).toBe('transactions.contract_call.verified_source')
+        ).toBe('transactions.contract_call.known_source')
         expect(
             screen.queryByTestId('ethereum_verified_call_implementation'),
         ).toBeNull()
@@ -450,7 +450,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         expect(screen.getByTestId(FUNCTION_ROW).textContent).toContain('claim')
         expect(
             screen.getByTestId('ethereum_verified_call_source').textContent,
-        ).toBe('transactions.contract_call.verified_source_proxy')
+        ).toBe('transactions.contract_call.known_source_proxy')
         expect(
             screen.getByTestId('ethereum_verified_call_implementation'),
         ).toBeTruthy()

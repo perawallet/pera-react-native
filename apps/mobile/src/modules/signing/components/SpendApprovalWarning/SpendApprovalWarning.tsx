@@ -115,10 +115,11 @@ export const SpendApprovalWarning = ({
                             <PWText>{knownSpenderName}</PWText>
                             <PWIcon
                                 testID='message-signing-spend-approval-spender-verified'
-                                name='assets/verified'
+                                name='check'
                                 size='sm'
+                                variant='positive'
                                 accessibilityLabel={t(
-                                    'ethereum.known_contract.verified',
+                                    'ethereum.known_contract.badge',
                                 )}
                             />
                         </PWView>

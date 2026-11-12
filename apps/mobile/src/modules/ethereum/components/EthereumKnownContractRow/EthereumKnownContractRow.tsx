@@ -55,11 +55,10 @@ export const EthereumKnownContractRow = ({
                     <PWText>{knownContract.name}</PWText>
                     <PWIcon
                         testID='ethereum_known_contract_verified'
-                        name='assets/verified'
+                        name='check'
                         size='sm'
-                        accessibilityLabel={t(
-                            'ethereum.known_contract.verified',
-                        )}
+                        variant='positive'
+                        accessibilityLabel={t('ethereum.known_contract.badge')}
                     />
                 </PWView>
                 <AddressDisplay

@@ -3758,8 +3758,8 @@
             "arguments": "Arguments",
             "argument_index": "Argument {{index}}",
             "implementation": "Implémentation",
-            "verified_source": "Nom tiré du code source vérifié du contrat.",
-            "verified_source_proxy": "Ce contrat est un proxy. Nom tiré du code source vérifié du contrat vers lequel il redirige.",
+            "known_source": "Nom tiré du code source public du contrat.",
+            "known_source_proxy": "Ce contrat est un proxy. Nom tiré du code source public du contrat vers lequel il redirige.",
             "lookup_failed": "Pera n’a pas pu récupérer le nom de fonction de ce contrat.",
             "unchecked_warning": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à {{domain}}.",
             "unchecked_warning_no_source": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à l’application qui l’a envoyée."
@@ -4985,7 +4985,7 @@
         },
         "known_contract": {
             "title": "Contrat",
-            "verified": "Contrat vérifié",
+            "badge": "Contrat connu",
             "matches_site": "Correspond à {{domain}}"
         },
         "review_warnings": {

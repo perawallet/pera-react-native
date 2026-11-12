@@ -3758,8 +3758,8 @@
             "arguments": "Argumentos",
             "argument_index": "Argumento {{index}}",
             "implementation": "Implementación",
-            "verified_source": "Nombre tomado del código fuente verificado del contrato.",
-            "verified_source_proxy": "Este contrato es un proxy. Nombre tomado del código fuente verificado del contrato al que redirige.",
+            "known_source": "Nombre tomado del código fuente público del contrato.",
+            "known_source_proxy": "Este contrato es un proxy. Nombre tomado del código fuente público del contrato al que redirige.",
             "lookup_failed": "Pera no pudo consultar el nombre de la función de este contrato.",
             "unchecked_warning": "Pera no pudo comprobar qué hace esta transacción. Continúa solo si confías en {{domain}}.",
             "unchecked_warning_no_source": "Pera no pudo comprobar qué hace esta transacción. Continúa solo si confías en la app que la envió."
@@ -4985,7 +4985,7 @@
         },
         "known_contract": {
             "title": "Contrato",
-            "verified": "Contrato verificado",
+            "badge": "Contrato conocido",
             "matches_site": "Coincide con {{domain}}"
         },
         "review_warnings": {
