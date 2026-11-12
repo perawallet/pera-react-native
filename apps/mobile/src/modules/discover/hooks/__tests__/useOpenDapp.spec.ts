@@ -88,6 +88,23 @@ describe('useOpenDapp', () => {
         )
     })
 
+    it('keeps a typed query and hash out of the open and favorite events', () => {
+        const { result } = renderHook(() => useOpenDapp())
+        result.current.openDapp(
+            dapp('https://uniswap.org/swap?token=secret#frag'),
+            null,
+        )
+        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.DappOpenTap, {
+            dapp_name: 'A',
+            dapp_url: 'https://uniswap.org/swap',
+        })
+        pushWebView.mock.calls[0]?.[0].favorite.onToggle()
+        expect(trackEvent).toHaveBeenLastCalledWith(
+            DiscoverEvent.DappFavoriteTap,
+            { dapp_name: 'A', dapp_url: 'https://uniswap.org/swap' },
+        )
+    })
+
     it('pushes nothing for an invalid dapp url', () => {
         const { result } = renderHook(() => useOpenDapp())
         result.current.openDapp(dapp('http://x.io'), null)

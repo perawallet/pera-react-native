@@ -46,7 +46,6 @@ import type { DiscoverDapp } from '../../types'
 import {
     dappEventPayload,
     stripUrlQueryAndHash,
-    typedUrlEventPayload,
 } from '../../utils/discoverAnalytics'
 import { filterDappsByQuery } from '../../utils/filterDappsByQuery'
 import { looksLikeUrl } from '../../utils/looksLikeUrl'
@@ -216,7 +215,7 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
             return
         }
         pushRecent({ kind: 'url', url: typedUrl })
-        trackEvent(DiscoverEvent.SearchResultTap, typedUrlEventPayload(dapp))
+        trackEvent(DiscoverEvent.SearchResultTap, dappEventPayload(dapp, null))
         // The in-app browser star toggles the typed-URL favorite.
         openDappPage(dapp, null)
     }, [typedUrl, pushRecent, openDappPage])
@@ -284,7 +283,7 @@ export const useDiscoverSearchScreen = (): UseDiscoverSearchScreenResult => {
                                           recent.url,
                                       ),
                                   }
-                                : typedUrlEventPayload(dapp),
+                                : dappEventPayload(dapp, null),
                         )
                     }
                     if (dapp === null) openWebPage(recent.url)

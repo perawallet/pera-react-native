@@ -27,17 +27,16 @@ export const stripUrlQueryAndHash = (url: string): string => {
     return end === -1 ? url : url.slice(0, end)
 }
 
-/** The payload for a url the user typed; never the query or hash. */
-export const typedUrlEventPayload = (dapp: DiscoverDapp): DappEventPayload => ({
-    ...dappEventPayload(dapp, null),
-    [Key.DappUrl]: stripUrlQueryAndHash(dapp.url),
-})
-
+/**
+ * Every dApp event's payload. The url is always cut to origin and path:
+ * directory urls don't need the rest, and a typed one reaches the open and
+ * favorite events through the same path.
+ */
 export const dappEventPayload = (
     dapp: DiscoverDapp,
     chain: Nullable<ChainId>,
 ): DappEventPayload => ({
     [Key.DappName]: dapp.name,
-    [Key.DappUrl]: dapp.url,
+    [Key.DappUrl]: stripUrlQueryAndHash(dapp.url),
     ...(chain === null ? {} : { [Key.ChainId]: chain }),
 })
