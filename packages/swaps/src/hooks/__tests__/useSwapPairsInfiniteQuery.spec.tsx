@@ -133,6 +133,72 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
         await waitFor(() => expect(result.current.assets).toHaveLength(2))
     })
 
+    test('lists a token the router repeats on one page once', async () => {
+        vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+            assets: [asset('7'), asset('8'), asset('7')],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useSwapPairsInfiniteQuery({ anchor: ANCHOR, scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.assets.map(a => a.assetId)).toEqual(['7', '8'])
+    })
+
+    test('lists a token the router repeats on a later page once', async () => {
+        vi.mocked(fetchSwapPairs)
+            .mockResolvedValueOnce({ assets: [asset('7')], next: 'c2' })
+            .mockResolvedValueOnce({
+                assets: [asset('7'), asset('8')],
+                next: null,
+            })
+
+        const { result } = renderHook(
+            () => useSwapPairsInfiniteQuery({ anchor: ANCHOR, scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.hasNextPage).toBe(true))
+        await act(async () => {
+            result.current.fetchNextPage()
+        })
+
+        await waitFor(() => expect(result.current.hasNextPage).toBe(false))
+        expect(result.current.assets.map(a => a.assetId)).toEqual(['7', '8'])
+    })
+
+    test('keeps the same asset id on different chains', async () => {
+        vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+            assets: [
+                asset('native', 'mainnet', 'ethereum'),
+                asset('native', 'mainnet', 'base'),
+            ],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapPairsInfiniteQuery({
+                    anchor: ANCHOR,
+                    scope: SCOPE,
+                    destinationScopes: [
+                        ETH_SCOPE,
+                        { chainId: 'base', networkId: 'mainnet' },
+                    ],
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.assets.map(a => a.ref.chainId)).toEqual([
+            'ethereum',
+            'base',
+        ])
+    })
+
     test('waits for an anchor', () => {
         renderHook(
             () => useSwapPairsInfiniteQuery({ anchor: null, scope: SCOPE }),

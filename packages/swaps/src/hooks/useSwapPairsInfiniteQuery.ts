@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { skipToken, useInfiniteQuery } from '@tanstack/react-query'
 import {
     toScopeKey,
@@ -45,6 +46,21 @@ export type UseSwapPairsInfiniteQueryResult = {
 
 const isOnAnyScope = (asset: SwapAsset, scopeKeys: Set<string>): boolean =>
     scopeKeys.has(toScopeKey(asset.ref))
+
+// The router returns one row per aggregator, so a token several aggregators
+// route comes back more than once, within a page or across pages. Lists key rows
+// by scope + asset id, and a repeated key leaves a blank row in FlashList.
+const uniqueAssets = (pages: SwapPairsPage[]): SwapAsset[] => {
+    const seen = new Set<string>()
+    return pages
+        .flatMap(page => page.assets)
+        .filter(asset => {
+            const key = `${toScopeKey(asset.ref)}/${asset.assetId}`
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+        })
+}
 
 const fetchVisiblePage = async (
     anchor: SwapAssetRef,
@@ -102,8 +118,11 @@ export const useSwapPairsInfiniteQuery = ({
             lastPage.next ?? undefined,
     })
 
+    const pages = query.data?.pages
+    const assets = useMemo(() => uniqueAssets(pages ?? []), [pages])
+
     return {
-        assets: query.data?.pages.flatMap(page => page.assets) ?? [],
+        assets,
         isLoading: query.isLoading,
         isSuccess: query.isSuccess,
         hasNextPage: query.hasNextPage,
