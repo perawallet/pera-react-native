@@ -137,9 +137,7 @@
             "added_title": "Token hinzugefügt",
             "added_body": "{{assetName}} zu {{chain}} hinzugefügt",
             "add_failed_title": "Token konnte nicht hinzugefügt werden",
-            "unverified_title": "Nicht verifizierter Token",
-            "unverified_body": "Pera hat {{assetName}} nicht verifiziert. Jeder kann einen Token mit beliebigem Namen oder Logo erstellen, also prüfe vor dem Hinzufügen, ob die Vertragsadresse {{address}} die erwartete ist.",
-            "unverified_confirm": "Trotzdem hinzufügen",
+            "suspicious_confirm": "Trotzdem hinzufügen",
             "suspicious_title": "Verdächtiger Token",
             "suspicious_body": "Pera hat {{assetName}} ({{address}}) als verdächtig markiert. Er könnte einen anderen Token nachahmen oder Teil eines Betrugs sein. Füge ihn nur hinzu, wenn du seiner Herkunft vertraust.",
             "remove_title": "{{assetName}} entfernen?",
@@ -290,8 +288,7 @@
         }
     },
     "asset": {
-        "deleted_label": "(Gelöscht)",
-        "unverified_label": "Nicht verifiziert"
+        "deleted_label": "(Gelöscht)"
     },
     "asset_details": {
         "about": {
@@ -385,9 +382,8 @@
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
         },
         "token_warning": {
-            "unverified_title": "Nicht verifiziertes Token",
             "suspicious_title": "Verdächtiges Token",
-            "body": "Pera hat dieses Token nicht verifiziert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
+            "body": "Pera hat dieses Token als verdächtig markiert. Du hast es nicht angefordert und es könnte ein Betrug sein. Interagiere nicht mit Websites oder Links, die damit zu tun haben."
         },
         "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren",
         "toggle_amount_hint": "Tippe, um zwischen Wert und Asset-Betrag zu wechseln"

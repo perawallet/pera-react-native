@@ -14,7 +14,10 @@ import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetVerificationTier,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useCanBuyAsset } from '@perawallet/wallet-core-onramp'
@@ -44,12 +47,13 @@ export const useAssetActionButtons = (
     const canSendOnChain = useChainCapability(chainId, 'send')
     const canReceiveOnChain = useChainCapability(chainId, 'receive')
     const isOnChain = !account || chainAccountOf(account, chainId) !== undefined
-    // A swap sends the user to approve a contract; for a token nobody vetted,
+    // A swap sends the user to approve a contract; for a token Pera flagged,
     // that is the lure to avoid.
-    const isUnvetted =
-        asset !== undefined && unvettedTierOf(asset, chainId) !== null
+    const isSuspicious =
+        asset !== undefined &&
+        unvettedTierOf(asset, chainId) === PeraAssetVerificationTier.suspicious
     return {
-        canSwap: canSwapOnChain && !isUnvetted,
+        canSwap: canSwapOnChain && !isSuspicious,
         canBuy,
         canSend: canSendOnChain && isOnChain,
         canReceive: canReceiveOnChain && isOnChain,

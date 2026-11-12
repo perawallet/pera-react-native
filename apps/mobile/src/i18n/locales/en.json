@@ -137,9 +137,7 @@
             "added_title": "Token added",
             "added_body": "{{assetName}} added to {{chain}}",
             "add_failed_title": "Couldn't add token",
-            "unverified_title": "Unverified token",
-            "unverified_body": "Pera hasn't verified {{assetName}}. Anyone can create a token with any name or logo, so check that its contract address, {{address}}, is the one you expect before you add it.",
-            "unverified_confirm": "Add anyway",
+            "suspicious_confirm": "Add anyway",
             "suspicious_title": "Suspicious token",
             "suspicious_body": "Pera has flagged {{assetName}} ({{address}}) as suspicious. It may imitate another token or be part of a scam. Add it only if you trust where it came from.",
             "remove_title": "Remove {{assetName}}?",
@@ -290,8 +288,7 @@
         }
     },
     "asset": {
-        "deleted_label": "(Deleted)",
-        "unverified_label": "Unverified"
+        "deleted_label": "(Deleted)"
     },
     "asset_details": {
         "about": {
@@ -385,9 +382,8 @@
             "learn_more": "Learn more about ASA verification"
         },
         "token_warning": {
-            "unverified_title": "Unverified token",
             "suspicious_title": "Suspicious token",
-            "body": "Pera hasn't verified this token. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
+            "body": "Pera has flagged this token as suspicious. You didn't request it, and it may be a scam. Don't interact with websites or links related to it."
         },
         "copy_full_amount_hint": "Long press to copy the full amount",
         "toggle_amount_hint": "Tap to switch between the value and the asset amount"

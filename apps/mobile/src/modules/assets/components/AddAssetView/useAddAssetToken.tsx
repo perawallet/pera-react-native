@@ -60,8 +60,9 @@ export const addsWithoutOptIn = (chainId: ChainId): boolean =>
 export const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
     assetRefKey({ chainId: scope.chainId, assetId: asset.assetId })
 
-const tierOf = ({ asset }: ScopedAssetSearchResult) =>
-    asset.peraMetadata?.verificationTier ?? PeraAssetVerificationTier.unverified
+const isSuspicious = ({ asset }: ScopedAssetSearchResult) =>
+    asset.peraMetadata?.verificationTier ===
+    PeraAssetVerificationTier.suspicious
 
 const assetLabelOf = ({ asset }: ScopedAssetSearchResult): string =>
     asset.unitName ?? asset.name ?? asset.assetId
@@ -137,38 +138,25 @@ export const useAddAssetToken = (
         [addedKeys],
     )
 
-    // The sheets take display strings, not ids: an unverified token has no
-    // stored record yet to read its name back from.
-    // Pera flagged a suspicious token, so it gets its own, harder warning.
-    const confirmUnverified = useCallback(
-        (assetName: string, address: string, isSuspicious: boolean) =>
+    // The sheet takes display strings, not ids: the token has no stored
+    // record yet to read its name back from.
+    const confirmSuspicious = useCallback(
+        (assetName: string, address: string) =>
             request<boolean>({
                 contents: (
                     <ConfirmActionContent
                         icon='warning'
                         iconVariant='error'
-                        title={t(
-                            isSuspicious
-                                ? 'add_asset.token.suspicious_title'
-                                : 'add_asset.token.unverified_title',
-                        )}
-                        message={t(
-                            isSuspicious
-                                ? 'add_asset.token.suspicious_body'
-                                : 'add_asset.token.unverified_body',
-                            { assetName, address },
-                        )}
-                        confirmLabel={t('add_asset.token.unverified_confirm')}
+                        title={t('add_asset.token.suspicious_title')}
+                        message={t('add_asset.token.suspicious_body', {
+                            assetName,
+                            address,
+                        })}
+                        confirmLabel={t('add_asset.token.suspicious_confirm')}
                         cancelLabel={t('common.cancel.label')}
-                        confirmVariant={
-                            isSuspicious ? 'destructive' : 'primary'
-                        }
-                        testID={
-                            isSuspicious
-                                ? 'add_asset_suspicious_token_sheet'
-                                : 'add_asset_unverified_token_sheet'
-                        }
-                        confirmTestID='add_asset_unverified_token_confirm'
+                        confirmVariant='destructive'
+                        testID='add_asset_suspicious_token_sheet'
+                        confirmTestID='add_asset_suspicious_token_confirm'
                     />
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
@@ -210,16 +198,14 @@ export const useAddAssetToken = (
             // Claimed before the sheet, so a tap while it's open adds nothing.
             inFlightKeys.current.add(key)
             const assetName = assetLabelOf(result)
-            const tier = tierOf(result)
             try {
                 if (
-                    tier !== PeraAssetVerificationTier.verified &&
-                    (await confirmUnverified(
+                    isSuspicious(result) &&
+                    (await confirmSuspicious(
                         assetName,
                         addressCodecs
                             .get(result.scope.chainId)
                             .truncate(result.asset.assetId),
-                        tier === PeraAssetVerificationTier.suspicious,
                     )) !== true
                 ) {
                     return
@@ -249,7 +235,7 @@ export const useAddAssetToken = (
         [
             addressOn,
             canAddToken,
-            confirmUnverified,
+            confirmSuspicious,
             addToken,
             showToast,
             showError,

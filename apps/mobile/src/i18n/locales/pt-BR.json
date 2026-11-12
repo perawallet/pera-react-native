@@ -137,9 +137,7 @@
             "added_title": "Token adicionado",
             "added_body": "{{assetName}} adicionado em {{chain}}",
             "add_failed_title": "Não foi possível adicionar o token",
-            "unverified_title": "Token não verificado",
-            "unverified_body": "A Pera não verificou {{assetName}}. Qualquer pessoa pode criar um token com qualquer nome ou logo, então confira se o endereço do contrato, {{address}}, é o que você espera antes de adicioná-lo.",
-            "unverified_confirm": "Adicionar mesmo assim",
+            "suspicious_confirm": "Adicionar mesmo assim",
             "suspicious_title": "Token suspeito",
             "suspicious_body": "A Pera marcou {{assetName}} ({{address}}) como suspeito. Ele pode imitar outro token ou fazer parte de um golpe. Adicione-o só se você confiar na origem dele.",
             "remove_title": "Remover {{assetName}}?",
@@ -290,8 +288,7 @@
         }
     },
     "asset": {
-        "deleted_label": "(Excluído)",
-        "unverified_label": "Não verificado"
+        "deleted_label": "(Excluído)"
     },
     "asset_details": {
         "about": {
@@ -385,9 +382,8 @@
             "learn_more": "Saiba mais sobre a verificação de ASA"
         },
         "token_warning": {
-            "unverified_title": "Token não verificado",
             "suspicious_title": "Token suspeito",
-            "body": "A Pera não verificou este token. Você não o solicitou e ele pode ser um golpe. Não interaja com sites ou links relacionados a ele."
+            "body": "A Pera marcou este token como suspeito. Você não o solicitou e ele pode ser um golpe. Não interaja com sites ou links relacionados a ele."
         },
         "copy_full_amount_hint": "Toque e segure para copiar o valor completo",
         "toggle_amount_hint": "Toque para alternar entre o valor e a quantidade do ativo"
