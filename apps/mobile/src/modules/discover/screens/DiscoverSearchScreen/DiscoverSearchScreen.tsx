@@ -301,13 +301,17 @@ export const DiscoverSearchScreen = () => {
                 />
             </PWView>
             {search.isTyping ? (
-                <FilterSelection
-                    options={search.filterOptions}
-                    selectedValue={search.filter}
-                    onSelect={search.setFilter}
-                    contentContainerStyle={styles.filters}
-                    testID='discover_search_filters'
-                />
+                // Wrapped so the horizontal ScrollView keeps its content
+                // height instead of growing against the list below.
+                <PWView>
+                    <FilterSelection
+                        options={search.filterOptions}
+                        selectedValue={search.filter}
+                        onSelect={search.setFilter}
+                        contentContainerStyle={styles.filters}
+                        testID='discover_search_filters'
+                    />
+                </PWView>
             ) : null}
             <PWFlatList
                 data={rows}
