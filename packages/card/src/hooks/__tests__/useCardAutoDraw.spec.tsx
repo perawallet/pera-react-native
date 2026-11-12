@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerFakeCardAdapter } from '../../__tests__/fakeCardAdapter'
+import { useCardStore } from '../../store'
 import { useCardAutoDraw } from '../useCardAutoDraw'
 import { cardQueryKeys } from '../querykeys'
 
@@ -39,35 +40,38 @@ describe.each(SCOPES)('useCardAutoDraw ($chainId)', SCOPE => {
     beforeEach(() => {
         vi.clearAllMocks()
         queryClient = new QueryClient()
+        useCardStore.getState().setConnectedFundingSourceAddress('FUNDING')
         registerFakeCardAdapter({
             chainId: SCOPE.chainId,
             autoDraw: { enableAutoDraw, disableAutoDraw },
         })
     })
 
-    it('re-reads the on-chain switch after enabling and after disabling', async () => {
+    it('records the confirmed switch instead of re-reading a chain that may lag', async () => {
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const key = cardQueryKeys.autoDrawEnabled(SCOPE, 'FUNDING')
         const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
 
         await result.current.enableAutoDraw(account, 'CARD')
-        await result.current.disableAutoDraw(account)
+        expect(queryClient.getQueryData(key)).toBe(true)
 
-        expect(invalidate).toHaveBeenCalledTimes(2)
-        expect(invalidate).toHaveBeenCalledWith({
-            queryKey: cardQueryKeys.autoDrawEnabledAll(SCOPE),
-        })
+        await result.current.disableAutoDraw(account)
+        expect(queryClient.getQueryData(key)).toBe(false)
+
+        expect(invalidate).not.toHaveBeenCalled()
     })
 
     it('leaves the cached switch alone when the change fails', async () => {
         enableAutoDraw.mockRejectedValueOnce(new Error('enable failed'))
-        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const key = cardQueryKeys.autoDrawEnabled(SCOPE, 'FUNDING')
+        queryClient.setQueryData(key, false)
         const { result } = renderHook(() => useCardAutoDraw(SCOPE), { wrapper })
 
         await expect(
             result.current.enableAutoDraw(account, 'CARD'),
         ).rejects.toThrow('enable failed')
 
-        expect(invalidate).not.toHaveBeenCalled()
+        expect(queryClient.getQueryData(key)).toBe(false)
     })
 
     it('forwards the account, card address and scope when enabling', async () => {

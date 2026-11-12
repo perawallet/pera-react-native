@@ -34,8 +34,6 @@ export const cardQueryKeys = {
         [MODULE_PREFIX, 'transactions', { scope, ...(filters ?? {}) }] as const,
     pendingWithdrawal: (scope: ChainScope, ownerAddress: Nullable<string>) =>
         [MODULE_PREFIX, 'pending-withdrawal', { scope, ownerAddress }] as const,
-    autoDrawEnabledAll: (scope: ChainScope) =>
-        [MODULE_PREFIX, 'auto-draw-enabled', { scope }] as const,
     autoDrawEnabled: (scope: ChainScope, ownerAddress: Nullable<string>) =>
         [MODULE_PREFIX, 'auto-draw-enabled', { scope }, ownerAddress] as const,
     cardOwner: (scope: ChainScope) =>
