@@ -59,7 +59,7 @@ describe('evm chain matrix', () => {
             })
             const { raw, hash } = await signAndSend(env, sender, unsigned)
 
-            // Round-trip: bytes, node transaction and balance delta (Base's L1 fee included) under this chain's id.
+            // Round-trip: bytes, node transaction and balance delta (the L1 fee included on an OP-stack chain) under this chain's id.
             await expectEvmConformant({
                 env,
                 intent: {

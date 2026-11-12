@@ -215,9 +215,9 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
 - [ ] Local EVM network: the chain in `EvmnetChain`, `EVMNET_CHAINS` and `EVMNET`
       (`conformance-evm/src/harness/evmnet.ts`), an Anvil service in `tools/dev/evmnet.compose.yml`,
       `CONTAINERS` in `tools/dev/evmnet.sh`, the expected list in `tools/__tests__/evmnet.test.sh`,
-      and the node count in the root `README.md`. An OP Stack chain may need its own fixture beside
-      `conformance-evm/src/vectors/opStackPredeploys.ts` (captured by
-      `tools/dev/capture-op-predeploys.sh`).
+      and the node count in the root `README.md`. An OP Stack chain's node runs Anvil with `--optimism` and
+      takes the shared predeploy fixture, `conformance-evm/src/vectors/opStackPredeploys.ts` (captured by
+      `tools/dev/capture-op-predeploys.sh`), through `isOpStackEvmnetChain`.
 - [ ] Your `.env`: the id in `CHAINS` and an RPC URL per network, or `generate-config.sh` fails.
 - [ ] Outside the repo: the Pera backend must accept the chain id for device registration and serve
       the services listed; the `chain_<id>_overrides` and `enable_ssl_pinning_<id>_rpc` remote keys
