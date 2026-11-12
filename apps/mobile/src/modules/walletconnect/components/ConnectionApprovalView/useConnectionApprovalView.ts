@@ -225,7 +225,7 @@ export const useConnectionApprovalView = (
         [sortedAccounts, accounts, chainIds],
     )
     const { enablingChainId: addingChainId, enableChainOnAccounts } =
-        useEnableChainAction(t('account_options.add_network_error'))
+        useEnableChainAction(t('account_options.enable_network_error'))
     const requestedNetworks = useMemo(
         () =>
             chainIds.map((chainId): RequestedNetwork => {

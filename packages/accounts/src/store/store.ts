@@ -84,6 +84,7 @@ import {
     AccountNotFoundError,
     AddressMismatchError,
     ChainNotEligibleError,
+    LastChainRemovalError,
     DeviceAddressRequiredError,
     DuplicateAccountError,
     InvalidChainAddressError,
@@ -810,12 +811,49 @@ export const removeUnclaimedKeys = (
  * eligible for and lacks. A chain whose entry can't be resolved, or whose
  * address another account holds, is left off; the draft is never written.
  */
-export const withDefaultChains = async <A extends WalletAccount>(
+export const withDefaultChains = <A extends WalletAccount>(
     draft: A,
+): Promise<A> => withCreatedChains(draft, defaultChains(draft))
+
+/**
+ * `draft` on just the listed chains it is eligible for: one it lacks is added
+ * as `withDefaultChains` adds it, and an entry not listed is dropped, its key
+ * removed unless an account still signs with it. The draft is never written.
+ */
+export const withSelectedChains = async <A extends WalletAccount>(
+    draft: A,
+    chainIds: readonly ChainId[],
 ): Promise<A> => {
-    const missing = defaultChains(draft).filter(
-        chainId => !chainAccountOf(draft, chainId),
+    const eligible = new Set(eligibleChains(draft))
+    // Added before dropping: EVM chains share a key, so dropping first would
+    // remove a key a kept chain is about to derive again.
+    const added = await withCreatedChains(
+        draft,
+        chainIds.filter(chainId => eligible.has(chainId)),
     )
+    const chains: AccountChains = {}
+    const droppedKeys: string[] = []
+    for (const [chainId, entry] of Object.entries(added.chains)) {
+        if (!entry) continue
+        if (chainIds.includes(chainId as ChainId)) {
+            chains[chainId as ChainId] = entry
+        } else if (entry.keyPairId !== undefined) {
+            droppedKeys.push(entry.keyPairId)
+        }
+    }
+    const account = { ...added, chains }
+    await removeUnreferencedKeys(
+        [...useAccountsStore.getState().accounts, account],
+        droppedKeys,
+    )
+    return account
+}
+
+const withCreatedChains = async <A extends WalletAccount>(
+    draft: A,
+    chainIds: readonly ChainId[],
+): Promise<A> => {
+    const missing = chainIds.filter(chainId => !chainAccountOf(draft, chainId))
     if (missing.length === 0) return draft
     const chains: AccountChains = { ...draft.chains }
     const unusedKeys: string[] = []
@@ -1181,6 +1219,34 @@ export const useAccountsStore: UseBoundStore<
                         throw error
                     }
                 }),
+            disableChains: (accountId, chainIds) =>
+                queuedFor(accountId, async () => {
+                    const { accounts } = get()
+                    const account = findAccountById(accounts, accountId)
+                    const chains: AccountChains = {}
+                    const droppedKeys: string[] = []
+                    for (const [chainId, entry] of Object.entries(
+                        account.chains,
+                    )) {
+                        if (!entry) continue
+                        if (!chainIds.includes(chainId as ChainId)) {
+                            chains[chainId as ChainId] = entry
+                        } else if (entry.keyPairId !== undefined) {
+                            droppedKeys.push(entry.keyPairId)
+                        }
+                    }
+                    if (Object.keys(chains).length === 0) {
+                        throw new LastChainRemovalError(accountId)
+                    }
+                    const next = { ...account, chains }
+                    get().setAccounts(
+                        accounts.map(held =>
+                            held.id === accountId ? next : held,
+                        ),
+                    )
+                    await removeUnreferencedKeys(get().accounts, droppedKeys)
+                    return next
+                }),
             discoverChains: (accountId: string) =>
                 queuedFor(accountId, async () => {
                     try {
@@ -1307,7 +1373,25 @@ export const useAccountsStore: UseBoundStore<
                                     index,
                                     derived,
                                 )
-                                if (holder && chainAccountOf(holder, chainId)) {
+                                const own =
+                                    holder && chainAccountOf(holder, chainId)
+                                if (holder && own) {
+                                    // Marks the activity, so a later choice of
+                                    // chains keeps this one.
+                                    if (own.enabledBy !== 'discovery') {
+                                        get().setAccounts(
+                                            withChainEntry(
+                                                get().accounts,
+                                                holder.id,
+                                                {
+                                                    [chainId]: {
+                                                        ...own,
+                                                        enabledBy: 'discovery',
+                                                    },
+                                                },
+                                            ),
+                                        )
+                                    }
                                     continue
                                 }
                                 try {

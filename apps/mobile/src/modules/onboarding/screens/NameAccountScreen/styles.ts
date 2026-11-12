@@ -26,4 +26,21 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         color: theme.colors.textGray,
     },
+    networks: {
+        gap: theme.spacing.sm,
+        paddingTop: theme.spacing.xl,
+    },
+    networksHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    networksLabel: {
+        color: theme.colors.textGray,
+    },
+    chips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: theme.spacing.sm,
+    },
 }))

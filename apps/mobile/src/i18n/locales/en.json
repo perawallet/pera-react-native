@@ -538,9 +538,9 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
         "view_private_key": "View private key",
         "networks_title": "Networks",
-        "add_network": "Add",
-        "add_network_error": "Couldn't add this network",
-        "add_network_success": "{{network}} added",
+        "enable_network": "Enable",
+        "enable_network_error": "Couldn't enable this network",
+        "enable_network_success": "{{network}} enabled",
         "see_all_networks": "See all networks",
         "view_passphrase": "View passphrase",
         "network_options": "More options"
@@ -2441,7 +2441,13 @@
         "name_account": {
             "title": "Name your account",
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
-            "finish_button": "Finish Account Creation"
+            "finish_button": "Finish Account Creation",
+            "setup_title": "Set up your account",
+            "setup_description": "Choose a name and the networks you want to use with this account.",
+            "name_label": "Name",
+            "name_hint": "Only you can see this name",
+            "networks_label": "Networks",
+            "edit_networks": "Edit networks"
         },
         "import_select_addresses": {
             "title": "Select addresses to add",
@@ -2958,7 +2964,9 @@
     },
     "chain_selection": {
         "title": "Choose Network",
-        "add_action": "Add"
+        "enable_action": "Enable",
+        "disable_action": "Disable",
+        "required": "Required"
     },
     "receive_funds": {
         "account_selection": {
@@ -3942,7 +3950,7 @@
             "networks_heading": "Networks",
             "networks_more": "+{{count}}",
             "networks_optional_note": "Optional. {{name}} also works on these networks.",
-            "network_added": "Added",
+            "network_enabled": "Enabled",
             "origin_verified": "Verified by WalletConnect",
             "accounts_title": "SELECT ACCOUNTS",
             "no_accounts": "None of your accounts can connect on this network.",

@@ -44,6 +44,7 @@ export {
     hydrateAccountChainStates,
     recordAuthority,
     getAllAccounts,
+    withSelectedChains,
     getSelectedAccount,
     getSelectedAccountId,
     setSelectedAccountId,

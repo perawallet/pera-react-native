@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainChip } from '@modules/chain-ui/icon'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
 
@@ -29,7 +30,57 @@ export const NameAccountScreen = () => {
         account,
         nameError,
         isFinishDisabled,
+        isChoosingNetworks,
+        selectedChainIds,
+        handleEditNetworks,
     } = useNameAccountScreen()
+
+    if (isChoosingNetworks) {
+        return (
+            <NameAccountForm
+                title={t('onboarding.name_account.setup_title')}
+                description={t('onboarding.name_account.setup_description')}
+                finishButtonTitle={t('onboarding.name_account.finish_button')}
+                loadingTitle={t('onboarding.create_account.processing')}
+                value={walletDisplay}
+                onChangeText={handleNameChange}
+                onFinish={() => void handleFinish()}
+                isLoading={isCreating}
+                isDisabled={isFinishDisabled}
+                errorMessage={nameError}
+                label={t('onboarding.name_account.name_label')}
+                hint={t('onboarding.name_account.name_hint')}
+                belowInput={
+                    <PWView style={styles.networks}>
+                        <PWView style={styles.networksHeader}>
+                            <PWText style={styles.networksLabel}>
+                                {t('onboarding.name_account.networks_label')}
+                            </PWText>
+                            <PWButton
+                                variant='link'
+                                paddingStyle='none'
+                                title={t(
+                                    'onboarding.name_account.edit_networks',
+                                )}
+                                onPress={handleEditNetworks}
+                                testID='name_account_edit_networks_button'
+                            />
+                        </PWView>
+                        <PWView style={styles.chips}>
+                            {selectedChainIds.map(chainId => (
+                                <ChainChip
+                                    key={chainId}
+                                    chainId={chainId}
+                                    isOutlined
+                                    testID={`name_account_network_${chainId}`}
+                                />
+                            ))}
+                        </PWView>
+                    </PWView>
+                }
+            />
+        )
+    }
 
     return (
         <NameAccountForm

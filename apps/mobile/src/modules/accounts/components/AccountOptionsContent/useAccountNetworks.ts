@@ -82,7 +82,7 @@ export const useAccountNetworks = ({
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const { enablingChainId: addingChainId, enableChain } =
-        useEnableChainAction(t('account_options.add_network_error'))
+        useEnableChainAction(t('account_options.enable_network_error'))
     const checkCapability = useChainCapabilityCheck()
     const accounts = useAllAccounts()
     const account = accounts.find(a => a.id === snapshot.id) ?? snapshot
@@ -166,7 +166,7 @@ export const useAccountNetworks = ({
             enableChain(account.id, chainId, () =>
                 showToast(
                     {
-                        title: t('account_options.add_network_success', {
+                        title: t('account_options.enable_network_success', {
                             network: row.displayName,
                         }),
                         body: '',
