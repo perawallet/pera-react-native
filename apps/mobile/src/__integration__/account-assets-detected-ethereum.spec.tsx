@@ -23,6 +23,7 @@ import {
 import { act, screen } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import {
+    getAccountPortfolioTotals,
     insertAssetHolding,
     upsertAccountChainState,
     useAccountsStore,
@@ -63,6 +64,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 const TSLAX = '0x8aD3c73F833d3F9A523aB01476625F269aEB7Cf0'
 const UNKNOWN = '0x2222222222222222222222222222222222222222'
 const SPAM = '0x3333333333333333333333333333333333333333'
+const PRICED_UNVERIFIED = '0x4444444444444444444444444444444444444444'
 
 const ACCOUNT: WalletAccount = {
     id: 'eth-detected',
@@ -90,7 +92,8 @@ const token = (
 })
 
 // 0.00551 of a priced, vetted token the account received from a swap, plus an
-// unknown token and a flagged one an airdrop left behind.
+// unknown token, a priced one Pera hasn't reviewed and a flagged one an airdrop
+// left behind.
 const seedReceivedTokens = async () => {
     const ether = nativeAssetFor('ethereum')
     await upsertAssets({
@@ -98,6 +101,7 @@ const seedReceivedTokens = async () => {
             ether,
             token(TSLAX, 'Tesla xStock', 'verified'),
             token(UNKNOWN, 'Mystery Coin', 'unverified'),
+            token(PRICED_UNVERIFIED, 'Plain Coin', 'unverified'),
             token(SPAM, 'Free Airdrop', 'suspicious'),
         ],
         scope: ETH_SCOPE,
@@ -112,6 +116,7 @@ const seedReceivedTokens = async () => {
         [ether.assetId, '1500000000000000000'],
         [TSLAX, '5510000000000000'],
         [UNKNOWN, '1000000000000000000'],
+        [PRICED_UNVERIFIED, '1000000000000000000'],
         [SPAM, '9000000000000000000'],
     ] as const) {
         await insertAssetHolding({
@@ -125,6 +130,7 @@ const seedReceivedTokens = async () => {
         prices: [
             { assetId: ether.assetId, usdPrice: new Decimal('2000') },
             { assetId: TSLAX, usdPrice: new Decimal('357') },
+            { assetId: PRICED_UNVERIFIED, usdPrice: new Decimal('4') },
         ],
         scope: ETH_SCOPE,
     })
@@ -174,7 +180,7 @@ describe('Flow: tokens an Ethereum account received', () => {
         useAssetPreferencesStore.getState().resetState()
     })
 
-    it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name, amount and fiat value and no contract address or unverified label', async () => {
+    it('Given a token received from a swap that Pera has vetted, when the list renders, then it is listed with its name, amount and fiat value and no contract address', async () => {
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${TSLAX}`)
@@ -184,19 +190,31 @@ describe('Flow: tokens an Ethereum account received', () => {
         expect(row.textContent).toContain('0.0055 TESLA')
         expect(row.textContent).toContain('1.97')
         expect(row.textContent).not.toContain('0x8aD3')
-        expect(row.textContent).not.toContain('asset.unverified_label')
     })
 
-    it('Given a token Pera has not vetted, when the list renders, then it is listed with the unverified label, its contract address, its symbol on the amount and no fiat value', async () => {
+    it('Given a token Pera has not vetted, when the list renders, then it is listed with its contract address, its symbol on the amount and no fiat value', async () => {
         renderList()
 
         const row = await screen.findByTestId(`asset_row_${UNKNOWN}`)
 
-        expect(row.textContent).toContain('asset.unverified_label')
         expect(row.textContent).toContain('MYSTE · 0x2222')
         expect(row.textContent).toContain('1.00 MYSTE')
         // No price: no value at all, not a placeholder.
         expect(row.textContent).not.toContain('---')
+    })
+
+    it('Given a priced token Pera has not vetted, when the list renders, then it shows its fiat value and the account total counts it', async () => {
+        renderList()
+
+        const row = await screen.findByTestId(`asset_row_${PRICED_UNVERIFIED}`)
+
+        expect(row.textContent).toContain('4.00')
+        const { nonNativeUsdValue } = await getAccountPortfolioTotals({
+            accountAddress: ETH_ADDRESS,
+            scope: ETH_SCOPE,
+        })
+        // 0.00551 * $357 from the vetted token, plus 1 * $4; the flagged token adds nothing.
+        expect(nonNativeUsdValue.toNumber()).toBeCloseTo(0.00551 * 357 + 4, 4)
     })
 
     it('Given a token Pera flags as suspicious, when the list renders, then it is not listed', async () => {

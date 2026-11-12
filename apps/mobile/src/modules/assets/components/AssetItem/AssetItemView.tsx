@@ -183,12 +183,6 @@ export const AssetItemView = ({
                         />
                     ) : null}
                     {titleAccessory}
-                    {isUnverified ? (
-                        <PWBadge
-                            variant='secondary'
-                            value={t('asset.unverified_label')}
-                        />
-                    ) : null}
                     {showFrozenBadge ? (
                         <PWBadge
                             variant='secondary'

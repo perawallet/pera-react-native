@@ -191,18 +191,24 @@ describe('useAssetActionButtons', () => {
         expect(result.current.canSwap).toBe(false)
     })
 
-    it.each(['unverified', 'suspicious'] as const)(
-        'drops swap for a %s token on a chain where tokens arrive unasked',
-        verificationTier => {
-            const { result } = renderButtons(onEthereumOnly, 'ethereum', {
-                assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-                peraMetadata: { verificationTier },
-            })
+    it('drops swap for a suspicious token on a chain where tokens arrive unasked', () => {
+        const { result } = renderButtons(onEthereumOnly, 'ethereum', {
+            assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+            peraMetadata: { verificationTier: 'suspicious' },
+        })
 
-            expect(result.current.canSwap).toBe(false)
-            expect(result.current.canSend).toBe(true)
-        },
-    )
+        expect(result.current.canSwap).toBe(false)
+        expect(result.current.canSend).toBe(true)
+    })
+
+    it('keeps swap for an unverified token on Ethereum', () => {
+        const { result } = renderButtons(onEthereumOnly, 'ethereum', {
+            assetId: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+            peraMetadata: { verificationTier: 'unverified' },
+        })
+
+        expect(result.current.canSwap).toBe(true)
+    })
 
     it('keeps swap for a verified token and for the native coin', () => {
         const verified = renderButtons(onEthereumOnly, 'ethereum', {

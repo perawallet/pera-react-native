@@ -163,9 +163,7 @@
             "added_title": "Token eklendi",
             "added_body": "{{assetName}}, {{chain}} ağına eklendi",
             "add_failed_title": "Token eklenemedi",
-            "unverified_title": "Doğrulanmamış token",
-            "unverified_body": "Pera, {{assetName}} tokenını doğrulamadı. Herkes istediği ad veya logoyla token oluşturabilir, bu yüzden eklemeden önce kontrat adresinin ({{address}}) beklediğin adres olduğunu kontrol et.",
-            "unverified_confirm": "Yine de ekle",
+            "suspicious_confirm": "Yine de ekle",
             "suspicious_title": "Şüpheli token",
             "suspicious_body": "Pera, {{assetName}} ({{address}}) tokenını şüpheli olarak işaretledi. Başka bir tokenı taklit ediyor ya da bir dolandırıcılığın parçası olabilir. Yalnızca kaynağına güveniyorsan ekle.",
             "remove_title": "{{assetName}} kaldırılsın mı?",
@@ -316,8 +314,7 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)",
-        "unverified_label": "Doğrulanmamış"
+        "deleted_label": "(Silindi)"
     },
     "asset_details": {
         "about": {
@@ -410,9 +407,8 @@
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
         },
         "token_warning": {
-            "unverified_title": "Doğrulanmamış token",
             "suspicious_title": "Şüpheli token",
-            "body": "Pera bu tokenı doğrulamadı. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
+            "body": "Pera bu tokenı şüpheli olarak işaretledi. Bunu sen istemedin ve bir dolandırıcılık olabilir. Bununla ilgili web siteleriyle veya bağlantılarla etkileşime girme."
         },
         "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun",
         "toggle_amount_hint": "Değer ile varlık miktarı arasında geçiş yapmak için dokun"
