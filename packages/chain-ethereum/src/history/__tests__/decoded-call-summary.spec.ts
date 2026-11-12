@@ -109,7 +109,7 @@ describe('decodedCallSummary', () => {
         expect(summary.kind).toBe('swap')
         expect(summary.title.key).toBe('transactions.list_item.swap')
         expect(summary.subtitle?.params).toEqual({
-            title: findKnownEvmContract(1, to)?.name,
+            title: 'Uniswap',
         })
     })
 
@@ -167,14 +167,14 @@ describe('decodedCallSummary', () => {
         })
         const value = 168n * 10n ** 12n
 
-        it('is titled Add liquidity with the Uniswap V3 Positions subtitle while decoding', () => {
+        it('is titled Add liquidity with the Uniswap subtitle while decoding', () => {
             const summary = summarize({ to: MANAGER, data, value })
 
             expect(summary.title.key).toBe(
                 'transactions.list_item.add_liquidity',
             )
             expect(summary.subtitle?.params).toEqual({
-                title: 'Uniswap V3 Positions',
+                title: 'Uniswap',
             })
         })
 

@@ -113,6 +113,7 @@ describe('findKnownEvmContract', () => {
             address: V3_POSITIONS,
             kind: 'uniswap-v3-position-manager',
             name: 'Uniswap V3 Positions',
+            projectName: 'Uniswap',
             projectDomain: 'uniswap.org',
             source: 'https://developers.uniswap.org/docs/protocols/v3/deployments/v3-ethereum-deployments',
         })

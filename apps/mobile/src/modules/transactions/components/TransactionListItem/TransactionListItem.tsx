@@ -41,6 +41,7 @@ const TransactionListItemView = ({
         iconName,
         title,
         subtitle,
+        subtitleEllipsizeMode,
         amounts,
         amountsOverflowCount,
         fee,
@@ -120,10 +121,12 @@ const TransactionListItemView = ({
             }
         >
             <PWView>
+                {/* The amounts never shrink, so a long swap pair needs a third line to keep the received token in view. */}
                 <PWText
                     variant='h4'
                     style={styles.title}
                     truncate
+                    numberOfLines={3}
                 >
                     {title}
                 </PWText>
@@ -131,7 +134,7 @@ const TransactionListItemView = ({
                     <PWText
                         style={styles.subtitle}
                         truncate
-                        ellipsizeMode='middle'
+                        ellipsizeMode={subtitleEllipsizeMode}
                     >
                         {subtitle}
                     </PWText>

@@ -15,7 +15,6 @@ import {
     type AssetRef,
     type BalanceChange,
     type I18nKey,
-    type LocalizedText,
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
@@ -245,9 +244,12 @@ export const classifyEvmHistoryCall = (
 /** The subtitle naming a well-known contract; a proper noun, never translated. */
 export const knownContractSubtitle = (
     contract: KnownEvmContract,
-): LocalizedText => ({
-    key: INTERPRETED_TITLE,
-    params: { title: contract.name },
+): Pick<TransactionSummary, 'subtitle' | 'subtitleEllipsis'> => ({
+    subtitle: {
+        key: INTERPRETED_TITLE,
+        params: { title: contract.projectName ?? contract.name },
+    },
+    subtitleEllipsis: 'tail',
 })
 
 /**
@@ -263,7 +265,7 @@ export const historyActionSummary = (
     const { isActionUnknown: _unknown, ...known } = base
     const named: TransactionSummary = {
         ...known,
-        ...(contract && { subtitle: knownContractSubtitle(contract) }),
+        ...(contract && knownContractSubtitle(contract)),
         ...(action.isInferred && { isInferred: true }),
     }
     switch (action.kind) {

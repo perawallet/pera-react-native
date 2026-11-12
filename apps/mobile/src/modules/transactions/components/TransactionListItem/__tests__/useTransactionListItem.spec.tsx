@@ -467,6 +467,54 @@ describe('useTransactionListItem with a record', () => {
         expect(useCounterpartyName).toHaveBeenCalledWith('0xbob', 'ethereum')
     })
 
+    it('truncates a counterparty name in the middle', () => {
+        expect(renderRecord().subtitleEllipsizeMode).toBe('middle')
+    })
+
+    it('truncates a subtitle at the end when the summary asks for it', () => {
+        const row = renderRecord(
+            {},
+            {
+                ...record,
+                summary: {
+                    ...record.summary,
+                    subtitle: {
+                        key: i18nKey(
+                            'transactions.list_item.interpreted_title',
+                        ),
+                        params: { title: 'Uniswap' },
+                    },
+                    subtitleEllipsis: 'tail',
+                },
+            },
+        )
+
+        expect(row.subtitleEllipsizeMode).toBe('tail')
+    })
+
+    it('truncates an NFT subtitle in the middle, keeping its token id', () => {
+        const row = renderRecord(
+            {},
+            {
+                ...record,
+                summary: {
+                    ...record.summary,
+                    kind: 'nft-transfer',
+                    subtitle: {
+                        key: i18nKey('transactions.list_item.nft_subtitle'),
+                        params: {
+                            collection:
+                                '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+                            tokenId: '1234',
+                        },
+                    },
+                },
+            },
+        )
+
+        expect(row.subtitleEllipsizeMode).toBe('middle')
+    })
+
     it("names an approval's token by its stored unit name", () => {
         stored([{ assetId: '0xusdt', unitName: 'USDT' }])
 

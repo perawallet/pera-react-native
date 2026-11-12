@@ -433,6 +433,8 @@ describe('summarizeEthereumHistoryItem', () => {
                 },
             })
             expect(summary.amount?.value).toEqual(new Decimal(1))
+            // The collection can fall back to its address, so the row keeps middle cutting to show the token id.
+            expect(summary.subtitleEllipsis).toBeUndefined()
         })
 
         it('names an unnamed collection by its contract', () => {
@@ -1484,8 +1486,9 @@ describe('summarizeEthereumHistoryItem', () => {
                 },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'Uniswap Universal Router' },
+                    params: { title: 'Uniswap' },
                 },
+                subtitleEllipsis: 'tail',
                 counterparty: getAddress(ROUTER),
                 // The router's calldata isn't read here, so the swap is guessed from its balances.
                 isInferred: true,
@@ -1554,7 +1557,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 title: { key: 'transactions.list_item.supply' },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'Aave V3 Pool' },
+                    params: { title: 'Aave' },
                 },
             })
             expect(summary.isInferred).toBeUndefined()
@@ -1642,7 +1645,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'Uniswap V3 Positions' },
+                    params: { title: 'Uniswap' },
                 },
             })
         })
