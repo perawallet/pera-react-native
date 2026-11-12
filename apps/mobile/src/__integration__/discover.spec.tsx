@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { waitFor } from '@testing-library/react'
 
 import { config } from '@perawallet/wallet-core-config'
@@ -28,12 +28,74 @@ vi.mock('@modules/webview/components/PWWebView', () => ({
     },
 }))
 
+const { DiscoverScreen } =
+    await import('@modules/discover/screens/DiscoverScreen/DiscoverScreen')
+const { DiscoverTabScreen } =
+    await import('@modules/discover/screens/DiscoverTabScreen/DiscoverTabScreen')
 const { DiscoverDetailScreen } =
     await import('@modules/discover/screens/DiscoverDetailScreen/DiscoverDetailScreen')
 
 const baseUrl = config.discoverBaseUrl.endsWith('/')
     ? config.discoverBaseUrl.slice(0, -1)
     : config.discoverBaseUrl
+
+describe('Flow: Discover — webview URL building', () => {
+    beforeEach(() => {
+        webViewSpy.mockClear()
+    })
+
+    afterEach(() => {
+        webViewSpy.mockClear()
+    })
+
+    it('Given a safe relative path param, when Discover mounts, then the path is appended to the discover base URL', async () => {
+        renderWithNavigation(DiscoverScreen, 'Discover', {
+            initialParams: { path: 'markets/algo' },
+        })
+
+        await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
+
+        expect(webViewSpy).toHaveBeenLastCalledWith(`${baseUrl}/markets/algo`)
+    })
+
+    it('Given an absolute http URL as the path param, when Discover mounts, then it is rejected and only the base URL is used', async () => {
+        renderWithNavigation(DiscoverScreen, 'Discover', {
+            initialParams: { path: 'https://evil.com' },
+        })
+
+        await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
+
+        expect(webViewSpy).toHaveBeenLastCalledWith(config.discoverBaseUrl)
+    })
+
+    it('Given a javascript: scheme as the path param, when Discover mounts, then it is rejected and only the base URL is used', async () => {
+        renderWithNavigation(DiscoverScreen, 'Discover', {
+            initialParams: { path: 'javascript:alert(1)' },
+        })
+
+        await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
+
+        expect(webViewSpy).toHaveBeenLastCalledWith(config.discoverBaseUrl)
+    })
+
+    it('Given an Algorand-only build, when the Discover tab mounts, then it loads the Discover web app', async () => {
+        renderWithNavigation(DiscoverTabScreen, 'Discover', {
+            initialParams: { path: 'markets/algo' },
+        })
+
+        await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
+
+        expect(webViewSpy).toHaveBeenLastCalledWith(`${baseUrl}/markets/algo`)
+    })
+
+    it('Given no path param, when Discover mounts, then the bare discover base URL is used', async () => {
+        renderWithNavigation(DiscoverScreen, 'Discover')
+
+        await waitFor(() => expect(webViewSpy).toHaveBeenCalled())
+
+        expect(webViewSpy).toHaveBeenLastCalledWith(config.discoverBaseUrl)
+    })
+})
 
 describe('Flow: Discover detail — pushed page keeps a way back', () => {
     beforeEach(() => {

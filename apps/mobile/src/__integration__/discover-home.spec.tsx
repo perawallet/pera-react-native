@@ -46,6 +46,8 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const { DiscoverHomeScreen } =
     await import('@modules/discover/screens/DiscoverHomeScreen/DiscoverHomeScreen')
+const { DiscoverTabScreen } =
+    await import('@modules/discover/screens/DiscoverTabScreen/DiscoverTabScreen')
 
 // Read lazily: the chain registry is only populated once the setup has run.
 const algorandCaip2 = (): string =>
@@ -169,6 +171,17 @@ describe('Flow: Discover home', () => {
         expect(screen.queryByTestId('discover_chain_filter_all')).toBeNull()
         await screen.findByTestId(rowOf('Tinyman'))
         expect(requestedChains).toContain(algorandCaip2())
+        await flush()
+    })
+
+    it('Given a multichain build, when the Discover tab mounts, then it shows the native home', async () => {
+        useHandlers()
+        renderWithNavigation(DiscoverTabScreen, 'Discover')
+
+        await screen.findByTestId(rowOf('Tinyman'))
+        expect(
+            screen.getByTestId('discover_chain_filter_ethereum'),
+        ).toBeTruthy()
         await flush()
     })
 

@@ -1,6 +1,8 @@
 *** Settings ***
-Documentation       Discover is a native home (search, Top dApps, News) behind the shared age gate. Only
-...                 the home screen's presence is asserted; its lists come from the live API.
+Documentation       On a multichain build (the staging builds the smoke suite runs on) Discover is a native
+...                 home (search, Top dApps, News) behind the shared age gate; an Algorand-only build keeps
+...                 the Discover web app. Only the home screen's presence is asserted; its lists come from
+...                 the live API.
 Resource            settings.resource
 
 

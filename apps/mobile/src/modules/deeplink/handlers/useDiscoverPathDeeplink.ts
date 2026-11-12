@@ -15,6 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { isSafeRelativePath } from '@modules/webview'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import { navigateToScreen } from '../navigateToScreen'
 import { discoverPathTarget } from './discoverPathTarget'
 
@@ -27,12 +28,15 @@ export type DiscoverPathDeeplinkHandler = (params: {
 
 /**
  * Validates the discover path against the same safe-relative-path check
- * the Discover screen runs (defense in depth) before routing to
- * the Discover home, the interim WebView or native asset details.
+ * the Discover screen runs (defense in depth). An Algorand-only build hands
+ * the path to the Discover web app in its tab; a multichain build, whose
+ * Discover tab is native, routes to the Discover home, the interim WebView
+ * or native asset details.
  */
 export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
     const { errorToast } = useToast()
     const { t } = useLanguage()
+    const isNativeDiscover = useIsNativeDiscover()
 
     return useCallback(
         ({ path, sourceUrl, replaceCurrentScreen, onError }) => {
@@ -47,6 +51,13 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                 )
                 onError?.()
                 return false
+            }
+            if (!isNativeDiscover) {
+                navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                    screen: 'Discover',
+                    params: { path },
+                })
+                return true
             }
             const target = discoverPathTarget(path)
             if (target.kind === 'home') {
@@ -71,6 +82,6 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
             }
             return true
         },
-        [errorToast, t],
+        [errorToast, t, isNativeDiscover],
     )
 }

@@ -17,6 +17,7 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import {
     DiscoverDetailScreen,
     DiscoverSearchScreen,
@@ -79,6 +80,8 @@ export const MainRoutes = () => {
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
+    // Search belongs to the native Discover, which only a multichain build shows.
+    const isNativeDiscover = useIsNativeDiscover()
     const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
 
     return (
@@ -242,16 +245,17 @@ export const MainRoutes = () => {
                                 component={DiscoverDetailScreen}
                             />
                         )}
-                        {isAllowed({
-                            platform: 'discoverTab',
-                            anyChain: 'discover',
-                        }) && (
-                            <RootStack.Screen
-                                name='DiscoverSearch'
-                                layout={safeAreaLayout}
-                                component={DiscoverSearchScreen}
-                            />
-                        )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverSearch'
+                                    layout={safeAreaLayout}
+                                    component={DiscoverSearchScreen}
+                                />
+                            )}
                         <RootStack.Screen
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}

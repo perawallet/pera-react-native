@@ -13,3 +13,4 @@
 export { DiscoverDetailScreen } from '../screens/DiscoverDetailScreen'
 export { DiscoverSearchScreen } from '../screens/DiscoverSearchScreen'
 export { DiscoverHomeScreen } from '../screens/DiscoverHomeScreen'
+export { DiscoverTabScreen } from '../screens/DiscoverTabScreen'
