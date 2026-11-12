@@ -206,6 +206,11 @@ export interface TransactionSummary {
     counterparty?: string
     /** Shown instead of the counterparty's name when set. */
     subtitle?: LocalizedText
+    /**
+     * Where the row cuts a `subtitle` that doesn't fit: `tail` for a name read from its start,
+     * such as a protocol. Absent means middle, which keeps an address's or token id's end visible.
+     */
+    subtitleEllipsis?: 'tail'
     /** Unsigned: the sign comes from `direction`. `balanceChanges` carry their own sign. */
     amount?: { assetRef: AssetRef; value: Decimal; display?: AssetDisplayHint }
     /** Shown instead of `amount` when set. */

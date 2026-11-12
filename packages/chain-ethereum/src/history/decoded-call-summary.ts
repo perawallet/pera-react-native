@@ -121,6 +121,6 @@ export const decodedCallSummary = (
           )
     return {
         ...(action ? contractActionSummary(action, call, chain) : base),
-        subtitle: knownContractSubtitle(named),
+        ...knownContractSubtitle(named),
     }
 }
