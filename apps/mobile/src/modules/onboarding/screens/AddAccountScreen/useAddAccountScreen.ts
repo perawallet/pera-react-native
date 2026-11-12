@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import {
-    useCreateAccount,
-    useCreateNextHDAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
@@ -47,7 +44,6 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const navigation = useAppNavigation()
     const scope = useHomeChainScope()
     const { buildHdWalletAccount } = useCreateAccount(scope)
-    const { hasHDWallet } = useCreateNextHDAccount(scope)
     const { currentLanguage } = useLanguage()
     const { pushWebView } = useWebView()
     // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
@@ -128,13 +124,9 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
                         titleKey: i18nKey(
                             'onboarding.add_account.add_account_option_title',
                         ),
-                        descriptionKey: hasHDWallet
-                            ? i18nKey(
-                                  'onboarding.add_account.add_account_option_description',
-                              )
-                            : i18nKey(
-                                  'onboarding.add_account_options.multichain_new_wallet_description',
-                              ),
+                        descriptionKey: i18nKey(
+                            'onboarding.add_account.add_account_option_description',
+                        ),
                         leftIcon: 'wallet-add' as IconName,
                         onPress: handleOpenAddAccountOptions,
                         isDisabled: isCreatingAccount,
@@ -165,7 +157,6 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
                 ] satisfies (AccountOption | false)[]
             ).filter((option): option is AccountOption => !!option),
         [
-            hasHDWallet,
             isCreatingAccount,
             handleOpenAddAccountOptions,
             isPeraCardEnabled,
