@@ -317,6 +317,11 @@ patchedDependencies:
   # The popup lays out under `html { zoom: 0.85 }`, which `Dimensions` doesn't see:
   # it divides window size by the root's computed zoom (a no-op at 1), in both
   # builds (`dist` for Metro web, `dist/cjs` for vitest). Drop if the zoom goes.
+  # `ScrollView` also hands its own style, `overflow: auto` included, to the
+  # `refreshControl` it wraps itself in, making the wrapper a second scroller
+  # without the inner one's hidden scrollbar. On Windows a subpixel overflow
+  # there shows a classic scrollbar that narrows the list, and the wrapper
+  # takes the tail of an animated wheel scroll. The patch pins it to `hidden`.
   "react-native-web@0.21.4": patches/react-native-web@0.21.4.patch
   # RN 0.88 removed the legacy `RCTBaseTextInputView.h`; the Swift bridging
   # header still imports it though no source uses the class. Drop once
