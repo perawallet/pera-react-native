@@ -30,6 +30,8 @@ export type KnownEvmContract = {
     kind: KnownEvmContractKind
     /** A proper noun: shown as written, never translated. */
     name: string
+    /** The project alone ("Uniswap"), where `name` also names the contract; history rows have room only for this. */
+    projectName?: string
     /** The project's own domain, for matching the requesting site; absent on wrapped native, which no project owns. */
     projectDomain?: string
     /** The published deployment list this address was taken from. */
@@ -55,6 +57,7 @@ const router = (address: Address, source: string): KnownEvmContract => ({
     address,
     kind: 'uniswap-universal-router',
     name: 'Uniswap Universal Router',
+    projectName: 'Uniswap',
     projectDomain: UNISWAP_DOMAIN,
     source,
 })
@@ -85,6 +88,7 @@ const aavePool = (address: Address, file: string): KnownEvmContract => ({
     address,
     kind: 'aave-v3-pool',
     name: 'Aave V3 Pool',
+    projectName: 'Aave',
     projectDomain: AAVE_DOMAIN,
     source: `${AAVE_ADDRESS_BOOK}/${file}.ts`,
 })
@@ -93,6 +97,7 @@ const v3Positions = (address: Address, page: string): KnownEvmContract => ({
     address,
     kind: 'uniswap-v3-position-manager',
     name: 'Uniswap V3 Positions',
+    projectName: 'Uniswap',
     projectDomain: UNISWAP_DOMAIN,
     source: `${UNISWAP_DEPLOYMENTS}/${page}`,
 })
@@ -101,6 +106,7 @@ const v4Positions = (address: Address): KnownEvmContract => ({
     address,
     kind: 'uniswap-v4-position-manager',
     name: 'Uniswap V4 Positions',
+    projectName: 'Uniswap',
     projectDomain: UNISWAP_DOMAIN,
     source: UNISWAP_V4_DEPLOYMENTS,
 })

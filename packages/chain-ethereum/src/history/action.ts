@@ -247,7 +247,7 @@ export const knownContractSubtitle = (
     contract: KnownEvmContract,
 ): LocalizedText => ({
     key: INTERPRETED_TITLE,
-    params: { title: contract.name },
+    params: { title: contract.projectName ?? contract.name },
 })
 
 /**

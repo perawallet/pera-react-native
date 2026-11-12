@@ -67,6 +67,8 @@ export type UseTransactionListItemResult = {
     iconName: IconName
     title: string
     subtitle: Nullable<string>
+    /** A counterparty name keeps both ends (an NFD suffix, an address); a summary subtitle reads from the start. */
+    subtitleEllipsizeMode: 'middle' | 'tail'
     amounts: AmountDisplay[]
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
@@ -198,6 +200,7 @@ export const useTransactionListItem = (
         iconName: transactionIconName(summary.icon),
         title,
         subtitle,
+        subtitleEllipsizeMode: summary.subtitle ? 'tail' : 'middle',
         amounts,
         amountsOverflowCount: Math.max(
             0,

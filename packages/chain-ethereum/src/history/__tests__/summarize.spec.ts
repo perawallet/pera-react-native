@@ -1484,7 +1484,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'Uniswap Universal Router' },
+                    params: { title: 'Uniswap' },
                 },
                 counterparty: getAddress(ROUTER),
                 // The router's calldata isn't read here, so the swap is guessed from its balances.
@@ -1554,7 +1554,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 title: { key: 'transactions.list_item.supply' },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'Aave V3 Pool' },
+                    params: { title: 'Aave' },
                 },
             })
             expect(summary.isInferred).toBeUndefined()
@@ -1642,7 +1642,7 @@ describe('summarizeEthereumHistoryItem', () => {
                 },
                 subtitle: {
                     key: 'transactions.list_item.interpreted_title',
-                    params: { title: 'Uniswap V3 Positions' },
+                    params: { title: 'Uniswap' },
                 },
             })
         })
