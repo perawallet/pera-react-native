@@ -19,6 +19,7 @@ import {
     waitFor,
 } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import { View } from 'react-native'
 
 // The card chain ids are empty in the test env, and AutoDraw fails closed
 // without them — supply them so the LSig leg runs. A Killswitch id of '0'
@@ -108,12 +109,15 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    clearCardSession,
     FundingType,
     OnboardingStep,
+    setCardSession,
     useCardStore,
 } from '@perawallet/wallet-core-card'
 import {
     mockCreateCard,
+    mockGetCardStatus,
     mockGetUser,
     mockGetDelegationToken,
 } from '@perawallet/wallet-core-card/test-handlers'
@@ -129,6 +133,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
+import { CardOnOtherAccountScreen } from '@modules/card/screens/CardOnOtherAccountScreen'
 import { CardCreateSigningScreen } from '@modules/card/screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFundingSigningScreen'
 import { SigningOverlays } from '@modules/signing/shell'
@@ -200,6 +205,8 @@ const seedFundingSigner = async (): Promise<void> => {
 // `signOwnership`'s request is an INTERACTIVE_SOURCES source, so it resolves
 // only once SigningOverlays — mounted here in a sibling render tree sharing the
 // same global signing store — renders the review sheet and its slide is tapped.
+const TabBarStub = () => <View testID='card-status-home-stub' />
+
 const renderStatus = () => {
     renderWithNavigation(() => <SigningOverlays />, 'CardSigningOverlaysHost')
     return renderWithNavigation(
@@ -207,7 +214,11 @@ const renderStatus = () => {
         'CardOnboardingStatus',
         {
             additionalScreens: [
-                { name: 'TabBar', component: () => null },
+                { name: 'TabBar', component: TabBarStub },
+                {
+                    name: 'CardOnOtherAccount',
+                    component: CardOnOtherAccountScreen,
+                },
                 {
                     name: 'CardOnboardingSigning',
                     component: CardCreateSigningScreen,
@@ -267,9 +278,10 @@ describe('Flow: Card onboarding — select funding type', () => {
             deviceInstallationId: 'device',
         })
     })
-    afterEach(() => {
+    afterEach(async () => {
         useAccountsStore.getState().setAccounts([])
         useAppIntegrityStore.getState().resetState()
+        await clearCardSession()
     })
 
     it('Given funds are connected, then both funding-type options and the Create button show', async () => {
@@ -602,6 +614,107 @@ describe('Flow: Card onboarding — select funding type', () => {
         expect(
             screen.queryByTestId('card-create-signing-standing-authority'),
         ).toBeNull()
+    })
+
+    it('Given the issued card is bound to an account outside this wallet, then its own screen replaces the checklist instead of offering a second card', async () => {
+        await setCardSession({
+            accessToken: 'test-access-token',
+            refreshToken: '',
+        })
+        const lookup = vi.fn(() =>
+            HttpResponse.json(
+                {
+                    address: FUNDING_ADDRESS,
+                    linkState: 'unlinked',
+                    cardAddress: null,
+                },
+                { status: 200 },
+            ),
+        )
+        server.use(
+            mockGetCardStatus({
+                response: {
+                    id: 'card_1',
+                    panLast4: '4680',
+                    status: 'ACTIVE',
+                    type: 'VIRTUAL',
+                    orderedAt: '2026-11-02T14:12:04.091Z',
+                },
+            }),
+            http.get('*/api/v3/baanx/card-address', lookup),
+        )
+
+        renderStatus()
+
+        expect(
+            await screen.findByTestId(
+                'card-on-other-account',
+                {},
+                { timeout: 5000 },
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('peraCard.card_on_other_account.title'),
+        ).toBeTruthy()
+        expect(screen.getByTestId('card-on-other-account-primary')).toBeTruthy()
+        expect(
+            screen.queryByTestId('card-onboarding-status-create-card'),
+        ).toBeNull()
+        await waitFor(() => expect(lookup).toHaveBeenCalled())
+        expect(useCardStore.getState().escrowCardAddress).toBeNull()
+        expect(useCardStore.getState().connectedFundingSourceAddress).toBeNull()
+    })
+
+    it('Given the issued card is bound to an account this wallet holds, then it is restored and the card opens', async () => {
+        await setCardSession({
+            accessToken: 'test-access-token',
+            refreshToken: '',
+        })
+        useCardStore.getState().setConnectedFundingSourceAddress(null)
+        server.use(
+            mockGetCardStatus({
+                response: {
+                    id: 'card_1',
+                    panLast4: '4680',
+                    status: 'ACTIVE',
+                    type: 'VIRTUAL',
+                    orderedAt: '2026-11-02T14:12:04.091Z',
+                },
+            }),
+            http.get('*/api/v3/baanx/card-address', () =>
+                HttpResponse.json(
+                    {
+                        address: FUNDING_ADDRESS,
+                        linkState: 'linked_to_caller',
+                        cardAddress: 'RESTOREDCARDADDRESS',
+                    },
+                    { status: 200 },
+                ),
+            ),
+        )
+
+        renderStatus()
+
+        // Status read, hand-over, then the user and address lookups: a longer
+        // chain than the default wait allows under a loaded full run.
+        await waitFor(
+            () =>
+                expect(useCardStore.getState().escrowCardAddress).toBe(
+                    'RESTOREDCARDADDRESS',
+                ),
+            { timeout: 5000 },
+        )
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
+        expect(useCardStore.getState().connectedFundingSourceAddress).toBe(
+            FUNDING_ADDRESS,
+        )
+        expect(
+            await screen.findByTestId(
+                'card-status-home-stub',
+                {},
+                { timeout: 5000 },
+            ),
+        ).toBeTruthy()
     })
 
     it('Given funds are not connected, then the funding-type row stays inactive with no Create button', async () => {

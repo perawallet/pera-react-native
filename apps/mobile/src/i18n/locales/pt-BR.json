@@ -1989,6 +1989,13 @@
             "error_body": "Não conseguimos iniciar a verificação. Tente novamente.",
             "open_link_error_body": "Não conseguimos abrir a página de verificação. Tente novamente."
         },
+        "card_on_other_account": {
+            "title": "Seu Pera Card está vinculado a outra conta",
+            "body": "A conta que financia seu cartão não está nesta wallet. Adicione essa conta à Pera e verifique novamente.",
+            "check_again": "Verificar novamente",
+            "not_found_title": "Conta não encontrada",
+            "not_found_body": "Nenhuma das contas desta wallet está vinculada ao seu Pera Card."
+        },
         "setup_status": {
             "title": "Conclua a configuração e comece a gastar on-chain",
             "documents_title": "Envie seus documentos",

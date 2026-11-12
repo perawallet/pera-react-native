@@ -1987,6 +1987,13 @@
             "error_body": "Doğrulamayı başlatamadık. Lütfen tekrar dene.",
             "open_link_error_body": "Doğrulama sayfasını açamadık. Lütfen tekrar dene."
         },
+        "card_on_other_account": {
+            "title": "Pera Card’ın başka bir hesaba bağlı",
+            "body": "Kartını fonlayan hesap bu cüzdanda değil. O hesabı Pera’ya ekle, sonra tekrar kontrol et.",
+            "check_again": "Tekrar kontrol et",
+            "not_found_title": "Hesap bulunamadı",
+            "not_found_body": "Bu cüzdandaki hesapların hiçbiri Pera Card’ına bağlı değil."
+        },
         "setup_status": {
             "title": "Kurulumu tamamla ve zincir üzerinde harcamaya başla",
             "documents_title": "Belgelerini gönder",
