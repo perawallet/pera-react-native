@@ -266,7 +266,7 @@ pipelines:
           # Staging ships every chain, as bitrise.yml's staging workflows do. A job
           # sees only its declared env, so production keeps the config default
           # (Algorand only) without a pin.
-          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
           ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
           ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
           ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
@@ -291,6 +291,10 @@ pipelines:
           POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
           POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
           POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+          OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com
+          OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com
+          OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
           # Testers install on phones, so staging skips the x86 and x86_64
           # emulator builds of every native module: about half the native
           # compile. Production still builds every ABI for Play.
@@ -312,7 +316,7 @@ pipelines:
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
           # See android-staging.
-          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
           ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
           ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
           ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
@@ -337,6 +341,10 @@ pipelines:
           POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
           POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
           POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+          OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com
+          OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com
+          OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
           IOS_SCHEME: Pera7Staging
           # See ios-production.
           BUILD_NUMBER_OFFSET: '1000'
@@ -352,7 +360,7 @@ pipelines:
           APP_ENV: staging
           DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
           # See android-staging.
-          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+          CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
           ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
           ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
           ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
@@ -377,6 +385,10 @@ pipelines:
           POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
           POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
           POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+          OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com
+          OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+          OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com
+          OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
           # See web-production, for both the integrity flags and the offset.
           WEB_INTEGRITY_MINT_ENABLED: 'true'
           WEB_INTEGRITY_ENROL_ENABLED: 'true'
