@@ -15,6 +15,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { PWTabBar } from '../PWTabBar'
 import { Animated } from 'react-native'
 
+const mockHaptics = vi.hoisted(() => ({ selection: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('PWTabBar', () => {
     const mockNavigation = {
         navigate: vi.fn(),
@@ -86,5 +92,30 @@ describe('PWTabBar', () => {
             canPreventDefault: true,
         })
         expect(mockNavigation.navigate).toHaveBeenCalledWith('SecondTab')
+    })
+
+    it('plays the selection haptic for an unfocused tab only', () => {
+        mockHaptics.selection.mockClear()
+        const { getAllByText } = render(
+            <PWTabBar
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                state={mockState as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                descriptors={mockDescriptors as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                navigation={mockNavigation as any}
+                position={mockPosition}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                layout={{ width: 300, height: 50 } as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                jumpTo={vi.fn() as any}
+            />,
+        )
+
+        fireEvent.click(getAllByText('First Tab')[0])
+        expect(mockHaptics.selection).not.toHaveBeenCalled()
+
+        fireEvent.click(getAllByText('Second Tab')[0])
+        expect(mockHaptics.selection).toHaveBeenCalledTimes(1)
     })
 })

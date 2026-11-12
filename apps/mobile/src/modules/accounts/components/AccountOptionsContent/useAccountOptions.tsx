@@ -46,6 +46,7 @@ import {
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
@@ -119,6 +120,7 @@ export const useAccountOptions = ({
     onShowAddress,
 }: UseAccountOptionsParams): UseAccountOptionsResult => {
     const { t } = useLanguage()
+    const haptics = useHaptics()
     const { showToast, errorToast } = useToast()
     const { isAccountEnabled } = useNotificationPreferences()
     const { toggleAccountNotification, isTogglePending } =
@@ -347,6 +349,7 @@ export const useAccountOptions = ({
         trackEvent(AccountOptionsEvent.Remove, {
             [AnalyticsMetadataKey.ChainId]: accountChainId,
         })
+        haptics.warning()
         // Render confirmation inline inside the already-open AccountOptions sheet
         // instead of opening a second BottomSheetModal. gorhom's stackBehavior='push'
         // causes the second modal's window to sit behind the first on iOS, making the
@@ -356,7 +359,7 @@ export const useAccountOptions = ({
         } else {
             setRemoveConfirmView('remove-confirm')
         }
-    }, [account, accountChainId])
+    }, [account, accountChainId, haptics])
 
     const handleConfirmBackupWarning = useCallback(() => {
         setRemoveConfirmView('remove-confirm')

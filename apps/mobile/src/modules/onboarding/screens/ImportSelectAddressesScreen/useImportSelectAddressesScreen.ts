@@ -45,6 +45,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useToast } from '@hooks/useToast'
+import { useHaptics } from '@hooks/useHaptics'
 import { networkListOf } from '@modules/chain-ui'
 import {
     useExitAccountFlow,
@@ -92,6 +93,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const haptics = useHaptics()
     const liveAccounts = useAllAccounts()
     // Frozen when the user taps Import: the commit writes the selection into
     // the store, and reading it live would flip every row to "already
@@ -289,11 +291,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                             account: accountsToAdd[0],
                         })
                     } else {
+                        // No naming step, so no confetti: this is the success moment.
+                        if (accountsToAdd.length > 0) haptics.success()
                         exitAccountFlow()
                     }
                 } else {
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,
+                        hasImportedAccounts: accountsToAdd.length > 0,
                     })
                 }
             } catch (error) {
@@ -338,6 +343,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setAccounts,
         seedIdOf,
         errorToast,
+        haptics,
         t,
         scope.chainId,
         addressOf,

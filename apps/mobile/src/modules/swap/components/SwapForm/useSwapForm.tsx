@@ -48,6 +48,8 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
+import { useHaptics } from '@hooks/useHaptics'
+import { useHapticOnCrossing } from '@hooks/useHapticOnCrossing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
@@ -151,6 +153,7 @@ export const useSwapForm = (
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
     const { successToast, errorToast, infoToast } = useToast()
+    const haptics = useHaptics()
     const { t } = useLanguage()
 
     const { data: payAssets } = useAssetsQuery(scope, [fromAsset])
@@ -352,6 +355,17 @@ export const useSwapForm = (
         isPayBalanceError,
     ])
 
+    // The cue marks the user typing past their holding. An amount that arrived
+    // any other way (a flip, a resume) or on another pay asset is not entry.
+    const [enteredAmount, setEnteredAmount] =
+        useState<Nullable<{ amount: Nullable<Decimal>; assetId: string }>>(null)
+    const isInsufficientByEntry =
+        hasInsufficientBalance &&
+        enteredAmount !== null &&
+        enteredAmount.amount === payAmount &&
+        enteredAmount.assetId === fromAsset
+    useHapticOnCrossing(isInsufficientByEntry, haptics.error)
+
     const canSwap = useMemo(
         () =>
             selectedQuote !== null &&
@@ -368,12 +382,13 @@ export const useSwapForm = (
             shouldReopenConfirmRef.current = false
             isPercentageFillRef.current = false
             setPayAmount(amount)
+            setEnteredAmount({ amount, assetId: fromAsset })
             if (!isDecimalEqual(amount, quotedAmount)) {
                 resetQuotes()
                 setReceiveAmount(null)
             }
         },
-        [quotedAmount, resetQuotes],
+        [quotedAmount, resetQuotes, fromAsset],
     )
 
     const handlePayAmountFocus = useCallback(() => {
@@ -384,6 +399,7 @@ export const useSwapForm = (
 
     const handleSwapDirection = useCallback(() => {
         if (isCrossChain) return
+        haptics.light()
         previousFromAssetRef.current = toAsset
         isPercentageFillRef.current = false
         setFromAsset(toAsset)
@@ -394,6 +410,7 @@ export const useSwapForm = (
         resetQuotes()
     }, [
         isCrossChain,
+        haptics,
         fromAsset,
         toAsset,
         payAmount,

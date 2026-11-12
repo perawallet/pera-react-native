@@ -14,6 +14,12 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { PWSwitch } from '../PWSwitch'
 
+const mockHaptics = vi.hoisted(() => ({ selection: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('PWSwitch', () => {
     it('calls onValueChange when toggled', () => {
         const onValueChange = vi.fn()
@@ -26,5 +32,19 @@ describe('PWSwitch', () => {
         // Switch often has role 'switch'
         fireEvent.click(getByRole('switch'))
         expect(onValueChange).toHaveBeenCalledWith(true)
+    })
+
+    it('plays the selection haptic when toggled', () => {
+        mockHaptics.selection.mockClear()
+        const { getByRole } = render(
+            <PWSwitch
+                value={false}
+                onValueChange={vi.fn()}
+            />,
+        )
+
+        fireEvent.click(getByRole('switch'))
+
+        expect(mockHaptics.selection).toHaveBeenCalledTimes(1)
     })
 })

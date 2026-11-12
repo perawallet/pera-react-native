@@ -17,6 +17,7 @@ import {
     type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
@@ -90,14 +91,18 @@ export const useRestoreOutcome = ({
 }: UseRestoreOutcomeParams): UseRestoreOutcomeResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
+    const haptics = useHaptics()
 
     const onSuccess = useCallback(
         (result: RestoreCloudBackupResult) => {
-            showToast(outcomeToast(t, result))
+            const toast = outcomeToast(t, result)
+            // A partial restore shows a warning toast, so it is not a success.
+            if (toast.type === 'success') haptics.success()
+            showToast(toast)
             clearDraft()
             onDone()
         },
-        [showToast, t, clearDraft, onDone],
+        [showToast, haptics, t, clearDraft, onDone],
     )
 
     const onError = useCallback(

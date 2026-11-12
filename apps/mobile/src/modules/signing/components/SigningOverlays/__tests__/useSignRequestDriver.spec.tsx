@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     isSignRequestAwaitingPreflight,
+    wasRestoredFromStorage,
     useSigningPipeline,
     useSigningRequest,
     type SignRequest,
@@ -39,6 +40,16 @@ vi.mock('@modules/bottom-sheet', () => ({
         selector({ hostCount: hostCountState.current }),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
+const lockState = vi.hoisted(() => ({ isVisible: false }))
+vi.mock('@hooks/useIsLockOverlayVisible', () => ({
+    useIsLockOverlayVisible: () => lockState.isVisible,
+}))
+
 vi.mock('../../SignRequestContent', () => ({
     SignRequestContent: () => null,
 }))
@@ -51,6 +62,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
         useSigningRequest: vi.fn(),
         useSigningPipeline: vi.fn(),
         isSignRequestAwaitingPreflight: vi.fn(() => false),
+        wasRestoredFromStorage: vi.fn(() => false),
     }
 })
 
@@ -88,6 +100,70 @@ describe('useSignRequestDriver', () => {
         vi.clearAllMocks()
         vi.mocked(isSignRequestAwaitingPreflight).mockReturnValue(false)
         hostCountState.current = 1
+        lockState.isVisible = false
+        vi.mocked(wasRestoredFromStorage).mockReturnValue(false)
+    })
+
+    describe('the arrival haptic', () => {
+        const cosignRequest = {
+            id: 'cosign-request',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'multisig-cosign',
+        } as unknown as SignRequest
+
+        it('plays the warning haptic once for a dApp request, even when the sheet host remounts', () => {
+            mockQueue([wcRequest])
+            const { rerender } = renderHook(() => useSignRequestDriver())
+            expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
+
+            hostCountState.current = 0
+            rerender()
+            hostCountState.current = 1
+            rerender()
+
+            expect(requestBottomSheetMock).toHaveBeenCalledTimes(2)
+            expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
+        })
+
+        it('stays silent for a request that did not come from a dApp', () => {
+            mockQueue([cosignRequest])
+
+            renderHook(() => useSignRequestDriver())
+
+            expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+            expect(mockHaptics.warning).not.toHaveBeenCalled()
+        })
+
+        it('stays silent for a request restored from storage at launch, though its sheet still opens', () => {
+            vi.mocked(wasRestoredFromStorage).mockReturnValue(true)
+            mockQueue([wcRequest])
+
+            renderHook(() => useSignRequestDriver())
+
+            expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+            expect(mockHaptics.warning).not.toHaveBeenCalled()
+        })
+
+        it('waits for the lock screen to clear', () => {
+            lockState.isVisible = true
+            mockQueue([wcRequest])
+            const { rerender } = renderHook(() => useSignRequestDriver())
+            expect(mockHaptics.warning).not.toHaveBeenCalled()
+
+            lockState.isVisible = false
+            rerender()
+
+            expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
+        })
+
+        it('waits while a hardware sign is in flight for another request', () => {
+            mockQueue([headlessRequest, wcRequest], { hardwareActive: true })
+
+            renderHook(() => useSignRequestDriver())
+
+            expect(mockHaptics.warning).not.toHaveBeenCalled()
+        })
     })
 
     it('opens the sheet for the first interactive request', () => {

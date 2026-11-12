@@ -16,8 +16,15 @@ import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { useOfflineFeedbackStore } from '@hooks/useOfflineFeedbackStore'
 import { usePWRefreshControl } from '../usePWRefreshControl'
 
+const mockHaptics = vi.hoisted(() => ({ light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('usePWRefreshControl', () => {
     beforeEach(() => {
+        mockHaptics.light.mockClear()
         useNetworkStatusStore.setState({ hasInternet: true })
         useOfflineFeedbackStore.setState({ emphasisNonce: 0 })
     })
@@ -55,6 +62,24 @@ describe('usePWRefreshControl', () => {
 
         expect(onRefresh).not.toHaveBeenCalled()
         expect(useOfflineFeedbackStore.getState().emphasisNonce).toBe(1)
+    })
+
+    it('plays the light haptic on a pull, online or offline', () => {
+        const { result } = renderHook(() =>
+            usePWRefreshControl({ isRefreshing: false, onRefresh: vi.fn() }),
+        )
+
+        act(() => {
+            result.current.handleRefresh()
+        })
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: false })
+        })
+        act(() => {
+            result.current.handleRefresh()
+        })
+
+        expect(mockHaptics.light).toHaveBeenCalledTimes(2)
     })
 
     it('reports no refresh in progress while offline', () => {

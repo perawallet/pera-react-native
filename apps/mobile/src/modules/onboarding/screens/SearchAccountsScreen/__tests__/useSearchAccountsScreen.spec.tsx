@@ -557,6 +557,7 @@ describe('useSearchAccountsScreen', () => {
             expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
             expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
                 accounts: rekeyedAccounts,
+                hasImportedAccounts: true,
             })
             expect(mockExitAccountFlow).not.toHaveBeenCalled()
         })
@@ -612,6 +613,7 @@ describe('useSearchAccountsScreen', () => {
             expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
             expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
                 accounts: rekeyedAccounts,
+                hasImportedAccounts: true,
             })
             expect(mockExitAccountFlow).not.toHaveBeenCalled()
         })

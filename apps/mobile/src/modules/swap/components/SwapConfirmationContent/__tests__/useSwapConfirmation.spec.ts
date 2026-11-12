@@ -42,6 +42,12 @@ const { STYLES, mockUseAssetsQuery } = vi.hoisted(() => ({
 
 vi.mock('../styles', () => ({ useStyles: () => STYLES }))
 
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: mockUseAssetsQuery,
     formatAssetAmount: (
@@ -104,6 +110,7 @@ const mockCurrency = (usdToPreferred: (usd: Decimal) => Decimal | null) =>
 
 describe('useSwapConfirmation', () => {
     beforeEach(() => {
+        mockHaptics.warning.mockClear()
         mockUseAssetsQuery.mockReset()
         mockUseAssetsQuery.mockImplementation((_scope, ids: string[]) => ({
             data: new Map(ids.map(id => [id, ASSETS[id]])),
@@ -508,6 +515,21 @@ describe('useSwapConfirmation', () => {
         const { result } = renderConfirmation(quote)
 
         expect(result.current.slippageDisplay).toBe('1%')
+    })
+
+    it('plays the warning haptic once for a quote at the high price impact threshold', () => {
+        const { rerender } = renderConfirmation(
+            makeQuote({ priceImpact: new Decimal('5') }),
+        )
+        rerender()
+
+        expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
+    })
+
+    it('plays no warning haptic just under the threshold', () => {
+        renderConfirmation(makeQuote({ priceImpact: new Decimal('4.99') }))
+
+        expect(mockHaptics.warning).not.toHaveBeenCalled()
     })
 
     it.each([

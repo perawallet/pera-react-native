@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { useHaptics } from '@hooks/useHaptics'
 
 export type ConfettiAnimationProps = {
     play: boolean
@@ -30,19 +31,20 @@ export const useConfettiAnimation = ({
     onFinish,
 }: ConfettiAnimationProps): UseConfettiAnimationResult => {
     const [isVisible, setIsVisible] = useState(false)
+    const haptics = useHaptics()
 
     useEffect(() => {
         if (play) {
-            const timeout = setTimeout(
-                () => setIsVisible(true),
-                RENDER_DELAY_MS,
-            )
+            const timeout = setTimeout(() => {
+                haptics.success()
+                setIsVisible(true)
+            }, RENDER_DELAY_MS)
             return () => clearTimeout(timeout)
         }
 
         setIsVisible(false)
         return undefined
-    }, [play])
+    }, [play, haptics])
 
     const handleFinish = useCallback(() => {
         setIsVisible(false)

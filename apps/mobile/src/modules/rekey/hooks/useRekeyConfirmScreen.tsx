@@ -32,6 +32,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from './useHandleRekeyError'
 import { useRekeyProposeHandoff } from './useRekeyProposeHandoff'
@@ -106,6 +107,7 @@ export const useRekeyConfirmScreen = ({
     const handleRekeyError = useHandleRekeyError()
     const { pushWebView } = useWebView()
     const { request: requestBottomSheet } = useBottomSheet()
+    const haptics = useHaptics()
     const { submitAsync, isPending: isSubmitting } =
         useSubmitDelegationMutation({
             scope,
@@ -204,6 +206,7 @@ export const useRekeyConfirmScreen = ({
             const currentAuthName = currentAuth
                 ? getAccountDisplayName(currentAuth, scope.chainId)
                 : ''
+            haptics.warning()
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <PreviousRekeyWarningSheet
@@ -227,6 +230,7 @@ export const useRekeyConfirmScreen = ({
             target &&
             isAuthorityDowngrade(source, target, accounts, scope.chainId)
         ) {
+            haptics.warning()
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <QuantumDowngradeWarningSheet
@@ -254,6 +258,7 @@ export const useRekeyConfirmScreen = ({
         currentAuth,
         isUnderfunded,
         requestBottomSheet,
+        haptics,
         handleLearnMore,
         submit,
         warningCopy,

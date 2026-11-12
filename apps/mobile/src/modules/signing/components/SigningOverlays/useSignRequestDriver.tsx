@@ -13,11 +13,15 @@
 import React, { useEffect, useRef } from 'react'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet, useBottomSheetStore } from '@modules/bottom-sheet'
+import { useHaptics } from '@hooks/useHaptics'
+import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
 import {
+    isExternalCallbackSource,
     isInteractiveSource,
     isSignRequestAwaitingPreflight,
     useSigningPipeline,
     useSigningRequest,
+    wasRestoredFromStorage,
 } from '@perawallet/wallet-core-signing'
 import { SignRequestContent } from '../SignRequestContent'
 
@@ -57,6 +61,9 @@ export const useSignRequestDriver = () => {
     // instead of wedging in the queue with no sheet and no dApp response.
     const hostCount = useBottomSheetStore(s => s.hostCount)
     const openIdRef = useRef<Nullable<string>>(null)
+    const haptics = useHaptics()
+    const isLockOverlayVisible = useIsLockOverlayVisible()
+    const announcedIdsRef = useRef(new Set<string>())
 
     const firstInteractive = pendingSignRequests.find(r =>
         isInteractiveSource(r.sourceType),
@@ -72,6 +79,36 @@ export const useSignRequestDriver = () => {
         resolved?.activeChild?.kind === 'hardware' &&
         !!nextRequest &&
         currentRequest?.id !== nextRequest.id
+
+    // Once per request id: a host remount re-opens the same sheet, and the
+    // sheet is held back under the lock screen, so the cue waits for unlock.
+    // Only requests that arrive this session are announced: a persisted one
+    // coming back after a relaunch is not an arrival.
+    useEffect(() => {
+        if (
+            !nextRequest ||
+            !isExternalCallbackSource(nextRequest.sourceType) ||
+            wasRestoredFromStorage(nextRequest.id)
+        ) {
+            return
+        }
+        if (
+            isLockOverlayVisible ||
+            hostCount === 0 ||
+            isHardwareBusyForOtherRequest ||
+            announcedIdsRef.current.has(nextRequest.id)
+        ) {
+            return
+        }
+        announcedIdsRef.current.add(nextRequest.id)
+        haptics.warning()
+    }, [
+        nextRequest,
+        isLockOverlayVisible,
+        hostCount,
+        isHardwareBusyForOtherRequest,
+        haptics,
+    ])
 
     useEffect(() => {
         // Keep the sign-request sheet mounted for as long as its request is

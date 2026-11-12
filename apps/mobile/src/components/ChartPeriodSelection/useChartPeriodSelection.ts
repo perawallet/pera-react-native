@@ -12,6 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseChartPeriodSelectionParams = {
@@ -31,15 +32,17 @@ export const useChartPeriodSelection = ({
 }: UseChartPeriodSelectionParams): UseChartPeriodSelectionResult => {
     const [activeValue, setActiveValue] = useState<HistoryPeriod>(value)
     const { t } = useLanguage()
+    const haptics = useHaptics()
 
     const handlePressed = useCallback(
         (newValue: HistoryPeriod) => {
             if (activeValue !== newValue) {
+                haptics.selection()
                 setActiveValue(newValue)
                 onChange(newValue)
             }
         },
-        [onChange, setActiveValue, activeValue],
+        [onChange, setActiveValue, activeValue, haptics],
     )
 
     return {

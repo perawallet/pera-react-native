@@ -12,6 +12,7 @@
 
 import type { StyleProp, ViewStyle } from 'react-native'
 import { PWScrollView, PWText, PWTouchableOpacity } from '@components/core'
+import { useHaptics } from '@hooks/useHaptics'
 import { useStyles } from './styles'
 
 export type FilterOption<T> = {
@@ -42,6 +43,7 @@ export const FilterSelection = <T,>({
     testID,
 }: FilterSelectionProps<T>) => {
     const styles = useStyles()
+    const haptics = useHaptics()
 
     return (
         <PWScrollView
@@ -55,7 +57,10 @@ export const FilterSelection = <T,>({
                 return (
                     <PWTouchableOpacity
                         key={String(option.value)}
-                        onPress={() => onSelect(option.value)}
+                        onPress={() => {
+                            if (!isActive) haptics.selection()
+                            onSelect(option.value)
+                        }}
                         testID={option.testID}
                         style={[styles.chip, isActive && styles.activeChip]}
                     >

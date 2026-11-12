@@ -13,6 +13,7 @@
 import React, { useState } from 'react'
 import { Animated, type LayoutChangeEvent } from 'react-native'
 import type { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs' // TODO: monitor for lib updates to migrate from native Animated to Reanimated, which is currently unsupported
+import { useHaptics } from '@hooks/useHaptics'
 import { useTabBarStyles } from './styles'
 import { PWView } from '@components/core/PWView'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
@@ -27,6 +28,7 @@ export const PWTabBar = ({
     position,
 }: PWTabBarProps) => {
     const styles = useTabBarStyles()
+    const haptics = useHaptics()
     // We rely on onLayout to get the actual width of the container (after padding)
     // Initializing with layout.width might be wrong if parent has padding we don't know about,
     // or if we add padding (which we do in externalContainer).
@@ -97,6 +99,7 @@ export const PWTabBar = ({
                         })
 
                         if (!isFocused && !event.defaultPrevented) {
+                            haptics.selection()
                             navigation.navigate(route.name)
                         }
                     }

@@ -373,7 +373,10 @@ export const getScreenSections = (): GallerySection[] => [
                         name: 'AddAccount',
                         params: {
                             screen: 'ImportRekeyedAddresses',
-                            params: { accounts: [] },
+                            params: {
+                                accounts: [],
+                                hasImportedAccounts: false,
+                            },
                         },
                     },
                 },

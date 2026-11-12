@@ -32,6 +32,7 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from '@modules/rekey/hooks/useHandleRekeyError'
 import { useRekeyProposeHandoff } from '@modules/rekey/hooks/useRekeyProposeHandoff'
@@ -86,6 +87,7 @@ export const useUndoRekeyConfirmScreen =
         const handleRekeyError = useHandleRekeyError()
         const { pushWebView } = useWebView()
         const { request: requestBottomSheet } = useBottomSheet()
+        const haptics = useHaptics()
         const { submitAsync, isPending: isSubmitting } =
             useSubmitDelegationMutation({
                 scope,
@@ -188,6 +190,7 @@ export const useUndoRekeyConfirmScreen =
                 : ''
             const willBecomeNoAuth = isWatchAccount(source)
             const copy = willBecomeNoAuth ? NO_AUTH_WARNING_COPY : WARNING_COPY
+            haptics.warning()
             const confirmed = await requestBottomSheet<boolean>({
                 contents: (
                     <PreviousRekeyWarningSheet
@@ -210,6 +213,7 @@ export const useUndoRekeyConfirmScreen =
             currentAuth,
             isUnderfunded,
             requestBottomSheet,
+            haptics,
             handleLearnMore,
             handleRekeyError,
             navigation,

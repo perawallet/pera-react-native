@@ -16,6 +16,12 @@ import { useRestoreOutcome } from '../useRestoreOutcome'
 
 const { showToastMock } = vi.hoisted(() => ({ showToastMock: vi.fn() }))
 
+const mockHaptics = vi.hoisted(() => ({ success: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@perawallet/wallet-core-backup', () => ({
     restoreErrorCategoryOf: () => 'UNKNOWN',
 }))
@@ -40,6 +46,43 @@ const result = (
 describe('useRestoreOutcome', () => {
     beforeEach(() => {
         showToastMock.mockReset()
+        mockHaptics.success.mockClear()
+    })
+
+    test('plays the success haptic when a restore completes', () => {
+        const { result: hook } = renderHook(() =>
+            useRestoreOutcome({ clearDraft: vi.fn(), onDone: vi.fn() }),
+        )
+
+        hook.current.onSuccess(result(0, 0))
+
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
+    })
+
+    test.each([
+        ['accounts missing a chain', 1, 0],
+        ['accounts only a newer app can restore', 0, 2],
+    ])(
+        'plays no success haptic for a partial restore: %s',
+        (_label, incomplete, newer) => {
+            const { result: hook } = renderHook(() =>
+                useRestoreOutcome({ clearDraft: vi.fn(), onDone: vi.fn() }),
+            )
+
+            hook.current.onSuccess(result(incomplete, newer))
+
+            expect(mockHaptics.success).not.toHaveBeenCalled()
+        },
+    )
+
+    test('plays no haptic when a restore fails', () => {
+        const { result: hook } = renderHook(() =>
+            useRestoreOutcome({ clearDraft: vi.fn(), onDone: vi.fn() }),
+        )
+
+        hook.current.onError(new Error('nope'))
+
+        expect(mockHaptics.success).not.toHaveBeenCalled()
     })
 
     test.each([
