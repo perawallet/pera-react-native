@@ -29,6 +29,13 @@ import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import type { EthereumTransactionPresentation } from '../../../hooks/useEthereumTransactionPresentation'
 import { useEthereumSimulationSection } from '../useEthereumSimulationSection'
 
+const mockShareability = vi.hoisted(() => ({
+    current: { isChecking: false, isShareable: true },
+}))
+vi.mock('@modules/signing/hooks/useRequestShareability', () => ({
+    useRequestShareability: () => mockShareability.current,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -264,6 +271,22 @@ describe('useEthereumSimulationSection', () => {
                 status: 'reverted',
             })
         })
+    })
+
+    it('is loading, and asks nothing, while the request addresses are still being checked', () => {
+        mockShareability.current = { isChecking: true, isShareable: false }
+
+        expect(render()).toEqual({ status: 'loading' })
+        expect(isRequested()).toBe(false)
+        mockShareability.current = { isChecking: false, isShareable: true }
+    })
+
+    it('asks nothing for a request naming a scam-listed address', () => {
+        mockShareability.current = { isChecking: false, isShareable: false }
+
+        expect(render()).toEqual({ status: 'hidden' })
+        expect(isRequested()).toBe(false)
+        mockShareability.current = { isChecking: false, isShareable: true }
     })
 
     it('is loading while the prediction is pending', () => {

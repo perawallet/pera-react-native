@@ -158,17 +158,21 @@ describe('titleKeyOf', () => {
 })
 
 describe('iconNameOf', () => {
-    it('uses the swap icon for a swap and the contract call icon for another action', () => {
+    it('gives each action its own icon', () => {
         expect(iconNameOf(view(), null, swap)).toBe('transactions/swap')
-        expect(iconNameOf(view(), null, wrap)).toBe(
-            'transactions/application-call',
-        )
+        expect(iconNameOf(view(), null, wrap)).toBe('transactions/swap')
+        expect(
+            iconNameOf(view(), null, {
+                kind: 'supply',
+                assetContract: ROUTER,
+                amount,
+                isEntireBalance: false,
+            } as EthereumContractActionPresentation),
+        ).toBe('fund')
     })
 
     it('uses the approval icon for an approval, even with an action', () => {
-        expect(iconNameOf(view(), approval({}), swap)).toBe(
-            'transactions/application-call',
-        )
+        expect(iconNameOf(view(), approval({}), swap)).toBe('key')
     })
 
     it('uses the send icon for a read transfer and a transfer', () => {
@@ -181,9 +185,7 @@ describe('iconNameOf', () => {
     })
 
     it('uses the contract call icon for an unread call', () => {
-        expect(iconNameOf(view(), null, null)).toBe(
-            'transactions/application-call',
-        )
+        expect(iconNameOf(view(), null, null)).toBe('code')
     })
 })
 

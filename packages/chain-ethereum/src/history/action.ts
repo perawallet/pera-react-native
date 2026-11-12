@@ -81,6 +81,14 @@ const AAVE_POOL_ACTIONS: ReadonlyMap<string, PlainActionKind> = new Map([
     ['repayWithATokens', 'repay'],
 ])
 
+const AAVE_GATEWAY_ACTIONS: ReadonlyMap<string, PlainActionKind> = new Map([
+    ['depositETH', 'supply'],
+    ['withdrawETH', 'withdraw'],
+    ['withdrawETHWithPermit', 'withdraw'],
+    ['borrowETH', 'borrow'],
+    ['repayETH', 'repay'],
+])
+
 const WRAPPED_NATIVE_ACTIONS: ReadonlyMap<string, PlainActionKind> = new Map([
     ['deposit', 'wrap'],
     ['withdraw', 'unwrap'],
@@ -210,6 +218,9 @@ const knownContractAction = (
         case 'aave-v3-pool': {
             return actionByMethod(AAVE_POOL_ACTIONS, facts.method)
         }
+        case 'aave-v3-gateway': {
+            return actionByMethod(AAVE_GATEWAY_ACTIONS, facts.method)
+        }
         case 'wrapped-native': {
             return actionByMethod(WRAPPED_NATIVE_ACTIONS, facts.method)
         }
@@ -218,7 +229,9 @@ const knownContractAction = (
             return positionAction(facts)
         }
         case 'uniswap-universal-router':
-        case 'uniswap-permit2': {
+        case 'uniswap-permit2':
+        case 'aave-v3-rewards':
+        case 'aave-v3-adapter': {
             return shapeAction(facts)
         }
     }

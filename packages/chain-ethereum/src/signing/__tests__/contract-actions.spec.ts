@@ -123,6 +123,68 @@ describe('decodeEvmContractAction', () => {
         })
     })
 
+    describe('Aave V3 gateway', () => {
+        const GATEWAY: Address = '0xd01607c3C5eCABa394D8be377a08590149325722'
+        const GATEWAY_ABI = parseAbi([
+            'function depositETH(address pool, address onBehalfOf, uint16 referralCode)',
+            'function withdrawETH(address pool, uint256 amount, address to)',
+            'function borrowETH(address pool, uint256 amount, uint16 referralCode)',
+            'function repayETH(address pool, uint256 amount, address onBehalfOf)',
+        ])
+        const gateway = (
+            functionName: (typeof GATEWAY_ABI)[number]['name'],
+            args: unknown[],
+        ): Hex =>
+            encodeFunctionData({
+                abi: GATEWAY_ABI,
+                functionName,
+                args,
+            } as Parameters<typeof encodeFunctionData>[0])
+        const lending = (
+            kind: 'supply' | 'withdraw' | 'borrow' | 'repay',
+            amount: bigint,
+            isEntireBalance = false,
+        ) => ({ kind, asset: WETH, amount: dec(amount), isEntireBalance })
+
+        it('reads each native-coin call as the action on the wrapped reserve', () => {
+            expect(
+                decode(
+                    GATEWAY,
+                    gateway('depositETH', [POOL, SENDER, 0]),
+                    10n ** 18n,
+                ),
+            ).toEqual(lending('supply', 10n ** 18n))
+            expect(
+                decode(
+                    GATEWAY,
+                    gateway('withdrawETH', [POOL, maxUint256, SENDER]),
+                ),
+            ).toEqual(lending('withdraw', maxUint256, true))
+            expect(
+                decode(GATEWAY, gateway('borrowETH', [POOL, 7n, 0])),
+            ).toEqual(lending('borrow', 7n))
+            expect(
+                decode(
+                    GATEWAY,
+                    gateway('repayETH', [POOL, maxUint256, SENDER]),
+                    3n,
+                ),
+            ).toEqual(lending('repay', 3n))
+        })
+
+        it('gives nothing for a call on behalf of someone else, or a deposit that sends nothing', () => {
+            expect(
+                decode(GATEWAY, gateway('depositETH', [POOL, OTHER, 0]), 1n),
+            ).toBeUndefined()
+            expect(
+                decode(GATEWAY, gateway('withdrawETH', [POOL, 1n, OTHER])),
+            ).toBeUndefined()
+            expect(
+                decode(GATEWAY, gateway('depositETH', [POOL, SENDER, 0])),
+            ).toBeUndefined()
+        })
+    })
+
     describe('Aave V3 pool', () => {
         it('reads supply, with its permit form', () => {
             const expected: EvmContractAction = {

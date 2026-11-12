@@ -3488,10 +3488,7 @@
     "signing": {
         "view_details": "Ver detalles de la transacción",
         "balance_impact": {
-            "receive_title": "Recibirás",
-            "spend_title": "Gastarás",
             "analyzing": "Analizando la transacción…",
-            "unavailable": "No se puede previsualizar el impacto en el saldo — revisa los detalles de la transacción con atención antes de firmar.",
             "entire_balance": "Todo el saldo de {{unit}}",
             "closes_balance": "Se envía todo tu saldo restante",
             "new_asset": "Nuevo activo creado por esta transacción"
@@ -3565,8 +3562,7 @@
             "multiple_transactions_title": "Varias transacciones",
             "transactions_count_one": "{{count}} transacción",
             "transactions_count_other": "{{count}} transacciones",
-            "details": "Detalles de la transacción",
-            "signing_with": "Cuenta que firma"
+            "details": "Detalles de la transacción"
         },
         "external_transaction": {
             "pill_label": "Firmada",
@@ -3650,8 +3646,52 @@
             "reason": "Motivo del contrato: «{{reason}}»"
         },
         "review_warnings": {
-            "summary": "{{count}} cosas que revisar",
             "acknowledge": "Entiendo los riesgos y quiero firmar de todos modos"
+        },
+        "review": {
+            "caution_title": "Revisa esta con atención",
+            "changes_note": "Los importes pueden cambiar ligeramente antes de que se complete tu transacción.",
+            "changes_title": "Cambios estimados en tu billetera",
+            "fee_max": "Hasta <0/> · pagado en {{symbol}}",
+            "network_fee": "Comisión de red",
+            "nothing": "Nada",
+            "nothing_back_body": "Salen activos de tu billetera y no vuelve nada. Continúa solo si lo esperabas.",
+            "nothing_back_title": "No recibes nada a cambio",
+            "permission_collection": "Todos tus NFT de {{collection}}",
+            "permission_collection_note": "Podrá mover todos los NFT que tengas de esta colección, ahora y más adelante, hasta que retires este permiso.",
+            "permission_no_change": "Con esta transacción no sale ningún token de tu billetera.",
+            "permission_revoke": "{{spender}} ya no podrá gastar",
+            "permission_spender": "{{spender}} podrá gastar",
+            "permission_title": "Permiso que otorgas",
+            "permission_token": "{{collection}} #{{tokenId}}",
+            "permission_unlimited": "{{symbol}} ilimitado",
+            "permission_unlimited_note": "Ilimitado significa que podrá mover todo tu {{symbol}}, ahora y más adelante, hasta que retires este permiso.",
+            "preview_unavailable_body": "Normalmente mostramos exactamente qué sale y qué entra en tu billetera. Esta vez no podemos, así que revisa la solicitud con atención.",
+            "preview_unavailable_tip": "Continúa solo si iniciaste esto tú mismo en {{host}}.",
+            "preview_unavailable_tip_generic": "Continúa solo si iniciaste esto tú mismo.",
+            "preview_unavailable_title": "No pudimos previsualizar esto",
+            "technical_details": "Detalles técnicos",
+            "technical_details_evm": "Contrato, función y desglose de comisiones",
+            "title_approve": "Aprobar",
+            "title_clawback": "Recuperación",
+            "title_contract_interaction": "Interacción con contrato",
+            "token_contract": "Contrato del token {{symbol}}",
+            "unverified": "No verificado",
+            "you_receive": "Recibes",
+            "you_send": "Envías",
+            "scroll_hint": "Desplázate para ver más",
+            "analyzing": "Analizando la solicitud…",
+            "holder": "Se toma de",
+            "technical_details_generic": "Datos de la transacción y desglose de comisiones"
+        },
+        "technical": {
+            "interacting_with": "Con qué interactúas",
+            "contract": "Contrato",
+            "contract_help": "El código al que envías esta transacción.",
+            "not_decoded": "Pera no pudo decodificar esta función, así que muestra el selector sin procesar.",
+            "known_match": "Contrato conocido · coincide con {{domain}}",
+            "amount_sent": "Importe enviado",
+            "transaction": "Transacción"
         }
     },
     "site_safety": {
@@ -3754,17 +3794,12 @@
             "nft_fallback": "{{collection}} · ID del token {{tokenId}}"
         },
         "contract_call": {
-            "advanced": "Avanzado",
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
             "function_selector": "Selector de función",
             "call_data": "Datos de la llamada",
             "function": "Función",
-            "arguments": "Argumentos",
             "argument_index": "Argumento {{index}}",
             "implementation": "Implementación",
-            "known_source": "Nombre tomado del código fuente público del contrato.",
-            "known_source_proxy": "Este contrato es un proxy. Nombre tomado del código fuente público del contrato al que redirige.",
-            "lookup_failed": "Pera no pudo consultar el nombre de la función de este contrato.",
             "unchecked_warning": "Pera no pudo comprobar qué hace esta transacción. Continúa solo si confías en {{domain}}.",
             "unchecked_warning_no_source": "Pera no pudo comprobar qué hace esta transacción. Continúa solo si confías en la app que la envió."
         },
@@ -3888,11 +3923,6 @@
             "transactions_count_other": "{{count}} transacciones"
         },
         "summary": {
-            "payment_to": "Pago a",
-            "opt_in": "Añadir el activo {{asset}} a",
-            "opt_out": "Eliminar el activo {{asset}} de",
-            "transfer": "Transferencia del activo {{asset}} a",
-            "clawback": "Clawback del activo {{asset}} desde",
             "app_id": "ID de la aplicación: {{id}}"
         },
         "filter": {
@@ -4988,23 +5018,13 @@
             "max_priority_fee_per_gas": "Comisión de prioridad máxima por gas"
         },
         "known_contract": {
-            "title": "Contrato",
-            "badge": "Contrato conocido",
-            "matches_site": "Coincide con {{domain}}"
+            "badge": "Contrato conocido"
         },
         "review_warnings": {
             "high_fee_title": "Comisión de red inusualmente alta",
             "high_fee_body": "{{domain}} fijó la comisión de esta transacción en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos.",
             "high_fee_body_no_source": "La app que envió esto fijó su comisión en más del doble de lo que Pera usaría con su configuración Rápida. Pagarás como máximo <0/> (comisión máxima), normalmente menos."
         },
-        "simulation": {
-            "title": "Cambios estimados",
-            "estimate_note": "Estimado con el último bloque. El resultado puede cambiar antes de que se incluya tu transacción.",
-            "approvals_title": "Aprobaciones",
-            "revoke_title": "Quitar el permiso para usar tu {{asset}}",
-            "revoke_title_assets": "Quitar el permiso para usar tus activos",
-            "no_changes": "No se esperan cambios en tus saldos ni en tus aprobaciones.",
-            "unavailable": "No se pudo simular esta transacción. Revísala con atención antes de firmar."
-        }
+        "simulation": {}
     }
 }

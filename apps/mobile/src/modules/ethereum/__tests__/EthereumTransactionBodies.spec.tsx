@@ -27,7 +27,6 @@ import {
     addressCodecs,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
-import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
@@ -206,7 +205,23 @@ describe('Ethereum transaction bodies', () => {
     })
 
     describe('review', () => {
-        it('shows a transfer as a send of 1 ETH with its max fee and no warning', () => {
+        const follows = (before: HTMLElement, after: HTMLElement) =>
+            before.compareDocumentPosition(after) &
+            Node.DOCUMENT_POSITION_FOLLOWING
+
+        const holdSigner = () =>
+            vi.mocked(useFindAccountByAddress).mockImplementation(address =>
+                address === ETHEREUM_FIXTURE_SENDER
+                    ? ({
+                          id: 'signer',
+                          name: SIGNER_NAME,
+                          custody: { kind: 'watch' },
+                          chains: { ethereum: { address } },
+                      } as ReturnType<typeof useFindAccountByAddress>)
+                    : null,
+            )
+
+        it('shows a transfer as a send of 1 ETH to its recipient, with its fee and no warning', () => {
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -214,16 +229,21 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(screen.getByText('transactions.list_item.send')).toBeTruthy()
-            expect(screen.getByText(SHORT_RECIPIENT)).toBeTruthy()
-            expect(textOf('ethereum_review_amount')).toMatch(/ETH.*1/)
-            expect(textOf('ethereum_review_fee')).toContain('0.00042')
+            expect(textOf('review_action_title')).toBe(
+                'transactions.list_item.send',
+            )
+            expect(textOf('ethereum_review_target')).toContain(SHORT_RECIPIENT)
+            expect(textOf('review_wallet_changes')).toContain(
+                'signing.review.you_send',
+            )
+            expect(textOf('review_wallet_changes')).toMatch(/ETH.*1/)
+            expect(screen.getByTestId('ethereum_review_fee')).toBeTruthy()
             expect(
                 screen.queryByTestId('ethereum_contract_call_warning'),
             ).toBeNull()
         })
 
-        it('shows the fee tier, the estimate and the max fee, each in ETH with its fiat value', () => {
+        it('prices the expected fee in the preferred currency', () => {
             const estimated: TransactionNative = {
                 family: 'evm',
                 transaction: {
@@ -247,17 +267,11 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(textOf('ethereum_review_fee')).toContain(
-                'send_funds.fee.fast',
-            )
-            expect(textOf('fee_summary_estimate')).toContain('0.000063')
-            expect(textOf('fee_summary_max')).toContain('0.00042')
-            // 0.000063 ETH and 0.00042 ETH at $2000.
-            expect(textOf('fee_summary_estimate_fiat')).toContain('0.126')
-            expect(textOf('fee_summary_max_fiat')).toContain('0.84')
+            // 0.000063 ETH at $2000.
+            expect(textOf('ethereum_review_fee_expected')).toContain('0.126')
         })
 
-        it('shows a token transfer in the token, with its contract in the Asset row', () => {
+        it('shows a token transfer as a send in the token', () => {
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -265,12 +279,10 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(textOf('ethereum_review_amount')).toMatch(/USDC.*5/)
-            expect(textOf('ethereum_review_asset')).toContain('USDC')
-            expect(textOf('ethereum_review_asset')).toContain(SHORT_TOKEN)
+            expect(textOf('review_wallet_changes')).toMatch(/USDC.*5/)
         })
 
-        it('shows an NFT transfer as the NFT, with no fiat, contract-call details or warning', () => {
+        it('shows an NFT transfer as the NFT sent, with no contract-call warning', () => {
             vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
                 data: {
                     assetId: ETHEREUM_FIXTURE_NFT_ID,
@@ -290,21 +302,19 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(screen.getByText('transactions.list_item.send')).toBeTruthy()
-            expect(screen.getByText(SHORT_RECIPIENT)).toBeTruthy()
-            expect(textOf('ethereum_review_amount')).toMatch(/BAYC.*1/)
-            expect(textOf('ethereum_review_nft')).toContain(
+            expect(textOf('review_action_title')).toBe(
+                'transactions.list_item.send',
+            )
+            expect(textOf('ethereum_review_target')).toContain(SHORT_RECIPIENT)
+            expect(textOf('review_wallet_changes')).toContain(
                 'transactions.list_item.nft_subtitle',
             )
             expect(
                 screen.queryByTestId('ethereum_contract_call_warning'),
             ).toBeNull()
-            expect(
-                screen.queryByTestId('ethereum_contract_call_selector'),
-            ).toBeNull()
         })
 
-        it('warns about an unrecognised call in the warnings banner, and keeps its target in view with no zero amount', () => {
+        it('asks the user to interact with an unrecognised contract, marked unverified, with a caution and no preview', () => {
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -314,8 +324,12 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
+            expect(textOf('review_action_title')).toBe(
+                'signing.review.title_contract_interaction',
+            )
+            expect(textOf('ethereum_review_target')).toContain(SHORT_TOKEN)
             expect(
-                screen.getByText('transactions.list_item.contract_call'),
+                screen.getByTestId('ethereum_review_target_unverified'),
             ).toBeTruthy()
             expect(
                 screen
@@ -324,14 +338,12 @@ describe('Ethereum transaction bodies', () => {
                         screen.getByTestId('ethereum_contract_call_warning'),
                     ),
             ).toBe(true)
-            expect(textOf('ethereum_contract_call_warning')).toBe(
+            expect(textOf('ethereum_contract_call_warning')).toContain(
                 'transactions.contract_call.unchecked_warning',
             )
-            expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(
-                screen.queryByTestId('ethereum_contract_call_value'),
-            ).toBeNull()
-            expect(screen.queryByTestId('ethereum_review_amount')).toBeNull()
+                screen.getByTestId('review_preview_unavailable'),
+            ).toBeTruthy()
         })
 
         it('asks the user to trust the sending app when only the dApp has claimed a site', () => {
@@ -343,7 +355,7 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(textOf('ethereum_contract_call_warning')).toBe(
+            expect(textOf('ethereum_contract_call_warning')).toContain(
                 'transactions.contract_call.unchecked_warning_no_source',
             )
         })
@@ -365,17 +377,8 @@ describe('Ethereum transaction bodies', () => {
             expect(screen.getByTestId('ethereum_view_details')).toBeTruthy()
         })
 
-        it('puts the signing account ahead of the call it pays for, View details after the call, and the fee last beside the actions', () => {
-            vi.mocked(useFindAccountByAddress).mockImplementation(address =>
-                address === ETHEREUM_FIXTURE_SENDER
-                    ? ({
-                          id: 'signer',
-                          name: SIGNER_NAME,
-                          custody: { kind: 'watch' },
-                          chains: { ethereum: { address } },
-                      } as ReturnType<typeof useFindAccountByAddress>)
-                    : null,
-            )
+        it('runs the action, the cautions, From, Network and fee, then technical details, ahead of the actions', () => {
+            holdSigner()
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -383,42 +386,23 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            const signingWith = screen.getByText(
-                'signing.transactions.signing_with',
-            )
-            const target = screen.getByTestId('ethereum_contract_call_to')
-            const viewDetails = screen.getByTestId('ethereum_view_details')
+            const action = screen.getByTestId('review_action_header')
+            const warnings = screen.getByTestId('review_warnings')
+            const from = screen.getByTestId('review_from')
+            const network = screen.getByTestId('review_network')
             const fee = screen.getByTestId('ethereum_review_fee')
+            const details = screen.getByTestId('ethereum_view_details')
             const actions = screen.getByTestId('review_actions_probe')
-            const follows = (before: HTMLElement, after: HTMLElement) =>
-                before.compareDocumentPosition(after) &
-                Node.DOCUMENT_POSITION_FOLLOWING
 
-            expect(follows(signingWith, target)).toBeTruthy()
-            expect(follows(target, viewDetails)).toBeTruthy()
-            expect(follows(viewDetails, fee)).toBeTruthy()
-            expect(follows(fee, actions)).toBeTruthy()
-            expect(fee.contains(viewDetails)).toBe(false)
+            expect(follows(action, warnings)).toBeTruthy()
+            expect(follows(warnings, from)).toBeTruthy()
+            expect(follows(from, network)).toBeTruthy()
+            expect(follows(network, fee)).toBeTruthy()
+            expect(follows(fee, details)).toBeTruthy()
+            expect(follows(details, actions)).toBeTruthy()
         })
 
-        it("puts a token transfer's asset row ahead of the fee", () => {
-            render(
-                <TransactionReviewBody
-                    actions={REVIEW_ACTIONS}
-                    transaction={natives['token-transfer']}
-                />,
-            )
-
-            expect(
-                screen
-                    .getByTestId('ethereum_review_asset')
-                    .compareDocumentPosition(
-                        screen.getByTestId('ethereum_review_fee'),
-                    ) & Node.DOCUMENT_POSITION_FOLLOWING,
-            ).toBeTruthy()
-        })
-
-        it('names the dApp, the action and the network in a header ahead of everything that scrolls', () => {
+        it('names the requesting site by its domain, never the name it gives itself, ahead of the action', () => {
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -427,30 +411,16 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            const header = screen.getByTestId('ethereum_review_header')
-            expect(header.textContent).toContain('Fixture dApp')
-            expect(header.textContent).toContain('transactions.list_item.send')
-            expect(textOf('ethereum_review_network')).toBe(
-                'dapp.approval.chain_network',
-            )
+            const requester = screen.getByTestId('source_metadata_badge')
+            expect(requester.textContent).toContain('dapp.test')
+            expect(screen.queryByText('Fixture dApp')).toBeNull()
             expect(
-                header.compareDocumentPosition(
-                    screen.getByTestId('ethereum_review_amount'),
-                ) & Node.DOCUMENT_POSITION_FOLLOWING,
+                follows(requester, screen.getByTestId('review_action_header')),
             ).toBeTruthy()
         })
 
-        it("shows a held signer on Ethereum's chain, and no caption without one", () => {
-            vi.mocked(useFindAccountByAddress).mockImplementation(address =>
-                address === ETHEREUM_FIXTURE_SENDER
-                    ? ({
-                          id: 'signer',
-                          name: SIGNER_NAME,
-                          custody: { kind: 'watch' },
-                          chains: { ethereum: { address } },
-                      } as ReturnType<typeof useFindAccountByAddress>)
-                    : null,
-            )
+        it('shows a held signer in the From row, and no row without one', () => {
+            holdSigner()
             const held = render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -458,10 +428,7 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(
-                screen.getByText('signing.transactions.signing_with'),
-            ).toBeTruthy()
-            expect(screen.getByText(`${SIGNER_NAME}:ethereum`)).toBeTruthy()
+            expect(textOf('review_from')).toContain(SIGNER_NAME)
 
             held.unmount()
             vi.mocked(useFindAccountByAddress).mockReturnValue(null)
@@ -472,26 +439,7 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(
-                screen.queryByText('signing.transactions.signing_with'),
-            ).toBeNull()
-        })
-
-        it('shows the requesting dApp when a source is given', () => {
-            const source: SignRequestSource = {
-                name: 'Fixture dApp',
-                url: 'https://dapp.test',
-            }
-
-            render(
-                <TransactionReviewBody
-                    actions={REVIEW_ACTIONS}
-                    transaction={natives.transfer}
-                    source={source}
-                />,
-            )
-
-            expect(screen.getByText('Fixture dApp')).toBeTruthy()
+            expect(screen.queryByTestId('review_from')).toBeNull()
         })
 
         it('opens the transaction details from the review', () => {
@@ -519,7 +467,7 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(screen.getByTestId('review_actions_probe')).toBeTruthy()
-            expect(screen.queryByTestId('ethereum_review_header')).toBeNull()
+            expect(screen.queryByTestId('review_action_header')).toBeNull()
             expect(screen.queryByTestId('ethereum_review_fee')).toBeNull()
         })
     })
@@ -551,29 +499,27 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('transaction_detail_amount')).toMatch(/USDC.*5/)
         })
 
-        it("shows an unrecognised call with the review's warning, and its selector, collapsed calldata, target and zero value under Advanced", () => {
+        it('shows an unrecognised call as an unverified contract, with its selector, collapsed calldata and zero value', () => {
             render(
                 <TransactionDetailBody
                     transaction={natives['contract-call']}
                 />,
             )
 
-            expect(textOf('ethereum_contract_call_warning')).toBe(
-                'transactions.contract_call.unchecked_warning_no_source',
-            )
+            const section = textOf('ethereum_interacting_with')
+            expect(section).toContain('signing.technical.interacting_with')
+            expect(section).toContain(SHORT_TOKEN)
             expect(
-                screen.getByText('transactions.contract_call.advanced'),
+                screen.getByTestId(
+                    'ethereum_interacting_with_contract_unverified',
+                ),
             ).toBeTruthy()
-            const advanced = textOf('ethereum_detail_advanced')
-            expect(advanced).toContain('0x5ae401dc')
-            expect(advanced).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_selector')).toContain(
                 '0x5ae401dc',
             )
             expect(textOf('ethereum_contract_call_data')).toContain(
                 COLLAPSED_CALL_DATA,
             )
-            expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_value')).toMatch(/ETH.*0/)
 
             fireEvent.click(screen.getByText('common.show_more'))
@@ -720,7 +666,7 @@ describe('Ethereum transaction bodies', () => {
             },
         })
 
-        it('reviews an unlimited approve titled by what it allows, with the spend warning, not as an unknown call', () => {
+        it('reviews an unlimited approve as Approve, with the permission it gives and its unlimited note, not as an unknown call', () => {
             render(
                 <TransactionReviewBody
                     actions={REVIEW_ACTIONS}
@@ -728,14 +674,14 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
+            expect(textOf('review_action_title')).toBe(
+                'signing.review.title_approve',
+            )
+            expect(textOf('ethereum_review_permission')).toContain(
+                'signing.review.permission_title',
+            )
             expect(
-                screen.getByText(/^signing\.spend_approval\.allow_title/),
-            ).toBeTruthy()
-            expect(
-                screen.queryByText('transactions.list_item.approval'),
-            ).toBeNull()
-            expect(
-                screen.getByTestId('message-signing-spend-approval-warning'),
+                screen.getByTestId('ethereum_review_permission_unlimited'),
             ).toBeTruthy()
             expect(
                 screen.queryByTestId('ethereum_contract_call_warning'),
@@ -745,9 +691,10 @@ describe('Ethereum transaction bodies', () => {
         it('details an approval opened from a list with the spend warning and the raw call it was read from', () => {
             render(<TransactionDetailBody transaction={natives.approval} />)
 
+            // The review already titled it; the details open on what it does.
             expect(
-                screen.getByText('transactions.list_item.approval'),
-            ).toBeTruthy()
+                screen.queryByText('transactions.list_item.approval'),
+            ).toBeNull()
             expect(
                 screen.getByTestId('message-signing-spend-approval-warning'),
             ).toBeTruthy()
@@ -874,12 +821,10 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(
-                screen.getByTestId('ethereum_review_nft_item_0'),
-            ).toBeTruthy()
-            expect(
-                screen.getByTestId('ethereum_review_nft_item_1'),
-            ).toBeTruthy()
+            const sends = screen
+                .getByTestId('review_wallet_changes')
+                .querySelectorAll('[data-testid^="review_wallet_send_"]')
+            expect(sends).toHaveLength(2)
         })
 
         it('titles the preview row of an approval as one', () => {

@@ -21,6 +21,26 @@ vi.mock('../../EthereumSimulationSection', () => ({
     useEthereumSimulationSection: vi.fn(),
 }))
 
+const mockVerifiedCall = vi.hoisted(() => ({
+    current: { status: 'idle' } as { status: string; call?: object },
+}))
+vi.mock('../../../hooks/useEthereumVerifiedCall', () => ({
+    useEthereumVerifiedCall: () => mockVerifiedCall.current,
+}))
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useAssetsQuery: () => ({ data: new Map() }),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    addressCodecs: {
+        has: () => true,
+        get: () => ({ truncate: (address: string) => `short:${address}` }),
+    },
+}))
+
 vi.mock('@modules/signing', () => ({
     PredictedFailureMessage: () => null,
 }))
@@ -38,17 +58,25 @@ vi.mock('@hooks/useLanguage', () => ({
 
 const presentation = {
     scope: { chainId: 'ethereum', networkId: 'sepolia' },
+    titleKey: 'transactions.list_item.contract_call',
     hasHighFee: true,
     reviewFee: { maxAmount: new Decimal(1) },
     isTransfer: false,
     standardCall: undefined,
     contractAction: undefined,
-    view: { action: undefined },
+    knownContract: null,
+    view: { action: undefined, to: '0xcontract' },
 } as unknown as EthereumTransactionPresentation
 
-const review = (verifiedOrigin?: string) =>
+const review = (
+    verifiedOrigin?: string,
+    overrides: Partial<EthereumTransactionPresentation> = {},
+) =>
     renderHook(() =>
-        useEthereumTransactionReview({ presentation, verifiedOrigin }),
+        useEthereumTransactionReview({
+            presentation: { ...presentation, ...overrides },
+            verifiedOrigin,
+        }),
     ).result.current
 
 describe('useEthereumTransactionReview', () => {
@@ -102,17 +130,67 @@ describe('useEthereumTransactionReview', () => {
         ).toBe('transactions.contract_call.unchecked_warning_no_source')
     })
 
-    it('gives an unavailable simulation an advisory item', () => {
+    it('leaves an unavailable simulation to the changes card, not the cautions', () => {
         vi.mocked(useEthereumSimulationSection).mockReturnValue({
             status: 'unavailable',
         })
 
         const { warningItems } = review()
 
-        expect(warningItems.at(-1)).toMatchObject({
-            id: 'ethereum_simulation_unavailable',
-            isHighRisk: false,
+        expect(warningItems.map(({ id }) => id)).not.toContain(
+            'ethereum_simulation_unavailable',
+        )
+    })
+
+    it('asks the user to interact with an unknown contract, aimed at its short address and marked unverified', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'hidden',
         })
+        mockVerifiedCall.current = { status: 'idle' }
+
+        const { title, target } = review()
+
+        expect(title).toBe('signing.review.title_contract_interaction')
+        expect(target).toEqual({
+            label: 'short:0xcontract',
+            status: 'unverified',
+        })
+    })
+
+    it('titles a verified call by its function name and a known contract by its label', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'hidden',
+        })
+        mockVerifiedCall.current = {
+            status: 'decoded',
+            call: { functionName: 'claimAllRewardsToSelf' },
+        }
+
+        const { title, target } = review(undefined, {
+            knownContract: { name: 'Aave Rewards' },
+        })
+
+        expect(title).toBe('Claim all rewards to self')
+        expect(target).toEqual({ label: 'Aave Rewards', status: 'verified' })
+        mockVerifiedCall.current = { status: 'idle' }
+    })
+
+    it('sends a transfer to its recipient with what it sends as the spend', () => {
+        vi.mocked(useEthereumSimulationSection).mockReturnValue({
+            status: 'hidden',
+        })
+        const asset = { assetId: 'native', unitName: 'ETH' }
+
+        const { target, transferSpend } = review(undefined, {
+            isTransfer: true,
+            counterparty: '0xrecipient',
+            amount: { asset, value: new Decimal(1) },
+        } as unknown as Partial<EthereumTransactionPresentation>)
+
+        expect(target).toEqual({ label: 'short:0xrecipient' })
+        expect(transferSpend).toMatchObject([
+            { assetId: 'native', direction: 'spend', amount: new Decimal(1) },
+        ])
     })
 
     it('hands back the simulation it ran once', () => {

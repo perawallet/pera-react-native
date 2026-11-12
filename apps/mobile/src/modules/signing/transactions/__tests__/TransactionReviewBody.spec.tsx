@@ -122,37 +122,42 @@ type ReviewExpectation = {
 const REVIEW_KINDS: Record<AlgorandDisplayFixtureKind, ReviewExpectation> = {
     payment: {
         icon: 'icon-transactions/payment',
-        header: ['transactions.summary.payment_to', FIXTURE_RECEIVER, /2\.5/],
+        header: ['transactions.list_item.send', FIXTURE_RECEIVER],
     },
     'asset-transfer': {
         icon: 'icon-transactions/asset-transfer',
-        header: ['transactions.summary.transfer', FIXTURE_RECEIVER, /5000000/],
+        header: ['transactions.list_item.send', FIXTURE_RECEIVER],
     },
     'asset-config': {
         icon: 'icon-transactions/asset-config',
-        header: ['transactions.type.acfg'],
+        header: ['transactions.list_item.asset_config'],
     },
-    // No summary body has ever been wired for a freeze; the icon alone is today's header.
-    'asset-freeze': { icon: 'icon-transactions/asset-freeze', header: [] },
+    'asset-freeze': {
+        icon: 'icon-transactions/asset-freeze',
+        header: ['transactions.list_item.asset_freeze'],
+    },
     'key-registration': {
         icon: 'icon-transactions/key-registration',
-        header: ['transactions.type.keyreg'],
+        header: ['transactions.list_item.key_registration'],
     },
     'app-call': {
         icon: 'icon-transactions/application-call',
-        header: ['transactions.type.appl', 'transactions.summary.app_id'],
+        header: [
+            'transactions.list_item.app_call',
+            'transactions.summary.app_id',
+        ],
     },
     heartbeat: {
         icon: 'icon-transactions/key-registration',
-        header: ['transactions.type.hb'],
+        header: ['transactions.list_item.heartbeat'],
     },
     'state-proof': {
         icon: 'icon-transactions/generic',
-        header: ['transactions.type.stpf'],
+        header: ['transactions.list_item.state_proof'],
     },
     unknown: {
         icon: 'icon-transactions/generic',
-        header: ['transactions.type.'],
+        header: ['transactions.list_item.default'],
     },
 }
 
@@ -187,17 +192,17 @@ describe('TransactionReviewBody', () => {
             }
         })
 
-        it('renders the signing account', () => {
-            expect(
-                screen.getByText('signing.transactions.signing_with'),
-            ).toBeTruthy()
+        it('renders the signing account in the From row', () => {
+            expect(screen.getByText('transactions.common.from')).toBeTruthy()
             expect(screen.getByText(SIGNER_NAME)).toBeTruthy()
         })
 
-        it('renders the fee and the link to the full details', () => {
-            expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
-            expect(screen.getByText(/0\.001/)).toBeTruthy()
-            expect(screen.getByText('signing.view_details')).toBeTruthy()
+        it('renders the fee and the link to the technical details', () => {
+            expect(screen.getByText('signing.review.network_fee')).toBeTruthy()
+            expect(screen.getAllByText(/0\.001/).length).toBeGreaterThan(0)
+            expect(
+                screen.getByText('signing.review.technical_details'),
+            ).toBeTruthy()
         })
 
         it('renders the key registration summary only for a key registration', () => {
@@ -208,14 +213,14 @@ describe('TransactionReviewBody', () => {
     })
 
     it.each([
-        ['opt-in', 'transactions.summary.opt_in'],
-        ['opt-out', 'transactions.summary.opt_out'],
-        ['clawback', 'transactions.summary.clawback'],
-    ] as const)('titles an asset %s with its own summary', (variant, title) => {
+        ['opt-in', 'transactions.list_item.opt_in'],
+        ['opt-out', 'transactions.list_item.opt_out'],
+        ['clawback', 'signing.review.title_clawback'],
+    ] as const)('titles an asset %s with its own verb', (variant, title) => {
         renderReview(buildAlgorandAssetTransferFixture(variant))
 
         expect(screen.getByText(title)).toBeTruthy()
-        expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
+        expect(screen.getByText('signing.review.network_fee')).toBeTruthy()
     })
 
     it('renders nothing for a family with no registered body', () => {
@@ -240,24 +245,18 @@ describe('TransactionReviewBody', () => {
         expect(screen.queryByTestId('review_actions_probe')).toBeNull()
     })
 
-    it('shows the requesting dApp and the origin the platform observed', () => {
+    it('shows the requesting site by its domain, never the name it gives itself, and the origin the platform observed', () => {
         renderReview(buildAlgorandDisplayFixture('payment'), {
             source: { name: 'Fixture dApp', url: 'https://dapp.test' },
             verifiedOrigin: 'https://elsewhere.test',
         })
 
-        expect(screen.getByText('Fixture dApp')).toBeTruthy()
+        expect(screen.queryByText('Fixture dApp')).toBeNull()
         expect(screen.getByText('dapp.test')).toBeTruthy()
         expect(screen.getByText('dapp.approval.request_origin')).toBeTruthy()
     })
 
-    it('renders no summary title for an asset freeze', () => {
-        renderReview(buildAlgorandDisplayFixture('asset-freeze'))
-
-        expect(screen.queryByText('transactions.type.afrz')).toBeNull()
-    })
-
-    it('places the warnings block between the header and the signing account', () => {
+    it('places the warnings between the action and the From row', () => {
         const warning: TransactionWarning = {
             type: 'close-account',
             senderAddress: FIXTURE_SENDER,
@@ -267,9 +266,9 @@ describe('TransactionReviewBody', () => {
         mockPipeline.warnings = [warning]
         renderReview(buildAlgorandDisplayFixture('payment'))
 
-        const header = screen.getByText('transactions.summary.payment_to')
+        const header = screen.getByTestId('review_action_title')
         const warnings = screen.getByText('transactions.warning.title')
-        const account = screen.getByText('signing.transactions.signing_with')
+        const account = screen.getByText('transactions.common.from')
         expect(
             header.compareDocumentPosition(warnings) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
@@ -285,21 +284,19 @@ describe('TransactionReviewBody', () => {
 
         expect(
             screen
-                .getByText('transactions.common.tx_fee')
+                .getByText('signing.review.network_fee')
                 .compareDocumentPosition(
                     screen.getByText('transactions.key_reg.status'),
                 ) & Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy()
     })
 
-    it('still renders the header and fee when the signer is not in the wallet', () => {
+    it('still renders the action and fee when the signer is not in the wallet', () => {
         vi.mocked(useFindAccountByAddress).mockReturnValue(null)
         renderReview(buildAlgorandDisplayFixture('payment'))
 
-        expect(
-            screen.queryByText('signing.transactions.signing_with'),
-        ).toBeNull()
-        expect(screen.getByText('transactions.summary.payment_to')).toBeTruthy()
-        expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
+        expect(screen.queryByText('transactions.common.from')).toBeNull()
+        expect(screen.getByText('transactions.list_item.send')).toBeTruthy()
+        expect(screen.getByText('signing.review.network_fee')).toBeTruthy()
     })
 })

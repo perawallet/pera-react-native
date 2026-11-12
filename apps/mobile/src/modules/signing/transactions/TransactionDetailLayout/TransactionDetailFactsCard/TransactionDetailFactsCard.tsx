@@ -12,6 +12,7 @@
 
 import { PWText } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
@@ -21,13 +22,16 @@ import type { TransactionDetailSummary } from '../../types'
 
 type TransactionDetailFactsCardProps = {
     summary: TransactionDetailSummary
+    /** Shows the amount here when no hero above does. */
+    isAmountShown?: boolean
 }
 
 export const TransactionDetailFactsCard = ({
     summary,
+    isAmountShown = false,
 }: TransactionDetailFactsCardProps) => {
     const { t } = useLanguage()
-    const { scope, transactionId, timestamp, block } = summary
+    const { scope, transactionId, timestamp, block, amount } = summary
 
     return (
         <TransactionDetailCard testID='transaction_detail_facts'>
@@ -40,6 +44,19 @@ export const TransactionDetailFactsCard = ({
                     isBare
                 />
             </KeyValueRow>
+            {isAmountShown && !!amount && (
+                <KeyValueRow
+                    testID='transaction_detail_amount'
+                    title={t('signing.technical.amount_sent')}
+                >
+                    <AssetAmount
+                        chainId={scope.chainId}
+                        asset={amount.asset}
+                        value={amount.value}
+                        ignorePrivacyMode
+                    />
+                </KeyValueRow>
+            )}
             {!!transactionId && (
                 <KeyValueRow
                     testID='transaction_detail_id'

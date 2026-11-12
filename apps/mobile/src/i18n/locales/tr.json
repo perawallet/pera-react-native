@@ -3488,10 +3488,7 @@
     "signing": {
         "view_details": "İşlem detaylarını görüntüle",
         "balance_impact": {
-            "receive_title": "Alacaksın",
-            "spend_title": "Harcayacaksın",
             "analyzing": "İşlem analiz ediliyor…",
-            "unavailable": "Bakiye etkisi önizlenemiyor — imzalamadan önce işlem detaylarını dikkatlice incele.",
             "entire_balance": "Tüm {{unit}} bakiyesi",
             "closes_balance": "Kalan tüm bakiyen gönderilir",
             "new_asset": "Bu işlemle oluşturulan yeni varlık"
@@ -3565,8 +3562,7 @@
             "multiple_transactions_title": "Birden fazla işlem",
             "transactions_count_one": "{{count}} işlem",
             "transactions_count_other": "{{count}} işlem",
-            "details": "İşlem detayları",
-            "signing_with": "İmzalayan hesap"
+            "details": "İşlem detayları"
         },
         "external_transaction": {
             "pill_label": "İmzalandı",
@@ -3650,8 +3646,52 @@
             "reason": "Sözleşmenin gerekçesi: “{{reason}}”"
         },
         "review_warnings": {
-            "summary": "Kontrol edilecek {{count}} şey var",
             "acknowledge": "Riskleri anlıyorum ve yine de imzalamak istiyorum"
+        },
+        "review": {
+            "caution_title": "Bunu dikkatlice kontrol et",
+            "changes_note": "Tutarlar, işlemin tamamlanmasından önce biraz değişebilir.",
+            "changes_title": "Cüzdanındaki tahmini değişiklikler",
+            "fee_max": "En fazla <0/> · ödeme birimi: {{symbol}}",
+            "network_fee": "Ağ ücreti",
+            "nothing": "Hiçbir şey",
+            "nothing_back_body": "Cüzdanından varlık çıkıyor ve karşılığında hiçbir şey gelmiyor. Bunu bekliyorsan devam et.",
+            "nothing_back_title": "Karşılığında hiçbir şey almıyorsun",
+            "permission_collection": "Tüm {{collection}} NFT’lerin",
+            "permission_collection_note": "Bu koleksiyondaki tüm NFT’lerini, bu izni kaldırana kadar şimdi ve daha sonra taşıyabilir.",
+            "permission_no_change": "Bu işlemle cüzdanından hiçbir token çıkmaz.",
+            "permission_revoke": "Harcama izni kaldırılıyor: {{spender}}",
+            "permission_spender": "Harcama izni verilen: {{spender}}",
+            "permission_title": "Verdiğin izin",
+            "permission_token": "{{collection}} #{{tokenId}}",
+            "permission_unlimited": "Sınırsız {{symbol}}",
+            "permission_unlimited_note": "Sınırsız, bu izni kaldırana kadar şimdi ve daha sonra tüm {{symbol}} bakiyeni taşıyabileceği anlamına gelir.",
+            "preview_unavailable_body": "Normalde cüzdanından neyin çıkıp neyin girdiğini tam olarak gösteririz. Bu sefer gösteremiyoruz, bu yüzden isteği dikkatlice kontrol et.",
+            "preview_unavailable_tip": "Yalnızca bu işlemi kendin başlattıysan devam et. Site: {{host}}",
+            "preview_unavailable_tip_generic": "Yalnızca bu işlemi kendin başlattıysan devam et.",
+            "preview_unavailable_title": "Bunun önizlemesini gösteremedik",
+            "technical_details": "Teknik detaylar",
+            "technical_details_evm": "Sözleşme, fonksiyon ve ücret dökümü",
+            "title_approve": "Onayla",
+            "title_clawback": "Geri alma",
+            "title_contract_interaction": "Sözleşme etkileşimi",
+            "token_contract": "Token sözleşmesi: {{symbol}}",
+            "unverified": "Doğrulanmamış",
+            "you_receive": "Alacağın",
+            "you_send": "Göndereceğin",
+            "scroll_hint": "Daha fazlasını görmek için kaydır",
+            "analyzing": "İstek analiz ediliyor…",
+            "holder": "Alındığı hesap",
+            "technical_details_generic": "İşlem verileri ve ücret dökümü"
+        },
+        "technical": {
+            "interacting_with": "Etkileşimde bulunduğun",
+            "contract": "Sözleşme",
+            "contract_help": "Bu işlemi gönderdiğin kod.",
+            "not_decoded": "Pera bu fonksiyonu çözemedi, bu yüzden ham seçiciyi gösteriyor.",
+            "known_match": "Bilinen sözleşme · eşleşen site: {{domain}}",
+            "amount_sent": "Gönderilen tutar",
+            "transaction": "İşlem"
         }
     },
     "site_safety": {
@@ -3754,17 +3794,12 @@
             "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
-            "advanced": "Gelişmiş",
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
             "call_data": "Çağrı verisi",
             "function": "Fonksiyon",
-            "arguments": "Argümanlar",
             "argument_index": "Argüman {{index}}",
             "implementation": "Uygulama sözleşmesi",
-            "known_source": "Ad, sözleşmenin herkese açık kaynak kodundan alındı.",
-            "known_source_proxy": "Bu sözleşme bir proxy. Ad, yönlendirdiği sözleşmenin herkese açık kaynak kodundan alındı.",
-            "lookup_failed": "Pera bu sözleşmenin fonksiyon adını sorgulayamadı.",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },
@@ -3888,11 +3923,6 @@
             "transactions_count_other": "{{count}} işlem"
         },
         "summary": {
-            "payment_to": "Ödeme alıcısı",
-            "opt_in": "{{asset}} varlığı için opt-in, alıcı",
-            "opt_out": "{{asset}} varlığı için opt-out, gönderen",
-            "transfer": "{{asset}} varlığı transferi, alıcı",
-            "clawback": "{{asset}} varlığı clawback, gönderen",
             "app_id": "Uygulama ID: {{id}}"
         },
         "filter": {
@@ -4988,23 +5018,13 @@
             "max_priority_fee_per_gas": "Gas başına maks. öncelik ücreti"
         },
         "known_contract": {
-            "title": "Sözleşme",
-            "badge": "Bilinen sözleşme",
-            "matches_site": "{{domain}} ile eşleşiyor"
+            "badge": "Bilinen sözleşme"
         },
         "review_warnings": {
             "high_fee_title": "Alışılmadık şekilde yüksek ağ ücreti",
             "high_fee_body": "{{domain}} bu işlemin ücretini, Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını.",
             "high_fee_body_no_source": "Bu isteği gönderen uygulama, ücreti Pera’nın Hızlı ayarında kullanacağı ücretin iki katından fazlasına ayarladı. En fazla <0/> (maksimum ücret) ödersin, genellikle daha azını."
         },
-        "simulation": {
-            "title": "Tahmini değişiklikler",
-            "estimate_note": "En son bloka göre tahmin edildi. Sonuç, işlemin dahil edilmesinden önce değişebilir.",
-            "approvals_title": "Onaylar",
-            "revoke_title": "{{asset}} varlığını kullanma iznini kaldır",
-            "revoke_title_assets": "Varlıklarını kullanma iznini kaldır",
-            "no_changes": "Bakiyelerinde veya onaylarında bir değişiklik beklenmiyor.",
-            "unavailable": "Bu işlem simüle edilemedi. İmzalamadan önce dikkatlice incele."
-        }
+        "simulation": {}
     }
 }

@@ -105,10 +105,9 @@ export const AppCallTransactionDisplay = ({
                             onInnerTransactionPress={onInnerTransactionsPress}
                         />
                     )}
-
-                    <AppCallDetailsPanel transaction={transaction} />
                 </TransactionDetailCard>
             )}
+            <AppCallDetailsPanel transaction={transaction} />
         </>
     )
 }
