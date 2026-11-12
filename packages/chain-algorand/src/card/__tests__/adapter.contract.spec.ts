@@ -83,10 +83,14 @@ vi.mock('../../accounts/vocabulary', async () => ({
     canSignArc60: () => true,
 }))
 
+import { ABIType } from 'algosdk'
 import { AlgodError } from '../../blockchain'
 import { algorandCardAdapter } from '../adapter'
 
 const ADDRESS = 'A4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DQOBYHA4DVZ36IB4'
+const CARD_ADDRESS =
+    'YHHOHURTKJF7VK6UAETAACBGAK3E4XZ4U3HTX7WACDKJCVBWTNCFBAWFRQ'
+const CARD_DATA_TYPE = ABIType.from('(address,address,uint64,uint64)')
 const REKEYED_ADDRESS = 'REKEYED'
 const algorandAccount = (address: string) =>
     ({
@@ -181,5 +185,34 @@ cardContractTests(() => algorandCardAdapter, {
         submissions: () =>
             submit.mock.calls.length +
             submitWithFeeDelegation.mock.calls.length,
+    },
+    cardOwner: {
+        wallet: { address: CARD_ADDRESS, network: 'algorand' },
+        ownerAddress: ADDRESS,
+        // W3Card's `cards` box exists exactly for a card, holding its owner.
+        arrangeOwner: isCard =>
+            arrangeClient({
+                client: {
+                    algod: {
+                        getApplicationBoxByName: () => ({
+                            do: async () => {
+                                if (!isCard) {
+                                    throw Object.assign(new Error('box'), {
+                                        response: { status: 404 },
+                                    })
+                                }
+                                return {
+                                    value: CARD_DATA_TYPE.encode([
+                                        ADDRESS,
+                                        CARD_ADDRESS,
+                                        0n,
+                                        0n,
+                                    ]),
+                                }
+                            },
+                        }),
+                    },
+                },
+            }),
     },
 })

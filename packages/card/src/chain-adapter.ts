@@ -19,7 +19,7 @@ import {
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { CardSignInData } from './api/card-creation'
-import type { PendingWithdrawal } from './models'
+import type { CardExternalWallet, PendingWithdrawal } from './models'
 
 /** A Baanx delegation route and body; the card transport sends it. */
 export type CardDelegationRequest = {
@@ -158,6 +158,19 @@ export interface CardChainAdapter {
      * that every device sees. False on a scope with no card deployment.
      */
     isAutoDrawEnabled(scope: ChainScope, ownerAddress: string): Promise<boolean>
+    /**
+     * The account that owns the user's card, read from the chain for the card
+     * address Baanx has on record (`registeredWallets`, from
+     * GET /v1/wallet/external). Null when none of them is a card on this
+     * chain, or the scope has no card deployment.
+     */
+    findCardOwner(
+        scope: ChainScope,
+        registeredWallets: readonly Pick<
+            CardExternalWallet,
+            'address' | 'network'
+        >[],
+    ): Promise<Nullable<string>>
     useAutoDraw(): CardAutoDrawOperations
     withdrawal: CardEscrowWithdrawals
 }

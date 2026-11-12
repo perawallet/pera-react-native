@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWResultView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardOnOtherAccountScreen } from './useCardOnOtherAccountScreen'
@@ -18,6 +19,7 @@ import { useCardOnOtherAccountScreen } from './useCardOnOtherAccountScreen'
 export const CardOnOtherAccountScreen = () => {
     const { t } = useLanguage()
     const {
+        ownerAddress,
         isCheckingAgain,
         handleCheckAgain,
         handleLogout,
@@ -30,7 +32,13 @@ export const CardOnOtherAccountScreen = () => {
             icon='wallet'
             testID='card-on-other-account'
             title={t('peraCard.card_on_other_account.title')}
-            body={t('peraCard.card_on_other_account.body')}
+            body={
+                ownerAddress
+                    ? t('peraCard.card_on_other_account.body_with_address', {
+                          address: truncateAlgorandAddress(ownerAddress),
+                      })
+                    : t('peraCard.card_on_other_account.body')
+            }
             primaryAction={{
                 label: t('peraCard.card_on_other_account.check_again'),
                 onPress: handleCheckAgain,

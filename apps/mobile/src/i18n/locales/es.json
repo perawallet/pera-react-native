@@ -1990,6 +1990,7 @@
         "card_on_other_account": {
             "title": "Tu Pera Card está vinculada a otra cuenta",
             "body": "La cuenta que financia tu tarjeta no está en esta wallet. Añade esa cuenta a Pera y vuelve a comprobarlo.",
+            "body_with_address": "Tu tarjeta se financia desde {{address}}, que no está en esta wallet. Añade esa cuenta a Pera y vuelve a comprobarlo.",
             "check_again": "Comprobar de nuevo",
             "not_found_title": "Cuenta no encontrada",
             "not_found_body": "Ninguna de las cuentas de esta wallet está vinculada a tu Pera Card."

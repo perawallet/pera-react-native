@@ -19,6 +19,7 @@ import { useCardOnOtherAccountScreen } from '../useCardOnOtherAccountScreen'
 const WALLET_ADDRESS = 'WALLETADDRESS'
 
 let mockHasSession = true
+let mockOwnerAddress: string | null = null
 let mockIsRestorePending = false
 let mockIsFocused = true
 let mockIsScreenFocused = true
@@ -32,6 +33,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     return {
         ...actual,
         hasCardSession: () => mockHasSession,
+        useCardOwnerAddressQuery: () => ({
+            ownerAddress: mockOwnerAddress,
+            isLoading: false,
+        }),
         useRestoreEscrowCardMutation: () => ({
             mutateAsync: mockRestore,
             isPending: mockIsRestorePending,
@@ -114,6 +119,7 @@ describe('useCardOnOtherAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHasSession = true
+        mockOwnerAddress = null
         mockIsRestorePending = false
         mockIsFocused = true
         mockIsScreenFocused = true
@@ -130,6 +136,14 @@ describe('useCardOnOtherAccountScreen', () => {
         expect(mockSetFundingSource).toHaveBeenCalledWith(null)
         expect(mockInfoToast).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('names the account the card is bound to once it is known', () => {
+        mockOwnerAddress = 'OWNERADDRESS'
+
+        const { result } = renderSubject()
+
+        expect(result.current.ownerAddress).toBe('OWNERADDRESS')
     })
 
     it('opens the card once the wallet holds the bound account', async () => {

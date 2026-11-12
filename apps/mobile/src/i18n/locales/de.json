@@ -1982,6 +1982,7 @@
         "card_on_other_account": {
             "title": "Deine Pera Card ist mit einem anderen Konto verbunden",
             "body": "Das Konto, über das deine Karte finanziert wird, ist nicht in diesem Wallet. Füge dieses Konto zu Pera hinzu und prüfe dann erneut.",
+            "body_with_address": "Deine Karte wird über {{address}} finanziert, und dieses Konto ist nicht in diesem Wallet. Füge es zu Pera hinzu und prüfe dann erneut.",
             "check_again": "Erneut prüfen",
             "not_found_title": "Konto nicht gefunden",
             "not_found_body": "Keines der Konten in diesem Wallet ist mit deiner Pera Card verbunden."

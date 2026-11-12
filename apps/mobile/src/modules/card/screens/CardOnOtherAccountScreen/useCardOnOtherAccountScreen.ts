@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     hasCardSession,
     setCardFundingSourceAddress,
+    useCardOwnerAddressQuery,
     useRestoreEscrowCardMutation,
 } from '@perawallet/wallet-core-card'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -33,6 +34,8 @@ import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/
 import { cardAccountAddressOf } from '../../utils/cardAccountAddress'
 
 export type UseCardOnOtherAccountScreenResult = {
+    /** The account the card is bound to, once Baanx and the chain answer. */
+    ownerAddress: Nullable<string>
     isCheckingAgain: boolean
     /** Looks the card up again, for after the user adds the missing account. */
     handleCheckAgain: () => void
@@ -52,6 +55,7 @@ export const useCardOnOtherAccountScreen =
         const { handleLogout } = useCardOnboardingLogout()
         const handleOpenSupport = useOpenCardSupport()
 
+        const { ownerAddress } = useCardOwnerAddressQuery(scope)
         const restore = useRestoreEscrowCardMutation(scope)
         const restoreAsync = restore.mutateAsync
 
@@ -140,6 +144,7 @@ export const useCardOnOtherAccountScreen =
         }, [restore.isPending, findCardInWallet])
 
         return {
+            ownerAddress,
             isCheckingAgain: restore.isPending,
             handleCheckAgain,
             handleLogout,

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isValidAddress } from 'algosdk'
 import { toUnsignedAlgorandTransactions } from '../signing/unsignedTransaction'
 import { toAlgodError, waitForTransactionConfirmation } from '../blockchain'
 import {
@@ -36,6 +37,7 @@ import {
     algorandDelegationRequests,
     BAANX_ALGORAND_NETWORK,
 } from './delegation'
+import { getAlgorandCardOwner } from './escrow/cards'
 import { algorandAutoDraw } from './escrow/killswitch'
 import { resolveEscrowChainConfig } from './escrow/lsig'
 import { algorandEscrowWithdrawals } from './escrow/withdrawal'
@@ -123,6 +125,23 @@ export const algorandCardAdapter: CardChainAdapter = {
             sender: ownerAddress,
             asset: resolveEscrowChainConfig(network).assetId,
         })
+    },
+    // Baanx can hold several registered wallets, and on other chains too.
+    findCardOwner: async (scope, registeredWallets) => {
+        if (settlementAsset(scope) === null) return null
+        const network = algorandNetworkOf(scope)
+        for (const wallet of registeredWallets) {
+            if (
+                wallet.network.trim().toLowerCase() !==
+                    BAANX_ALGORAND_NETWORK ||
+                !isValidAddress(wallet.address)
+            ) {
+                continue
+            }
+            const owner = await getAlgorandCardOwner(network, wallet.address)
+            if (owner !== null) return owner
+        }
+        return null
     },
     useAutoDraw: useAlgorandCardAutoDraw,
     withdrawal: {

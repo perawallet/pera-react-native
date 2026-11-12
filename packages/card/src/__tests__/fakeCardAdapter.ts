@@ -53,6 +53,7 @@ export const fakeCardAdapter = ({
         describeError: vi.fn(() => null),
         transactionUrl: vi.fn(() => null),
         isAutoDrawEnabled: vi.fn(async () => false),
+        findCardOwner: vi.fn(async () => null),
         useAutoDraw: () => autoDrawOperations,
         ...overrides,
         withdrawal: {

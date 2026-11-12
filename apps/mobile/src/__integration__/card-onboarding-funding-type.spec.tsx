@@ -18,6 +18,7 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import { ABIType } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { View } from 'react-native'
 
@@ -151,6 +152,10 @@ import {
 const FUNDING_ADDRESS = ALGO25_TEST_ADDRESS
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const BAANX_USER_ID = 'mock-baanx-user-id'
+const ELSEWHERE_CARD_ADDRESS =
+    'YHHOHURTKJF7VK6UAETAACBGAK3E4XZ4U3HTX7WACDKJCVBWTNCFBAWFRQ'
+const ELSEWHERE_OWNER_ADDRESS =
+    '6LZGPL2AMVFL537W47DY5WBELKLHTKJ3O3E24W7XHFBICJILDT454CUV2Q'
 
 const LEDGER_ACCOUNT: HardwareWalletAccount = {
     id: 'hw-ledger-1',
@@ -642,6 +647,33 @@ describe('Flow: Card onboarding — select funding type', () => {
                 },
             }),
             http.get('*/api/v3/baanx/card-address', lookup),
+            // Baanx keeps the card's address on record; W3Card's `cards` box
+            // names its owner, an account this wallet does not hold.
+            http.get('*/v1/wallet/external', () =>
+                HttpResponse.json([
+                    {
+                        address: ELSEWHERE_CARD_ADDRESS,
+                        currency: 'usdc',
+                        balance: '0',
+                        allowance: '0',
+                        network: 'algorand',
+                    },
+                ]),
+            ),
+            http.get('*/v2/applications/:appId/box', () =>
+                HttpResponse.json({
+                    name: '',
+                    round: 1,
+                    value: Buffer.from(
+                        ABIType.from('(address,address,uint64,uint64)').encode([
+                            ELSEWHERE_OWNER_ADDRESS,
+                            ELSEWHERE_CARD_ADDRESS,
+                            0n,
+                            0n,
+                        ]),
+                    ).toString('base64'),
+                }),
+            ),
         )
 
         renderStatus()
@@ -655,6 +687,13 @@ describe('Flow: Card onboarding — select funding type', () => {
         ).toBeTruthy()
         expect(
             screen.getByText('peraCard.card_on_other_account.title'),
+        ).toBeTruthy()
+        expect(
+            await screen.findByText(
+                'peraCard.card_on_other_account.body_with_address',
+                {},
+                { timeout: 5000 },
+            ),
         ).toBeTruthy()
         expect(screen.getByTestId('card-on-other-account-primary')).toBeTruthy()
         expect(
@@ -691,6 +730,7 @@ describe('Flow: Card onboarding — select funding type', () => {
                     { status: 200 },
                 ),
             ),
+            http.get('*/v1/wallet/external', () => HttpResponse.json([])),
         )
 
         renderStatus()

@@ -1990,6 +1990,7 @@
         "card_on_other_account": {
             "title": "Your Pera Card is linked to another account",
             "body": "The account that funds your card isn't in this wallet. Add that account to Pera, then check again.",
+            "body_with_address": "Your card is funded from {{address}}, which isn't in this wallet. Add that account to Pera, then check again.",
             "check_again": "Check again",
             "not_found_title": "Account not found",
             "not_found_body": "None of the accounts in this wallet is linked to your Pera Card."
