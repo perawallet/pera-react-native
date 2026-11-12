@@ -2008,6 +2008,14 @@
             "error_body": "Nous n’avons pas pu démarrer la vérification. Veuillez réessayer.",
             "open_link_error_body": "Nous n’avons pas pu ouvrir la page de vérification. Veuillez réessayer."
         },
+        "card_on_other_account": {
+            "title": "Votre Pera Card est liée à un autre compte",
+            "body": "Le compte qui finance votre carte ne figure pas dans ce wallet. Ajoutez ce compte à Pera, puis vérifiez à nouveau.",
+            "body_with_address": "Votre carte est financée depuis {{address}}, qui ne figure pas dans ce wallet. Ajoutez ce compte à Pera, puis vérifiez à nouveau.",
+            "check_again": "Vérifier à nouveau",
+            "not_found_title": "Compte introuvable",
+            "not_found_body": "Aucun des comptes de ce wallet n’est lié à votre Pera Card."
+        },
         "setup_status": {
             "title": "Terminez la configuration et commencez à payer on-chain",
             "documents_title": "Envoyez vos documents",

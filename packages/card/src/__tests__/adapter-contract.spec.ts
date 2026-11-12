@@ -42,6 +42,7 @@ const chainNeutral = (scope: ChainScope): UnsignedTransaction => ({
 
 let isAutoDrawOn = false
 let submissions = 0
+let isCardOnChain = false
 
 const adapter = fakeCardAdapter({
     autoDraw: {
@@ -54,6 +55,12 @@ const adapter = fakeCardAdapter({
     },
     settlementAsset: scope => (isConfigured(scope) ? '1' : null),
     isAutoDrawEnabled: async scope => isConfigured(scope) && isAutoDrawOn,
+    findCardOwner: async (scope, wallets) =>
+        isConfigured(scope) &&
+        isCardOnChain &&
+        wallets.some(wallet => wallet.network === 'chain')
+            ? 'OWNER'
+            : null,
     buildManualDeposit: async (_params, scope) => {
         if (!isConfigured(scope)) throw new CardEscrowNotConfiguredError()
         return [chainNeutral(scope)]
@@ -111,5 +118,12 @@ cardContractTests(() => adapter, {
             isAutoDrawOn = enabled
         },
         submissions: () => submissions,
+    },
+    cardOwner: {
+        wallet: { address: 'CARD', network: 'chain' },
+        ownerAddress: 'OWNER',
+        arrangeOwner: isCard => {
+            isCardOnChain = isCard
+        },
     },
 })

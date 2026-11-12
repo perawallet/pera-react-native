@@ -46,15 +46,22 @@ export const useRestoreEscrowCardMutation = (
                 throw new CardUserUnavailableError()
             }
             // One failed lookup must not hide a card linked to another
-            // address, so each is settled on its own.
-            const links = await Promise.all(
+            // address, so each is settled on its own. When every one failed
+            // nothing was learned, which is not the same as "no card".
+            const settled = await Promise.allSettled(
                 addresses.map(address =>
                     fetchFundingAddressLink({
                         scope,
                         address,
                         baanxUserId: user.id,
-                    }).catch(() => null),
+                    }),
                 ),
+            )
+            if (settled.every(result => result.status === 'rejected')) {
+                throw settled[0].reason
+            }
+            const links = settled.map(result =>
+                result.status === 'fulfilled' ? result.value : null,
             )
             const index = links.findIndex(
                 link =>
