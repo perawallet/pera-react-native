@@ -16,6 +16,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import type { CardTransactionFilters, CardWalletKind } from '../models'
 
 export const MODULE_PREFIX = 'card'
+const AUTO_DRAW_ENABLED = 'auto-draw-enabled'
 
 // Sensitive flows (card details / PIN) deliberately have no query keys — they
 // are imperative mutations and must never be cached.
@@ -35,7 +36,7 @@ export const cardQueryKeys = {
     pendingWithdrawal: (scope: ChainScope, ownerAddress: Nullable<string>) =>
         [MODULE_PREFIX, 'pending-withdrawal', { scope, ownerAddress }] as const,
     autoDrawEnabled: (scope: ChainScope, ownerAddress: Nullable<string>) =>
-        [MODULE_PREFIX, 'auto-draw-enabled', { scope }, ownerAddress] as const,
+        [MODULE_PREFIX, AUTO_DRAW_ENABLED, { scope }, ownerAddress] as const,
     cardOwner: (scope: ChainScope) =>
         [MODULE_PREFIX, 'card-owner', { scope }] as const,
     usdcBalance: (scope: ChainScope, address: string) =>
@@ -97,8 +98,25 @@ export const cardMutationKeys = {
 export const isCardQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX
 
-export const invalidateCardQueries = (queryClient: QueryClient): void => {
+export type InvalidateCardQueriesOptions = {
+    /**
+     * Keeps the auto-draw switch a caller has just confirmed on chain. A
+     * re-read right after it can reach a node that has not seen that round
+     * yet, and the funding type synced from it would undo the switch.
+     */
+    exceptAutoDrawSwitch?: boolean
+}
+
+export const invalidateCardQueries = (
+    queryClient: QueryClient,
+    options?: InvalidateCardQueriesOptions,
+): void => {
     void queryClient.invalidateQueries({
-        predicate: query => query.queryKey[0] === MODULE_PREFIX,
+        predicate: query =>
+            query.queryKey[0] === MODULE_PREFIX &&
+            !(
+                options?.exceptAutoDrawSwitch &&
+                query.queryKey[1] === AUTO_DRAW_ENABLED
+            ),
     })
 }
