@@ -321,7 +321,19 @@ older shape can still rehydrate, so the machine refuses any whose transactions a
 An Algorand request is checked and grouped by the Algorand transactions it carries: group integrity
 over the full group, and one group per account each transaction signs for, whose rekey is followed
 once. The planner adapter's `signedForAddresses` decides that key, and refuses a signer override
-that names neither the sender nor an account the payload signs with.
+that names neither the sender nor an account the payload signs with. An override naming the payload's
+authority (ARC-0001 `authAddr` for a dApp escrow rekeyed to a wallet account) keys the group by that
+signer instead (`isKeyedBySigner`): the chain checks only the sender's auth address, so the
+authority's own rekey must not be followed.
+
+dApp requests (WalletConnect `algo_signTxn` per ARC-0025, and the webview bridge) follow ARC-0001's
+signing rules in `resolveArc0001SignTxnRequest`: an `authAddr` signs with that key even when the
+wallet's records say the sender isn't rekeyed to it, including an `authAddr` equal to the sender; a
+signer the request names that the wallet can't use fails the whole request with one error that
+doesn't name it; `signers: [X]` without `authAddr` is rejected unless X is the sender and the sender
+isn't rekeyed; and `signers: []` returns the dApp's own `stxn` when it matches `txn`. One deviation
+is deliberate: a transaction with no `signers` whose sender the wallet can't sign for is left `null`
+instead of failing the request, because `@perawallet/connect` 1.5.2 and older drop `signers: []`.
 Every Algorand signer and guard reads the transaction from the payload through
 `readAlgorandTransaction`, the trust boundary for a payload a dApp may have built.
 
@@ -349,8 +361,8 @@ it can't prove stays an unrecognised contract call that the app can't sign witho
 
 A request's `signer` is the address whose key produces the signature, not the account it is for:
 the planner reads it from the payload (Ethereum's `from`; Algorand's sender, rekey authority, or one
-request per multisig participant). A group keyed by that signer (`isKeyedByPlanner`) never has its
-rekey followed a second time. Only keys
+request per multisig participant). A group keyed by that signer (`isKeyedBySigner`, which includes
+every `isKeyedByPlanner` group) never has its rekey followed a second time. Only keys
 the review lists as `signableAddresses` sign, so a payload can't add a signer the user never
 approved: Algorand's reviewer lists every planned signer the wallet holds and refuses an authority a
 wallet sender isn't rekeyed to. A listed key the wallet can't use locally is left to its holder.

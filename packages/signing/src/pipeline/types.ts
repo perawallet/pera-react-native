@@ -41,6 +41,11 @@ export interface UnsignedTransactionsSignableData {
      * `signableGroupChainData`; only that chain reads it.
      */
     chainData?: unknown
+    /**
+     * A group with chain data whose `signerAddress` is the key the request
+     * names to sign, not an account it signs for (`SignedFor.isSigner`).
+     */
+    isKeyedBySigner?: true
 }
 
 /**
@@ -50,6 +55,30 @@ export interface UnsignedTransactionsSignableData {
  */
 export const isKeyedByPlanner = (data: SignableData): boolean =>
     data.type === 'transactions' && data.chainData === undefined
+
+/** The group's `signerAddress` holds the key that signs, so its rekey is not followed. */
+export const isKeyedBySigner = (data: SignableData): boolean =>
+    isKeyedByPlanner(data) ||
+    (data.type === 'transactions' && data.isKeyedBySigner === true)
+
+/**
+ * The key of a group's signer in `GroupSignerMap`. An address can sign for
+ * itself through its rekey and, in the same request, be named as the signer
+ * of another account's transaction, which takes its own key.
+ */
+export const groupSignerKeyOf = ({
+    signerAddress,
+    data,
+}: Pick<SignableGroup, 'signerAddress' | 'data'>): string =>
+    signerKeyOf(
+        signerAddress,
+        data.type === 'transactions' && data.isKeyedBySigner === true,
+    )
+
+export const signerKeyOf = (
+    signerAddress: string,
+    isKeyedBySigner: boolean,
+): string => (isKeyedBySigner ? `${signerAddress}#signer` : signerAddress)
 
 export interface ArbitraryDataSignableData {
     type: 'arbitrary-data'
@@ -218,6 +247,8 @@ export interface SourceMetadata {
         payloadId: number
         indicesToSign: number[]
         totalLength: number
+        /** Index → the dApp's own `stxn`, returned as is in that slot. */
+        passthrough?: Record<number, string>
     }
 }
 

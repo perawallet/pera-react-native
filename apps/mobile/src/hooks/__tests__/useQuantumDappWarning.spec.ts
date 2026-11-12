@@ -141,6 +141,34 @@ describe('useQuantumDappWarning', () => {
         )
     })
 
+    // A dApp-named signer signs with its own key, so the caller passes that
+    // account and its rekey to a quantum auth must not raise the sheet.
+    it('takes resolved signers as they are, never following their rekey', async () => {
+        const { result } = renderHook(() => useQuantumDappWarning())
+        const accounts = (useAllAccounts as Mock).mock.results[0].value
+
+        const decision = await result.current.confirmQuantumDappSigners(
+            [accounts[2]],
+            'algorand',
+        )
+
+        expect(mockRequest).not.toHaveBeenCalled()
+        expect(decision).toBe('continue')
+    })
+
+    it('shows the sheet for a resolved quantum signer', async () => {
+        const { result } = renderHook(() => useQuantumDappWarning())
+        const accounts = (useAllAccounts as Mock).mock.results[0].value
+
+        const decision = await result.current.confirmQuantumDappSigners(
+            [accounts[0]],
+            'algorand',
+        )
+
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        expect(decision).toBe('continue')
+    })
+
     it('continues without a sheet when no address is a quantum account', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 

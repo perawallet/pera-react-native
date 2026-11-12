@@ -422,7 +422,9 @@ describe('signingMachine', () => {
 
         // signerAddress should be the override (user), not the contract sender
         expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
-        expect(state.context.groupSigners?.get(MOCK_ADDRESS)).toEqual({
+        expect(
+            state.context.groupSigners?.get(`${MOCK_ADDRESS}#signer`),
+        ).toEqual({
             custody: 'local',
             scheme: 'ed25519',
         })
@@ -1221,7 +1223,7 @@ describe('signingMachine', () => {
                 'signed-transactions',
             )
             // Keyed by the account it signs for, so transport follows its rekey.
-            expect(transportInput?.isKeyedByPlanner).toBe(false)
+            expect(transportInput?.isKeyedBySigner).toBe(false)
         })
 
         it("signs a key in a scheme the planner doesn't plan through the Algorand strategy", async () => {

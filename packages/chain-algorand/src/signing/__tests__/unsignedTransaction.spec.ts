@@ -180,7 +180,7 @@ describe('a request whose signer is named for a slot', () => {
         expect(readAlgorandTransaction(unsigned).signer).toBe(OTHER)
         expect(
             algorandSignedForAddresses(requestOf([unsigned], OTHER)),
-        ).toEqual([OTHER])
+        ).toEqual([{ address: OTHER, isSigner: true }])
     })
 
     it('signs a cosign for a participant of the joint account it decodes for', () => {
@@ -204,7 +204,7 @@ describe('a request whose signer is named for a slot', () => {
         expect(readAlgorandTransaction(unsigned).multisig).toEqual(multisig)
         expect(
             algorandSignedForAddresses(requestOf([unsigned], PARTICIPANT)),
-        ).toEqual([PARTICIPANT])
+        ).toEqual([{ address: PARTICIPANT, isSigner: false }])
     })
 })
 

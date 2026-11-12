@@ -137,13 +137,21 @@ export const fakePlannerAdapter = (
     validateGroup: vi.fn((transactions, { isCosigner }) => {
         if (!isCosigner) recomputeGroupIds(payloadTransactions(transactions))
     }),
-    // Algorand's rule, minus the override check: each transaction's sender.
+    // Algorand's rule, minus the override check: each transaction's sender,
+    // or the signer an override names for someone else's transaction.
     signedForAddresses: vi.fn(request =>
         request.txs[0]?.chainData.family === 'algorand'
             ? request.txs.map(
-                  (unsigned: UnsignedTransaction, index: number) =>
-                      requestFactsOf(request)?.signerOverrides?.get(index) ??
-                      payloadTransactions([unsigned])[0].sender.toString(),
+                  (unsigned: UnsignedTransaction, index: number) => {
+                      const sender = payloadTransactions([
+                          unsigned,
+                      ])[0].sender.toString()
+                      const override =
+                          requestFactsOf(request)?.signerOverrides?.get(index)
+                      return override === undefined || override === sender
+                          ? { address: sender, isSigner: false }
+                          : { address: override, isSigner: true }
+                  },
               )
             : undefined,
     ),

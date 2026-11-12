@@ -49,4 +49,14 @@ describe('buildWalletConnectSignResult', () => {
 
         expect(result).toEqual([encodeToBase64(a), null, null])
     })
+
+    // Recovery after an app kill rebuilds the result from the handoff, so the
+    // dApp's own stxn must come back from it too.
+    test("puts the dApp's own stxn in its slot", () => {
+        const a = new Uint8Array([9])
+
+        expect(
+            buildWalletConnectSignResult([a], [0], 3, { 2: 'dapp-stxn' }),
+        ).toEqual([encodeToBase64(a), null, 'dapp-stxn'])
+    })
 })

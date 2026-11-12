@@ -34,7 +34,10 @@ import {
     type UnsignedTransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
-import { buildWalletConnectSignResult } from './multisig/buildWalletConnectSignResult'
+import {
+    buildWalletConnectSignResult,
+    emptySignResult,
+} from './multisig/buildWalletConnectSignResult'
 import { algorandRequestChainData } from './requestChainData'
 import {
     algorandTransactionOf,
@@ -61,9 +64,15 @@ export const enqueueArc0001SignRequest = async (
 ): Promise<Nullable<TransactionSignRequest>> => {
     const { allDecoded, toSign, signerOverrides } = resolved
     const totalLength = allDecoded.length
+    const passthrough =
+        resolved.passthrough.size > 0
+            ? Object.fromEntries(resolved.passthrough)
+            : undefined
 
     if (toSign.length === 0) {
-        void transport.respondWithResult(new Array(totalLength).fill(null))
+        void transport.respondWithResult(
+            emptySignResult(totalLength, passthrough),
+        )
         return null
     }
 
@@ -141,12 +150,13 @@ export const enqueueArc0001SignRequest = async (
             rawTransactionsBase64,
             payloadId: transport.payloadId,
             totalLength,
+            passthrough,
             signerOverrides:
                 signerOverrides.size > 0 ? signerOverrides : undefined,
             feeAdjustments,
         }),
         approve: async (signed: Nullable<SignedTransaction>[]) => {
-            const result: Nullable<string>[] = new Array(totalLength).fill(null)
+            const result = emptySignResult(totalLength, passthrough)
             signed.forEach((tx, i) => {
                 if (tx) {
                     result[indicesToSign[i]] = encodeToBase64(tx.bytes)
@@ -177,6 +187,7 @@ export const enqueueArc0001SignRequest = async (
                 signedBytes,
                 indicesToSign,
                 totalLength,
+                passthrough,
             )
             await transport.respondWithResult(result)
         },

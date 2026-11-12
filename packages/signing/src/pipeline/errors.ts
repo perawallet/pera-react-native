@@ -73,16 +73,36 @@ export class UserCancelledError extends PipelineError {
 }
 
 export class CannotSignError extends PipelineError {
-    constructor(address: string, reason?: string) {
+    constructor(
+        address: string,
+        reason?: string,
+        copy?: { messageKey: I18nKey; params: Record<string, unknown> },
+    ) {
         super(
             reason
                 ? `Cannot sign with account ${address}: ${reason}`
                 : `Cannot sign with account ${address}`,
             undefined,
             {
-                messageKey: SIGNING_ERROR_KEYS.cannotSign,
+                messageKey: copy?.messageKey ?? SIGNING_ERROR_KEYS.cannotSign,
                 titleKey: SIGNING_ERROR_KEYS.title,
-                params: { address, reason },
+                params: { address, reason, ...copy?.params },
+            },
+        )
+    }
+}
+
+/** The request names `address` to sign with its own key, which the wallet doesn't hold. */
+export class SignerKeyMissingError extends CannotSignError {
+    constructor(address: string) {
+        super(
+            address,
+            'the request names it to sign, and its own key is not held',
+            {
+                messageKey: i18nKey(
+                    'signing.cannot_sign.signer_key_missing_body',
+                ),
+                params: { authAddress: address },
             },
         )
     }

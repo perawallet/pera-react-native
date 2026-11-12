@@ -86,10 +86,25 @@ export type GroupTransactionItem = {
 
 export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
 
+/**
+ * `authKeyMissing`: the request names `authAddress` itself as the signer, and
+ * the wallet doesn't hold that account's own key.
+ */
 export type DelegatedUnsignableReason = {
-    kind: 'authMissing' | 'authIsWatch'
+    kind: 'authMissing' | 'authIsWatch' | 'authKeyMissing'
     senderAddress: string
     authAddress: string
+}
+
+/** What a chain-neutral transaction is grouped under for signing. */
+export type SignedFor = {
+    address: string
+    /**
+     * `address` is the key the transaction names to sign it, not the account
+     * it signs for, so that account's own rekey is never followed: rekeys
+     * don't chain.
+     */
+    isSigner: boolean
 }
 
 /** What an address a review shows is to the transaction. */
@@ -169,6 +184,15 @@ export interface ReviewerChainAdapter {
         authorizerByIndex?: Map<number, string>,
     ): TransactionWarning[]
     resolveAllSignerAddresses(request: SignRequest): string[]
+    /**
+     * The held accounts whose keys sign `request`, as the planner keys them
+     * (a signer named for another account's transaction is itself, not its
+     * delegate).
+     */
+    resolveSigningAccounts(
+        request: SignRequest,
+        accounts: WalletAccount[],
+    ): WalletAccount[]
     getDelegatedUnsignableReason(
         request: SignRequest,
         accounts: WalletAccount[],
@@ -213,6 +237,11 @@ export const resolveAllSignerAddresses: WithChain<
     ReviewerChainAdapter['resolveAllSignerAddresses']
 > = (chainId, ...args) =>
     reviewerChainAdapters.get(chainId).resolveAllSignerAddresses(...args)
+
+export const resolveSigningAccounts: WithChain<
+    ReviewerChainAdapter['resolveSigningAccounts']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).resolveSigningAccounts(...args)
 
 export const getDelegatedUnsignableReason: WithChain<
     ReviewerChainAdapter['getDelegatedUnsignableReason']
@@ -339,6 +368,17 @@ export type DappResolveContext = {
      * its approved accounts learns nothing of the wallet's other accounts.
      */
     authorizedAddresses?: Set<string>
+    /**
+     * Every address the wallet holds on the chain, signable or not. A signer
+     * the dApp names signs with its own key, so it only needs to be held;
+     * defaults to `signableAddresses`.
+     */
+    heldAddresses?: ReadonlySet<string>
+    /**
+     * Held addresses that another account signs for. A dApp naming one as
+     * its own signer, without naming the account that signs, is rejected.
+     */
+    delegatedAddresses?: ReadonlySet<string>
     /**
      * Local multisig addresses. A transaction such an address sends is signed
      * as the multisig itself, whatever signer the dApp names: the dApp can't
@@ -830,7 +870,7 @@ export interface PlannerChainAdapter {
      */
     signedForAddresses(
         request: UnsignedTransactionSignRequest,
-    ): Optional<string[]>
+    ): Optional<SignedFor[]>
     /**
      * The chain data of a group {@link signedForAddresses} keys by account:
      * `indices` are the group's slots in `request.txs`.

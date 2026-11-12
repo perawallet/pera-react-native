@@ -15,7 +15,12 @@ import {
     resolveAuthAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { SignableData, SourceMetadata } from '../../pipeline/types'
+import {
+    isKeyedBySigner,
+    type SignableData,
+    type SignableGroup,
+    type SourceMetadata,
+} from '../../pipeline/types'
 
 /**
  * Picks the account whose key produces the signature for a signable group.
@@ -58,3 +63,23 @@ export const resolveSigningAccount = (
     }
     return resolveAuthAccount(signerAccount, allAccounts, chainId)
 }
+
+/**
+ * {@link resolveSigningAccount} for a group: a group keyed by its signer
+ * already names the account whose key signs.
+ */
+export const resolveGroupSigningAccount = (
+    group: Pick<SignableGroup, 'source' | 'data'>,
+    signerAccount: WalletAccount,
+    allAccounts: WalletAccount[],
+    chainId: ChainId,
+): WalletAccount =>
+    isKeyedBySigner(group.data)
+        ? signerAccount
+        : resolveSigningAccount(
+              signerAccount,
+              group.source,
+              group.data.type,
+              allAccounts,
+              chainId,
+          )

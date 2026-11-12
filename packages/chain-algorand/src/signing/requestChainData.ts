@@ -28,6 +28,8 @@ export type AlgorandRequestData = SignRequestGroupFacts & {
     payloadId?: number
     /** Full atomic-group length. The WalletConnect result array is null-padded to it. */
     totalLength?: number
+    /** Index → the dApp's own `stxn`, returned as is in that slot. */
+    passthrough?: Record<number, string>
 }
 
 /** An Algorand group's members the wallet signs, and its bytes as an external request sent them. */
@@ -95,5 +97,6 @@ export const algorandHandoffDeliveryOf = (
         payloadId: facts.payloadId,
         indicesToSign: facts.signableIndices ?? [],
         totalLength: facts.totalLength ?? 0,
+        ...(facts.passthrough && { passthrough: facts.passthrough }),
     }
 }
