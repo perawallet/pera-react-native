@@ -939,6 +939,36 @@ describe('useConnectionSigningAdapter', () => {
         })
     })
 
+    describe('re-delivery', () => {
+        it('queues a request re-delivered while still open only once, leaving the copy unanswered', async () => {
+            mockEnqueue.mockResolvedValue({ id: 'sr-1' } as never)
+            mockIsSignRequestPending.mockReturnValue(true)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('7', 'c1'))
+            await Promise.resolve()
+
+            const copy = txnMessage('7', 'c1')
+            send(copy)
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(1)
+            expect(copy.reject).not.toHaveBeenCalled()
+        })
+
+        it('queues the request again once the first was answered', async () => {
+            mockEnqueue.mockResolvedValue({ id: 'sr-1' } as never)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            send(txnMessage('7', 'c1'))
+            await Promise.resolve()
+            lastTransport().respondWithReject()
+
+            send(txnMessage('7', 'c1'))
+
+            expect(mockEnqueue).toHaveBeenCalledTimes(2)
+        })
+    })
+
     describe('connection closed', () => {
         // A send-transaction broadcast goes out even once its actor stops, so
         // withdrawing here would hide an outcome the user needs to see.

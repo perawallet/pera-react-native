@@ -891,10 +891,18 @@ export const enqueueInboundRequest = (
     }
     if (message.kind !== 'request') return
 
-    const breach = pendingCapacityBreach(
-        openRequestConnections(deps),
-        message.connectionId,
-    )
+    const openConnections = openRequestConnections(deps)
+    // A fresh WalletKit client (any teardown and re-init) re-emits every
+    // request it still holds. Answering the copy would answer the original.
+    if (deps.pendingRequests.has(requestKey(message))) {
+        logger.debug('[connections] ignored a re-delivered request', {
+            connectionId: message.connectionId,
+            correlationId: message.correlationId,
+        })
+        return
+    }
+
+    const breach = pendingCapacityBreach(openConnections, message.connectionId)
     if (breach) {
         // Not toasted: a peer flooding requests would flood the user too.
         logger.warn('[connections] refused a request over the pending cap', {
