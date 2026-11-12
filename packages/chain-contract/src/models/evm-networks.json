@@ -94,5 +94,21 @@
                 "eip155ChainId": 80002
             }
         ]
+    },
+    "optimism": {
+        "networks": [
+            {
+                "id": "mainnet",
+                "tier": "mainnet",
+                "displayName": "Mainnet",
+                "eip155ChainId": 10
+            },
+            {
+                "id": "sepolia",
+                "tier": "testnet",
+                "displayName": "Sepolia",
+                "eip155ChainId": 11155420
+            }
+        ]
     }
 }

@@ -1,7 +1,7 @@
 # EVM conformance suite
 
 Vitest suites that run the app's own EVM code (`packages/chain-ethereum` and the signing pipeline it
-plugs into) against **real** EVM nodes: six local Anvil nodes, one per chain Pera ships, each on
+plugs into) against **real** EVM nodes: seven local Anvil nodes, one per chain Pera ships, each on
 that chain's testnet chain id. The independent oracle is Foundry's `cast`, never viem, which is the
 app's own library.
 
@@ -28,7 +28,7 @@ author expects. These bug classes are invisible to that:
   written against strings the test author typed agrees with the author's assumption; only a real
   node's rejection (`suites/errors/rejections.spec.ts`) disagrees when the wording drifts.
 - **Contracts the app assumes exist.** `fetchAccountState` reads balances through Multicall3, and
-  Base's fee strategy prices the L1 data fee from the OP-stack GasPriceOracle. Plain Anvil has
+  an OP-stack chain's fee strategy (Base, Optimism) prices the L1 data fee from the GasPriceOracle. Plain Anvil has
   neither, so the harness installs the canonical Multicall3 bytecode and the GasPriceOracle and
   L1Block predeploys captured from Base Sepolia (`src/vectors/`), and proves the installed oracle
   prices as the live one did.
@@ -38,7 +38,7 @@ author expects. These bug classes are invisible to that:
 Docker is the only host prerequisite.
 
 ```sh
-pnpm evmnet                 # start the six Anvil nodes (pulls the digest-pinned Foundry image)
+pnpm evmnet                 # start the seven Anvil nodes (pulls the digest-pinned Foundry image)
 pnpm test:conformance:evm   # from the repo root; on failure it prints every node's logs
 pnpm --filter @perawallet/conformance-evm exec vitest run src/suites/fees   # one directory or file
 ```
@@ -51,9 +51,10 @@ pnpm --filter @perawallet/conformance-evm exec vitest run src/suites/fees   # on
 | Arbitrum  | Arb. Sepolia | 421614   | 8548 | `pera_evmnet_arbitrum`  |
 | Avalanche | Fuji         | 43113    | 8549 | `pera_evmnet_avalanche` |
 | Polygon   | Amoy         | 80002    | 8550 | `pera_evmnet_polygon`   |
+| Optimism  | OP Sepolia   | 11155420 | 8551 | `pera_evmnet_optimism`  |
 
 Every scope is a testnet, so nothing the suite signs replays on a mainnet. The testnet tier carries
-the mainnet fee strategy, including Polygon's tip floor. Base runs with `--optimism`. Ports bind to
+the mainnet fee strategy, including Polygon's tip floor. Base and Optimism run with `--optimism`. Ports bind to
 loopback only, because the nodes hold Anvil's well-known dev keys.
 
 `vitest.setup.ts` fails every file fast with `evmnet is not reachable at …` when a node is down, and
@@ -117,7 +118,7 @@ Oracle parity, node acceptance and round-trip decode, as
 - **`expectEvmConformant` also proves the money moved** (`src/harness/assert/roundTrip.ts`): the
   submitted bytes hash to the transaction, the signature recovers to the sender, the node's copy
   matches the intent, and the sender's balance fell by exactly `value + gasUsed × effectiveGasPrice`,
-  plus the OP-stack L1 fee on Base. Anvil charges that fee but leaves `l1Fee` out of the receipt,
+  plus the OP-stack L1 fee on Base and Optimism. Anvil charges that fee but leaves `l1Fee` out of the receipt,
   so the harness prices it with the installed GasPriceOracle.
 
 ## Reading a diff failure
@@ -139,7 +140,7 @@ These are app behaviours the suite pins against a real node, each a bug class a 
 - A resend of bytes the node already pools, which Anvil refuses as `transaction already imported`,
   counts as already known rather than a rejection, so the ledger row stays open
   (`suites/submission/broadcast.spec.ts`).
-- A MAX send on Ethereum and on Base lands and leaves exactly the reserve the chain did not charge; a base
+- A MAX send on Ethereum and on each OP-stack chain lands and leaves exactly the reserve the chain did not charge; a base
   fee that rises after the review is held to the confirmed max fee, or refused once it can't fit
   (`suites/construction/maxSend.spec.ts`).
 - A gas limit below the intrinsic cost classifies as `OUT_OF_GAS`, and Anvil's raw custom-error
@@ -164,14 +165,14 @@ These are app behaviours the suite pins against a real node, each a bug class a 
 - **`RATE_LIMITED`** is exercised with a synthetic local HTTP 429; real providers' bodies vary.
 - **Custom errors are not decoded.** The app has no contract ABI, so users see a bare revert with
   no error name or arguments.
-- **Base (OP stack) fees on Anvil.**
+- **OP-stack fees on Anvil.**
     - The harness's L1 fee parity is exact only below the oracle's Fjord 100-byte minimum
       transaction size, where the oracle and the node clamp to the same fee. Every transfer the
       app builds is below it; large dApp calldata is not.
     - The captured operator fee is zero, so `getOperatorFee` parity is vacuous.
-    - Anvil runs `eth_call` on Base only for a funded caller, so the harness funds the zero
+    - Anvil runs `eth_call` on an OP-stack chain only for a funded caller, so the harness funds the zero
       address; real OP nodes do not need that.
-    - The predeploys are pinned to Base Sepolia block 50,996,000. Re-capturing with
+    - Both OP-stack nodes take the predeploys pinned to Base Sepolia block 50,996,000. Re-capturing with
       `tools/dev/capture-op-predeploys.sh` at a past block needs an archive RPC.
 - **Real L2 execution semantics** beyond the fee oracle (Arbitrum's L1 calldata gas, OP deposits),
   and reorgs. Anvil is a single-node L1 simulator, so the reconcile suite proves finality gating
@@ -193,7 +194,7 @@ These are app behaviours the suite pins against a real node, each a bug class a 
 - `evmnet is not reachable at http://127.0.0.1:8545`: Docker isn't running or the nodes aren't up.
   `pnpm evmnet:status`, then `pnpm evmnet`.
 - `… is on the wrong network`, or `pnpm evmnet` cannot bind a port: something else is listening
-  on 8545 to 8550, often another Anvil or Hardhat node. Stop it, then `pnpm evmnet`.
+  on 8545 to 8551, often another Anvil or Hardhat node. Stop it, then `pnpm evmnet`.
 - Odd chain state, or a test reporting `a test left evmnet dirty`: `pnpm evmnet:reset` recreates
   every node from a fresh chain.
 - `committed artifacts drift from the Solidity sources`: a contract under `contracts/src/` changed

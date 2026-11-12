@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_PATH="${SCRIPT_DIR}/evmnet.compose.yml"
-CONTAINERS="pera_evmnet_ethereum pera_evmnet_base pera_evmnet_bsc pera_evmnet_arbitrum pera_evmnet_avalanche pera_evmnet_polygon"
+CONTAINERS="pera_evmnet_ethereum pera_evmnet_base pera_evmnet_bsc pera_evmnet_arbitrum pera_evmnet_avalanche pera_evmnet_polygon pera_evmnet_optimism"
 
 usage() {
   cat >&2 <<EOF2
@@ -60,6 +60,7 @@ case "$cmd" in
     echo "  arbitrum   http://127.0.0.1:8548  (chain id 421614)"
     echo "  avalanche  http://127.0.0.1:8549  (chain id 43113)"
     echo "  polygon    http://127.0.0.1:8550  (chain id 80002)"
+    echo "  optimism   http://127.0.0.1:8551  (chain id 11155420)"
     ;;
   stop)
     require_docker

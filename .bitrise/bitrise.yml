@@ -1234,7 +1234,7 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
-    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
@@ -1259,6 +1259,10 @@ workflows:
     - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
     - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
     - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com
+    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com
+    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - ANDROID_FLAVOR: staging
     - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
@@ -1385,7 +1389,7 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
-    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
@@ -1410,6 +1414,10 @@ workflows:
     - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
     - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
     - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com
+    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com
+    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
     - USE_CACHE: 'true'
@@ -1553,7 +1561,7 @@ workflows:
     envs:
     - ENVIRONMENT: staging
     - APP_ENV: staging
-    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon
+    - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com
     - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com
@@ -1578,6 +1586,10 @@ workflows:
     - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
     - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com
     - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com
+    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com
+    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - WEB_INTEGRITY_MINT_ENABLED: 'true'
     - WEB_INTEGRITY_ENROL_ENABLED: 'true'

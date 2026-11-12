@@ -7,7 +7,7 @@ off in production, and what adding one touches.
 
 A **chain** is one entry in `CHAIN_IDS`; a **family** is one entry in `CHAIN_FAMILIES`
 (`packages/chain-contract/src/models/identity.ts`). Algorand is a family of one. Ethereum, Base, BSC,
-Arbitrum, Avalanche and Polygon are chains of the `evm` family, all built from
+Arbitrum, Avalanche, Polygon and Optimism are chains of the `evm` family, all built from
 `packages/chain-ethereum`.
 
 Each chain ships a `ChainModule` (`packages/chain-contract/src/models/module.ts`):
@@ -194,8 +194,9 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
       and any per-chain `capabilities` or `restrictions`. Update `src/chains/__tests__/table.spec.ts`
       and `src/__tests__/evm-chains.ts` where they enumerate rows, and add the id to `evmChainIds` in
       `packages/chain-ethereum/vitest.setup.ts`, or the package's specs throw for it.
-- [ ] `packages/chain-ethereum/src/signing/known-contracts.ts`: the mainnet's well-known routers and
-      spenders under its EIP-155 id. Optional; without them, approvals on the chain name no contract.
+- [ ] `packages/chain-ethereum/src/signing/known-contracts.ts`: the mainnet's routers, Permit2, wrapped
+      native token, Aave V3 pool and Uniswap position managers under its EIP-155 id. `known-contracts.spec.ts`
+      requires the full set for every mainnet.
 - [ ] A fee strategy the existing kinds don't cover: `EvmFeeStrategy` in `src/chains/types.ts`,
       `src/transfer/fees.ts` and `src/transfer/submission.ts`, and [EVM fees](EVM_FEES.md).
 - [ ] `lanekeep/rules/no-chain-identity-in-shared-packages.ts`: add the id to its copy of `CHAIN_IDS`;
@@ -214,9 +215,9 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
 - [ ] Local EVM network: the chain in `EvmnetChain`, `EVMNET_CHAINS` and `EVMNET`
       (`conformance-evm/src/harness/evmnet.ts`), an Anvil service in `tools/dev/evmnet.compose.yml`,
       `CONTAINERS` in `tools/dev/evmnet.sh`, the expected list in `tools/__tests__/evmnet.test.sh`,
-      and the node count in the root `README.md`. An OP Stack chain may need its own fixture beside
-      `conformance-evm/src/vectors/opStackPredeploys.ts` (captured by
-      `tools/dev/capture-op-predeploys.sh`).
+      and the node count in the root `README.md`. An OP Stack chain's node runs Anvil with `--optimism` and
+      takes the shared predeploy fixture, `conformance-evm/src/vectors/opStackPredeploys.ts` (captured by
+      `tools/dev/capture-op-predeploys.sh`), through `isOpStackEvmnetChain`.
 - [ ] Your `.env`: the id in `CHAINS` and an RPC URL per network, or `generate-config.sh` fails.
 - [ ] Outside the repo: the Pera backend must accept the chain id for device registration and serve
       the services listed; the `chain_<id>_overrides` and `enable_ssl_pinning_<id>_rpc` remote keys

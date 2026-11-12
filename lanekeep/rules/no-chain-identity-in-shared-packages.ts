@@ -19,6 +19,7 @@ export const CHAIN_IDS = [
     'arbitrum',
     'avalanche',
     'polygon',
+    'optimism',
 ] as const
 
 // An app names a chain at its own call sites, so a chain id literal

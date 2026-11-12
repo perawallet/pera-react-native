@@ -35,7 +35,7 @@ its 15 s refetch interval. Every EVM send is capped this way, not only MAX.
 ## Why a small balance remains
 
 The reserve is a ceiling. The network charges `gas x (base fee + tip)`, so after a MAX send the account
-holds about `gas x base fee`, plus the unused part of the L1 headroom on Base. Nothing else is held
+holds about `gas x base fee`, plus the unused part of the L1 headroom on an OP-stack chain. Nothing else is held
 back. The amount step says so under the amount.
 
 Halving the headroom would roughly halve that leftover and raise the chance of a send that never mines,

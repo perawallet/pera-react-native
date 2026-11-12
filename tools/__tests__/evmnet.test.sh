@@ -51,7 +51,7 @@ recorded() { # $1 prefix -> matching record lines, without the prefix
 
 check "pins the foundry image by digest" "yes" \
     "$(grep -Eq 'image: ghcr.io/foundry-rs/foundry:v[0-9]+\.[0-9]+\.[0-9]+@sha256:[0-9a-f]{64}' "$COMPOSE_FILE_PATH" && echo yes || echo no)"
-check "every service overrides the entrypoint to anvil" "6" \
+check "every service overrides the entrypoint to anvil" "7" \
     "$(grep -c 'entrypoint: \["anvil"\]' "$COMPOSE_FILE_PATH")"
 
 # service container port chain-id
@@ -60,7 +60,8 @@ pera_evmnet_base 8546 84532
 pera_evmnet_bsc 8547 97
 pera_evmnet_arbitrum 8548 421614
 pera_evmnet_avalanche 8549 43113
-pera_evmnet_polygon 8550 80002"
+pera_evmnet_polygon 8550 80002
+pera_evmnet_optimism 8551 11155420"
 while read -r name port id; do
     block=$(awk -v n="container_name: $name" '
         /^  [a-z]+:$/ { if (found) exit; buf = "" }
@@ -71,11 +72,11 @@ while read -r name port id; do
         "$(echo "$block" | grep -A1 -- '- "--chain-id"' | grep -q -- "- \"$id\"" && echo yes || echo no)"
     check "$name binds port $port" "yes" \
         "$(echo "$block" | grep -q "127.0.0.1:$port:8545" && echo yes || echo no)"
-    if [ "$name" = pera_evmnet_base ]; then want=yes; else want=no; fi
+    if [ "$name" = pera_evmnet_base ] || [ "$name" = pera_evmnet_optimism ]; then want=yes; else want=no; fi
     check "$name OP-stack mode is $want" "$want" \
         "$(echo "$block" | grep -q -- '"--optimism"' && echo yes || echo no)"
 done <<<"$TABLE"
-check "only one service runs the OP-stack mode" "1" \
+check "only the two OP-stack services run the OP-stack mode" "2" \
     "$(grep -c -- '--optimism' "$COMPOSE_FILE_PATH")"
 
 run "$BASH_BIN" "$EVMNET" start >/dev/null

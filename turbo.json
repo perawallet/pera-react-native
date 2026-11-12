@@ -43,7 +43,8 @@
     "BSC_*",
     "ARBITRUM_*",
     "AVALANCHE_*",
-    "POLYGON_*"
+    "POLYGON_*",
+    "OPTIMISM_*"
   ],
   "globalPassThroughEnv": [
     "VITEST_MAX_WORKERS"

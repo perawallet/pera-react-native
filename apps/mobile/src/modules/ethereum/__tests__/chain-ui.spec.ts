@@ -65,6 +65,7 @@ describe('resolveEthereumAssetAbout', () => {
         ['ethereum', 'ether', 'https://ethereum.org'],
         ['base', 'ether', 'https://ethereum.org'],
         ['arbitrum', 'ether', 'https://ethereum.org'],
+        ['optimism', 'ether', 'https://ethereum.org'],
         ['bsc', 'bnb', 'https://www.bnbchain.org'],
         ['avalanche', 'avax', 'https://www.avax.network'],
         ['polygon', 'pol', 'https://polygon.technology'],

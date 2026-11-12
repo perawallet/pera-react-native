@@ -21,6 +21,7 @@ export const ETHEREUM: EvmChain = evmChainOf('ethereum')
 export const BASE: EvmChain = evmChainOf('base')
 export const BSC: EvmChain = evmChainOf('bsc')
 export const POLYGON: EvmChain = evmChainOf('polygon')
+export const OPTIMISM: EvmChain = evmChainOf('optimism')
 
 /** Every row of the table, for specs that run per chain. */
 export const EVM_TEST_CHAINS: readonly EvmChain[] = EVM_CHAINS

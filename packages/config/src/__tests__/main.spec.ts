@@ -296,6 +296,7 @@ describe('config/main', () => {
             arbitrum: { readMs: 15_000, submitMs: 30_000 },
             avalanche: { readMs: 15_000, submitMs: 30_000 },
             polygon: { readMs: 15_000, submitMs: 30_000 },
+            optimism: { readMs: 15_000, submitMs: 30_000 },
         })
         expect(config.signingTransportTimeout).toBe(60_000)
     })

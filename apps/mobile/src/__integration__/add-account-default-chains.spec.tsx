@@ -457,6 +457,37 @@ describe('Flow: adding an account lands it on its default chains', () => {
         await expectImportedKeyOnEthereumAlone()
     })
 
+    it('Given an 0x address active only on Optimism, when it is watched, then the account is on Optimism alone and never on Algorand', async () => {
+        server.use(...handlersFor(['optimism']))
+        renderWithNavigation(WatchAccountScreen, 'WatchAccount', {
+            additionalScreens: [nameAccountScreen],
+        })
+
+        fireEvent.change(
+            await waitFor(() =>
+                screen.getByTestId('watch_account_address_input'),
+            ),
+            { target: { value: WATCH_ADDRESS } },
+        )
+        await waitFor(() =>
+            expect(
+                isElementDisabled(
+                    screen.getByTestId('watch_account_submit_button'),
+                ),
+            ).toBe(false),
+        )
+        fireEvent.click(screen.getByTestId('watch_account_submit_button'))
+        await finishNaming()
+
+        await waitFor(() =>
+            expect(useAccountsStore.getState().accounts).toHaveLength(1),
+        )
+        const account = theOnlyAccount()
+        expect(account.custody).toEqual({ kind: 'watch' })
+        expect(Object.keys(account.chains)).toEqual(['optimism'])
+        expect(chainAccountOf(account, 'optimism')?.enabledBy).toBe('discovery')
+    })
+
     it('Given an 0x address with no activity, when it is watched, then the account is on Ethereum alone and never on Algorand', async () => {
         renderWithNavigation(WatchAccountScreen, 'WatchAccount', {
             additionalScreens: [nameAccountScreen],

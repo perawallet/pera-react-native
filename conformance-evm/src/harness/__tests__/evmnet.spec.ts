@@ -21,6 +21,7 @@ import {
     assertEvmnetReachable,
     assertRpcReachable,
     isAutomine,
+    isOpStackEvmnetChain,
     mine,
     rpcAt,
     setAutomine,
@@ -59,7 +60,7 @@ describe('evmnet', () => {
                 container: EVMNET[chain].container,
                 rpcUrl: EVMNET[chain].rpcUrl,
                 eip155ChainId: EVMNET[chain].eip155ChainId,
-                optimism: chain === 'base',
+                optimism: isOpStackEvmnetChain(chain),
             })
         }
     })

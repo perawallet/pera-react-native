@@ -21,12 +21,19 @@ const loadWith = async (appEnvironment: string, chainId = 'ethereum') => {
             >()
         return { ...actual, config: { ...actual.config, appEnvironment } }
     })
-    const [{ evmChainOf }, { evmSupportedCapabilitiesOf }] = await Promise.all([
+    const [
+        { evmChainOf },
+        { evmSupportedCapabilitiesOf, evmCapabilityDefaultsOf },
+    ] = await Promise.all([
         import('../chains/table'),
         import('../capability-defaults'),
     ])
     const { row } = evmChainOf(chainId)
-    return { row, supported: evmSupportedCapabilitiesOf(row) }
+    return {
+        row,
+        supported: evmSupportedCapabilitiesOf(row),
+        defaults: evmCapabilityDefaultsOf(row),
+    }
 }
 
 describe('the onramp capability', () => {
@@ -96,4 +103,25 @@ describe.each([
 
         expect(row.defaultSwapReceiveAssetId).toBe(usdc)
     })
+})
+
+describe('the optimism capabilities', () => {
+    afterEach(() => {
+        vi.doUnmock('@perawallet/wallet-core-config')
+        vi.resetModules()
+    })
+
+    it.each(['development', 'staging', 'production'])(
+        'leave swap, onramp and discover off in %s, where remote config can still switch them',
+        async env => {
+            const { row, supported, defaults } = await loadWith(env, 'optimism')
+
+            expect(row.capabilities).toBeUndefined()
+            expect(defaults.swap).toBe(false)
+            expect(defaults.onramp).toBe(false)
+            expect(defaults.discover).toBe(false)
+            expect(supported).toContain('swap')
+            expect(supported).toContain('onramp')
+        },
+    )
 })

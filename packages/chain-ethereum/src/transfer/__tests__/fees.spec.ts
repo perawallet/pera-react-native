@@ -38,6 +38,7 @@ import {
     BASE,
     BSC,
     ETHEREUM,
+    OPTIMISM,
     EVM_TEST_CHAINS,
     POLYGON,
     eip155IdOf,
@@ -349,9 +350,10 @@ describe('per-chain fee strategies', () => {
         nonce: number,
         gas: bigint,
         data?: Hex,
+        chain: EvmChain = BASE,
     ): Parameters<typeof unsignedEncodingOf>[0] => ({
         type: 'eip1559',
-        chainId: eip155IdOf(BASE),
+        chainId: eip155IdOf(chain),
         nonce,
         to: call.to,
         value: call.value,
@@ -431,6 +433,17 @@ describe('per-chain fee strategies', () => {
                 (fees.gas * values.maxFeePerGas + 2n * surcharge).toString(),
             )
         }
+    })
+
+    it("adds Optimism's L1 data fee and operator fee from the same oracle", async () => {
+        const fees = await readOn(OPTIMISM, HISTORY, {
+            transfer: { ...call, chainId: eip155IdOf(OPTIMISM) },
+            oracle: oracleOf([
+                unsignedEncodingOf(pricedAs(0, 21_000n, undefined, OPTIMISM)),
+            ]),
+        })
+
+        expect(fees.surcharge).toBe(L1_DATA_FEE + OPERATOR_FEE)
     })
 
     it('prices the L1 fee on the transaction the send would sign', async () => {
