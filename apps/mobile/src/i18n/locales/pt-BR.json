@@ -2459,7 +2459,7 @@
         "add_account": {
             "title": "Adicionar conta",
             "add_account_option_title": "Adicionar conta",
-            "add_account_option_description": "Adicione uma nova conta à sua Universal Wallet existente",
+            "add_account_option_description": "Adicione uma conta à sua Pera Wallet",
             "import_account_option_title": "Importar conta",
             "import_account_option_description": "Importe uma conta existente ou conecte seu Ledger",
             "qr_scan_invalid_title": "Código QR inválido",
@@ -2480,7 +2480,7 @@
             "quantum_creating_title": "Criando sua conta Quantum…",
             "terms_and_privacy": "Ao adicionar uma wallet, você concorda com os <0>Termos e Condições</0> e a <1>Política de Privacidade</1> da Pera Wallet",
             "create_multisig_option_title": "Conta compartilhada Algorand",
-            "create_multisig_option_description": "Crie uma nova conta multisig com segurança reforçada, que exige vários signatários",
+            "create_multisig_option_description": "Crie uma nova conta multisig da Algorand com segurança reforçada, que exige vários signatários",
             "pera_card_option_title": "Adicionar conta Pera Card",
             "pera_card_option_description": "Gaste suas criptomoedas no mundo real com o Pera Card",
             "see_other_options": "Ver outras opções"

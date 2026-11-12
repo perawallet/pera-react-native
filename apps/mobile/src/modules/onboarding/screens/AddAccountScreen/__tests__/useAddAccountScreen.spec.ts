@@ -216,22 +216,16 @@ describe('useAddAccountScreen', () => {
         ).toBeDefined()
     })
 
-    it('add account option describes the existing Universal Wallet when one exists', () => {
+    it('add account option describes adding to the Pera Wallet whether or not a Universal Wallet exists', () => {
+        const { result: withoutHd } = renderHook(() => useAddAccountScreen())
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+        const { result: withHd } = renderHook(() => useAddAccountScreen())
 
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(result.current.mainOptions[0]?.descriptionKey).toBe(
-            'onboarding.add_account.add_account_option_description',
-        )
-    })
-
-    it('add account option describes a new multichain wallet when none exists', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(result.current.mainOptions[0]?.descriptionKey).toBe(
-            'onboarding.add_account_options.multichain_new_wallet_description',
-        )
+        for (const result of [withoutHd, withHd]) {
+            expect(result.current.mainOptions[0]?.descriptionKey).toBe(
+                'onboarding.add_account.add_account_option_description',
+            )
+        }
     })
 
     it('add account option opens the AddAccountOptions screen', () => {
