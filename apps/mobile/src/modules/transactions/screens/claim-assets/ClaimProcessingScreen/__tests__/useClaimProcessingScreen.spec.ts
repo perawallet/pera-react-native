@@ -44,6 +44,16 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/native-stack', () => ({}))
 
+const { mockHandleSubmitError } = vi.hoisted(() => ({
+    mockHandleSubmitError: vi.fn(),
+}))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({
+        handleSubmitError: mockHandleSubmitError,
+    }),
+}))
+
 const { mockExecute, mockUseTransactionSendFlow } = vi.hoisted(() => {
     const mockExecute = vi.fn()
     return {
@@ -192,6 +202,25 @@ describe('useClaimProcessingScreen', () => {
                     variant: mode,
                 }),
             )
+        })
+
+        it('hands a failed submit to the submit-error haptic', async () => {
+            const executeError = new Error('Network error')
+            mockExecute.mockRejectedValueOnce(executeError)
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+            expect(mockHandleSubmitError).toHaveBeenCalledWith(executeError)
+        })
+
+        it('plays no transaction haptic when the user cancels', async () => {
+            mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+            expect(mockHandleSubmitError).not.toHaveBeenCalled()
         })
 
         it('goes back without an error toast when the user cancels the signing overlay', async () => {

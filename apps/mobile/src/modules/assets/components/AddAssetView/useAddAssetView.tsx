@@ -37,6 +37,7 @@ import {
 } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
@@ -234,6 +235,7 @@ export const useAddAssetView = (
     const { optIn } = useAssetOptInMutation(addScope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
+    const { playSuccess, handleSubmitError } = useTransactionOutcomeHaptics()
     const { requestByType } = useBottomSheet()
 
     const {
@@ -306,6 +308,7 @@ export const useAddAssetView = (
                     assetId: BigInt(assetId),
                 })
                 setRecentlyOptedInKeys(prev => withKey(prev, key))
+                playSuccess()
                 showToast({
                     title: t('add_asset.opt_in.success_title'),
                     body: assetDisplayName
@@ -319,6 +322,7 @@ export const useAddAssetView = (
                 if (err instanceof UserRejectedSigningError) {
                     return
                 }
+                handleSubmitError(err)
                 showError(err, t('add_asset.opt_in.failed_title'))
             } finally {
                 setOptingInKeys(prev => withoutKey(prev, key))
@@ -335,6 +339,8 @@ export const useAddAssetView = (
             showToast,
             t,
             showError,
+            playSuccess,
+            handleSubmitError,
         ],
     )
 

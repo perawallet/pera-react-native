@@ -43,6 +43,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import { formatSwapFee } from '@modules/swap'
 import { useCardScope } from '../../hooks/useCardScope'
 import {
@@ -128,6 +129,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
     const { t } = useLanguage()
     const { successToast, errorToast, infoToast } = useToast()
+    const { playSuccess } = useTransactionOutcomeHaptics()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const { deposit } = useCardManualDeposit()
     const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCreditQuery(scope)
@@ -262,6 +264,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
             creditedRef.current = credited
             const amount = baseUnitsToDisplayUnits(credited, usdcDecimals)
             await deposit({ account, amount })
+            playSuccess()
             successToast(
                 t('peraCard.add_funds.deposit_success_title'),
                 t('peraCard.add_funds.swap_deposit_success_body', {
@@ -294,6 +297,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         invalidateBalances,
         navigation,
         showDepositError,
+        playSuccess,
     ])
 
     const handleRetryDeposit = useCallback(() => {

@@ -56,6 +56,8 @@ export type SwapExecutionFailure =
     | { phase: 'signing'; reason: 'quantum-blocked'; translationKey: I18nKey }
     | { phase: 'signing'; reason: 'signing-failed' }
     | { phase: 'submission'; reason: 'submission-failed'; error: unknown }
+    // Mined and reverted: a final failure, unlike a submit that got no answer.
+    | { phase: 'submission'; reason: 'reverted'; error: unknown }
 
 export type ExecuteSwapResult =
     | { kind: 'success'; orderId: string; txIds: string[] }

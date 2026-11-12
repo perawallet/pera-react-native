@@ -23,6 +23,7 @@ import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 
 export type AssetOptInDeeplinkParams = {
     chainId: ChainId
@@ -80,6 +81,7 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
     const optInByChain = useOptInByChain()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
+    const { playSuccess, handleSubmitError } = useTransactionOutcomeHaptics()
     const { t } = useLanguage()
 
     return useCallback(
@@ -117,6 +119,7 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
             //    readable message.
             try {
                 await optIn({ sender, assetId: BigInt(assetId) })
+                playSuccess()
                 showToast({
                     title: t('add_asset.opt_in.success_title'),
                     body: t('add_asset.opt_in.success_body_generic'),
@@ -124,9 +127,18 @@ export const useAssetOptInDeeplink = (): AssetOptInDeeplinkHandler => {
                 })
             } catch (error) {
                 if (error instanceof UserRejectedSigningError) return
+                handleSubmitError(error)
                 showError(error, t('add_asset.opt_in.failed_title'))
             }
         },
-        [requestByType, optInByChain, showToast, showError, t],
+        [
+            requestByType,
+            optInByChain,
+            showToast,
+            showError,
+            playSuccess,
+            handleSubmitError,
+            t,
+        ],
     )
 }

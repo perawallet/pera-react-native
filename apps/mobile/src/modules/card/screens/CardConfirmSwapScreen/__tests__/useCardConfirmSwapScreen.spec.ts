@@ -118,6 +118,12 @@ vi.mock('../../CardAddFundsScreen/useCardAddFundsSwap', () => ({
     },
 }))
 
+const { mockPlaySuccess } = vi.hoisted(() => ({ mockPlaySuccess: vi.fn() }))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({ playSuccess: mockPlaySuccess }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: mockSuccessToast,
@@ -229,6 +235,8 @@ describe('useCardConfirmSwapScreen', () => {
             'peraCard.add_funds.deposit_success_title',
             'peraCard.add_funds.swap_deposit_success_body',
         )
+        // With the deposit's toast, not the swap before it.
+        expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
         expect(mockInvalidate).toHaveBeenCalled()
         expect(result.current.step).toBe('idle')
     })
@@ -243,6 +251,7 @@ describe('useCardConfirmSwapScreen', () => {
         await waitFor(() => expect(result.current.step).toBe('deposit-failed'))
         expect(mockDepositError).toHaveBeenCalledTimes(1)
         expect(mockPop).not.toHaveBeenCalled()
+        expect(mockPlaySuccess).not.toHaveBeenCalled()
         // The swap is kept as done so only the deposit reads as the problem.
         expect(result.current.steps.map(row => row.status)).toEqual([
             'done',

@@ -11,7 +11,8 @@
  */
 
 import { useDeepLink } from '@modules/deeplink'
-import { logger } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     useCameraDevice,
@@ -61,6 +62,7 @@ export const useQRScannerView = ({
     const [isHandling, setIsHandling] = useState(false)
 
     const { handleDeepLink, isValidDeepLink, parseDeeplink } = useDeepLink()
+    const { scanLock } = useHaptics()
 
     // Synchronous guard against double-fire. The barcode scanner's
     // `onBarcodeScanned` is invoked from the native camera frame loop and
@@ -72,9 +74,16 @@ export const useQRScannerView = ({
     // / two error popups the user has to dismiss separately).
     const handlingRef = useRef(false)
 
+    // A caller that re-arms the scanner on a bad payload locks the same code
+    // again while it is still in view; that is one scan, so one haptic.
+    const lastLockedValueRef = useRef<Nullable<string>>(null)
+
     // Reset the guard whenever the modal opens; same lifecycle as the
     // scanningEnabled state.
     useEffect(() => {
+        // Cleared on close too: the payload can be a mnemonic, and the screen
+        // keeps this hook mounted long after the scanner is dismissed.
+        lastLockedValueRef.current = null
         if (!isVisible) {
             setScanningEnabled(false)
         } else {
@@ -104,6 +113,10 @@ export const useQRScannerView = ({
                 }
                 // Take the lock before doing anything that could re-enter.
                 handlingRef.current = true
+                if (lastLockedValueRef.current !== url) {
+                    lastLockedValueRef.current = url
+                    scanLock()
+                }
                 setScanningEnabled(false)
                 if (skipDeepLinkHandler) {
                     onSuccess(url, () => {
@@ -169,6 +182,7 @@ export const useQRScannerView = ({
             skipDeepLinkHandler,
             onSuccess,
             onClose,
+            scanLock,
         ],
     )
 

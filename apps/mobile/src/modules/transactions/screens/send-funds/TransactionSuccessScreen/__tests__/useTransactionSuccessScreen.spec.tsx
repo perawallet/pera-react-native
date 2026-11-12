@@ -21,6 +21,11 @@ const mockOnFinished = vi.fn()
 const mockPushWebView = vi.fn()
 const mockRemove = vi.fn()
 const mockInvalidateQueries = vi.fn()
+const mockPlaySuccess = vi.fn()
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({ playSuccess: mockPlaySuccess }),
+}))
 
 vi.mock('react-native', () => ({
     BackHandler: {
@@ -86,6 +91,14 @@ describe('useTransactionSuccessScreen', () => {
         ;(useWebView as Mock).mockReturnValue({
             pushWebView: mockPushWebView,
         })
+    })
+
+    it('plays the success haptic once, as the screen shows', () => {
+        const { rerender } = renderHook(() => useTransactionSuccessScreen())
+
+        rerender()
+
+        expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
     })
 
     it('should call onFinished when handleDone is called', () => {

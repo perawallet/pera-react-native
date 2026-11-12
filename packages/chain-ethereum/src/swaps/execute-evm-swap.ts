@@ -327,7 +327,10 @@ const sendApproval = async (
     } catch (error) {
         return failed({
             phase: 'submission',
-            reason: 'submission-failed',
+            reason:
+                evmErrorCodeOf(error) === EvmErrorCode.REVERTED
+                    ? 'reverted'
+                    : 'submission-failed',
             error,
         })
     }
@@ -574,7 +577,7 @@ export const executeEvmSwap = async ({
         if (evmErrorCodeOf(error) === EvmErrorCode.REVERTED) {
             return failed({
                 phase: 'submission',
-                reason: 'submission-failed',
+                reason: 'reverted',
                 error,
             })
         }

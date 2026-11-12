@@ -47,6 +47,8 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    TransportError: class TransportError extends Error {},
+    UserRejectedSigningError: class UserRejectedSigningError extends Error {},
     SubmissionError: class SubmissionError extends Error {
         readonly metadata = { retryable: true }
         constructor(
@@ -96,6 +98,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
             : { assetId: 'native', unitName: 'ETH', decimals: 18 },
 }))
 
+const { mockTxError, mockTxSuccess } = vi.hoisted(() => ({
+    mockTxError: vi.fn(),
+    mockTxSuccess: vi.fn(),
+}))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => ({ txError: mockTxError, txSuccess: mockTxSuccess }),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: mockT,
@@ -137,6 +148,8 @@ const holdExecution = () => {
         variables: () => variables,
     }
 }
+
+const nodeError = Object.assign(new Error('node'), { code: 'node_error' })
 
 describe('useSwapExecution', () => {
     beforeEach(() => {
@@ -242,6 +255,121 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({ kind: 'success' })
         expect(result.current.status).toBe('success')
         expect(result.current.txIds).toEqual(['group-1-id', 'group-2-id'])
+    })
+
+    describe('haptics', () => {
+        const failedSubmission = (error: unknown) =>
+            failWith({
+                phase: 'submission',
+                reason: 'submission-failed',
+                error,
+            })
+
+        it('leaves the success haptic to the UI that shows the result', async () => {
+            resolveWith({
+                kind: 'success',
+                orderId: '1',
+                txIds: ['approve-id', 'swap-id'],
+            })
+            const { result } = renderHook(() => useSwapExecution())
+
+            await executeOnce(result.current.execute)
+
+            expect(mockTxSuccess).not.toHaveBeenCalled()
+            expect(mockTxError).not.toHaveBeenCalled()
+        })
+
+        it('plays txError when the node rejected the submission', async () => {
+            const { SubmissionError } =
+                await import('@perawallet/wallet-core-signing')
+            failedSubmission(
+                new SubmissionError(['t1'], 'rejected-by-node', nodeError),
+            )
+            const { result } = renderHook(() => useSwapExecution())
+
+            await executeOnce(result.current.execute)
+
+            expect(mockTxError).toHaveBeenCalledTimes(1)
+        })
+
+        it('stays silent when no node answered, since the swap may still land', async () => {
+            const { SubmissionError } =
+                await import('@perawallet/wallet-core-signing')
+            failedSubmission(
+                new SubmissionError(['t1'], 'unknown-outcome', nodeError),
+            )
+            const { result } = renderHook(() => useSwapExecution())
+
+            await executeOnce(result.current.execute)
+
+            expect(mockTxError).not.toHaveBeenCalled()
+            expect(mockTxSuccess).not.toHaveBeenCalled()
+        })
+
+        it('plays txError for a transaction that reverted', async () => {
+            failWith({
+                phase: 'submission',
+                reason: 'reverted',
+                error: new Error('reverted'),
+            })
+            const { result } = renderHook(() => useSwapExecution())
+
+            await executeOnce(result.current.execute)
+
+            expect(mockTxError).toHaveBeenCalledTimes(1)
+        })
+
+        it('plays txError for a submission that never reached the network or timed out', async () => {
+            const { TransportError } =
+                await import('@perawallet/wallet-core-signing')
+            failedSubmission(new TransportError('ledger unreadable'))
+            const { result } = renderHook(() => useSwapExecution())
+            await executeOnce(result.current.execute)
+
+            failedSubmission(new Error('receipt wait timed out'))
+            await executeOnce(result.current.execute)
+
+            expect(mockTxError).toHaveBeenCalledTimes(2)
+        })
+
+        it.each<[string, ExecuteSwapResult]>([
+            [
+                'a signing failure',
+                {
+                    kind: 'failed',
+                    failure: { phase: 'signing', reason: 'signing-failed' },
+                },
+            ],
+            [
+                'a prepare failure',
+                {
+                    kind: 'failed',
+                    failure: { phase: 'prepare', reason: 'no-signable-steps' },
+                },
+            ],
+        ])('plays txError with the error shown for %s', async (_, outcome) => {
+            resolveWith(outcome)
+            const { result } = renderHook(() => useSwapExecution())
+
+            await executeOnce(result.current.execute)
+
+            expect(mockTxError).toHaveBeenCalledTimes(1)
+        })
+
+        it.each<[string, ExecuteSwapResult]>([
+            ['a user rejection', { kind: 'user-rejected' }],
+            ['a cancel', { kind: 'cancelled' }],
+            ['a proposed shared-account swap', { kind: 'pending-cosign' }],
+            ['a stale quote', { kind: 'stale-quote' }],
+            ['an open earlier attempt', { kind: 'verifying-previous' }],
+        ])('plays no transaction haptic for %s', async (_, outcome) => {
+            resolveWith(outcome)
+            const { result } = renderHook(() => useSwapExecution())
+
+            await executeOnce(result.current.execute)
+
+            expect(mockTxError).not.toHaveBeenCalled()
+        })
     })
 
     it('mirrors each in-flight phase into status', async () => {
@@ -675,6 +803,7 @@ describe('useSwapExecution', () => {
             expect.objectContaining({ kind: 'error', phase: 'prepare' }),
         )
         expect(result.current.status).toBe('error')
+        expect(mockTxError).toHaveBeenCalledTimes(1)
     })
 
     it('resets state', async () => {
