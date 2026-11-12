@@ -46,10 +46,8 @@ export const EthereumVerifiedCallRows = ({
                         style={styles.caption}
                     >
                         {call.proxy
-                            ? t(
-                                  'transactions.contract_call.verified_source_proxy',
-                              )
-                            : t('transactions.contract_call.verified_source')}
+                            ? t('transactions.contract_call.known_source_proxy')
+                            : t('transactions.contract_call.known_source')}
                     </PWText>
                 </PWView>
             </KeyValueRow>

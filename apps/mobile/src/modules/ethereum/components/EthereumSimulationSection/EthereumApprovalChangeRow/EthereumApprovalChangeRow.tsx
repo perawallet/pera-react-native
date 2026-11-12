@@ -58,10 +58,11 @@ export const EthereumApprovalChangeRow = ({
                         <PWView style={styles.spenderName}>
                             <PWText>{spenderName}</PWText>
                             <PWIcon
-                                name='assets/verified'
+                                name='check'
                                 size='sm'
+                                variant='positive'
                                 accessibilityLabel={t(
-                                    'ethereum.known_contract.verified',
+                                    'ethereum.known_contract.badge',
                                 )}
                             />
                         </PWView>

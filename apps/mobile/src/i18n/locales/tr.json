@@ -3758,8 +3758,8 @@
             "arguments": "Argümanlar",
             "argument_index": "Argüman {{index}}",
             "implementation": "Uygulama sözleşmesi",
-            "verified_source": "Ad, sözleşmenin doğrulanmış kaynak kodundan alındı.",
-            "verified_source_proxy": "Bu sözleşme bir proxy. Ad, yönlendirdiği sözleşmenin doğrulanmış kaynak kodundan alındı.",
+            "known_source": "Ad, sözleşmenin herkese açık kaynak kodundan alındı.",
+            "known_source_proxy": "Bu sözleşme bir proxy. Ad, yönlendirdiği sözleşmenin herkese açık kaynak kodundan alındı.",
             "lookup_failed": "Pera bu sözleşmenin fonksiyon adını sorgulayamadı.",
             "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
             "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
@@ -4985,7 +4985,7 @@
         },
         "known_contract": {
             "title": "Sözleşme",
-            "verified": "Doğrulanmış sözleşme",
+            "badge": "Bilinen sözleşme",
             "matches_site": "{{domain}} ile eşleşiyor"
         },
         "review_warnings": {

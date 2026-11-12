@@ -3775,8 +3775,8 @@
             "arguments": "Argumentos",
             "argument_index": "Argumento {{index}}",
             "implementation": "Implementação",
-            "verified_source": "Nome obtido do código-fonte verificado do contrato.",
-            "verified_source_proxy": "Este contrato é um proxy. Nome obtido do código-fonte verificado do contrato para o qual ele encaminha.",
+            "known_source": "Nome obtido do código-fonte público do contrato.",
+            "known_source_proxy": "Este contrato é um proxy. Nome obtido do código-fonte público do contrato para o qual ele encaminha.",
             "lookup_failed": "O Pera não conseguiu consultar o nome da função deste contrato.",
             "unchecked_warning": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar em {{domain}}.",
             "unchecked_warning_no_source": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar no app que a enviou."
@@ -5013,7 +5013,7 @@
         },
         "known_contract": {
             "title": "Contrato",
-            "verified": "Contrato verificado",
+            "badge": "Contrato conhecido",
             "matches_site": "Corresponde a {{domain}}"
         },
         "review_warnings": {
