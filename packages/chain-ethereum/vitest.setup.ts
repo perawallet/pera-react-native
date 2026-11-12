@@ -35,6 +35,7 @@ const evmChainIds = new Set<string>([
     'arbitrum',
     'avalanche',
     'polygon',
+    'optimism',
 ])
 const chains = {
     ...registry,

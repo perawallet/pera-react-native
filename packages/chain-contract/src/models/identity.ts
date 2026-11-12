@@ -25,6 +25,7 @@ export const CHAIN_IDS = [
     'arbitrum',
     'avalanche',
     'polygon',
+    'optimism',
 ] as const
 
 export type ChainId = (typeof CHAIN_IDS)[number]

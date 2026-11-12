@@ -258,6 +258,7 @@ describe('Flow: an account enables chains as it is used on them', () => {
             'arbitrum',
             'avalanche',
             'polygon',
+            'optimism',
         ]) {
             expect(
                 screen.getByTestId(`receive_chain_add_${chainId}`),
@@ -269,7 +270,7 @@ describe('Flow: an account enables chains as it is used on them', () => {
             screen.getAllByText(
                 addressCodecs.get('ethereum').truncate(ethereumAddress),
             ),
-        ).toHaveLength(6)
+        ).toHaveLength(EVM_CHAINS.length)
         // Algorand is another family: receive doesn't offer it.
         expect(screen.queryByTestId('receive_chain_row_algorand')).toBeNull()
 

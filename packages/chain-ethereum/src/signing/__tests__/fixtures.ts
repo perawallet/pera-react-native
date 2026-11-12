@@ -374,8 +374,8 @@ export const KMS_SIGNATURES: Record<Hex, Hex> = {
         '0x6ea8bb309a3401225701f3565e32519f94a0ea91a5910ce9229fe488e773584c0390416a2190d9560219dab757ecca2029e63fa9d1c2aebf676cc25b9f03126a00',
     '0x3d5f8596f420e506cd72a92f8a0af2f1b751a8629c2accc5e233a1367b7b3b20':
         '0x14a151566889e31a834bcd323d90eba083c2f0010965b909f5969a4481405d2b312ebb7f7c50c4546a4d991d990c7252bed307533bccf21a11f57c1849bd964701',
-    // TRANSFER, TRANSFER at nonce 2 and MAIL_TYPED_DATA with each other EVM
-    // chain's mainnet EIP-155 id, under the same key.
+    // TRANSFER and MAIL_TYPED_DATA with each other EVM chain's mainnet
+    // EIP-155 id, under the same key.
     // base transfer
     '0xcd30e5ba35ec0fa305fb08c6a491c190db5a6e10aad0c470bb55faf0d641b699':
         '0x1f4c7a27c862b5c6491cdfa74108d050f14f25cb2c2c34a62440d2930518828b57497b1c5316254f4b8bccaedef491792843ab60c3f2c53311ecfb33c6501c9701',
@@ -421,6 +421,12 @@ export const KMS_SIGNATURES: Record<Hex, Hex> = {
     // polygon mail
     '0x53e341aefc7641107dbb3d5af2a67709d7132f5cc532d728b2b610bf1e4ba72e':
         '0x7f3268561a9475c865d78bd7dea415d439938bb29b53d9a77362f1c631052a0c027aa98b6682fc2092e5b341e9893d281c75d585e4123e5f132480e25c740bab00',
+    // optimism transfer
+    '0x4b2ef5ddea768948a39c0084d96cdece04d0cab78592f70081b86eb429e9c5b2':
+        '0x643cbaba77accfb3b53ee9bc34e9d57849816e4f88ed6bfc46ccd8ffb8e8d78d0546a1a10e0ab258e7b937c0cca41f71f21f895db0a9ad6fc8f278c0d421741b01',
+    // optimism mail
+    '0x2752db86097e9749484b4645855d9ff3d1b6109c89ed55a9d7f9021dbc77bcf9':
+        '0x8cec883a1f73fa80b2f1ada1ed0afd7f090db771ac111bff21ef836ec83689137a67c3cccbcc0e684786edaa1dd2760f7a23712314077463f628c3718c8faeb800',
 }
 
 // viem's own `signTransaction` output for `TRANSFER` and `ERC20_TRANSFER` under

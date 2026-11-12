@@ -243,6 +243,29 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
         ),
         v4Positions('0x1Ec2eBf4F37E7363FDfe3551602425af0B3ceef9'),
     ],
+    10: [
+        routerListed('0xb555edF5dcF85f42cEeF1f3630a52A108E55A654', 'optimism'),
+        routerListed('0xeC8B0F7Ffe3ae75d7FfAb09429e3675bb63503e4', 'optimism'),
+        routerListed('0xCb1355ff08Ab38bBCE60111F1bb2B784bE25D7e8', 'optimism'),
+        routerListed('0x851116D9223fabED8E56C0E6b8Ad0c31d98B3507', 'optimism'),
+        routerListed('0x8B844f885672f333Bc0042cB669255f93a4C1E6b', 'optimism'),
+        routerListed('0xC09255D86DB563cBc11C2fCf4a0C512e160111B4', 'optimism'),
+        permit2('v3-optimism-deployments'),
+        wrappedNative(
+            '0x4200000000000000000000000000000000000006',
+            'Wrapped Ether',
+            'v3-optimism-deployments',
+        ),
+        aavePool(
+            '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
+            'AaveV3Optimism',
+        ),
+        v3Positions(
+            '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
+            'v3-optimism-deployments',
+        ),
+        v4Positions('0x3C3Ea4B57a46241e54610e5f022E5c45859A1017'),
+    ],
 }
 
 /** Undefined on a chain with no entries, such as a testnet or a custom network. */

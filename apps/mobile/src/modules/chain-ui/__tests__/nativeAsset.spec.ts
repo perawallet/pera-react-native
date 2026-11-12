@@ -57,6 +57,7 @@ describe('native asset art', () => {
         expect(nativeAssetIconOf(native('ethereum'))).toBe(EthereumIcon)
         expect(nativeAssetIconOf(native('base'))).toBe(EthereumIcon)
         expect(nativeAssetIconOf(native('arbitrum'))).toBe(EthereumIcon)
+        expect(nativeAssetIconOf(native('optimism'))).toBe(EthereumIcon)
         expect(nativeAssetIconOf(native('bsc'))).toBe(BscIcon)
         expect(nativeAssetIconOf(native('avalanche'))).toBe(AvalancheIcon)
         expect(nativeAssetIconOf(native('polygon'))).toBe(PolygonIcon)

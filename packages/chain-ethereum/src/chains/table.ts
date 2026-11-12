@@ -158,6 +158,23 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         finality: { kind: 'confirmations', recommended: 32 },
         enabledByDefault: false,
     },
+    {
+        id: 'optimism',
+        displayName: 'Optimism',
+        nativeAsset: ETHER,
+        explorerName: 'Optimistic Etherscan',
+        explorerBase: {
+            mainnet: 'https://optimistic.etherscan.io',
+            sepolia: 'https://sepolia-optimism.etherscan.io',
+        },
+        fee: {
+            kind: 'eip1559-op-stack',
+            gasPriceOracleAddress: OP_STACK_GAS_PRICE_ORACLE,
+        },
+        blockTimeMs: 2000,
+        finality: { kind: 'confirmations', recommended: 10 },
+        enabledByDefault: false,
+    },
 ]
 
 export const EVM_CHAINS: readonly EvmChain[] =

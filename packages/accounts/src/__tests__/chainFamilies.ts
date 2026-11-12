@@ -37,6 +37,7 @@ export const EVM_CHAINS = [
     'arbitrum',
     'avalanche',
     'polygon',
+    'optimism',
 ] as ChainId[]
 export const [ETHEREUM, BASE, , , , POLYGON] = EVM_CHAINS
 const DEFAULT_CHAINS: readonly ChainId[] = [ALGORAND, ETHEREUM]
