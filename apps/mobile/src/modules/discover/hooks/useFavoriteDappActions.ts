@@ -11,11 +11,13 @@
  */
 
 import { useCallback } from 'react'
+import { DiscoverEvent, trackEvent } from '@analytics'
+import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '../types'
+import { dappEventPayload } from '../utils/discoverAnalytics'
 import { normalizeDappUrl } from '../utils/normalizeDappUrl'
 import { useDiscoverDirectory } from './useDiscoverDirectory'
 import { useOpenDapp } from './useOpenDapp'
-import { useToggleDiscoverFavorite } from './useToggleDiscoverFavorite'
 
 export type UseFavoriteDappActionsResult = {
     isVerified: (url: string) => boolean
@@ -28,7 +30,7 @@ export type UseFavoriteDappActionsResult = {
 export const useFavoriteDappActions = (): UseFavoriteDappActionsResult => {
     const { verifiedUrls } = useDiscoverDirectory()
     const { openDapp: open } = useOpenDapp()
-    const toggle = useToggleDiscoverFavorite()
+    const removeFavorite = useDiscoverFavoritesStore(s => s.removeFavorite)
 
     const isVerified = useCallback(
         (url: string) => verifiedUrls.has(normalizeDappUrl(url) ?? ''),
@@ -38,11 +40,19 @@ export const useFavoriteDappActions = (): UseFavoriteDappActionsResult => {
         (dapp: DiscoverDapp) => open(dapp, null),
         [open],
     )
+    // Only ever removes: a quick second tap must not star the dApp again.
     const unfavorite = useCallback(
         (dapp: DiscoverDapp) => {
-            toggle(dapp, null)
+            if (!useDiscoverFavoritesStore.getState().isFavorite(dapp.url)) {
+                return
+            }
+            removeFavorite(dapp.url)
+            trackEvent(
+                DiscoverEvent.DappUnfavoriteTap,
+                dappEventPayload(dapp, null),
+            )
         },
-        [toggle],
+        [removeFavorite],
     )
     return { isVerified, openDapp, unfavorite }
 }
