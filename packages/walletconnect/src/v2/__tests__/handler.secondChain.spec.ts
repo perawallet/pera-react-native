@@ -1577,9 +1577,16 @@ describe('changeAccount', () => {
 
     // Raised for the old account. Whoever holds it declines it unless the
     // user already approved it, so a send already signing is not answered 4001.
-    it('hands the requests pending on the session back to be declined, without answering them itself', async () => {
+    it('hands the EVM requests pending on the session back to be declined, without answering them itself', async () => {
         const { handler, walletKit, context } = await withSession()
-        walletKit.emit('session_request', makeRequest())
+        walletKit.emit(
+            'session_request',
+            makeRequest({
+                method: 'eth_sendTransaction',
+                params: [{ to: ETH }],
+                chainId: ETH_MAINNET,
+            }),
+        )
         await flush()
         expect(context.onMessage).toHaveBeenCalled()
 
@@ -1591,5 +1598,67 @@ describe('changeAccount', () => {
             String(REQUEST_ID),
         )
         expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+    })
+
+    // The Algorand account did not change, so its request still stands.
+    it('leaves a pending Algorand request on a mixed session alone', async () => {
+        const { handler, walletKit, context } = await withSession()
+        walletKit.emit('session_request', makeRequest({ id: 1 }))
+        walletKit.emit(
+            'session_request',
+            makeRequest({
+                id: 2,
+                method: 'eth_sendTransaction',
+                params: [{ to: ETH }],
+                chainId: ETH_MAINNET,
+            }),
+        )
+        await flush()
+        expect(context.onMessage).toHaveBeenCalledTimes(2)
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+        await flush()
+
+        expect(context.onRequestWithdrawn).toHaveBeenCalledTimes(1)
+        expect(context.onRequestWithdrawn).toHaveBeenCalledWith(TOPIC, '2')
+    })
+
+    // A chain switch can land while the store is written; writing back the
+    // namespaces read before it would undo it.
+    it('builds the update from the session as it is when the relay is told', async () => {
+        const { handler, walletKit, store } = await withSession()
+        const upsert = store.upsert.bind(store)
+        vi.spyOn(store, 'upsert').mockImplementationOnce(async record => {
+            await upsert(record)
+            const live = walletKit.getActiveSessions()[TOPIC]
+            live.namespaces = {
+                ...live.namespaces,
+                eip155: {
+                    ...live.namespaces.eip155,
+                    events: ['accountsChanged', 'chainChanged', 'added'],
+                },
+            }
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0]
+        expect(namespaces.eip155.events).toContain('added')
+    })
+
+    it('puts the accounts back when the session ends while the store is written', async () => {
+        const { handler, walletKit, store } = await withSession()
+        const upsert = store.upsert.bind(store)
+        vi.spyOn(store, 'upsert').mockImplementationOnce(async record => {
+            await upsert(record)
+            delete walletKit.getActiveSessions()[TOPIC]
+        })
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow()
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect((await store.list())[0].accounts).toEqual([ADDRESS, ETH])
     })
 })

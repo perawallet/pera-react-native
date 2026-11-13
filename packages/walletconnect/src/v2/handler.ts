@@ -416,8 +416,12 @@ export const createWalletConnectV2Handler = (
     // missing from here has been approved, rejected or expired.
     const pendingProposals = new Map<number, string>()
     // Request id to session topic: `session_request_expire` carries only the
-    // id, and the registry addresses requests by connection.
-    const pendingRequests = new Map<number, string>()
+    // id, and the registry addresses requests by connection. The namespace
+    // lets an account switch withdraw only its own family's requests.
+    const pendingRequests = new Map<
+        number,
+        { topic: string; namespace: string }
+    >()
     // Pairings the caller gave up on. Tombstoned rather than forgotten,
     // because a slow dApp can still deliver a proposal on one and a sheet
     // appearing from nowhere is worse than a map entry per abandon.
@@ -481,7 +485,7 @@ export const createWalletConnectV2Handler = (
         // WalletKit has dropped the request, so any answer now fails with
         // "No matching key": the sheet has to go, and the user hears why.
         bind(walletKit, 'session_request_expire', ({ id }) => {
-            const topic = pendingRequests.get(id)
+            const topic = pendingRequests.get(id)?.topic
             if (topic === undefined) return
             pendingRequests.delete(id)
             kit.currentContext()?.onRequestExpired(topic, String(id))
@@ -759,7 +763,7 @@ export const createWalletConnectV2Handler = (
             pendingRequests.delete(id)
         }
 
-        pendingRequests.set(id, topic)
+        pendingRequests.set(id, { topic, namespace: support.namespace })
         requireContext().onMessage({
             kind: 'request',
             chainId: chain.chainId,
@@ -1766,10 +1770,15 @@ export const createWalletConnectV2Handler = (
     // Raised for the account being replaced. The subscriber holding each one
     // declines it unless the user already approved it, so a send already
     // signing is not answered 4001 while it broadcasts.
-    const withdrawPendingRequests = (topic: string): void => {
+    const withdrawPendingRequests = (
+        topic: string,
+        namespace: string,
+    ): void => {
         const context = requireContext()
-        for (const [requestId, requestTopic] of pendingRequests) {
-            if (requestTopic !== topic) continue
+        for (const [requestId, pending] of pendingRequests) {
+            if (pending.topic !== topic || pending.namespace !== namespace) {
+                continue
+            }
             context.onRequestWithdrawn(topic, String(requestId))
         }
     }
@@ -1853,15 +1862,28 @@ export const createWalletConnectV2Handler = (
                 normalized,
             ],
         })
-        withdrawPendingRequests(id)
+        withdrawPendingRequests(id, chain.support.namespace)
+        let updated = namespace
         try {
+            // Re-read after the store awaits: a chain switch landing meanwhile
+            // changed the namespaces, and the copy read above would undo it.
+            const live = walletKit.getActiveSessions()[
+                id
+            ] as Optional<WalletKitSession>
+            const liveNamespace = live?.namespaces[
+                chain.support.namespace
+            ] as Optional<WalletKitSession['namespaces'][string]>
+            if (!live || !liveNamespace) {
+                throw new WalletConnectInvalidSessionError('No session found')
+            }
+            updated = liveNamespace
             await walletKit.updateSession({
                 topic: id,
                 namespaces: {
-                    ...session.namespaces,
+                    ...live.namespaces,
                     [chain.support.namespace]: {
-                        ...namespace,
-                        accounts: (namespace.chains ?? []).map(caip2 =>
+                        ...liveNamespace,
+                        accounts: (liveNamespace.chains ?? []).map(caip2 =>
                             toCaip10Account(caip2, normalized),
                         ),
                     },
@@ -1888,9 +1910,9 @@ export const createWalletConnectV2Handler = (
             throw error
         }
 
-        if (!(namespace.events ?? []).includes('accountsChanged')) return
+        if (!(updated.events ?? []).includes('accountsChanged')) return
         const active = chain.support.caip2ChainIdFor(getNetworkId(chainId))
-        const owned = (namespace.chains ?? []).filter(
+        const owned = (updated.chains ?? []).filter(
             caip2 => chain.support.networkForCaip2ChainId(caip2) !== null,
         )
         const emitOn =
