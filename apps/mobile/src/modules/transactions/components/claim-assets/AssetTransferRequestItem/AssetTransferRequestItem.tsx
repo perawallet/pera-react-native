@@ -19,6 +19,8 @@ import { AssetAmount } from '@components/AssetAmount'
 import { AssetIcon } from '@components/AssetIcon'
 import { AssetNameBadge } from '@modules/assets'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { ChainNotice } from '@components/ChainNotice'
+import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import {
     useSingleAssetDetailsQuery,
     toWholeUnits,
@@ -66,6 +68,15 @@ export const AssetTransferRequestItem = ({
     const amount = useMemo(
         () => toWholeUnits(totalAmount, asset),
         [totalAmount, asset],
+    )
+
+    const imitatedCurrency = useMemo(
+        () =>
+            imitatedCurrencyOf(
+                { chainId: scope.chainId, assetId: asset.assetId },
+                asset.unitName,
+            ),
+        [scope.chainId, asset.assetId, asset.unitName],
     )
 
     return (
@@ -121,6 +132,14 @@ export const AssetTransferRequestItem = ({
                         usdPrice={usdValue ?? undefined}
                     />
                 </PWView>
+                {imitatedCurrency !== null && (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='asset.imitated_currency.marker'
+                        params={{ code: imitatedCurrency }}
+                        testID={`asset_inbox_request_imitated_currency_${asset.assetId}`}
+                    />
+                )}
             </PWView>
         </PWTouchableOpacity>
     )
