@@ -19,9 +19,9 @@ export type SwapScreenParams = {
     assetIn?: AssetRef
     assetOut?: AssetRef
     /**
-     * The output of a cross-chain swap a browser tab resumes. Apart from
-     * `assetOut` because a deeplink's `assetOut` on another chain must stay
-     * ignored.
+     * The output of a cross-chain swap: one a browser tab resumes, or Swap for
+     * {native} from an empty network. Apart from `assetOut` because a
+     * deeplink's `assetOut` on another chain must stay ignored.
      */
     receive?: { scope: ChainScope; assetId: string; accountId: string }
     /** Pay-asset display units, for a swap a browser tab resumes from the popup. */
