@@ -43,9 +43,15 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
 ])
 
 // Off by default but safe for remote config to switch on: no Algorand-only code,
-// and no Pera endpoint a scope without a deployment could reach. Anything else
+// and no Pera endpoint a scope without a deployment could reach (the approvals
+// list asks for its own service, so a scope without it fails closed). Anything else
 // stays off.
-const SWITCHABLE: readonly ChainCapability[] = ['discover', 'onramp', 'swap']
+const SWITCHABLE: readonly ChainCapability[] = [
+    'discover',
+    'onramp',
+    'swap',
+    'tokenApprovals',
+]
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 
