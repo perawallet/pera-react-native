@@ -261,6 +261,14 @@ export const getReplaceableTransactionQueryKey = (
 export const getBlockingGapQueryKey = (scope: ChainScope, txId: string) =>
     [MODULE_PREFIX, 'blocking-gap', { scope, txId }] as const
 
+export const revokeTokenApprovalMutationKey = [
+    MODULE_PREFIX,
+    'revoke-token-approval',
+] as const
+
+export const getTokenApprovalsQueryKey = (scope: ChainScope, account: string) =>
+    [MODULE_PREFIX, 'token-approvals', { scope, account }] as const
+
 // Its own prefix, and deliberately not 'transactions': the app's query
 // persistence classifies this one (an inbox request list survives a restart).
 const ASSET_INBOX_MODULE_PREFIX = 'asa-inbox'

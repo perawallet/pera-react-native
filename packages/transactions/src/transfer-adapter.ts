@@ -20,6 +20,7 @@ import {
     type ChainScope,
     type FeeEstimate,
     type LocalizedText,
+    type TokenApproval,
     type TransactionIntent,
     type TransactionSummary,
     type UnsignedTransaction,
@@ -174,6 +175,11 @@ export interface TransferChainAdapter {
         request: TransactionGapFillRequest,
         context: BuildContext,
     ): Promise<UnsignedTransaction[]>
+    /**
+     * The account's standing approvals, each re-read from the chain during the
+     * call so none that has since lapsed is listed. Reads the network.
+     */
+    listApprovals?(account: string, scope: ChainScope): Promise<TokenApproval[]>
     /**
      * Read on every screening, so a chain can retune it remotely. Absent on a
      * chain that doesn't screen recipients for address poisoning.
