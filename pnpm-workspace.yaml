@@ -44,7 +44,7 @@ catalog:
   # pin: follows @scure/bip39
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
-  "@perawallet/walletconnect": 1.0.3
+  "@perawallet/walletconnect": 1.0.4
   "@playwright/test": ^1.53.0
   # Exact: every module peers on the identical app version; move all five
   # together.
