@@ -48,7 +48,9 @@ export const DiscoverDappsScreen = () => {
             showChains={screen.showChains}
             onPress={() => screen.openDapp(item.dapp)}
             onToggleFavorite={() => screen.toggleFavorite(item.dapp)}
-            onDetailsPress={() => screen.openDetails(item)}
+            onDetailsPress={() => {
+                void screen.openDetails(item)
+            }}
             testID={`discover_dapps_row_${item.dapp.url}`}
         />
     )
