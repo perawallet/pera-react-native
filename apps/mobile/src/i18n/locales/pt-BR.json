@@ -340,6 +340,7 @@
         "markets": {
             "something_went_wrong_title": "Algo deu errado",
             "something_went_wrong_body": "Não foi possível carregar os detalhes deste ativo. Verifique sua conexão e tente novamente.",
+            "title": "Mercados",
             "stats": "Estatísticas",
             "price": "Preço",
             "total_supply": "Fornecimento total",

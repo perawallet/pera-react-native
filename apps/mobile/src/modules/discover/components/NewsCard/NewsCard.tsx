@@ -18,7 +18,8 @@ export type NewsCardProps = {
     title: string
     banner: Nullable<string>
     dateDisplay: string
-    onPress: () => void
+    /** Left out until the card has a native destination; the card is then inert. */
+    onPress?: () => void
     testID?: string
 }
 
@@ -35,6 +36,7 @@ export const NewsCard = ({
         <PWTouchableOpacity
             style={styles.card}
             onPress={onPress}
+            disabled={onPress === undefined}
             testID={testID}
         >
             {banner ? (

@@ -277,7 +277,7 @@ describe('Flow: Discover home', () => {
         expect(screen.queryByText('discover.home.news')).toBeNull()
     })
 
-    it('Given news, then the cards render under a News header that opens the news list', async () => {
+    it('Given news, then the cards render under a News header and nothing opens the Discover web app', async () => {
         useHandlers()
         renderHome()
 
@@ -285,7 +285,9 @@ describe('Flow: Discover home', () => {
         expect(screen.getByText('Second story')).toBeTruthy()
 
         fireEvent.click(screen.getByText('discover.home.news'))
-        expect(await screen.findByTestId('detail_screen')).toBeTruthy()
+        fireEvent.click(screen.getByText('First story'))
+        fireEvent.click(screen.getByText('discover.home.top_dapps'))
+        expect(screen.queryByTestId('detail_screen')).toBeNull()
         await flush()
     })
 

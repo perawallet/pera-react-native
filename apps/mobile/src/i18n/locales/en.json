@@ -340,6 +340,7 @@
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
+            "title": "Markets",
             "stats": "Statistics",
             "price": "Price",
             "total_supply": "Total Supply",

@@ -16,7 +16,8 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type DiscoverPathTarget =
     | { kind: 'home' }
-    | { kind: 'webview'; path: string }
+    /** A Discover web page with no native screen yet. */
+    | { kind: 'unported'; path: string }
     | { kind: 'asset'; assetId: string; chainId: ChainId }
 
 // Discover's token-detail paths predate multichain and always mean Algorand
@@ -25,9 +26,9 @@ const DISCOVER_TOKEN_DETAIL_CHAIN: ChainId = 'algorand'
 const TOKEN_DETAIL_PREFIX = 'token-detail/'
 
 /**
- * Decides where a DISCOVER_PATH deeplink lands. The path is normalised
- * (one leading slash, query and fragment) for matching only; WebView
- * targets keep the original path.
+ * Decides where a DISCOVER_PATH deeplink lands on a multichain build, whose
+ * Discover is native. The path is normalised (one leading slash, query and
+ * fragment) for matching only; unported targets keep the original path.
  */
 export const discoverPathTarget = (
     path: Optional<string>,
@@ -53,5 +54,5 @@ export const discoverPathTarget = (
             }
         }
     }
-    return { kind: 'webview', path: path as string }
+    return { kind: 'unported', path: path as string }
 }

@@ -53,14 +53,7 @@ export type UseDiscoverHomeScreenResult = {
     refresh: () => Promise<void>
     openSearch: () => void
     openDapp: (dapp: DiscoverDapp) => void
-    openNewsItem: (item: DiscoverNewsCardItem) => void
-    openNewsList: () => void
-    openDappDirectory: () => void
 }
-
-// The web app's dApp directory: the interim target of the Top dApps header
-// until the native directory exists (spec §5).
-const DAPP_DIRECTORY_PATH = 'main/browser'
 
 export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
     const navigation = useAppNavigation()
@@ -159,28 +152,6 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         navigation.navigate('DiscoverSearch')
     }, [navigation])
 
-    const openNewsItem = useCallback(
-        (item: DiscoverNewsCardItem) => {
-            trackEvent(DiscoverEvent.NewsOpenTap, {
-                [Key.NewsTitle]: item.title,
-            })
-            navigation.navigate('DiscoverDetail', {
-                path: `news/${item.id}`,
-            })
-        },
-        [navigation],
-    )
-
-    const openNewsList = useCallback(() => {
-        trackEvent(DiscoverEvent.NewsButtonTap)
-        navigation.navigate('DiscoverDetail', { path: 'news' })
-    }, [navigation])
-
-    const openDappDirectory = useCallback(() => {
-        trackEvent(DiscoverEvent.TopDappsButtonTap)
-        navigation.navigate('DiscoverDetail', { path: DAPP_DIRECTORY_PATH })
-    }, [navigation])
-
     return {
         chainOptions,
         selectedChainId,
@@ -195,8 +166,5 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         refresh,
         openSearch,
         openDapp,
-        openNewsItem,
-        openNewsList,
-        openDappDirectory,
     }
 }

@@ -99,7 +99,6 @@ export const DiscoverHomeScreen = () => {
                 title={item.title}
                 banner={item.banner}
                 dateDisplay={item.dateDisplay}
-                onPress={() => home.openNewsItem(item)}
                 testID={`discover_home_news_${item.id}`}
             />
         </PWView>
@@ -136,7 +135,6 @@ export const DiscoverHomeScreen = () => {
                 <PWView style={styles.section}>
                     <DiscoverSectionHeader
                         title={t('discover.home.top_dapps')}
-                        onPress={home.openDappDirectory}
                         testID='discover_home_top_dapps_header'
                     />
                     {home.chainOptions.length > 0 ? (
@@ -155,7 +153,6 @@ export const DiscoverHomeScreen = () => {
                     <PWView style={styles.section}>
                         <DiscoverSectionHeader
                             title={t('discover.home.news')}
-                            onPress={home.openNewsList}
                             testID='discover_home_news_header'
                         />
                         <PWFlatList

@@ -70,8 +70,6 @@ const RootStack = createNativeStackNavigator<RootStackParamList>()
 // Age-gated at the navigator so the screen (and its data fetching) only mounts
 // for users who pass the gate; blocked users see the restricted view instead.
 const GatedStakingScreen = withAgeGate(StakingScreen)
-// A discover-path deeplink pushes this route directly, past the gated tab.
-const GatedDiscoverDetailScreen = withAgeGate(DiscoverDetailScreen)
 
 export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
@@ -82,7 +80,8 @@ export const MainRoutes = () => {
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
-    // Search belongs to the native Discover, which only a multichain build shows.
+    // A multichain build shows the native Discover, which owns the search
+    // route; an Algorand-only one keeps the web app and its detail route.
     const isNativeDiscover = useIsNativeDiscover()
     const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
 
@@ -236,17 +235,20 @@ export const MainRoutes = () => {
                                 component={GatedStakingScreen}
                             />
                         )}
-                        {isAllowed({
-                            platform: 'discoverTab',
-                            anyChain: 'discover',
-                        }) && (
-                            <RootStack.Screen
-                                name='DiscoverDetail'
-                                options={headeredScreen('tabbar.discover')}
-                                layout={fullScreenLayout}
-                                component={GatedDiscoverDetailScreen}
-                            />
-                        )}
+                        {!isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverDetail'
+                                    options={headeredScreen(
+                                        'asset_details.markets.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverDetailScreen}
+                                />
+                            )}
                         {isNativeDiscover &&
                             isAllowed({
                                 platform: 'discoverTab',
