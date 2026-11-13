@@ -48,19 +48,21 @@ const APPLY_FOR_DISCOVER_URL =
     'https://explorer.perawallet.app/project-verification/'
 
 // English labels go to analytics so events do not split by language.
-const SORTS: { id: DappSort; labelKey: string; analyticsLabel: string }[] = [
+const SORTS: { id: DappSort; labelKey: string; analyticsName: string }[] = [
     {
         id: 'popular',
         labelKey: 'discover.dapps.sort_popular',
-        analyticsLabel: 'Popular',
+        // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- analytics value matching the web app's event, never shown
+        analyticsName: 'Popular',
     },
     {
         id: 'a-z',
         labelKey: 'discover.dapps.sort_alphabetical',
-        analyticsLabel: 'Alphabetical (A-Z)',
+        // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- analytics value matching the web app's event, never shown
+        analyticsName: 'Alphabetical (A-Z)',
     },
 ]
-const ALL_ANALYTICS_LABEL = 'All'
+const ALL_ANALYTICS_NAME = 'All'
 
 export type DappSortOption = { id: DappSort; label: string }
 
@@ -180,7 +182,7 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         trackEvent(DiscoverEvent.DappFilterTap, {
             [Key.FilterName]:
                 id === null
-                    ? ALL_ANALYTICS_LABEL
+                    ? ALL_ANALYTICS_NAME
                     : (chainDisplayNameOf(id) ?? id),
             ...(id === null ? {} : { [Key.ChainId]: id }),
         })
@@ -190,13 +192,13 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         setPickedCategory(null)
         trackEvent(DiscoverEvent.DappFilterTap, {
             [Key.FilterName]:
-                SORTS.find(option => option.id === id)?.analyticsLabel ?? id,
+                SORTS.find(option => option.id === id)?.analyticsName ?? id,
         })
     }, [])
     const selectCategory = useCallback((category: Nullable<string>) => {
         setPickedCategory(category)
         trackEvent(DiscoverEvent.DappFilterTap, {
-            [Key.FilterName]: category ?? ALL_ANALYTICS_LABEL,
+            [Key.FilterName]: category ?? ALL_ANALYTICS_NAME,
         })
     }, [])
 
