@@ -80,8 +80,12 @@ FIREBASE_UPLOAD=false
 if ios_firebase_enabled; then
   FIREBASE_UPLOAD=true
 fi
-# The changelog is supplied by the job's needs; keep its real line breaks.
-if [ -n "${CI_OUT_CHANGELOG_TEXT:-}" ]; then
+# pera-admin's few-line summary of the release, when it has one for an rc or
+# stable tag; else the changelog supplied by the job's needs. Both keep their
+# real line breaks.
+if [ -n "${CI_RELEASE_NOTES_SUMMARY:-}" ]; then
+  export RELEASE_NOTES="$CI_RELEASE_NOTES_SUMMARY"
+elif [ -n "${CI_OUT_CHANGELOG_TEXT:-}" ]; then
   export RELEASE_NOTES="$CI_OUT_CHANGELOG_TEXT"
 fi
 

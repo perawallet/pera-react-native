@@ -70,7 +70,8 @@ actionable message before building. Unset or `false` keeps Firebase disabled.
 `config/GoogleService-Info.plist`; `FIREBASE_APP_ID_IOS` can explicitly override it. Set
 these non-secret options in the job's `env` when needed.
 
-The job passes the actual changelog to Firebase and stores a separate
+The job passes pera-admin's release notes summary to Firebase when the build
+has one, else the changelog, and stores a separate
 `*-firebase.ipa` artifact. The App Store IPA and TestFlight delivery stay intact.
 Firebase uploads occur after TestFlight; a Firebase export/upload failure fails
 the job even if TestFlight has already accepted its build. A production opt-in
@@ -83,6 +84,7 @@ and [ad-hoc tester device registration](https://firebase.google.com/docs/app-dis
 ### Android
 
 - Builds an AAB and uploads it to the Play `internal` track (`fastlane android deploy_internal`), then builds an APK and distributes it to Firebase App Distribution (`pera,pera-alpha`). Both run sequentially within the one lane, and the Firebase step is intentionally fatal: a Firebase failure fails the workflow even after the Play upload has already succeeded.
+- The Play release's en-US "What's new" is pera-admin's release notes summary (`CI_RELEASE_NOTES_SUMMARY`) when the build has one; without it the release carries no notes. The full changelog would exceed Play's 500 characters.
 - Promotion to production (with staged rollout %) is manual from Play Console.
 
 ### Browser extension

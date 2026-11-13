@@ -406,6 +406,11 @@ platform :android do
       artifact_type: "aab"
     )
 
+    # Play's "What's new" for this build: pera-admin's summary of the release,
+    # when the job has one. Never RELEASE_NOTES, whose full changelog runs past
+    # Play's 500 characters and would fail the upload.
+    play_notes = play_changelog_dir(ENV["CI_RELEASE_NOTES_SUMMARY"], resolve_build_number)
+
     upload_to_play_store(
       track: "internal",
       package_name: package_name,
@@ -416,7 +421,8 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      skip_upload_changelogs: true
+      skip_upload_changelogs: play_notes.nil?,
+      **(play_notes ? { metadata_path: play_notes } : {})
     )
 
     # 2) Also distribute an APK to Firebase App Distribution for dogfooding.
@@ -499,6 +505,22 @@ end
 # Check if running in CI environment
 def is_ci
   ENV['CI'] == 'true' || ENV['GITHUB_ACTIONS'] == 'true'
+end
+
+PLAY_NOTES_MAX = 500
+
+# A metadata folder holding only this build's en-US changelog, the shape
+# upload_to_play_store reads release notes from; nil when there are no notes.
+def play_changelog_dir(notes, version_code)
+  text = notes.to_s.strip
+  return nil if text.empty?
+
+  require 'tmpdir'
+  require 'fileutils'
+  dir = File.join(Dir.mktmpdir("play-notes"), "en-US", "changelogs")
+  FileUtils.mkdir_p(dir)
+  File.write(File.join(dir, "#{version_code}.txt"), text[0, PLAY_NOTES_MAX])
+  File.expand_path("../..", dir)
 end
 
 # Unescape literal \n sequences to real newlines for upload changelogs.
