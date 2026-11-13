@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
@@ -41,7 +41,7 @@ export const fetchPeraServedChainIds = async (
         deployment,
         method: 'GET',
         url: PERA_CHAINS_PATH,
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
     })
     if (!isChainList(data)) {
         throw new Error(

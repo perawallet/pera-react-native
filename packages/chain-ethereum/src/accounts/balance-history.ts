@@ -20,7 +20,7 @@ import {
     type HoldingBalanceHistoryPoint,
     type PortfolioHistoryPoint,
 } from '@perawallet/wallet-core-accounts'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import {
     getAssetsByIds,
     type PriceHistoryPoint,
@@ -149,7 +149,7 @@ const requestBalanceHistory = async (
             scope,
             method: 'POST',
             url: balanceHistoryPath(eip155ChainIdOf(scope, chain)),
-            headers: buildIntegrityHeaders(),
+            headers: await buildIntegrityHeadersWhenReady(),
             data: { addresses, asset_ids: caip19Ids, period },
             signal,
             timeout: CHART_QUERY_TIMEOUT_MS,

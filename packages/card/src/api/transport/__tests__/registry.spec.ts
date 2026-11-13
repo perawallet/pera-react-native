@@ -19,7 +19,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({ queryClient: vi.fn() }))
 // the app-integrity store (and its shared/registerStore import) stays out of
 // this registry-focused test.
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    buildIntegrityHeaders: () => ({}),
+    buildIntegrityHeadersWhenReady: async () => ({}),
 }))
 
 import {

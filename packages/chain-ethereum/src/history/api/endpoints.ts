@@ -14,7 +14,7 @@ import type {
     ChainScope,
     PageRef,
 } from '@perawallet/wallet-core-chain-contract'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
@@ -62,7 +62,7 @@ export const fetchHistoryPage = async (
                 limit: Math.min(Math.max(page.limit, 1), HISTORY_MAX_PAGE_SIZE),
             }),
         },
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
     })
     const { next, results } = evmHistoryPageSchema.parse(data)
     return {
@@ -93,7 +93,7 @@ export const fetchHasHistory = async (
         method: 'GET',
         url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
         params: { limit: 1 },
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         signal,
         ...DISCOVERY_LOOKUP_BOUNDS,
     })

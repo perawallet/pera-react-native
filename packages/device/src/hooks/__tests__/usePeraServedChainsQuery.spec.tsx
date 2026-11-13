@@ -55,7 +55,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-app-integrity', () => {
     integrity.store = create<{ canCall: boolean }>()(() => ({ canCall: true }))
     return {
-        buildIntegrityHeaders: () => ({ 'X-Integrity-Token': 'token' }),
+        buildIntegrityHeadersWhenReady: async () => ({
+            'X-Integrity-Token': 'token',
+        }),
         useAppIntegrityStore: integrity.store,
         canCallIntegrityGuardedRoute: () => integrity.store.getState().canCall,
     }

@@ -12,13 +12,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { baanxDirectRequest, queryClient, buildIntegrityHeaders } = vi.hoisted(
-    () => ({
+const { baanxDirectRequest, queryClient, buildIntegrityHeadersWhenReady } =
+    vi.hoisted(() => ({
         baanxDirectRequest: vi.fn(),
         queryClient: vi.fn(),
-        buildIntegrityHeaders: vi.fn(),
-    }),
-)
+        buildIntegrityHeadersWhenReady: vi.fn(),
+    }))
 
 vi.mock('ky', () => ({
     isHTTPError: (error: unknown): boolean =>
@@ -27,7 +26,7 @@ vi.mock('ky', () => ({
 vi.mock('../baanx-client', () => ({ baanxDirectRequest }))
 vi.mock('@perawallet/wallet-core-shared', () => ({ queryClient }))
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    buildIntegrityHeaders,
+    buildIntegrityHeadersWhenReady,
 }))
 
 import {
@@ -47,7 +46,7 @@ describe('defaultTransport', () => {
         vi.clearAllMocks()
         setRefreshHandler(null)
         setSessionLostHandler(null)
-        buildIntegrityHeaders.mockReturnValue({})
+        buildIntegrityHeadersWhenReady.mockResolvedValue({})
     })
 
     it('routes direct requests to the Baanx client', async () => {
@@ -104,7 +103,7 @@ describe('defaultTransport', () => {
 
     it('applies the integrity policy to proxy calls', async () => {
         queryClient.mockResolvedValue(ok)
-        buildIntegrityHeaders.mockReturnValue({
+        buildIntegrityHeadersWhenReady.mockResolvedValue({
             'x-app-integrity-token': 'attestation-token',
         })
 
@@ -124,7 +123,7 @@ describe('defaultTransport', () => {
 
     it('keeps integrity headers off direct Baanx calls', async () => {
         baanxDirectRequest.mockResolvedValue(ok)
-        buildIntegrityHeaders.mockReturnValue({
+        buildIntegrityHeadersWhenReady.mockResolvedValue({
             'x-app-integrity-token': 'attestation-token',
         })
 
@@ -134,7 +133,7 @@ describe('defaultTransport', () => {
             path: '/v1/card/status',
         })
 
-        expect(buildIntegrityHeaders).not.toHaveBeenCalled()
+        expect(buildIntegrityHeadersWhenReady).not.toHaveBeenCalled()
         expect(baanxDirectRequest).toHaveBeenCalledWith(
             expect.not.objectContaining({ headers: expect.anything() }),
         )
@@ -142,7 +141,7 @@ describe('defaultTransport', () => {
 
     it('lets per-request headers win over the integrity defaults', async () => {
         queryClient.mockResolvedValue(ok)
-        buildIntegrityHeaders.mockReturnValue({
+        buildIntegrityHeadersWhenReady.mockResolvedValue({
             'x-app-integrity-token': 'attestation-token',
         })
 
