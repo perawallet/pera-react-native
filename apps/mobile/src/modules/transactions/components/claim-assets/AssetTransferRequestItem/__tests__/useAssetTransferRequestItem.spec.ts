@@ -17,17 +17,23 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useAssetTransferRequestItem } from '../useAssetTransferRequestItem'
 
 vi.mock('@hooks/useResolvedAddress', () => ({
-    useResolvedAddress: () => ({ displayName: 'Resolved' }),
+    useResolvedAddress: vi.fn(),
 }))
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 const buildItem = (
     unitName: string,
-    overrides: { decimals?: number; totalAmount?: Decimal; logo?: string } = {},
+    overrides: {
+        decimals?: number
+        totalAmount?: Decimal
+        logo?: string
+        sender?: { address: string; name?: string }
+    } = {},
 ) =>
     ({
         id: '741',
@@ -40,7 +46,10 @@ const buildItem = (
             unitName,
             peraMetadata: overrides.logo ? { logo: overrides.logo } : undefined,
         },
-        senders: { count: 0, results: [] },
+        senders: {
+            count: overrides.sender ? 1 : 0,
+            results: overrides.sender ? [{ sender: overrides.sender }] : [],
+        },
     }) as unknown as AssetInboxRequest
 
 describe('useAssetTransferRequestItem', () => {
@@ -50,6 +59,9 @@ describe('useAssetTransferRequestItem', () => {
             data: null,
             isPending: false,
         } as unknown as ReturnType<typeof useSingleAssetDetailsQuery>)
+        vi.mocked(useResolvedAddress).mockReturnValue({
+            displayName: 'Resolved',
+        } as unknown as ReturnType<typeof useResolvedAddress>)
     })
 
     it('reports the code the unit name imitates, judged on the asset id and the payload unit name', () => {
@@ -143,11 +155,40 @@ describe('useAssetTransferRequestItem', () => {
         })
     })
 
-    it('shows the resolved display name of the first sender', () => {
-        const { result } = renderHook(() =>
-            useAssetTransferRequestItem(buildItem('TST'), SCOPE),
-        )
+    describe('sender display name', () => {
+        it('resolves the first sender by address when the payload carries no name', () => {
+            const item = buildItem('TST', { sender: { address: 'SENDER1' } })
 
-        expect(result.current.senderDisplayName).toBe('Resolved')
+            const { result } = renderHook(() =>
+                useAssetTransferRequestItem(item, SCOPE),
+            )
+
+            expect(result.current.senderDisplayName).toBe('Resolved')
+            expect(useResolvedAddress).toHaveBeenCalledWith('SENDER1', SCOPE, {
+                enabled: true,
+            })
+        })
+
+        it('skips the lookup when the payload already names the sender', () => {
+            const item = buildItem('TST', {
+                sender: { address: 'SENDER1', name: 'Alice' },
+            })
+
+            renderHook(() => useAssetTransferRequestItem(item, SCOPE))
+
+            expect(useResolvedAddress).toHaveBeenCalledWith('SENDER1', SCOPE, {
+                enabled: false,
+            })
+        })
+
+        it('skips the lookup when there is no sender', () => {
+            renderHook(() =>
+                useAssetTransferRequestItem(buildItem('TST'), SCOPE),
+            )
+
+            expect(useResolvedAddress).toHaveBeenCalledWith('', SCOPE, {
+                enabled: false,
+            })
+        })
     })
 })
