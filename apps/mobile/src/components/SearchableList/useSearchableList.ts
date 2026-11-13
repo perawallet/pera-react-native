@@ -27,6 +27,7 @@ import {
 import type { PWFlatListRef } from '@components/core'
 import type { SearchInputRef } from '@components/SearchInput'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { shouldDrawPinnedSearchEdge } from './pinnedSearchPlatform'
 import {
     shouldReleasePinOnScrollUp,
     shouldUnpinSearchOnScroll,
@@ -130,7 +131,7 @@ type UseSearchableListResult<T> = {
     searchFooterHeight: number
     /** Measured height of the sticky search bar, 0 until laid out. */
     searchStickyHeight: number
-    /** True while list rows are scrolled under the pinned search bar. */
+    /** True while list rows are scrolled under the pinned search bar and the platform draws an edge there. */
     isSearchDividerVisible: boolean
     /** The single focusable overlay input's ref (for programmatic focus/blur). */
     overlayRef: React.RefObject<Nullable<SearchInputRef>>
@@ -230,7 +231,10 @@ export const useSearchableList = <T>({
     const itemCount = data?.length ?? 0
     // An empty list never pins the search bar, so there is nothing to underline.
     const isSearchDividerVisible =
-        isScrolledUnderSearch && itemCount > 0 && searchStickyHeight > 0
+        shouldDrawPinnedSearchEdge &&
+        isScrolledUnderSearch &&
+        itemCount > 0 &&
+        searchStickyHeight > 0
 
     const searchFooterHeight = useMemo(() => {
         if (listLayoutHeight <= 0) {
@@ -259,7 +263,10 @@ export const useSearchableList = <T>({
     }, [searchFooterHeight, itemCount])
 
     const updateIsScrolledUnderSearch = useCallback((next: boolean) => {
-        if (isScrolledUnderSearchRef.current === next) {
+        if (
+            !shouldDrawPinnedSearchEdge ||
+            isScrolledUnderSearchRef.current === next
+        ) {
             return
         }
         isScrolledUnderSearchRef.current = next

@@ -19,22 +19,32 @@
 // This file never imports `@gorhom/bottom-sheet` at all, so it can't hit that.
 // `isInBottomSheet` is still computed because it feeds `bottomInset` — a sheet
 // has no tab bar to clear.
-import { useContext } from 'react'
+import { useContext, useImperativeHandle, useRef, type Ref } from 'react'
 import { getContainerTestProps } from '@utils/test-id-helper'
-import { type ScrollViewProps, StyleSheet } from 'react-native'
+import {
+    type ScrollView as RNScrollView,
+    type ScrollViewProps,
+    StyleSheet,
+} from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { useStyles } from './styles'
 
+export type PWScrollViewRef = {
+    scrollTo: (options: { x?: number; y?: number; animated?: boolean }) => void
+}
+
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
     /** On web this only feeds the bottom-inset calc below (see file header) — it doesn't swap in a different scroll component. */
     inBottomSheet?: boolean
+    ref?: Ref<PWScrollViewRef>
 }
 
 export const PWScrollView = ({
+    ref,
     testID,
     inBottomSheet,
     children,
@@ -52,6 +62,11 @@ export const PWScrollView = ({
     const isInBottomSheet = inBottomSheet ?? isInSheet
     const bottomInset = isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
     const styles = useStyles({ bottomInset })
+    const scrollRef = useRef<RNScrollView>(null)
+
+    useImperativeHandle(ref, () => ({
+        scrollTo: options => scrollRef.current?.scrollTo(options),
+    }))
 
     // Skip the default bottom padding if the caller set any bottom-affecting
     // padding: RN edge-specificity would otherwise silently override theirs.
@@ -66,6 +81,7 @@ export const PWScrollView = ({
 
     return (
         <ScrollView
+            ref={scrollRef}
             // RN's default ('never') swallows the first tap on a child while an
             // input is focused; 'handled' lets the tap through.
             keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}

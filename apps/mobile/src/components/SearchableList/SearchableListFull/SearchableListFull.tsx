@@ -126,6 +126,7 @@ const SearchableListFullInner = <T,>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const list = createElement(PWFlatList as any, {
         ...listProps,
+        style: [listProps.style, styles.list],
         ref: listRef,
         data: augmentedData,
         renderItem: augmentedRenderItem,

@@ -11,4 +11,4 @@
  */
 
 export { PWScrollView } from './PWScrollView'
-export type { PWScrollViewProps } from './PWScrollView'
+export type { PWScrollViewProps, PWScrollViewRef } from './PWScrollView'

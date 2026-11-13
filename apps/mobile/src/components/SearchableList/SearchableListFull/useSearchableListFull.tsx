@@ -186,7 +186,7 @@ export const useSearchableListFull = <T,>({
                             ) : null}
                         </PWView>
                         {searchAccessory != null ? (
-                            <PWView style={styles.searchAccessory}>
+                            <PWView style={styles.searchStickyAccessory}>
                                 {searchAccessory}
                             </PWView>
                         ) : null}
@@ -214,7 +214,7 @@ export const useSearchableListFull = <T,>({
             handleHeaderLayout,
             handleSearchStickyLayout,
             styles.searchSticky,
-            styles.searchAccessory,
+            styles.searchStickyAccessory,
             searchAccessory,
             styles.searchClearHitArea,
             styles.searchOverlayHidden,

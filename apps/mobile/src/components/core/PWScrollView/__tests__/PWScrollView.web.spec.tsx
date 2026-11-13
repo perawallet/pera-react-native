@@ -10,15 +10,35 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { createRef } from 'react'
+import { describe, it, expect, vi } from 'vitest'
 import { Text } from 'react-native'
 import { render, screen } from '@test-utils/render'
 // Import the exact web filename — vitest has no Metro platform resolution,
 // so a bare '../PWScrollView' specifier would load the gorhom-based native
-// module instead (as the native PWScrollView, if it had its own spec, would
-// import '../PWScrollView' directly). See PWBottomSheet.web.spec.tsx for the
-// same pattern.
-import { PWScrollView } from '../PWScrollView.web'
+// module instead (PWScrollView.spec.tsx imports '../PWScrollView' directly).
+// See PWBottomSheet.web.spec.tsx for the same pattern.
+import { PWScrollView, type PWScrollViewRef } from '../PWScrollView.web'
+
+const scrollTo = vi.hoisted(() => vi.fn())
+
+// The shared unit mock renders ScrollView as a bare div; this one gives the
+// ref the scroller handle the component under test delegates to.
+vi.mock('react-native-gesture-handler', async () => {
+    const React = await import('react')
+    return {
+        ScrollView: ({
+            ref,
+            children,
+        }: {
+            ref?: React.Ref<unknown>
+            children?: React.ReactNode
+        }) => {
+            React.useImperativeHandle(ref, () => ({ scrollTo }))
+            return React.createElement('div', null, children)
+        },
+    }
+})
 
 describe('PWScrollView.web', () => {
     it('renders children when inBottomSheet is true, without mounting gorhom', () => {
@@ -45,5 +65,21 @@ describe('PWScrollView.web', () => {
         )
 
         expect(screen.getByText('Plain content')).toBeTruthy()
+    })
+
+    it('delegates scrollTo through the ref to the scroll view', () => {
+        const ref = createRef<PWScrollViewRef>()
+        render(
+            <PWScrollView
+                ref={ref}
+                horizontal
+            >
+                <Text>Row</Text>
+            </PWScrollView>,
+        )
+
+        ref.current?.scrollTo({ x: 40, animated: false })
+
+        expect(scrollTo).toHaveBeenCalledWith({ x: 40, animated: false })
     })
 })
