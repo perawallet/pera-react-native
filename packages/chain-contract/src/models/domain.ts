@@ -339,7 +339,38 @@ export type AssetOptInIntent = {
     assetRef: AssetRef
 }
 
-export type TransactionIntent = TransferIntent | AssetOptInIntent
+/** A standing permission an account has given another party over its tokens. */
+export type TokenApproval =
+    | {
+          kind: 'allowance'
+          assetRef: AssetRef
+          /** In the chain's address format. */
+          spender: string
+          /** Base units of the token; absent when unlimited. */
+          amount?: Decimal
+          knownSpender?: KnownSpender
+      }
+    | {
+          kind: 'collection'
+          /** The collection's contract in the chain's address format. */
+          collection: string
+          collectionName?: string
+          /** May move every item the account holds in `collection`. */
+          spender: string
+          knownSpender?: KnownSpender
+      }
+
+/** Only built by a chain whose tokens carry standing approvals; withdraws the approval entirely. */
+export type ApprovalRevokeIntent = {
+    kind: 'approval-revoke'
+    account: string
+    approval: TokenApproval
+}
+
+export type TransactionIntent =
+    | TransferIntent
+    | AssetOptInIntent
+    | ApprovalRevokeIntent
 
 export interface BuildContext {
     scope: ChainScope

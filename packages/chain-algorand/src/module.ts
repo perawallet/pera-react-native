@@ -27,7 +27,10 @@ import { registerChain } from './register'
 export const chainModule: ChainModule = {
     descriptor: algorandDescriptor,
     capabilityDefaults: algorandCapabilityDefaults,
-    supportedCapabilities: CHAIN_CAPABILITIES,
+    // Algorand has no standing token approvals, so no override may switch the feature on.
+    supportedCapabilities: CHAIN_CAPABILITIES.filter(
+        capability => capability !== 'tokenApprovals',
+    ),
     capabilityRestrictions: algorandCapabilityRestrictions,
     // The adapters are module-level instances the registries dedupe, so the
     // context goes to a holder instead of into rebuilt adapters.
