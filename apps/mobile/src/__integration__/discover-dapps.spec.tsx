@@ -100,7 +100,7 @@ const useHandlers = ({ ethereumEmpty = false } = {}) => {
     server.use(
         mockDiscoverProjects({
             response: ethereumEmpty
-                ? all.filter(p => !p.chains.includes('eip155:1'))
+                ? all.filter(p => !p.chains?.includes('eip155:1'))
                 : all,
         }),
     )

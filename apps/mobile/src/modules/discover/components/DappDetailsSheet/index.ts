@@ -14,3 +14,4 @@ export {
     DappDetailsSheet,
     type DappDetailsSheetProps,
 } from './DappDetailsSheet'
+export type { DappDetailsSheetResult } from './useDappDetailsSheet'
