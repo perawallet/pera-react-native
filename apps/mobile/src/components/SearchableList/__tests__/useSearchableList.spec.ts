@@ -15,6 +15,7 @@ import { act, renderHook } from '@test-utils/render'
 import { isSeparatorSuppressed, useSearchableList } from '../useSearchableList'
 import type { PWFlatListRef } from '@components/core'
 import * as webScrollUnpin from '../scrollUnpin.web'
+import * as webPinnedSearchPlatform from '../pinnedSearchPlatform.web'
 
 // vitest doesn't resolve `.web.ts` twins, so the web cases swap one in here.
 const scrollUnpin = vi.hoisted(() => ({
@@ -22,6 +23,12 @@ const scrollUnpin = vi.hoisted(() => ({
     shouldReleasePinOnScrollUp: false,
 }))
 vi.mock('../scrollUnpin', () => scrollUnpin)
+
+const pinnedSearchPlatform = vi.hoisted(() => ({
+    shouldDrawPinnedSearchEdge: true,
+    pinnedListOverscrollReset: null as object | null,
+}))
+vi.mock('../pinnedSearchPlatform', () => pinnedSearchPlatform)
 
 const HEADER_SENTINEL = { __searchableListHeader: true, key: 'h' }
 const SEARCH_SENTINEL = { __searchableListSearch: true, key: 's' }
@@ -435,6 +442,20 @@ describe('useSearchableList search divider', () => {
         layoutSearchSticky(hook.result, STICKY_HEIGHT)
         return hook
     }
+
+    beforeEach(() => {
+        pinnedSearchPlatform.shouldDrawPinnedSearchEdge = true
+        pinnedSearchPlatform.pinnedListOverscrollReset = null
+    })
+
+    it('never shows on a platform that draws no edge under the pinned bar', () => {
+        Object.assign(pinnedSearchPlatform, webPinnedSearchPlatform)
+        const { result } = setupMeasured()
+
+        scrollTo(result, HEADER_HEIGHT + 40)
+
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
 
     it('is hidden before any scroll', () => {
         const { result } = setupMeasured()

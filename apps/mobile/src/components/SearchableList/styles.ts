@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { pinnedListOverscrollReset } from './pinnedSearchPlatform'
 
 export const useStyles = makeStyles(theme => ({
     content: {
@@ -43,6 +44,13 @@ export const useStyles = makeStyles(theme => ({
     },
     searchAccessory: {
         paddingTop: theme.spacing.md,
+    },
+    // Matches searchSticky's bottom padding so the chips sit evenly in the pinned bar.
+    searchStickyAccessory: {
+        paddingTop: theme.spacing.lg,
+    },
+    list: {
+        ...pinnedListOverscrollReset,
     },
     // Wraps the list and the pinned search overlay floated on top of it.
     root: {
