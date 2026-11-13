@@ -32,7 +32,7 @@ describe('articleRunStyle', () => {
         expect(articleRunStyle(run({ bold: true }), 'h3', false)).toEqual({
             plain: false,
             variant: 'h3',
-            weight: 600,
+            weight: 700,
             italic: false,
             link: false,
         })
@@ -58,7 +58,7 @@ describe('articleRunStyle', () => {
             articleRunStyle(run({ bold: true }), 'body', true),
         ).toMatchObject({
             variant: 'body',
-            weight: 600,
+            weight: 700,
             link: true,
         })
     })

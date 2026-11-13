@@ -25,12 +25,17 @@ const DEFAULT_IMAGE_ASPECT = 16 / 9
 export const ArticleImage = ({ src }: ArticleImageProps) => {
     const styles = useStyles()
     const [aspectRatio, setAspectRatio] = useState(DEFAULT_IMAGE_ASPECT)
+    // An image that cannot load takes no room, rather than leaving a blank box.
+    const [hasFailed, setHasFailed] = useState(false)
+
+    if (hasFailed) return null
 
     return (
         <PWImage
             source={{ uri: src }}
             resizeMode='contain'
             style={[styles.image, { aspectRatio }]}
+            onError={() => setHasFailed(true)}
             onLoad={event => {
                 const { width, height } = event.source
                 if (width > 0 && height > 0) setAspectRatio(width / height)

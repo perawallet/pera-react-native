@@ -24,7 +24,9 @@ export type ArticleRunStyle =
           link: boolean
       }
 
-const SEMIBOLD: FontWeight = 600
+// 700, not 600: on iOS the bundled SemiBold file registers as DMSans18pt-SemiBold,
+// so the app's 600 face name does not resolve there and the run would draw regular.
+const BOLD: FontWeight = 700
 
 /**
  * How a text run renders inside its block (`base`) or link. React Native lets
@@ -41,7 +43,7 @@ export const articleRunStyle = (
     return {
         plain: false,
         variant: run.code ? 'mono' : base,
-        weight: run.bold ? SEMIBOLD : undefined,
+        weight: run.bold ? BOLD : undefined,
         italic: run.italic,
         link: inLink,
     }
