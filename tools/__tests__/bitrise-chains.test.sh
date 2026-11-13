@@ -42,6 +42,37 @@ check() { # $1 label  $2 expected  $3 actual
     fi
 }
 
+provider_of() { # $1 URL -> the last two labels of its hostname
+    local host="${1#*://}"
+    host="${host%%/*}"
+    host="${host%%:*}"
+    awk -F. '{ print (NF > 1 ? $(NF - 1) "." $NF : $0) }' <<< "$host"
+}
+
+# One provider failing must not take the network down, so a staging list is
+# the main node and a fallback on another provider, both over https.
+two_provider_list() { # $1 comma list -> "yes", or "no (<reason>)"
+    local -a urls
+    if [[ "$1" == *, ]]; then
+        echo "no (trailing comma: $1)"
+        return
+    fi
+    IFS=, read -r -a urls <<< "$1"
+    if [ "${#urls[@]}" -ne 2 ]; then
+        echo "no (expected 2 URLs, got ${#urls[@]}: $1)"
+        return
+    fi
+    local url
+    for url in "${urls[@]}"; do
+        [[ "$url" == https://?* ]] || { echo "no (not https: ${url})"; return; }
+    done
+    if [ "$(provider_of "${urls[0]}")" = "$(provider_of "${urls[1]}")" ]; then
+        echo "no (both on $(provider_of "${urls[0]}"): $1)"
+        return
+    fi
+    echo yes
+}
+
 # The app registers chains in module order, so CHAINS is a set.
 sorted_csv() { tr ',' '\n' <<< "$1" | sort | paste -sd, -; }
 
@@ -79,9 +110,8 @@ for source in bitrise pipelines; do
             "$(sorted_csv "algorand,$(paste -sd, - <<< "$GATED_CHAIN_IDS")")" \
             "$(sorted_csv "$("$env_of" "$job" CHAINS)")"
         while read -r rpc_env; do
-            url="$("$env_of" "$job" "$rpc_env")"
-            check "${job} sets an https ${rpc_env}" "yes" \
-                "$([[ "$url" == https://?* ]] && echo yes || echo "no (${url})")"
+            check "${job} gives ${rpc_env} a main node and a fallback provider" "yes" \
+                "$(two_provider_list "$("$env_of" "$job" "$rpc_env")")"
         done <<< "$EVM_RPC_URL_ENVS"
         while read -r services_env; do
             check "${job} lists the ${services_env}" \
@@ -97,6 +127,14 @@ for source in bitrise pipelines; do
             check "${job} sets no ${key}" "" "$("$env_of" "$job" "$key")"
         done <<< "$SCOPE_ENVS"
     done
+done
+
+echo "bitrise and pipelines agree"
+for job in ios-staging android-staging web-staging; do
+    while read -r rpc_env; do
+        check "${job} gives ${rpc_env} the same list in both files" \
+            "$(bitrise_env "$job" "$rpc_env")" "$(pipelines_env "$job" "$rpc_env")"
+    done <<< "$EVM_RPC_URL_ENVS"
 done
 
 if [ "$failures" -gt 0 ]; then

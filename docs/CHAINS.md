@@ -211,7 +211,8 @@ Most EVM wiring reads `evm-networks.json` and the chain table, so the list is sh
       chain's UI differs from the family's.
 - [ ] `turbo.json`: add `<ID>_*` to `globalEnv`.
 - [ ] `.bitrise/bitrise.yml` and `ci/pipelines.yml`: the id in each staging `CHAINS`, and every
-      network's `_RPC_URL` and `_PERA_SERVICES`. `tools/__tests__/bitrise-chains.test.sh` checks both.
+      network's `_RPC_URL` (the main node, then a fallback on another provider that takes a JSON-RPC
+      batch of 10) and `_PERA_SERVICES`. `tools/__tests__/bitrise-chains.test.sh` checks both.
 - [ ] Local EVM network: the chain in `EvmnetChain`, `EVMNET_CHAINS` and `EVMNET`
       (`conformance-evm/src/harness/evmnet.ts`), an Anvil service in `tools/dev/evmnet.compose.yml`,
       `CONTAINERS` in `tools/dev/evmnet.sh`, the expected list in `tools/__tests__/evmnet.test.sh`,

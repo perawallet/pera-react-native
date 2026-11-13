@@ -47,6 +47,10 @@ const SUBMIT_METHODS: ReadonlySet<string> = new Set(['eth_sendRawTransaction'])
 // Providers cap the size of a JSON-RPC batch; a larger tick splits.
 const READ_BATCH_SIZE = 100
 
+// Free public nodes cap a JSON-RPC batch (Optimism's at 10) and refuse the whole
+// batch past it.
+const FALLBACK_READ_BATCH_SIZE = 10
+
 // Providers also cap the request body (publicnode answers 503 past 1 MB), and
 // viem splits a batch by count only. A request bigger than this goes out on
 // its own, so a full batch of the rest stays under 1 MB.
@@ -73,6 +77,7 @@ const payloadChars = (value: unknown): number => {
 const timeoutBoundedTransport = (
     url: string,
     { readMs, submitMs }: ChainRequestTimeouts,
+    readBatchSize: number,
 ): Transport => {
     // Small reads issued in the same tick go out as one JSON-RPC batch, so
     // the nonce reads of a sync pass cost one request however many accounts
@@ -80,7 +85,7 @@ const timeoutBoundedTransport = (
     const read = evmHttpTransport(url, {
         timeout: readMs,
         retryCount: 0,
-        batch: { batchSize: READ_BATCH_SIZE },
+        batch: { batchSize: readBatchSize },
     })
     const readAlone = evmHttpTransport(url, { timeout: readMs, retryCount: 0 })
     const submit = evmHttpTransport(url, { timeout: submitMs, retryCount: 0 })
@@ -156,10 +161,11 @@ const endpointListTransport = (
     const reads = splitCeilingMs(readMs, rpcUrls.length)
     const submits = splitCeilingMs(submitMs, rpcUrls.length)
     const perUrl = rpcUrls.map((url, index) =>
-        timeoutBoundedTransport(url, {
-            readMs: reads[index]!,
-            submitMs: submits[index]!,
-        }),
+        timeoutBoundedTransport(
+            url,
+            { readMs: reads[index]!, submitMs: submits[index]! },
+            index === 0 ? READ_BATCH_SIZE : FALLBACK_READ_BATCH_SIZE,
+        ),
     )
     const readFallback = fallback(perUrl, { retryCount: 0 })
     return params => {

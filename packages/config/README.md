@@ -77,7 +77,8 @@ every one of its networks' RPC URLs is set and baked, so a `CONFIG_ALLOWLIST` th
 must keep them too. Each channel workflow in `.bitrise/bitrise.yml` and job in `ci/pipelines.yml`
 sets its own `CHAINS`: staging ships every chain, production ships Algorand alone, and
 `tools/__tests__/bitrise-chains.test.sh` fails if either drifts. Staging also lists the Pera
-services the staging backend serves for each EVM network, which the same test pins.
+services the staging backend serves for each EVM network, which the same test pins. Each EVM network
+also gets a fallback on a second provider after its main node, which the test pins too.
 
 Betanet carries chain endpoints only. It has no Pera backend, so its Pera service traffic fails typed
 through `createPeraClient`; see [Architecture](../../docs/ARCHITECTURE.md).
