@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useDiscoverNewsDetailQuery } from '@perawallet/wallet-core-discover'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { RootStackParamList } from '@routes/types'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
 import {
@@ -22,6 +22,39 @@ import {
     type ArticleBlock,
 } from '../../utils/articleHtml'
 import { formatNewsDate } from '../../utils/formatNewsDate'
+
+// Hostile or very deep HTML can overflow the recursive parser; the article
+// then shows as plain text rather than taking the screen down.
+const toBlocks = (newsId: string, html: string): ArticleBlock[] => {
+    try {
+        return parseArticleHtml(html)
+    } catch (error) {
+        logger.error('News article HTML could not be parsed', {
+            newsId,
+            error,
+        })
+        const value = html
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+        return value
+            ? [
+                  {
+                      type: 'paragraph',
+                      children: [
+                          {
+                              type: 'text',
+                              value,
+                              bold: false,
+                              italic: false,
+                              code: false,
+                          },
+                      ],
+                  },
+              ]
+            : []
+    }
+}
 
 export type UseDiscoverNewsDetailScreenResult = {
     title: string
@@ -38,14 +71,15 @@ export const useDiscoverNewsDetailScreen =
     (): UseDiscoverNewsDetailScreenResult => {
         const route =
             useRoute<RouteProp<RootStackParamList, 'DiscoverNewsDetail'>>()
-        const query = useDiscoverNewsDetailQuery(route.params.newsId)
+        const { newsId } = route.params
+        const query = useDiscoverNewsDetailQuery(newsId)
         const { openWebPage } = useOpenDapp()
 
         const news = query.data
         const contentHtml = news?.contentHtml
         const blocks = useMemo(
-            () => (contentHtml ? parseArticleHtml(contentHtml) : []),
-            [contentHtml],
+            () => (contentHtml ? toBlocks(newsId, contentHtml) : []),
+            [newsId, contentHtml],
         )
 
         // As the web page: article links open in the in-app browser.
@@ -61,14 +95,17 @@ export const useDiscoverNewsDetailScreen =
             void refetch()
         }, [refetch])
 
-        const isRetrying = query.isError && query.isFetching
+        // A cached article stays up when a background refetch fails; the error
+        // view is only for nothing to show.
+        const hasNothing = news === undefined
+        const isRetrying = query.isError && query.isFetching && hasNothing
         return {
             title: news?.title ?? '',
             dateDisplay: news ? formatNewsDate(news.publishedAt) : '',
             banner: news?.banner ?? null,
             blocks,
             isLoading: query.isLoading || isRetrying,
-            isError: query.isError && !query.isFetching,
+            isError: query.isError && !query.isFetching && hasNothing,
             retry,
             openLink,
         }

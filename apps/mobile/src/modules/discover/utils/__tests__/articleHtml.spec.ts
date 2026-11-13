@@ -154,6 +154,53 @@ describe('parseArticleHtml', () => {
     })
 })
 
+describe('parseArticleHtml edge cases', () => {
+    it('lifts an image inside a link into its own block', () => {
+        expect(
+            parseArticleHtml(
+                '<p><a href="https://x.io"><img src="https://pera.test/b.png" alt="b"></a></p>',
+            ),
+        ).toEqual([{ type: 'image', src: 'https://pera.test/b.png', alt: 'b' }])
+    })
+
+    it('keeps an emoji image inline as its shortcode', () => {
+        expect(
+            parseArticleHtml(
+                '<p>Launch <img class="marked-emoji" src="https://github.githubassets.com/images/icons/emoji/rocket.png"> now</p>',
+            ),
+        ).toEqual([
+            { type: 'paragraph', children: [text('Launch :rocket: now')] },
+        ])
+    })
+
+    it('keeps the spaces at the edges of a link', () => {
+        expect(
+            parseArticleHtml(
+                '<p>Read<a href="https://x.io"> more</a> and <a href="https://y.io">foo </a>bar</p>',
+            ),
+        ).toEqual([
+            {
+                type: 'paragraph',
+                children: [
+                    text('Read'),
+                    {
+                        type: 'link',
+                        href: 'https://x.io',
+                        children: [text(' more')],
+                    },
+                    text(' and '),
+                    {
+                        type: 'link',
+                        href: 'https://y.io',
+                        children: [text('foo ')],
+                    },
+                    text('bar'),
+                ],
+            },
+        ])
+    })
+})
+
 describe('toArticleLinkUrl', () => {
     it('keeps an explicit https link', () => {
         expect(toArticleLinkUrl('https://x.io/a')).toBe('https://x.io/a')

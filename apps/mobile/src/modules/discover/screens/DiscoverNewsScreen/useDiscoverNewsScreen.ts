@@ -71,12 +71,14 @@ export const useDiscoverNewsScreen = (): UseDiscoverNewsScreenResult => {
         [navigation],
     )
 
-    // A retry after an error keeps status 'error' while it runs; show it loading.
-    const isRetrying = query.isError && query.isFetching
+    // A retry after an error keeps status 'error' while it runs; show it
+    // loading. Cached news stays up when a background refetch fails.
+    const hasNothing = data === undefined
+    const isRetrying = query.isError && query.isFetching && hasNothing
     return {
         items,
         isLoading: query.isLoading || isRetrying,
-        isError: query.isError && !query.isFetching,
+        isError: query.isError && !query.isFetching && hasNothing,
         isRefreshing,
         refresh,
         retry,

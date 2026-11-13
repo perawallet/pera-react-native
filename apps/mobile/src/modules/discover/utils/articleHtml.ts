@@ -137,7 +137,18 @@ const collectInline = (
             }
             case 'img': {
                 const src = node.attribs.src
-                if (src) {
+                // Martor turns :rocket: into a small emoji image inside the
+                // sentence; keep it as its shortcode rather than a full-width image.
+                if ((node.attribs.class ?? '').includes('emoji')) {
+                    const name =
+                        node.attribs.alt?.replace(/:/g, '') ||
+                        src
+                            ?.split('/')
+                            .pop()
+                            ?.replace(/\.\w+$/, '')
+                    if (name)
+                        out.push({ type: 'text', value: `:${name}:`, ...marks })
+                } else if (src) {
                     out.push({
                         type: 'image',
                         src,
@@ -155,6 +166,9 @@ const collectInline = (
                 const href = node.attribs.href
                 if (href) out.push({ type: 'link', href, children: inline })
                 else out.push(...inline)
+                // A linked image (Markdown's clickable image) is still lifted into
+                // its own block; it shows, it just does not carry the link.
+                out.push(...children.filter(piece => piece.type === 'image'))
                 break
             }
             default: {
@@ -167,10 +181,24 @@ const collectInline = (
 const sameMarks = (a: ArticleText, b: ArticleText) =>
     a.bold === b.bold && a.italic === b.italic && a.code === b.code
 
-/** Merges runs, drops a space after a space and trims the ends; `[]` when nothing visible is left. */
-const tidyInline = (pieces: readonly ArticleInline[]): ArticleInline[] => {
+const lastTextOf = (pieces: readonly ArticleInline[]): string => {
+    const last = pieces.at(-1)
+    if (last?.type === 'text') return last.value
+    if (last?.type === 'link') return lastTextOf(last.children)
+    return ''
+}
+
+/**
+ * Merges runs and drops a space after a space. A block's run (`isBlock`) also
+ * trims its ends and is `[]` when nothing visible is left; a link's children
+ * keep their edge spaces, which separate the link from its neighbours.
+ */
+const tidyInline = (
+    pieces: readonly ArticleInline[],
+    isBlock = true,
+): ArticleInline[] => {
     const out: ArticleInline[] = []
-    let endsWithSpace = true
+    let endsWithSpace = isBlock
     for (const piece of pieces) {
         if (piece.type === 'text') {
             const value: string = endsWithSpace
@@ -185,15 +213,23 @@ const tidyInline = (pieces: readonly ArticleInline[]): ArticleInline[] => {
             }
             endsWithSpace = value.endsWith(' ')
         } else if (piece.type === 'link') {
-            const children = tidyInline(piece.children)
-            if (children.length === 0) continue
+            let children = tidyInline(piece.children, false)
+            const first = children[0]
+            if (endsWithSpace && first?.type === 'text') {
+                const value = first.value.replace(/^ /, '')
+                children = value
+                    ? [{ ...first, value }, ...children.slice(1)]
+                    : children.slice(1)
+            }
+            if (!children.some(child => child.type !== 'break')) continue
             out.push({ ...piece, children })
-            endsWithSpace = false
+            endsWithSpace = lastTextOf(children).endsWith(' ')
         } else {
             out.push(piece)
             endsWithSpace = true
         }
     }
+    if (!isBlock) return out
     const last = out.at(-1)
     if (last?.type === 'text') {
         const value = last.value.replace(/ $/, '')

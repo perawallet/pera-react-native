@@ -85,4 +85,11 @@ describe('useDiscoverNewsScreen', () => {
         act(() => result.current.retry())
         expect(refetch).toHaveBeenCalled()
     })
+
+    it('keeps the list on screen when a background refetch fails', () => {
+        mockNews({ isError: true, isFetching: false })
+        const { result } = renderHook(() => useDiscoverNewsScreen())
+        expect(result.current.isError).toBe(false)
+        expect(result.current.items).toHaveLength(1)
+    })
 })

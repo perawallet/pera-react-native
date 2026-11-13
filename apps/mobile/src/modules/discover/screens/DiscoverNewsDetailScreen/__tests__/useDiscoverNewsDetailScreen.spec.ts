@@ -14,7 +14,9 @@ import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute } from '@react-navigation/native'
 import { useDiscoverNewsDetailQuery } from '@perawallet/wallet-core-discover'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useOpenDapp } from '../../../hooks/useOpenDapp'
+import * as articleHtml from '../../../utils/articleHtml'
 import { useDiscoverNewsDetailScreen } from '../useDiscoverNewsDetailScreen'
 
 vi.mock('@react-navigation/native', async importOriginal => ({
@@ -100,5 +102,30 @@ describe('useDiscoverNewsDetailScreen', () => {
         const { result } = renderHook(() => useDiscoverNewsDetailScreen())
         expect(result.current.isLoading).toBe(true)
         expect(result.current.isError).toBe(false)
+    })
+
+    it('keeps the article on screen when a background refetch fails', () => {
+        mockDetail({ isError: true, isFetching: false })
+        const { result } = renderHook(() => useDiscoverNewsDetailScreen())
+        expect(result.current.isError).toBe(false)
+        expect(result.current.title).toBe('Big news')
+    })
+
+    it('falls back to plain text and logs when the article cannot be parsed', () => {
+        const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
+        vi.spyOn(articleHtml, 'parseArticleHtml').mockImplementation(() => {
+            throw new RangeError('Maximum call stack size exceeded')
+        })
+        const { result } = renderHook(() => useDiscoverNewsDetailScreen())
+        expect(result.current.blocks).toEqual([
+            {
+                type: 'paragraph',
+                children: [
+                    expect.objectContaining({ type: 'text', value: 'Hello x' }),
+                ],
+            },
+        ])
+        expect(error).toHaveBeenCalled()
+        vi.restoreAllMocks()
     })
 })
