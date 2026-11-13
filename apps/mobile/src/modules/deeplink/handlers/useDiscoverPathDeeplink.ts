@@ -74,7 +74,11 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                 return true
             }
             if (target.kind === 'news') {
-                navigateToScreen(replaceCurrentScreen, 'DiscoverNews', undefined)
+                navigateToScreen(
+                    replaceCurrentScreen,
+                    'DiscoverNews',
+                    undefined,
+                )
                 return true
             }
             if (target.kind === 'newsDetail') {

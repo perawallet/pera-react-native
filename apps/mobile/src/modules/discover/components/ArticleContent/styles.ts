@@ -45,7 +45,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
     },
     rule: {
-        height: 1,
+        height: theme.borders.sm,
         backgroundColor: theme.colors.layerGray,
     },
     image: {
