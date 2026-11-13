@@ -10,31 +10,31 @@
  limitations under the License
  */
 
-import { dappHostOf, normalizeDappUrl } from '../normalizeDappUrl'
+import { dappHostOf, normalizeDappUrl } from "../normalizeDappUrl";
 
-describe('normalizeDappUrl', () => {
-    test.each([
-        ['HTTPS://App.Uniswap.org/', 'https://app.uniswap.org'],
-        ['uniswap.org/swap/#x', 'https://uniswap.org/swap'],
-        ['https://a.io/p/?q=1', 'https://a.io/p?q=1'],
-    ])('normalises %s', (input, expected) => {
-        expect(normalizeDappUrl(input)).toBe(expected)
-    })
+describe("normalizeDappUrl", () => {
+  test.each([
+    ["HTTPS://App.Uniswap.org/", "https://app.uniswap.org"],
+    ["uniswap.org/swap/#x", "https://uniswap.org/swap"],
+    ["https://a.io/p/?q=1", "https://a.io/p?q=1"],
+  ])("normalises %s", (input, expected) => {
+    expect(normalizeDappUrl(input)).toBe(expected);
+  });
 
-    test.each(['http://evil.com', 'javascript:alert(1)', ''])(
-        'rejects %j',
-        input => {
-            expect(normalizeDappUrl(input)).toBeNull()
-        },
-    )
-})
+  test.each(["http://evil.com", "javascript:alert(1)", ""])(
+    "rejects %j",
+    (input) => {
+      expect(normalizeDappUrl(input)).toBeNull();
+    },
+  );
+});
 
-describe('dappHostOf', () => {
-    test.each([
-        ['https://App.io/x', 'app.io'],
-        ['HTTPS://App.io/x', 'app.io'],
-        ['app.io', 'app.io'],
-    ])('host of %s', (input, expected) => {
-        expect(dappHostOf(input)).toBe(expected)
-    })
-})
+describe("dappHostOf", () => {
+  test.each([
+    ["https://App.io/x", "app.io"],
+    ["HTTPS://App.io/x", "app.io"],
+    ["app.io", "app.io"],
+  ])("host of %s", (input, expected) => {
+    expect(dappHostOf(input)).toBe(expected);
+  });
+});

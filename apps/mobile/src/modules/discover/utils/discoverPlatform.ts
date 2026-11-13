@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
-import type { DiscoverPlatform } from '@perawallet/wallet-core-projects'
+import { Platform } from "react-native";
+import type { DiscoverPlatform } from "@perawallet/wallet-core-projects";
 
 // Web never reaches Discover: `discoverTab` is false there.
 export const discoverPlatform = (): DiscoverPlatform =>
-    Platform.OS === 'ios' ? 'ios' : 'android'
+  Platform.OS === "ios" ? "ios" : "android";

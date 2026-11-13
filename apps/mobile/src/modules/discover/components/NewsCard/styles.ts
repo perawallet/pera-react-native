@@ -10,34 +10,34 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { makeStyles } from "@rneui/themed";
 
-export const useStyles = makeStyles(theme => ({
-    card: {
-        borderRadius: theme.spacing.md,
-        overflow: 'hidden',
-        backgroundColor: theme.colors.layerGray,
-    },
-    banner: {
-        width: '100%',
-        aspectRatio: 2,
-        backgroundColor: theme.colors.layerGray,
-    },
-    body: {
-        gap: theme.spacing.xs,
-        padding: theme.spacing.lg,
-    },
-    date: {
-        color: theme.colors.textGray,
-    },
-    footer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    read: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xxs,
-    },
-}))
+export const useStyles = makeStyles((theme) => ({
+  card: {
+    borderRadius: theme.spacing.md,
+    overflow: "hidden",
+    backgroundColor: theme.colors.layerGray,
+  },
+  banner: {
+    width: "100%",
+    aspectRatio: 2,
+    backgroundColor: theme.colors.layerGray,
+  },
+  body: {
+    gap: theme.spacing.xs,
+    padding: theme.spacing.lg,
+  },
+  date: {
+    color: theme.colors.textGray,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  read: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.xxs,
+  },
+}));

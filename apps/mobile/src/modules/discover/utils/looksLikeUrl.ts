@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i
-const HOST = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i
-const HOST_END = /[/?#:]/
+const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//i;
+const HOST = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+const HOST_END = /[/?#:]/;
 
 /**
  * Whether typed search text is meant as a web address. A regex rather than
@@ -21,9 +21,9 @@ const HOST_END = /[/?#:]/
  * `javascript:` text never becomes an openable URL.
  */
 export const looksLikeUrl = (query: string): boolean => {
-    const q = query.trim()
-    if (/\s/.test(q)) return false
-    if (SCHEME_PREFIX.test(q)) return true
-    const host = q.split(HOST_END, 1)[0] ?? ''
-    return HOST.test(host)
-}
+  const q = query.trim();
+  if (/\s/.test(q)) return false;
+  if (SCHEME_PREFIX.test(q)) return true;
+  const host = q.split(HOST_END, 1)[0] ?? "";
+  return HOST.test(host);
+};

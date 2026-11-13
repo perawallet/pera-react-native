@@ -10,33 +10,33 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { DiscoverEvent, trackEvent } from '@analytics'
-import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
-import type { DiscoverDapp } from '../types'
-import { dappEventPayload } from '../utils/discoverAnalytics'
+import { useCallback } from "react";
+import type { ChainId } from "@perawallet/wallet-core-chain-contract";
+import type { Nullable } from "@perawallet/wallet-core-shared";
+import { DiscoverEvent, trackEvent } from "@analytics";
+import { useDiscoverFavoritesStore } from "../store/useDiscoverFavoritesStore";
+import type { DiscoverDapp } from "../types";
+import { dappEventPayload } from "../utils/discoverAnalytics";
 
 export type UseToggleDiscoverFavoriteResult = (
-    dapp: DiscoverDapp,
-    chain: Nullable<ChainId>,
-) => boolean
+  dapp: DiscoverDapp,
+  chain: Nullable<ChainId>,
+) => boolean;
 
 export const useToggleDiscoverFavorite =
-    (): UseToggleDiscoverFavoriteResult => {
-        const toggleFavorite = useDiscoverFavoritesStore(s => s.toggleFavorite)
-        return useCallback(
-            (dapp, chain) => {
-                const isNowFavorite = toggleFavorite(dapp)
-                trackEvent(
-                    isNowFavorite
-                        ? DiscoverEvent.DappFavoriteTap
-                        : DiscoverEvent.DappUnfavoriteTap,
-                    dappEventPayload(dapp, chain),
-                )
-                return isNowFavorite
-            },
-            [toggleFavorite],
-        )
-    }
+  (): UseToggleDiscoverFavoriteResult => {
+    const toggleFavorite = useDiscoverFavoritesStore((s) => s.toggleFavorite);
+    return useCallback(
+      (dapp, chain) => {
+        const isNowFavorite = toggleFavorite(dapp);
+        trackEvent(
+          isNowFavorite
+            ? DiscoverEvent.DappFavoriteTap
+            : DiscoverEvent.DappUnfavoriteTap,
+          dappEventPayload(dapp, chain),
+        );
+        return isNowFavorite;
+      },
+      [toggleFavorite],
+    );
+  };

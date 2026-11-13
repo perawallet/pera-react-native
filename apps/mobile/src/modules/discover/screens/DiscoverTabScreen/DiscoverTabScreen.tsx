@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import { DiscoverHomeScreen } from '../DiscoverHomeScreen'
-import { DiscoverScreen } from '../DiscoverScreen'
-import { useDiscoverTabScreen } from './useDiscoverTabScreen'
+import { DiscoverHomeScreen } from "../DiscoverHomeScreen";
+import { DiscoverScreen } from "../DiscoverScreen";
+import { useDiscoverTabScreen } from "./useDiscoverTabScreen";
 
 /**
  * The Discover tab: the native multichain Discover on a multichain build, the
  * Discover web app on an Algorand-only one.
  */
 export const DiscoverTabScreen = () => {
-    const { isNative } = useDiscoverTabScreen()
+  const { isNative } = useDiscoverTabScreen();
 
-    return isNative ? <DiscoverHomeScreen /> : <DiscoverScreen />
-}
+  return isNative ? <DiscoverHomeScreen /> : <DiscoverScreen />;
+};

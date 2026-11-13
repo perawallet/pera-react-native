@@ -10,61 +10,62 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { ChainId } from "@perawallet/wallet-core-chain-contract";
+import type { AnalyticsMetadataKey as Key } from "../metadata-keys";
 
 /** Native Discover home, search, dApp directory and favorites. Names match the web app. */
 export enum DiscoverEvent {
-    SearchBarTap = 'disover_search_bar_tap', // sic, the web app's spelling
-    SearchResultTap = 'discover_search_result_tap',
-    DappOpenTap = 'discover_dapp_open_tap',
-    DappFavoriteTap = 'discover_dapp_favorite_tap',
-    DappUnfavoriteTap = 'discover_dapp_unfavorite_tap',
-    DappFilterTap = 'discover_dapp_filter_tap',
-    NewsButtonTap = 'discover_news_button_tap',
-    NewsOpenTap = 'discover_news_open_tap',
-    TopDappsButtonTap = 'discover_top_dapps_button_tap',
-    ApplyForVerificationTap = 'discover_apply_for_verification',
-    DappCategoryTap = 'discover_dapp_category_tap',
-    DappDetailsButtonTap = 'discover_dapp_details_button_tap',
-    DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
+  SearchBarTap = "disover_search_bar_tap", // sic, the web app's spelling
+  SearchResultTap = "discover_search_result_tap",
+  DappOpenTap = "discover_dapp_open_tap",
+  DappFavoriteTap = "discover_dapp_favorite_tap",
+  DappUnfavoriteTap = "discover_dapp_unfavorite_tap",
+  DappFilterTap = "discover_dapp_filter_tap",
+  NewsButtonTap = "discover_news_button_tap",
+  NewsOpenTap = "discover_news_open_tap",
+  TopDappsButtonTap = "discover_top_dapps_button_tap",
+  ApplyForVerificationTap = "discover_apply_for_verification",
+  DappCategoryTap = "discover_dapp_category_tap",
+  DappDetailsButtonTap = "discover_dapp_details_button_tap",
+  DetailsCloseTap = "discover_details_close_tap", // sic, the web app's name
+  FolderCreate = "discover_folder_create",
 }
 
 type DappPayload = {
-    [Key.DappName]: string
-    [Key.DappUrl]: string
-    [Key.ChainId]?: ChainId
-}
+  [Key.DappName]: string;
+  [Key.DappUrl]: string;
+  [Key.ChainId]?: ChainId;
+};
 
 export interface DiscoverRequiredPayloads {
-    [DiscoverEvent.DappOpenTap]: DappPayload
-    [DiscoverEvent.DappFavoriteTap]: DappPayload
-    [DiscoverEvent.DappUnfavoriteTap]: DappPayload
-    [DiscoverEvent.DappFilterTap]: {
-        [Key.FilterName]: string
-        [Key.ChainId]?: ChainId
-    }
-    [DiscoverEvent.NewsOpenTap]: { [Key.NewsTitle]: string }
-    [DiscoverEvent.ApplyForVerificationTap]: { [Key.Category]: 'project' }
-    [DiscoverEvent.DappCategoryTap]: {
-        [Key.CategoryName]: string
-        [Key.ChainId]?: ChainId
-    }
-    [DiscoverEvent.DappDetailsButtonTap]: {
-        [Key.DappName]: string
-        [Key.ChainId]?: ChainId
-    }
-    [DiscoverEvent.DetailsCloseTap]: {
-        [Key.DappName]: string
-        [Key.ChainId]?: ChainId
-    }
+  [DiscoverEvent.DappOpenTap]: DappPayload;
+  [DiscoverEvent.DappFavoriteTap]: DappPayload;
+  [DiscoverEvent.DappUnfavoriteTap]: DappPayload;
+  [DiscoverEvent.DappFilterTap]: {
+    [Key.FilterName]: string;
+    [Key.ChainId]?: ChainId;
+  };
+  [DiscoverEvent.NewsOpenTap]: { [Key.NewsTitle]: string };
+  [DiscoverEvent.ApplyForVerificationTap]: { [Key.Category]: "project" };
+  [DiscoverEvent.DappCategoryTap]: {
+    [Key.CategoryName]: string;
+    [Key.ChainId]?: ChainId;
+  };
+  [DiscoverEvent.DappDetailsButtonTap]: {
+    [Key.DappName]: string;
+    [Key.ChainId]?: ChainId;
+  };
+  [DiscoverEvent.DetailsCloseTap]: {
+    [Key.DappName]: string;
+    [Key.ChainId]?: ChainId;
+  };
 }
 
 export interface DiscoverOptionalPayloads {
-    [DiscoverEvent.SearchResultTap]: {
-        [Key.DappName]?: string
-        [Key.DappUrl]?: string
-        [Key.AssetId]?: string
-        [Key.ChainId]?: ChainId
-    }
+  [DiscoverEvent.SearchResultTap]: {
+    [Key.DappName]?: string;
+    [Key.DappUrl]?: string;
+    [Key.AssetId]?: string;
+    [Key.ChainId]?: ChainId;
+  };
 }

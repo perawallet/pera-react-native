@@ -10,40 +10,40 @@
  limitations under the License
  */
 
-import { PWLoadingIndicator, PWScreen, PWView } from '@components/core'
-import { PWWebView } from '@modules/webview/browser'
-import { useDiscoverScreen } from './useDiscoverScreen'
-import { useStyles } from './styles'
+import { PWLoadingIndicator, PWScreen, PWView } from "@components/core";
+import { PWWebView } from "@modules/webview/browser";
+import { useDiscoverScreen } from "./useDiscoverScreen";
+import { useStyles } from "./styles";
 
 export const DiscoverScreen = () => {
-    const styles = useStyles()
-    const { url, isReady } = useDiscoverScreen()
+  const styles = useStyles();
+  const { url, isReady } = useDiscoverScreen();
 
-    return (
-        <PWScreen
-            scroll='never'
-            horizontalPadding='none'
-            // The Discover web app sizes its search modal from a viewport
-            // height snapshotted at load and anchors it to the viewport
-            // bottom; shrinking the WebView with the keyboard pushes the
-            // search input off the top of the screen on Android.
-            // Let the keyboard overlay the page instead, matching iOS.
-            keyboardAvoidance='never'
-            style={styles.container}
-        >
-            {isReady ? (
-                <PWWebView
-                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl plus an isSafeRelativePath path
-                    url={url}
-                    enablePeraConnect={true}
-                    containerStyle={styles.webview}
-                    openExternalLinksInBrowser
-                />
-            ) : (
-                <PWView style={styles.loadingContainer}>
-                    <PWLoadingIndicator />
-                </PWView>
-            )}
-        </PWScreen>
-    )
-}
+  return (
+    <PWScreen
+      scroll="never"
+      horizontalPadding="none"
+      // The Discover web app sizes its search modal from a viewport
+      // height snapshotted at load and anchors it to the viewport
+      // bottom; shrinking the WebView with the keyboard pushes the
+      // search input off the top of the screen on Android.
+      // Let the keyboard overlay the page instead, matching iOS.
+      keyboardAvoidance="never"
+      style={styles.container}
+    >
+      {isReady ? (
+        <PWWebView
+          // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl plus an isSafeRelativePath path
+          url={url}
+          enablePeraConnect={true}
+          containerStyle={styles.webview}
+          openExternalLinksInBrowser
+        />
+      ) : (
+        <PWView style={styles.loadingContainer}>
+          <PWLoadingIndicator />
+        </PWView>
+      )}
+    </PWScreen>
+  );
+};

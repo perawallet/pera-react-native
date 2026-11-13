@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { makeStyles } from "@rneui/themed";
 
-export const useStyles = makeStyles(theme => ({
-    content: {
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-    },
-    date: {
-        color: theme.colors.textGray,
-    },
-    banner: {
-        width: '100%',
-        aspectRatio: 2,
-        borderRadius: theme.spacing.md,
-        backgroundColor: theme.colors.layerGray,
-    },
-    error: {
-        paddingVertical: theme.spacing.xl,
-    },
-}))
+export const useStyles = makeStyles((theme) => ({
+  content: {
+    gap: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
+  },
+  date: {
+    color: theme.colors.textGray,
+  },
+  banner: {
+    width: "100%",
+    aspectRatio: 2,
+    borderRadius: theme.spacing.md,
+    backgroundColor: theme.colors.layerGray,
+  },
+  error: {
+    paddingVertical: theme.spacing.xl,
+  },
+}));

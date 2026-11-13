@@ -10,26 +10,26 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback } from "react";
 import {
-    AnalyticsMetadataKey as Key,
-    DiscoverEvent,
-    trackEvent,
-} from '@analytics'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+  AnalyticsMetadataKey as Key,
+  DiscoverEvent,
+  trackEvent,
+} from "@analytics";
+import { useAppNavigation } from "@hooks/useAppNavigation";
 
-export type OpenNewsItemTarget = { id: string; title: string }
+export type OpenNewsItemTarget = { id: string; title: string };
 
 /** Opens a news item's native detail, tracking the tap as the web news cards do. */
 export const useOpenNewsItem = (): ((item: OpenNewsItemTarget) => void) => {
-    const navigation = useAppNavigation()
-    return useCallback(
-        (item: OpenNewsItemTarget) => {
-            trackEvent(DiscoverEvent.NewsOpenTap, {
-                [Key.NewsTitle]: item.title,
-            })
-            navigation.navigate('DiscoverNewsDetail', { newsId: item.id })
-        },
-        [navigation],
-    )
-}
+  const navigation = useAppNavigation();
+  return useCallback(
+    (item: OpenNewsItemTarget) => {
+      trackEvent(DiscoverEvent.NewsOpenTap, {
+        [Key.NewsTitle]: item.title,
+      });
+      navigation.navigate("DiscoverNewsDetail", { newsId: item.id });
+    },
+    [navigation],
+  );
+};

@@ -11,84 +11,68 @@
  */
 
 import {
-    PWButton,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    type IconName,
-} from '@components/core'
-import { useStyles } from './styles'
+  PWButton,
+  PWIcon,
+  PWText,
+  PWTouchableOpacity,
+  PWView,
+  type IconName,
+} from "@components/core";
+import { useStyles } from "./styles";
 
 export type DiscoverSectionHeaderProps = {
-    title: string
-    icon?: IconName
-    onPress?: () => void
-    action?: { label: string; onPress: () => void; testID?: string }
-    testID?: string
-}
+  title: string;
+  icon?: IconName;
+  onPress?: () => void;
+  action?: { label: string; onPress: () => void; testID?: string };
+  testID?: string;
+};
 
 export const DiscoverSectionHeader = ({
-    title,
-    icon,
-    onPress,
-    action,
-    testID,
+  title,
+  icon,
+  onPress,
+  action,
+  testID,
 }: DiscoverSectionHeaderProps) => {
-    const styles = useStyles()
+  const styles = useStyles();
 
-    const heading = (
-        <>
-            {icon ? (
-                <PWIcon
-                    name={icon}
-                    size='sm'
-                />
-            ) : null}
-            <PWText
-                variant='h3'
-                numberOfLines={1}
-                style={styles.title}
-            >
-                {title}
-            </PWText>
-            {onPress ? (
-                <PWIcon
-                    name='chevron-right'
-                    size='sm'
-                    variant='secondary'
-                />
-            ) : null}
-        </>
-    )
+  const heading = (
+    <>
+      {icon ? <PWIcon name={icon} size="sm" /> : null}
+      <PWText variant="h3" numberOfLines={1} style={styles.title}>
+        {title}
+      </PWText>
+      {onPress ? (
+        <PWIcon name="chevron-right" size="sm" variant="secondary" />
+      ) : null}
+    </>
+  );
 
-    return (
-        <PWView style={styles.header}>
-            {onPress ? (
-                <PWTouchableOpacity
-                    style={styles.heading}
-                    onPress={onPress}
-                    testID={testID}
-                >
-                    {heading}
-                </PWTouchableOpacity>
-            ) : (
-                <PWView
-                    style={styles.heading}
-                    testID={testID}
-                >
-                    {heading}
-                </PWView>
-            )}
-            {action ? (
-                <PWButton
-                    variant='link'
-                    paddingStyle='none'
-                    title={action.label}
-                    onPress={action.onPress}
-                    testID={action.testID}
-                />
-            ) : null}
+  return (
+    <PWView style={styles.header}>
+      {onPress ? (
+        <PWTouchableOpacity
+          style={styles.heading}
+          onPress={onPress}
+          testID={testID}
+        >
+          {heading}
+        </PWTouchableOpacity>
+      ) : (
+        <PWView style={styles.heading} testID={testID}>
+          {heading}
         </PWView>
-    )
-}
+      )}
+      {action ? (
+        <PWButton
+          variant="link"
+          paddingStyle="none"
+          title={action.label}
+          onPress={action.onPress}
+          testID={action.testID}
+        />
+      ) : null}
+    </PWView>
+  );
+};

@@ -10,68 +10,65 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { DiscoverEvent, trackEvent } from '@analytics'
-import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
-import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
-import type { DiscoverDapp } from '../types'
-import { dappEventPayload } from '../utils/discoverAnalytics'
-import { useToggleDiscoverFavorite } from './useToggleDiscoverFavorite'
+import { useCallback } from "react";
+import type { ChainId } from "@perawallet/wallet-core-chain-contract";
+import { logger, type Nullable } from "@perawallet/wallet-core-shared";
+import { DiscoverEvent, trackEvent } from "@analytics";
+import { toValidatedBrowserUrl, useWebView } from "@modules/webview";
+import { useDiscoverFavoritesStore } from "../store/useDiscoverFavoritesStore";
+import type { DiscoverDapp } from "../types";
+import { dappEventPayload } from "../utils/discoverAnalytics";
+import { useToggleDiscoverFavorite } from "./useToggleDiscoverFavorite";
 
 export type UseOpenDappResult = {
-    openDapp: (dapp: DiscoverDapp, chain: Nullable<ChainId>) => void
-    openWebPage: (rawUrl: string) => void
-}
+  openDapp: (dapp: DiscoverDapp, chain: Nullable<ChainId>) => void;
+  openWebPage: (rawUrl: string) => void;
+};
 
 export const useOpenDapp = (): UseOpenDappResult => {
-    const { pushWebView } = useWebView()
-    const toggle = useToggleDiscoverFavorite()
+  const { pushWebView } = useWebView();
+  const toggle = useToggleDiscoverFavorite();
 
-    const openDapp = useCallback(
-        (dapp: DiscoverDapp, chain: Nullable<ChainId>) => {
-            const url = toValidatedBrowserUrl(dapp.url)
-            if (url === null) {
-                logger.warn('Discover refused to open an invalid dApp URL', {
-                    url: dapp.url,
-                })
-                return
-            }
-            trackEvent(DiscoverEvent.DappOpenTap, dappEventPayload(dapp, chain))
-            pushWebView({
-                url,
-                enablePeraConnect: true,
-                favorite: {
-                    initialIsFavorite: useDiscoverFavoritesStore
-                        .getState()
-                        .isFavorite(url),
-                    onToggle: () => {
-                        toggle({ ...dapp, url }, chain)
-                    },
-                },
-            })
+  const openDapp = useCallback(
+    (dapp: DiscoverDapp, chain: Nullable<ChainId>) => {
+      const url = toValidatedBrowserUrl(dapp.url);
+      if (url === null) {
+        logger.warn("Discover refused to open an invalid dApp URL", {
+          url: dapp.url,
+        });
+        return;
+      }
+      trackEvent(DiscoverEvent.DappOpenTap, dappEventPayload(dapp, chain));
+      pushWebView({
+        url,
+        enablePeraConnect: true,
+        favorite: {
+          initialIsFavorite: useDiscoverFavoritesStore
+            .getState()
+            .isFavorite(url),
+          onToggle: () => {
+            toggle({ ...dapp, url }, chain);
+          },
         },
-        [pushWebView, toggle],
-    )
+      });
+    },
+    [pushWebView, toggle],
+  );
 
-    // DuckDuckGo and URL recents: no favorite hook and no event.
-    const openWebPage = useCallback(
-        (rawUrl: string) => {
-            const url = toValidatedBrowserUrl(rawUrl)
-            if (url === null) {
-                logger.warn(
-                    'Discover refused to open an invalid web page URL',
-                    {
-                        url: rawUrl,
-                    },
-                )
-                return
-            }
-            pushWebView({ url, enablePeraConnect: true })
-        },
-        [pushWebView],
-    )
+  // DuckDuckGo and URL recents: no favorite hook and no event.
+  const openWebPage = useCallback(
+    (rawUrl: string) => {
+      const url = toValidatedBrowserUrl(rawUrl);
+      if (url === null) {
+        logger.warn("Discover refused to open an invalid web page URL", {
+          url: rawUrl,
+        });
+        return;
+      }
+      pushWebView({ url, enablePeraConnect: true });
+    },
+    [pushWebView],
+  );
 
-    return { openDapp, openWebPage }
-}
+  return { openDapp, openWebPage };
+};

@@ -10,46 +10,46 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useMemo } from "react";
 import {
-    useDiscoverProjectsQuery,
-    type PeraProject,
-} from '@perawallet/wallet-core-projects'
-import { discoverPlatform } from '../utils/discoverPlatform'
-import { verifiedDappUrls } from '../utils/toDiscoverDapp'
-import { useDiscoverCaip2s } from './useDiscoverCaip2s'
-import { useDiscoverChainIds } from './useDiscoverChainIds'
+  useDiscoverProjectsQuery,
+  type PeraProject,
+} from "@perawallet/wallet-core-projects";
+import { discoverPlatform } from "../utils/discoverPlatform";
+import { verifiedDappUrls } from "../utils/toDiscoverDapp";
+import { useDiscoverCaip2s } from "./useDiscoverCaip2s";
+import { useDiscoverChainIds } from "./useDiscoverChainIds";
 
-export type UseDiscoverDirectoryParams = { isEnabled?: boolean }
+export type UseDiscoverDirectoryParams = { isEnabled?: boolean };
 
 export type UseDiscoverDirectoryResult = {
-    projects: PeraProject[]
-    verifiedUrls: ReadonlySet<string>
-    isLoading: boolean
-    isError: boolean
-    isFetching: boolean
-    refetch: () => Promise<unknown>
-}
+  projects: PeraProject[];
+  verifiedUrls: ReadonlySet<string>;
+  isLoading: boolean;
+  isError: boolean;
+  isFetching: boolean;
+  refetch: () => Promise<unknown>;
+};
 
 // The every-discover-chain project list that search filters locally. Home
 // queries per chain chip instead, so the two use different query keys.
 export const useDiscoverDirectory = ({
-    isEnabled = true,
+  isEnabled = true,
 }: UseDiscoverDirectoryParams = {}): UseDiscoverDirectoryResult => {
-    const caip2s = useDiscoverCaip2s(useDiscoverChainIds())
-    const query = useDiscoverProjectsQuery({
-        platform: discoverPlatform(),
-        chains: caip2s,
-        isEnabled: isEnabled && caip2s.length > 0,
-    })
-    const projects = useMemo(() => query.data ?? [], [query.data])
-    const verifiedUrls = useMemo(() => verifiedDappUrls(projects), [projects])
-    return {
-        projects,
-        verifiedUrls,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        isFetching: query.isFetching,
-        refetch: query.refetch,
-    }
-}
+  const caip2s = useDiscoverCaip2s(useDiscoverChainIds());
+  const query = useDiscoverProjectsQuery({
+    platform: discoverPlatform(),
+    chains: caip2s,
+    isEnabled: isEnabled && caip2s.length > 0,
+  });
+  const projects = useMemo(() => query.data ?? [], [query.data]);
+  const verifiedUrls = useMemo(() => verifiedDappUrls(projects), [projects]);
+  return {
+    projects,
+    verifiedUrls,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    isFetching: query.isFetching,
+    refetch: query.refetch,
+  };
+};

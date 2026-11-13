@@ -10,29 +10,27 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { describe, expect, it, vi } from "vitest";
+import { renderHook } from "@testing-library/react";
 
-const mocks = vi.hoisted(() => ({ isNativeDiscover: false }))
+const mocks = vi.hoisted(() => ({ isNativeDiscover: false }));
 
-vi.mock('@hooks/useIsNativeDiscover', () => ({
-    useIsNativeDiscover: () => mocks.isNativeDiscover,
-}))
+vi.mock("@hooks/useIsNativeDiscover", () => ({
+  useIsNativeDiscover: () => mocks.isNativeDiscover,
+}));
 
-import { useDiscoverTabScreen } from '../useDiscoverTabScreen'
+import { useDiscoverTabScreen } from "../useDiscoverTabScreen";
 
-describe('useDiscoverTabScreen', () => {
-    it('keeps the Discover web app on an Algorand-only build', () => {
-        mocks.isNativeDiscover = false
-        expect(renderHook(useDiscoverTabScreen).result.current.isNative).toBe(
-            false,
-        )
-    })
+describe("useDiscoverTabScreen", () => {
+  it("keeps the Discover web app on an Algorand-only build", () => {
+    mocks.isNativeDiscover = false;
+    expect(renderHook(useDiscoverTabScreen).result.current.isNative).toBe(
+      false,
+    );
+  });
 
-    it('shows the native Discover on a multichain build', () => {
-        mocks.isNativeDiscover = true
-        expect(renderHook(useDiscoverTabScreen).result.current.isNative).toBe(
-            true,
-        )
-    })
-})
+  it("shows the native Discover on a multichain build", () => {
+    mocks.isNativeDiscover = true;
+    expect(renderHook(useDiscoverTabScreen).result.current.isNative).toBe(true);
+  });
+});

@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { DiscoverNewsDetailScreen } from './DiscoverNewsDetailScreen'
+export { DiscoverNewsDetailScreen } from "./DiscoverNewsDetailScreen";

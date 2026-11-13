@@ -10,68 +10,64 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { articleRunStyle } from '../articleRunStyle'
+import { describe, expect, it } from "vitest";
+import { articleRunStyle } from "../articleRunStyle";
 
-const run = (marks: Partial<Record<'bold' | 'italic' | 'code', boolean>>) => ({
-    type: 'text' as const,
-    value: 'x',
-    bold: false,
-    italic: false,
-    code: false,
-    ...marks,
-})
+const run = (marks: Partial<Record<"bold" | "italic" | "code", boolean>>) => ({
+  type: "text" as const,
+  value: "x",
+  bold: false,
+  italic: false,
+  code: false,
+  ...marks,
+});
 
-describe('articleRunStyle', () => {
-    it('leaves an unmarked run plain so it inherits its block or link', () => {
-        expect(articleRunStyle(run({}), 'h3', false)).toEqual({ plain: true })
-        expect(articleRunStyle(run({}), 'body', true)).toEqual({ plain: true })
-    })
+describe("articleRunStyle", () => {
+  it("leaves an unmarked run plain so it inherits its block or link", () => {
+    expect(articleRunStyle(run({}), "h3", false)).toEqual({ plain: true });
+    expect(articleRunStyle(run({}), "body", true)).toEqual({ plain: true });
+  });
 
-    it('keeps the block variant for bold and italic, changing only weight or slant', () => {
-        expect(articleRunStyle(run({ bold: true }), 'h3', false)).toEqual({
-            plain: false,
-            variant: 'h3',
-            weight: 700,
-            italic: false,
-            link: false,
-        })
-        expect(articleRunStyle(run({ italic: true }), 'body', false)).toEqual({
-            plain: false,
-            variant: 'body',
-            weight: undefined,
-            italic: true,
-            link: false,
-        })
-    })
+  it("keeps the block variant for bold and italic, changing only weight or slant", () => {
+    expect(articleRunStyle(run({ bold: true }), "h3", false)).toEqual({
+      plain: false,
+      variant: "h3",
+      weight: 700,
+      italic: false,
+      link: false,
+    });
+    expect(articleRunStyle(run({ italic: true }), "body", false)).toEqual({
+      plain: false,
+      variant: "body",
+      weight: undefined,
+      italic: true,
+      link: false,
+    });
+  });
 
-    it('uses the mono variant for code', () => {
-        expect(articleRunStyle(run({ code: true }), 'h2', false)).toMatchObject(
-            {
-                variant: 'mono',
-            },
-        )
-    })
+  it("uses the mono variant for code", () => {
+    expect(articleRunStyle(run({ code: true }), "h2", false)).toMatchObject({
+      variant: "mono",
+    });
+  });
 
-    it('never gives a code run a weight, since a weight swaps the mono family out', () => {
-        expect(
-            articleRunStyle(run({ code: true, bold: true }), 'h4', false, 700),
-        ).toMatchObject({ variant: 'mono', weight: undefined })
-    })
+  it("never gives a code run a weight, since a weight swaps the mono family out", () => {
+    expect(
+      articleRunStyle(run({ code: true, bold: true }), "h4", false, 700),
+    ).toMatchObject({ variant: "mono", weight: undefined });
+  });
 
-    it("keeps the block's own weight on an italic run inside a bold heading", () => {
-        expect(
-            articleRunStyle(run({ italic: true }), 'h4', false, 700),
-        ).toMatchObject({ variant: 'h4', weight: 700, italic: true })
-    })
+  it("keeps the block's own weight on an italic run inside a bold heading", () => {
+    expect(
+      articleRunStyle(run({ italic: true }), "h4", false, 700),
+    ).toMatchObject({ variant: "h4", weight: 700, italic: true });
+  });
 
-    it('keeps the link colour on a marked run inside a link', () => {
-        expect(
-            articleRunStyle(run({ bold: true }), 'body', true),
-        ).toMatchObject({
-            variant: 'body',
-            weight: 700,
-            link: true,
-        })
-    })
-})
+  it("keeps the link colour on a marked run inside a link", () => {
+    expect(articleRunStyle(run({ bold: true }), "body", true)).toMatchObject({
+      variant: "body",
+      weight: 700,
+      link: true,
+    });
+  });
+});

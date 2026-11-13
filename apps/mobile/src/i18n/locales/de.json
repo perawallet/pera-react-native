@@ -85,6 +85,16 @@
                 "create": "Erstellen",
                 "save": "Speichern"
             }
+        },
+        "favorites": {
+            "title": "Favoriten",
+            "new_folder": "Neuer Ordner",
+            "all_favorites": "Alle Favoriten",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Alle anzeigen",
+            "empty_title": "Noch keine Favoriten",
+            "empty_body": "Entdecke die dApps"
         }
     },
     "account_menu": {

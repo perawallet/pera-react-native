@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-export { DiscoverDetailScreen } from '../screens/DiscoverDetailScreen'
-export { DiscoverSearchScreen } from '../screens/DiscoverSearchScreen'
-export { DiscoverNewsScreen } from '../screens/DiscoverNewsScreen'
-export { DiscoverNewsDetailScreen } from '../screens/DiscoverNewsDetailScreen'
-export { DiscoverDappsScreen } from '../screens/DiscoverDappsScreen'
-export { DiscoverHomeScreen } from '../screens/DiscoverHomeScreen'
-export { DiscoverTabScreen } from '../screens/DiscoverTabScreen'
+export { DiscoverDetailScreen } from "../screens/DiscoverDetailScreen";
+export { DiscoverSearchScreen } from "../screens/DiscoverSearchScreen";
+export { DiscoverNewsScreen } from "../screens/DiscoverNewsScreen";
+export { DiscoverNewsDetailScreen } from "../screens/DiscoverNewsDetailScreen";
+export { DiscoverDappsScreen } from "../screens/DiscoverDappsScreen";
+export { DiscoverHomeScreen } from "../screens/DiscoverHomeScreen";
+export { DiscoverTabScreen } from "../screens/DiscoverTabScreen";

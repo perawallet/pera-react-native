@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { getActiveLocale } from '@perawallet/wallet-core-shared'
+import { getActiveLocale } from "@perawallet/wallet-core-shared";
 
 /** The spec's `dd MMM yyyy`, with the parts ordered per locale. */
 export const formatNewsDate = (date: Date): string => {
-    // Intl throws a RangeError on an invalid date.
-    if (Number.isNaN(date.getTime())) return ''
-    return new Intl.DateTimeFormat(getActiveLocale(), {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    }).format(date)
-}
+  // Intl throws a RangeError on an invalid date.
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(getActiveLocale(), {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+};

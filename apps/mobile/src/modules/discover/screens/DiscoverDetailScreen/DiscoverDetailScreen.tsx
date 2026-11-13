@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { PWLoadingIndicator, PWScreen, PWView } from '@components/core'
-import { PWWebView } from '@modules/webview/browser'
-import { useDiscoverDetailScreen } from './useDiscoverDetailScreen'
-import { useStyles } from './styles'
+import { PWLoadingIndicator, PWScreen, PWView } from "@components/core";
+import { PWWebView } from "@modules/webview/browser";
+import { useDiscoverDetailScreen } from "./useDiscoverDetailScreen";
+import { useStyles } from "./styles";
 
 /**
  * A Discover page pushed over the current screen (unlike the Discover tab,
@@ -21,30 +21,26 @@ import { useStyles } from './styles'
  * the back button; the page's own back/close bridge calls pop the screen too.
  */
 export const DiscoverDetailScreen = () => {
-    const styles = useStyles()
-    const { url, isReady, handleBack } = useDiscoverDetailScreen()
+  const styles = useStyles();
+  const { url, isReady, handleBack } = useDiscoverDetailScreen();
 
-    return (
-        <PWScreen
-            scroll='never'
-            horizontalPadding='none'
-            style={styles.container}
-        >
-            {isReady ? (
-                <PWWebView
-                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl plus an isSafeRelativePath path
-                    url={url}
-                    enablePeraConnect={true}
-                    containerStyle={styles.webview}
-                    openExternalLinksInBrowser
-                    onBack={handleBack}
-                    onClose={handleBack}
-                />
-            ) : (
-                <PWView style={styles.loadingContainer}>
-                    <PWLoadingIndicator />
-                </PWView>
-            )}
-        </PWScreen>
-    )
-}
+  return (
+    <PWScreen scroll="never" horizontalPadding="none" style={styles.container}>
+      {isReady ? (
+        <PWWebView
+          // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl plus an isSafeRelativePath path
+          url={url}
+          enablePeraConnect={true}
+          containerStyle={styles.webview}
+          openExternalLinksInBrowser
+          onBack={handleBack}
+          onClose={handleBack}
+        />
+      ) : (
+        <PWView style={styles.loadingContainer}>
+          <PWLoadingIndicator />
+        </PWView>
+      )}
+    </PWScreen>
+  );
+};

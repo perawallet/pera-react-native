@@ -10,51 +10,52 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DiscoverEvent, trackEvent } from '@analytics'
-import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
-import type { DiscoverDapp } from '../../types'
-import { useToggleDiscoverFavorite } from '../useToggleDiscoverFavorite'
+import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DiscoverEvent, trackEvent } from "@analytics";
+import { useDiscoverFavoritesStore } from "../../store/useDiscoverFavoritesStore";
+import type { DiscoverDapp } from "../../types";
+import { useToggleDiscoverFavorite } from "../useToggleDiscoverFavorite";
 
-vi.mock('@analytics', async () => ({
-    ...(await vi.importActual<object>('@analytics')),
-    trackEvent: vi.fn(),
-}))
+vi.mock("@analytics", async () => ({
+  ...(await vi.importActual<object>("@analytics")),
+  trackEvent: vi.fn(),
+}));
 
 const dapp: DiscoverDapp = {
-    url: 'https://a.io',
-    name: 'A',
-    logo: null,
-    categories: [],
-    chains: [],
-}
+  url: "https://a.io",
+  name: "A",
+  logo: null,
+  categories: [],
+  chains: [],
+};
 
-describe('useToggleDiscoverFavorite', () => {
-    beforeEach(() => {
-        useDiscoverFavoritesStore.setState({ favorites: {}, favoriteOrder: [] })
-        vi.mocked(trackEvent).mockClear()
-    })
+describe("useToggleDiscoverFavorite", () => {
+  beforeEach(() => {
+    useDiscoverFavoritesStore.setState({ favorites: {}, favoriteOrder: [] });
+    vi.mocked(trackEvent).mockClear();
+  });
 
-    it('favorites then unfavorites, tracking each', () => {
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        expect(result.current(dapp, 'algorand')).toBe(true)
-        expect(trackEvent).toHaveBeenLastCalledWith(
-            DiscoverEvent.DappFavoriteTap,
-            { dapp_name: 'A', dapp_url: 'https://a.io', chain_id: 'algorand' },
-        )
-        expect(result.current(dapp, 'algorand')).toBe(false)
-        expect(trackEvent).toHaveBeenLastCalledWith(
-            DiscoverEvent.DappUnfavoriteTap,
-            { dapp_name: 'A', dapp_url: 'https://a.io', chain_id: 'algorand' },
-        )
-    })
+  it("favorites then unfavorites, tracking each", () => {
+    const { result } = renderHook(() => useToggleDiscoverFavorite());
+    expect(result.current(dapp, "algorand")).toBe(true);
+    expect(trackEvent).toHaveBeenLastCalledWith(DiscoverEvent.DappFavoriteTap, {
+      dapp_name: "A",
+      dapp_url: "https://a.io",
+      chain_id: "algorand",
+    });
+    expect(result.current(dapp, "algorand")).toBe(false);
+    expect(trackEvent).toHaveBeenLastCalledWith(
+      DiscoverEvent.DappUnfavoriteTap,
+      { dapp_name: "A", dapp_url: "https://a.io", chain_id: "algorand" },
+    );
+  });
 
-    it('leaves chain_id out when no chain is selected', () => {
-        const { result } = renderHook(() => useToggleDiscoverFavorite())
-        result.current(dapp, null)
-        const payload = vi.mocked(trackEvent).mock.calls[0]?.[1]
-        expect(payload).toEqual({ dapp_name: 'A', dapp_url: 'https://a.io' })
-        expect(payload).not.toHaveProperty('chain_id')
-    })
-})
+  it("leaves chain_id out when no chain is selected", () => {
+    const { result } = renderHook(() => useToggleDiscoverFavorite());
+    result.current(dapp, null);
+    const payload = vi.mocked(trackEvent).mock.calls[0]?.[1];
+    expect(payload).toEqual({ dapp_name: "A", dapp_url: "https://a.io" });
+    expect(payload).not.toHaveProperty("chain_id");
+  });
+});

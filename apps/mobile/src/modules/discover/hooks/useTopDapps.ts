@@ -10,55 +10,55 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useDiscoverProjectsQuery } from '@perawallet/wallet-core-projects'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { DiscoverDapp } from '../types'
-import { discoverPlatform } from '../utils/discoverPlatform'
+import { useMemo } from "react";
+import type { ChainId } from "@perawallet/wallet-core-chain-contract";
+import { useDiscoverProjectsQuery } from "@perawallet/wallet-core-projects";
+import type { Nullable } from "@perawallet/wallet-core-shared";
+import type { DiscoverDapp } from "../types";
+import { discoverPlatform } from "../utils/discoverPlatform";
 import {
-    toDiscoverDapp,
-    uniqueDappsByUrl,
-    verifiedDappUrls,
-} from '../utils/toDiscoverDapp'
-import { useDiscoverCaip2s } from './useDiscoverCaip2s'
+  toDiscoverDapp,
+  uniqueDappsByUrl,
+  verifiedDappUrls,
+} from "../utils/toDiscoverDapp";
+import { useDiscoverCaip2s } from "./useDiscoverCaip2s";
 
-const TOP_DAPPS_COUNT = 4
+const TOP_DAPPS_COUNT = 4;
 
 export type UseTopDappsResult = {
-    dapps: DiscoverDapp[]
-    verifiedUrls: ReadonlySet<string>
-    isLoading: boolean
-    isError: boolean
-    refetch: () => Promise<unknown>
-}
+  dapps: DiscoverDapp[];
+  verifiedUrls: ReadonlySet<string>;
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => Promise<unknown>;
+};
 
 export const useTopDapps = (chainId: Nullable<ChainId>): UseTopDappsResult => {
-    const caip2s = useDiscoverCaip2s(chainId ? [chainId] : [])
-    const query = useDiscoverProjectsQuery({
-        platform: discoverPlatform(),
-        chains: caip2s,
-        isEnabled: caip2s.length > 0,
-    })
-    const dapps = useMemo(
-        () =>
-            uniqueDappsByUrl(
-                (query.data ?? []).flatMap(project => {
-                    const dapp = toDiscoverDapp(project)
-                    return dapp === null ? [] : [dapp]
-                }),
-            ).slice(0, TOP_DAPPS_COUNT),
-        [query.data],
-    )
-    const verifiedUrls = useMemo(
-        () => verifiedDappUrls(query.data ?? []),
-        [query.data],
-    )
-    return {
-        dapps,
-        verifiedUrls,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        refetch: () => query.refetch(),
-    }
-}
+  const caip2s = useDiscoverCaip2s(chainId ? [chainId] : []);
+  const query = useDiscoverProjectsQuery({
+    platform: discoverPlatform(),
+    chains: caip2s,
+    isEnabled: caip2s.length > 0,
+  });
+  const dapps = useMemo(
+    () =>
+      uniqueDappsByUrl(
+        (query.data ?? []).flatMap((project) => {
+          const dapp = toDiscoverDapp(project);
+          return dapp === null ? [] : [dapp];
+        }),
+      ).slice(0, TOP_DAPPS_COUNT),
+    [query.data],
+  );
+  const verifiedUrls = useMemo(
+    () => verifiedDappUrls(query.data ?? []),
+    [query.data],
+  );
+  return {
+    dapps,
+    verifiedUrls,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: () => query.refetch(),
+  };
+};

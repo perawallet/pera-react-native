@@ -85,6 +85,16 @@
                 "create": "Criar",
                 "save": "Salvar"
             }
+        },
+        "favorites": {
+            "title": "Favoritos",
+            "new_folder": "Nova pasta",
+            "all_favorites": "Todos os favoritos",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Ver tudo",
+            "empty_title": "Nenhum favorito ainda",
+            "empty_body": "Comece a explorar os dApps"
         }
     },
     "account_menu": {

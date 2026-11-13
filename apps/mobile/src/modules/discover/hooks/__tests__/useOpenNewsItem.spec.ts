@@ -10,39 +10,39 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DiscoverEvent, trackEvent } from '@analytics'
-import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useOpenNewsItem } from '../useOpenNewsItem'
+import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DiscoverEvent, trackEvent } from "@analytics";
+import { useAppNavigation } from "@hooks/useAppNavigation";
+import { useOpenNewsItem } from "../useOpenNewsItem";
 
-vi.mock('@analytics', async () => ({
-    ...(await vi.importActual<object>('@analytics')),
-    trackEvent: vi.fn(),
-}))
-vi.mock('@hooks/useAppNavigation', () => ({ useAppNavigation: vi.fn() }))
+vi.mock("@analytics", async () => ({
+  ...(await vi.importActual<object>("@analytics")),
+  trackEvent: vi.fn(),
+}));
+vi.mock("@hooks/useAppNavigation", () => ({ useAppNavigation: vi.fn() }));
 
-const navigate = vi.fn()
+const navigate = vi.fn();
 
-describe('useOpenNewsItem', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        vi.mocked(useAppNavigation).mockReturnValue({ navigate } as never)
-    })
+describe("useOpenNewsItem", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAppNavigation).mockReturnValue({ navigate } as never);
+  });
 
-    it('tracks the tap with the title and opens the native detail', () => {
-        // Arrange
-        const { result } = renderHook(() => useOpenNewsItem())
+  it("tracks the tap with the title and opens the native detail", () => {
+    // Arrange
+    const { result } = renderHook(() => useOpenNewsItem());
 
-        // Act
-        result.current({ id: '7', title: 'Hello' })
+    // Act
+    result.current({ id: "7", title: "Hello" });
 
-        // Assert
-        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.NewsOpenTap, {
-            news_title: 'Hello',
-        })
-        expect(navigate).toHaveBeenCalledWith('DiscoverNewsDetail', {
-            newsId: '7',
-        })
-    })
-})
+    // Assert
+    expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.NewsOpenTap, {
+      news_title: "Hello",
+    });
+    expect(navigate).toHaveBeenCalledWith("DiscoverNewsDetail", {
+      newsId: "7",
+    });
+  });
+});

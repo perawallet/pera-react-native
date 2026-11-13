@@ -11,6 +11,6 @@
  */
 
 export {
-    DiscoverSectionHeader,
-    type DiscoverSectionHeaderProps,
-} from './DiscoverSectionHeader'
+  DiscoverSectionHeader,
+  type DiscoverSectionHeaderProps,
+} from "./DiscoverSectionHeader";

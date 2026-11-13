@@ -10,81 +10,67 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from "@perawallet/wallet-core-shared";
 import {
-    PWIcon,
-    PWImage,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
+  PWIcon,
+  PWImage,
+  PWText,
+  PWTouchableOpacity,
+  PWView,
+} from "@components/core";
+import { useLanguage } from "@hooks/useLanguage";
+import { useStyles } from "./styles";
 
 export type NewsCardProps = {
-    title: string
-    banner: Nullable<string>
-    dateDisplay: string
-    /** Left out until the card has a native destination; the card is then inert. */
-    onPress?: () => void
-    /** The full-width list card's "Read" cue, as the web news list. */
-    showReadAction?: boolean
-    testID?: string
-}
+  title: string;
+  banner: Nullable<string>;
+  dateDisplay: string;
+  /** Left out until the card has a native destination; the card is then inert. */
+  onPress?: () => void;
+  /** The full-width list card's "Read" cue, as the web news list. */
+  showReadAction?: boolean;
+  testID?: string;
+};
 
 export const NewsCard = ({
-    title,
-    banner,
-    dateDisplay,
-    onPress,
-    showReadAction = false,
-    testID,
+  title,
+  banner,
+  dateDisplay,
+  onPress,
+  showReadAction = false,
+  testID,
 }: NewsCardProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
+  const styles = useStyles();
+  const { t } = useLanguage();
 
-    return (
-        <PWTouchableOpacity
-            style={styles.card}
-            onPress={onPress}
-            disabled={onPress === undefined}
-            testID={testID}
-        >
-            {banner ? (
-                <PWImage
-                    source={{ uri: banner }}
-                    style={styles.banner}
-                />
-            ) : (
-                <PWView style={styles.banner} />
-            )}
-            <PWView style={styles.body}>
-                <PWText
-                    variant='h4'
-                    numberOfLines={2}
-                >
-                    {title}
-                </PWText>
-                <PWView style={styles.footer}>
-                    <PWText
-                        variant='caption'
-                        style={styles.date}
-                    >
-                        {dateDisplay}
-                    </PWText>
-                    {showReadAction ? (
-                        <PWView style={styles.read}>
-                            <PWText variant='captionMedium'>
-                                {t('discover.news.read')}
-                            </PWText>
-                            <PWIcon
-                                name='chevron-right'
-                                size='xs'
-                            />
-                        </PWView>
-                    ) : null}
-                </PWView>
+  return (
+    <PWTouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      disabled={onPress === undefined}
+      testID={testID}
+    >
+      {banner ? (
+        <PWImage source={{ uri: banner }} style={styles.banner} />
+      ) : (
+        <PWView style={styles.banner} />
+      )}
+      <PWView style={styles.body}>
+        <PWText variant="h4" numberOfLines={2}>
+          {title}
+        </PWText>
+        <PWView style={styles.footer}>
+          <PWText variant="caption" style={styles.date}>
+            {dateDisplay}
+          </PWText>
+          {showReadAction ? (
+            <PWView style={styles.read}>
+              <PWText variant="captionMedium">{t("discover.news.read")}</PWText>
+              <PWIcon name="chevron-right" size="xs" />
             </PWView>
-        </PWTouchableOpacity>
-    )
-}
+          ) : null}
+        </PWView>
+      </PWView>
+    </PWTouchableOpacity>
+  );
+};

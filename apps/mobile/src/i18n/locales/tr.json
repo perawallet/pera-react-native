@@ -85,6 +85,16 @@
                 "create": "Oluştur",
                 "save": "Kaydet"
             }
+        },
+        "favorites": {
+            "title": "Favoriler",
+            "new_folder": "Yeni klasör",
+            "all_favorites": "Tüm favoriler",
+            "dapp_count": "{{count}} dApp",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Tümünü gör",
+            "empty_title": "Henüz favorin yok",
+            "empty_body": "dApp'leri keşfetmeye başla"
         }
     },
     "account_menu": {

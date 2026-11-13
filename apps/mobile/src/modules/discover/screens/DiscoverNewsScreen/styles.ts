@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { makeStyles } from "@rneui/themed";
 
-export const useStyles = makeStyles(theme => ({
-    list: {
-        paddingVertical: theme.spacing.md,
-    },
-    empty: {
-        paddingVertical: theme.spacing.lg,
-    },
-    skeleton: {
-        gap: theme.spacing.md,
-        paddingTop: theme.spacing.md,
-    },
-}))
+export const useStyles = makeStyles((theme) => ({
+  list: {
+    paddingVertical: theme.spacing.md,
+  },
+  empty: {
+    paddingVertical: theme.spacing.lg,
+  },
+  skeleton: {
+    gap: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+  },
+}));

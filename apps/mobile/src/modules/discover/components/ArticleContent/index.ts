@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { ArticleContent, type ArticleContentProps } from './ArticleContent'
+export { ArticleContent, type ArticleContentProps } from "./ArticleContent";
