@@ -3489,10 +3489,7 @@
     "signing": {
         "view_details": "Transaktionsdetails anzeigen",
         "balance_impact": {
-            "receive_title": "Du erhältst",
-            "spend_title": "Du gibst aus",
             "analyzing": "Transaktion wird analysiert…",
-            "unavailable": "Auswirkung auf das Guthaben kann nicht angezeigt werden — prüfe die Transaktionsdetails sorgfältig, bevor du signierst.",
             "entire_balance": "Gesamtes {{unit}}-Guthaben",
             "closes_balance": "Dein gesamtes verbleibendes Guthaben wird gesendet",
             "new_asset": "Neues Asset, erstellt durch diese Transaktion"
@@ -3566,8 +3563,7 @@
             "multiple_transactions_title": "Mehrere Transaktionen",
             "transactions_count_one": "{{count}} Transaktion",
             "transactions_count_other": "{{count}} Transaktionen",
-            "details": "Transaktionsdetails",
-            "signing_with": "Signierendes Konto"
+            "details": "Transaktionsdetails"
         },
         "external_transaction": {
             "pill_label": "Signiert",
@@ -3651,8 +3647,54 @@
             "reason": "Grund des Contracts: „{{reason}}“"
         },
         "review_warnings": {
-            "summary": "{{count}} Dinge zu prüfen",
             "acknowledge": "Ich verstehe die Risiken und möchte trotzdem signieren"
+        },
+        "review": {
+            "caution_title": "Prüfe diese Anfrage genau",
+            "changes_note": "Beträge können sich bis zur Ausführung deiner Transaktion leicht ändern.",
+            "changes_title": "Geschätzte Änderungen in deiner Wallet",
+            "fee_max": "Bis zu <0/> · bezahlt in {{symbol}}",
+            "network_fee": "Netzwerkgebühr",
+            "nothing": "Nichts",
+            "nothing_back_body": "Assets verlassen deine Wallet und nichts kommt zurück. Fahre nur fort, wenn du das erwartest.",
+            "nothing_back_title": "Du bekommst nichts zurück",
+            "permission_collection": "Alle deine {{collection}}-NFTs",
+            "permission_collection_note": "Damit kann jedes NFT dieser Sammlung in deinem Besitz bewegt werden, jetzt und später, bis du diese Berechtigung entfernst.",
+            "permission_no_change": "Mit dieser Transaktion verlassen keine Token deine Wallet.",
+            "permission_revoke": "{{spender}} darf nicht mehr ausgeben",
+            "permission_spender": "{{spender}} darf ausgeben",
+            "permission_title": "Berechtigung, die du erteilst",
+            "permission_token": "{{collection}} #{{tokenId}}",
+            "permission_unlimited": "Unbegrenzt {{symbol}}",
+            "permission_unlimited_note": "Unbegrenzt heißt: Damit kann dein gesamtes {{symbol}} bewegt werden, jetzt und später, bis du diese Berechtigung entfernst.",
+            "preview_unavailable_body": "Normalerweise zeigen wir genau, was deine Wallet verlässt und was hinzukommt. Diesmal geht das nicht, prüfe die Anfrage also genau.",
+            "preview_unavailable_tip": "Fahre nur fort, wenn du das selbst auf {{host}} gestartet hast.",
+            "preview_unavailable_tip_generic": "Fahre nur fort, wenn du das selbst gestartet hast.",
+            "preview_unavailable_title": "Vorschau nicht möglich",
+            "technical_details": "Technische Details",
+            "technical_details_evm": "Smart Contract, Funktion und Gebührenaufschlüsselung",
+            "title_approve": "Freigeben",
+            "title_clawback": "Clawback",
+            "title_contract_interaction": "Smart-Contract-Interaktion",
+            "token_contract": "{{symbol}}-Token-Contract",
+            "unverified": "Nicht verifiziert",
+            "you_receive": "Du erhältst",
+            "you_send": "Du sendest",
+            "scroll_hint": "Scrolle für mehr",
+            "analyzing": "Anfrage wird analysiert…",
+            "holder": "Entnommen von",
+            "technical_details_generic": "Transaktionsdaten und Gebührenaufschlüsselung",
+            "net_change": "Nettoänderung",
+            "net_change_same": "Etwa gleicher Wert"
+        },
+        "technical": {
+            "interacting_with": "Womit du interagierst",
+            "contract": "Smart Contract",
+            "contract_help": "Der Code, an den du diese Transaktion sendest.",
+            "not_decoded": "Pera konnte diese Funktion nicht entschlüsseln und zeigt daher den rohen Selektor.",
+            "known_match": "Bekannter Smart Contract · passt zu {{domain}}",
+            "amount_sent": "Gesendeter Betrag",
+            "transaction": "Transaktion"
         }
     },
     "site_safety": {
@@ -3755,17 +3797,12 @@
             "nft_fallback": "{{collection}} · Token-ID {{tokenId}}"
         },
         "contract_call": {
-            "advanced": "Erweitert",
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",
             "function_selector": "Funktionsselektor",
             "call_data": "Aufrufdaten",
             "function": "Funktion",
-            "arguments": "Argumente",
             "argument_index": "Argument {{index}}",
             "implementation": "Implementierung",
-            "known_source": "Benannt nach dem öffentlichen Quellcode des Smart Contracts.",
-            "known_source_proxy": "Dieser Smart Contract ist ein Proxy. Benannt nach dem öffentlichen Quellcode des Smart Contracts, an den er weiterleitet.",
-            "lookup_failed": "Pera konnte den Funktionsnamen dieses Smart Contracts nicht abrufen.",
             "unchecked_warning": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du {{domain}} vertraust.",
             "unchecked_warning_no_source": "Pera konnte nicht prüfen, was diese Transaktion bewirkt. Fahre nur fort, wenn du der App vertraust, die sie gesendet hat."
         },
@@ -3889,11 +3926,6 @@
             "transactions_count_other": "{{count}} Transaktionen"
         },
         "summary": {
-            "payment_to": "Zahlung an",
-            "opt_in": "Asset-Opt-in für {{asset}} zu",
-            "opt_out": "Asset-Opt-out für {{asset}} von",
-            "transfer": "Asset-Übertragung von {{asset}} an",
-            "clawback": "Asset-Clawback von {{asset}} von",
             "app_id": "Anwendungs-ID: {{id}}"
         },
         "filter": {
@@ -4997,23 +5029,13 @@
             "max_priority_fee_per_gas": "Max. Prioritätsgebühr pro Gas"
         },
         "known_contract": {
-            "title": "Smart Contract",
-            "badge": "Bekannter Smart Contract",
-            "matches_site": "Entspricht {{domain}}"
+            "badge": "Bekannter Smart Contract"
         },
         "review_warnings": {
             "high_fee_title": "Ungewöhnlich hohe Netzwerkgebühr",
             "high_fee_body": "{{domain}} hat die Gebühr dieser Transaktion auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger.",
             "high_fee_body_no_source": "Die App, die das gesendet hat, hat die Gebühr auf mehr als das Doppelte dessen gesetzt, was Pera in der Einstellung „Schnell“ verwenden würde. Du zahlst höchstens <0/> (maximale Gebühr), meist weniger."
         },
-        "simulation": {
-            "title": "Geschätzte Änderungen",
-            "estimate_note": "Geschätzt anhand des neuesten Blocks. Das Ergebnis kann sich ändern, bevor deine Transaktion aufgenommen wird.",
-            "approvals_title": "Genehmigungen",
-            "revoke_title": "Berechtigung zur Nutzung deiner {{asset}} entfernen",
-            "revoke_title_assets": "Berechtigung zur Nutzung deiner Assets entfernen",
-            "no_changes": "Es werden keine Änderungen an deinem Guthaben oder deinen Genehmigungen erwartet.",
-            "unavailable": "Diese Transaktion konnte nicht simuliert werden. Prüfe sie sorgfältig, bevor du signierst."
-        }
+        "simulation": {}
     }
 }

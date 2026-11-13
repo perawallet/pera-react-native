@@ -34,6 +34,7 @@ export const EthereumTransactionDetailBody = ({
     return (
         <TransactionDetailLayout
             summary={summary}
+            isHeroShown={summary.status !== undefined}
             chainSection={
                 <EthereumTransactionDetailSection
                     presentation={presentation}

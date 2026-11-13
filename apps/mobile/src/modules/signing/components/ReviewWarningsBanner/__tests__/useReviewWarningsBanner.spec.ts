@@ -41,16 +41,6 @@ describe('useReviewWarningsBanner', () => {
         })
     })
 
-    it('shows a single item in full and folds two or more', () => {
-        const one = renderHook(() => useReviewWarningsBanner([item('a')]))
-        const two = renderHook(() =>
-            useReviewWarningsBanner([item('a'), item('b')]),
-        )
-
-        expect(one.result.current.isCollapsible).toBe(false)
-        expect(two.result.current.isCollapsible).toBe(true)
-    })
-
     it('leaves Confirm alone when every item is advisory', () => {
         const { result } = renderHook(() =>
             useReviewWarningsBanner([item('a'), item('b')]),

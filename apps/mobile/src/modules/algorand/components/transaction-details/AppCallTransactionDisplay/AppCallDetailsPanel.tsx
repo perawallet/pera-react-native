@@ -11,14 +11,17 @@
  */
 
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { PWText, PWView } from '@components/core'
+import { PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDetailAddress } from '@modules/signing'
-import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
+import {
+    TechnicalBlock,
+    TechnicalSection,
+    TransactionDetailAddress,
+} from '@modules/signing'
 import { CopyableText } from '@components/CopyableText'
 import { hasAdvancedAppCallDetails } from './utils'
 
@@ -43,8 +46,11 @@ export const AppCallDetailsPanel = ({
     }
 
     return (
-        <TitledExpandablePanel title={t('transactions.app_call.details')}>
-            <PWView style={styles.expandablePanel}>
+        <TechnicalSection
+            title={t('transactions.app_call.details')}
+            testID='algorand_app_call_details'
+        >
+            <TechnicalBlock>
                 {appCall.applicationArgs &&
                     appCall.applicationArgs.length > 0 && (
                         <KeyValueRow
@@ -126,7 +132,7 @@ export const AppCallDetailsPanel = ({
                         </PWText>
                     </KeyValueRow>
                 )}
-            </PWView>
-        </TitledExpandablePanel>
+            </TechnicalBlock>
+        </TechnicalSection>
     )
 }

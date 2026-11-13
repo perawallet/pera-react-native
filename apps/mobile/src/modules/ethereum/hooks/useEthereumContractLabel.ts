@@ -18,6 +18,7 @@ import type {
 import { useEvmContractMetadataQuery } from '@perawallet/wallet-core-chain-ethereum'
 import { toSiteHost } from '@perawallet/wallet-core-site-safety'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useRequestShareability } from '@modules/signing'
 
 /** A contract named for the user: its name, and its project's domain for matching the requesting site. */
 export type EthereumContractLabel = KnownSpender
@@ -36,10 +37,12 @@ export const useEthereumContractLabel = (
     bundled: Optional<EthereumContractLabel>,
     isEnabled = true,
 ): Nullable<EthereumContractLabel> => {
+    // A scam-listed address must never reach the lookup service.
+    const { isShareable } = useRequestShareability()
     const { data: metadata } = useEvmContractMetadataQuery({
         scope,
         address,
-        isEnabled,
+        isEnabled: isEnabled && isShareable,
     })
 
     return useMemo(() => {

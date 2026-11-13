@@ -35,10 +35,14 @@ import {
     isExternalCallbackSource,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { balanceImpactItemOf, type BalanceImpactItem } from '@modules/signing'
+import {
+    balanceImpactItemOf,
+    useRequestShareability,
+    type BalanceImpactItem,
+} from '@modules/signing'
 import type { EthereumStandardCallPresentation } from '../../hooks/useEthereumStandardCall'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { isCallUnexplained } from '../EthereumContractCallDetails'
+import { isCallUnexplained } from '../../utils/contractCallNotice'
 
 export type EthereumApprovalGrant =
     | { kind: 'unlimited' }
@@ -193,12 +197,15 @@ export const useEthereumSimulationSection = (
     const request = useMemo(() => simulationRequestOf(view), [view])
     const revertedEstimate =
         'revertedEstimate' in view ? view.revertedEstimate : undefined
-    const isActive =
+    const { isChecking: isCheckingAddresses, isShareable } =
+        useRequestShareability()
+    const isWanted =
         isDecoding &&
         isDappRequest &&
         view.kind === 'contract-call' &&
         request !== null &&
         !revertedEstimate
+    const isActive = isWanted && isShareable
 
     const {
         data: answer,
@@ -247,6 +254,8 @@ export const useEthereumSimulationSection = (
                 reason: revertedEstimate.reason ?? null,
             }
         }
+        // Held until the request's addresses clear, so a scam-listed one is never sent to the simulator.
+        if (isWanted && isCheckingAddresses) return LOADING
         if (!isActive) return HIDDEN
         if (isSimulationPending) return LOADING
         if (isSimulationError || !answer || answer.status === 'unavailable') {
@@ -303,6 +312,8 @@ export const useEthereumSimulationSection = (
         }
     }, [
         revertedEstimate,
+        isWanted,
+        isCheckingAddresses,
         isActive,
         isSimulationPending,
         isSimulationError,

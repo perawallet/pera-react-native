@@ -57,22 +57,33 @@ export const titleKeyOf = (
         : i18nKey('transactions.list_item.send')
 }
 
+const ACTION_ICON_NAMES: Record<
+    EthereumContractActionPresentation['kind'],
+    IconName
+> = {
+    swap: transactionIconName('swap'),
+    wrap: transactionIconName('swap'),
+    unwrap: transactionIconName('swap'),
+    supply: 'fund',
+    withdraw: 'inflow',
+    borrow: 'inflow',
+    repay: 'outflow',
+    'add-liquidity': 'plus',
+    'remove-liquidity': 'minus',
+}
+
 export const iconNameOf = (
     view: EthereumTransactionView,
     standardCall: Nullable<EthereumStandardCallPresentation>,
     contractAction: Nullable<EthereumContractActionPresentation>,
 ): IconName => {
-    if (isApproval(standardCall)) return transactionIconName('approval')
+    if (isApproval(standardCall)) return 'key'
     if (!standardCall && contractAction) {
-        return transactionIconName(
-            contractAction.kind === 'swap' ? 'swap' : 'contract-call',
-        )
+        return ACTION_ICON_NAMES[contractAction.kind]
     }
-    return transactionIconName(
-        view.kind === 'contract-call' && !standardCall
-            ? 'contract-call'
-            : 'send',
-    )
+    return view.kind === 'contract-call' && !standardCall
+        ? 'code'
+        : transactionIconName('send')
 }
 
 /** Who a standard call is with: a transfer's recipient, an approval's spender or operator. */

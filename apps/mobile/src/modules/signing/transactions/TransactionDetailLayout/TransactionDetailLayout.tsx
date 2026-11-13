@@ -22,6 +22,11 @@ import { useTransactionDetailLayout } from './useTransactionDetailLayout'
 
 export type TransactionDetailLayoutProps = {
     summary: TransactionDetailSummary
+    /**
+     * The icon, title and amount at the top. A transaction not yet sent leaves
+     * it off: its review already showed them.
+     */
+    isHeroShown?: boolean
     warnings?: ReactNode
     /** The chain's own cards, each wrapped in `TransactionDetailCard`. */
     chainSection?: ReactNode
@@ -31,6 +36,7 @@ export type TransactionDetailLayoutProps = {
 
 export const TransactionDetailLayout = ({
     summary,
+    isHeroShown = true,
     warnings,
     chainSection,
     actions,
@@ -43,9 +49,12 @@ export const TransactionDetailLayout = ({
 
     return (
         <PWView style={styles.container}>
-            <TransactionDetailHero summary={summary} />
+            {isHeroShown && <TransactionDetailHero summary={summary} />}
             {warnings}
-            <TransactionDetailFactsCard summary={summary} />
+            <TransactionDetailFactsCard
+                summary={summary}
+                isAmountShown={!isHeroShown}
+            />
             <TransactionDetailPartiesCard summary={summary} />
             {chainSection}
             {(!!handleOpenExplorer || !!actions) && (

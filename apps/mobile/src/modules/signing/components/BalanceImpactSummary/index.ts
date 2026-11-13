@@ -11,7 +11,6 @@
  */
 
 export { BalanceImpactSummary } from './BalanceImpactSummary'
-export { BalanceImpactSection } from './BalanceImpactSection'
 export { balanceImpactItemOf } from './balanceImpactItemOf'
 export {
     useBalanceImpactSummary,

@@ -21,6 +21,9 @@ export type KnownEvmContractKind =
     | 'uniswap-permit2'
     | 'wrapped-native'
     | 'aave-v3-pool'
+    | 'aave-v3-gateway'
+    | 'aave-v3-rewards'
+    | 'aave-v3-adapter'
     | 'uniswap-v3-position-manager'
     | 'uniswap-v4-position-manager'
 
@@ -84,14 +87,54 @@ const wrappedNative = (
     source: `${UNISWAP_DEPLOYMENTS}/${page}`,
 })
 
-const aavePool = (address: Address, file: string): KnownEvmContract => ({
+const aave = (
+    address: Address,
+    kind: Extract<KnownEvmContractKind, `aave-${string}`>,
+    name: string,
+    file: string,
+): KnownEvmContract => ({
     address,
-    kind: 'aave-v3-pool',
-    name: 'Aave V3 Pool',
+    kind,
+    name,
     projectName: 'Aave',
     projectDomain: AAVE_DOMAIN,
     source: `${AAVE_ADDRESS_BOOK}/${file}.ts`,
 })
+
+const aavePool = (
+    address: Address,
+    file: string,
+    name = 'Aave V3 Pool',
+): KnownEvmContract => aave(address, 'aave-v3-pool', name, file)
+
+type AaveMarket = {
+    gateway?: Address
+    rewards?: Address
+    debtSwap?: Address
+    collateralSwap?: Address
+    repayWithCollateral?: Address
+    withdrawSwap?: Address
+}
+
+// The contracts beside a market's pool that a user signs against, by the
+// address book's WETH_GATEWAY, DEFAULT_INCENTIVES_CONTROLLER and adapter names.
+const aaveMarket = (file: string, market: AaveMarket): KnownEvmContract[] =>
+    (
+        [
+            [market.gateway, 'aave-v3-gateway', 'Aave V3 Gateway'],
+            [market.rewards, 'aave-v3-rewards', 'Aave Rewards'],
+            [market.debtSwap, 'aave-v3-adapter', 'Aave Debt Swap'],
+            [market.collateralSwap, 'aave-v3-adapter', 'Aave Collateral Swap'],
+            [
+                market.repayWithCollateral,
+                'aave-v3-adapter',
+                'Aave Repay With Collateral',
+            ],
+            [market.withdrawSwap, 'aave-v3-adapter', 'Aave Withdraw And Swap'],
+        ] as const
+    ).flatMap(([address, kind, name]) =>
+        address ? [aave(address, kind, name, file)] : [],
+    )
 
 const v3Positions = (address: Address, page: string): KnownEvmContract => ({
     address,
@@ -135,6 +178,46 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
             'AaveV3Ethereum',
         ),
+        ...aaveMarket('AaveV3Ethereum', {
+            gateway: '0xd01607c3C5eCABa394D8be377a08590149325722',
+            rewards: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb',
+            debtSwap: '0xd7852E139a7097E119623de0751AE53a61efb442',
+            collateralSwap: '0xADC0A53095A0af87F3aa29FE0715B5c28016364e',
+            repayWithCollateral: '0x35bb522b102326ea3F1141661dF4626C87000e3E',
+            withdrawSwap: '0x78F8Bd884C3D738B74B420540659c82f392820e0',
+        }),
+        aavePool(
+            '0x4e033931ad43597d96D6bcc25c280717730B58B1',
+            'AaveV3EthereumLido',
+            'Aave V3 Lido Pool',
+        ),
+        ...aaveMarket('AaveV3EthereumLido', {
+            gateway: '0x3167C452fA3fa1e5C16bB83Bc0fde4519C464299',
+            debtSwap: '0xd1B2dec98A95B773C4909B5CD8FB455F467A527f',
+            collateralSwap: '0xD0887AA7fEBC8962c622493646195e7c76D94fCE',
+            repayWithCollateral: '0x66E1aBdb06e7363a618D65a910c540dfED23754f',
+            withdrawSwap: '0x43eDB797834151D041619EEF833Edc784B509dAE',
+        }),
+        aavePool(
+            '0x0AA97c284e98396202b6A04024F5E2c65026F3c0',
+            'AaveV3EthereumEtherFi',
+            'Aave V3 EtherFi Pool',
+        ),
+        ...aaveMarket('AaveV3EthereumEtherFi', {
+            gateway: '0xf956B38F035dC9067fb827A512D3CF35202AB0Bc',
+            debtSwap: '0x40ede12b44d98Fc4E53A2fB027D1BD1846e1690C',
+            collateralSwap: '0xB04427eFdd15b0EC233400d2F7f7E4fd0291C285',
+            repayWithCollateral: '0x23b282c49C88d9161aae14b5eD777B976A5Ae65D',
+            withdrawSwap: '0x850347E0cF64fd342A3404c1c5DA21Aa0A46c5c6',
+        }),
+        aavePool(
+            '0xAe05Cd22df81871bc7cC2a04BeCfb516bFe332C8',
+            'AaveV3EthereumHorizon',
+            'Aave V3 Horizon Pool',
+        ),
+        ...aaveMarket('AaveV3EthereumHorizon', {
+            rewards: '0x1D5D386a90CEA8AcEa9fa75389e97CF5F1AE21D3',
+        }),
         v3Positions(
             '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
             'v3-ethereum-deployments',
@@ -154,6 +237,14 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-base-deployments',
         ),
         aavePool('0xA238Dd80C259a72e81d7e4664a9801593F98d1c5', 'AaveV3Base'),
+        ...aaveMarket('AaveV3Base', {
+            gateway: '0xa0d9C1E9E48Ca30c8d8C3B5D69FF5dc1f6DFfC24',
+            rewards: '0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44',
+            debtSwap: '0xb12e82DF057BF16ecFa89D7D089dc7E5C1Dc057B',
+            collateralSwap: '0x2E549104c516b8657A7D888494DfbAbD7C70b464',
+            repayWithCollateral: '0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4',
+            withdrawSwap: '0x5598BbFA2f4fE8151f45bBA0a3edE1b54B51a0a9',
+        }),
         v3Positions(
             '0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1',
             'v3-base-deployments',
@@ -174,6 +265,14 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-bnb-deployments',
         ),
         aavePool('0x6807dc923806fE8Fd134338EABCA509979a7e0cB', 'AaveV3BNB'),
+        ...aaveMarket('AaveV3BNB', {
+            gateway: '0x0c2C95b24529664fE55D4437D7A31175CFE6c4f7',
+            rewards: '0xC206C2764A9dBF27d599613b8F9A63ACd1160ab4',
+            debtSwap: '0x5d4D4007A4c6336550DdAa2a7c0d5e7972eebd16',
+            collateralSwap: '0x33E0b3fc976DC9C516926BA48CfC0A9E10a2aAA5',
+            repayWithCollateral: '0x5598BbFA2f4fE8151f45bBA0a3edE1b54B51a0a9',
+            withdrawSwap: '0x5E2d083417D12d4B0824E14Ecd48D26831F4Da7D',
+        }),
         v3Positions(
             '0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613',
             'v3-bnb-deployments',
@@ -197,6 +296,14 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
             'AaveV3Arbitrum',
         ),
+        ...aaveMarket('AaveV3Arbitrum', {
+            gateway: '0x5283BEcEd7ADF6D003225C13896E536f2D4264FF',
+            rewards: '0x929EC64c34a17401F460460D4B9390518E5B473e',
+            debtSwap: '0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4',
+            collateralSwap: '0xF3C3F14dd7BDb7E03e6EBc3bc5Ffc6D66De12251',
+            repayWithCollateral: '0xE28E2c8d240dd5eBd0adcab86fbD79df7a052034',
+            withdrawSwap: '0x5598BbFA2f4fE8151f45bBA0a3edE1b54B51a0a9',
+        }),
         v3Positions(
             '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
             'v3-arbitrum-deployments',
@@ -223,6 +330,14 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
             'AaveV3Avalanche',
         ),
+        ...aaveMarket('AaveV3Avalanche', {
+            gateway: '0x2825cE5921538d17cc15Ae00a8B24fF759C6CDaE',
+            rewards: '0x929EC64c34a17401F460460D4B9390518E5B473e',
+            debtSwap: '0xE28E2c8d240dd5eBd0adcab86fbD79df7a052034',
+            collateralSwap: '0x2Cf641F7C0eac2788A7924B82d6Ca8EB7bAa4E3A',
+            repayWithCollateral: '0x5d4D4007A4c6336550DdAa2a7c0d5e7972eebd16',
+            withdrawSwap: '0x78F8Bd884C3D738B74B420540659c82f392820e0',
+        }),
         v3Positions(
             '0x655C406EBFa14EE2006250925e54ec43AD184f8B',
             'v3-avalanche-deployments',
@@ -243,6 +358,14 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             'v3-polygon-deployments',
         ),
         aavePool('0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'AaveV3Polygon'),
+        ...aaveMarket('AaveV3Polygon', {
+            gateway: '0xBC302053db3aA514A3c86B9221082f162B91ad63',
+            rewards: '0x929EC64c34a17401F460460D4B9390518E5B473e',
+            debtSwap: '0xE28E2c8d240dd5eBd0adcab86fbD79df7a052034',
+            collateralSwap: '0xC4aff49fCeD8ac1D818a6DCAB063f9f97E66ec5E',
+            repayWithCollateral: '0x5d4D4007A4c6336550DdAa2a7c0d5e7972eebd16',
+            withdrawSwap: '0x78F8Bd884C3D738B74B420540659c82f392820e0',
+        }),
         v3Positions(
             '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
             'v3-polygon-deployments',
@@ -266,6 +389,14 @@ export const KNOWN_EVM_CONTRACTS: Readonly<
             '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
             'AaveV3Optimism',
         ),
+        ...aaveMarket('AaveV3Optimism', {
+            gateway: '0x5f2508cAE9923b02316254026CD43d7902866725',
+            rewards: '0x929EC64c34a17401F460460D4B9390518E5B473e',
+            debtSwap: '0xE28E2c8d240dd5eBd0adcab86fbD79df7a052034',
+            collateralSwap: '0x830C5A67a0C95D69dA5fb7801Ac1773c6fB53857',
+            repayWithCollateral: '0x5d4D4007A4c6336550DdAa2a7c0d5e7972eebd16',
+            withdrawSwap: '0x78F8Bd884C3D738B74B420540659c82f392820e0',
+        }),
         v3Positions(
             '0xC36442b4a4522E871399CD717aBDD847Ab11FE88',
             'v3-optimism-deployments',
