@@ -13,7 +13,7 @@
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
-/** Native Discover home, search and the dApp favorites. Names match the web app. */
+/** Native Discover home, search, dApp directory and favorites. Names match the web app. */
 export enum DiscoverEvent {
     SearchBarTap = 'disover_search_bar_tap', // sic, the web app's spelling
     SearchResultTap = 'discover_search_result_tap',
@@ -24,6 +24,10 @@ export enum DiscoverEvent {
     NewsButtonTap = 'discover_news_button_tap',
     NewsOpenTap = 'discover_news_open_tap',
     TopDappsButtonTap = 'discover_top_dapps_button_tap',
+    ApplyForVerificationTap = 'discover_apply_for_verification',
+    DappCategoryTap = 'discover_dapp_category_tap',
+    DappDetailsButtonTap = 'discover_dapp_details_button_tap',
+    DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
 }
 
 type DappPayload = {
@@ -41,6 +45,19 @@ export interface DiscoverRequiredPayloads {
         [Key.ChainId]?: ChainId
     }
     [DiscoverEvent.NewsOpenTap]: { [Key.NewsTitle]: string }
+    [DiscoverEvent.ApplyForVerificationTap]: { [Key.Category]: 'project' }
+    [DiscoverEvent.DappCategoryTap]: {
+        [Key.CategoryName]: string
+        [Key.ChainId]?: ChainId
+    }
+    [DiscoverEvent.DappDetailsButtonTap]: {
+        [Key.DappName]: string
+        [Key.ChainId]?: ChainId
+    }
+    [DiscoverEvent.DetailsCloseTap]: {
+        [Key.DappName]: string
+        [Key.ChainId]?: ChainId
+    }
 }
 
 export interface DiscoverOptionalPayloads {

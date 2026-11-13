@@ -15,21 +15,29 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { PWButton, PWText, PWView } from '@components/core'
-import { AccountWithBalance } from '@components/AccountWithBalance'
-import { FeeSummary } from '@components/FeeRow'
+import { PWText } from '@components/core'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionReviewLayout } from '@modules/signing'
+import {
+    PreviewUnavailableCard,
+    ReviewActionHeader,
+    ReviewDetailRow,
+    ReviewFromRow,
+    ReviewNetworkRow,
+    ReviewTarget,
+    ReviewTechnicalDetailsLink,
+    SourceMetadataBadge,
+    TransactionReviewLayout,
+    WalletChangesCard,
+} from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
-import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
-import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
-import { EthereumSimulationSection } from '../EthereumSimulationSection'
-import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { EthereumReviewHeader } from './EthereumReviewHeader'
-import { EthereumReviewHero } from './EthereumReviewHero'
-import { useEthereumTransactionReview } from './useEthereumTransactionReview'
+import { EthereumPermissionCard } from './EthereumPermissionCard'
+import { EthereumReviewFeeRow } from './EthereumReviewFeeRow'
+import {
+    useEthereumTransactionReview,
+    type UseEthereumTransactionReviewResult,
+} from './useEthereumTransactionReview'
 import { useStyles } from './styles'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList>
@@ -42,6 +50,83 @@ type EthereumTransactionReviewProps = {
     actions: ReactNode
 }
 
+type ChangesProps = Pick<
+    UseEthereumTransactionReviewResult,
+    'simulation' | 'permissions' | 'transferSpend' | 'requesterHost'
+> & {
+    presentation: EthereumTransactionPresentation
+    isDappRequest: boolean
+}
+
+const changesOf = ({
+    simulation,
+    permissions,
+    transferSpend,
+    requesterHost,
+    presentation,
+    isDappRequest,
+}: ChangesProps): ReactNode => {
+    const { scope, isTransfer } = presentation
+    const permissionCard = (isOnlyPermission: boolean) =>
+        permissions.length > 0 ? (
+            <EthereumPermissionCard
+                scope={scope}
+                permissions={permissions}
+                isOnlyPermission={isOnlyPermission}
+            />
+        ) : null
+
+    switch (simulation.status) {
+        case 'loading': {
+            return (
+                <WalletChangesCard
+                    spend={[]}
+                    receive={[]}
+                    isLoading
+                />
+            )
+        }
+        case 'success': {
+            const movesValue =
+                simulation.spend.length > 0 || simulation.receive.length > 0
+            return (
+                <>
+                    {(movesValue || permissions.length === 0) && (
+                        <WalletChangesCard
+                            spend={simulation.spend}
+                            receive={simulation.receive}
+                        />
+                    )}
+                    {permissionCard(simulation.spend.length === 0)}
+                </>
+            )
+        }
+        case 'unavailable': {
+            return (
+                <>
+                    <PreviewUnavailableCard host={requesterHost} />
+                    {permissionCard(false)}
+                </>
+            )
+        }
+        default: {
+            if (permissions.length > 0) return permissionCard(true)
+            if (isTransfer && transferSpend.length > 0) {
+                return (
+                    <WalletChangesCard
+                        spend={transferSpend}
+                        receive={[]}
+                    />
+                )
+            }
+            // A dApp's call the simulator didn't cover can't be previewed either.
+            return isDappRequest && !isTransfer ? (
+                <PreviewUnavailableCard host={requesterHost} />
+            ) : null
+        }
+    }
+}
+
 export const EthereumTransactionReview = ({
     transaction,
     presentation,
@@ -52,126 +137,96 @@ export const EthereumTransactionReview = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
-    const { simulation, warningItems } = useEthereumTransactionReview({
+    const review = useEthereumTransactionReview({
         presentation,
         source,
         verifiedOrigin,
     })
-    const {
-        reviewFee,
-        signingAccount,
-        scope,
-        standardCall,
-        contractAction,
-        isTransfer,
-    } = presentation
+    const { reviewFee, signingAccount, scope, iconName } = presentation
+
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
 
-    let callDetails = null
-    if (standardCall && !isTransfer) {
-        callDetails = (
-            <EthereumApprovalDetails
-                presentation={presentation}
-                source={source}
-                verifiedOrigin={verifiedOrigin}
-            />
-        )
-    } else if (contractAction) {
-        callDetails = (
-            <EthereumContractActionDetails
-                presentation={presentation}
-                source={source}
-                verifiedOrigin={verifiedOrigin}
-            />
-        )
-    } else if (!isTransfer) {
-        callDetails = (
-            <EthereumContractCallDetails
-                presentation={presentation}
-                variant='review'
-                source={source}
-                verifiedOrigin={verifiedOrigin}
-            />
-        )
-    } else {
-        callDetails = (
-            <EthereumTransferAssetRows
-                presentation={presentation}
-                testIDPrefix='ethereum_review'
-            />
-        )
-    }
-
     return (
         <TransactionReviewLayout
-            header={
-                <EthereumReviewHeader
-                    presentation={presentation}
-                    source={source}
-                    verifiedOrigin={verifiedOrigin}
+            requester={
+                source ? (
+                    <SourceMetadataBadge
+                        metadata={source}
+                        verifiedOrigin={verifiedOrigin}
+                    />
+                ) : undefined
+            }
+            action={
+                <ReviewActionHeader
+                    iconName={iconName}
+                    title={review.title}
+                    target={
+                        review.target ? (
+                            <ReviewTarget
+                                label={review.target.label}
+                                status={review.target.status}
+                                testID='ethereum_review_target'
+                            />
+                        ) : undefined
+                    }
                 />
             }
-            hero={<EthereumReviewHero presentation={presentation} />}
-            warnings={warningItems}
-            summary={
-                <EthereumSimulationSection
-                    presentation={presentation}
-                    state={simulation}
-                />
-            }
-            participants={
-                signingAccount ? (
-                    <PWView style={styles.participants}>
-                        <PWText
-                            variant='caption'
-                            style={styles.caption}
-                        >
-                            {t('signing.transactions.signing_with')}
-                        </PWText>
-                        <AccountWithBalance
+            changes={changesOf({
+                ...review,
+                presentation,
+                isDappRequest: !!source,
+            })}
+            warnings={review.warningItems}
+            details={
+                <>
+                    {!!signingAccount && (
+                        <ReviewFromRow
                             account={signingAccount}
                             chainId={scope.chainId}
-                            style={styles.signingAccount}
                         />
-                    </PWView>
-                ) : null
+                    )}
+                    {!!presentation.sender && (
+                        <ReviewDetailRow
+                            label={t('signing.review.holder')}
+                            testID='ethereum_review_holder'
+                        >
+                            <AddressDisplay
+                                address={presentation.sender}
+                                displayType='address-only'
+                                scope={scope}
+                            />
+                        </ReviewDetailRow>
+                    )}
+                    <ReviewNetworkRow scope={scope} />
+                    {reviewFee ? (
+                        <EthereumReviewFeeRow
+                            scope={scope}
+                            reviewFee={reviewFee}
+                        />
+                    ) : (
+                        <ReviewDetailRow
+                            label={t('signing.review.network_fee')}
+                            testID='ethereum_review_fee'
+                        >
+                            <PWText style={styles.feePending}>
+                                {t('ethereum.batch.fee_when_reached')}
+                            </PWText>
+                        </ReviewDetailRow>
+                    )}
+                </>
             }
-            details={
-                <PWView style={styles.details}>
-                    {callDetails}
-                    <PWButton
-                        testID='ethereum_view_details'
-                        variant='linkPositive'
-                        style={styles.transactionDetails}
-                        paddingStyle='none'
-                        title={t('signing.view_details')}
-                        iconRight='chevron-right'
-                        onPress={handleViewDetails}
-                    />
-                </PWView>
-            }
-            stickyFee={
-                reviewFee ? (
-                    <FeeSummary
-                        testID='ethereum_review_fee'
-                        scope={scope}
-                        maxAmount={reviewFee.maxAmount}
-                        estimate={reviewFee.estimate}
-                        isCompact
-                    />
-                ) : (
-                    <PWView
-                        testID='ethereum_review_fee'
-                        style={styles.feeRow}
-                    >
-                        <PWText style={styles.label}>
-                            {t('send_funds.fee.max_fee')}
-                        </PWText>
-                        <PWText>{t('ethereum.batch.fee_when_reached')}</PWText>
-                    </PWView>
-                )
+            technicalDetails={
+                <ReviewTechnicalDetailsLink
+                    subtitle={t(
+                        presentation.view.kind === 'contract-call'
+                            ? 'signing.review.technical_details_evm'
+                            : 'signing.review.technical_details_generic',
+                    )}
+                    onPress={handleViewDetails}
+                    testID='ethereum_view_details'
+                />
             }
             actions={actions}
         />

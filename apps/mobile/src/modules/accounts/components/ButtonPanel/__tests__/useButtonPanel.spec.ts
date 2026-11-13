@@ -22,6 +22,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { AnalyticsMetadataKey, HomeEvent } from '@analytics'
+import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 import { useButtonPanel } from '../useButtonPanel'
 
 const overview = vi.hoisted(() => ({ account: null as unknown }))
@@ -53,7 +54,14 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         typeof import('@perawallet/wallet-core-accounts')
     >('@perawallet/wallet-core-accounts')
     return {
-        useSwapScope: (account: WalletAccount | null) =>
+        useSwapScope: (account: WalletAccount | null, chainId?: string) =>
+            useAccountCapabilityScope(
+                account,
+                'swap',
+                chainId as Parameters<typeof useAccountCapabilityScope>[2],
+            ),
+        // The swap store's chosen chain, unset here, falls back to the default.
+        useSwapSourceScope: (account: WalletAccount | null) =>
             useAccountCapabilityScope(account, 'swap'),
     }
 })
@@ -88,6 +96,7 @@ describe('useButtonPanel', () => {
             actualAccounts.useAccountChainOptionsResolver,
         )
         overview.account = onAlgorand
+        useAssetListViewStore.getState().setSelectedChainId(null)
     })
 
     it("offers swapping when the account's chain has swap", () => {
@@ -174,5 +183,67 @@ describe('useButtonPanel', () => {
 
         expect(result.current.canSend).toBe(false)
         expect(result.current.canSwap).toBe(false)
+    })
+
+    it('opens Swap on the network the chip narrows to', () => {
+        registerEthereumChain()
+        overview.account = {
+            ...onAlgorand,
+            chains: { ...onAlgorand.chains, ...onEthereumOnly.chains },
+        }
+        useAssetListViewStore.getState().setSelectedChainId('ethereum')
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        act(() => {
+            result.current.handleSwap()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Swap, {
+            [AnalyticsMetadataKey.ChainId]: 'ethereum',
+        })
+        expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: {
+                assetIn: {
+                    chainId: 'ethereum',
+                    assetId: expect.any(String),
+                },
+            },
+        })
+    })
+
+    it('removes swapping when the chosen network has swap off', () => {
+        registerEthereumChain()
+        setCapabilityOverrides({ swap: false }, 'ethereum')
+        overview.account = {
+            ...onAlgorand,
+            chains: { ...onAlgorand.chains, ...onEthereumOnly.chains },
+        }
+        useAssetListViewStore.getState().setSelectedChainId('ethereum')
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        expect(result.current.canSwap).toBe(false)
+    })
+
+    it('passes no starting asset when the chip names the chain Swap is already on', () => {
+        registerEthereumChain()
+        overview.account = {
+            ...onAlgorand,
+            chains: { ...onAlgorand.chains, ...onEthereumOnly.chains },
+        }
+        useAssetListViewStore.getState().setSelectedChainId('algorand')
+
+        const { result } = renderHook(() => useButtonPanel())
+
+        act(() => {
+            result.current.handleSwap()
+        })
+
+        expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: undefined,
+        })
     })
 })

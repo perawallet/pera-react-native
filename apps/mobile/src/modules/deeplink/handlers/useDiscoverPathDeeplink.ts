@@ -30,8 +30,8 @@ export type DiscoverPathDeeplinkHandler = (params: {
  * Validates the discover path against the same safe-relative-path check
  * the Discover screen runs (defense in depth). An Algorand-only build hands
  * the path to the Discover web app in its tab; a multichain build, whose
- * Discover tab is native, routes to native asset details, native news or the
- * Discover home, never to the web app.
+ * Discover tab is native, routes to native asset details, the native dApp
+ * directory, native news or the Discover home, never to the web app.
  */
 export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
     const { errorToast } = useToast()
@@ -71,6 +71,14 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                         },
                     },
                 })
+                return true
+            }
+            if (target.kind === 'dapps') {
+                navigateToScreen(
+                    replaceCurrentScreen,
+                    'DiscoverDapps',
+                    undefined,
+                )
                 return true
             }
             if (target.kind === 'news') {

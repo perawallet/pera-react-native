@@ -18,6 +18,7 @@ export type DiscoverPathTarget =
     | { kind: 'home' }
     | { kind: 'news' }
     | { kind: 'newsDetail'; newsId: string }
+    | { kind: 'dapps' }
     /** A Discover web page with no native screen yet. */
     | { kind: 'unported'; path: string }
     | { kind: 'asset'; assetId: string; chainId: ChainId }
@@ -48,6 +49,9 @@ export const discoverPathTarget = (
             kind: 'newsDetail',
             newsId: normalised.slice(NEWS_PREFIX.length).replace(/\/$/, ''),
         }
+    }
+    if (normalised === 'main/browser') {
+        return { kind: 'dapps' }
     }
     if (normalised.startsWith(TOKEN_DETAIL_PREFIX)) {
         const id = normalised.slice(TOKEN_DETAIL_PREFIX.length)

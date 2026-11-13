@@ -477,7 +477,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                 },
             ])
 
-        it('Given a listed drainer, when a dApp asks to approve it as a spender, then the review flags it, keeps the unlimited warning and offers only Reject', async () => {
+        it('Given a listed drainer, when a dApp asks to approve it as a spender, then the review flags it, shows the unlimited permission and offers only Reject', async () => {
             const walletKit = await connectEthereum()
 
             approveDrainer(walletKit)
@@ -492,12 +492,15 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
             expect(
                 screen.getByText('signing.address_safety.role.spender'),
             ).toBeTruthy()
+            // The permission card takes the changes slot once the simulation settles.
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('ethereum_review_permission'),
+                ).toBeTruthy(),
+            )
             expect(
-                screen.getByTestId('message-signing-spend-approval-warning'),
+                screen.getByTestId('ethereum_review_permission_unlimited'),
             ).toBeTruthy()
-            expect(
-                screen.getAllByText('signing.spend_approval.unlimited').length,
-            ).toBeGreaterThan(0)
             await expectBlocked(
                 TRANSACTION_BLOCKED,
                 TRANSACTION_SLIDE,

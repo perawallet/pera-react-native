@@ -55,6 +55,7 @@ export type UseDiscoverHomeScreenResult = {
     openDapp: (dapp: DiscoverDapp) => void
     openNewsItem: (item: DiscoverNewsCardItem) => void
     openNewsList: () => void
+    openDappDirectory: () => void
 }
 
 export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
@@ -169,6 +170,13 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         navigation.navigate('DiscoverNews')
     }, [navigation])
 
+    const openDappDirectory = useCallback(() => {
+        trackEvent(DiscoverEvent.TopDappsButtonTap)
+        navigation.navigate('DiscoverDapps', {
+            chainId: selectedChainId ?? undefined,
+        })
+    }, [navigation, selectedChainId])
+
     return {
         chainOptions,
         selectedChainId,
@@ -185,5 +193,6 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         openDapp,
         openNewsItem,
         openNewsList,
+        openDappDirectory,
     }
 }

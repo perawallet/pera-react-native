@@ -67,6 +67,15 @@ describe('useDiscoverPathDeeplink', () => {
         )
     })
 
+    it('opens the native dApp directory for main/browser', () => {
+        expect(run('main/browser')).toBe(true)
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+            false,
+            'DiscoverDapps',
+            undefined,
+        )
+    })
+
     it('opens the native news list for news', () => {
         expect(run('news')).toBe(true)
         expect(mocks.navigateToScreen).toHaveBeenCalledWith(

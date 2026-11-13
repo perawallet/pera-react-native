@@ -125,6 +125,10 @@ const renderHome = () =>
                 name: 'DiscoverNewsDetail',
                 component: () => <div data-testid='news_detail_screen' />,
             },
+            {
+                name: 'DiscoverDapps',
+                component: () => <div data-testid='dapps_screen' />,
+            },
         ],
     })
 
@@ -306,6 +310,18 @@ describe('Flow: Discover home', () => {
         fireEvent.click(await screen.findByText('First story'))
 
         expect(await screen.findByTestId('news_detail_screen')).toBeTruthy()
+        expect(screen.queryByTestId('detail_screen')).toBeNull()
+        await flush()
+    })
+
+    it('Given the Top dApps header is tapped, then the native directory opens', async () => {
+        useHandlers()
+        renderHome()
+        await screen.findByTestId(rowOf('Tinyman'))
+
+        fireEvent.click(screen.getByText('discover.home.top_dapps'))
+
+        expect(await screen.findByTestId('dapps_screen')).toBeTruthy()
         expect(screen.queryByTestId('detail_screen')).toBeNull()
         await flush()
     })

@@ -209,6 +209,9 @@ const KNOWN_CONTRACT_KINDS: readonly unknown[] = [
     'uniswap-permit2',
     'wrapped-native',
     'aave-v3-pool',
+    'aave-v3-gateway',
+    'aave-v3-rewards',
+    'aave-v3-adapter',
     'uniswap-v3-position-manager',
     'uniswap-v4-position-manager',
 ]

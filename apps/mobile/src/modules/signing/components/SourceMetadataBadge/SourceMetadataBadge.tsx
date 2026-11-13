@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { useStyles } from './styles'
-import { useSourceMetadataBadge } from './useSourceMetadataBadge'
+import { PWIcon, PWImage, PWText, PWView } from '@components/core'
 import { ProjectVerificationIcon } from '@modules/projects'
+import { useSourceMetadataBadge } from './useSourceMetadataBadge'
+import { useStyles } from './styles'
 
 export type SourceMetadataBadgeProps = {
     metadata: SignRequestSource
@@ -22,6 +22,7 @@ export type SourceMetadataBadgeProps = {
     verifiedOrigin?: string
 }
 
+/** The requesting site by its domain; the name a site gives itself is never shown beside it. */
 export const SourceMetadataBadge = ({
     metadata,
     verifiedOrigin,
@@ -30,43 +31,42 @@ export const SourceMetadataBadge = ({
     const {
         displayIcon,
         displayName,
-        isNameShown,
         url,
         verificationTier,
         requestOriginLabel,
     } = useSourceMetadataBadge(metadata, verifiedOrigin)
+    const label = url || displayName
 
     return (
         <PWView style={styles.wrapper}>
-            <PWView style={styles.container}>
+            <PWView
+                style={styles.container}
+                testID='source_metadata_badge'
+            >
                 {displayIcon ? (
-                    <PWImage
-                        source={{ uri: displayIcon }}
-                        style={styles.icon}
-                    />
+                    // Clipped by a round frame: sites ship square icons, and the image's own radius doesn't always clip.
+                    <PWView style={styles.iconFrame}>
+                        <PWImage
+                            source={{ uri: displayIcon }}
+                            style={styles.icon}
+                        />
+                    </PWView>
                 ) : (
                     <PWView style={styles.iconFallback}>
                         <PWIcon
-                            name='wallet-connect'
+                            name='globe'
                             variant='secondary'
-                            size='sm'
+                            size='xs'
                         />
                     </PWView>
                 )}
-                {isNameShown && (
+                {!!label && (
                     <PWText
-                        variant='caption'
-                        style={styles.name}
+                        variant='footnoteMedium'
+                        style={styles.url}
+                        numberOfLines={1}
                     >
-                        {displayName}
-                    </PWText>
-                )}
-                {isNameShown && !!metadata.url && (
-                    <PWText
-                        variant='caption'
-                        style={styles.separator}
-                    >
-                        &middot;
+                        {label}
                     </PWText>
                 )}
                 {!!verificationTier && (
@@ -74,14 +74,6 @@ export const SourceMetadataBadge = ({
                         tier={verificationTier}
                         size='sm'
                     />
-                )}
-                {!!url && (
-                    <PWText
-                        variant='caption'
-                        style={styles.url}
-                    >
-                        {url}
-                    </PWText>
                 )}
             </PWView>
             {!!requestOriginLabel && (

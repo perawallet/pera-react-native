@@ -10,46 +10,30 @@
  limitations under the License
  */
 
-import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWView } from '@components/core'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
 import { ActionRows } from './ActionRows'
 import { useStyles } from './styles'
 
 type EthereumContractActionDetailsProps = {
     presentation: EthereumTransactionPresentation
-    /** Set only on the review, which is the only place there is a request to match. */
-    source?: SignRequestSource
-    /** Set only on the review. Origin the platform observed (never dApp-asserted). */
-    verifiedOrigin?: string
 }
 
+/** What a known contract's action does; the contract itself is named in the technical sections. */
 export const EthereumContractActionDetails = ({
     presentation,
-    source,
-    verifiedOrigin,
 }: EthereumContractActionDetailsProps) => {
     const styles = useStyles()
-    const { view, scope, knownContract, contractAction } = presentation
+    const { contractAction } = presentation
+
+    if (!contractAction) return null
 
     return (
         <PWView style={styles.container}>
-            {!!knownContract && !!view.to && (
-                <EthereumKnownContractRow
-                    knownContract={knownContract}
-                    address={view.to}
-                    scope={scope}
-                    source={source}
-                    verifiedOrigin={verifiedOrigin}
-                />
-            )}
-            {!!contractAction && (
-                <ActionRows
-                    action={contractAction}
-                    presentation={presentation}
-                />
-            )}
+            <ActionRows
+                action={contractAction}
+                presentation={presentation}
+            />
         </PWView>
     )
 }

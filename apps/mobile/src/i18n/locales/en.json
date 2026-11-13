@@ -63,6 +63,19 @@
             "read": "Read",
             "load_failure": "Failed to load news details.",
             "list_failure": "Failed loading news"
+        },
+        "dapps": {
+            "title": "dApps",
+            "list_title": "dApps on Pera",
+            "sort_popular": "Popular",
+            "sort_alphabetical": "Alphabetical (A-Z)",
+            "apply_prompt": "Want to add your project to Discover?",
+            "apply_cta": "Apply for Discover",
+            "load_failure": "Failed loading dApps",
+            "details": "Details",
+            "about": "About",
+            "website": "Website",
+            "open": "Open"
         }
     },
     "account_menu": {
@@ -442,6 +455,7 @@
             "nomatch_body": "No assets matched your search term",
             "funding_title": "Get started on {{network}}",
             "funding_body": "Deposit funds to start using this network. You'll need some {{nativeSymbol}} on {{network}} to pay network fees.",
+            "funding_swap_for": "Swap for {{symbol}}",
             "network_filter_all": "All",
             "see_networks": "See networks",
             "hide_networks": "Hide networks",
@@ -3503,10 +3517,7 @@
     "signing": {
         "view_details": "View Transaction Details",
         "balance_impact": {
-            "receive_title": "You will receive",
-            "spend_title": "You will spend",
             "analyzing": "Analyzing transaction…",
-            "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
             "entire_balance": "Entire {{unit}} balance",
             "closes_balance": "Your full remaining balance is sent",
             "new_asset": "New asset created by this transaction"
@@ -3580,8 +3591,7 @@
             "multiple_transactions_title": "Multiple Transactions",
             "transactions_count_one": "{{count}} Transaction",
             "transactions_count_other": "{{count}} Transactions",
-            "details": "Transaction Details",
-            "signing_with": "Signing Account"
+            "details": "Transaction Details"
         },
         "external_transaction": {
             "pill_label": "Signed",
@@ -3665,8 +3675,54 @@
             "reason": "The contract's reason: \"{{reason}}\""
         },
         "review_warnings": {
-            "summary": "{{count}} things to check",
             "acknowledge": "I understand the risks and want to sign anyway"
+        },
+        "review": {
+            "caution_title": "Check this one carefully",
+            "changes_note": "Amounts can change slightly before your transaction goes through.",
+            "changes_title": "Estimated changes to your wallet",
+            "fee_max": "Up to <0/> · paid in {{symbol}}",
+            "network_fee": "Network fee",
+            "nothing": "Nothing",
+            "nothing_back_body": "Assets leave your wallet and nothing comes back. Only continue if you expected that.",
+            "nothing_back_title": "You get nothing back",
+            "permission_collection": "All your {{collection}} NFTs",
+            "permission_collection_note": "It can move every NFT you hold in this collection, now and later, until you remove this permission.",
+            "permission_no_change": "No tokens leave your wallet with this transaction.",
+            "permission_revoke": "{{spender}} can no longer spend",
+            "permission_spender": "{{spender}} can spend",
+            "permission_title": "Permission you're giving",
+            "permission_token": "{{collection}} #{{tokenId}}",
+            "permission_unlimited": "Unlimited {{symbol}}",
+            "permission_unlimited_note": "Unlimited means it can move all your {{symbol}}, now and later, until you remove this permission.",
+            "preview_unavailable_body": "Normally we show exactly what leaves and enters your wallet. This time we can't, so check the request carefully.",
+            "preview_unavailable_tip": "Only continue if you started this on {{host}} yourself.",
+            "preview_unavailable_tip_generic": "Only continue if you started this yourself.",
+            "preview_unavailable_title": "We couldn't preview this",
+            "technical_details": "Technical details",
+            "technical_details_evm": "Contract, function and fee breakdown",
+            "title_approve": "Approve",
+            "title_clawback": "Clawback",
+            "title_contract_interaction": "Contract interaction",
+            "token_contract": "{{symbol}} token contract",
+            "unverified": "Unverified",
+            "you_receive": "You receive",
+            "you_send": "You send",
+            "scroll_hint": "Scroll to see more",
+            "analyzing": "Analyzing the request…",
+            "holder": "Taken from",
+            "technical_details_generic": "Transaction data and fee breakdown",
+            "net_change": "Net change",
+            "net_change_same": "About the same value"
+        },
+        "technical": {
+            "interacting_with": "What you're interacting with",
+            "contract": "Contract",
+            "contract_help": "The code you're sending this transaction to.",
+            "not_decoded": "Pera couldn't decode this function, so it shows the raw selector.",
+            "known_match": "Known contract · matches {{domain}}",
+            "amount_sent": "Amount sent",
+            "transaction": "Transaction"
         }
     },
     "site_safety": {
@@ -3769,17 +3825,12 @@
             "nft_fallback": "{{collection}} · Token ID {{tokenId}}"
         },
         "contract_call": {
-            "advanced": "Advanced",
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
             "call_data": "Call Data",
             "function": "Function",
-            "arguments": "Arguments",
             "argument_index": "Argument {{index}}",
             "implementation": "Implementation",
-            "known_source": "Named from the contract's public source code.",
-            "known_source_proxy": "This contract is a proxy. Named from the public source code of the contract it forwards to.",
-            "lookup_failed": "Pera couldn't look up this contract's function name.",
             "unchecked_warning": "Pera couldn't check what this transaction does. Only continue if you trust {{domain}}.",
             "unchecked_warning_no_source": "Pera couldn't check what this transaction does. Only continue if you trust the app that sent it."
         },
@@ -3903,11 +3954,6 @@
             "transactions_count_other": "{{count}} Transactions"
         },
         "summary": {
-            "payment_to": "Payment to",
-            "opt_in": "Asset Opt-in for {{asset}} to",
-            "opt_out": "Asset Opt-out for {{asset}} from",
-            "transfer": "Asset Transfer of {{asset}} to",
-            "clawback": "Asset Clawback of {{asset}} from",
             "app_id": "Application ID: {{id}}"
         },
         "filter": {
@@ -5003,23 +5049,13 @@
             "max_priority_fee_per_gas": "Max priority fee per gas"
         },
         "known_contract": {
-            "title": "Contract",
-            "badge": "Known contract",
-            "matches_site": "Matches {{domain}}"
+            "badge": "Known contract"
         },
         "review_warnings": {
             "high_fee_title": "Unusually high network fee",
             "high_fee_body": "{{domain}} set this transaction's fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less.",
             "high_fee_body_no_source": "The app that sent this set its fee to more than twice what Pera would use at its Fast setting. You'll pay at most <0/> (max fee), usually less."
         },
-        "simulation": {
-            "title": "Estimated changes",
-            "estimate_note": "Estimated against the latest block. The result can change before your transaction is included.",
-            "approvals_title": "Approvals",
-            "revoke_title": "Remove permission to use your {{asset}}",
-            "revoke_title_assets": "Remove permission to use your assets",
-            "no_changes": "No changes to your balances or approvals are expected.",
-            "unavailable": "Couldn't simulate this transaction. Review it carefully before you sign."
-        }
+        "simulation": {}
     }
 }

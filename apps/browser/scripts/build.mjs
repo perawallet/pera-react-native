@@ -57,13 +57,17 @@ const mobileDir = path.resolve(root, '../mobile')
 const dist = path.join(root, 'dist')
 
 const SURFACES = ['popup', 'expanded', 'approval', 'offscreen']
-// Popup: 423.53x705.89 CSS layout at 0.85 zoom = a 360x600 physical popup
-// (Chrome's height cap). zoom scales the declared box and Chrome sizes the
-// popup window to rendered content, so declaring 360x600 directly would
-// shrink the real popup to 306x510. Window dimensions don't see this zoom;
-// the react-native-web patch in pnpm-workspace.yaml divides them by it.
+// Popup: 423.53x705.5 CSS layout at 0.85 zoom = a 360x599.675 physical popup.
+// zoom scales the declared box and Chrome sizes the popup window to rendered
+// content, so declaring 360x600 directly would shrink the real popup to
+// 306x510. The height stays just under Chrome's 600px popup cap rather than
+// exactly on it: at fractional Windows display scales a box on the cap can
+// round past it, and Chrome's auto-sizing then alternates between two layouts
+// every frame (the app's tab bar visibly jumps). Window dimensions don't see
+// this zoom; the react-native-web patch in pnpm-workspace.yaml divides them by
+// it.
 const POPUP_CSS =
-    '<style>html,body{width:423.53px;height:705.89px;margin:0;overflow:hidden}html{zoom:0.85}#root{width:100%;height:100%}</style>'
+    '<style>html,body{width:423.53px;height:705.5px;margin:0;overflow:hidden}html{zoom:0.85}#root{width:100%;height:100%}</style>'
 // Web-only, all surfaces: react-native-web renders <Text> as selectable HTML
 // (native RN text isn't selectable), so a click-drag over any label selects
 // text instead of feeling like a native drag/scroll gesture. `user-select:

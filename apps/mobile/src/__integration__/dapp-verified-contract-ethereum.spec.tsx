@@ -52,6 +52,25 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
+// The setup mocks each navigation package with the test navigator, and after
+// vi.resetModules() each mock can load its own copy: the review's useNavigation
+// then misses the signing sheet's stack and the technical details never open.
+// Both stack packages are pointed at the one copy @react-navigation/native gives.
+// The setup's mock of @react-navigation/native adds the test navigator, which its own types don't declare.
+const mockedStackOf = async () =>
+    (
+        (await import('@react-navigation/native')) as unknown as Pick<
+            typeof import('@react-navigation/native-stack'),
+            'createNativeStackNavigator'
+        >
+    ).createNativeStackNavigator
+vi.mock('@react-navigation/native-stack', async () => ({
+    createNativeStackNavigator: await mockedStackOf(),
+}))
+vi.mock('@react-navigation/stack', async () => ({
+    createStackNavigator: await mockedStackOf(),
+}))
+
 vi.resetModules()
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
@@ -133,6 +152,8 @@ const CLAIM_DATA =
     '0x1e83409a0000000000000000000000003c44cdddb6a900fa2b585dd299e03d12fa4293bc'
 
 const FUNCTION_ROW = 'ethereum_verified_call_function'
+const SELECTOR_ROW = 'ethereum_interacting_with_function'
+const LOADING_ROW = 'ethereum_verified_call_loading'
 const TRANSACTION_SLIDE = 'signing-confirm-slide'
 
 const ETHEREUM_ACCOUNT = {
@@ -233,7 +254,7 @@ const review = async (
     value = '0x0',
     {
         contractMetadata = {},
-        readyTestId = 'ethereum_contract_call_to',
+        readyTestId = 'ethereum_review_target',
     }: Pick<PeraEvmContractFixtures, 'contractMetadata'> & {
         readyTestId?: string
     } = {},
@@ -261,6 +282,19 @@ const review = async (
     await waitFor(() => screen.getByTestId(readyTestId), {
         timeout: 15_000,
     })
+}
+
+const reviewTitle = () => screen.getByTestId('review_action_title').textContent
+
+const openTechnicalDetails = async () => {
+    fireEvent.click(screen.getByTestId('ethereum_view_details'))
+    await waitFor(() => screen.getByTestId('transaction_details_screen'))
+}
+
+// The technical details read the function once its ABI lookup settles.
+const openSettledTechnicalDetails = async () => {
+    await openTechnicalDetails()
+    await waitFor(() => expect(screen.queryByTestId(LOADING_ROW)).toBeNull())
 }
 
 const argumentRows = () =>
@@ -326,7 +360,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         useRemoteConfigStore.getState().resetState()
     })
 
-    it("Given a swap on a verified router, when it is reviewed, then it shows the function and its arguments from the contract's verified source, names the user's account, leaves the raw call to View details and still says the transaction wasn't checked", async () => {
+    it("Given a swap on a verified router, when it is reviewed, then it is titled by its function, still says the transaction wasn't checked and leaves the raw call to the technical details, which show the function and its arguments from the verified source and name the user's account", async () => {
         await review(
             ROUTER,
             SWAP_DATA,
@@ -338,15 +372,19 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             '0x2386f26fc10000',
         )
 
-        await waitFor(() => screen.getByTestId(FUNCTION_ROW), {
-            timeout: 15_000,
-        })
+        await waitFor(
+            () => expect(reviewTitle()).toBe('Swap exact ETH for tokens'),
+            { timeout: 15_000 },
+        )
+        expect(
+            screen.getByTestId('ethereum_contract_call_warning'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('ethereum_contract_call_data')).toBeNull()
+
+        await openSettledTechnicalDetails()
         expect(screen.getByTestId(FUNCTION_ROW).textContent).toContain(
             'swapExactETHForTokens',
         )
-        expect(
-            screen.getByTestId('ethereum_verified_call_source').textContent,
-        ).toBe('transactions.contract_call.known_source')
         expect(
             screen.queryByTestId('ethereum_verified_call_implementation'),
         ).toBeNull()
@@ -363,10 +401,6 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         expect(
             argumentRows().some(row => (row.textContent ?? '').includes(WETH)),
         ).toBe(true)
-        expect(
-            screen.getByTestId('ethereum_contract_call_warning'),
-        ).toBeTruthy()
-        expect(screen.queryByTestId('ethereum_contract_call_data')).toBeNull()
     })
 
     describe('a contract Pera curates that the app does not bundle', () => {
@@ -378,12 +412,12 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             ),
         }
 
-        it('Given an approval for it to spend a token, when it is reviewed, then the spender is named as Pera curates it', async () => {
+        it('Given an approval for it to spend a token, when its technical details are opened, then the spender is named as Pera curates it', async () => {
             await review(USDC, APPROVE_ROUTER_DATA, {}, '0x0', {
                 contractMetadata: curated,
-                readyTestId: 'message-signing-spend-approval-spender',
             })
 
+            await openTechnicalDetails()
             await waitFor(
                 () => {
                     expect(
@@ -396,7 +430,7 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             )
         })
 
-        it('Given the call the approval was for, when it is reviewed, then the contract is named the same way', async () => {
+        it('Given the call the approval was for, when it is reviewed, then the contract is named the same way on the review and in the technical details', async () => {
             await review(ROUTER, SWAP_DATA, {}, '0x2386f26fc10000', {
                 contractMetadata: curated,
             })
@@ -404,12 +438,20 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             await waitFor(
                 () => {
                     expect(
-                        screen.getByTestId('ethereum_known_contract')
+                        screen.getByTestId('ethereum_review_target')
                             .textContent,
                     ).toContain('Example V2 Router')
                 },
                 { timeout: 15_000 },
             )
+            expect(
+                screen.getByTestId('ethereum_review_target_verified'),
+            ).toBeTruthy()
+
+            await openTechnicalDetails()
+            expect(
+                screen.getByTestId('ethereum_known_contract').textContent,
+            ).toContain('Example V2 Router')
         })
 
         it('Given its project is not verified, when a call to it is reviewed, then it is not named', async () => {
@@ -427,16 +469,24 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             await waitFor(() => {
                 expect(metadataPathsRequested).toHaveLength(1)
             })
-            await waitFor(() => {
-                expect(
-                    screen.queryByTestId('ethereum_verified_call_loading'),
-                ).toBeNull()
-            })
+            expect(
+                screen.getByTestId('ethereum_review_target').textContent,
+            ).not.toContain('Example V2 Router')
+            expect(
+                screen.getByTestId('ethereum_review_target_unverified'),
+            ).toBeTruthy()
+
+            await openSettledTechnicalDetails()
             expect(screen.queryByTestId('ethereum_known_contract')).toBeNull()
+            expect(
+                screen.getByTestId(
+                    'ethereum_interacting_with_contract_unverified',
+                ),
+            ).toBeTruthy()
         })
     })
 
-    it("Given a call through a verified proxy, when it is reviewed, then it shows the implementation's function, says the contract is a proxy and names a contact", async () => {
+    it("Given a call through a verified proxy, when its technical details are opened, then they show the implementation's function and address and name a contact", async () => {
         await review(DISTRIBUTOR, CLAIM_DATA, {
             [DISTRIBUTOR.toLowerCase()]: verifiedAbiResponse(
                 [CLAIM],
@@ -444,13 +494,11 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
             ),
         })
 
+        await openTechnicalDetails()
         await waitFor(() => screen.getByTestId(FUNCTION_ROW), {
             timeout: 15_000,
         })
         expect(screen.getByTestId(FUNCTION_ROW).textContent).toContain('claim')
-        expect(
-            screen.getByTestId('ethereum_verified_call_source').textContent,
-        ).toBe('transactions.contract_call.known_source_proxy')
         expect(
             screen.getByTestId('ethereum_verified_call_implementation'),
         ).toBeTruthy()
@@ -461,18 +509,14 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         await review(ROUTER, SWAP_DATA)
 
         await waitFor(() => expect(abiPathsRequested).toHaveLength(1))
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId('ethereum_verified_call_loading'),
-            ).toBeNull(),
-        )
-        expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
-        expect(
-            screen.queryByTestId('ethereum_verified_call_lookup_failed'),
-        ).toBeNull()
+        expect(reviewTitle()).toBe('signing.review.title_contract_interaction')
         expect(
             screen.getByTestId('ethereum_contract_call_warning'),
         ).toBeTruthy()
+
+        await openSettledTechnicalDetails()
+        expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
+        expect(screen.getByTestId(SELECTOR_ROW).textContent).toBe('0x7ff36ab5')
     })
 
     it("Given calldata that doesn't re-encode exactly under the verified ABI, when it is reviewed, then it stays an unrecognised contract call", async () => {
@@ -483,25 +527,21 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         })
 
         await waitFor(() => expect(abiPathsRequested).toHaveLength(1))
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId('ethereum_verified_call_loading'),
-            ).toBeNull(),
-        )
-        expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
+        expect(reviewTitle()).toBe('signing.review.title_contract_interaction')
         expect(
             screen.getByTestId('ethereum_contract_call_warning'),
         ).toBeTruthy()
+
+        await openSettledTechnicalDetails()
+        expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
+        expect(screen.getByTestId(SELECTOR_ROW)).toBeTruthy()
     })
 
-    it("Given the backend can't answer, when a call is reviewed, then it stays unrecognised, says the name couldn't be looked up, and the user can still confirm", async () => {
+    it("Given the backend can't answer, when a call is reviewed, then it stays unrecognised and the user can still confirm", async () => {
         await review(ROUTER, SWAP_DATA, 503)
 
-        await waitFor(
-            () => screen.getByTestId('ethereum_verified_call_lookup_failed'),
-            { timeout: 15_000 },
-        )
-        expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
+        await waitFor(() => expect(abiPathsRequested).toHaveLength(1))
+        expect(reviewTitle()).toBe('signing.review.title_contract_interaction')
         expect(
             screen.getByTestId('ethereum_contract_call_warning'),
         ).toBeTruthy()
@@ -510,9 +550,13 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
                 isElementDisabled(screen.getByTestId(TRANSACTION_SLIDE)),
             ).toBe(false),
         )
+
+        await openSettledTechnicalDetails()
+        expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
+        expect(screen.getByTestId(SELECTOR_ROW)).toBeTruthy()
     })
 
-    it('Given contractDecoding is off, when a call to a verified contract is reviewed, then nothing is looked up and the review is unchanged', async () => {
+    it('Given contractDecoding is off, when a call to a verified contract is reviewed, then nothing is looked up and it stays unrecognised', async () => {
         setCapabilityOverrides(
             { dappConnect: true, contractDecoding: false },
             'ethereum',
@@ -527,10 +571,11 @@ describe('Flow: a dApp asks to call a contract whose source is verified', () => 
         expect(
             screen.getByTestId('ethereum_contract_call_warning'),
         ).toBeTruthy()
+        expect(reviewTitle()).toBe('signing.review.title_contract_interaction')
+
+        await openTechnicalDetails()
         expect(screen.queryByTestId(FUNCTION_ROW)).toBeNull()
-        expect(
-            screen.queryByTestId('ethereum_verified_call_loading'),
-        ).toBeNull()
+        expect(screen.queryByTestId(LOADING_ROW)).toBeNull()
         expect(abiPathsRequested).toEqual([])
         expect(metadataPathsRequested).toEqual([])
     })

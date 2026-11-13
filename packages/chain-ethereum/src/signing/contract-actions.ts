@@ -66,6 +66,15 @@ const AAVE_POOL_FUNCTIONS = parseAbi([
     'function repayWithPermit(address asset, uint256 amount, uint256 interestRateMode, address onBehalfOf, uint256 deadline, uint8 permitV, bytes32 permitR, bytes32 permitS)',
 ])
 
+// WrappedTokenGatewayV3: the first argument names a pool the gateway ignores
+// for its own immutable one.
+const AAVE_GATEWAY_FUNCTIONS = parseAbi([
+    'function depositETH(address pool, address onBehalfOf, uint16 referralCode)',
+    'function withdrawETH(address pool, uint256 amount, address to)',
+    'function borrowETH(address pool, uint256 amount, uint16 referralCode)',
+    'function repayETH(address pool, uint256 amount, address onBehalfOf)',
+])
+
 const PERMIT2_FUNCTIONS = parseAbi([
     'function approve(address token, address spender, uint160 amount, uint48 expiration)',
 ])
@@ -116,6 +125,67 @@ const decodeWrappedNativeAction = (call: Call): Optional<EvmContractAction> => {
     }
     if (read?.name === 'withdraw' && call.value === 0n) {
         return { kind: 'unwrap', amount: toDecimal(read.args[0] as bigint) }
+    }
+    return undefined
+}
+
+// The gateway wraps the native coin into the pool's wrapped-native reserve, so
+// that reserve is the action's asset.
+const decodeAaveGatewayAction = (
+    call: Call,
+    wrappedNative: Optional<Address>,
+): Optional<EvmContractAction> => {
+    const read = readFunction(AAVE_GATEWAY_FUNCTIONS, call.data)
+    if (!read || !wrappedNative) return undefined
+    const { name, args } = read
+    const asset = getAddress(wrappedNative)
+    const isForSigner = (address: unknown) =>
+        areEvmAddressesEqual(address as Address, call.from)
+
+    switch (name) {
+        case 'depositETH': {
+            return call.value > 0n && isForSigner(args[1])
+                ? {
+                      kind: 'supply',
+                      asset,
+                      amount: toDecimal(call.value),
+                      isEntireBalance: false,
+                  }
+                : undefined
+        }
+        case 'withdrawETH': {
+            const amount = args[1] as bigint
+            return call.value === 0n && isForSigner(args[2])
+                ? {
+                      kind: 'withdraw',
+                      asset,
+                      amount: toDecimal(amount),
+                      isEntireBalance: amount === maxUint256,
+                  }
+                : undefined
+        }
+        case 'borrowETH': {
+            const amount = args[1] as bigint
+            return call.value === 0n && amount !== maxUint256
+                ? {
+                      kind: 'borrow',
+                      asset,
+                      amount: toDecimal(amount),
+                      isEntireBalance: false,
+                  }
+                : undefined
+        }
+        case 'repayETH': {
+            // Repays at most the value sent; the gateway refunds any excess.
+            return call.value > 0n && isForSigner(args[2])
+                ? {
+                      kind: 'repay',
+                      asset,
+                      amount: toDecimal(call.value),
+                      isEntireBalance: false,
+                  }
+                : undefined
+        }
     }
     return undefined
 }
@@ -361,11 +431,16 @@ export const decodeEvmContractAction = (
             case 'aave-v3-pool': {
                 return decodeAavePoolAction(call)
             }
+            case 'aave-v3-gateway': {
+                return decodeAaveGatewayAction(call, wrappedNative)
+            }
             case 'uniswap-v3-position-manager': {
                 return decodeUniswapV3PositionAction(call, wrappedNative)
             }
             case 'uniswap-permit2':
-            case 'uniswap-v4-position-manager': {
+            case 'uniswap-v4-position-manager':
+            case 'aave-v3-rewards':
+            case 'aave-v3-adapter': {
                 return undefined
             }
         }

@@ -127,8 +127,9 @@ const ADD_LIQUIDITY_DATA =
     '0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000016488316456000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000000000001f4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2761a00000000000000000000000000000000000000000000000000000000000d89e600000000000000000000000000000000000000000000000000000000000566a9000000000000000000000000000000000000000000000000000098cb8c52800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000006b49d20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000412210e8a00000000000000000000000000000000000000000000000000000000'
 
 const TRANSACTION_SLIDE = 'signing-confirm-slide'
-const CHANGES = 'ethereum_simulation_changes'
-const UNAVAILABLE = 'ethereum_simulation_unavailable'
+const CHANGES = 'review_wallet_changes'
+const CHANGES_LOADING = 'review_wallet_changes_loading'
+const UNAVAILABLE = 'review_preview_unavailable'
 const FAILURE_WARNING = 'predicted_failure_warning'
 const FAILURE_ACKNOWLEDGE = 'review_warnings_acknowledge'
 const UNCHECKED_NOTICE = 'ethereum_contract_call_warning'
@@ -372,33 +373,29 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         useRemoteConfigStore.getState().resetState()
     })
 
-    it('Given a swap, when it is reviewed, then the estimated change leaves and arrives with their fiat value, above the signing account, and the user can still confirm', async () => {
+    it('Given a swap, when it is reviewed, then the estimated changes show what leaves and arrives with their fiat value, above the From row, and the user can still confirm', async () => {
         await review(ROUTER, SWAP_DATA, SWAP_SIMULATION, ONE_MILLI_ETH)
 
         const changes = await waitFor(() => screen.getByTestId(CHANGES), {
             timeout: 15_000,
         })
         await waitFor(() => expect(changes.textContent).toContain('USDC'))
-        expect(changes.textContent).toContain('ethereum.simulation.title')
-        expect(changes.textContent).toContain(
-            'signing.balance_impact.spend_title',
-        )
-        expect(changes.textContent).toContain(
-            'signing.balance_impact.receive_title',
-        )
-        expect(changes.textContent).toContain('ETH')
-        expect(changes.textContent).toContain('2.28296')
+        expect(changes.textContent).toContain('signing.review.changes_title')
         // 0.001 ETH at $2,040 and 2.28296 USDC at $1.
-        expect(changes.textContent).toContain('-0.001 ETH$ 2.04')
-        expect(changes.textContent).toContain('+2.28296 USDC$ 2.28')
-        expect(changes.textContent).toContain(
-            'ethereum.simulation.estimate_note',
+        const sent = screen.getByTestId(
+            `review_wallet_send_${nativeAssetFor('ethereum').assetId}`,
         )
-        const signingWith = screen.getByText(
-            'signing.transactions.signing_with',
+        expect(sent.textContent).toContain('signing.review.you_send')
+        expect(sent.textContent).toContain('0.001 ETH$ 2.04')
+        const received = screen.getByTestId(`review_wallet_receive_${USDC}`)
+        expect(received.textContent).toContain('signing.review.you_receive')
+        expect(received.textContent).toContain('2.28296 USDC$ 2.28')
+        expect(screen.getByTestId('review_wallet_net_change').textContent).toBe(
+            'signing.review.net_change≈ +$ 0.24',
         )
+        expect(changes.textContent).toContain('signing.review.changes_note')
         expect(
-            changes.compareDocumentPosition(signingWith) &
+            changes.compareDocumentPosition(screen.getByTestId('review_from')) &
                 Node.DOCUMENT_POSITION_FOLLOWING,
         ).toBeTruthy()
         expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
@@ -439,21 +436,24 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
             timeout: 15_000,
         })
         await waitFor(() => expect(changes.textContent).toContain('USDC'))
-        expect(changes.textContent).toContain(
-            'signing.balance_impact.spend_title',
+        expect(
+            screen.getByTestId(`review_wallet_send_${USDC}`).textContent,
+        ).toContain('0.353961 USDC')
+        expect(
+            screen.getByTestId(
+                `review_wallet_send_${nativeAssetFor('ethereum').assetId}`,
+            ).textContent,
+        ).toContain('0.000168 ETH')
+        const position = screen.getByTestId(
+            `review_wallet_receive_${V3_POSITION_MANAGER}/987654`,
         )
-        expect(changes.textContent).toContain(
-            'signing.balance_impact.receive_title',
-        )
-        expect(changes.textContent).toContain('-0.353961 USDC')
-        expect(changes.textContent).toContain('-0.000168 ETH')
-        expect(changes.textContent).toContain('Uniswap V3 Positions')
-        expect(changes.textContent).toContain('#987654')
+        expect(position.textContent).toContain('Uniswap V3 Positions')
+        expect(position.textContent).toContain('#987654')
         expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
         await expectSlideEnabled()
     })
 
-    it('Given a call Pera cannot decode that grants an unlimited approval to a known spender, when it is reviewed, then the change names the spender and reads as information', async () => {
+    it('Given a call Pera cannot decode that grants an unlimited approval to a known spender, when it is reviewed, then it shows as an unlimited permission with its note, not as a wallet change', async () => {
         const simulation = simulationSuccessResponse(
             [],
             [
@@ -469,32 +469,25 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
 
         await review(ROUTER, SWAP_DATA, simulation)
 
-        const approval = await waitFor(
-            () => screen.getByTestId('ethereum_simulation_approval'),
+        const permission = await waitFor(
+            () => screen.getByTestId('ethereum_review_permission'),
             { timeout: 15_000 },
         )
-        expect(
-            screen.getByTestId('ethereum_simulation_approval_spender')
-                .textContent,
-        ).toContain('Permit2')
-        expect(approval.textContent).toContain(
-            'signing.spend_approval.unlimited',
+        // The spender's name is interpolated, and integration i18n prints keys.
+        expect(permission.textContent).toContain(
+            'signing.review.permission_spender',
         )
-        // A registry spender reads as information, as the decoded review does.
         expect(
-            screen.getByTestId('ethereum_simulation_approval_note').textContent,
-        ).toBe('signing.spend_approval.known_unlimited_note')
+            screen.getByTestId('ethereum_review_permission_amount').textContent,
+        ).toBe('signing.review.permission_unlimited')
+        // The design keeps the unlimited note for a registry spender too.
         expect(
-            screen.queryByTestId('ethereum_simulation_approval_warning'),
-        ).toBeNull()
-        // The token is named by its contract, not only by its unit.
-        expect(
-            screen.getByTestId('ethereum_simulation_approval_asset')
-                .textContent,
-        ).toContain(USDC.slice(0, 6))
+            screen.getByTestId('ethereum_review_permission_unlimited'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId(CHANGES)).toBeNull()
     })
 
-    it('Given an approve Pera decodes, when it is reviewed, then the approval shows once, in the call review, and not again as an estimated change', async () => {
+    it('Given an approve Pera decodes, when it is reviewed, then the approval shows once, as the permission, and not again as an estimated change', async () => {
         const simulation = simulationSuccessResponse(
             [],
             [
@@ -512,14 +505,11 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
 
         await waitFor(() => expect(simulationPathsRequested).toHaveLength(1))
         await waitFor(() =>
-            expect(
-                screen.queryByTestId('ethereum_simulation_loading'),
-            ).toBeNull(),
+            expect(screen.queryByTestId(CHANGES_LOADING)).toBeNull(),
         )
         expect(
-            screen.getByTestId('message-signing-spend-approval-spender'),
-        ).toBeTruthy()
-        expect(screen.queryByTestId('ethereum_simulation_approval')).toBeNull()
+            screen.getAllByTestId('ethereum_review_permission'),
+        ).toHaveLength(1)
         expect(screen.queryByTestId(CHANGES)).toBeNull()
         expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
         await expectSlideEnabled()
@@ -551,7 +541,7 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         await expectSlideEnabled()
     })
 
-    it("Given a call whose gas estimate reverts and a simulation endpoint that fails, when it is reviewed, then the node's refusal still gates Confirm", async () => {
+    it("Given a call whose gas estimate reverts and a simulation endpoint that fails, when it is reviewed, then the node's refusal still gates Confirm and the changes read as unavailable", async () => {
         await review(
             ROUTER,
             SWAP_DATA,
@@ -566,7 +556,7 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         await waitFor(() => screen.getByTestId(FAILURE_WARNING), {
             timeout: 15_000,
         })
-        expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
+        expect(screen.getByTestId(UNAVAILABLE)).toBeTruthy()
         // The node already said it reverts, so the backend is never asked.
         expect(simulationPathsRequested).toEqual([])
         await waitFor(() =>
@@ -638,7 +628,7 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         await expectSlideEnabled()
     })
 
-    it("Given a call Pera can't name and a simulation that is unavailable, when it is reviewed, then only the unchecked-call notice shows", async () => {
+    it("Given a call Pera can't name and a simulation that is unavailable, when it is reviewed, then the unchecked-call notice shows and the changes read as unavailable", async () => {
         await review(
             ROUTER,
             SWAP_DATA,
@@ -648,17 +638,15 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
 
         await waitFor(() => expect(simulationPathsRequested).toHaveLength(1))
         await waitFor(() =>
-            expect(
-                screen.queryByTestId('ethereum_simulation_loading'),
-            ).toBeNull(),
+            expect(screen.queryByTestId(CHANGES_LOADING)).toBeNull(),
         )
         expect(screen.getByTestId(UNCHECKED_NOTICE)).toBeTruthy()
-        expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
+        expect(screen.getByTestId(UNAVAILABLE)).toBeTruthy()
         expect(screen.queryByTestId(CHANGES)).toBeNull()
         await expectSlideEnabled()
     })
 
-    it('Given contractDecoding is off, when a swap is reviewed, then nothing is simulated and the review is unchanged', async () => {
+    it('Given contractDecoding is off, when a swap is reviewed, then nothing is simulated and the changes read as unavailable', async () => {
         setCapabilityOverrides(
             { dappConnect: true, contractDecoding: false },
             'ethereum',
@@ -670,7 +658,7 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         await new Promise(resolve => setTimeout(resolve, 300))
         expect(screen.getByTestId(UNCHECKED_NOTICE)).toBeTruthy()
         expect(screen.queryByTestId(CHANGES)).toBeNull()
-        expect(screen.queryByTestId(UNAVAILABLE)).toBeNull()
+        expect(screen.getByTestId(UNAVAILABLE)).toBeTruthy()
         expect(simulationPathsRequested).toEqual([])
     })
 })

@@ -16,6 +16,7 @@
 // taps for every dApp signing request; local send/swap flows bypass it.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { within } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -81,17 +82,24 @@ describe('Flow: interactive transaction review (WalletConnect → review sheet)'
         )
 
         // i18n isn't initialized here, so copy renders as raw keys.
-        expect(screen.getByText('transactions.summary.payment_to')).toBeTruthy()
+        expect(screen.getByTestId('review_action_title').textContent).toBe(
+            'transactions.list_item.send',
+        )
         expect(
-            screen.getAllByText(
+            within(screen.getByTestId('algorand_review_target')).getByText(
                 truncateAlgorandAddress(REVIEW_RECEIVER_ADDRESS),
-            ).length,
-        ).toBeGreaterThan(0)
-        expect(
-            screen.getByText('signing.transactions.signing_with'),
+            ),
         ).toBeTruthy()
-        expect(screen.getAllByText('Review Signer').length).toBeGreaterThan(0)
-        expect(screen.getByText('transactions.common.tx_fee')).toBeTruthy()
+        expect(
+            within(screen.getByTestId('review_from')).getByText(
+                'Review Signer',
+            ),
+        ).toBeTruthy()
+        expect(
+            within(screen.getByTestId('algorand_review_fee')).getByTestId(
+                'algorand_review_fee_amount',
+            ),
+        ).toBeTruthy()
 
         confirm()
 
