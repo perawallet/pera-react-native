@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url'
 import {
     openApprovalSurface,
     expectApprovalSurfaceUrl,
-    selectAccountAndArmConnect,
+    selectEvmAccountAndArmConnect,
     standInForToolbarPopup,
     tapToConfirm,
     trackPageErrors,
@@ -383,13 +383,12 @@ test.describe('signing from a connected dApp', () => {
         await startRequest('connect', { method: 'eth_requestAccounts' })
         const { approvalPage } = await openApproval()
         const connectButton = approvalPage.getByTestId('wc-connect-connect')
-        const firstRow = approvalPage
-            .locator('[data-testid^="wc_account_row_"]')
-            .first()
-        await expect(firstRow).toBeVisible({ timeout: 20_000 })
-        await expect(firstRow.getByTestId('chain_icon_ethereum')).toBeVisible()
-        const rowText = (await firstRow.textContent()) ?? ''
-        await selectAccountAndArmConnect(approvalPage, connectButton)
+        const row = await selectEvmAccountAndArmConnect(
+            approvalPage,
+            connectButton,
+        )
+        await expect(row.getByTestId('chain_icon_ethereum')).toBeVisible()
+        const rowText = (await row.textContent()) ?? ''
         await connectButton.click()
         const connected = await outcomeOf('connect')
         expect(connected.code, connected.message).toBeUndefined()
