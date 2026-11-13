@@ -33,8 +33,19 @@ const toBlocks = (newsId: string, html: string): ArticleBlock[] => {
             newsId,
             error,
         })
+        // Same drops as the parser, so script or style text never shows.
         const value = html
+            .replace(
+                /<(script|style|iframe|object|noscript|template)\b[\s\S]*?<\/\1\s*>/gi,
+                ' ',
+            )
             .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&')
             .replace(/\s+/g, ' ')
             .trim()
         return value

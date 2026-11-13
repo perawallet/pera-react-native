@@ -12,12 +12,13 @@
 
 import { Fragment, type ReactNode } from 'react'
 import { PWText, PWView } from '@components/core'
+import type { TypographyVariant } from '@theme/typography'
 import {
     toArticleLinkUrl,
     type ArticleBlock,
     type ArticleInline,
-    type ArticleText,
 } from '../../utils/articleHtml'
+import { articleRunStyle } from '../../utils/articleRunStyle'
 import { ArticleImage } from './ArticleImage'
 import { useStyles } from './styles'
 
@@ -39,11 +40,6 @@ const HEADING_VARIANT = {
     6: 'h4',
 } as const
 
-const textVariant = (piece: ArticleText) => {
-    if (piece.code) return 'mono'
-    return piece.bold ? 'bodySemibold' : 'body'
-}
-
 export const ArticleContent = ({
     blocks,
     onLinkPress,
@@ -51,30 +47,47 @@ export const ArticleContent = ({
 }: ArticleContentProps) => {
     const styles = useStyles()
 
-    const renderInline = (pieces: ArticleInline[]): ReactNode =>
+    // Each run inherits from the Text around it (block or link), see articleRunStyle.
+    const renderInline = (
+        pieces: ArticleInline[],
+        base: TypographyVariant,
+        inLink: boolean,
+    ): ReactNode =>
         pieces.map((piece, index) => {
             if (piece.type === 'break') return '\n'
             if (piece.type === 'link') {
-                const children = renderInline(piece.children)
                 if (toArticleLinkUrl(piece.href) === null) {
-                    return <Fragment key={index}>{children}</Fragment>
+                    return (
+                        <Fragment key={index}>
+                            {renderInline(piece.children, base, inLink)}
+                        </Fragment>
+                    )
                 }
                 return (
                     <PWText
                         key={index}
-                        variant='link'
+                        variant={base}
+                        style={styles.link}
                         onPress={() => onLinkPress(piece.href)}
                         testID='discover_news_article_link'
                     >
-                        {children}
+                        {renderInline(piece.children, base, true)}
                     </PWText>
                 )
+            }
+            const look = articleRunStyle(piece, base, inLink)
+            if (look.plain) {
+                return <Fragment key={index}>{piece.value}</Fragment>
             }
             return (
                 <PWText
                     key={index}
-                    variant={textVariant(piece)}
-                    style={piece.italic ? styles.italic : undefined}
+                    variant={look.variant}
+                    weight={look.weight}
+                    style={[
+                        look.italic && styles.italic,
+                        look.link && styles.link,
+                    ]}
                 >
                     {piece.value}
                 </PWText>
@@ -90,14 +103,18 @@ export const ArticleContent = ({
                             key={index}
                             variant={HEADING_VARIANT[block.level]}
                         >
-                            {renderInline(block.children)}
+                            {renderInline(
+                                block.children,
+                                HEADING_VARIANT[block.level],
+                                false,
+                            )}
                         </PWText>
                     )
                 }
                 case 'paragraph': {
                     return (
                         <PWText key={index}>
-                            {renderInline(block.children)}
+                            {renderInline(block.children, 'body', false)}
                         </PWText>
                     )
                 }

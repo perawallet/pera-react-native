@@ -72,6 +72,9 @@ const RootStack = createNativeStackNavigator<RootStackParamList>()
 // Age-gated at the navigator so the screen (and its data fetching) only mounts
 // for users who pass the gate; blocked users see the restricted view instead.
 const GatedStakingScreen = withAgeGate(StakingScreen)
+// Deeplinks reach these directly, past the age-gated Discover tab.
+const GatedDiscoverNewsScreen = withAgeGate(DiscoverNewsScreen)
+const GatedDiscoverNewsDetailScreen = withAgeGate(DiscoverNewsDetailScreen)
 
 export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
@@ -273,7 +276,7 @@ export const MainRoutes = () => {
                                         'discover.news.title',
                                     )}
                                     layout={fullScreenLayout}
-                                    component={DiscoverNewsScreen}
+                                    component={GatedDiscoverNewsScreen}
                                 />
                             )}
                         {isNativeDiscover &&
@@ -287,7 +290,7 @@ export const MainRoutes = () => {
                                         'discover.news.title',
                                     )}
                                     layout={fullScreenLayout}
-                                    component={DiscoverNewsDetailScreen}
+                                    component={GatedDiscoverNewsDetailScreen}
                                 />
                             )}
                         <RootStack.Screen

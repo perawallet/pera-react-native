@@ -112,6 +112,16 @@ describe('useDiscoverNewsDetailScreen', () => {
     })
 
     it('falls back to plain text and logs when the article cannot be parsed', () => {
+        mockDetail({
+            data: {
+                id: 'n1',
+                title: 'Big news',
+                banner: null,
+                publishedAt: new Date('2026-11-09T10:00:00Z'),
+                contentHtml:
+                    '<p>Tom &amp; Jerry</p><script>steal()</script><style>p{}</style><p>x</p>',
+            },
+        })
         const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
         vi.spyOn(articleHtml, 'parseArticleHtml').mockImplementation(() => {
             throw new RangeError('Maximum call stack size exceeded')
@@ -121,7 +131,10 @@ describe('useDiscoverNewsDetailScreen', () => {
             {
                 type: 'paragraph',
                 children: [
-                    expect.objectContaining({ type: 'text', value: 'Hello x' }),
+                    expect.objectContaining({
+                        type: 'text',
+                        value: 'Tom & Jerry x',
+                    }),
                 ],
             },
         ])

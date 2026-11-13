@@ -143,7 +143,8 @@ describe('Flow: Discover news', () => {
         useDetail()
         renderDetail()
 
-        fireEvent.click(await screen.findByText('do not click'))
+        // Not a link: its text is part of the paragraph's text.
+        fireEvent.click(await screen.findByText(/do not click/))
 
         expect(
             screen.getAllByTestId('discover_news_article_link'),

@@ -19,6 +19,9 @@ export const useStyles = makeStyles(theme => ({
     italic: {
         fontStyle: 'italic',
     },
+    link: {
+        color: theme.colors.linkPrimary,
+    },
     listItem: {
         flexDirection: 'row',
         gap: theme.spacing.sm,
