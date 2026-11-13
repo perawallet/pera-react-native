@@ -31,7 +31,7 @@ export type DiscoverPathDeeplinkHandler = (params: {
  * the Discover screen runs (defense in depth). An Algorand-only build hands
  * the path to the Discover web app in its tab; a multichain build, whose
  * Discover tab is native, routes to native asset details, the native dApp
- * directory or the Discover home, never to the web app.
+ * directory, native news or the Discover home, never to the web app.
  */
 export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
     const { errorToast } = useToast()
@@ -79,6 +79,20 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                     'DiscoverDapps',
                     undefined,
                 )
+                return true
+            }
+            if (target.kind === 'news') {
+                navigateToScreen(
+                    replaceCurrentScreen,
+                    'DiscoverNews',
+                    undefined,
+                )
+                return true
+            }
+            if (target.kind === 'newsDetail') {
+                navigateToScreen(replaceCurrentScreen, 'DiscoverNewsDetail', {
+                    newsId: target.newsId,
+                })
                 return true
             }
             // The native Discover never opens the Discover web app; a page it

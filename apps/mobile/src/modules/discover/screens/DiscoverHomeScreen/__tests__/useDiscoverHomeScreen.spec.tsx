@@ -172,6 +172,31 @@ describe('useDiscoverHomeScreen', () => {
             const { result } = setup()
             expect(result.current.news.items).toEqual([])
         })
+
+        it('openNewsItem tracks the tap and opens the native detail', () => {
+            const { result } = setup()
+            act(() =>
+                result.current.openNewsItem({
+                    id: 'n1',
+                    title: 'Big news',
+                    banner: null,
+                    dateDisplay: '09 Nov 2026',
+                }),
+            )
+            expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.NewsOpenTap, {
+                news_title: 'Big news',
+            })
+            expect(navigate).toHaveBeenCalledWith('DiscoverNewsDetail', {
+                newsId: 'n1',
+            })
+        })
+
+        it('openNewsList tracks the tap and opens the native list', () => {
+            const { result } = setup()
+            act(() => result.current.openNewsList())
+            expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.NewsButtonTap)
+            expect(navigate).toHaveBeenCalledWith('DiscoverNews')
+        })
     })
 
     describe('navigation', () => {

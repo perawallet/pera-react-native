@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import type { NewsItemApiResponse } from './schema'
-import type { DiscoverNewsItemRaw } from '../../models/types'
+import type { NewsDetailApiResponse, NewsItemApiResponse } from './schema'
+import type {
+    DiscoverNewsDetailRaw,
+    DiscoverNewsItemRaw,
+} from '../../models/types'
 
 export const transformNewsItem = (
     item: NewsItemApiResponse,
@@ -20,4 +23,11 @@ export const transformNewsItem = (
     title: item.title,
     banner: item.banner ?? null,
     publishedAt: item.publishing_datetime,
+})
+
+export const transformNewsDetail = (
+    item: NewsDetailApiResponse,
+): DiscoverNewsDetailRaw => ({
+    ...transformNewsItem(item),
+    contentHtml: item.content_html,
 })

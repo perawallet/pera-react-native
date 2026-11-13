@@ -11,7 +11,14 @@
  */
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { PWImage, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWImage,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type NewsCardProps = {
@@ -20,6 +27,8 @@ export type NewsCardProps = {
     dateDisplay: string
     /** Left out until the card has a native destination; the card is then inert. */
     onPress?: () => void
+    /** The full-width list card's "Read" cue, as the web news list. */
+    showReadAction?: boolean
     testID?: string
 }
 
@@ -28,9 +37,11 @@ export const NewsCard = ({
     banner,
     dateDisplay,
     onPress,
+    showReadAction = false,
     testID,
 }: NewsCardProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     return (
         <PWTouchableOpacity
@@ -54,12 +65,25 @@ export const NewsCard = ({
                 >
                     {title}
                 </PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.date}
-                >
-                    {dateDisplay}
-                </PWText>
+                <PWView style={styles.footer}>
+                    <PWText
+                        variant='caption'
+                        style={styles.date}
+                    >
+                        {dateDisplay}
+                    </PWText>
+                    {showReadAction ? (
+                        <PWView style={styles.read}>
+                            <PWText variant='captionMedium'>
+                                {t('discover.news.read')}
+                            </PWText>
+                            <PWIcon
+                                name='chevron-right'
+                                size='xs'
+                            />
+                        </PWView>
+                    ) : null}
+                </PWView>
             </PWView>
         </PWTouchableOpacity>
     )

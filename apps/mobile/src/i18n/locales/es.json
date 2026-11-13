@@ -58,6 +58,12 @@
             "assets_unavailable": "La búsqueda de activos no está disponible en este momento",
             "dapps_unavailable": "La búsqueda de dApps no está disponible en este momento"
         },
+        "news": {
+            "title": "Noticias",
+            "read": "Leer",
+            "load_failure": "Error al cargar los detalles de la noticia.",
+            "list_failure": "Error al cargar las noticias"
+        },
         "dapps": {
             "title": "dApps",
             "list_title": "dApps en Pera",

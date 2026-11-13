@@ -73,6 +73,8 @@ export type RootStackParamList = {
      * Discover route (e.g. `token-detail/ALGO`), validated on load. */
     DiscoverDetail: { path: string }
     DiscoverSearch: undefined
+    DiscoverNews: undefined
+    DiscoverNewsDetail: { newsId: string }
     /** Native dApp directory; opens on `chainId` when it supports Discover. */
     DiscoverDapps: Optional<{ chainId?: ChainId }>
     BannersCarouselModal: Optional<{ bannerId?: string }>

@@ -12,7 +12,12 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import { newsListResponseSchema, type NewsListApiResponse } from './schema'
+import {
+    newsDetailResponseSchema,
+    newsListResponseSchema,
+    type NewsDetailApiResponse,
+    type NewsListApiResponse,
+} from './schema'
 
 export type MockDiscoverNewsParams = {
     response: NewsListApiResponse
@@ -25,6 +30,27 @@ export const mockDiscoverNews = ({
 }: MockDiscoverNewsParams): HttpHandler => {
     validateMockResponse(newsListResponseSchema, response, 'mockDiscoverNews')
     return http.get('*/v1/discover/news/', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export type MockDiscoverNewsDetailParams = {
+    id: string
+    response: NewsDetailApiResponse
+    status?: number
+}
+
+export const mockDiscoverNewsDetail = ({
+    id,
+    response,
+    status = 200,
+}: MockDiscoverNewsDetailParams): HttpHandler => {
+    validateMockResponse(
+        newsDetailResponseSchema,
+        response,
+        'mockDiscoverNewsDetail',
+    )
+    return http.get(`*/v1/discover/news/${encodeURIComponent(id)}/`, () =>
         HttpResponse.json(response, { status }),
     )
 }

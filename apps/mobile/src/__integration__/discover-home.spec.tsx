@@ -118,6 +118,14 @@ const renderHome = () =>
                 component: () => <div data-testid='detail_screen' />,
             },
             {
+                name: 'DiscoverNews',
+                component: () => <div data-testid='news_screen' />,
+            },
+            {
+                name: 'DiscoverNewsDetail',
+                component: () => <div data-testid='news_detail_screen' />,
+            },
+            {
                 name: 'DiscoverDapps',
                 component: () => <div data-testid='dapps_screen' />,
             },
@@ -281,7 +289,7 @@ describe('Flow: Discover home', () => {
         expect(screen.queryByText('discover.home.news')).toBeNull()
     })
 
-    it('Given news, then the cards render under a News header and nothing opens the Discover web app', async () => {
+    it('Given news, then the News header opens the native news list', async () => {
         useHandlers()
         renderHome()
 
@@ -289,7 +297,19 @@ describe('Flow: Discover home', () => {
         expect(screen.getByText('Second story')).toBeTruthy()
 
         fireEvent.click(screen.getByText('discover.home.news'))
-        fireEvent.click(screen.getByText('First story'))
+
+        expect(await screen.findByTestId('news_screen')).toBeTruthy()
+        expect(screen.queryByTestId('detail_screen')).toBeNull()
+        await flush()
+    })
+
+    it('Given news, then a card opens the native news detail', async () => {
+        useHandlers()
+        renderHome()
+
+        fireEvent.click(await screen.findByText('First story'))
+
+        expect(await screen.findByTestId('news_detail_screen')).toBeTruthy()
         expect(screen.queryByTestId('detail_screen')).toBeNull()
         await flush()
     })
