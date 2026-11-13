@@ -259,8 +259,10 @@ the credential and the device headers. It is built for every configured scope, o
 credential is the API key on native and the integrity token as a Bearer on web, where the extension
 bakes no key; there a refused Pera call throws `IntegrityRequiredError` and a guarded call waits up
 to the realm's bound for a token still on its way. A call to an integrity-guarded route (the
-card, fee-delegation and EVM routes) also passes `headers: buildIntegrityHeaders()` from
-`@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
+card, fee-delegation and EVM routes) also passes `headers: await buildIntegrityHeadersWhenReady()`
+from `@perawallet/wallet-core-app-integrity`, which carries the native token and the staging bypass.
+The native token lives in memory only, so every launch attests again; a production build's guarded
+call waits, capped, for that attestation instead of going out refused.
 
 `queryClient` serves the Pera and backup backends only, never a chain's nodes, so a Pera credential
 cannot reach a third-party node. Each chain builds its own node clients from the `ChainContext` it

@@ -14,8 +14,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppIntegrityStore } from '../../store'
 import {
     buildIntegrityHeaders,
+    buildIntegrityHeadersWhenReady,
     canCallIntegrityGuardedRoute,
 } from '../integrityHeaders'
+
+const waitMock = vi.hoisted(() => vi.fn())
+vi.mock('../registerAppIntegrity', () => ({
+    waitForIntegrityRegistration: waitMock,
+}))
 
 const mockConfig = vi.hoisted(() => ({
     appEnvironment: 'production' as string,
@@ -96,4 +102,53 @@ describe('canCallIntegrityGuardedRoute', () => {
 
         expect(canCallIntegrityGuardedRoute(token)).toBe(expected)
     })
+})
+
+describe('buildIntegrityHeadersWhenReady', () => {
+    beforeEach(() => {
+        useAppIntegrityStore.getState().resetState()
+        waitMock.mockReset().mockResolvedValue(undefined)
+    })
+
+    const setToken = () =>
+        useAppIntegrityStore.getState().setRegistration({
+            integrityToken: 'jwt',
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            keyId: 'k1',
+            deviceInstallationId: 'd1',
+        })
+
+    it('reads the token after the wait, so one minted meanwhile is sent', async () => {
+        mockConfig.appEnvironment = 'production'
+        waitMock.mockImplementation(async () => setToken())
+
+        await expect(buildIntegrityHeadersWhenReady()).resolves.toEqual(TOKEN)
+        expect(waitMock).toHaveBeenCalledOnce()
+    })
+
+    it('sends no token when the wait ends without one', async () => {
+        mockConfig.appEnvironment = 'production'
+
+        await expect(buildIntegrityHeadersWhenReady()).resolves.toEqual({})
+    })
+
+    it('does not wait when a valid token is already held', async () => {
+        mockConfig.appEnvironment = 'production'
+        setToken()
+
+        await expect(buildIntegrityHeadersWhenReady()).resolves.toEqual(TOKEN)
+        expect(waitMock).not.toHaveBeenCalled()
+    })
+
+    it.each(['staging', 'development'])(
+        'does not wait on %s, which sends the bypass',
+        async environment => {
+            mockConfig.appEnvironment = environment
+
+            await expect(buildIntegrityHeadersWhenReady()).resolves.toEqual(
+                BYPASS,
+            )
+            expect(waitMock).not.toHaveBeenCalled()
+        },
+    )
 })

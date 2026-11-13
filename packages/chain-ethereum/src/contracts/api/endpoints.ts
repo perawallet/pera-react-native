@@ -12,7 +12,7 @@
 
 import { getAddress, type Address } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import {
     isPeraServiceUnavailableError,
     queryClient,
@@ -73,7 +73,7 @@ const fetchContractPart = async (
                 address.toLowerCase(),
             ),
             params: { include: part },
-            headers: buildIntegrityHeaders(),
+            headers: await buildIntegrityHeadersWhenReady(),
             ...BOUNDS[part],
         }))
     } catch (error) {

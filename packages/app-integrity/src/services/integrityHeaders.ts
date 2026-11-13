@@ -13,6 +13,7 @@
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { getValidIntegrityToken } from './getValidIntegrityToken'
+import { waitForIntegrityRegistration } from './registerAppIntegrity'
 
 export const INTEGRITY_TOKEN_HEADER = 'x-app-integrity-token'
 export const INTEGRITY_BYPASS_HEADER = 'x-bypass-integrity'
@@ -51,3 +52,17 @@ export const buildIntegrityHeaders = (
 export const canCallIntegrityGuardedRoute = (
     token: Nullable<string> = getValidIntegrityToken(),
 ): boolean => Boolean(token) || isBypassEnvironment()
+
+/**
+ * The headers for a guarded request. The native token is memory-only and minted
+ * by the launch's attestation, so a production build holds for it (capped)
+ * rather than going out refused; dev and staging send the bypass and never wait.
+ */
+export const buildIntegrityHeadersWhenReady = async (): Promise<
+    Record<string, string>
+> => {
+    if (getValidIntegrityToken() === null && !isBypassEnvironment()) {
+        await waitForIntegrityRegistration()
+    }
+    return buildIntegrityHeaders()
+}

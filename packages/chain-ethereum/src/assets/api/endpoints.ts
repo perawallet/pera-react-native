@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import { Decimal } from 'decimal.js'
 import type { PriceHistoryPoint } from '@perawallet/wallet-core-assets'
 import {
@@ -80,7 +80,7 @@ export const fetchAssetItems = async (
         scope,
         method: 'POST',
         url: ASSETS_PATH,
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         data: { ids },
         signal,
     })
@@ -118,7 +118,7 @@ export const fetchWhitelist = async (
         scope,
         method: 'GET',
         url: whitelistPath(eip155ChainIdOf(scope, chain)),
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
     })
     const { results } = whitelistResponseSchema.parse(data)
     return results.flatMap(row => toWhitelistRow(row, scope, chain) ?? [])
@@ -148,7 +148,7 @@ export const fetchNftHoldings = async (
             method: 'GET',
             url,
             params: cursor === null ? undefined : { cursor },
-            headers: buildIntegrityHeaders(),
+            headers: await buildIntegrityHeadersWhenReady(),
         })
         const { results, next } = nftHoldingsPageSchema.parse(data)
         for (const row of results) {
@@ -184,7 +184,7 @@ export const fetchHasNftHoldings = async (
             eip155ChainIdOf(scope, chain),
             address.toLowerCase(),
         ),
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         signal,
         ...DISCOVERY_LOOKUP_BOUNDS,
     })
@@ -211,7 +211,7 @@ export const fetchNftItems = async (
         scope,
         method: 'POST',
         url: NFTS_PATH,
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         data: { ids },
     })
     const items = nftsResponseSchema.parse(data).results.map(row => {
@@ -262,7 +262,7 @@ export const fetchPriceChart = async (
             method: 'GET',
             url: CHART_PATH,
             params: { id: toCaip19(assetId, scope, chain), ...query },
-            headers: buildIntegrityHeaders(),
+            headers: await buildIntegrityHeadersWhenReady(),
             signal,
             timeout: CHART_QUERY_TIMEOUT_MS,
         })

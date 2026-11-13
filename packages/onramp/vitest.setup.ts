@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 
 // Router calls attach app-integrity headers, which need the device keystore.
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    buildIntegrityHeaders: () => ({}),
+    buildIntegrityHeadersWhenReady: async () => ({}),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
