@@ -18,6 +18,9 @@ type MockAccount = { id: string; chains: Record<string, { address: string }> }
 const mocks = vi.hoisted(() => ({
     accounts: [] as MockAccount[],
     registry: null as null | { changeAccount: ReturnType<typeof vi.fn> },
+    activeRegistry: null as null | {
+        changeAccount: ReturnType<typeof vi.fn>
+    },
     pickAccount: vi.fn(),
     showError: vi.fn(),
 }))
@@ -27,6 +30,7 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
         typeof import('@perawallet/wallet-core-connections')
     >()),
     useOptionalConnectionRegistry: () => mocks.registry,
+    getActiveConnectionRegistry: () => mocks.activeRegistry,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -85,6 +89,7 @@ describe('useChangeConnectionAccount', () => {
         vi.clearAllMocks()
         mocks.accounts = [ONE, TWO, ALGO]
         mocks.registry = { changeAccount: vi.fn(async () => {}) }
+        mocks.activeRegistry = null
         mocks.pickAccount.mockResolvedValue(null)
     })
 
@@ -107,7 +112,27 @@ describe('useChangeConnectionAccount', () => {
         expect(result.current.isAvailable).toBe(false)
     })
 
-    it('is unavailable outside a connections provider', () => {
+    // The in-app browser renders in a bottom sheet, which sits above the
+    // provider; the app's registry is still the one to change through.
+    it('changes through the app registry when rendered outside the provider', async () => {
+        mocks.registry = null
+        mocks.activeRegistry = { changeAccount: vi.fn(async () => {}) }
+        mocks.pickAccount.mockResolvedValueOnce('two')
+        const { result } = renderHook(() =>
+            useChangeConnectionAccount(CONNECTION),
+        )
+
+        expect(result.current.isAvailable).toBe(true)
+        await act(() => result.current.handleChangeAccount())
+
+        expect(mocks.activeRegistry.changeAccount).toHaveBeenCalledWith(
+            'session-1',
+            'ethereum',
+            '0x2',
+        )
+    })
+
+    it('is unavailable with no registry at all', () => {
         mocks.registry = null
         const { result } = renderHook(() =>
             useChangeConnectionAccount(CONNECTION),

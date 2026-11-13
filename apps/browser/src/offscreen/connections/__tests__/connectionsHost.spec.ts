@@ -651,14 +651,28 @@ describe('startConnectionsHost', () => {
             ).toEqual({ ok: true })
         })
 
-        it('ignores an approval mark for a request it does not hold', async () => {
+        // A mark for a request the host does not hold must not linger and
+        // spare a later request that reuses its key.
+        it('ignores an approval mark for a request it does not hold yet', async () => {
             expect(
                 await control({
                     kind: 'mark-request-approved',
                     connectionId: 'conn-1',
-                    correlationId: 'gone',
+                    correlationId: '7',
                 }),
             ).toEqual({ ok: true })
+            const request = makeRequest({ correlationId: '7' })
+            fake.emitMessage(request)
+
+            fake.emitMessage({
+                kind: 'request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            expect(request.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ failure: 'user-rejected' }),
+            )
         })
 
         it('withdraws nothing for an expiry on a request already answered', () => {

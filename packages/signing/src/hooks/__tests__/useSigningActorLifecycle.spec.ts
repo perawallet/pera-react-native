@@ -632,6 +632,58 @@ describe('useSigningActorLifecycle', () => {
         expect(isSignRequestPastApproval('tx-past')).toBe(true)
     })
 
+    // A review that failed before the user approved (a retryable network
+    // error in validation) is not approved: its Retry brings the review back.
+    test('isSignRequestPastApproval is false for a request that failed before it was approved', async () => {
+        const actor = makeMockActor('tx-failed-early')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+        renderHook(() => useSigningActorLifecycle())
+        const request = makeTxRequest({
+            id: 'tx-failed-early',
+            sourceType: 'walletconnect',
+        })
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+
+        act(() => {
+            actor.emit({ value: 'validating', request })
+        })
+        act(() => {
+            actor.emit({ value: 'failed', request })
+        })
+
+        expect(isSignRequestPastApproval('tx-failed-early')).toBe(false)
+    })
+
+    test('isSignRequestPastApproval holds for a request that failed while signing, and drops once a retry returns it to review', async () => {
+        const actor = makeMockActor('tx-failed-late')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+        renderHook(() => useSigningActorLifecycle())
+        const request = makeTxRequest({
+            id: 'tx-failed-late',
+            sourceType: 'walletconnect',
+        })
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+
+        act(() => {
+            actor.emit({ value: { signing: 'hardware' }, request })
+        })
+        act(() => {
+            actor.emit({ value: 'failed', request })
+        })
+        expect(isSignRequestPastApproval('tx-failed-late')).toBe(true)
+
+        act(() => {
+            actor.emit({ value: 'awaiting_user', request })
+        })
+        expect(isSignRequestPastApproval('tx-failed-late')).toBe(false)
+    })
+
     test('rejected gate result forwards USER_REJECTED to the actor', async () => {
         const actor = makeMockActor('tx-reject')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)

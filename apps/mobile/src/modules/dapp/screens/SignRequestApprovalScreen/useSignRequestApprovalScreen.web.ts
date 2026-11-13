@@ -34,8 +34,8 @@ import {
     encodeWalletOperationResult,
     failConnectionRequest,
     rebuildWireError,
+    markConnectionRequestApproved,
     resolveConnectionRequest,
-    sendConnectionsControlMessage,
     submitConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
@@ -194,11 +194,10 @@ export const useSignRequestApprovalScreen =
                 event.request.transportId === connectionRequest.connectionId,
             () => {
                 if (!connectionRequest) return
-                sendConnectionsControlMessage({
-                    kind: 'mark-request-approved',
-                    connectionId: connectionRequest.connectionId,
-                    correlationId: connectionRequest.correlationId,
-                }).catch((markError: unknown) => {
+                markConnectionRequestApproved(
+                    connectionRequest.connectionId,
+                    connectionRequest.correlationId,
+                ).catch((markError: unknown) => {
                     logger.warn(
                         '[dapp] marking a connection request approved failed',
                         { error: markError },

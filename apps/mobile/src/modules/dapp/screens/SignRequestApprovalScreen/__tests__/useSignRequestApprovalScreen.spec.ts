@@ -38,7 +38,7 @@ const mocks = vi.hoisted(() => {
         useAllAccounts: vi.fn(),
         confirmNetworkSwitch: vi.fn(),
         useSigningEvent: vi.fn(),
-        sendConnectionsControlMessage: vi.fn(async () => undefined),
+        markConnectionRequestApproved: vi.fn(async () => undefined),
     }
 })
 
@@ -71,7 +71,7 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     resolveConnectionRequest: mocks.resolveConnectionRequest,
-    sendConnectionsControlMessage: mocks.sendConnectionsControlMessage,
+    markConnectionRequestApproved: mocks.markConnectionRequestApproved,
     declineConnectionRequest: mocks.declineConnectionRequest,
     failConnectionRequest: mocks.failConnectionRequest,
     submitConnectionRequest: mocks.submitConnectionRequest,
@@ -205,11 +205,10 @@ describe('useSignRequestApprovalScreen', () => {
         expect(predicate(started)).toBe(true)
         handler(started)
 
-        expect(mocks.sendConnectionsControlMessage).toHaveBeenCalledWith({
-            kind: 'mark-request-approved',
-            connectionId: 'connection-1',
-            correlationId: '9',
-        })
+        expect(mocks.markConnectionRequestApproved).toHaveBeenCalledWith(
+            'connection-1',
+            '9',
+        )
     })
 
     it('dismiss closes the popup', () => {

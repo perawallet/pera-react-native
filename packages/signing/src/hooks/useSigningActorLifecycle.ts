@@ -119,6 +119,11 @@ export const isSignRequestAwaitingPreflight = (request: SignRequest): boolean =>
 
 const PRE_APPROVAL_STATES = ['idle', 'validating', 'awaiting_user'] as const
 
+// Requests that reached `signing`, which only an approval leads to. `failed`
+// alone does not say: a review that failed validation never was approved,
+// and its RETRY brings the review back.
+const approvedRequestIds = new Set<string>()
+
 /**
  * Whether the user (or a headless caller) has approved the request, so it is
  * signing, delivering or showing an outcome. Withdrawing it then would stop
@@ -128,6 +133,7 @@ export const isSignRequestPastApproval = (id: string): boolean => {
     const snapshot = actorRefsMap.get(id)?.getSnapshot()
     return (
         snapshot !== undefined &&
+        approvedRequestIds.has(id) &&
         !PRE_APPROVAL_STATES.some(state => snapshot.matches(state))
     )
 }
@@ -215,6 +221,7 @@ export const __resetSigningActorRegistryForTests = (): void => {
     awaitingApprovalSet.clear()
     startedSet.clear()
     signingStartedSet.clear()
+    approvedRequestIds.clear()
     preflightInFlight.clear()
     approvalGate.__resetForTests()
     signingEventBus.__resetForTests()
@@ -342,6 +349,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         type: 'awaiting-user',
                         request: snapshot.context.request,
                     })
+                }
+
+                if (snapshot.matches('signing')) {
+                    approvedRequestIds.add(actor.id)
                 }
 
                 // signing-started: published once per custody the dispatch
@@ -472,6 +483,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 actor.stop()
 
                 actorRefsMap.delete(actor.id)
+                approvedRequestIds.delete(actor.id)
                 notifyActorRegistry()
                 signingEventBus.releaseRequest(actor.id)
                 // Removing from the store triggers pendingSignRequests to change,
@@ -498,6 +510,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         if (actor) {
             actor.stop()
             actorRefsMap.delete(requestId)
+            approvedRequestIds.delete(requestId)
             notifyActorRegistry()
         }
         approvalGate.unregister(requestId)

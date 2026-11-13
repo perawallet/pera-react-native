@@ -19,7 +19,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useOptionalConnectionRegistry } from '@perawallet/wallet-core-connections'
+import {
+    getActiveConnectionRegistry,
+    useOptionalConnectionRegistry,
+} from '@perawallet/wallet-core-connections'
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -52,7 +55,11 @@ export const useChangeConnectionAccount = ({
 }: ChangeableConnection): UseChangeConnectionAccountResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
-    const registry = useOptionalConnectionRegistry()
+    // Bottom sheets (the in-app browser among them) render above the
+    // provider, so its context is out of reach there; the app's one registry
+    // is not.
+    const registry =
+        useOptionalConnectionRegistry() ?? getActiveConnectionRegistry()
     const accounts = useAllAccounts()
     const { pickAccount } = useConnectAccountPicker()
     const [isChanging, setIsChanging] = useState(false)
