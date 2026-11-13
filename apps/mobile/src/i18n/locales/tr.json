@@ -346,7 +346,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Silindi)"
+        "deleted_label": "(Silindi)",
+        "imitated_currency": {
+            "marker": "Gerçek {{code}} değil",
+            "title": "Bu varlık {{code}} değil",
+            "body": "Birim adı {{code}} olsa da herkesin oluşturabileceği ayrı bir varlıktır. Bunu almak sana hiç {{code}} kazandırmaz."
+        }
     },
     "asset_details": {
         "about": {
