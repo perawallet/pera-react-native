@@ -340,6 +340,7 @@
         "markets": {
             "something_went_wrong_title": "Bir şeyler ters gitti",
             "something_went_wrong_body": "Bu varlığın detaylarını yükleyemedik. Lütfen bağlantını kontrol edip tekrar dene.",
+            "title": "Piyasalar",
             "stats": "İstatistikler",
             "price": "Fiyat",
             "total_supply": "Toplam arz",

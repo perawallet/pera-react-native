@@ -25,7 +25,6 @@ const PERA_BACKED = [
     'peraWebImport',
     'notifications',
     'assetInbox',
-    'discover',
 ] as const
 
 describe('algorandCapabilityRestrictions', () => {

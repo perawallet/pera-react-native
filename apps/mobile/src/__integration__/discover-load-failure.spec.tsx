@@ -57,8 +57,8 @@ vi.mock('@modules/webview/hooks/handlers', async importOriginal => ({
     generateBridgeToken: () => BRIDGE_TOKEN,
 }))
 
-const { DiscoverDetailScreen } =
-    await import('@modules/discover/screens/DiscoverDetailScreen/DiscoverDetailScreen')
+const { DiscoverScreen } =
+    await import('@modules/discover/screens/DiscoverScreen/DiscoverScreen')
 
 const webViewProps = (): CapturedWebViewProps => {
     if (!captured.props) throw new Error('WebView not rendered')
@@ -66,9 +66,7 @@ const webViewProps = (): CapturedWebViewProps => {
 }
 
 const renderDiscover = async () => {
-    renderWithNavigation(DiscoverDetailScreen, 'DiscoverDetail', {
-        initialParams: { path: 'markets' },
-    })
+    renderWithNavigation(DiscoverScreen, 'Discover')
     await waitFor(() => expect(captured.props).toBeDefined())
     return webViewProps().source.uri
 }

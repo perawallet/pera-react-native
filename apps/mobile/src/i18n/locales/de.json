@@ -340,6 +340,7 @@
         "markets": {
             "something_went_wrong_title": "Etwas ist schiefgelaufen",
             "something_went_wrong_body": "Die Details dieses Assets konnten nicht geladen werden. Bitte überprüfe deine Verbindung und versuche es erneut.",
+            "title": "Märkte",
             "stats": "Statistiken",
             "price": "Preis",
             "total_supply": "Gesamtangebot",
