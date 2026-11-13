@@ -46,6 +46,15 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         backgroundColor: theme.colors.background,
     },
+    net: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: theme.spacing.xs,
+        paddingTop: theme.spacing.md,
+        borderTopWidth: theme.borders.sm,
+        borderTopColor: theme.colors.layerGray,
+    },
     note: {
         flexDirection: 'row',
         alignItems: 'flex-start',

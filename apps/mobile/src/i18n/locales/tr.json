@@ -3682,7 +3682,9 @@
             "scroll_hint": "Daha fazlasını görmek için kaydır",
             "analyzing": "İstek analiz ediliyor…",
             "holder": "Alındığı hesap",
-            "technical_details_generic": "İşlem verileri ve ücret dökümü"
+            "technical_details_generic": "İşlem verileri ve ücret dökümü",
+            "net_change": "Net değişim",
+            "net_change_same": "Yaklaşık aynı değer"
         },
         "technical": {
             "interacting_with": "Etkileşimde bulunduğun",

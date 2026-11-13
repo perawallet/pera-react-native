@@ -3682,7 +3682,9 @@
             "scroll_hint": "Scroll to see more",
             "analyzing": "Analyzing the request…",
             "holder": "Taken from",
-            "technical_details_generic": "Transaction data and fee breakdown"
+            "technical_details_generic": "Transaction data and fee breakdown",
+            "net_change": "Net change",
+            "net_change_same": "About the same value"
         },
         "technical": {
             "interacting_with": "What you're interacting with",

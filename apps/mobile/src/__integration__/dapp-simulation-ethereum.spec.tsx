@@ -390,6 +390,9 @@ describe('Flow: a dApp asks to sign a call whose outcome the backend predicts', 
         const received = screen.getByTestId(`review_wallet_receive_${USDC}`)
         expect(received.textContent).toContain('signing.review.you_receive')
         expect(received.textContent).toContain('2.28296 USDC$ 2.28')
+        expect(screen.getByTestId('review_wallet_net_change').textContent).toBe(
+            'signing.review.net_change≈ +$ 0.24',
+        )
         expect(changes.textContent).toContain('signing.review.changes_note')
         expect(
             changes.compareDocumentPosition(screen.getByTestId('review_from')) &

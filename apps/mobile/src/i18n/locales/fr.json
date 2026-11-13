@@ -3682,7 +3682,9 @@
             "scroll_hint": "Faites défiler pour en voir plus",
             "analyzing": "Analyse de la demande…",
             "holder": "Prélevé sur",
-            "technical_details_generic": "Données de la transaction et détail des frais"
+            "technical_details_generic": "Données de la transaction et détail des frais",
+            "net_change": "Variation nette",
+            "net_change_same": "Valeur à peu près identique"
         },
         "technical": {
             "interacting_with": "Avec quoi vous interagissez",

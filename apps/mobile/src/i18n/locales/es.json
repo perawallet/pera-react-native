@@ -3682,7 +3682,9 @@
             "scroll_hint": "Desplázate para ver más",
             "analyzing": "Analizando la solicitud…",
             "holder": "Se toma de",
-            "technical_details_generic": "Datos de la transacción y desglose de comisiones"
+            "technical_details_generic": "Datos de la transacción y desglose de comisiones",
+            "net_change": "Cambio neto",
+            "net_change_same": "Aproximadamente el mismo valor"
         },
         "technical": {
             "interacting_with": "Con qué interactúas",

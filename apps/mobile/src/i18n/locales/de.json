@@ -3674,7 +3674,9 @@
             "scroll_hint": "Scrolle für mehr",
             "analyzing": "Anfrage wird analysiert…",
             "holder": "Entnommen von",
-            "technical_details_generic": "Transaktionsdaten und Gebührenaufschlüsselung"
+            "technical_details_generic": "Transaktionsdaten und Gebührenaufschlüsselung",
+            "net_change": "Nettoänderung",
+            "net_change_same": "Etwa gleicher Wert"
         },
         "technical": {
             "interacting_with": "Womit du interagierst",

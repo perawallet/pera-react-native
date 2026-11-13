@@ -3699,7 +3699,9 @@
             "scroll_hint": "Role para ver mais",
             "analyzing": "Analisando a solicitação…",
             "holder": "Retirado de",
-            "technical_details_generic": "Dados da transação e detalhamento da taxa"
+            "technical_details_generic": "Dados da transação e detalhamento da taxa",
+            "net_change": "Variação líquida",
+            "net_change_same": "Aproximadamente o mesmo valor"
         },
         "technical": {
             "interacting_with": "Com o que você está interagindo",

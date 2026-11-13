@@ -12,10 +12,12 @@
 
 import { Fragment } from 'react'
 import { PWIcon, PWLoadingIndicator, PWText, PWView } from '@components/core'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from '../BalanceImpactSummary'
 import { WalletChangeRow } from './WalletChangeRow'
 import { useStyles } from './styles'
+import { useWalletChangesCard } from './useWalletChangesCard'
 
 export type WalletChangesCardProps = {
     spend: readonly BalanceImpactItem[]
@@ -31,6 +33,7 @@ export const WalletChangesCard = ({
 }: WalletChangesCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { netChange, isNetNeutral } = useWalletChangesCard(spend, receive)
 
     const sideOf = (
         items: readonly BalanceImpactItem[],
@@ -91,6 +94,27 @@ export const WalletChangesCard = ({
                 receive,
                 t('signing.review.you_receive'),
                 'review_wallet_receive',
+            )}
+            {netChange && (
+                <PWView
+                    style={styles.net}
+                    testID='review_wallet_net_change'
+                >
+                    <PWText style={styles.muted}>
+                        {t('signing.review.net_change')}
+                    </PWText>
+                    {isNetNeutral ? (
+                        <PWText variant='bodySemibold'>
+                            {t('signing.review.net_change_same')}
+                        </PWText>
+                    ) : (
+                        <PreferredAmount
+                            value={netChange.abs()}
+                            prefix={netChange.isNegative() ? '≈ −' : '≈ +'}
+                            variant='bodySemibold'
+                        />
+                    )}
+                </PWView>
             )}
             <PWView style={styles.note}>
                 <PWIcon
