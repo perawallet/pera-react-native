@@ -10,10 +10,11 @@
  limitations under the License
  */
 
+import FolderIcon from '@assets/icons/discover/folder.svg'
+import FolderAddIcon from '@assets/icons/discover/folder-add.svg'
 import {
     PWButton,
     PWCheckbox,
-    PWIcon,
     PWSheetLayout,
     PWText,
     PWTouchableOpacity,
@@ -54,10 +55,7 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                     testID='discover_add_to_folder_new'
                 >
                     <PWView style={styles.icon}>
-                        <PWIcon
-                            name='folder-plus'
-                            variant='link'
-                        />
+                        <FolderAddIcon />
                     </PWView>
                     <PWText
                         variant='h4'
@@ -74,10 +72,7 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                         testID={`discover_add_to_folder_${folder.id}`}
                     >
                         <PWView style={styles.icon}>
-                            <PWIcon
-                                name='folder'
-                                variant='secondary'
-                            />
+                            <FolderIcon />
                         </PWView>
                         <PWText
                             variant='h4'

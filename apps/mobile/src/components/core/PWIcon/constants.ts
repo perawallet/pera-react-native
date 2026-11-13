@@ -174,8 +174,6 @@ import TxSwapIcon from '@assets/icons/transactions/swap.svg'
 import DocumentDownloadIcon from '@assets/icons/document-download.svg'
 import DownloadIcon from '@assets/icons/download.svg'
 import GridViewIcon from '@assets/icons/grid-view.svg'
-import FolderIcon from '@assets/icons/folder.svg'
-import FolderPlusIcon from '@assets/icons/folder-plus.svg'
 import ListViewIcon from '@assets/icons/list-view.svg'
 
 export const ICON_LIBRARY = {
@@ -213,8 +211,6 @@ export const ICON_LIBRARY = {
     dollar: DollarIcon,
     'document-download': DocumentDownloadIcon,
     download: DownloadIcon,
-    folder: FolderIcon,
-    'folder-plus': FolderPlusIcon,
     'grid-view': GridViewIcon,
     'list-view': ListViewIcon,
     'dot-stack': DotStackIcon,

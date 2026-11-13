@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-import { PWButton, PWView } from '@components/core'
+import { Fragment } from 'react'
+import FavoritesIcon from '@assets/icons/discover/favorites.svg'
+import FolderAddIcon from '@assets/icons/discover/folder-add.svg'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { DiscoverSectionHeader } from '../DiscoverSectionHeader'
-import { FolderRow } from '../FolderRow'
+import { FolderRow, type FolderRowProps } from '../FolderRow'
+import { RowDivider } from '../RowDivider'
 import { useFavoritesSection } from './useFavoritesSection'
 import { useStyles } from './styles'
 
@@ -24,6 +28,29 @@ export const FavoritesSection = () => {
     const { t } = useLanguage()
     const section = useFavoritesSection()
 
+    const rows: (FolderRowProps & { key: string })[] = [
+        ...(section.favoriteCount > 0
+            ? [
+                  {
+                      key: 'all',
+                      name: t('discover.favorites.all_favorites'),
+                      count: section.favoriteCount,
+                      icon: 'star' as const,
+                      onPress: section.openAllFavorites,
+                      testID: 'discover_home_all_favorites',
+                  },
+              ]
+            : []),
+        ...section.folders.map(folder => ({
+            key: folder.id,
+            name: folder.name,
+            count: folder.count,
+            icon: 'folder' as const,
+            onPress: () => section.openFolder(folder.id),
+            testID: `discover_home_folder_${folder.id}`,
+        })),
+    ]
+
     return (
         <PWView
             style={styles.section}
@@ -31,8 +58,10 @@ export const FavoritesSection = () => {
         >
             <DiscoverSectionHeader
                 title={t('discover.favorites.title')}
+                icon={<FavoritesIcon />}
                 action={{
                     label: t('discover.favorites.new_folder'),
+                    icon: <FolderAddIcon />,
                     onPress: () => {
                         void section.openNewFolder()
                     },
@@ -48,33 +77,33 @@ export const FavoritesSection = () => {
                     testID='discover_home_favorites_empty'
                 />
             ) : null}
-            {section.favoriteCount > 0 ? (
-                <FolderRow
-                    name={t('discover.favorites.all_favorites')}
-                    count={section.favoriteCount}
-                    icon='star'
-                    onPress={section.openAllFavorites}
-                    testID='discover_home_all_favorites'
-                />
+            {rows.length > 0 ? (
+                <PWView>
+                    {rows.map(({ key, ...row }, index) => (
+                        <Fragment key={key}>
+                            {index > 0 ? <RowDivider /> : null}
+                            <FolderRow {...row} />
+                        </Fragment>
+                    ))}
+                </PWView>
             ) : null}
-            {section.folders.map(folder => (
-                <FolderRow
-                    key={folder.id}
-                    name={folder.name}
-                    count={folder.count}
-                    icon='folder'
-                    onPress={() => section.openFolder(folder.id)}
-                    testID={`discover_home_folder_${folder.id}`}
-                />
-            ))}
             {section.hasMore ? (
-                <PWButton
-                    variant='secondary'
-                    title={t('discover.favorites.see_all')}
-                    iconRight='chevron-down'
+                <PWTouchableOpacity
+                    style={styles.seeAll}
                     onPress={section.openAllFolders}
                     testID='discover_home_folders_see_all'
-                />
+                >
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                    >
+                        {t('discover.favorites.see_all')}
+                    </PWText>
+                    <PWIcon
+                        name='chevron-down'
+                        size='sm'
+                    />
+                </PWTouchableOpacity>
             ) : null}
         </PWView>
     )

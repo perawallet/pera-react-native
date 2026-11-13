@@ -14,9 +14,21 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     section: {
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
     },
     empty: {
         paddingVertical: theme.spacing.md,
+    },
+    // Figma "See all": a full-width 40 pt pill, Layer Gray Lightest with a Layer Gray border.
+    seeAll: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.xs,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.borderRadius.lg,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
 }))

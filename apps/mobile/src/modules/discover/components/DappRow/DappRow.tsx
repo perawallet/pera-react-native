@@ -78,7 +78,8 @@ export const DappRow = ({
                 <PWView style={styles.info}>
                     <PWView style={styles.titleRow}>
                         <PWText
-                            variant='h4'
+                            variant='bodyLarge'
+                            weight={500}
                             numberOfLines={1}
                             style={styles.title}
                         >
@@ -95,7 +96,8 @@ export const DappRow = ({
                         ) : null}
                     </PWView>
                     <PWText
-                        variant='caption'
+                        variant='footnoteMedium'
+                        weight={400}
                         numberOfLines={1}
                         style={styles.subtitle}
                     >
@@ -127,7 +129,8 @@ export const DappRow = ({
             >
                 <PWIcon
                     name={isFavorite ? 'star-filled' : 'star'}
-                    variant={isFavorite ? 'favorite' : 'secondary'}
+                    size='sm'
+                    variant={isFavorite ? 'favorite' : 'tertiary'}
                 />
             </PWTouchableOpacity>
         </PWView>

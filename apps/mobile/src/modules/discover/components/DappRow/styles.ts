@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { DISCOVER_ROW_LEAD_SIZE } from '../../utils/discoverLayout'
 
 export const useStyles = makeStyles(theme => ({
     row: {
@@ -23,12 +24,12 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
     },
     logo: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        borderRadius: theme.spacing.sm,
+        width: DISCOVER_ROW_LEAD_SIZE,
+        height: DISCOVER_ROW_LEAD_SIZE,
+        borderRadius: theme.borderRadius.full,
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
@@ -36,7 +37,6 @@ export const useStyles = makeStyles(theme => ({
     },
     info: {
         flex: 1,
-        gap: theme.spacing.xxs,
     },
     titleRow: {
         flexDirection: 'row',
@@ -50,6 +50,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     star: {
-        padding: theme.spacing.xs,
+        padding: theme.spacing.sm,
     },
 }))

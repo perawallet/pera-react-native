@@ -29,6 +29,7 @@ export type PWIconVariant =
     | 'primary'
     | 'buttonPrimary'
     | 'secondary'
+    | 'tertiary'
     | 'helper'
     | 'white'
     | 'link'

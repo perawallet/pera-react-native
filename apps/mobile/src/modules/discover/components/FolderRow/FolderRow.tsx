@@ -10,20 +10,16 @@
  limitations under the License
  */
 
-import {
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    type IconName,
-} from '@components/core'
+import FolderIcon from '@assets/icons/discover/folder.svg'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type FolderRowProps = {
     name: string
     count: number
-    icon: Extract<IconName, 'folder' | 'star'>
+    /** \`folder\`: the design's folder glyph; \`star\`: the All favorites entry. */
+    icon: 'folder' | 'star'
     onPress: () => void
     testID?: string
 }
@@ -46,20 +42,26 @@ export const FolderRow = ({
             testID={testID}
         >
             <PWView style={styles.icon}>
-                <PWIcon
-                    name={icon}
-                    variant='secondary'
-                />
+                {icon === 'folder' ? (
+                    <FolderIcon />
+                ) : (
+                    <PWIcon
+                        name='star'
+                        variant='tertiary'
+                    />
+                )}
             </PWView>
             <PWView style={styles.info}>
                 <PWText
-                    variant='h4'
+                    variant='bodyLarge'
+                    weight={500}
                     numberOfLines={1}
                 >
                     {name}
                 </PWText>
                 <PWText
-                    variant='caption'
+                    variant='footnoteMedium'
+                    weight={400}
                     style={styles.count}
                 >
                     {t('discover.favorites.dapp_count', { count })}
@@ -69,7 +71,7 @@ export const FolderRow = ({
                 <PWIcon
                     name='chevron-right'
                     size='sm'
-                    variant='secondary'
+                    variant='tertiary'
                 />
             </PWView>
         </PWTouchableOpacity>
