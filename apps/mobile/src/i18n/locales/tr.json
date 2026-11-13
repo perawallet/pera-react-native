@@ -96,7 +96,11 @@
             "see_all": "Tümünü gör",
             "empty_title": "Henüz favorin yok",
             "empty_body": "dApp'leri keşfetmeye başla",
-            "all_folders_title": "Tüm klasörler"
+            "all_folders_title": "Tüm klasörler",
+            "added_toast": {
+                "title": "Favorilere eklendi",
+                "body": "Bir klasöre eklemek için dokun"
+            }
         },
         "add_to_folder": {
             "title": "Klasöre ekle",

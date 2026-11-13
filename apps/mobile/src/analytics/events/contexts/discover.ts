@@ -31,6 +31,7 @@ export enum DiscoverEvent {
     FolderCreate = 'discover_folder_create',
     FolderDappAdd = 'discover_folder_dapp_add',
     FolderDappRemove = 'discover_folder_dapp_remove',
+    FavoriteToastTap = 'discover_favorite_toast_tap',
 }
 
 type DappPayload = {

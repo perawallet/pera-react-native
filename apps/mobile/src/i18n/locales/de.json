@@ -96,7 +96,11 @@
             "see_all": "Alle anzeigen",
             "empty_title": "Noch keine Favoriten",
             "empty_body": "Entdecke die dApps",
-            "all_folders_title": "Alle Ordner"
+            "all_folders_title": "Alle Ordner",
+            "added_toast": {
+                "title": "Zu Favoriten hinzugefügt",
+                "body": "Tippe, um es einem Ordner hinzuzufügen"
+            }
         },
         "add_to_folder": {
             "title": "Zu Ordner hinzufügen",

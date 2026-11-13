@@ -96,7 +96,11 @@
             "see_all": "Tout voir",
             "empty_title": "Aucun favori pour le moment",
             "empty_body": "Commencez à explorer les dApps",
-            "all_folders_title": "Tous les dossiers"
+            "all_folders_title": "Tous les dossiers",
+            "added_toast": {
+                "title": "Ajouté aux favoris",
+                "body": "Touchez pour l’ajouter à un dossier"
+            }
         },
         "add_to_folder": {
             "title": "Ajouter à un dossier",

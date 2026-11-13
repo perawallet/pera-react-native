@@ -23,7 +23,11 @@ vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics')),
     trackEvent: vi.fn(),
 }))
-vi.mock('@modules/bottom-sheet', () => ({ useBottomSheetResult: vi.fn() }))
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheetResult: vi.fn(),
+    // Starring offers folders through a sheet request (useToggleDiscoverFavorite).
+    useBottomSheet: vi.fn(() => ({ request: vi.fn() })),
+}))
 vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 
 const calls: string[] = []
