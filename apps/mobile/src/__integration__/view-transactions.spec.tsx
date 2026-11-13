@@ -140,6 +140,28 @@ const TX_STATE_PROOF: TransactionHistoryItem = {
     balanceImpacts: [],
 }
 
+// An ASA whose unit name is the native ticker. Seeded per-test, like the state proof.
+const TX_SPOOF_TRANSFER: TransactionHistoryItem = {
+    id: 'TXSPOOFTRANSFER000000000000000000000000000000000000005',
+    txType: 'axfer',
+    sender: HD_TEST_ADDRESS,
+    receiver: ALGO25_TEST_ADDRESS,
+    assetSender: null,
+    confirmedRound: 96,
+    roundTime: 1_699_600_000,
+    chainData: null,
+    interpretedMeaning: null,
+    fee: new Decimal(1000),
+    amount: new Decimal(1_000_000_000),
+    asset: {
+        assetId: '999999999',
+        name: 'Spoof',
+        unitName: 'ALGO',
+        decimals: 6,
+    },
+    balanceImpacts: [],
+}
+
 const RECIPIENT_CONTACT_NAME = 'Landlord'
 
 const NOTE_BASE64 = 'UEVSQS00OTc0IG5vdGU='
@@ -573,6 +595,44 @@ describe('Flow: View transactions → tap into details', () => {
             truncateAlgorandAddress(HD_TEST_ADDRESS),
         )
         expect(transferRow.textContent).toMatch(/\+\s*2\.5\d*\s*USDC/)
+
+        expect(
+            screen.queryByTestId(
+                `transaction_row_imitated_currency_${TX_PAYMENT.id}`,
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId(
+                `transaction_row_imitated_currency_${TX_ASSET_TRANSFER.id}`,
+            ),
+        ).toBeNull()
+    })
+
+    it('Given a received asset whose unit name is ALGO, its row warns that it is not ALGO and the real payment row does not', async () => {
+        await upsertTransactions({
+            items: [TX_SPOOF_TRANSFER],
+            accountAddress: addressOf(ACCOUNT),
+            scope: MAINNET_SCOPE,
+        })
+
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+
+        const marker = await screen.findByTestId(
+            `transaction_row_imitated_currency_${TX_SPOOF_TRANSFER.id}`,
+            undefined,
+            { timeout: 5000 },
+        )
+        expect(marker.textContent).toContain('asset.imitated_currency.marker')
+        expect(
+            screen.queryByTestId(
+                `transaction_row_imitated_currency_${TX_PAYMENT.id}`,
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId(
+                `transaction_row_imitated_currency_${TX_ASSET_TRANSFER.id}`,
+            ),
+        ).toBeNull()
     })
 
     it('Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row', async () => {
