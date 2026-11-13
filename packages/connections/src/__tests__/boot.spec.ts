@@ -49,6 +49,7 @@ const makeStore = (items: Connection[] = []) => {
 
 const makeRegistry = (order: string[]): ConnectionRegistry => ({
     register: vi.fn(),
+    changeAccount: vi.fn(async () => {}),
     methodsFor: vi.fn(() => []),
     initialize: vi.fn(async () => void order.push('initialize')),
     teardown: vi.fn(async () => {}),

@@ -1175,7 +1175,8 @@
             "unavailable_body": "Please try again in a moment.",
             "offline_title": "You're offline",
             "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online.",
-            "unknown_host": "Unknown site"
+            "unknown_host": "Unknown site",
+            "connected_account_a11y": "Connected account, tap to change"
         },
         "done": "Done",
         "save": "Save",
@@ -4035,7 +4036,10 @@
             "error_delivery_failed": "Pera couldn't reach the app to deliver your answer, so it may still be waiting. Try again from the app.",
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts.",
             "origin_scam": "This app has been flagged as a security risk. Don't connect unless you trust it.",
-            "origin_unverified": "Pera couldn't verify this app's website."
+            "origin_unverified": "Pera couldn't verify this app's website.",
+            "connect_account": "Connect account",
+            "choose_account": "Choose an account",
+            "account_picker_title": "Select account"
         },
         "permissions": {
             "heading": "This app can",
@@ -4071,7 +4075,9 @@
             "network_label": "{{chain}} {{network}}",
             "permissions": "Advanced Permissions",
             "permissions_info_title": "Advanced Permissions",
-            "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."
+            "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects.",
+            "change_account": "Change account",
+            "change_account_failed": "Couldn't change the account. Try again."
         }
     },
     "staking": {

@@ -15,6 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { PWIcon, PWTouchableOpacity, PWView, PWText } from '@components/core'
 import { useStyles } from './styles'
 import { getDisplayHost } from './getDisplayHost'
+import { WebViewAccountChip } from './WebViewAccountChip'
 
 export type WebViewTitleBarProps = {
     title: string
@@ -70,13 +71,16 @@ export const WebViewTitleBar = ({
                     {domain}
                 </PWText>
             </PWView>
-            <PWView style={styles.titleIconContainer}>
-                <PWIcon
-                    name='reload'
-                    onPress={onReload}
-                    variant='primary'
-                    size='md'
-                />
+            <PWView style={styles.titleActions}>
+                <WebViewAccountChip url={url} />
+                <PWView style={styles.titleIconContainer}>
+                    <PWIcon
+                        name='reload'
+                        onPress={onReload}
+                        variant='primary'
+                        size='md'
+                    />
+                </PWView>
             </PWView>
         </PWView>
     )

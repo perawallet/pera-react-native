@@ -83,6 +83,7 @@ import {
 import { useSigningStore } from '@packages/signing/src/store'
 import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { selectEvmConnectAccount } from '@test-utils/connect-account'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -261,11 +262,19 @@ const connectSession = async (
         walletKit.emit('session_proposal', makeProposal(namespaces))
     })
     await waitFor(() => expect(findButton('common.connect.label')).toBeTruthy())
-    const row = `wc_account_row_${accountId}`
-    await waitFor(() => expect(screen.getByTestId(row)).toBeTruthy(), {
-        timeout: 5000,
-    })
-    fireEvent.click(screen.getByTestId(row))
+    const account = useAccountsStore
+        .getState()
+        .accounts.find(({ id }) => id === accountId)
+    if (!account) throw new Error(`No account ${accountId}`)
+    if (account.chains.algorand) {
+        const row = `wc_account_row_${accountId}`
+        await waitFor(() => expect(screen.getByTestId(row)).toBeTruthy(), {
+            timeout: 5000,
+        })
+        fireEvent.click(screen.getByTestId(row))
+    } else {
+        await selectEvmConnectAccount(account)
+    }
     await waitFor(() =>
         expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
             false,

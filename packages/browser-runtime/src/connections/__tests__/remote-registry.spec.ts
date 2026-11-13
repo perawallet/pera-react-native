@@ -184,6 +184,24 @@ describe('createRemoteConnectionRegistry', () => {
     })
 
     describe('lifecycle commands', () => {
+        it('routes changeAccount to the host', async () => {
+            const received = installHost()
+            const registry = createRemoteConnectionRegistry({
+                handlers: [makeHandler()],
+            })
+
+            await registry.changeAccount('topic', 'ethereum', '0xB')
+
+            expect(received).toEqual([
+                expect.objectContaining({
+                    kind: 'change-account',
+                    connectionId: 'topic',
+                    chainId: 'ethereum',
+                    address: '0xB',
+                }),
+            ])
+        })
+
         it('routes abandonPairing, disconnect and disconnectAll to the host', async () => {
             const received = installHost()
             const registry = createRemoteConnectionRegistry({

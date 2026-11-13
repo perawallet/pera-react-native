@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
     Connection,
     ConnectionId,
@@ -38,6 +41,12 @@ export interface ConnectionHandlerContext {
      * Telling the user why is the handler's job, through {@link onError}.
      */
     onRequestExpired(id: ConnectionId, correlationId: string): void
+    /**
+     * The request was raised for something the wallet has since changed on the
+     * connection. The subscriber holding it declines it, once, by the usual
+     * path, unless the user already approved it: that one finishes.
+     */
+    onRequestWithdrawn(id: ConnectionId, correlationId: string): void
     /** Report `{ pairingId }` for a failure before the proposal is approved and `{ connectionId }` after. */
     onError(error: Error, scope?: ConnectionErrorScope): void
 }
@@ -113,4 +122,18 @@ export interface ConnectionHandler<
      * lacks the notice's chain, and never widens the accounts the session holds.
      */
     notify?(id: ConnectionId, notice: WalletNotice): Promise<void>
+
+    /**
+     * Narrows the connection to `address` on `chainId`'s namespace: the same
+     * chains and methods, one account. Requests pending on the connection were
+     * raised for the account being replaced and go through
+     * {@link ConnectionHandlerContext.onRequestWithdrawn}. A no-op when
+     * `address` is already its only address there; throws for an address the
+     * wallet cannot sign for on any of that namespace's chains this build serves.
+     */
+    changeAccount?(
+        id: ConnectionId,
+        chainId: ChainId,
+        address: string,
+    ): Promise<void>
 }

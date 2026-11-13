@@ -235,8 +235,10 @@ afterEach(() => {
 const open = async (
     seed: Parameters<typeof memoryStore>[0] = [],
     walletKit = createFakeWalletKit(),
+    options: Partial<Parameters<typeof createWalletConnectV2Handler>[0]> = {},
 ) => {
     const handler = createWalletConnectV2Handler({
+        ...options,
         getNetworkId: chainId => selectedNetworks[chainId],
         isDappConnectEnabled: chainId => connectable.has(chainId),
         projectId: 'a-reown-project-id',
@@ -252,6 +254,10 @@ const open = async (
         onMessage: vi.fn<ConnectionHandlerContext['onMessage']>(),
         onDisconnected: vi.fn<ConnectionHandlerContext['onDisconnected']>(),
         onRequestExpired: vi.fn<ConnectionHandlerContext['onRequestExpired']>(),
+        onRequestWithdrawn:
+            vi.fn<
+                NonNullable<ConnectionHandlerContext['onRequestWithdrawn']>
+            >(),
         onError: vi.fn<ConnectionHandlerContext['onError']>(),
     }
     await handler.initialize(context)
@@ -1357,6 +1363,7 @@ describe('notify', () => {
             onMessage: vi.fn(),
             onDisconnected: vi.fn(),
             onRequestExpired: vi.fn(),
+            onRequestWithdrawn: vi.fn(),
             onError: vi.fn(),
         })
 
@@ -1383,5 +1390,275 @@ describe('matchesChainScope', () => {
                 handler.matchesChainScope(record, scope as ChainScope),
             ),
         ).toEqual([true, false, true, true])
+    })
+})
+
+describe('changeAccount', () => {
+    const NEW_ETH = '0x3333333333333333333333333333333333333333'
+    const signable = new Set<string>()
+
+    const withSession = async (
+        eip155: Parameters<typeof liveSession>[1] = BOTH_ETHEREUM_NETWORKS,
+        record = recordFor(TOPIC, {
+            accounts: [ADDRESS, ETH],
+            chains: [MAINNET_CHAIN_ID, ETH_MAINNET, ETH_SEPOLIA],
+        }),
+    ) => {
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: liveSession(TOPIC, eip155),
+        })
+        return await open([record], walletKit, {
+            canSignWith: (chainId, address) =>
+                chainId === 'ethereum' && signable.has(address),
+        })
+    }
+
+    beforeEach(() => {
+        signable.clear()
+        signable.add(NEW_ETH)
+        signable.add(ETH)
+    })
+
+    it('narrows the eip155 namespace to the new address on every chain it holds', async () => {
+        const { handler, walletKit, store } = await withSession()
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0]
+        expect(namespaces.eip155).toMatchObject({
+            chains: [ETH_MAINNET, ETH_SEPOLIA],
+            accounts: [
+                `${ETH_MAINNET}:${NEW_ETH}`,
+                `${ETH_SEPOLIA}:${NEW_ETH}`,
+            ],
+        })
+        expect(namespaces.algorand.accounts).toEqual([
+            `${MAINNET_CHAIN_ID}:${ADDRESS}`,
+        ])
+        const [stored] = await store.list()
+        expect(stored.accounts).toEqual([ADDRESS, NEW_ETH])
+        expect(walletKit.emitSessionEvent).toHaveBeenCalledWith({
+            topic: TOPIC,
+            event: { name: 'accountsChanged', data: [NEW_ETH] },
+            chainId: ETH_MAINNET,
+        })
+    })
+
+    // A request read between the switch and the store write would be raised
+    // for the account the user just left.
+    it('narrows the stored session before telling the relay', async () => {
+        const { handler, walletKit, store } = await withSession()
+        let storedDuringUpdate: string[] = []
+        walletKit.updateSession.mockImplementationOnce(async () => {
+            storedDuringUpdate = (await store.list())[0].accounts
+            return { acknowledged: async () => {} }
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        expect(storedDuringUpdate).toEqual([ADDRESS, NEW_ETH])
+    })
+
+    it('restores the stored session when the relay refuses the update', async () => {
+        const { handler, walletKit, store } = await withSession()
+        walletKit.updateSession.mockRejectedValueOnce(new Error('relay down'))
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow('relay down')
+
+        expect((await store.list())[0].accounts).toEqual([ADDRESS, ETH])
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    // The switch has landed by then; telling the dApp is best effort.
+    it('still completes when the dApp cannot be told of the new account', async () => {
+        const { handler, walletKit, store } = await withSession()
+        walletKit.emitSessionEvent.mockRejectedValueOnce(
+            new Error('relay down'),
+        )
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).resolves.toBeUndefined()
+
+        expect((await store.list())[0].accounts).toEqual([ADDRESS, NEW_ETH])
+    })
+
+    // The dApp hung up while the relay call was in flight.
+    it('does not bring back a session removed while the relay refused the update', async () => {
+        const { handler, walletKit, store } = await withSession()
+        walletKit.updateSession.mockImplementationOnce(async () => {
+            await store.remove(TOPIC)
+            throw new Error('No matching key')
+        })
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow()
+
+        expect(await store.list()).toEqual([])
+    })
+
+    it('restores only the accounts when the relay refuses the update', async () => {
+        const { handler, walletKit, store } = await withSession()
+        walletKit.updateSession.mockImplementationOnce(async () => {
+            const [record] = await store.list()
+            await store.upsert({ ...record, lastActiveAt: 42 })
+            throw new Error('relay down')
+        })
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow()
+
+        const [restored] = await store.list()
+        expect(restored.accounts).toEqual([ADDRESS, ETH])
+        expect(restored.lastActiveAt).toBe(42)
+    })
+
+    it('refuses a session whose EVM chains this build does not serve', async () => {
+        const { handler, walletKit } = await withSession({
+            chains: ['eip155:137'],
+            accounts: [`eip155:137:${ETH}`],
+        })
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow()
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+    })
+
+    it('updates the session but sends no event when the dApp never asked for accountsChanged', async () => {
+        const { handler, walletKit } = await withSession({
+            ...BOTH_ETHEREUM_NETWORKS,
+            events: ['chainChanged'],
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        expect(walletKit.updateSession).toHaveBeenCalledTimes(1)
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the address is already the only one', async () => {
+        const { handler, walletKit } = await withSession()
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', ETH)
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
+    it('refuses an address the wallet cannot sign for, changing nothing', async () => {
+        signable.delete(NEW_ETH)
+        const { handler, walletKit, store } = await withSession()
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toMatchObject({ code: 'unauthorized-account' })
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        const [stored] = await store.list()
+        expect(stored.accounts).toEqual([ADDRESS, ETH])
+    })
+
+    it('refuses everything without a signer check wired in', async () => {
+        const walletKit = createFakeWalletKit({
+            [TOPIC]: liveSession(TOPIC, BOTH_ETHEREUM_NETWORKS),
+        })
+        const { handler } = await open([recordFor(TOPIC)], walletKit)
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toMatchObject({ code: 'unauthorized-account' })
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+    })
+
+    // Raised for the old account. Whoever holds it declines it unless the
+    // user already approved it, so a send already signing is not answered 4001.
+    it('hands the EVM requests pending on the session back to be declined, without answering them itself', async () => {
+        const { handler, walletKit, context } = await withSession()
+        walletKit.emit(
+            'session_request',
+            makeRequest({
+                method: 'eth_sendTransaction',
+                params: [{ to: ETH }],
+                chainId: ETH_MAINNET,
+            }),
+        )
+        await flush()
+        expect(context.onMessage).toHaveBeenCalled()
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+        await flush()
+
+        expect(context.onRequestWithdrawn).toHaveBeenCalledWith(
+            TOPIC,
+            String(REQUEST_ID),
+        )
+        expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+    })
+
+    // The Algorand account did not change, so its request still stands.
+    it('leaves a pending Algorand request on a mixed session alone', async () => {
+        const { handler, walletKit, context } = await withSession()
+        walletKit.emit('session_request', makeRequest({ id: 1 }))
+        walletKit.emit(
+            'session_request',
+            makeRequest({
+                id: 2,
+                method: 'eth_sendTransaction',
+                params: [{ to: ETH }],
+                chainId: ETH_MAINNET,
+            }),
+        )
+        await flush()
+        expect(context.onMessage).toHaveBeenCalledTimes(2)
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+        await flush()
+
+        expect(context.onRequestWithdrawn).toHaveBeenCalledTimes(1)
+        expect(context.onRequestWithdrawn).toHaveBeenCalledWith(TOPIC, '2')
+    })
+
+    // A chain switch can land while the store is written; writing back the
+    // namespaces read before it would undo it.
+    it('builds the update from the session as it is when the relay is told', async () => {
+        const { handler, walletKit, store } = await withSession()
+        const upsert = store.upsert.bind(store)
+        vi.spyOn(store, 'upsert').mockImplementationOnce(async record => {
+            await upsert(record)
+            const live = walletKit.getActiveSessions()[TOPIC]
+            live.namespaces = {
+                ...live.namespaces,
+                eip155: {
+                    ...live.namespaces.eip155,
+                    events: ['accountsChanged', 'chainChanged', 'added'],
+                },
+            }
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        const { namespaces } = walletKit.updateSession.mock.calls[0][0]
+        expect(namespaces.eip155.events).toContain('added')
+    })
+
+    it('puts the accounts back when the session ends while the store is written', async () => {
+        const { handler, walletKit, store } = await withSession()
+        const upsert = store.upsert.bind(store)
+        vi.spyOn(store, 'upsert').mockImplementationOnce(async record => {
+            await upsert(record)
+            delete walletKit.getActiveSessions()[TOPIC]
+        })
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow()
+
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+        expect((await store.list())[0].accounts).toEqual([ADDRESS, ETH])
     })
 })

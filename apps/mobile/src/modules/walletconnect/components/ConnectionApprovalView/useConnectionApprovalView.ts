@@ -32,6 +32,7 @@ import {
     generateOrderedUniqueId,
     logger,
     toError,
+    type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
@@ -57,22 +58,26 @@ import {
     type ConnectionPermission,
 } from '../../utils/connectionPermissions'
 import { uniqueChainIds } from '../../utils/uniqueChainIds'
+import { splitChainsByFamily } from '../../utils/splitChainsByFamily'
+import { useConnectionEvmAccount } from './useConnectionEvmAccount'
+import { useConnectionGrant } from './useConnectionGrant'
 
 export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
 
 type ApprovedChain = { chainId: ChainId; address: Optional<string> }
 
-// The chains the session settles with an address, each with its first
-// selected address on that chain; a requested chain no selected account holds
-// is not approved. With none, the session still logs once, on `fallback`.
+// The chains the session settles with an address, each with the first granted
+// address on that chain: the EVM account on EVM chains, the first checked
+// account elsewhere. A requested chain nothing granted holds is not approved.
+// With none, the session still logs once, on `fallback`.
 const approvedChainsOf = (
-    selected: readonly WalletAccount[],
+    grantedOn: (chainId: ChainId) => readonly WalletAccount[],
     accounts: WalletAccount[],
     requestedChains: readonly ChainId[],
     fallback: ApprovedChain,
 ): ApprovedChain[] => {
     const approved = uniqueChainIds(requestedChains).flatMap(chainId => {
-        const [address] = selected.flatMap(account =>
+        const [address] = grantedOn(chainId).flatMap(account =>
             signingAddressesOn(account, accounts, [chainId]),
         )
         return address === undefined ? [] : [{ chainId, address }]
@@ -111,15 +116,24 @@ const canAddChainTo = (account: WalletAccount, chainId: ChainId): boolean =>
     eligibleChains(account).includes(chainId)
 
 export type UseConnectionApprovalViewResult = {
-    /** The accounts that can sign on the proposal's chains, in the user's sort order. */
+    /** Accounts that can sign on the proposal's non-EVM chains, in the user's sort order. */
     accountRows: ConnectionAccountRow[]
+    /** The first requested EVM chain; absent when the proposal asks for none. */
+    evmChainId: Optional<ChainId>
+    /** Accounts that sign on every requested EVM chain, in the user's sort order. */
+    evmCandidates: WalletAccount[]
+    /** The one account EVM chains are granted to; `null` when none can be. */
+    evmAccount: Nullable<WalletAccount>
+    handleEvmAccountPress: () => Promise<void>
+    /** Every requested family that can be granted has a pick, and no required chain is left without one. */
+    canConnect: boolean
     title: string
     requestedNetworks: RequestedNetwork[]
     handleAddNetwork: (chainId: ChainId) => void
     permissions: ConnectionPermission[]
     /** WalletConnect Verify attested the origin and site safety found nothing against it. */
     isOriginVerified: boolean
-    /** Account ids; an account may connect on more than one chain. */
+    /** Account ids checked for the non-EVM chains. */
     selectedAccounts: string[]
     isConnecting: boolean
     handleAccountPress: (accountId: string) => void
@@ -132,6 +146,10 @@ export type UseConnectionApprovalViewResult = {
     /** False when the peer url fails the https gate, so it renders unlinked. */
     canOpenPeerUrl: boolean
     handlePressUrl: () => void
+    /** Why the EVM row is empty; absent when an account can take it. */
+    evmNoAccountsNote: Optional<string>
+    /** A non-EVM chain was requested, so the checkbox list shows. */
+    hasAccountList: boolean
     /** Shown in place of the account list when no account can connect. */
     noAccountsNote: string
     /** Undefined when the peer's origin is attested or carries no verdict. */
@@ -213,17 +231,28 @@ export const useConnectionApprovalView = (
         () => uniqueChainIds(proposal.requested.chains),
         [proposal.requested.chains],
     )
+    const { evm: evmChainIds, other: otherChainIds } = useMemo(
+        () => splitChainsByFamily(chainIds),
+        [chainIds],
+    )
     const accountRows = useMemo(
         () =>
             sortedAccounts.flatMap(account => {
-                const chainId = chainIds.find(
+                const chainId = otherChainIds.find(
                     id =>
                         signingAddressesOn(account, accounts, [id]).length > 0,
                 )
                 return chainId === undefined ? [] : [{ account, chainId }]
             }),
-        [sortedAccounts, accounts, chainIds],
+        [sortedAccounts, accounts, otherChainIds],
     )
+    const {
+        evmChainId,
+        evmCandidates,
+        evmAccount,
+        handleEvmAccountPress,
+        evmNoAccountsNote,
+    } = useConnectionEvmAccount(proposal, sortedAccounts, evmChainIds)
     const { enablingChainId: addingChainId, enableChainOnAccounts } =
         useEnableChainAction(t('account_options.enable_network_error'))
     const requestedNetworks = useMemo(
@@ -293,12 +322,13 @@ export const useConnectionApprovalView = (
             t(
                 firstUnreachableChainsNote(
                     accounts,
-                    proposal.requested.chains,
+                    otherChainIds.length > 0
+                        ? otherChainIds
+                        : proposal.requested.chains,
                 ) ?? i18nKey('walletconnect.request.no_accounts'),
             ),
-        [accounts, proposal.requested.chains, t],
+        [accounts, otherChainIds, proposal.requested.chains, t],
     )
-    const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
     // Every origin the proposal carries: the claimed url, the one the browser
     // or webview observed, and the one WalletConnect Verify attested.
@@ -316,13 +346,20 @@ export const useConnectionApprovalView = (
     // await) and Cancel has no state-driven disabling at all.
     const isHandlingRef = useRef(false)
 
-    const handleAccountPress = useCallback((accountId: string) => {
-        setSelectedAccounts(prev =>
-            prev.includes(accountId)
-                ? prev.filter(existing => existing !== accountId)
-                : [...prev, accountId],
-        )
-    }, [])
+    const {
+        selectedAccounts,
+        selectedOtherAccounts,
+        grantedAddresses,
+        canConnect,
+        handleAccountPress,
+    } = useConnectionGrant({
+        accounts,
+        chainIds,
+        evmChainIds,
+        otherChainIds,
+        requiredChains: proposal.requested.requiredChains,
+        evmAccount,
+    })
 
     // Callers already holding `isHandlingRef` (`handleConnect`) call this
     // directly; `handleCancel` would see the guard held and no-op.
@@ -361,7 +398,7 @@ export const useConnectionApprovalView = (
 
     const { isApprovalAllowed } = siteSafety
     const handleConnect = useCallback(async () => {
-        if (isHandlingRef.current || !isApprovalAllowed) return
+        if (isHandlingRef.current || !isApprovalAllowed || !canConnect) return
         isHandlingRef.current = true
         try {
             // No expiry pre-check here: the handler owns that verdict and
@@ -370,17 +407,7 @@ export const useConnectionApprovalView = (
             //
             // Before approve, so a 'cancel' can't leave a half-approved connection;
             // this await is the async gap `isHandlingRef` covers.
-            const selected = selectedAccounts.flatMap(accountId => {
-                const account = accounts.find(({ id }) => id === accountId)
-                return account ? [account] : []
-            })
-            const addresses = selected.flatMap(account =>
-                signingAddressesOn(
-                    account,
-                    accounts,
-                    proposal.requested.chains,
-                ),
-            )
+            const addresses = grantedAddresses
             const decision = await confirmQuantumDappUsage(
                 addresses,
                 ALGORAND_CHAIN_ID,
@@ -394,8 +421,17 @@ export const useConnectionApprovalView = (
             try {
                 await proposal.approve(addresses)
                 // Firebase params are scalars, so a session spanning chains logs once per chain.
+                const evmGrant = evmAccount ? [evmAccount] : []
+                const grantedOn = (chainId: ChainId) =>
+                    evmChainIds.includes(chainId)
+                        ? evmGrant
+                        : selectedOtherAccounts
+                const grantedCount = new Set([
+                    ...selectedOtherAccounts.map(({ id }) => id),
+                    ...(evmAccount ? [evmAccount.id] : []),
+                ]).size
                 for (const { chainId, address } of approvedChainsOf(
-                    selected,
+                    grantedOn,
                     accounts,
                     proposal.requested.chains,
                     { chainId: fallbackChainId, address: addresses[0] },
@@ -404,8 +440,7 @@ export const useConnectionApprovalView = (
                         [AnalyticsMetadataKey.DappName]: proposal.peer.name,
                         [AnalyticsMetadataKey.DappUrl]: proposal.peer.url ?? '',
                         [AnalyticsMetadataKey.AccountAddress]: address,
-                        [AnalyticsMetadataKey.TotalAccount]:
-                            selectedAccounts.length,
+                        [AnalyticsMetadataKey.TotalAccount]: grantedCount,
                         [AnalyticsMetadataKey.ChainId]: chainId,
                     })
                 }
@@ -438,7 +473,11 @@ export const useConnectionApprovalView = (
     }, [
         proposal,
         accounts,
-        selectedAccounts,
+        grantedAddresses,
+        canConnect,
+        evmChainIds,
+        evmAccount,
+        selectedOtherAccounts,
         isApprovalAllowed,
         confirmQuantumDappUsage,
         rejectProposal,
@@ -457,6 +496,13 @@ export const useConnectionApprovalView = (
 
     return {
         accountRows,
+        evmChainId,
+        evmCandidates,
+        evmAccount,
+        handleEvmAccountPress,
+        evmNoAccountsNote,
+        hasAccountList: otherChainIds.length > 0,
+        canConnect,
         title,
         requestedNetworks,
         handleAddNetwork,

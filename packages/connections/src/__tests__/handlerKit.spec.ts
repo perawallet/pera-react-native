@@ -64,6 +64,7 @@ const makeContext = (
     onMessage: vi.fn(),
     onDisconnected: vi.fn(),
     onRequestExpired: vi.fn(),
+    onRequestWithdrawn: vi.fn(),
     onError: vi.fn<ConnectionHandlerContext['onError']>(),
 })
 

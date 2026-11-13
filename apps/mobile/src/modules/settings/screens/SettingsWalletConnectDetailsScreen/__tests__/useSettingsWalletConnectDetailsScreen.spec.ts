@@ -27,6 +27,8 @@ const mocks = vi.hoisted(() => ({
     showError: vi.fn(),
     pushWebView: vi.fn(),
     accounts: [] as MockAccount[],
+    connections: [] as unknown[],
+    useChangeConnectionAccount: vi.fn(),
 }))
 
 const network = (
@@ -70,7 +72,15 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 // a connector of its own — no UI surface may own a WC connector
 // (the oxlint rule pera/wc-connector-ownership).
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
-    useConnectionSettingsList: () => ({ revoke: mocks.revoke }),
+    useConnectionSettingsList: () => ({
+        revoke: mocks.revoke,
+        connections: mocks.connections,
+    }),
+}))
+
+vi.mock('@modules/walletconnect', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/walletconnect')>()),
+    useChangeConnectionAccount: mocks.useChangeConnectionAccount,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -81,6 +91,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: string,
         address: string,
     ) => accounts.find(account => account.chains[chainId]?.address === address),
+    chainAccountOf: (account: MockAccount, chainId: string) =>
+        account.chains[chainId],
+    signingAddressesOn: (
+        account: MockAccount,
+        _accounts: unknown,
+        chainIds: readonly string[],
+    ) => chainIds.flatMap(chainId => account.chains[chainId]?.address ?? []),
 }))
 
 vi.mock('@react-navigation/native', async importOriginal => ({
@@ -131,6 +148,54 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.revoke.mockResolvedValue(undefined)
+        mocks.connections = []
+        mocks.accounts = []
+        mocks.useChangeConnectionAccount.mockReturnValue({
+            evmChainId: undefined,
+            activeEvmAccount: null,
+            isAvailable: false,
+            isChanging: false,
+            handleChangeAccount: vi.fn(),
+        })
+    })
+
+    describe('changing the EVM account', () => {
+        const evmRow = (
+            accounts: string[] = ['0x1'],
+        ): ConnectionSettingsRow => ({
+            ...connectionRow(),
+            kind: 'walletconnect-v2',
+            protocolVersion: 2,
+            accounts,
+            networks: [
+                { chainId: 'algorand', networkId: 'mainnet' },
+                { chainId: 'ethereum', networkId: 'mainnet' },
+            ],
+        })
+
+        it('hands the session’s EVM chains and addresses to the shared change', () => {
+            renderHook(() =>
+                useSettingsWalletConnectDetailsScreen(evmRow(['AAAA', '0x1'])),
+            )
+
+            expect(mocks.useChangeConnectionAccount).toHaveBeenLastCalledWith({
+                id: 'client-1',
+                accounts: ['AAAA', '0x1'],
+                evmChainIds: ['ethereum'],
+            })
+        })
+
+        // The route param is a snapshot taken when the screen opened.
+        it('follows the stored session once the change lands', () => {
+            mocks.connections = [{ ...evmRow(['0x2']) }]
+            renderHook(() =>
+                useSettingsWalletConnectDetailsScreen(evmRow(['0x1'])),
+            )
+
+            expect(mocks.useChangeConnectionAccount).toHaveBeenLastCalledWith(
+                expect.objectContaining({ accounts: ['0x2'] }),
+            )
+        })
     })
 
     it('navigates back once the session is actually revoked', async () => {

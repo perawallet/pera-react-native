@@ -25,7 +25,10 @@ import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { SiteSafetyGate } from '@modules/site-safety'
-import { ConnectionApprovalAccountRow } from '@modules/walletconnect'
+import {
+    ConnectAccountRow,
+    ConnectionApprovalAccountRow,
+} from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
@@ -47,6 +50,10 @@ export const WcConnectScreen = (): React.JSX.Element => {
         accounts,
         selected,
         toggle,
+        isEvm,
+        evmAccount,
+        handleEvmAccountPress,
+        isArmed,
         canConnect,
         isLoading,
         isConnecting,
@@ -87,7 +94,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
                 <PWFlatList
                     style={styles.container}
                     contentContainerStyle={styles.contentContainer}
-                    data={accounts}
+                    data={isEvm ? [] : accounts}
                     renderItem={renderAccountRow}
                     extraData={{ selected }}
                     ListHeaderComponent={
@@ -104,15 +111,32 @@ export const WcConnectScreen = (): React.JSX.Element => {
                             peerUrlLabel={peerUrlLabel}
                             canOpenPeerUrl={canOpenPeerUrl}
                             onPressUrl={handlePressUrl}
+                            evmAccountRow={
+                                isEvm && accounts.length > 0 ? (
+                                    <ConnectAccountRow
+                                        account={evmAccount}
+                                        chainId={chainId}
+                                        labelKey='connect'
+                                        onPress={() =>
+                                            void handleEvmAccountPress()
+                                        }
+                                        isDisabled={!isArmed}
+                                        testID='wc_evm_account_row'
+                                    />
+                                ) : undefined
+                            }
                         />
                     }
                     ListEmptyComponent={
-                        <PWText
-                            style={styles.noAccounts}
-                            testID='dapp_connect_no_accounts'
-                        >
-                            {noAccountsNote}
-                        </PWText>
+                        // An EVM chain lists nothing: its accounts are in the row.
+                        isEvm && accounts.length > 0 ? null : (
+                            <PWText
+                                style={styles.noAccounts}
+                                testID='dapp_connect_no_accounts'
+                            >
+                                {noAccountsNote}
+                            </PWText>
+                        )
                     }
                     showsVerticalScrollIndicator={false}
                 />

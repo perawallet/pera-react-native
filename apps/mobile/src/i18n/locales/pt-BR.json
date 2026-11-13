@@ -1175,7 +1175,8 @@
             "unavailable_body": "Tente novamente em instantes.",
             "offline_title": "Você está offline",
             "offline_body": "Esta página não pode ser carregada sem conexão com a internet. Ela será recarregada automaticamente quando você voltar a ficar online.",
-            "unknown_host": "Site desconhecido"
+            "unknown_host": "Site desconhecido",
+            "connected_account_a11y": "Conta conectada, toque para trocar"
         },
         "done": "Pronto",
         "save": "Salvar",
@@ -4057,7 +4058,10 @@
             "error_delivery_failed": "A Pera não conseguiu contatar o aplicativo para entregar sua resposta, então ele pode continuar aguardando. Tente novamente pelo aplicativo.",
             "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum.",
             "origin_scam": "Este app foi sinalizado como um risco de segurança. Não se conecte, a menos que você confie nele.",
-            "origin_unverified": "A Pera não conseguiu verificar o site deste app."
+            "origin_unverified": "A Pera não conseguiu verificar o site deste app.",
+            "connect_account": "Conectar conta",
+            "choose_account": "Escolha uma conta",
+            "account_picker_title": "Selecionar conta"
         },
         "permissions": {
             "heading": "Este app pode",
@@ -4093,7 +4097,9 @@
             "network_label": "{{chain}} {{network}}",
             "permissions": "Permissões avançadas",
             "permissions_info_title": "Permissões avançadas",
-            "permissions_info_body": "O WalletConnect é um protocolo de comunicação para web3 que permite que wallets e dApps se conectem e interajam com segurança. Em cada nova versão, o WalletConnect traz novas formas de tratar, assinar e/ou exibir solicitações de transação vindas de projetos de terceiros."
+            "permissions_info_body": "O WalletConnect é um protocolo de comunicação para web3 que permite que wallets e dApps se conectem e interajam com segurança. Em cada nova versão, o WalletConnect traz novas formas de tratar, assinar e/ou exibir solicitações de transação vindas de projetos de terceiros.",
+            "change_account": "Trocar conta",
+            "change_account_failed": "Não foi possível trocar a conta. Tente novamente."
         }
     },
     "staking": {

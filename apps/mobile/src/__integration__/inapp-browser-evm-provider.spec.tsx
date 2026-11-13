@@ -35,7 +35,11 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { resetConnectionPairingStateForTesting } from '@perawallet/wallet-core-connections'
+import {
+    resetConnectionPairingStateForTesting,
+    useConnectionRegistry,
+    type ConnectionRegistryClient,
+} from '@perawallet/wallet-core-connections'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
@@ -74,6 +78,27 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
     name: 'Ether',
 }
 
+// A second account on the same key, so switching to it stays signable.
+const SECOND_ADDRESS = '0x00000000000000000000000000000000000000a2'
+const SECOND_ACCOUNT: WalletAccount = {
+    id: 'inapp-eth-second',
+    custody: {
+        kind: 'local',
+        seed: 'bip39',
+        hd: { account: 0, keyIndex: 1 },
+    },
+    chains: {
+        ethereum: { address: SECOND_ADDRESS, keyPairId: SIGNER_KEY_PAIR_ID },
+    },
+    name: 'Second',
+}
+
+const captured: { registry?: ConnectionRegistryClient } = {}
+const CaptureRegistry = () => {
+    captured.registry = useConnectionRegistry()
+    return null
+}
+
 const inject = vi.fn()
 const page = { currentUrl: () => `${ORIGIN}/swap`, inject }
 
@@ -90,6 +115,7 @@ const ConnectionsWithSigning = () => {
 
     return (
         <ConnectionsProvider>
+            <CaptureRegistry />
             <SigningOverlays />
         </ConnectionsProvider>
     )
@@ -110,6 +136,17 @@ const answers = (): Answer[] =>
     inject.mock.calls.flatMap(([script]) => {
         const match = /deliver\((\{.*\})\);/.exec(String(script))
         return match ? [JSON.parse(match[1]) as Answer] : []
+    })
+
+const notificationsOf = (method: string): unknown[] =>
+    inject.mock.calls.flatMap(([script]) => {
+        const match = /deliver\((\{.*\})\);/.exec(String(script))
+        if (!match) return []
+        const message = JSON.parse(match[1]) as {
+            method?: string
+            params?: unknown
+        }
+        return message.method === method ? [message.params] : []
     })
 
 const answerOf = (id: string): Promise<Answer> =>
@@ -146,11 +183,11 @@ const connect = async () => {
     await waitFor(() => {
         expect(findButton('common.connect.label')).toBeTruthy()
     })
-    const row = `wc_account_row_${ETHEREUM_ACCOUNT.id}`
+    // The one EVM account is preselected in the row; nothing to tick.
+    const row = 'wc_evm_account_row'
     await waitFor(() => expect(screen.getByTestId(row)).toBeTruthy(), {
         timeout: 5000,
     })
-    fireEvent.click(screen.getByTestId(row))
     await waitFor(() => {
         expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
             false,
@@ -199,6 +236,30 @@ describe('Flow: an EVM dApp in the in-app browser', () => {
             kind: 'dapp-eip1193',
             accounts: [SENDER],
         })
+    })
+
+    it('Given a connected site, when the account is changed from Pera, then the page is told the new account and the site holds only it', async () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([ETHEREUM_ACCOUNT, SECOND_ACCOUNT])
+        await connect()
+
+        await act(async () => {
+            await captured.registry!.changeAccount(
+                CONNECTION_ID,
+                'ethereum',
+                SECOND_ADDRESS,
+            )
+        })
+
+        await waitFor(() =>
+            expect(notificationsOf('accountsChanged')).toContainEqual([
+                SECOND_ADDRESS,
+            ]),
+        )
+        expect(
+            await getProvider().connections.store.get(CONNECTION_ID),
+        ).toMatchObject({ accounts: [SECOND_ADDRESS] })
     })
 
     it('Given no user gesture, when the page asks for accounts, then it is answered 4100 and no sheet opens', async () => {

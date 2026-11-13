@@ -12,7 +12,10 @@
 
 import { useEffect, useRef } from 'react'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { type ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { signingAccountAddressesOn } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -84,6 +87,15 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 // Loading the v2 SDK holds the JS thread for seconds; at boot
                 // that delayed the PIN pad and the biometric prompt.
                 startWhen: whenAppUnlocked,
+                // The handler passes its codec's normalized form (EVM
+                // checksum case), which the store need not share.
+                canSignWith: (chainId, address) =>
+                    addressCodecs.has(chainId) &&
+                    signingAccountAddressesOn(chainId).some(held =>
+                        addressCodecs
+                            .get(chainId)
+                            .areEqual(held.address, address),
+                    ),
             }),
         )
         webViewDappTransport.bindLockState(isAppLocked)
