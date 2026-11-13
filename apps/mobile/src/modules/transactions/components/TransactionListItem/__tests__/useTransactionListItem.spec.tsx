@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createQueryClientWrapper } from '@test-utils/render'
 import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
@@ -298,6 +298,11 @@ describe('useTransactionListItem', () => {
             vi.mocked(imitatedCurrencyOf).mockImplementation((_ref, name) =>
                 name === 'ALGO' ? 'ALGO' : null,
             )
+        })
+
+        afterEach(() => {
+            vi.mocked(imitatedCurrencyOf).mockReset()
+            vi.mocked(imitatedCurrencyOf).mockReturnValue(null)
         })
 
         it('flags a received asset whose stored unit name imitates a currency', () => {

@@ -82,7 +82,7 @@ export type UseTransactionListItemResult = {
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
     isSuspectedPoisoning: boolean
-    /** Code the first visible amount's unit name imitates (its chain's native ticker or a fiat code), or null. */
+    /** Code imitated by the first visible amount whose unit name passes itself off as a currency (its chain's native ticker or a fiat code), or null. */
     imitatedCurrency: Nullable<string>
 }
 

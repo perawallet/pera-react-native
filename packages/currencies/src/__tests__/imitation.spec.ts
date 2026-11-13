@@ -56,7 +56,7 @@ describe('imitatedCurrencyOf', () => {
         expect(imitatedCurrencyOf(algorand('741'), unitName)).toBeNull()
     })
 
-    it('reserves only the ticker of the asset own chain', () => {
+    it('reserves only the ticker of the own chain of the asset', () => {
         const erc20 = { chainId: 'ethereum', assetId: '0xabc' }
 
         expect(imitatedCurrencyOf(erc20, 'eth')).toBe('ETH')

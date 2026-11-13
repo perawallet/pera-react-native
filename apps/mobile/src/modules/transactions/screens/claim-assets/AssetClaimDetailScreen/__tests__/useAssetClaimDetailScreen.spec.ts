@@ -145,10 +145,25 @@ describe('useAssetClaimDetailScreen', () => {
             )
         })
 
-        it('is null for an asset that imitates nothing', () => {
+        it('judges the payload asset id and the unit name it renders', () => {
+            mockAssetRequests = [
+                buildRequest({
+                    asset: {
+                        assetId: '123',
+                        decimals: 0,
+                        name: 'TEST',
+                        unitName: 'TST',
+                    },
+                }),
+            ]
+
             const { result } = renderHook(() => useAssetClaimDetailScreen())
 
             expect(result.current.imitatedCurrency).toBeNull()
+            expect(imitatedCurrencyOf).toHaveBeenCalledWith(
+                { chainId: 'algorand', assetId: '123' },
+                'TST',
+            )
         })
 
         it('is null when there is no request', () => {
@@ -157,6 +172,7 @@ describe('useAssetClaimDetailScreen', () => {
             const { result } = renderHook(() => useAssetClaimDetailScreen())
 
             expect(result.current.imitatedCurrency).toBeNull()
+            expect(imitatedCurrencyOf).not.toHaveBeenCalled()
         })
     })
 

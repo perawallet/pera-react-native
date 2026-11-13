@@ -22,10 +22,9 @@ const FIAT_CURRENCY_CODES: ReadonlySet<string> = new Set(
 )
 
 /**
- * The currency code `unitName` passes itself off as: the chain's native ticker
- * as the chain spells it, or an upper-cased ISO 4217 code. Unit names are
- * free-form and set by whoever creates the asset, so this only ever feeds a
- * warning, never identity.
+ * Unit names are free-form and set by whoever creates the asset, so this only
+ * ever feeds a warning, never identity. Returns the native ticker as the chain
+ * spells it, or an upper-cased ISO 4217 code.
  */
 export const imitatedCurrencyOf = (
     ref: AssetRef,
