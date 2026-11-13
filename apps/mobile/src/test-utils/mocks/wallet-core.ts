@@ -52,6 +52,13 @@ vi.mock('@perawallet/wallet-core-discover', () => ({
         isError: false,
         refetch: vi.fn(async () => undefined),
     })),
+    useDiscoverNewsDetailQuery: vi.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        isFetching: false,
+        refetch: vi.fn(async () => undefined),
+    })),
 }))
 
 // The real check reads SQLite and loads megabytes of bundled lists; specs that

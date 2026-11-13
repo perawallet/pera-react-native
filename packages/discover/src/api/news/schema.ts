@@ -25,5 +25,10 @@ export const newsListResponseSchema = z.object({
     results: z.array(newsItemResponseSchema),
 })
 
+export const newsDetailResponseSchema = newsItemResponseSchema.extend({
+    content_html: z.string(),
+})
+
 export type NewsItemApiResponse = z.infer<typeof newsItemResponseSchema>
 export type NewsListApiResponse = z.infer<typeof newsListResponseSchema>
+export type NewsDetailApiResponse = z.infer<typeof newsDetailResponseSchema>

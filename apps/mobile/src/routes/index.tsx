@@ -21,6 +21,8 @@ import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import {
     DiscoverDappsScreen,
     DiscoverDetailScreen,
+    DiscoverNewsDetailScreen,
+    DiscoverNewsScreen,
     DiscoverSearchScreen,
 } from '@modules/discover/routes'
 import { withAgeGate } from '@components/AgeGated'
@@ -71,6 +73,9 @@ const RootStack = createNativeStackNavigator<RootStackParamList>()
 // Age-gated at the navigator so the screen (and its data fetching) only mounts
 // for users who pass the gate; blocked users see the restricted view instead.
 const GatedStakingScreen = withAgeGate(StakingScreen)
+// Deeplinks reach these directly, past the age-gated Discover tab.
+const GatedDiscoverNewsScreen = withAgeGate(DiscoverNewsScreen)
+const GatedDiscoverNewsDetailScreen = withAgeGate(DiscoverNewsDetailScreen)
 
 export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
@@ -273,6 +278,34 @@ export const MainRoutes = () => {
                                     )}
                                     layout={fullScreenLayout}
                                     component={DiscoverDappsScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverNews'
+                                    options={headeredScreen(
+                                        'discover.news.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={GatedDiscoverNewsScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverNewsDetail'
+                                    options={headeredScreen(
+                                        'discover.news.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={GatedDiscoverNewsDetailScreen}
                                 />
                             )}
                         <RootStack.Screen

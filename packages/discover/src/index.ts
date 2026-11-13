@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-export type { DiscoverNewsItem, DiscoverNewsItemRaw } from './models/types'
+export type {
+    DiscoverNewsDetail,
+    DiscoverNewsDetailRaw,
+    DiscoverNewsItem,
+    DiscoverNewsItemRaw,
+} from './models/types'
 
 export {
     useDiscoverNewsQuery,
@@ -18,8 +23,14 @@ export {
 } from './hooks/useDiscoverNewsQuery'
 
 export {
+    useDiscoverNewsDetailQuery,
+    type UseDiscoverNewsDetailQueryResult,
+} from './hooks/useDiscoverNewsDetailQuery'
+
+export {
+    getDiscoverNewsDetailQueryKey,
     getDiscoverNewsQueryKey,
     DISCOVER_MODULE_PREFIX,
 } from './hooks/querykeys'
 
-export { fetchDiscoverNews } from './api/news'
+export { fetchDiscoverNews, fetchDiscoverNewsDetail } from './api/news'

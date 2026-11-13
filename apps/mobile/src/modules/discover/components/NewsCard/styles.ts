@@ -30,4 +30,14 @@ export const useStyles = makeStyles(theme => ({
     date: {
         color: theme.colors.textGray,
     },
+    footer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    read: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xxs,
+    },
 }))

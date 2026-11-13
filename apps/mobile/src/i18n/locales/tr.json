@@ -58,6 +58,12 @@
             "assets_unavailable": "Varlık araması şu anda kullanılamıyor",
             "dapps_unavailable": "dApp araması şu anda kullanılamıyor"
         },
+        "news": {
+            "title": "Haberler",
+            "read": "Oku",
+            "load_failure": "Haber detayları yüklenemedi.",
+            "list_failure": "Haberler yüklenemedi"
+        },
         "dapps": {
             "title": "dApps",
             "list_title": "Pera’daki dApp’ler",

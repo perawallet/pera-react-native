@@ -1236,33 +1236,33 @@ workflows:
     - APP_ENV: staging
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com,https://mainnet.gateway.tenderly.co
-    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
-    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com,https://mainnet.base.org
-    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
-    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com,https://bsc-dataseed.bnbchain.org
-    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com,https://data-seed-prebsc-1-s1.bnbchain.org:8545
-    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com,https://arb1.arbitrum.io/rpc
-    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com,https://sepolia-rollup.arbitrum.io/rpc
-    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com,https://api.avax.network/ext/bc/C/rpc
-    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com,https://api.avax-test.network/ext/bc/C/rpc
-    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com,https://polygon.gateway.tenderly.co
-    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com,https://polygon-amoy.gateway.tenderly.co
-    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com,https://mainnet.optimism.io
-    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com,https://sepolia.optimism.io
-    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - ANDROID_FLAVOR: staging
     - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
@@ -1391,33 +1391,33 @@ workflows:
     - APP_ENV: staging
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com,https://mainnet.gateway.tenderly.co
-    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
-    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com,https://mainnet.base.org
-    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
-    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com,https://bsc-dataseed.bnbchain.org
-    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com,https://data-seed-prebsc-1-s1.bnbchain.org:8545
-    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com,https://arb1.arbitrum.io/rpc
-    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com,https://sepolia-rollup.arbitrum.io/rpc
-    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com,https://api.avax.network/ext/bc/C/rpc
-    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com,https://api.avax-test.network/ext/bc/C/rpc
-    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com,https://polygon.gateway.tenderly.co
-    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com,https://polygon-amoy.gateway.tenderly.co
-    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com,https://mainnet.optimism.io
-    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com,https://sepolia.optimism.io
-    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
     - USE_CACHE: 'true'
@@ -1563,33 +1563,33 @@ workflows:
     - APP_ENV: staging
     - CHAINS: algorand,ethereum,base,bsc,arbitrum,avalanche,polygon,optimism
     - ETHEREUM_MAINNET_RPC_URL: https://ethereum-rpc.publicnode.com,https://mainnet.gateway.tenderly.co
-    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ETHEREUM_SEPOLIA_RPC_URL: https://ethereum-sepolia-rpc.publicnode.com,https://sepolia.gateway.tenderly.co
-    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ETHEREUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_MAINNET_RPC_URL: https://base-rpc.publicnode.com,https://mainnet.base.org
-    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BASE_SEPOLIA_RPC_URL: https://base-sepolia-rpc.publicnode.com,https://sepolia.base.org
-    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BASE_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BSC_MAINNET_RPC_URL: https://bsc-rpc.publicnode.com,https://bsc-dataseed.bnbchain.org
-    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - BSC_TESTNET_RPC_URL: https://bsc-testnet-rpc.publicnode.com,https://data-seed-prebsc-1-s1.bnbchain.org:8545
-    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - BSC_TESTNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ARBITRUM_MAINNET_RPC_URL: https://arbitrum-one-rpc.publicnode.com,https://arb1.arbitrum.io/rpc
-    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - ARBITRUM_SEPOLIA_RPC_URL: https://arbitrum-sepolia-rpc.publicnode.com,https://sepolia-rollup.arbitrum.io/rpc
-    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - ARBITRUM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - AVALANCHE_MAINNET_RPC_URL: https://avalanche-c-chain-rpc.publicnode.com,https://api.avax.network/ext/bc/C/rpc
-    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - AVALANCHE_FUJI_RPC_URL: https://avalanche-fuji-c-chain-rpc.publicnode.com,https://api.avax-test.network/ext/bc/C/rpc
-    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing
+    - AVALANCHE_FUJI_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - POLYGON_MAINNET_RPC_URL: https://polygon-bor-rpc.publicnode.com,https://polygon.gateway.tenderly.co
-    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - POLYGON_AMOY_RPC_URL: https://polygon-amoy-bor-rpc.publicnode.com,https://polygon-amoy.gateway.tenderly.co
-    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing
+    - POLYGON_AMOY_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - OPTIMISM_MAINNET_RPC_URL: https://optimism-rpc.publicnode.com,https://mainnet.optimism.io
-    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_MAINNET_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - OPTIMISM_SEPOLIA_RPC_URL: https://optimism-sepolia-rpc.publicnode.com,https://sepolia.optimism.io
-    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing
+    - OPTIMISM_SEPOLIA_PERA_SERVICES: prices,assets,history,blockFollowing,contracts,simulations
     - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
     - WEB_INTEGRITY_MINT_ENABLED: 'true'
     - WEB_INTEGRITY_ENROL_ENABLED: 'true'

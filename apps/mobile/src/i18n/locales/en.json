@@ -58,6 +58,12 @@
             "assets_unavailable": "Asset search is unavailable right now",
             "dapps_unavailable": "dApp search is unavailable right now"
         },
+        "news": {
+            "title": "News",
+            "read": "Read",
+            "load_failure": "Failed to load news details.",
+            "list_failure": "Failed loading news"
+        },
         "dapps": {
             "title": "dApps",
             "list_title": "dApps on Pera",

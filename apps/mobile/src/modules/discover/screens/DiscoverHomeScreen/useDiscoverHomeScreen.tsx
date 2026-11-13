@@ -25,6 +25,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { toChainFilterOptions } from '@modules/assets'
 import { useDiscoverChainIds } from '../../hooks/useDiscoverChainIds'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useOpenNewsItem } from '../../hooks/useOpenNewsItem'
 import { useToggleDiscoverFavorite } from '../../hooks/useToggleDiscoverFavorite'
 import { useTopDapps, type UseTopDappsResult } from '../../hooks/useTopDapps'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
@@ -53,6 +54,8 @@ export type UseDiscoverHomeScreenResult = {
     refresh: () => Promise<void>
     openSearch: () => void
     openDapp: (dapp: DiscoverDapp) => void
+    openNewsItem: (item: DiscoverNewsCardItem) => void
+    openNewsList: () => void
     openDappDirectory: () => void
 }
 
@@ -153,6 +156,13 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         navigation.navigate('DiscoverSearch')
     }, [navigation])
 
+    const openNewsItem = useOpenNewsItem()
+
+    const openNewsList = useCallback(() => {
+        trackEvent(DiscoverEvent.NewsButtonTap)
+        navigation.navigate('DiscoverNews')
+    }, [navigation])
+
     const openDappDirectory = useCallback(() => {
         trackEvent(DiscoverEvent.TopDappsButtonTap)
         navigation.navigate('DiscoverDapps', {
@@ -174,6 +184,8 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         refresh,
         openSearch,
         openDapp,
+        openNewsItem,
+        openNewsList,
         openDappDirectory,
     }
 }

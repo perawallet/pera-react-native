@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { fetchDiscoverNews } from './endpoints'
+export { fetchDiscoverNews, fetchDiscoverNewsDetail } from './endpoints'

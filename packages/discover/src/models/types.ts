@@ -23,3 +23,10 @@ export type DiscoverNewsItemRaw = {
 export type DiscoverNewsItem = Omit<DiscoverNewsItemRaw, 'publishedAt'> & {
     publishedAt: Date
 }
+
+/** A news item with its article, as `GET /v1/discover/news/<id>/` serves it. */
+export type DiscoverNewsDetailRaw = DiscoverNewsItemRaw & {
+    contentHtml: string
+}
+
+export type DiscoverNewsDetail = DiscoverNewsItem & { contentHtml: string }

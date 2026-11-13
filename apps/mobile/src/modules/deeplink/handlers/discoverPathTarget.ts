@@ -16,6 +16,8 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type DiscoverPathTarget =
     | { kind: 'home' }
+    | { kind: 'news' }
+    | { kind: 'newsDetail'; newsId: string }
     | { kind: 'dapps' }
     /** A Discover web page with no native screen yet. */
     | { kind: 'unported'; path: string }
@@ -25,6 +27,7 @@ export type DiscoverPathTarget =
 const DISCOVER_TOKEN_DETAIL_CHAIN: ChainId = 'algorand'
 
 const TOKEN_DETAIL_PREFIX = 'token-detail/'
+const NEWS_PREFIX = 'news/'
 
 /**
  * Decides where a DISCOVER_PATH deeplink lands on a multichain build, whose
@@ -37,6 +40,14 @@ export const discoverPathTarget = (
     const normalised = (path ?? '').replace(/^\//, '').split(/[?#]/)[0]
     if (normalised === '' || normalised === 'main/home') {
         return { kind: 'home' }
+    }
+    if (normalised === 'news') {
+        return { kind: 'news' }
+    }
+    if (normalised.startsWith(NEWS_PREFIX)) {
+        // The id is the first segment only; `news/` or `news//` has none.
+        const newsId = normalised.slice(NEWS_PREFIX.length).split('/')[0]
+        return newsId ? { kind: 'newsDetail', newsId } : { kind: 'news' }
     }
     if (normalised === 'main/browser') {
         return { kind: 'dapps' }
