@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ChainId } from "@perawallet/wallet-core-chain-contract";
+import type { Nullable } from "@perawallet/wallet-core-shared";
 
 /**
  * The one value type for a dApp row, a favorite input, a `{kind:'dapp'}`
@@ -21,12 +21,20 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  * downgrade of the project, so verification is joined at render time.
  */
 export type DiscoverDapp = {
-    url: string
-    name: string
-    logo: Nullable<string>
-    categories: string[]
-    chains: ChainId[]
-    projectId?: string
-}
+  url: string;
+  name: string;
+  logo: Nullable<string>;
+  categories: string[];
+  chains: ChainId[];
+  projectId?: string;
+};
 
-export type DiscoverFavorite = DiscoverDapp & { addedAt: number }
+export type DiscoverFavorite = DiscoverDapp & { addedAt: number };
+
+/** A favorites folder; `items` are favorite keys (`normalizeDappUrl`), in folder order. */
+export type DiscoverFolder = {
+  id: string;
+  name: string;
+  items: string[];
+  createdAt: number;
+};

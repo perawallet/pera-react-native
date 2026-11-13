@@ -10,115 +10,115 @@
  limitations under the License
  */
 
-import { create } from 'zustand'
+import { create } from "zustand";
 import {
-    type AssetRef,
-    type NetworkId,
-} from '@perawallet/wallet-core-chain-contract'
+  type AssetRef,
+  type NetworkId,
+} from "@perawallet/wallet-core-chain-contract";
 import {
-    guardedPersist,
-    registerStore,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { DiscoverDapp } from '../types'
-import { normalizeDappUrl } from '../utils/normalizeDappUrl'
+  guardedPersist,
+  registerStore,
+  type Nullable,
+} from "@perawallet/wallet-core-shared";
+import { getProvider } from "@perawallet/wallet-extension-provider";
+import type { DiscoverDapp } from "../types";
+import { normalizeDappUrl } from "../utils/normalizeDappUrl";
 
 export type RecentSearch =
-    | { kind: 'url'; url: string }
-    | { kind: 'dapp'; dapp: DiscoverDapp }
-    | {
-          kind: 'asset'
-          ref: AssetRef
-          /** The network the asset was found on; the same id differs per network. */
-          networkId: NetworkId
-          name: string
-          unitName: string
-          logo: Nullable<string>
-      }
+  | { kind: "url"; url: string }
+  | { kind: "dapp"; dapp: DiscoverDapp }
+  | {
+      kind: "asset";
+      ref: AssetRef;
+      /** The network the asset was found on; the same id differs per network. */
+      networkId: NetworkId;
+      name: string;
+      unitName: string;
+      logo: Nullable<string>;
+    };
 
-export const MAX_RECENT_SEARCHES = 10
+export const MAX_RECENT_SEARCHES = 10;
 
 export const recentSearchKey = (item: RecentSearch): string => {
-    switch (item.kind) {
-        case 'url': {
-            return `url:${normalizeDappUrl(item.url) ?? item.url}`
-        }
-        case 'dapp': {
-            return `dapp:${normalizeDappUrl(item.dapp.url) ?? item.dapp.url}`
-        }
-        case 'asset': {
-            return `asset:${item.ref.chainId}/${item.networkId}/${item.ref.assetId}`
-        }
+  switch (item.kind) {
+    case "url": {
+      return `url:${normalizeDappUrl(item.url) ?? item.url}`;
     }
-}
+    case "dapp": {
+      return `dapp:${normalizeDappUrl(item.dapp.url) ?? item.dapp.url}`;
+    }
+    case "asset": {
+      return `asset:${item.ref.chainId}/${item.networkId}/${item.ref.assetId}`;
+    }
+  }
+};
 
 // Version 1 asset recents had no networkId, so they cannot be matched to a
 // network: drop them and keep the url and dapp recents.
 const migrateRecents = (
-    persisted: unknown,
-    version: number,
+  persisted: unknown,
+  version: number,
 ): RecentSearchesState => {
-    if (version === 2) return persisted as RecentSearchesState
-    if (version !== 1) return initialState
-    const items = (persisted as Nullable<Partial<RecentSearchesState>>)?.items
-    if (!Array.isArray(items)) return initialState
-    return {
-        items: items.filter(
-            item =>
-                (item as RecentSearch).kind !== 'asset' ||
-                typeof (item as { networkId?: unknown }).networkId === 'string',
-        ),
-    }
-}
+  if (version === 2) return persisted as RecentSearchesState;
+  if (version !== 1) return initialState;
+  const items = (persisted as Nullable<Partial<RecentSearchesState>>)?.items;
+  if (!Array.isArray(items)) return initialState;
+  return {
+    items: items.filter(
+      (item) =>
+        (item as RecentSearch).kind !== "asset" ||
+        typeof (item as { networkId?: unknown }).networkId === "string",
+    ),
+  };
+};
 
-type RecentSearchesState = { items: RecentSearch[] }
+type RecentSearchesState = { items: RecentSearch[] };
 
 type RecentSearchesActions = {
-    push(item: RecentSearch): void
-    remove(key: string): void
-    clear(): void
-    resetState(): void
-}
+  push(item: RecentSearch): void;
+  remove(key: string): void;
+  clear(): void;
+  resetState(): void;
+};
 
-const STORE_NAME = 'discover-recent-searches-store'
+const STORE_NAME = "discover-recent-searches-store";
 
-const initialState: RecentSearchesState = { items: [] }
+const initialState: RecentSearchesState = { items: [] };
 
 export const useDiscoverRecentSearchesStore = create<
-    RecentSearchesState & RecentSearchesActions
+  RecentSearchesState & RecentSearchesActions
 >()(
-    guardedPersist(
-        set => ({
-            ...initialState,
-            push: item => {
-                const key = recentSearchKey(item)
-                set(state => ({
-                    items: [
-                        item,
-                        ...state.items.filter(i => recentSearchKey(i) !== key),
-                    ].slice(0, MAX_RECENT_SEARCHES),
-                }))
-            },
-            remove: key =>
-                set(state => ({
-                    items: state.items.filter(i => recentSearchKey(i) !== key),
-                })),
-            clear: () => set(initialState),
-            resetState: () => set(initialState),
-        }),
-        {
-            name: STORE_NAME,
-            version: 2,
-            storage: () => getProvider().keyValueStorage,
-            migrate: (persisted, version) => migrateRecents(persisted, version),
-            partialize: state => ({ items: state.items }),
-        },
-    ),
-)
+  guardedPersist(
+    (set) => ({
+      ...initialState,
+      push: (item) => {
+        const key = recentSearchKey(item);
+        set((state) => ({
+          items: [
+            item,
+            ...state.items.filter((i) => recentSearchKey(i) !== key),
+          ].slice(0, MAX_RECENT_SEARCHES),
+        }));
+      },
+      remove: (key) =>
+        set((state) => ({
+          items: state.items.filter((i) => recentSearchKey(i) !== key),
+        })),
+      clear: () => set(initialState),
+      resetState: () => set(initialState),
+    }),
+    {
+      name: STORE_NAME,
+      version: 2,
+      storage: () => getProvider().keyValueStorage,
+      migrate: (persisted, version) => migrateRecents(persisted, version),
+      partialize: (state) => ({ items: state.items }),
+    },
+  ),
+);
 
 registerStore({
-    name: STORE_NAME,
-    clearStorage: () => useDiscoverRecentSearchesStore.persist.clearStorage(),
-    resetState: () => useDiscoverRecentSearchesStore.getState().resetState(),
-})
+  name: STORE_NAME,
+  clearStorage: () => useDiscoverRecentSearchesStore.persist.clearStorage(),
+  resetState: () => useDiscoverRecentSearchesStore.getState().resetState(),
+});
