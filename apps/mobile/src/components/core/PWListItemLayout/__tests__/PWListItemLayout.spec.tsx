@@ -154,7 +154,7 @@ describe('PWListItemLayout', () => {
                 maxWidth: '50%',
             })
             expect(styles.center).toMatchObject({ flexShrink: 1 })
-            expect(styles.center.maxWidth).toBeUndefined()
+            expect(styles.center).not.toHaveProperty('maxWidth')
         })
     })
 })
