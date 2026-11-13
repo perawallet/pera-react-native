@@ -13,7 +13,6 @@
 import { useCallback, useMemo } from 'react'
 import {
     addressOn,
-    canSignWith,
     useAllAccounts,
     useSelectedAccount,
     type WalletAccount,
@@ -24,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import { canReceiveCrossChain } from '../utils/crossChainEligibility'
 
 export type UseSwapReceiveTargetResult = {
     receiveScope: ChainScope
@@ -57,14 +57,12 @@ export const useSwapReceiveTarget = (
     const receivingAccounts = useMemo(
         () =>
             isCrossChain
-                ? accounts.filter(
-                      candidate =>
-                          !!addressOn(candidate, receiveScope) &&
-                          canSignWith(
-                              candidate,
-                              accounts,
-                              receiveScope.chainId,
-                          ),
+                ? accounts.filter(candidate =>
+                      canReceiveCrossChain(
+                          candidate,
+                          accounts,
+                          receiveScope.chainId,
+                      ),
                   )
                 : [],
         [isCrossChain, accounts, receiveScope],

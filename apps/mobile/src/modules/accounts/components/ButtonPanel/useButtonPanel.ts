@@ -11,14 +11,17 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useSwapScope } from '@perawallet/wallet-core-swaps'
+import { useSwapScope, useSwapSourceScope } from '@perawallet/wallet-core-swaps'
 import {
     useAccountCapabilityScope,
     useAccountChainOptionsResolver,
+    useAccountHoldingSources,
     useCanSignWithCheck,
 } from '@perawallet/wallet-core-accounts'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
 export type UseButtonPanelResult = {
@@ -39,7 +42,19 @@ export const useButtonPanel = (): UseButtonPanelResult => {
     // a signing flow, something held signs for it there); the flow it opens
     // asks which chain when more than one does.
     const canSignOn = useCanSignWithCheck()
-    const swapChainId = useSwapScope(account)?.chainId
+    // A network chip pins Swap to that network, with no fallback: opening an
+    // Algorand pair from the Ethereum tab is the wrong network.
+    const filterChainId = useSelectedNetworkSource(
+        useAccountHoldingSources(account),
+    )?.scope.chainId
+    const swapChainId = useSwapScope(account, filterChainId)?.chainId
+    // Swap already opens on its current chain, so only a move to another chain
+    // needs a starting asset.
+    const openSwapChainId = useSwapSourceScope(account)?.chainId
+    const startChainId =
+        filterChainId && filterChainId !== openSwapChainId
+            ? filterChainId
+            : undefined
     const canSwap = swapChainId !== undefined && canSignOn(account, swapChainId)
     const sendOptionsOf = useAccountChainOptionsResolver('send')
     const canSend = useMemo(
@@ -57,8 +72,18 @@ export const useButtonPanel = (): UseButtonPanelResult => {
         trackEvent(HomeEvent.Swap, {
             [AnalyticsMetadataKey.ChainId]: swapChainId,
         })
-        navigation.replace('TabBar', { screen: 'Swap' })
-    }, [swapChainId, navigation])
+        navigation.replace('TabBar', {
+            screen: 'Swap',
+            params: startChainId
+                ? {
+                      assetIn: {
+                          chainId: startChainId,
+                          assetId: nativeAssetFor(startChainId).assetId,
+                      },
+                  }
+                : undefined,
+        })
+    }, [swapChainId, startChainId, navigation])
 
     return {
         canSwap,
