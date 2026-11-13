@@ -86,6 +86,7 @@ describe('useTransactionHistoryQuery', () => {
             defaultOptions: {
                 queries: {
                     retry: false,
+                    retryDelay: 0,
                 },
             },
         })
@@ -275,6 +276,32 @@ describe('useTransactionHistoryQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
 
         expect(result.current.error).toBe(mockError)
+        expect(mockGetTransactionHistory).toHaveBeenCalledTimes(2)
+    })
+
+    test('reads again once before reporting a failed read', async () => {
+        mockGetTransactionHistory
+            .mockRejectedValueOnce(new Error('not ready yet'))
+            .mockResolvedValue([mockTransaction])
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    scope: {
+                        chainId: 'algorand',
+                        networkId: 'mainnet',
+                    } as const,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.transactions).toEqual([mockTransaction]),
+        )
+
+        expect(result.current.isError).toBe(false)
+        expect(mockGetTransactionHistory).toHaveBeenCalledTimes(2)
     })
 
     test('does not fetch when isEnabled is false', () => {
