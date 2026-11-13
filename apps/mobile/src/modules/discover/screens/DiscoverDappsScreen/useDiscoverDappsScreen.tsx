@@ -24,8 +24,10 @@ import {
 import type { FilterOption } from '@components/FilterSelection'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { toChainFilterOptions } from '@modules/assets'
 import type { RootStackParamList } from '@routes/types'
+import { DappDetailsSheet } from '../../components/DappDetailsSheet'
 import { useDiscoverChainIds } from '../../hooks/useDiscoverChainIds'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
@@ -83,6 +85,7 @@ export type UseDiscoverDappsScreenResult = {
     isVerified: (url: string) => boolean
     toggleFavorite: (dapp: DiscoverDapp) => void
     openDapp: (dapp: DiscoverDapp) => void
+    openDetails: (item: DirectoryDapp) => void
     openSearch: () => void
     applyForDiscover: () => void
 }
@@ -90,6 +93,7 @@ export type UseDiscoverDappsScreenResult = {
 export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
+    const { request } = useBottomSheet()
     const route = useRoute<RouteProp<RootStackParamList, 'DiscoverDapps'>>()
     const { openDapp: openDappPage } = useOpenDapp()
     const toggle = useToggleDiscoverFavorite()
@@ -216,6 +220,21 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         (dapp: DiscoverDapp) => openDappPage(dapp, selectedChainId),
         [openDappPage, selectedChainId],
     )
+    const openDetails = useCallback(
+        (item: DirectoryDapp) => {
+            void request({
+                contents: (
+                    <DappDetailsSheet
+                        item={item}
+                        chainId={selectedChainId}
+                        isVerified={isVerified(item.dapp.url)}
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+        },
+        [request, selectedChainId, isVerified],
+    )
     const openSearch = useCallback(() => {
         trackEvent(DiscoverEvent.SearchBarTap)
         navigation.navigate('DiscoverSearch')
@@ -254,6 +273,7 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         isVerified,
         toggleFavorite,
         openDapp,
+        openDetails,
         openSearch,
         applyForDiscover,
     }

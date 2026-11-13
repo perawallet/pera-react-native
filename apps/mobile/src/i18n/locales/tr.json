@@ -65,7 +65,11 @@
             "sort_alphabetical": "Alfabetik (A-Z)",
             "apply_prompt": "Projeni Discover’a eklemek ister misin?",
             "apply_cta": "Discover için başvur",
-            "load_failure": "dApp’ler yüklenemedi"
+            "load_failure": "dApp’ler yüklenemedi",
+            "details": "Detaylar",
+            "about": "Hakkında",
+            "website": "Web sitesi",
+            "open": "Aç"
         }
     },
     "account_menu": {

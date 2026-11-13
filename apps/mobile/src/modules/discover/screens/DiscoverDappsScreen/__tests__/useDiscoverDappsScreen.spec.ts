@@ -16,6 +16,7 @@ import { useRoute } from '@react-navigation/native'
 import type { PeraProject } from '@perawallet/wallet-core-projects'
 import { DiscoverEvent, trackEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
@@ -40,6 +41,7 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 vi.mock('@hooks/useAppNavigation', () => ({ useAppNavigation: vi.fn() }))
+vi.mock('@modules/bottom-sheet', () => ({ useBottomSheet: vi.fn() }))
 vi.mock('../../../hooks/useDiscoverChainIds', () => ({
     useDiscoverChainIds: vi.fn(),
 }))
@@ -51,6 +53,7 @@ vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 const navigate = vi.fn()
 const openDapp = vi.fn()
 const refetch = vi.fn(async () => undefined)
+const request = vi.fn(async () => undefined)
 
 const project = (
     name: string,
@@ -99,6 +102,7 @@ describe('useDiscoverDappsScreen', () => {
         registerEthereumChain()
         useDiscoverFavoritesStore.setState({ favorites: {}, favoriteOrder: [] })
         vi.mocked(useAppNavigation).mockReturnValue({ navigate } as never)
+        vi.mocked(useBottomSheet).mockReturnValue({ request } as never)
         vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
         vi.mocked(useDiscoverChainIds).mockReturnValue(['algorand', 'ethereum'])
         vi.mocked(useOpenDapp).mockReturnValue({
@@ -233,5 +237,25 @@ describe('useDiscoverDappsScreen', () => {
         const { result } = setup()
         act(() => result.current.retry())
         expect(refetch).toHaveBeenCalled()
+    })
+
+    it('openDetails opens a content-sized sheet for the dApp on the selected chain', () => {
+        const { result } = setup()
+        act(() => result.current.selectChain('ethereum'))
+        const item = result.current.items[0]!
+        act(() => result.current.openDetails(item))
+        expect(request).toHaveBeenCalledTimes(1)
+        const [call] = request.mock.calls[0] as unknown as [
+            { contents: { props: Record<string, unknown> }; options: object },
+        ]
+        expect(call.options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+        })
+        expect(call.contents.props).toEqual({
+            item,
+            chainId: 'ethereum',
+            isVerified: false,
+        })
     })
 })

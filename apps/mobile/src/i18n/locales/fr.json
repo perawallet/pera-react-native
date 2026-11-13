@@ -65,7 +65,11 @@
             "sort_alphabetical": "Alphabétique (A-Z)",
             "apply_prompt": "Vous souhaitez ajouter votre projet à Discover ?",
             "apply_cta": "Postuler pour Discover",
-            "load_failure": "Échec du chargement des dApps"
+            "load_failure": "Échec du chargement des dApps",
+            "details": "Détails",
+            "about": "À propos",
+            "website": "Site web",
+            "open": "Ouvrir"
         }
     },
     "account_menu": {

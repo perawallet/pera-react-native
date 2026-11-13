@@ -65,7 +65,11 @@
             "sort_alphabetical": "Alphabetisch (A-Z)",
             "apply_prompt": "Möchtest du dein Projekt zu Discover hinzufügen?",
             "apply_cta": "Für Discover bewerben",
-            "load_failure": "dApps konnten nicht geladen werden"
+            "load_failure": "dApps konnten nicht geladen werden",
+            "details": "Details",
+            "about": "Über",
+            "website": "Website",
+            "open": "Öffnen"
         }
     },
     "account_menu": {
