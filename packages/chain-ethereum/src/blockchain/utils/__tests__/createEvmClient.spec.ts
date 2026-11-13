@@ -371,6 +371,56 @@ describe('createEvmClient', () => {
             await expect(client.getBlockNumber()).rejects.toThrow()
             expect(order).toEqual(['first', 'second'])
         })
+
+        // Falls through to the node handlers behind it, after recording how
+        // many JSON-RPC entries the request carried.
+        const recordBatchSizes = (url: string, sizes: number[]) =>
+            http.post(url, async ({ request }) => {
+                const body: unknown = await request.clone().json()
+                sizes.push(Array.isArray(body) ? body.length : 1)
+            })
+        const addressAt = (index: number): Hex =>
+            `0x${index.toString(16).padStart(40, '0')}`
+
+        it('sends the second URL reads in batches of at most ten while the first is unreachable', async () => {
+            const sizes: number[] = []
+            firstIsDown()
+            server.use(
+                recordBatchSizes(SECOND_RPC, sizes),
+                ...evmRpcHandlers({ rpcUrl: SECOND_RPC }),
+            )
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            const counts = await Promise.all(
+                Array.from({ length: 25 }, (_, index) =>
+                    client.getTransactionCount({ address: addressAt(index) }),
+                ),
+            )
+
+            expect(counts).toHaveLength(25)
+            expect(Math.max(...sizes)).toBeLessThanOrEqual(10)
+            expect(sizes.reduce((sum, size) => sum + size, 0)).toBe(25)
+        })
+
+        it('still sends the first URL up to a hundred reads in one request', async () => {
+            const firstSizes: number[] = []
+            const secondCalls = countCalls(SECOND_RPC)
+            server.use(
+                recordBatchSizes(FIRST_RPC, firstSizes),
+                ...evmRpcHandlers({ rpcUrl: FIRST_RPC }),
+                ...evmRpcHandlers({ rpcUrl: SECOND_RPC }),
+            )
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            await Promise.all(
+                Array.from({ length: 25 }, (_, index) =>
+                    client.getTransactionCount({ address: addressAt(index) }),
+                ),
+            )
+
+            expect(firstSizes).toEqual([25])
+            expect(secondCalls).not.toHaveBeenCalled()
+        })
     })
 
     describe('request size', () => {
