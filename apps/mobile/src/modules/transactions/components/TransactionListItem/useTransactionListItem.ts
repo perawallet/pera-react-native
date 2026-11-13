@@ -16,6 +16,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery, useNativeAsset } from '@perawallet/wallet-core-assets'
+import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import {
     i18nKey,
     type ChainScope,
@@ -81,6 +82,8 @@ export type UseTransactionListItemResult = {
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
     isSuspectedPoisoning: boolean
+    /** Code imitated by the first visible amount whose unit name passes itself off as a currency (its chain's native ticker or a fiat code), or null. */
+    imitatedCurrency: Nullable<string>
 }
 
 export const useTransactionListItem = (
@@ -153,6 +156,17 @@ export const useTransactionListItem = (
         [visibleAmounts, storedAssets],
     )
 
+    const imitatedCurrency = useMemo<Nullable<string>>(() => {
+        for (const a of amounts) {
+            const code = imitatedCurrencyOf(
+                { chainId: a.chainId, assetId: a.assetId },
+                a.currency,
+            )
+            if (code !== null) return code
+        }
+        return null
+    }, [amounts])
+
     const nativeAsset = useNativeAsset(scope)
     const fee = useMemo<Nullable<AmountDisplay>>(() => {
         if (!record?.fee || allAmounts.length > 0) return null
@@ -211,5 +225,6 @@ export const useTransactionListItem = (
         handlePress: record ? recordPress : handleTransactionPress,
         handleLongPress,
         isSuspectedPoisoning: !!suspectedPoisoning,
+        imitatedCurrency,
     }
 }

@@ -346,7 +346,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Gelöscht)"
+        "deleted_label": "(Gelöscht)",
+        "imitated_currency": {
+            "marker": "Imitiert {{code}}",
+            "title": "Dieses Asset ist nicht {{code}}",
+            "body": "Sein Einheitenname ist {{code}}, aber es ist ein eigenständiges Asset, das jeder erstellt haben könnte. Wenn du es erhältst, bekommst du kein {{code}}."
+        }
     },
     "asset_details": {
         "about": {

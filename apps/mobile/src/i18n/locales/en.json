@@ -346,7 +346,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Deleted)"
+        "deleted_label": "(Deleted)",
+        "imitated_currency": {
+            "marker": "Not real {{code}}",
+            "title": "This asset is not {{code}}",
+            "body": "Its unit name is {{code}}, but it is a separate asset that anyone could have created. Receiving it does not give you any {{code}}."
+        }
     },
     "asset_details": {
         "about": {

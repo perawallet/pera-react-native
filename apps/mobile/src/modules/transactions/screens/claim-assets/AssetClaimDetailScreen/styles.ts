@@ -20,6 +20,9 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xl,
         gap: theme.spacing.xs,
     },
+    imitatedCurrencyCallout: {
+        marginBottom: theme.spacing.md,
+    },
     assetPreview: {
         marginBottom: theme.spacing.sm,
     },

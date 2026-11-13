@@ -346,7 +346,12 @@
         }
     },
     "asset": {
-        "deleted_label": "(Excluído)"
+        "deleted_label": "(Excluído)",
+        "imitated_currency": {
+            "marker": "Não é {{code}} real",
+            "title": "Este ativo não é {{code}}",
+            "body": "O nome da unidade dele é {{code}}, mas é um ativo diferente que qualquer pessoa pode ter criado. Recebê-lo não dá a você nenhum {{code}}."
+        }
     },
     "asset_details": {
         "about": {

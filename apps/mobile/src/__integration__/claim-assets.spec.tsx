@@ -360,6 +360,11 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             },
             { timeout: 5000 },
         )
+        expect(
+            screen.queryByTestId(
+                `asset_inbox_request_imitated_currency_${ASSET_ID}`,
+            ),
+        ).toBeNull()
         fireEvent.click(screen.getByText('Test Asset'))
 
         // Claim detail renders the slide-to-confirm (mocked as a button).
@@ -371,6 +376,9 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             },
             { timeout: 5000 },
         )
+        expect(
+            screen.queryByTestId('asset_inbox_claim_imitated_currency'),
+        ).toBeNull()
 
         fireEvent.click(screen.getByTestId('asset_inbox_claim_confirm_slide'))
 
@@ -399,6 +407,47 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         // and never falls back to a live `/v2/transactions/simulate`
         // call.
         expect(simulateCallCount).toBe(0)
+    })
+
+    it('Given an inbound asset whose unit name imitates a fiat code, when the user opens the list and the claim screen, then both warn that it is not that currency', async () => {
+        await seedClaimingAccount()
+
+        const [request] = rawAssetRequestsResponse.results
+        server.use(
+            http.get(`*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`, () =>
+                HttpResponse.json(
+                    {
+                        ...rawAssetRequestsResponse,
+                        results: [
+                            {
+                                ...request,
+                                asset: { ...request.asset, unit_name: 'usd' },
+                            },
+                        ],
+                    },
+                    { status: 200 },
+                ),
+            ),
+        )
+
+        renderClaimFlow('AssetTransferRequests')
+
+        const marker = await screen.findByTestId(
+            `asset_inbox_request_imitated_currency_${ASSET_ID}`,
+            {},
+            { timeout: 5000 },
+        )
+        expect(marker.textContent).toContain('asset.imitated_currency.marker')
+
+        fireEvent.click(screen.getByText('Test Asset'))
+
+        expect(
+            await screen.findByTestId(
+                'asset_inbox_claim_imitated_currency',
+                {},
+                { timeout: 5000 },
+            ),
+        ).toBeTruthy()
     })
 
     it('Given an inbound request with no inbox address on record, when the user confirms the claim, then the claim group is populated via a live simulate call and the success screen still renders', async () => {
