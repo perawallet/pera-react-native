@@ -23,6 +23,9 @@ import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '../types'
 import { dappEventPayload } from '../utils/discoverAnalytics'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: a duration in ms, not a size
+const FOLDER_TOAST_DURATION_MS = 5000
+
 export type UseToggleDiscoverFavoriteResult = (
     dapp: DiscoverDapp,
     chain: Nullable<ChainId>,
@@ -42,6 +45,8 @@ export const useToggleDiscoverFavorite =
                     t('discover.favorites.added_toast.title'),
                     t('discover.favorites.added_toast.body'),
                     {
+                        // Long enough to read and reach: the toast is the way into folders.
+                        duration: FOLDER_TOAST_DURATION_MS,
                         // Shows above an open sheet, such as the in-app browser.
                         notifier: bottomSheetNotifier.current ?? undefined,
                         onPress: () => {
