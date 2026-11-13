@@ -13,6 +13,7 @@
 import { useCallback, type ReactNode } from 'react'
 import {
     ownAddressOf,
+    useAccountHoldingSources,
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -36,6 +37,7 @@ import {
     PWTouchableOpacity,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
+import { useUniqueAccountName } from '@hooks/useUniqueAccountName'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
@@ -72,6 +74,9 @@ export const AccountSelection = ({
 }: AccountSelectionProps) => {
     const styles = useStyles()
     const account = useSelectedAccount()
+    const isMultiChain = useAccountHoldingSources(account).length > 1
+    const { hasDuplicateName } = useUniqueAccountName()
+    const isNameShared = !!account && hasDuplicateName(account)
     const { request: requestBottomSheet } = useBottomSheet()
     const drawerControls = useAccountDrawerControls()
     const {
@@ -175,6 +180,8 @@ export const AccountSelection = ({
             iconProps={triggerIconProps}
             chevronProps={triggerChevronProps}
             textProps={triggerTextProps}
+            // An account on several chains has no single address to show, so the header names it without picking one; a shared name keeps it, as the only way to tell the accounts apart.
+            shouldShowSecondaryLabel={!isMultiChain || isNameShared}
             noBorder
         />
     )
