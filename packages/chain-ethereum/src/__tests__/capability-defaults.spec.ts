@@ -112,14 +112,14 @@ describe('the optimism capabilities', () => {
     })
 
     it.each(['development', 'staging', 'production'])(
-        'leave swap, onramp and discover off in %s, where remote config can still switch them',
+        'leave swap and onramp off in %s, where remote config can still switch them',
         async env => {
             const { row, supported, defaults } = await loadWith(env, 'optimism')
 
             expect(row.capabilities).toBeUndefined()
             expect(defaults.swap).toBe(false)
             expect(defaults.onramp).toBe(false)
-            expect(defaults.discover).toBe(false)
+            expect(defaults.discover).toBe(true)
             expect(supported).toContain('swap')
             expect(supported).toContain('onramp')
         },

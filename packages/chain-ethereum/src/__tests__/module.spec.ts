@@ -56,6 +56,8 @@ const ENABLED = [
     'nameService',
     'contractDecoding',
     'cloudBackup',
+    'discover',
+    'tokenApprovals',
 ]
 
 describe('ethereumModule', () => {
@@ -222,7 +224,7 @@ describe('a row override', () => {
         expect(chains.capabilities('base').send).toBe(true)
         expect(chains.capabilities('ethereum').nft).toBe(true)
         expect(evmCapabilityDefaults.nft).toBe(true)
-        expect(evmCapabilityDefaults.discover).toBe(false)
+        expect(evmCapabilityDefaults.swap).toBe(false)
     })
 
     it('restricts a capability for its own chain only', () => {
