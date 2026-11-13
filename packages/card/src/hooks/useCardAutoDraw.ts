@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { cardAdapterFor } from '../chain-adapter'
+import { useCardStore } from '../store'
 import { cardQueryKeys } from './querykeys'
 
 export type UseCardAutoDrawResult = {
@@ -32,29 +33,34 @@ export const useCardAutoDraw = (scope: ChainScope): UseCardAutoDrawResult => {
     const operations = useAutoDraw()
     const queryClient = useQueryClient()
 
-    // A cached read from before the switch would otherwise undo it once the
-    // stored funding type is reconciled against the chain.
-    const rereadSwitch = useCallback(
-        () =>
-            queryClient.invalidateQueries({
-                queryKey: cardQueryKeys.autoDrawEnabledAll(scope),
-            }),
+    // The stored funding type is reconciled against the cached switch, so the
+    // cache must hold the state just confirmed. Re-reading instead can reach a
+    // node that has not seen that round yet and undo the user's switch.
+    const recordSwitch = useCallback(
+        (isEnabled: boolean) => {
+            const ownerAddress =
+                useCardStore.getState().connectedFundingSourceAddress
+            queryClient.setQueryData(
+                cardQueryKeys.autoDrawEnabled(scope, ownerAddress),
+                isEnabled,
+            )
+        },
         [queryClient, scope],
     )
 
     const enableAutoDraw = useCallback(
         async (account: WalletAccount, cardAddress: string) => {
             await operations.enableAutoDraw(account, cardAddress, scope)
-            await rereadSwitch()
+            recordSwitch(true)
         },
-        [operations, scope, rereadSwitch],
+        [operations, scope, recordSwitch],
     )
     const disableAutoDraw = useCallback(
         async (account: WalletAccount) => {
             await operations.disableAutoDraw(account, scope)
-            await rereadSwitch()
+            recordSwitch(false)
         },
-        [operations, scope, rereadSwitch],
+        [operations, scope, recordSwitch],
     )
 
     return useMemo(

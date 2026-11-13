@@ -47,7 +47,7 @@ export const useFinishCardCreation = (): UseFinishCardCreationResult => {
     const finish = useCallback(
         (fundingType: FundingType, autoFundingDegraded: boolean) => {
             setCardFundingType(fundingType)
-            invalidateCardQueries(queryClient)
+            invalidateCardQueries(queryClient, { exceptAutoDrawSwitch: true })
 
             schedule(() => {
                 // Popping the root back to the tab bar also dismisses the
