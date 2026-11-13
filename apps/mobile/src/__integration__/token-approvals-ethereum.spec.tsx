@@ -182,6 +182,25 @@ const applyRevoke = (raw: string): void => {
     }
 }
 
+// The review names the spender's permission as removed, rather than showing
+// a new grant (which would carry the unlimited warning or an amount).
+const expectReviewedAsRevoke = async () => {
+    await waitFor(
+        () => {
+            expect(
+                screen.getByTestId('ethereum_review_permission'),
+            ).toBeTruthy()
+            expect(
+                screen.getByText('signing.review.permission_revoke'),
+            ).toBeTruthy()
+        },
+        { timeout: 10_000 },
+    )
+    expect(
+        screen.queryByTestId('ethereum_review_permission_unlimited'),
+    ).toBeNull()
+}
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={createTestQueryClient()}>
         {children}
@@ -321,13 +340,7 @@ describe('Flow: list and revoke an Ethereum account’s token approvals', () => 
             { timeout: 10_000 },
         )
         // Reviewed as a revoke, not as a new grant.
-        await waitFor(
-            () =>
-                expect(
-                    screen.getByTestId('ethereum_approval_revoke_note'),
-                ).toBeTruthy(),
-            { timeout: 10_000 },
-        )
+        await expectReviewedAsRevoke()
         confirm()
         await act(() => revoking)
         return readSentRevoke(sentRawTransactions[0])
@@ -470,13 +483,7 @@ describe('Flow: list and revoke an Ethereum account’s token approvals', () => 
             })
 
             fireEvent.click(revoke)
-            await waitFor(
-                () =>
-                    expect(
-                        screen.getByTestId('ethereum_approval_revoke_note'),
-                    ).toBeTruthy(),
-                { timeout: 10_000 },
-            )
+            await expectReviewedAsRevoke()
             fireEvent.click(screen.getByTestId('signing-confirm-slide'))
 
             await waitFor(() => expect(sentRawTransactions).toHaveLength(1), {
