@@ -29,6 +29,57 @@ Push the first prerelease of the new version by hand (`git tag -a v7.2.0-rc.1 -m
 - Builds the `Pera7Production` scheme and uploads to TestFlight (`fastlane ios deploy_testflight`).
 - Promotion to the App Store (with phased release) is manual from App Store Connect.
 
+### iOS Firebase App Distribution
+
+The pera-admin iOS job can also deliver an ad-hoc export of the same archive
+that it uploads to TestFlight. This is opt-in: the default staging and production
+jobs continue delivering through TestFlight. A build with uploads disabled never
+exports or uploads a Firebase IPA.
+
+Before enabling staging, select its iOS app in Firebase App Distribution and
+complete **Get started**. Prepare ad-hoc profiles for both
+`com.algorandllc.perarn.staging` and
+`com.algorandllc.perarn.staging.PasskeyAutofillCredentialProvider`, including the
+QA devices' UDIDs and the same Apple Distribution certificate used by CI. App
+Store profiles cannot make an IPA installable through Firebase. Leave the
+existing TestFlight profiles unchanged.
+
+Add these secret names for staging (the daemon resolves `STAGING_`-prefixed
+values before bare names):
+
+- `FIREBASE_SERVICE_ACCOUNT_BASE64`: existing Firebase upload credential with App Distribution access.
+- `IOS_FIREBASE_PROVISIONING_PROFILE_BASE64`: ad-hoc app profile, base64.
+- `IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_BASE64`: ad-hoc AutoFill extension profile, base64.
+- `IOS_FIREBASE_PROVISIONING_PROFILE_NAME`: app profile's name.
+- `IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_NAME`: extension profile's name.
+
+Then change these two fields of `nightly.jobs.ios-staging` in
+`ci/pipelines.yml` (keep the other environment fields and job settings):
+
+```yaml
+env:
+    FIREBASE_IOS_DISTRIBUTION: 'true'
+secrets: *ios_firebase_secrets
+```
+
+`_ios_firebase_secrets` in that manifest is the opt-in secret list. It includes all
+normal iOS build secrets plus the five names above; missing values fail with an
+actionable message before building. Unset or `false` keeps Firebase disabled.
+`FIREBASE_TESTER_GROUPS` can select existing tester-group aliases; its default is
+`qa-testers`. The lane obtains the Firebase app ID from the environment-selected
+`config/GoogleService-Info.plist`; `FIREBASE_APP_ID_IOS` can explicitly override it. Set
+these non-secret options in the job's `env` when needed.
+
+The job passes the actual changelog to Firebase and stores a separate
+`*-firebase.ipa` artifact. The App Store IPA and TestFlight delivery stay intact.
+Firebase uploads occur after TestFlight; a Firebase export/upload failure fails
+the job even if TestFlight has already accepted its build. A production opt-in
+uses the same flag and secret list but needs production-specific ad-hoc profiles
+for the main app and `.autofill-extension` target, and `changelog` in its `needs`.
+
+See [Firebase's iOS fastlane guide](https://firebase.google.com/docs/app-distribution/ios/distribute-fastlane)
+and [ad-hoc tester device registration](https://firebase.google.com/docs/app-distribution/register-additional-devices).
+
 ### Android
 
 - Builds an AAB and uploads it to the Play `internal` track (`fastlane android deploy_internal`), then builds an APK and distributes it to Firebase App Distribution (`pera,pera-alpha`). Both run sequentially within the one lane, and the Firebase step is intentionally fatal: a Firebase failure fails the workflow even after the Play upload has already succeeded.

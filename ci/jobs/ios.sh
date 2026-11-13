@@ -3,6 +3,8 @@ set -euxo pipefail
 
 source ci/jobs/lib/toolchain.sh
 source ci/jobs/lib/ios-keychain.sh
+source ci/jobs/lib/ios-firebase.sh
+ios_firebase_validate
 use_pinned_node
 use_pinned_ruby
 use_ccache_if_available
@@ -62,6 +64,7 @@ pnpm --filter mobile exec node scripts/fix-development-team.js
 (cd apps/mobile/ios && SDKROOT="$(xcrun --sdk macosx --show-sdk-path)" bundle exec pod install)
 
 ios_keychain_setup
+ios_firebase_prepare_credentials
 
 # Every run is a fresh checkout at a new path, and Xcode keys DerivedData by
 # path, so the default location would accrue several GB in ~/Library per run.
@@ -73,18 +76,32 @@ if [ "${CI_UPLOADS_ENABLED:-false}" = "true" ]; then
   SKIP_UPLOAD=false
 fi
 
+FIREBASE_UPLOAD=false
+if ios_firebase_enabled; then
+  FIREBASE_UPLOAD=true
+fi
+# The changelog is supplied by the job's needs; keep its real line breaks.
+if [ -n "${CI_OUT_CHANGELOG_TEXT:-}" ]; then
+  export RELEASE_NOTES="$CI_OUT_CHANGELOG_TEXT"
+fi
+
 # The Fastfile only authenticates to App Store Connect when is_ci, which reads
 # CI; the daemon doesn't set it.
 (cd apps/mobile && CI=true bundle exec fastlane ios deploy_testflight \
-  "scheme:$IOS_SCHEME" clean:true "skip_upload:$SKIP_UPLOAD")
+  "scheme:$IOS_SCHEME" clean:true "skip_upload:$SKIP_UPLOAD" "firebase:$FIREBASE_UPLOAD")
 
 SHA=$(printf '%s' "$CI_SHA" | cut -c1-7)
 NAME="pera-ios-${ENVIRONMENT}-${CI_TAG}-${SHA}"
 cp "apps/mobile/build/ios/${IOS_SCHEME}.ipa" "$CI_ARTIFACT_DIR/${NAME}.ipa"
+if [ "$FIREBASE_UPLOAD" = true ]; then
+  cp "apps/mobile/build/ios/${IOS_SCHEME}-firebase.ipa" "$CI_ARTIFACT_DIR/${NAME}-firebase.ipa"
+fi
 # Kept so a shipped build can be re-symbolicated. gym names the zip after the
 # app product, not the scheme, hence the glob.
 for dsym in apps/mobile/build/ios/*.dSYM.zip; do
   [ -f "$dsym" ] || continue
+  # The Firebase export zips the same archive's dSYMs a second time.
+  case "$dsym" in *-firebase.app.dSYM.zip) continue ;; esac
   cp "$dsym" "$CI_ARTIFACT_DIR/${NAME}-$(basename "$dsym")"
 done
 

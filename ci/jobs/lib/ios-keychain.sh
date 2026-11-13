@@ -155,6 +155,15 @@ ios_keychain_setup() {
     if [ "$had_x" -eq 1 ]; then set -x; fi
     return 1
   fi
+  # App Store profiles remain installed for TestFlight. The second export
+  # uses separate ad-hoc profiles containing the testers' device UDIDs.
+  if [ "${FIREBASE_IOS_DISTRIBUTION:-false}" = true ] && [ "${CI_UPLOADS_ENABLED:-false}" = true ]; then
+    if ! _install_profile "${IOS_FIREBASE_PROVISIONING_PROFILE_BASE64:-}" ||
+       ! _install_profile "${IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_BASE64:-}"; then
+      if [ "$had_x" -eq 1 ]; then set -x; fi
+      return 1
+    fi
+  fi
   echo "pera-ci: signing keychain ready"
   if [ "$had_x" -eq 1 ]; then set -x; fi
 }
