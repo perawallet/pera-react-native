@@ -16,6 +16,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type DiscoverPathTarget =
     | { kind: 'home' }
+    | { kind: 'dapps' }
     /** A Discover web page with no native screen yet. */
     | { kind: 'unported'; path: string }
     | { kind: 'asset'; assetId: string; chainId: ChainId }
@@ -36,6 +37,9 @@ export const discoverPathTarget = (
     const normalised = (path ?? '').replace(/^\//, '').split(/[?#]/)[0]
     if (normalised === '' || normalised === 'main/home') {
         return { kind: 'home' }
+    }
+    if (normalised === 'main/browser') {
+        return { kind: 'dapps' }
     }
     if (normalised.startsWith(TOKEN_DETAIL_PREFIX)) {
         const id = normalised.slice(TOKEN_DETAIL_PREFIX.length)

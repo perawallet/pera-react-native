@@ -19,6 +19,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
 import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import {
+    DiscoverDappsScreen,
     DiscoverDetailScreen,
     DiscoverSearchScreen,
 } from '@modules/discover/routes'
@@ -258,6 +259,20 @@ export const MainRoutes = () => {
                                     name='DiscoverSearch'
                                     layout={safeAreaLayout}
                                     component={DiscoverSearchScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverDapps'
+                                    options={headeredScreen(
+                                        'discover.dapps.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverDappsScreen}
                                 />
                             )}
                         <RootStack.Screen

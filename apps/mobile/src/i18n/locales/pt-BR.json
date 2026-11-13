@@ -57,6 +57,19 @@
             "no_results": "Nenhum resultado",
             "assets_unavailable": "A pesquisa de ativos está indisponível no momento",
             "dapps_unavailable": "A pesquisa de dApps está indisponível no momento"
+        },
+        "dapps": {
+            "title": "dApps",
+            "list_title": "dApps na Pera",
+            "sort_popular": "Popular",
+            "sort_alphabetical": "Alfabético (A-Z)",
+            "apply_prompt": "Quer adicionar seu projeto ao Discover?",
+            "apply_cta": "Inscrever-se no Discover",
+            "load_failure": "Falha ao carregar os dApps",
+            "details": "Detalhes",
+            "about": "Sobre",
+            "website": "Site",
+            "open": "Abrir"
         }
     },
     "account_menu": {

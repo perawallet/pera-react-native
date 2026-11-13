@@ -13,6 +13,7 @@
 import { ChainIconStack } from '@modules/chain-ui/icon'
 import { ProjectVerificationIcon } from '@modules/projects'
 import {
+    PWButton,
     PWIcon,
     PWImage,
     PWText,
@@ -32,6 +33,8 @@ export type DappRowProps = {
     showChains: boolean
     onPress: () => void
     onToggleFavorite: () => void
+    /** Shows a Details button that opens the dApp's details; left out where rows have none. */
+    onDetailsPress?: () => void
     testID?: string
 }
 
@@ -43,6 +46,7 @@ export const DappRow = ({
     showChains,
     onPress,
     onToggleFavorite,
+    onDetailsPress,
     testID,
 }: DappRowProps) => {
     const styles = useStyles()
@@ -102,6 +106,15 @@ export const DappRow = ({
                     <ChainIconStack chainIds={dapp.chains} />
                 ) : null}
             </PWTouchableOpacity>
+            {onDetailsPress ? (
+                <PWButton
+                    variant='secondary'
+                    paddingStyle='dense'
+                    title={t('discover.dapps.details')}
+                    onPress={onDetailsPress}
+                    testID={testID ? `${testID}_details` : undefined}
+                />
+            ) : null}
             <PWTouchableOpacity
                 style={styles.star}
                 onPress={onToggleFavorite}

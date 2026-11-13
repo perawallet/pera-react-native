@@ -135,6 +135,7 @@ export const DiscoverHomeScreen = () => {
                 <PWView style={styles.section}>
                     <DiscoverSectionHeader
                         title={t('discover.home.top_dapps')}
+                        onPress={home.openDappDirectory}
                         testID='discover_home_top_dapps_header'
                     />
                     {home.chainOptions.length > 0 ? (

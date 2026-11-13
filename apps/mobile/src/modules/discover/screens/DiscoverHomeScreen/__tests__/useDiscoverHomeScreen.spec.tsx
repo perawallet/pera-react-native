@@ -182,6 +182,17 @@ describe('useDiscoverHomeScreen', () => {
             expect(navigate).toHaveBeenCalledWith('DiscoverSearch')
         })
 
+        it('openDappDirectory tracks the tap and opens the directory on the selected chain', () => {
+            const { result } = setup()
+            act(() => result.current.openDappDirectory())
+            expect(trackEvent).toHaveBeenCalledWith(
+                DiscoverEvent.TopDappsButtonTap,
+            )
+            expect(navigate).toHaveBeenCalledWith('DiscoverDapps', {
+                chainId: 'algorand',
+            })
+        })
+
         it('openDapp opens the dApp with the selected chain', () => {
             const { result } = setup()
             act(() => result.current.openDapp(uniswap))
