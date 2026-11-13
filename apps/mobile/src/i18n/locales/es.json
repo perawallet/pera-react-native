@@ -436,6 +436,7 @@
             "nomatch_body": "Ningún activo coincide con tu búsqueda",
             "funding_title": "Empieza en {{network}}",
             "funding_body": "Deposita fondos para empezar a usar esta red. Necesitarás algo de {{nativeSymbol}} en {{network}} para pagar las comisiones de red.",
+            "funding_swap_for": "Haz swap a {{symbol}}",
             "network_filter_all": "Todas",
             "see_networks": "Ver redes",
             "hide_networks": "Ocultar redes",

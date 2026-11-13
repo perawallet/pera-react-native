@@ -436,6 +436,7 @@
             "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı",
             "funding_title": "{{network}} ağında başla",
             "funding_body": "Bu ağı kullanmaya başlamak için para yatır. Ağ ücretlerini ödemek için {{network}} ağında biraz {{nativeSymbol}} gerekir.",
+            "funding_swap_for": "Swap ile {{symbol}} al",
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
             "hide_networks": "Ağları gizle",

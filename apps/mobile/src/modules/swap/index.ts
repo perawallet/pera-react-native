@@ -11,5 +11,9 @@
  */
 
 export { useSwapExecution, useSwapQuotes } from './hooks'
+export {
+    useSwapForNativeRoute,
+    type UseSwapForNativeRouteResult,
+} from './hooks/useSwapForNativeRoute'
 export { formatSwapFee, formatSwapSlippage } from './utils/formatSwapFee'
 export type { SwapScreenParams } from './routes/types'
