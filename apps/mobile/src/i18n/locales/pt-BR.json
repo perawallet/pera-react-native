@@ -76,6 +76,15 @@
             "about": "Sobre",
             "website": "Site",
             "open": "Abrir"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Nova pasta",
+                "title_rename": "Renomear pasta",
+                "placeholder": "Nome da pasta",
+                "create": "Criar",
+                "save": "Salvar"
+            }
         }
     },
     "account_menu": {

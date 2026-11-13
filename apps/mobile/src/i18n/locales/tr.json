@@ -76,6 +76,15 @@
             "about": "Hakkında",
             "website": "Web sitesi",
             "open": "Aç"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Yeni klasör",
+                "title_rename": "Klasörü yeniden adlandır",
+                "placeholder": "Klasör adı",
+                "create": "Oluştur",
+                "save": "Kaydet"
+            }
         }
     },
     "account_menu": {

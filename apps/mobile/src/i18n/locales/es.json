@@ -76,6 +76,15 @@
             "about": "Acerca de",
             "website": "Sitio web",
             "open": "Abrir"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Nueva carpeta",
+                "title_rename": "Cambiar nombre de la carpeta",
+                "placeholder": "Nombre de la carpeta",
+                "create": "Crear",
+                "save": "Guardar"
+            }
         }
     },
     "account_menu": {

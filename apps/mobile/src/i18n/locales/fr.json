@@ -76,6 +76,15 @@
             "about": "À propos",
             "website": "Site web",
             "open": "Ouvrir"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Nouveau dossier",
+                "title_rename": "Renommer le dossier",
+                "placeholder": "Nom du dossier",
+                "create": "Créer",
+                "save": "Enregistrer"
+            }
         }
     },
     "account_menu": {
