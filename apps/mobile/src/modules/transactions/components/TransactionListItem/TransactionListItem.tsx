@@ -50,6 +50,7 @@ const TransactionListItemView = ({
         handlePress,
         handleLongPress,
         isSuspectedPoisoning,
+        imitatedCurrency,
     } = useTransactionListItem(props)
 
     const getAmountStyle = (amount: AmountDisplay) => {
@@ -64,7 +65,11 @@ const TransactionListItemView = ({
             style={styles.container}
             // A title alone (a swap) sits centred against its stacked amounts.
             align={
-                subtitle || networkChainId || notice || isSuspectedPoisoning
+                subtitle ||
+                networkChainId ||
+                notice ||
+                isSuspectedPoisoning ||
+                imitatedCurrency !== null
                     ? 'top'
                     : 'center'
             }
@@ -158,6 +163,15 @@ const TransactionListItemView = ({
                         titleKey='transactions.suspected_poisoning.marker'
                         style={styles.notice}
                         testID={`transaction_row_suspected_poisoning_${id}`}
+                    />
+                )}
+                {imitatedCurrency !== null && (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='asset.imitated_currency.marker'
+                        params={{ code: imitatedCurrency }}
+                        style={styles.notice}
+                        testID={`transaction_row_imitated_currency_${id}`}
                     />
                 )}
             </PWView>
