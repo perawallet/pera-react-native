@@ -43,7 +43,7 @@ const amountGrantOf = (
     asset: Nullable<PeraAsset>,
 ): EthereumApprovalGrant => {
     if (amount === undefined) return { kind: 'unlimited' }
-    if (amount.isZero()) return { kind: 'revoke' }
+    // A revoke never gets here (it carries no spend approval), so a zero is a real grant of nothing.
     return asset
         ? {
               kind: 'amount',

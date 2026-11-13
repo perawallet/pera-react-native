@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
@@ -20,17 +19,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from '../../BalanceImpactSummary'
 import { CollectibleRowText } from '../../BalanceImpactSummary/CollectibleRowText'
 import { FullBalanceRowText } from '../../BalanceImpactSummary/FullBalanceRowText'
+import { estimateOf } from './estimateOf'
 import { useStyles } from './styles'
-
-// An estimate past 6 dp is noise, and the long figure runs into the fiat beside it.
-const MAX_DECIMALS = 6
-const DUST_DIGITS = 2
-
-const estimateOf = (amount: Decimal): Decimal => {
-    if (amount.decimalPlaces() <= MAX_DECIMALS) return amount
-    const rounded = amount.toDecimalPlaces(MAX_DECIMALS, Decimal.ROUND_DOWN)
-    return rounded.isZero() ? amount.toSignificantDigits(DUST_DIGITS) : rounded
-}
 
 export type WalletChangeRowProps = {
     label: string
