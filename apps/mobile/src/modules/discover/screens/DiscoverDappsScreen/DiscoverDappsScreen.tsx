@@ -137,7 +137,8 @@ export const DiscoverDappsScreen = () => {
                     </PWView>
                 </PWDropdown>
             </PWView>
-            {screen.items.length > 0 ? (
+            {/* "All" alone means the list has no categories to pick from. */}
+            {screen.items.length > 0 && screen.categoryOptions.length > 1 ? (
                 <PWView>
                     <FilterSelection
                         options={screen.categoryOptions}

@@ -34,6 +34,11 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         borderWidth: theme.spacing.xxs,
         borderColor: theme.colors.background,
+        overflow: 'hidden',
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
     },
     titleRow: {
         flexDirection: 'row',

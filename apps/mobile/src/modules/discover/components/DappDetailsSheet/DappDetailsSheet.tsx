@@ -16,6 +16,7 @@ import {
     PWButton,
     PWIcon,
     PWImage,
+    PWSheetLayout,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -43,92 +44,94 @@ export const DappDetailsSheet = ({
     const sheet = useDappDetailsSheet({ item, chainId })
     const { dapp } = item
 
+    // PWSheetLayout pads the sides and adds the bottom inset the sheet host leaves out.
     return (
-        <PWView
-            style={styles.container}
-            testID='discover_dapp_details'
-        >
-            <PWView>
-                {item.backgroundImage ? (
-                    <PWImage
-                        source={{ uri: item.backgroundImage }}
-                        style={styles.banner}
-                    />
-                ) : (
-                    <PWView style={styles.banner} />
-                )}
-                <PWView style={styles.logo}>
-                    {dapp.logo ? (
+        <PWSheetLayout testID='discover_dapp_details'>
+            <PWView style={styles.container}>
+                <PWView>
+                    {item.backgroundImage ? (
                         <PWImage
-                            source={{ uri: dapp.logo }}
-                            style={styles.logo}
+                            source={{ uri: item.backgroundImage }}
+                            style={styles.banner}
                         />
                     ) : (
-                        <PWIcon
-                            name='globe'
-                            variant='secondary'
-                        />
+                        <PWView style={styles.banner} />
                     )}
+                    <PWView style={styles.logo}>
+                        {dapp.logo ? (
+                            <PWImage
+                                source={{ uri: dapp.logo }}
+                                style={styles.logoImage}
+                            />
+                        ) : (
+                            <PWIcon
+                                name='globe'
+                                variant='secondary'
+                            />
+                        )}
+                    </PWView>
                 </PWView>
-            </PWView>
-            <PWView style={styles.titleRow}>
-                <PWText
-                    variant='h3'
-                    numberOfLines={2}
-                    style={styles.title}
-                >
-                    {dapp.name}
-                </PWText>
-                {isVerified ? (
-                    <ProjectVerificationIcon
-                        tier='verified'
-                        size='sm'
-                    />
+                <PWView style={styles.titleRow}>
+                    <PWText
+                        variant='h3'
+                        numberOfLines={2}
+                        style={styles.title}
+                    >
+                        {dapp.name}
+                    </PWText>
+                    {isVerified ? (
+                        <ProjectVerificationIcon
+                            tier='verified'
+                            size='sm'
+                        />
+                    ) : null}
+                    <PWTouchableOpacity
+                        style={styles.star}
+                        onPress={sheet.toggleFavorite}
+                        accessibilityLabel={t(
+                            sheet.isFavorite
+                                ? 'discover.dapp_row.unfavorite'
+                                : 'discover.dapp_row.favorite',
+                        )}
+                        testID='discover_dapp_details_star'
+                    >
+                        <PWIcon
+                            name={sheet.isFavorite ? 'star-filled' : 'star'}
+                            variant={
+                                sheet.isFavorite ? 'favorite' : 'secondary'
+                            }
+                        />
+                    </PWTouchableOpacity>
+                </PWView>
+                {item.description ? (
+                    <PWView style={styles.section}>
+                        <PWText
+                            variant='caption'
+                            style={styles.label}
+                        >
+                            {t('discover.dapps.about')}
+                        </PWText>
+                        <PWText testID='discover_dapp_details_description'>
+                            {item.description}
+                        </PWText>
+                    </PWView>
                 ) : null}
-                <PWTouchableOpacity
-                    style={styles.star}
-                    onPress={sheet.toggleFavorite}
-                    accessibilityLabel={t(
-                        sheet.isFavorite
-                            ? 'discover.dapp_row.unfavorite'
-                            : 'discover.dapp_row.favorite',
-                    )}
-                    testID='discover_dapp_details_star'
-                >
-                    <PWIcon
-                        name={sheet.isFavorite ? 'star-filled' : 'star'}
-                        variant={sheet.isFavorite ? 'favorite' : 'secondary'}
-                    />
-                </PWTouchableOpacity>
-            </PWView>
-            {item.description ? (
                 <PWView style={styles.section}>
                     <PWText
                         variant='caption'
                         style={styles.label}
                     >
-                        {t('discover.dapps.about')}
+                        {t('discover.dapps.website')}
                     </PWText>
-                    <PWText testID='discover_dapp_details_description'>
-                        {item.description}
-                    </PWText>
+                    <PWText>{sheet.host}</PWText>
                 </PWView>
-            ) : null}
-            <PWView style={styles.section}>
-                <PWText
-                    variant='caption'
-                    style={styles.label}
-                >
-                    {t('discover.dapps.website')}
-                </PWText>
-                <PWText>{sheet.host}</PWText>
+                <PWButton
+                    variant='primary'
+                    title={t('discover.dapps.open')}
+                    onPress={sheet.open}
+                    testID='discover_dapp_details_open'
+                />
             </PWView>
-            <PWButton
-                variant='primary'
-                title={t('discover.dapps.open')}
-                onPress={sheet.open}
-                testID='discover_dapp_details_open'
-            />
-        </PWView>
+        </PWSheetLayout>
     )
 }
