@@ -47,7 +47,8 @@ const SUBMIT_METHODS: ReadonlySet<string> = new Set(['eth_sendRawTransaction'])
 // Providers cap the size of a JSON-RPC batch; a larger tick splits.
 const READ_BATCH_SIZE = 100
 
-// Free public nodes cap a JSON-RPC batch (Optimism's at 10) and refuse the whole batch past it.
+// Free public nodes cap a JSON-RPC batch (Optimism's at 10) and refuse the whole
+// batch past it.
 const FALLBACK_READ_BATCH_SIZE = 10
 
 // Providers also cap the request body (publicnode answers 503 past 1 MB), and
