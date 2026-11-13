@@ -13,9 +13,13 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    i18nKey,
+    type ChainId,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     AnalyticsMetadataKey as Key,
     DiscoverEvent,
@@ -51,16 +55,16 @@ const APPLY_FOR_DISCOVER_URL =
     'https://explorer.perawallet.app/project-verification/'
 
 // English labels go to analytics so events do not split by language.
-const SORTS: { id: DappSort; labelKey: string; analyticsName: string }[] = [
+const SORTS: { id: DappSort; labelKey: I18nKey; analyticsName: string }[] = [
     {
         id: 'popular',
-        labelKey: 'discover.dapps.sort_popular',
+        labelKey: i18nKey('discover.dapps.sort_popular'),
         // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- analytics value matching the web app's event, never shown
         analyticsName: 'Popular',
     },
     {
         id: 'a-z',
-        labelKey: 'discover.dapps.sort_alphabetical',
+        labelKey: i18nKey('discover.dapps.sort_alphabetical'),
         // oxlint-disable-next-line pera/no-hardcoded-ui-strings -- analytics value matching the web app's event, never shown
         analyticsName: 'Alphabetical (A-Z)',
     },
@@ -135,14 +139,16 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         () => toDirectoryDapps(directory.projects),
         [directory.projects],
     )
+    // Filtered by chain only, in API order: the category chips come from this
+    // list, so their order does not move with the sort.
     const onChain = useMemo(
         () =>
-            filterDirectory(all, {
-                chainId: selectedChainId,
-                category: null,
-                sort,
-            }),
-        [all, selectedChainId, sort],
+            selectedChainId === null
+                ? all
+                : all.filter(({ dapp }) =>
+                      dapp.chains.includes(selectedChainId),
+                  ),
+        [all, selectedChainId],
     )
     const categories = useMemo(() => directoryCategories(onChain), [onChain])
     const selectedCategory =
@@ -151,12 +157,12 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
             : null
     const items = useMemo(
         () =>
-            selectedCategory === null
-                ? onChain
-                : onChain.filter(({ dapp }) =>
-                      dapp.categories.includes(selectedCategory),
-                  ),
-        [onChain, selectedCategory],
+            filterDirectory(onChain, {
+                chainId: null,
+                category: selectedCategory,
+                sort,
+            }),
+        [onChain, selectedCategory, sort],
     )
     const categoryOptions = useMemo(
         () => [
@@ -196,7 +202,6 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
     const selectSort = useCallback(
         (id: DappSort) => {
             setSort(id)
-            setPickedCategory(null)
             trackEvent(DiscoverEvent.DappFilterTap, {
                 [Key.FilterName]:
                     SORTS.find(option => option.id === id)?.analyticsName ?? id,

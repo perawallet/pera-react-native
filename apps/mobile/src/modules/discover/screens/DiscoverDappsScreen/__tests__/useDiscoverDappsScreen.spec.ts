@@ -156,17 +156,32 @@ describe('useDiscoverDappsScreen', () => {
         })
     })
 
-    it('selectSort reorders, resets the category and tracks the English label', () => {
+    it('selectSort reorders, keeps the category and tracks the English label', () => {
         const { result } = setup()
         act(() => result.current.selectCategory('Lending'))
         act(() => result.current.selectSort('a-z'))
         expect(result.current.sort).toBe('a-z')
-        expect(result.current.selectedCategory).toBeNull()
-        expect(names(result)).toEqual(['Aave', 'Folks', 'Tinyman'])
+        expect(result.current.selectedCategory).toBe('Lending')
+        expect(names(result)).toEqual(['Aave', 'Folks'])
         expect(trackEvent).toHaveBeenLastCalledWith(
             DiscoverEvent.DappFilterTap,
             { filter_name: 'Alphabetical (A-Z)' },
         )
+    })
+
+    it('keeps the category chips in API order whatever the sort', () => {
+        const { result } = setup()
+        expect(result.current.categoryOptions.map(o => o.value)).toEqual([
+            null,
+            'DEX',
+            'Lending',
+        ])
+        act(() => result.current.selectSort('a-z'))
+        expect(result.current.categoryOptions.map(o => o.value)).toEqual([
+            null,
+            'DEX',
+            'Lending',
+        ])
     })
 
     it('selectCategory filters and tracks the web category event', () => {
@@ -220,8 +235,8 @@ describe('useDiscoverDappsScreen', () => {
         const { result } = setup()
         expect(result.current.categoryOptions.map(o => o.value)).toEqual([
             null,
-            'Lending',
             'DEX',
+            'Lending',
         ])
         act(() => result.current.selectChain('ethereum'))
         expect(result.current.categoryOptions.map(o => o.value)).toEqual([
