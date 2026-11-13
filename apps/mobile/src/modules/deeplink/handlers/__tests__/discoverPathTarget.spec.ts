@@ -42,9 +42,9 @@ describe('discoverPathTarget', () => {
     })
 
     it.each(['main/game', 'news/12', '/test'])(
-        'maps %s to the WebView with the original path',
+        'marks %s unported, keeping the original path',
         path => {
-            expect(discoverPathTarget(path)).toEqual({ kind: 'webview', path })
+            expect(discoverPathTarget(path)).toEqual({ kind: 'unported', path })
         },
     )
 })

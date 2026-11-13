@@ -55,12 +55,15 @@ describe('useDiscoverPathDeeplink', () => {
         })
     })
 
-    it('opens the WebView detail for a regular path', () => {
+    it('opens the native Discover home for a page with no native screen', () => {
         expect(run('/markets')).toBe(true)
-        expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(false, 'TabBar', {
+            screen: 'Discover',
+        })
+        expect(mocks.navigateToScreen).not.toHaveBeenCalledWith(
             false,
             'DiscoverDetail',
-            { path: '/markets' },
+            expect.anything(),
         )
     })
 

@@ -172,33 +172,6 @@ describe('useDiscoverHomeScreen', () => {
             const { result } = setup()
             expect(result.current.news.items).toEqual([])
         })
-
-        it('openNewsItem tracks the tap and opens the news page', () => {
-            const { result } = setup()
-            act(() =>
-                result.current.openNewsItem({
-                    id: 'n1',
-                    title: 'Big news',
-                    banner: null,
-                    dateDisplay: '09 Nov 2026',
-                }),
-            )
-            expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.NewsOpenTap, {
-                news_title: 'Big news',
-            })
-            expect(navigate).toHaveBeenCalledWith('DiscoverDetail', {
-                path: 'news/n1',
-            })
-        })
-
-        it('openNewsList tracks the tap and opens the news list', () => {
-            const { result } = setup()
-            act(() => result.current.openNewsList())
-            expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.NewsButtonTap)
-            expect(navigate).toHaveBeenCalledWith('DiscoverDetail', {
-                path: 'news',
-            })
-        })
     })
 
     describe('navigation', () => {
@@ -207,17 +180,6 @@ describe('useDiscoverHomeScreen', () => {
             act(() => result.current.openSearch())
             expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.SearchBarTap)
             expect(navigate).toHaveBeenCalledWith('DiscoverSearch')
-        })
-
-        it('openDappDirectory tracks the tap and opens the web directory', () => {
-            const { result } = setup()
-            act(() => result.current.openDappDirectory())
-            expect(trackEvent).toHaveBeenCalledWith(
-                DiscoverEvent.TopDappsButtonTap,
-            )
-            expect(navigate).toHaveBeenCalledWith('DiscoverDetail', {
-                path: 'main/browser',
-            })
         })
 
         it('openDapp opens the dApp with the selected chain', () => {

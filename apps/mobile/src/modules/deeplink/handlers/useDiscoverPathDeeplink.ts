@@ -30,8 +30,8 @@ export type DiscoverPathDeeplinkHandler = (params: {
  * Validates the discover path against the same safe-relative-path check
  * the Discover screen runs (defense in depth). An Algorand-only build hands
  * the path to the Discover web app in its tab; a multichain build, whose
- * Discover tab is native, routes to the Discover home, the interim WebView
- * or native asset details.
+ * Discover tab is native, routes to native asset details or the Discover
+ * home, never to the web app.
  */
 export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
     const { errorToast } = useToast()
@@ -60,15 +60,7 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                 return true
             }
             const target = discoverPathTarget(path)
-            if (target.kind === 'home') {
-                navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                    screen: 'Discover',
-                })
-            } else if (target.kind === 'webview') {
-                navigateToScreen(replaceCurrentScreen, 'DiscoverDetail', {
-                    path: target.path,
-                })
-            } else {
+            if (target.kind === 'asset') {
                 navigateToScreen(replaceCurrentScreen, 'TabBar', {
                     screen: 'Home',
                     params: {
@@ -79,7 +71,18 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                         },
                     },
                 })
+                return true
             }
+            // The native Discover never opens the Discover web app; a page it
+            // has no screen for lands on its home until one is ported.
+            if (target.kind === 'unported') {
+                logger.warn('DISCOVER_PATH has no native screen yet', {
+                    path: target.path,
+                })
+            }
+            navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                screen: 'Discover',
+            })
             return true
         },
         [errorToast, t, isNativeDiscover],
