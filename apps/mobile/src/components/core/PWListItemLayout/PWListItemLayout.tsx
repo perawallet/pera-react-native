@@ -50,10 +50,10 @@ export type PWListItemLayoutProps = {
     /** Flex-grow weight for the center slot (default `1`). */
     centerFlex?: number
     /**
-     * Caps the right slot to this fraction (0–1) of the row width so its
-     * content truncates past the cap, for a trailing value with no length cap
-     * such as an amount in a token's own unit. Omit to size the slot to its
-     * content.
+     * Caps the right slot to this fraction (0–1) of the space beside `left`
+     * (unlike `leftMaxWidthRatio`, which takes the full row) so its content
+     * truncates past the cap, for a trailing value with no length cap such as
+     * an amount in a token's own unit. Omit to size the slot to its content.
      */
     rightMaxWidthRatio?: number
     /**
