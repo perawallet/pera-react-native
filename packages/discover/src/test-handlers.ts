@@ -12,5 +12,7 @@
 
 export {
     mockDiscoverNews,
+    mockDiscoverNewsDetail,
+    type MockDiscoverNewsDetailParams,
     type MockDiscoverNewsParams,
 } from './api/news/msw-handlers'

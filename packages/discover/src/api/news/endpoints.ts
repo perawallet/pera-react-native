@@ -12,9 +12,17 @@
 
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { queryClient } from '@perawallet/wallet-core-shared'
-import { newsListResponseSchema, type NewsListApiResponse } from './schema'
-import { transformNewsItem } from './transformers'
-import type { DiscoverNewsItemRaw } from '../../models/types'
+import {
+    newsDetailResponseSchema,
+    newsListResponseSchema,
+    type NewsDetailApiResponse,
+    type NewsListApiResponse,
+} from './schema'
+import { transformNewsDetail, transformNewsItem } from './transformers'
+import type {
+    DiscoverNewsDetailRaw,
+    DiscoverNewsItemRaw,
+} from '../../models/types'
 
 // First page only: the home screen shows the latest items.
 export const fetchDiscoverNews = async (
@@ -31,4 +39,20 @@ export const fetchDiscoverNews = async (
 
     const validated = newsListResponseSchema.parse(response.data)
     return validated.results.map(transformNewsItem)
+}
+
+export const fetchDiscoverNewsDetail = async (
+    deployment: WalletMode,
+    id: string,
+    signal?: AbortSignal,
+): Promise<DiscoverNewsDetailRaw> => {
+    const response = await queryClient<NewsDetailApiResponse>({
+        backend: 'pera',
+        deployment,
+        method: 'GET',
+        url: `/v1/discover/news/${encodeURIComponent(id)}/`,
+        signal,
+    })
+
+    return transformNewsDetail(newsDetailResponseSchema.parse(response.data))
 }

@@ -16,3 +16,8 @@ export const DISCOVER_MODULE_PREFIX = 'discover'
 
 export const getDiscoverNewsQueryKey = (deployment: WalletMode) =>
     [DISCOVER_MODULE_PREFIX, 'news', { deployment }] as const
+
+export const getDiscoverNewsDetailQueryKey = (
+    deployment: WalletMode,
+    id: string,
+) => [DISCOVER_MODULE_PREFIX, 'news', 'detail', { deployment, id }] as const
