@@ -14,7 +14,7 @@ import { PWButton, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { DiscoverSectionHeader } from '../DiscoverSectionHeader'
-import { FolderRow } from './FolderRow'
+import { FolderRow } from '../FolderRow'
 import { useFavoritesSection } from './useFavoritesSection'
 import { useStyles } from './styles'
 

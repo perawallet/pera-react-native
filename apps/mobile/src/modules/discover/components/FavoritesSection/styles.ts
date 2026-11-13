@@ -19,28 +19,4 @@ export const useStyles = makeStyles(theme => ({
     empty: {
         paddingVertical: theme.spacing.md,
     },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-    },
-    icon: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    info: {
-        flex: 1,
-        gap: theme.spacing.xxs,
-    },
-    count: {
-        color: theme.colors.textGray,
-    },
-    chevron: {
-        padding: theme.spacing.xs,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
 }))

@@ -11,7 +11,7 @@
  */
 
 import { PWFlatList, PWScreen } from '@components/core'
-import { FolderRow } from '../../components/FavoritesSection/FolderRow'
+import { FolderRow } from '../../components/FolderRow'
 import { useDiscoverAllFoldersScreen } from './useDiscoverAllFoldersScreen'
 import { useStyles } from './styles'
 
