@@ -23,6 +23,7 @@ import {
     isAddressEqual,
     keccak256,
     multicall3Abi,
+    parseAbi,
     parseTransaction,
     serializeTransaction,
     toFunctionSelector,
@@ -397,6 +398,71 @@ export const erc20CallResponder =
             answerErc20Call(tokens, to, data) ??
             new EvmRpcErrorFixture(3, 'execution reverted')
         )
+    }
+
+export type EvmApprovalFixture = {
+    /** Keyed by checksummed token contract; a pair left out reads 0. */
+    allowances?: Record<
+        string,
+        { owner: string; spender: string; amount: bigint }[]
+    >
+    /** Keyed by checksummed collection contract; a pair left out reads false. */
+    operators?: Record<string, { owner: string; operator: string }[]>
+}
+
+const APPROVAL_READS = parseAbi([
+    'function allowance(address owner, address spender) view returns (uint256)',
+    'function isApprovedForAll(address owner, address operator) view returns (bool)',
+])
+
+/**
+ * `eth_call` answers for `allowance` and `isApprovedForAll` reads, keyed by
+ * checksummed contract; any other call, or a contract left out, reverts.
+ * `evmRpcHandlers` runs each call of a Multicall3 `aggregate3` through it.
+ */
+export const evmApprovalCallResponder =
+    ({
+        allowances = {},
+        operators = {},
+    }: EvmApprovalFixture): ((
+        params: readonly unknown[],
+    ) => Hex | EvmRpcErrorFixture) =>
+    params => {
+        const { to, data } = params[0] as { to: Hex; data: Hex }
+        const contract = getAddress(to)
+        try {
+            const read = decodeFunctionData({ abi: APPROVAL_READS, data })
+            if (read.functionName === 'allowance') {
+                const held = allowances[contract]
+                if (!held) return revert()
+                const [owner, spender] = read.args
+                const amount =
+                    held.find(
+                        entry =>
+                            isAddressEqual(entry.owner as Address, owner) &&
+                            isAddressEqual(entry.spender as Address, spender),
+                    )?.amount ?? 0n
+                return encodeFunctionResult({
+                    abi: APPROVAL_READS,
+                    functionName: 'allowance',
+                    result: amount,
+                })
+            }
+            const held = operators[contract]
+            if (!held) return revert()
+            const [owner, operator] = read.args
+            return encodeFunctionResult({
+                abi: APPROVAL_READS,
+                functionName: 'isApprovedForAll',
+                result: held.some(
+                    entry =>
+                        isAddressEqual(entry.owner as Address, owner) &&
+                        isAddressEqual(entry.operator as Address, operator),
+                ),
+            })
+        } catch {
+            return revert()
+        }
     }
 
 /** An unsigned type 2 call on mainnet, as a router sends it: nonce and gas meant to be replaced. */

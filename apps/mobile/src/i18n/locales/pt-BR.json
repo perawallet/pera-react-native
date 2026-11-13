@@ -230,6 +230,19 @@
         "empty_title": "Nenhum token para ocultar",
         "empty_body": "Esta conta não tem tokens que possam ser ocultados."
     },
+    "token_approvals": {
+        "title": "Aprovações de tokens",
+        "unlimited": "Ilimitado",
+        "all_items": "Todos os itens de {{collection}}",
+        "revoke": "Revogar",
+        "revoke_unavailable": "Não foi possível carregar os dados do token, então ele não pode ser revogado aqui.",
+        "empty_title": "Nenhuma aprovação em aberto",
+        "empty_body": "Nenhuma aprovação aberta de token ou de coleção foi encontrada para esta conta.",
+        "error_title": "Não foi possível carregar as aprovações",
+        "error_body": "Verifique sua conexão e tente novamente.",
+        "revoke_error_title": "Revogação não confirmada",
+        "revoke_error_body": "Confira na lista o status da aprovação antes de tentar novamente."
+    },
     "token_visibility": {
         "hide": "Ocultar token",
         "unhide": "Mostrar token",
@@ -526,6 +539,7 @@
         "undo_rekey": "Desfazer rekey",
         "rekeyed_to": "Rekey feito para",
         "rekey_account": "Fazer rekey da conta",
+        "token_approvals": "Aprovações de tokens",
         "rekey_option_ledger_title": "Para uma conta Ledger",
         "rekey_option_ledger_description": "As transações serão autorizadas no seu dispositivo Ledger.",
         "rekey_option_standard_title": "Para uma conta padrão",

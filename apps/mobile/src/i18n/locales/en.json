@@ -230,6 +230,19 @@
         "empty_title": "No Tokens to Hide",
         "empty_body": "This account holds no tokens that can be hidden."
     },
+    "token_approvals": {
+        "title": "Token Approvals",
+        "unlimited": "Unlimited",
+        "all_items": "All items in {{collection}}",
+        "revoke": "Revoke",
+        "revoke_unavailable": "Token details couldn't be loaded, so it can't be revoked here.",
+        "empty_title": "No open approvals",
+        "empty_body": "No open token or collection approvals were found for this account.",
+        "error_title": "Couldn't load approvals",
+        "error_body": "Check your connection and try again.",
+        "revoke_error_title": "Revoke not confirmed",
+        "revoke_error_body": "Check the list for the approval's current status before trying again."
+    },
     "token_visibility": {
         "hide": "Hide token",
         "unhide": "Unhide token",
@@ -526,6 +539,7 @@
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_account": "Rekey Account",
+        "token_approvals": "Token Approvals",
         "rekey_option_ledger_title": "To a Ledger account",
         "rekey_option_ledger_description": "Transactions will be authorized on your Ledger device.",
         "rekey_option_standard_title": "To a standard account",

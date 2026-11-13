@@ -24,6 +24,10 @@ import {
     type AssetSupplyDisplay,
 } from '@modules/assets'
 import type { ChainUi, ChainUiOverride } from '@modules/chain-ui'
+import {
+    EthereumAccountSection,
+    useHasEthereumAccountSection,
+} from './components/EthereumAccountSection'
 import { EthereumRecordDetailBody } from './components/EthereumRecordDetailBody'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
@@ -93,6 +97,10 @@ export const ethereumChainUi: Optional<ChainUi> = {
     assetDetails: {
         resolveAbout: resolveEthereumAssetAbout,
         resolveSupply: resolveEthereumAssetSupply,
+    },
+    accountOptions: {
+        ExpandedSection: EthereumAccountSection,
+        useHasExpandedSection: useHasEthereumAccountSection,
     },
     addressSearchPlaceholder: i18nKey('address_entry.search_placeholder_evm'),
     swapAssetSearchPlaceholder: i18nKey(

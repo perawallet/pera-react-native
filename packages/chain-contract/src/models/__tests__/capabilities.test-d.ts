@@ -54,6 +54,7 @@ describe('ChainCapability', () => {
             | 'priceAlerts'
             | 'csvExport'
             | 'peraWebImport'
+            | 'tokenApprovals'
         >()
     })
 })

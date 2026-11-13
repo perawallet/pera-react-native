@@ -128,7 +128,9 @@ describe('chainModule', () => {
             Object.fromEntries(
                 CHAIN_CAPABILITIES.map(c => [
                     c,
-                    c !== 'privateKeys' && c !== 'contractDecoding',
+                    c !== 'privateKeys' &&
+                        c !== 'contractDecoding' &&
+                        c !== 'tokenApprovals',
                 ]),
             ),
         )

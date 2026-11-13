@@ -35,7 +35,10 @@ import {
     type UnsignedTransaction,
     type TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
-import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
+import {
+    InvalidSendParamsError,
+    UnsupportedTransactionIntentError,
+} from '@perawallet/wallet-core-transactions'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { groupTransactions } from '../../blockchain'
@@ -206,6 +209,23 @@ describe('buildAlgorandTransfer', () => {
         await expect(buildAlgorandTransfer(intent, context)).rejects.toThrow(
             InvalidSendParamsError,
         )
+    })
+
+    it('refuses an approval revoke, which Algorand has no standing approvals for', async () => {
+        await expect(
+            buildAlgorandTransfer(
+                {
+                    kind: 'approval-revoke',
+                    account: SENDER.toString(),
+                    approval: {
+                        kind: 'allowance',
+                        assetRef: USDC,
+                        spender: RECEIVER,
+                    },
+                },
+                context,
+            ),
+        ).rejects.toThrow(UnsupportedTransactionIntentError)
     })
 
     it('refuses an opt-in to ALGO itself', async () => {

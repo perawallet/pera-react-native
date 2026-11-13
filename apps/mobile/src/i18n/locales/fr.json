@@ -230,6 +230,19 @@
         "empty_title": "Aucun jeton à masquer",
         "empty_body": "Ce compte ne détient aucun jeton pouvant être masqué."
     },
+    "token_approvals": {
+        "title": "Autorisations des jetons",
+        "unlimited": "Illimité",
+        "all_items": "Tous les éléments de {{collection}}",
+        "revoke": "Révoquer",
+        "revoke_unavailable": "Les informations du jeton n'ont pas pu être chargées ; la révocation est impossible ici.",
+        "empty_title": "Aucune autorisation ouverte",
+        "empty_body": "Aucune autorisation ouverte de jeton ou de collection n'a été trouvée pour ce compte.",
+        "error_title": "Impossible de charger les autorisations",
+        "error_body": "Vérifiez votre connexion et réessayez.",
+        "revoke_error_title": "Révocation non confirmée",
+        "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
+    },
     "token_visibility": {
         "hide": "Masquer le jeton",
         "unhide": "Afficher le jeton",
@@ -526,6 +539,7 @@
         "undo_rekey": "Annuler le rekey",
         "rekeyed_to": "Rekey vers",
         "rekey_account": "Rekey du compte",
+        "token_approvals": "Autorisations des jetons",
         "rekey_option_ledger_title": "Vers un compte Ledger",
         "rekey_option_ledger_description": "Les transactions seront autorisées sur votre appareil Ledger.",
         "rekey_option_standard_title": "Vers un compte standard",

@@ -18,6 +18,10 @@ import {
     type PeraEvmAssetFixtures,
 } from '../assets/api/msw-handlers'
 import {
+    peraEvmApprovalHandlers,
+    type PeraEvmApprovalFixtures,
+} from '../approvals/api/msw-handlers'
+import {
     peraEvmHistoryHandlers,
     type PeraEvmHistoryFixtures,
 } from '../history/api/msw-handlers'
@@ -47,7 +51,8 @@ export type ShouldRefreshRequest = {
 export type PeraEvmFixtures = PeraEvmAssetFixtures &
     PeraEvmHistoryFixtures &
     PeraEvmContractFixtures &
-    PeraEvmSimulationFixtures & {
+    PeraEvmSimulationFixtures &
+    PeraEvmApprovalFixtures & {
         /**
          * A number is the HTTP status the endpoint fails with. Defaults to the
          * backend's quiet chain: a refresh at block 1 on a null cursor (it always
@@ -130,4 +135,5 @@ export const peraEvmHandlers = ({
     ...peraEvmHistoryHandlers(fixtures),
     ...peraEvmContractHandlers(fixtures),
     ...peraEvmSimulationHandlers(fixtures),
+    ...peraEvmApprovalHandlers(fixtures),
 ]

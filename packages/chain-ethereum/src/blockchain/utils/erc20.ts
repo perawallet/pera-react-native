@@ -189,7 +189,11 @@ export type HolderBalances = {
 // Bounds the gas one eth_call spends, well under the caps nodes put on it.
 const CALLS_PER_AGGREGATE = 300
 
-type Aggregate3Call = { target: Address; allowFailure: boolean; callData: Hex }
+export type Aggregate3Call = {
+    target: Address
+    allowFailure: boolean
+    callData: Hex
+}
 type Aggregate3Result = { success: boolean; returnData: Hex }
 
 // A full chunk is too big to batch, so each one is its own request; a few
@@ -211,7 +215,7 @@ const withoutCallData = (error: unknown): unknown =>
 // Not client.multicall: with allowFailure it turns a failed call as a whole
 // into per-call failures, which a caller can't tell from per-call reverts.
 // After one chunk fails the rest are skipped: the read is lost either way.
-const aggregate3 = async (
+export const aggregate3 = async (
     client: PublicClient,
     calls: Aggregate3Call[],
     blockNumber?: bigint,

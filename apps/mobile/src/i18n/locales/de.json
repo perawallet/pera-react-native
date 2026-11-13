@@ -230,6 +230,19 @@
         "empty_title": "Keine Tokens zum Ausblenden",
         "empty_body": "Dieses Konto hält keine Tokens, die ausgeblendet werden können."
     },
+    "token_approvals": {
+        "title": "Token-Freigaben",
+        "unlimited": "Unbegrenzt",
+        "all_items": "Alle Objekte in {{collection}}",
+        "revoke": "Widerrufen",
+        "revoke_unavailable": "Die Token-Details konnten nicht geladen werden, daher ist hier kein Widerruf möglich.",
+        "empty_title": "Keine offenen Freigaben",
+        "empty_body": "Für dieses Konto wurden keine offenen Token- oder Sammlungsfreigaben gefunden.",
+        "error_title": "Freigaben konnten nicht geladen werden",
+        "error_body": "Prüfe deine Verbindung und versuche es erneut.",
+        "revoke_error_title": "Widerruf nicht bestätigt",
+        "revoke_error_body": "Prüfe in der Liste, wie der Status der Freigabe ist, bevor du es erneut versuchst."
+    },
     "token_visibility": {
         "hide": "Token ausblenden",
         "unhide": "Token einblenden",
@@ -526,6 +539,7 @@
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
         "rekey_account": "Konto rekeyen",
+        "token_approvals": "Token-Freigaben",
         "rekey_option_ledger_title": "Zu einem Ledger-Konto",
         "rekey_option_ledger_description": "Transaktionen werden auf deinem Ledger-Gerät autorisiert.",
         "rekey_option_standard_title": "Zu einem Standard-Konto",
