@@ -12,12 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useDiscoverNewsQuery } from '@perawallet/wallet-core-discover'
-import {
-    AnalyticsMetadataKey as Key,
-    DiscoverEvent,
-    trackEvent,
-} from '@analytics'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useOpenNewsItem } from '../../hooks/useOpenNewsItem'
 import { formatNewsDate } from '../../utils/formatNewsDate'
 import type { DiscoverNewsCardItem } from '../DiscoverHomeScreen/useDiscoverHomeScreen'
 
@@ -32,7 +27,7 @@ export type UseDiscoverNewsScreenResult = {
 }
 
 export const useDiscoverNewsScreen = (): UseDiscoverNewsScreenResult => {
-    const navigation = useAppNavigation()
+    const openNewsItem = useOpenNewsItem()
     const query = useDiscoverNewsQuery()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -60,16 +55,6 @@ export const useDiscoverNewsScreen = (): UseDiscoverNewsScreenResult => {
     const retry = useCallback(() => {
         void refetch()
     }, [refetch])
-
-    const openNewsItem = useCallback(
-        (item: DiscoverNewsCardItem) => {
-            trackEvent(DiscoverEvent.NewsOpenTap, {
-                [Key.NewsTitle]: item.title,
-            })
-            navigation.navigate('DiscoverNewsDetail', { newsId: item.id })
-        },
-        [navigation],
-    )
 
     // A retry after an error keeps status 'error' while it runs; show it
     // loading. Cached news stays up when a background refetch fails.

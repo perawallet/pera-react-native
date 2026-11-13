@@ -141,7 +141,7 @@ export const ArticleContent = ({
                                 >
                                     <PWText style={styles.listMarker}>
                                         {block.ordered
-                                            ? `${itemIndex + 1}.`
+                                            ? `${block.start + itemIndex}.`
                                             : '•'}
                                     </PWText>
                                     <PWView style={styles.listBody}>
@@ -154,8 +154,10 @@ export const ArticleContent = ({
                 }
                 case 'image': {
                     return HTTPS_SRC.test(block.src) ? (
+                        // Keyed by src too, so a refetched article's new image
+                        // does not inherit another image's failed or size state.
                         <ArticleImage
-                            key={index}
+                            key={`${index}:${block.src}`}
                             src={block.src}
                         />
                     ) : null

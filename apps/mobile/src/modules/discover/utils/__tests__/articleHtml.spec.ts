@@ -11,7 +11,11 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { parseArticleHtml, toArticleLinkUrl } from '../articleHtml'
+import {
+    articleHtmlToPlainText,
+    parseArticleHtml,
+    toArticleLinkUrl,
+} from '../articleHtml'
 
 type Marks = Partial<Record<'bold' | 'italic' | 'code', boolean>>
 const text = (value: string, marks: Marks = {}) => ({
@@ -52,6 +56,7 @@ describe('parseArticleHtml', () => {
             {
                 type: 'list',
                 ordered: false,
+                start: 1,
                 items: [
                     [{ type: 'paragraph', children: [text('x')] }],
                     [{ type: 'paragraph', children: [text('y')] }],
@@ -60,6 +65,7 @@ describe('parseArticleHtml', () => {
             {
                 type: 'list',
                 ordered: true,
+                start: 1,
                 items: [[{ type: 'paragraph', children: [text('z')] }]],
             },
         ])
@@ -147,6 +153,28 @@ describe('parseArticleHtml', () => {
         ])
     })
 
+    it('numbers an ordered list from its start attribute', () => {
+        expect(parseArticleHtml('<ol start="4"><li>d</li></ol>')).toEqual([
+            {
+                type: 'list',
+                ordered: true,
+                start: 4,
+                items: [[{ type: 'paragraph', children: [text('d')] }]],
+            },
+        ])
+        expect(parseArticleHtml('<ol start="x"><li>d</li></ol>')).toMatchObject(
+            [{ start: 1 }],
+        )
+    })
+
+    it('keeps script and style out of a code block', () => {
+        expect(
+            parseArticleHtml(
+                '<pre><script>track()</script><style>p{}</style>const a = 1</pre>',
+            ),
+        ).toEqual([{ type: 'code', text: 'const a = 1' }])
+    })
+
     it('returns no blocks for empty or blank HTML', () => {
         expect(parseArticleHtml('')).toEqual([])
         expect(parseArticleHtml('  \n ')).toEqual([])
@@ -212,4 +240,34 @@ describe('toArticleLinkUrl', () => {
             expect(toArticleLinkUrl(href)).toBeNull()
         },
     )
+})
+
+describe('articleHtmlToPlainText', () => {
+    it('keeps the visible text, separating blocks with a space', () => {
+        expect(
+            articleHtmlToPlainText(
+                '<h1>Title</h1><p>One <b>two</b></p><p>three</p>',
+            ),
+        ).toBe('Title One two three')
+    })
+
+    it('decodes every entity, named or numeric', () => {
+        expect(
+            articleHtmlToPlainText(
+                '<p>it&#x27;s &rsquo;a&mdash;b&amp;c&#60;</p>',
+            ),
+        ).toBe("it's \u2019a\u2014b&c<")
+    })
+
+    it("drops the parser's dropped tags with their content", () => {
+        expect(
+            articleHtmlToPlainText(
+                '<head><title>draft</title></head><script>x()</script><style>p{}</style><noscript>n</noscript><p>kept</p>',
+            ),
+        ).toBe('kept')
+    })
+
+    it('returns an empty string for markup without text', () => {
+        expect(articleHtmlToPlainText('<div><br></div>')).toBe('')
+    })
 })

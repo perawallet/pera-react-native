@@ -17,6 +17,7 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { RootStackParamList } from '@routes/types'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
 import {
+    articleHtmlToPlainText,
     parseArticleHtml,
     toArticleLinkUrl,
     type ArticleBlock,
@@ -33,21 +34,7 @@ const toBlocks = (newsId: string, html: string): ArticleBlock[] => {
             newsId,
             error,
         })
-        // Same drops as the parser, so script or style text never shows.
-        const value = html
-            .replace(
-                /<(script|style|iframe|object|noscript|template)\b[\s\S]*?<\/\1\s*>/gi,
-                ' ',
-            )
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .replace(/&amp;/g, '&')
-            .replace(/\s+/g, ' ')
-            .trim()
+        const value = articleHtmlToPlainText(html)
         return value
             ? [
                   {

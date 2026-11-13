@@ -41,14 +41,13 @@ export const discoverPathTarget = (
     if (normalised === '' || normalised === 'main/home') {
         return { kind: 'home' }
     }
-    if (normalised === 'news' || normalised === NEWS_PREFIX) {
+    if (normalised === 'news') {
         return { kind: 'news' }
     }
     if (normalised.startsWith(NEWS_PREFIX)) {
-        return {
-            kind: 'newsDetail',
-            newsId: normalised.slice(NEWS_PREFIX.length).replace(/\/$/, ''),
-        }
+        // The id is the first segment only; `news/` or `news//` has none.
+        const newsId = normalised.slice(NEWS_PREFIX.length).split('/')[0]
+        return newsId ? { kind: 'newsDetail', newsId } : { kind: 'news' }
     }
     if (normalised === 'main/browser') {
         return { kind: 'dapps' }

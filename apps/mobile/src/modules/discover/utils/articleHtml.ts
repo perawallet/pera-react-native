@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { parseDocument } from 'htmlparser2'
+import { Parser, parseDocument } from 'htmlparser2'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { toValidatedBrowserUrl } from '@modules/webview'
 
@@ -34,7 +34,7 @@ export type ArticleBlock =
           children: ArticleInline[]
       }
     | { type: 'paragraph'; children: ArticleInline[] }
-    | { type: 'list'; ordered: boolean; items: ArticleBlock[][] }
+    | { type: 'list'; ordered: boolean; start: number; items: ArticleBlock[][] }
     | { type: 'image'; src: string; alt: string }
     | { type: 'quote'; children: ArticleBlock[] }
     | { type: 'code'; text: string }
@@ -99,8 +99,16 @@ const isElement = (node: ChildNode): node is Element => node.type === 'tag'
 
 const textOf = (node: ChildNode): string => {
     if (node.type === 'text') return node.data
+    // htmlparser2 types script and style nodes as their own kinds, not 'tag'.
+    if ('name' in node && DROPPED.has(node.name)) return ''
     if ('children' in node) return node.children.map(textOf).join('')
     return ''
+}
+
+// An ordered list's first number, from its `start` attribute when it has one.
+const listStart = (list: Element): number => {
+    const start = Number.parseInt(list.attribs.start ?? '', 10)
+    return Number.isFinite(start) ? start : 1
 }
 
 /** Inline pieces of `nodes`, with HTML whitespace collapsing; images stay in the stream so callers can lift them. */
@@ -309,7 +317,13 @@ const collectBlocks = (nodes: readonly ChildNode[]): ArticleBlock[] => {
                 .map(item => collectBlocks(item.children))
                 .filter(item => item.length > 0)
             if (items.length > 0) {
-                blocks.push({ type: 'list', ordered: name === 'ol', items })
+                const ordered = name === 'ol'
+                blocks.push({
+                    type: 'list',
+                    ordered,
+                    start: ordered ? listStart(node) : 1,
+                    items,
+                })
             }
         } else if (name === 'blockquote') {
             flushLoose()
@@ -340,6 +354,31 @@ const collectBlocks = (nodes: readonly ChildNode[]): ArticleBlock[] => {
  */
 export const parseArticleHtml = (html: string): ArticleBlock[] =>
     collectBlocks(parseDocument(html).children)
+
+/**
+ * The article's visible text, for when `parseArticleHtml` fails. The streaming
+ * parser does not recurse, decodes every entity and drops the same tags.
+ */
+export const articleHtmlToPlainText = (html: string): string => {
+    let dropDepth = 0
+    let text = ''
+    const parser = new Parser({
+        onopentagname: name => {
+            if (dropDepth > 0 || DROPPED.has(name)) dropDepth += 1
+            else text += ' '
+        },
+        onclosetag: (_name, isImplied) => {
+            if (dropDepth > 0) dropDepth -= 1
+            else if (!isImplied) text += ' '
+        },
+        ontext: data => {
+            if (dropDepth === 0) text += data
+        },
+    })
+    parser.write(html)
+    parser.end()
+    return text.replace(/\s+/g, ' ').trim()
+}
 
 /**
  * The URL an article link opens, or null when it should stay plain text: only

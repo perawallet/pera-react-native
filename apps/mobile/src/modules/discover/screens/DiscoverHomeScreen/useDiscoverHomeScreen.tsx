@@ -25,6 +25,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { toChainFilterOptions } from '@modules/assets'
 import { useDiscoverChainIds } from '../../hooks/useDiscoverChainIds'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useOpenNewsItem } from '../../hooks/useOpenNewsItem'
 import { useToggleDiscoverFavorite } from '../../hooks/useToggleDiscoverFavorite'
 import { useTopDapps, type UseTopDappsResult } from '../../hooks/useTopDapps'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
@@ -155,15 +156,7 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         navigation.navigate('DiscoverSearch')
     }, [navigation])
 
-    const openNewsItem = useCallback(
-        (item: DiscoverNewsCardItem) => {
-            trackEvent(DiscoverEvent.NewsOpenTap, {
-                [Key.NewsTitle]: item.title,
-            })
-            navigation.navigate('DiscoverNewsDetail', { newsId: item.id })
-        },
-        [navigation],
-    )
+    const openNewsItem = useOpenNewsItem()
 
     const openNewsList = useCallback(() => {
         trackEvent(DiscoverEvent.NewsButtonTap)

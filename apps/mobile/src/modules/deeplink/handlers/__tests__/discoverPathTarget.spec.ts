@@ -41,7 +41,7 @@ describe('discoverPathTarget', () => {
         })
     })
 
-    it.each(['news', '/news/', 'news?x=1'])(
+    it.each(['news', '/news/', 'news?x=1', 'news//'])(
         'maps %s to the native news list',
         path => {
             expect(discoverPathTarget(path)).toEqual({ kind: 'news' })
@@ -52,6 +52,7 @@ describe('discoverPathTarget', () => {
         ['news/12', '12'],
         ['/news/12?utm=x', '12'],
         ['news/ab-c#top', 'ab-c'],
+        ['news/12/comments', '12'],
     ])('maps %s to the native news detail %s', (path, newsId) => {
         expect(discoverPathTarget(path)).toEqual({ kind: 'newsDetail', newsId })
     })
