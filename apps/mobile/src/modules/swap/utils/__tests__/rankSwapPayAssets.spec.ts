@@ -13,7 +13,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { ChainAssetBalance } from '@perawallet/wallet-core-accounts'
-import { pickSwapPayAsset } from '../pickSwapPayAsset'
+import { rankSwapPayAssets } from '../rankSwapPayAssets'
 
 vi.mock('@perawallet/wallet-core-chain-contract', () => ({
     toScopeKey: ({
@@ -50,12 +50,14 @@ const holding = (
 const anyChain = () => true
 const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
-describe('pickSwapPayAsset', () => {
-    it('pays with a native coin, never a token worth more', () => {
+describe('rankSwapPayAssets', () => {
+    it('offers native coins only, never a token worth more', () => {
         const usdc = holding('algorand', '31566704', 100, 100)
         const algo = holding('algorand', '0', 1, 0.2)
 
-        expect(pickSwapPayAsset([usdc, algo], ETHEREUM, anyChain)).toBe(algo)
+        expect(rankSwapPayAssets([usdc, algo], ETHEREUM, anyChain)).toEqual([
+            algo,
+        ])
     })
 
     it('offers nothing for a token on a chain with no native coin to pay its fee', () => {
@@ -64,17 +66,17 @@ describe('pickSwapPayAsset', () => {
             holding('base', '0xusdc', 50, 50),
         ]
 
-        expect(pickSwapPayAsset(balances, ETHEREUM, anyChain)).toBeNull()
+        expect(rankSwapPayAssets(balances, ETHEREUM, anyChain)).toEqual([])
     })
 
-    it('takes the most valuable native coin, unpriced last', () => {
+    it('ranks native coins by value, unpriced last', () => {
         const unpriced = holding('bsc', 'native', 10, null)
         const algo = holding('algorand', '0', 10, 2)
         const baseEth = holding('base', 'native', 1, 3000)
 
         expect(
-            pickSwapPayAsset([unpriced, algo, baseEth], ETHEREUM, anyChain),
-        ).toBe(baseEth)
+            rankSwapPayAssets([unpriced, algo, baseEth], ETHEREUM, anyChain),
+        ).toEqual([baseEth, algo, unpriced])
     })
 
     it('skips the target network, empty and transfer-blocked holdings', () => {
@@ -84,18 +86,18 @@ describe('pickSwapPayAsset', () => {
             holding('base', 'native', 1, 3000, 'transferBlocked'),
         ]
 
-        expect(pickSwapPayAsset(balances, ETHEREUM, anyChain)).toBeNull()
+        expect(rankSwapPayAssets(balances, ETHEREUM, anyChain)).toEqual([])
     })
 
     it('skips a network the account cannot pay from', () => {
         const balances = [holding('algorand', '0', 5, 1)]
 
         expect(
-            pickSwapPayAsset(
+            rankSwapPayAssets(
                 balances,
                 ETHEREUM,
                 chainId => chainId !== 'algorand',
             ),
-        ).toBeNull()
+        ).toEqual([])
     })
 })

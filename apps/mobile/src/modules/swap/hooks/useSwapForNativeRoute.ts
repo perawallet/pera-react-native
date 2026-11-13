@@ -22,13 +22,21 @@ import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapScope } from '@perawallet/wallet-core-swaps'
+import {
+    isSwapChain,
+    swapAdapterFor,
+    useSwapScope,
+} from '@perawallet/wallet-core-swaps'
+import {
+    useSpendableBalancesQuery,
+    type SpendableBalanceInput,
+} from '@perawallet/wallet-core-transactions'
 import type { SwapScreenParams } from '../routes/types'
 import {
     canReceiveCrossChain,
     canSwapCrossChain,
 } from '../utils/crossChainEligibility'
-import { pickSwapPayAsset } from '../utils/pickSwapPayAsset'
+import { rankSwapPayAssets } from '../utils/rankSwapPayAssets'
 
 export type UseSwapForNativeRouteResult = {
     /** Opens a cross-chain swap into `chainId`'s native coin; null when none can. */
@@ -51,26 +59,64 @@ export const useSwapForNativeRoute = (
     const receiveScope = useSwapScope(account, chainId)
     const canSignOn = useCanSignWithCheck()
     const hasCapability = useChainCapabilityCheck()
-    const { assetBalances, isPending } =
+    const { assetBalances, isPending: isHoldingsPending } =
         useAccountHoldingsAcrossChainsQuery(account)
 
-    const params = useMemo((): Nullable<SwapScreenParams> => {
-        if (
-            !receiveScope ||
-            !canSwapCrossChain(account) ||
-            !canReceiveCrossChain(account, accounts, chainId)
-        ) {
-            return null
-        }
-        const payAsset = pickSwapPayAsset(
-            assetBalances,
+    const candidates = useMemo(
+        () =>
+            receiveScope &&
+            canSwapCrossChain(account) &&
+            canReceiveCrossChain(account, accounts, chainId)
+                ? rankSwapPayAssets(
+                      assetBalances,
+                      receiveScope,
+                      payChainId =>
+                          isSwapChain(payChainId) &&
+                          hasCapability({
+                              chain: {
+                                  chainId: payChainId,
+                                  capability: 'swap',
+                              },
+                          }) &&
+                          canSignOn(account, payChainId),
+                  )
+                : [],
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canReceiveCrossChain reads the chain-state store, not its arguments
+        [
             receiveScope,
-            payChainId =>
-                hasCapability({
-                    chain: { chainId: payChainId, capability: 'swap' },
-                }) && canSignOn(account, payChainId),
+            account,
+            accounts,
+            chainId,
+            assetBalances,
+            hasCapability,
+            canSignOn,
+            chainStates,
+        ],
+    )
+
+    // Held is not spendable: Algorand's minimum balance can lock all of it, and
+    // a few wei can't cover gas. Same reserve as the Swap form's MAX.
+    const spendableInputs = useMemo(
+        (): SpendableBalanceInput[] =>
+            candidates.map(candidate => ({
+                account,
+                asset: {
+                    chainId: candidate.scope.chainId,
+                    assetId: candidate.assetId,
+                },
+                scope: candidate.scope,
+                fee: swapAdapterFor(candidate.scope).maxAmountFeeReserve,
+            })),
+        [candidates, account],
+    )
+    const { data: spendables, isPending: isSpendablePending } =
+        useSpendableBalancesQuery(spendableInputs)
+
+    const params = useMemo((): Nullable<SwapScreenParams> => {
+        const payAsset = candidates.find(
+            (_candidate, index) => spendables[index]?.max.gt(0) ?? false,
         )
-        if (!payAsset) return null
+        if (!payAsset || !receiveScope) return null
         return {
             assetIn: {
                 chainId: payAsset.scope.chainId,
@@ -82,17 +128,7 @@ export const useSwapForNativeRoute = (
                 accountId: account.id,
             },
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canReceiveCrossChain reads the chain-state store, not its arguments
-    }, [
-        receiveScope,
-        account,
-        accounts,
-        chainId,
-        assetBalances,
-        hasCapability,
-        canSignOn,
-        chainStates,
-    ])
+    }, [candidates, spendables, receiveScope, chainId, account.id])
 
-    return { params, isPending }
+    return { params, isPending: isHoldingsPending || isSpendablePending }
 }

@@ -17,19 +17,18 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * What a cross-chain "Swap for {native}" pays with: the native coin of another
- * chain the account can swap from, the most valuable first. Only a native coin:
- * the source leg's fee is paid in it, so a token on a chain with none is a dead
- * end, and an airdropped token is the unvetted lure Swap avoids.
+ * What a cross-chain "Swap for {native}" may pay with, the most valuable first:
+ * the native coin of another chain the account can swap from. Only a native
+ * coin: the source leg's fee is paid in it, so a token on a chain with none is
+ * a dead end, and an airdropped token is the unvetted lure Swap avoids.
  */
-export const pickSwapPayAsset = (
+export const rankSwapPayAssets = (
     balances: readonly ChainAssetBalance[],
     targetScope: ChainScope,
     canPayOn: (chainId: ChainId) => boolean,
-): Nullable<ChainAssetBalance> => {
+): ChainAssetBalance[] => {
     const targetKey = toScopeKey(targetScope)
     const candidates = balances.filter(
         balance =>
@@ -39,10 +38,9 @@ export const pickSwapPayAsset = (
             balance.restriction === null &&
             canPayOn(balance.scope.chainId),
     )
-    const [best] = [...candidates].sort((a, b) => {
+    return [...candidates].sort((a, b) => {
         if (a.fiatValue === null) return b.fiatValue === null ? 0 : 1
         if (b.fiatValue === null) return -1
         return b.fiatValue.comparedTo(a.fiatValue)
     })
-    return best ?? null
 }

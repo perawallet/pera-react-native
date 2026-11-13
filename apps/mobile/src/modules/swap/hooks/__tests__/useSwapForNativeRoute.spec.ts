@@ -25,6 +25,9 @@ const state = vi.hoisted(() => ({
     isPending: false,
     signChainIds: ['algorand', 'base'] as string[],
     balances: [] as unknown[],
+    /** Spendable max in base units per pay chain; absent is still loading. */
+    spendableMax: {} as Record<string, number>,
+    isSpendablePending: false,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -44,10 +47,31 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwapScope: (_account: unknown, chainId: string) =>
-        state.hasReceiveScope ? { chainId, networkId: 'mainnet' } : null,
-}))
+vi.mock('@perawallet/wallet-core-swaps', async () => {
+    const { Decimal } = await import('decimal.js')
+    return {
+        isSwapChain: () => true,
+        swapAdapterFor: () => ({ maxAmountFeeReserve: new Decimal(1000) }),
+        useSwapScope: (_account: unknown, chainId: string) =>
+            state.hasReceiveScope ? { chainId, networkId: 'mainnet' } : null,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-transactions', async () => {
+    const { Decimal } = await import('decimal.js')
+    return {
+        useSpendableBalancesQuery: (
+            inputs: { scope: { chainId: string } }[],
+        ) => ({
+            data: inputs.map(({ scope }) =>
+                scope.chainId in state.spendableMax
+                    ? { max: new Decimal(state.spendableMax[scope.chainId]!) }
+                    : undefined,
+            ),
+            isPending: state.isSpendablePending,
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useChainCapabilityCheck: () => () => true,
@@ -85,6 +109,8 @@ describe('useSwapForNativeRoute', () => {
         state.isPending = false
         state.signChainIds = ['algorand', 'base']
         state.balances = [algoHolding]
+        state.spendableMax = { algorand: 4_899_000, bsc: 1 }
+        state.isSpendablePending = false
     })
 
     it("opens a swap into the network's native coin, paid from another network's", () => {
@@ -150,6 +176,47 @@ describe('useSwapForNativeRoute', () => {
         )
 
         expect(result.current.params).toBeNull()
+    })
+
+    it('offers nothing when the held native coin is all locked or reserved', () => {
+        state.spendableMax = { algorand: 0 }
+
+        const { result } = renderHook(() =>
+            useSwapForNativeRoute(account, 'base'),
+        )
+
+        expect(result.current.params).toBeNull()
+    })
+
+    it('pays with a cheaper coin when the most valuable one cannot be spent', () => {
+        const bnbHolding = {
+            ...algoHolding,
+            assetId: 'native',
+            fiatValue: new Decimal(0.5),
+            scope: { chainId: 'bsc', networkId: 'mainnet' },
+        }
+        state.balances = [algoHolding, bnbHolding]
+        state.spendableMax = { algorand: 0, bsc: 1 }
+        state.signChainIds = ['algorand', 'base', 'bsc']
+
+        const { result } = renderHook(() =>
+            useSwapForNativeRoute(account, 'base'),
+        )
+
+        expect(result.current.params?.assetIn).toEqual({
+            chainId: 'bsc',
+            assetId: 'native',
+        })
+    })
+
+    it('reports pending while spendable balances are still being read', () => {
+        state.isSpendablePending = true
+
+        const { result } = renderHook(() =>
+            useSwapForNativeRoute(account, 'base'),
+        )
+
+        expect(result.current.isPending).toBe(true)
     })
 
     it('reports holdings on other networks still being read', () => {
