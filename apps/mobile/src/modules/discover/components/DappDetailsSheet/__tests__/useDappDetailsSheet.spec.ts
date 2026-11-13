@@ -27,7 +27,9 @@ vi.mock('@modules/bottom-sheet', () => ({ useBottomSheetResult: vi.fn() }))
 vi.mock('../../../hooks/useOpenDapp', () => ({ useOpenDapp: vi.fn() }))
 
 const calls: string[] = []
-const dismiss = vi.fn(() => calls.push('dismiss'))
+const resolve = vi.fn((value: unknown) =>
+    calls.push(`resolve:${String(value)}`),
+)
 const openDapp = vi.fn(() => calls.push('open'))
 
 const item: DirectoryDapp = {
@@ -52,8 +54,8 @@ describe('useDappDetailsSheet', () => {
         calls.length = 0
         useDiscoverFavoritesStore.setState({ favorites: {}, favoriteOrder: [] })
         vi.mocked(useBottomSheetResult).mockReturnValue({
-            resolve: vi.fn(),
-            dismiss,
+            resolve,
+            dismiss: vi.fn(),
         })
         vi.mocked(useOpenDapp).mockReturnValue({
             openDapp,
@@ -86,10 +88,10 @@ describe('useDappDetailsSheet', () => {
         )
     })
 
-    it('open closes the sheet, then opens the dApp on the chain', () => {
+    it('open resolves the sheet as opened, then opens the dApp on the chain', () => {
         const { result } = setup()
         act(() => result.current.open())
-        expect(calls).toEqual(['dismiss', 'open'])
+        expect(calls).toEqual(['resolve:open', 'open'])
         expect(openDapp).toHaveBeenCalledWith(item.dapp, 'algorand')
     })
 })

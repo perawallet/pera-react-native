@@ -229,6 +229,31 @@ describe('Flow: Discover dApp directory', () => {
         await flush()
     })
 
+    it('Given a dApp with no description or banner, then its sheet still opens without About', async () => {
+        server.use(
+            mockDiscoverProjects({
+                response: [
+                    project('Bare', {
+                        description: '',
+                        chains: [algorandCaip2()],
+                    }),
+                ],
+            }),
+        )
+        renderDirectory()
+        await screen.findByTestId(rowOf('Bare'))
+
+        fireEvent.click(screen.getByTestId(`${rowOf('Bare')}_details`))
+
+        expect(
+            await screen.findByTestId('discover_dapp_details_open'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId('discover_dapp_details_description'),
+        ).toBeNull()
+        await flush()
+    })
+
     it('Given Apply, then the verification page opens in the system browser', async () => {
         const openURL = vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
         useHandlers()

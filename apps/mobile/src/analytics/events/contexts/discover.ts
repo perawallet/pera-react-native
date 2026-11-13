@@ -25,6 +25,9 @@ export enum DiscoverEvent {
     NewsOpenTap = 'discover_news_open_tap',
     TopDappsButtonTap = 'discover_top_dapps_button_tap',
     ApplyForVerificationTap = 'discover_apply_for_verification',
+    DappCategoryTap = 'discover_dapp_category_tap',
+    DappDetailsButtonTap = 'discover_dapp_details_button_tap',
+    DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
 }
 
 type DappPayload = {
@@ -43,6 +46,18 @@ export interface DiscoverRequiredPayloads {
     }
     [DiscoverEvent.NewsOpenTap]: { [Key.NewsTitle]: string }
     [DiscoverEvent.ApplyForVerificationTap]: { [Key.Category]: 'project' }
+    [DiscoverEvent.DappCategoryTap]: {
+        [Key.CategoryName]: string
+        [Key.ChainId]?: ChainId
+    }
+    [DiscoverEvent.DappDetailsButtonTap]: {
+        [Key.DappName]: string
+        [Key.ChainId]?: ChainId
+    }
+    [DiscoverEvent.DetailsCloseTap]: {
+        [Key.DappName]: string
+        [Key.ChainId]?: ChainId
+    }
 }
 
 export interface DiscoverOptionalPayloads {

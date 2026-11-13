@@ -67,6 +67,15 @@ describe('useDiscoverPathDeeplink', () => {
         )
     })
 
+    it('opens the native dApp directory for main/browser', () => {
+        expect(run('main/browser')).toBe(true)
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+            false,
+            'DiscoverDapps',
+            undefined,
+        )
+    })
+
     it('opens native asset details for a token-detail path', () => {
         expect(run('token-detail/31566704')).toBe(true)
         expect(mocks.navigateToScreen).toHaveBeenCalledWith(false, 'TabBar', {

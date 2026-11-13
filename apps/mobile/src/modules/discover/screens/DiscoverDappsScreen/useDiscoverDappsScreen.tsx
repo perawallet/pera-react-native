@@ -27,7 +27,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { toChainFilterOptions } from '@modules/assets'
 import type { RootStackParamList } from '@routes/types'
-import { DappDetailsSheet } from '../../components/DappDetailsSheet'
+import {
+    DappDetailsSheet,
+    type DappDetailsSheetResult,
+} from '../../components/DappDetailsSheet'
 import { useDiscoverChainIds } from '../../hooks/useDiscoverChainIds'
 import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
 import { useOpenDapp } from '../../hooks/useOpenDapp'
@@ -87,7 +90,7 @@ export type UseDiscoverDappsScreenResult = {
     isVerified: (url: string) => boolean
     toggleFavorite: (dapp: DiscoverDapp) => void
     openDapp: (dapp: DiscoverDapp) => void
-    openDetails: (item: DirectoryDapp) => void
+    openDetails: (item: DirectoryDapp) => Promise<void>
     openSearch: () => void
     applyForDiscover: () => void
 }
@@ -177,8 +180,11 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
     const sortLabel =
         sortOptions.find(option => option.id === sort)?.label ?? ''
 
+    // A chain switch starts the category at All, so a category the switch
+    // hid never re-selects itself on a later switch.
     const selectChain = useCallback((id: Nullable<ChainId>) => {
         setPickedChainId(id)
+        setPickedCategory(null)
         trackEvent(DiscoverEvent.DappFilterTap, {
             [Key.FilterName]:
                 id === null
@@ -187,20 +193,32 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
             ...(id === null ? {} : { [Key.ChainId]: id }),
         })
     }, [])
-    const selectSort = useCallback((id: DappSort) => {
-        setSort(id)
-        setPickedCategory(null)
-        trackEvent(DiscoverEvent.DappFilterTap, {
-            [Key.FilterName]:
-                SORTS.find(option => option.id === id)?.analyticsName ?? id,
-        })
-    }, [])
-    const selectCategory = useCallback((category: Nullable<string>) => {
-        setPickedCategory(category)
-        trackEvent(DiscoverEvent.DappFilterTap, {
-            [Key.FilterName]: category ?? ALL_ANALYTICS_NAME,
-        })
-    }, [])
+    const selectSort = useCallback(
+        (id: DappSort) => {
+            setSort(id)
+            setPickedCategory(null)
+            trackEvent(DiscoverEvent.DappFilterTap, {
+                [Key.FilterName]:
+                    SORTS.find(option => option.id === id)?.analyticsName ?? id,
+                ...(selectedChainId === null
+                    ? {}
+                    : { [Key.ChainId]: selectedChainId }),
+            })
+        },
+        [selectedChainId],
+    )
+    const selectCategory = useCallback(
+        (category: Nullable<string>) => {
+            setPickedCategory(category)
+            trackEvent(DiscoverEvent.DappCategoryTap, {
+                [Key.CategoryName]: category ?? ALL_ANALYTICS_NAME,
+                ...(selectedChainId === null
+                    ? {}
+                    : { [Key.ChainId]: selectedChainId }),
+            })
+        },
+        [selectedChainId],
+    )
 
     const verifiedUrls = directory.verifiedUrls
     const isVerified = useCallback(
@@ -223,8 +241,15 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         [openDappPage, selectedChainId],
     )
     const openDetails = useCallback(
-        (item: DirectoryDapp) => {
-            void request({
+        async (item: DirectoryDapp) => {
+            const dappPayload = {
+                [Key.DappName]: item.dapp.name,
+                ...(selectedChainId === null
+                    ? {}
+                    : { [Key.ChainId]: selectedChainId }),
+            }
+            trackEvent(DiscoverEvent.DappDetailsButtonTap, dappPayload)
+            const result = await request<DappDetailsSheetResult>({
                 contents: (
                     <DappDetailsSheet
                         item={item}
@@ -234,6 +259,9 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
             })
+            if (result === undefined) {
+                trackEvent(DiscoverEvent.DetailsCloseTap, dappPayload)
+            }
         },
         [request, selectedChainId, isVerified],
     )
@@ -268,8 +296,10 @@ export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
         items,
         // Icons only when the list mixes chains (All with chips to pick from).
         showChains: selectedChainId === null && chainOptions.length > 0,
-        isLoading: directory.isLoading,
-        isError: directory.isError,
+        // A retry after an error keeps status 'error' while it runs; show it loading.
+        isLoading:
+            directory.isLoading || (directory.isError && directory.isFetching),
+        isError: directory.isError && !directory.isFetching,
         retry,
         isFavorite,
         isVerified,

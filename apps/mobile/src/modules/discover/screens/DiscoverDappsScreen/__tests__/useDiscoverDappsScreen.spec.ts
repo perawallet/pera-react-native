@@ -87,6 +87,7 @@ const mockDirectory = (projects: PeraProject[] = PROJECTS) =>
         verifiedUrls: new Set(),
         isLoading: false,
         isError: false,
+        isFetching: false,
         refetch,
     })
 
@@ -168,13 +169,51 @@ describe('useDiscoverDappsScreen', () => {
         )
     })
 
-    it('selectCategory filters and tracks the category', () => {
+    it('selectCategory filters and tracks the web category event', () => {
         const { result } = setup()
         act(() => result.current.selectCategory('DEX'))
         expect(names(result)).toEqual(['Tinyman'])
-        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.DappFilterTap, {
-            filter_name: 'DEX',
+        expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.DappCategoryTap, {
+            category_name: 'DEX',
         })
+    })
+
+    it('sort and category events carry the selected chain', () => {
+        const { result } = setup()
+        act(() => result.current.selectChain('ethereum'))
+        act(() => result.current.selectCategory('Lending'))
+        expect(trackEvent).toHaveBeenLastCalledWith(
+            DiscoverEvent.DappCategoryTap,
+            { category_name: 'Lending', chain_id: 'ethereum' },
+        )
+        act(() => result.current.selectSort('a-z'))
+        expect(trackEvent).toHaveBeenLastCalledWith(
+            DiscoverEvent.DappFilterTap,
+            { filter_name: 'Alphabetical (A-Z)', chain_id: 'ethereum' },
+        )
+    })
+
+    it('a category hidden by a chain switch does not come back on its own', () => {
+        const { result } = setup()
+        act(() => result.current.selectCategory('DEX'))
+        act(() => result.current.selectChain('ethereum'))
+        act(() => result.current.selectChain(null))
+        expect(result.current.selectedCategory).toBeNull()
+        expect(names(result)).toEqual(['Folks', 'Tinyman', 'Aave'])
+    })
+
+    it('shows loading while a retry after an error is in flight', () => {
+        vi.mocked(useDiscoverDirectory).mockReturnValue({
+            projects: [],
+            verifiedUrls: new Set(),
+            isLoading: false,
+            isError: true,
+            isFetching: true,
+            refetch,
+        })
+        const { result } = setup()
+        expect(result.current.isLoading).toBe(true)
+        expect(result.current.isError).toBe(false)
     })
 
     it('offers All plus the categories of the chain-filtered list', () => {
@@ -239,11 +278,11 @@ describe('useDiscoverDappsScreen', () => {
         expect(refetch).toHaveBeenCalled()
     })
 
-    it('openDetails opens a content-sized sheet for the dApp on the selected chain', () => {
+    it('openDetails opens a content-sized sheet for the dApp on the selected chain', async () => {
         const { result } = setup()
         act(() => result.current.selectChain('ethereum'))
         const item = result.current.items[0]!
-        act(() => result.current.openDetails(item))
+        await act(async () => result.current.openDetails(item))
         expect(request).toHaveBeenCalledTimes(1)
         const [call] = request.mock.calls[0] as unknown as [
             { contents: { props: Record<string, unknown> }; options: object },
@@ -257,5 +296,27 @@ describe('useDiscoverDappsScreen', () => {
             chainId: 'ethereum',
             isVerified: false,
         })
+    })
+
+    it('a sheet closed without Open tracks the web close event', async () => {
+        request.mockResolvedValueOnce(undefined)
+        const { result } = setup()
+        const { openDetails, items } = result.current
+        await act(async () => openDetails(items[0]!))
+        expect(trackEvent).toHaveBeenLastCalledWith(
+            DiscoverEvent.DetailsCloseTap,
+            { dapp_name: 'Folks' },
+        )
+    })
+
+    it('a sheet left through Open tracks no close', async () => {
+        request.mockResolvedValueOnce('open' as never)
+        const { result } = setup()
+        const { openDetails, items } = result.current
+        await act(async () => openDetails(items[0]!))
+        expect(trackEvent).not.toHaveBeenCalledWith(
+            DiscoverEvent.DetailsCloseTap,
+            expect.anything(),
+        )
     })
 })

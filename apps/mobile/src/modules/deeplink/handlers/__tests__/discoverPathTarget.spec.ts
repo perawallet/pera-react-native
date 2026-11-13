@@ -41,6 +41,13 @@ describe('discoverPathTarget', () => {
         })
     })
 
+    it.each(['/main/browser', 'main/browser?x=1'])(
+        'maps %s to the native dApp directory',
+        path => {
+            expect(discoverPathTarget(path)).toEqual({ kind: 'dapps' })
+        },
+    )
+
     it.each(['main/game', 'news/12', '/test'])(
         'marks %s unported, keeping the original path',
         path => {

@@ -20,6 +20,9 @@ import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore
 import type { DirectoryDapp } from '../../utils/dappDirectory'
 import { dappHostOf, normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
+/** What the sheet resolves with; a pan-down or backdrop close resolves `undefined`. */
+export type DappDetailsSheetResult = 'open'
+
 export type UseDappDetailsSheetParams = {
     item: DirectoryDapp
     chainId: Nullable<ChainId>
@@ -36,7 +39,7 @@ export const useDappDetailsSheet = ({
     item,
     chainId,
 }: UseDappDetailsSheetParams): UseDappDetailsSheetResult => {
-    const { dismiss } = useBottomSheetResult()
+    const { resolve } = useBottomSheetResult<DappDetailsSheetResult>()
     const { openDapp } = useOpenDapp()
     const toggle = useToggleDiscoverFavorite()
     // Read live, so the star follows a toggle made while the sheet is open.
@@ -51,9 +54,9 @@ export const useDappDetailsSheet = ({
 
     // The dApp browser opens over the stack; the sheet would sit on top of it.
     const open = useCallback(() => {
-        dismiss()
+        resolve('open')
         openDapp(item.dapp, chainId)
-    }, [dismiss, openDapp, item.dapp, chainId])
+    }, [resolve, openDapp, item.dapp, chainId])
 
     return {
         isFavorite,

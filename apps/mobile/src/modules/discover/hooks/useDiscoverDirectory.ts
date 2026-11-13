@@ -27,6 +27,7 @@ export type UseDiscoverDirectoryResult = {
     verifiedUrls: ReadonlySet<string>
     isLoading: boolean
     isError: boolean
+    isFetching: boolean
     refetch: () => Promise<unknown>
 }
 
@@ -48,6 +49,7 @@ export const useDiscoverDirectory = ({
         verifiedUrls,
         isLoading: query.isLoading,
         isError: query.isError,
-        refetch: () => query.refetch(),
+        isFetching: query.isFetching,
+        refetch: query.refetch,
     }
 }
