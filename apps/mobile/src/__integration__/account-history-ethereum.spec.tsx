@@ -223,6 +223,37 @@ describe('Flow: History on an Ethereum account', () => {
         ).toBeNull()
     })
 
+    it('Given a receive of more than a million, when History lists it, then its amount reads in millions', async () => {
+        server.use(
+            ...peraEvmHistoryHandlers({
+                history: {
+                    [ETH_ADDRESS]: [
+                        [
+                            evmHistoryItem({
+                                hash: hashOf(4),
+                                block_time: '2026-01-04T00:00:00Z',
+                                from: COUNTERPARTY,
+                                to: ETH_ADDRESS,
+                                value: '2500000000000000000000000',
+                            }),
+                        ],
+                    ],
+                },
+            }),
+        )
+
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+
+        await waitFor(
+            () =>
+                expect(
+                    screen.getByTestId(`transaction_row_${hashOf(4)}`)
+                        .textContent,
+                ).toContain('common.amount_abbreviation.million'),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+    })
+
     it('Given a second page, when the list reaches its end, then the older page follows', async () => {
         serveTwoPages()
         const queryClient = createTestQueryClient()

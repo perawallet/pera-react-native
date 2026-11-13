@@ -25,6 +25,9 @@ import {
 } from './useTransactionListItem'
 import type { AmountDisplay } from './amounts'
 
+// A token's own unit has no length cap, so the amount column is capped and cuts off rather than squeezing the title.
+const AMOUNT_MAX_WIDTH_RATIO = 0.5
+
 export type TransactionListItemProps = UseTransactionListItemParams & {
     /** Labels the row with its network, on a list that mixes them. */
     networkChainId?: ChainId
@@ -68,6 +71,7 @@ const TransactionListItemView = ({
                     ? 'top'
                     : 'center'
             }
+            rightMaxWidthRatio={AMOUNT_MAX_WIDTH_RATIO}
             onPress={handlePress}
             onLongPress={handleLongPress}
             left={
@@ -86,6 +90,7 @@ const TransactionListItemView = ({
                             currency={amount.currency}
                             assetId={amount.assetId}
                             precision='compact'
+                            abbreviateFrom='million'
                             assetDecimals={amount.decimals}
                             prefix={amount.prefix}
                             showSymbol
