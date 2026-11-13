@@ -279,9 +279,11 @@ node that misreports balances and nonces or censors broadcasts. `createEvmClient
 order: reads through `fallback()`, a broadcast moving on only after a failure that is not a node
 reply (a later node's refusal then reads as an unknown outcome, since the earlier one may have
 taken it). The first URL keeps the chain's ceilings less a short reserve for the fallback, so a slow
-but healthy main node is not cut off. A later URL gets reads in JSON-RPC batches of at most 10,
-since free public nodes refuse a larger batch whole, so a fallback must take a batch of 10. The app lays a developer's per-network endpoint override from
-the network store over that record, replacing the list, and only over test networks the chain's
+but healthy main node is not cut off. A later URL gets reads in JSON-RPC batches of at most 10, because free public nodes refuse a
+larger batch whole. A fallback must therefore take a batch of 10, and the burst of them that a
+failed-over tick sends at once, which free nodes also rate-limit per batch item. The app lays a
+developer's per-network endpoint override from the network store over that record, replacing the
+list, and only over test networks the chain's
 config already carries: the stored override is unauthenticated, so a mainnet one is ignored.
 `tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed
 and requires production mainnet URLs to be https, on any domain. Only hosts under
