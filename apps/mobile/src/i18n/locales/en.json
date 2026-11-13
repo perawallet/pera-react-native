@@ -97,6 +97,11 @@
             "empty_title": "No favorites yet",
             "empty_body": "Start exploring the dApps",
             "all_folders_title": "All Folders"
+        },
+        "add_to_folder": {
+            "title": "Add to Folder",
+            "new_folder": "New folder",
+            "done": "Done"
         }
     },
     "account_menu": {

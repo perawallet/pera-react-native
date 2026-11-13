@@ -97,6 +97,11 @@
             "empty_title": "Henüz favorin yok",
             "empty_body": "dApp'leri keşfetmeye başla",
             "all_folders_title": "Tüm klasörler"
+        },
+        "add_to_folder": {
+            "title": "Klasöre ekle",
+            "new_folder": "Yeni klasör",
+            "done": "Tamam"
         }
     },
     "account_menu": {

@@ -97,6 +97,11 @@
             "empty_title": "Nenhum favorito ainda",
             "empty_body": "Comece a explorar os dApps",
             "all_folders_title": "Todas as pastas"
+        },
+        "add_to_folder": {
+            "title": "Adicionar a uma pasta",
+            "new_folder": "Nova pasta",
+            "done": "Concluído"
         }
     },
     "account_menu": {

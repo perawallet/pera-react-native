@@ -29,6 +29,8 @@ export enum DiscoverEvent {
     DappDetailsButtonTap = 'discover_dapp_details_button_tap',
     DetailsCloseTap = 'discover_details_close_tap', // sic, the web app's name
     FolderCreate = 'discover_folder_create',
+    FolderDappAdd = 'discover_folder_dapp_add',
+    FolderDappRemove = 'discover_folder_dapp_remove',
 }
 
 type DappPayload = {

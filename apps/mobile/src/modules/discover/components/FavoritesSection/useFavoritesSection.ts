@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { DiscoverEvent, trackEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { FolderNameSheet, type FolderNameSheetResult } from '../FolderNameSheet'
+import { useCreateFolder } from '../../hooks/useCreateFolder'
 import { useFolderRows, type FolderRowItem } from '../../hooks/useFolderRows'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 
@@ -38,21 +36,14 @@ export type UseFavoritesSectionResult = {
 
 export const useFavoritesSection = (): UseFavoritesSectionResult => {
     const navigation = useAppNavigation()
-    const { request } = useBottomSheet()
     const favoriteCount = useDiscoverFavoritesStore(s => s.favoriteOrder.length)
-    const createFolder = useDiscoverFavoritesStore(s => s.createFolder)
 
     const rows = useFolderRows()
 
+    const createFolder = useCreateFolder()
     const openNewFolder = useCallback(async () => {
-        const name = await request<FolderNameSheetResult>({
-            contents: <FolderNameSheet mode='create' />,
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-        if (name === undefined) return
-        createFolder(name)
-        trackEvent(DiscoverEvent.FolderCreate)
-    }, [request, createFolder])
+        await createFolder()
+    }, [createFolder])
 
     const openAllFavorites = useCallback(() => {
         navigation.navigate('DiscoverAllFavorites')
