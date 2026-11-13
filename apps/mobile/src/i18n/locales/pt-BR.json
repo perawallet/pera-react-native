@@ -57,6 +57,12 @@
             "no_results": "Nenhum resultado",
             "assets_unavailable": "A pesquisa de ativos está indisponível no momento",
             "dapps_unavailable": "A pesquisa de dApps está indisponível no momento"
+        },
+        "news": {
+            "title": "Notícias",
+            "read": "Ler",
+            "load_failure": "Falha ao carregar os detalhes da notícia.",
+            "list_failure": "Falha ao carregar as notícias"
         }
     },
     "account_menu": {

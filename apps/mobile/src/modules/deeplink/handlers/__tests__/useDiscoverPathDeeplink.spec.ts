@@ -67,6 +67,24 @@ describe('useDiscoverPathDeeplink', () => {
         )
     })
 
+    it('opens the native news list for news', () => {
+        expect(run('news')).toBe(true)
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+            false,
+            'DiscoverNews',
+            undefined,
+        )
+    })
+
+    it('opens the native news detail for news/<id>', () => {
+        expect(run('news/12?utm=x')).toBe(true)
+        expect(mocks.navigateToScreen).toHaveBeenCalledWith(
+            false,
+            'DiscoverNewsDetail',
+            { newsId: '12' },
+        )
+    })
+
     it('opens native asset details for a token-detail path', () => {
         expect(run('token-detail/31566704')).toBe(true)
         expect(mocks.navigateToScreen).toHaveBeenCalledWith(false, 'TabBar', {

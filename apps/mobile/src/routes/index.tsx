@@ -20,6 +20,8 @@ import { StakingScreen } from '@modules/staking'
 import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import {
     DiscoverDetailScreen,
+    DiscoverNewsDetailScreen,
+    DiscoverNewsScreen,
     DiscoverSearchScreen,
 } from '@modules/discover/routes'
 import { withAgeGate } from '@components/AgeGated'
@@ -258,6 +260,34 @@ export const MainRoutes = () => {
                                     name='DiscoverSearch'
                                     layout={safeAreaLayout}
                                     component={DiscoverSearchScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverNews'
+                                    options={headeredScreen(
+                                        'discover.news.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverNewsScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverNewsDetail'
+                                    options={headeredScreen(
+                                        'discover.news.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverNewsDetailScreen}
                                 />
                             )}
                         <RootStack.Screen

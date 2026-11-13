@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { parseArticleHtml } from '../articleHtml'
+import { parseArticleHtml, toArticleLinkUrl } from '../articleHtml'
 
 type Marks = Partial<Record<'bold' | 'italic' | 'code', boolean>>
 const text = (value: string, marks: Marks = {}) => ({
@@ -152,4 +152,17 @@ describe('parseArticleHtml', () => {
         expect(parseArticleHtml('  \n ')).toEqual([])
         expect(parseArticleHtml('<p> </p>')).toEqual([])
     })
+})
+
+describe('toArticleLinkUrl', () => {
+    it('keeps an explicit https link', () => {
+        expect(toArticleLinkUrl('https://x.io/a')).toBe('https://x.io/a')
+    })
+
+    it.each(['javascript:alert(1)', 'http://x.io', '/relative', 'x.io', ''])(
+        'refuses %s',
+        href => {
+            expect(toArticleLinkUrl(href)).toBeNull()
+        },
+    )
 })

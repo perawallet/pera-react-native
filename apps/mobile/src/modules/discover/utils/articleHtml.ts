@@ -11,6 +11,8 @@
  */
 
 import { parseDocument } from 'htmlparser2'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { toValidatedBrowserUrl } from '@modules/webview'
 
 export type ArticleText = {
     type: 'text'
@@ -302,3 +304,11 @@ const collectBlocks = (nodes: readonly ChildNode[]): ArticleBlock[] => {
  */
 export const parseArticleHtml = (html: string): ArticleBlock[] =>
     collectBlocks(parseDocument(html).children)
+
+/**
+ * The URL an article link opens, or null when it should stay plain text: only
+ * an explicit https link that passes the in-app browser's own check. A bare or
+ * relative href would otherwise be completed to https by that check.
+ */
+export const toArticleLinkUrl = (href: string): Nullable<string> =>
+    /^https:\/\//i.test(href.trim()) ? toValidatedBrowserUrl(href) : null
