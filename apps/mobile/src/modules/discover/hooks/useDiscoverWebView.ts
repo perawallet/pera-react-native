@@ -10,37 +10,39 @@
  limitations under the License
  */
 
-import { config } from "@perawallet/wallet-core-config";
-import { logger } from "@perawallet/wallet-core-shared";
-import { useNeedsMigration } from "@perawallet/wallet-core-migrate";
-import { isSafeRelativePath } from "@modules/webview";
+import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { isSafeRelativePath } from '@modules/webview'
 
 const joinDiscoverPath = (baseUrl: string, path?: string): string => {
-  if (!path) return baseUrl;
-  if (!isSafeRelativePath(path)) {
-    logger.warn("Discover webview: ignoring unsafe path param", { path });
-    return baseUrl;
-  }
-  const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${normalizedBase}${normalizedPath}`;
-};
+    if (!path) return baseUrl
+    if (!isSafeRelativePath(path)) {
+        logger.warn('Discover webview: ignoring unsafe path param', { path })
+        return baseUrl
+    }
+    const normalizedBase = baseUrl.endsWith('/')
+        ? baseUrl.slice(0, -1)
+        : baseUrl
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    return `${normalizedBase}${normalizedPath}`
+}
 
 export type UseDiscoverWebViewResult = {
-  url: string;
-  isReady: boolean;
-};
+    url: string
+    isReady: boolean
+}
 
 export const useDiscoverWebView = (path?: string): UseDiscoverWebViewResult => {
-  const { isChecking, needsMigration } = useNeedsMigration();
+    const { isChecking, needsMigration } = useNeedsMigration()
 
-  // hold the Discover WebView until the migration gate settles.
-  // The Discover web app reads the device id once on load; loading it before
-  // the migrated device id is written would fetch favorites with no id and
-  // never retry. Gating on migration completion (not device-id presence)
-  // avoids blocking users who legitimately have no id.
-  const isReady = !(isChecking || needsMigration);
-  const url = joinDiscoverPath(config.discoverBaseUrl, path);
+    // hold the Discover WebView until the migration gate settles.
+    // The Discover web app reads the device id once on load; loading it before
+    // the migrated device id is written would fetch favorites with no id and
+    // never retry. Gating on migration completion (not device-id presence)
+    // avoids blocking users who legitimately have no id.
+    const isReady = !(isChecking || needsMigration)
+    const url = joinDiscoverPath(config.discoverBaseUrl, path)
 
-  return { url, isReady };
-};
+    return { url, isReady }
+}

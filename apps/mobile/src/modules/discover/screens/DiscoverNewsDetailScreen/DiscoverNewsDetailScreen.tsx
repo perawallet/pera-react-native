@@ -11,85 +11,100 @@
  */
 
 import {
-  PWButton,
-  PWImage,
-  PWScreen,
-  PWScrollView,
-  PWSkeleton,
-  PWText,
-  PWView,
-} from "@components/core";
-import { EmptyView } from "@components/EmptyView";
-import { useLanguage } from "@hooks/useLanguage";
-import { ArticleContent } from "../../components/ArticleContent";
-import { useDiscoverNewsDetailScreen } from "./useDiscoverNewsDetailScreen";
-import { useStyles } from "./styles";
+    PWButton,
+    PWImage,
+    PWScreen,
+    PWScrollView,
+    PWSkeleton,
+    PWText,
+    PWView,
+} from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
+import { ArticleContent } from '../../components/ArticleContent'
+import { useDiscoverNewsDetailScreen } from './useDiscoverNewsDetailScreen'
+import { useStyles } from './styles'
 
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: date placeholder width, as the web skeleton
-const DATE_SKELETON_WIDTH = 102;
+const DATE_SKELETON_WIDTH = 102
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: title placeholder height, as the web skeleton
-const TITLE_SKELETON_HEIGHT = 60;
+const TITLE_SKELETON_HEIGHT = 60
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: banner placeholder height, as the web skeleton
-const BANNER_SKELETON_HEIGHT = 180;
+const BANNER_SKELETON_HEIGHT = 180
 
 export const DiscoverNewsDetailScreen = () => {
-  const styles = useStyles();
-  const { t } = useLanguage();
-  const screen = useDiscoverNewsDetailScreen();
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const screen = useDiscoverNewsDetailScreen()
 
-  const renderBody = () => {
-    if (screen.isLoading) {
-      return (
-        <PWView style={styles.content} testID="discover_news_detail_loading">
-          <PWSkeleton
-            width={DATE_SKELETON_WIDTH}
-            height={DATE_SKELETON_WIDTH / 4}
-          />
-          <PWSkeleton height={TITLE_SKELETON_HEIGHT} />
-          <PWSkeleton height={BANNER_SKELETON_HEIGHT} />
-        </PWView>
-      );
+    const renderBody = () => {
+        if (screen.isLoading) {
+            return (
+                <PWView
+                    style={styles.content}
+                    testID='discover_news_detail_loading'
+                >
+                    <PWSkeleton
+                        width={DATE_SKELETON_WIDTH}
+                        height={DATE_SKELETON_WIDTH / 4}
+                    />
+                    <PWSkeleton height={TITLE_SKELETON_HEIGHT} />
+                    <PWSkeleton height={BANNER_SKELETON_HEIGHT} />
+                </PWView>
+            )
+        }
+        if (screen.isError) {
+            return (
+                <EmptyView
+                    body={t('discover.news.load_failure')}
+                    style={styles.error}
+                    testID='discover_news_detail_error'
+                    button={
+                        <PWButton
+                            variant='secondary'
+                            title={t('common.retry.label')}
+                            onPress={screen.retry}
+                            testID='discover_news_detail_retry'
+                        />
+                    }
+                />
+            )
+        }
+        return (
+            <PWView style={styles.content}>
+                <PWText
+                    variant='captionMedium'
+                    style={styles.date}
+                >
+                    {screen.dateDisplay}
+                </PWText>
+                <PWText
+                    variant='h2'
+                    testID='discover_news_detail_title'
+                >
+                    {screen.title}
+                </PWText>
+                {screen.banner ? (
+                    <PWImage
+                        source={{ uri: screen.banner }}
+                        style={styles.banner}
+                    />
+                ) : null}
+                <ArticleContent
+                    blocks={screen.blocks}
+                    onLinkPress={screen.openLink}
+                    testID='discover_news_article'
+                />
+            </PWView>
+        )
     }
-    if (screen.isError) {
-      return (
-        <EmptyView
-          body={t("discover.news.load_failure")}
-          style={styles.error}
-          testID="discover_news_detail_error"
-          button={
-            <PWButton
-              variant="secondary"
-              title={t("common.retry.label")}
-              onPress={screen.retry}
-              testID="discover_news_detail_retry"
-            />
-          }
-        />
-      );
-    }
+
     return (
-      <PWView style={styles.content}>
-        <PWText variant="captionMedium" style={styles.date}>
-          {screen.dateDisplay}
-        </PWText>
-        <PWText variant="h2" testID="discover_news_detail_title">
-          {screen.title}
-        </PWText>
-        {screen.banner ? (
-          <PWImage source={{ uri: screen.banner }} style={styles.banner} />
-        ) : null}
-        <ArticleContent
-          blocks={screen.blocks}
-          onLinkPress={screen.openLink}
-          testID="discover_news_article"
-        />
-      </PWView>
-    );
-  };
-
-  return (
-    <PWScreen scroll="never" testID="discover_news_detail_screen">
-      <PWScrollView>{renderBody()}</PWScrollView>
-    </PWScreen>
-  );
-};
+        <PWScreen
+            scroll='never'
+            testID='discover_news_detail_screen'
+        >
+            <PWScrollView>{renderBody()}</PWScrollView>
+        </PWScreen>
+    )
+}

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { ChainId } from "@perawallet/wallet-core-chain-contract";
-import { useCapableChainIds } from "@hooks/useCapableChainIds";
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
 
 export const useDiscoverChainIds = (): ChainId[] =>
-  useCapableChainIds("discover");
+    useCapableChainIds('discover')

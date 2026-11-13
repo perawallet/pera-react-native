@@ -10,35 +10,35 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getChainDescriptor } from "@perawallet/wallet-core-chain-shared";
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
-  registerEthereumChain,
-  restoreAlgorandOnlyChains,
-} from "@test-utils/chain-fixtures";
-import { discoverCaip2Of } from "../discoverCaip2";
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
+import { discoverCaip2Of } from '../discoverCaip2'
 
-describe("discoverCaip2Of", () => {
-  beforeEach(() => {
-    registerEthereumChain();
-  });
-  afterEach(() => {
-    restoreAlgorandOnlyChains();
-  });
+describe('discoverCaip2Of', () => {
+    beforeEach(() => {
+        registerEthereumChain()
+    })
+    afterEach(() => {
+        restoreAlgorandOnlyChains()
+    })
 
-  it("uses the selected Algorand network", () => {
-    const testnet = getChainDescriptor("algorand").networks.find(
-      (n) => n.id === "testnet",
-    );
-    expect(testnet).toBeDefined();
-    expect(discoverCaip2Of("algorand", "testnet")).toBe(testnet?.caip2);
-  });
+    it('uses the selected Algorand network', () => {
+        const testnet = getChainDescriptor('algorand').networks.find(
+            n => n.id === 'testnet',
+        )
+        expect(testnet).toBeDefined()
+        expect(discoverCaip2Of('algorand', 'testnet')).toBe(testnet?.caip2)
+    })
 
-  it("always sends the mainnet CAIP-2 for EVM, whatever network is selected", () => {
-    expect(discoverCaip2Of("ethereum", "sepolia")).toBe("eip155:1");
-  });
+    it('always sends the mainnet CAIP-2 for EVM, whatever network is selected', () => {
+        expect(discoverCaip2Of('ethereum', 'sepolia')).toBe('eip155:1')
+    })
 
-  it("is null for an Algorand network the descriptor does not list", () => {
-    expect(discoverCaip2Of("algorand", "nonsense")).toBeNull();
-  });
-});
+    it('is null for an Algorand network the descriptor does not list', () => {
+        expect(discoverCaip2Of('algorand', 'nonsense')).toBeNull()
+    })
+})

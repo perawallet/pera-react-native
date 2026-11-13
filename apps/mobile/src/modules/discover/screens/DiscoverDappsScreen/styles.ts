@@ -10,41 +10,41 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  header: {
-    gap: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-  },
-  listHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sortTrigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xxs,
-  },
-  sortLabel: {
-    color: theme.colors.linkPrimary,
-  },
-  chips: {
-    paddingVertical: theme.spacing.xs,
-  },
-  empty: {
-    paddingVertical: theme.spacing.lg,
-  },
-  apply: {
-    alignItems: "center",
-    gap: theme.spacing.md,
-    padding: theme.spacing.lg,
-    marginVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.layerGrayLighter,
-  },
-  applyPrompt: {
-    textAlign: "center",
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    header: {
+        gap: theme.spacing.md,
+        paddingTop: theme.spacing.md,
+    },
+    listHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    sortTrigger: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xxs,
+    },
+    sortLabel: {
+        color: theme.colors.linkPrimary,
+    },
+    chips: {
+        paddingVertical: theme.spacing.xs,
+    },
+    empty: {
+        paddingVertical: theme.spacing.lg,
+    },
+    apply: {
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        padding: theme.spacing.lg,
+        marginVertical: theme.spacing.lg,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    applyPrompt: {
+        textAlign: 'center',
+    },
+}))

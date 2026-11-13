@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { DiscoverTabScreen } from "./DiscoverTabScreen";
+export { DiscoverTabScreen } from './DiscoverTabScreen'

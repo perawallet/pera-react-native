@@ -10,27 +10,27 @@
  limitations under the License
  */
 
-import type { PeraProject } from "@perawallet/wallet-core-projects";
-import type { DiscoverDapp } from "../types";
-import { toDiscoverDapp, uniqueDappsByUrl } from "./toDiscoverDapp";
+import type { PeraProject } from '@perawallet/wallet-core-projects'
+import type { DiscoverDapp } from '../types'
+import { toDiscoverDapp, uniqueDappsByUrl } from './toDiscoverDapp'
 
 const matches = (project: PeraProject, needle: string): boolean =>
-  (project.name ?? "").toLowerCase().includes(needle) ||
-  (project.url ?? "").toLowerCase().includes(needle);
+    (project.name ?? '').toLowerCase().includes(needle) ||
+    (project.url ?? '').toLowerCase().includes(needle)
 
 /** Case-insensitive substring match on name or url, most popular first. */
 export const filterDappsByQuery = (
-  projects: readonly PeraProject[],
-  query: string,
+    projects: readonly PeraProject[],
+    query: string,
 ): DiscoverDapp[] => {
-  const needle = query.trim().toLowerCase();
-  if (needle === "") return [];
-  const dapps = projects
-    .filter((project) => matches(project, needle))
-    .sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
-    .flatMap((project) => {
-      const dapp = toDiscoverDapp(project);
-      return dapp === null ? [] : [dapp];
-    });
-  return uniqueDappsByUrl(dapps);
-};
+    const needle = query.trim().toLowerCase()
+    if (needle === '') return []
+    const dapps = projects
+        .filter(project => matches(project, needle))
+        .sort((a, b) => (b.popularityScore ?? 0) - (a.popularityScore ?? 0))
+        .flatMap(project => {
+            const dapp = toDiscoverDapp(project)
+            return dapp === null ? [] : [dapp]
+        })
+    return uniqueDappsByUrl(dapps)
+}

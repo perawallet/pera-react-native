@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { FavoritesSection } from "./FavoritesSection";
+export { FavoritesSection } from './FavoritesSection'

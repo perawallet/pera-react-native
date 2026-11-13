@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { NewsCard, type NewsCardProps } from "./NewsCard";
+export { NewsCard, type NewsCardProps } from './NewsCard'

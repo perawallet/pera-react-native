@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { useIsNativeDiscover } from "@hooks/useIsNativeDiscover";
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 
 export type UseDiscoverTabScreenResult = {
-  /** The build registers more than one chain (`CHAINS`), so Discover is native. */
-  isNative: boolean;
-};
+    /** The build registers more than one chain (`CHAINS`), so Discover is native. */
+    isNative: boolean
+}
 
 export const useDiscoverTabScreen = (): UseDiscoverTabScreenResult => {
-  return { isNative: useIsNativeDiscover() };
-};
+    return { isNative: useIsNativeDiscover() }
+}

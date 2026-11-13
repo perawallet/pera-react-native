@@ -10,52 +10,52 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  container: {
-    gap: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
-  },
-  banner: {
-    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: banner height, as the web app's dApp modal
-    height: 140,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.layerGray,
-  },
-  logo: {
-    width: theme.spacing["4xl"],
-    height: theme.spacing["4xl"],
-    borderRadius: theme.borderRadius.full,
-    marginTop: -theme.spacing["3xl"],
-    marginLeft: theme.spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.layerGrayLighter,
-    borderWidth: theme.spacing.xxs,
-    borderColor: theme.colors.background,
-    overflow: "hidden",
-  },
-  logoImage: {
-    width: "100%",
-    height: "100%",
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xs,
-  },
-  title: {
-    flexShrink: 1,
-  },
-  star: {
-    marginLeft: "auto",
-    padding: theme.spacing.xs,
-  },
-  section: {
-    gap: theme.spacing.xxs,
-  },
-  label: {
-    color: theme.colors.textGray,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
+    },
+    banner: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: banner height, as the web app's dApp modal
+        height: 140,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.layerGray,
+    },
+    logo: {
+        width: theme.spacing['4xl'],
+        height: theme.spacing['4xl'],
+        borderRadius: theme.borderRadius.full,
+        marginTop: -theme.spacing['3xl'],
+        marginLeft: theme.spacing.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderWidth: theme.spacing.xxs,
+        borderColor: theme.colors.background,
+        overflow: 'hidden',
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    title: {
+        flexShrink: 1,
+    },
+    star: {
+        marginLeft: 'auto',
+        padding: theme.spacing.xs,
+    },
+    section: {
+        gap: theme.spacing.xxs,
+    },
+    label: {
+        color: theme.colors.textGray,
+    },
+}))

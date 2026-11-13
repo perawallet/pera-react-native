@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-  },
-  heading: {
-    flexShrink: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-  },
-  title: {
-    flexShrink: 1,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    heading: {
+        flexShrink: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    title: {
+        flexShrink: 1,
+    },
+}))

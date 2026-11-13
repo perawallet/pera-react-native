@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  inputContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-  },
-  buttonContainer: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    inputContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+    },
+    buttonContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+    },
+}))

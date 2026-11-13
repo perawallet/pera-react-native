@@ -10,38 +10,38 @@
  limitations under the License
  */
 
-import { useCallback, useState } from "react";
-import { useBottomSheetResult } from "@modules/bottom-sheet";
+import { useCallback, useState } from 'react'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import {
-  FOLDER_NAME_MAX_LENGTH,
-  normalizeFolderName,
-} from "../../store/useDiscoverFavoritesStore";
+    FOLDER_NAME_MAX_LENGTH,
+    normalizeFolderName,
+} from '../../store/useDiscoverFavoritesStore'
 
 /** What the sheet resolves with: the trimmed folder name. A pan-down close resolves `undefined`. */
-export type FolderNameSheetResult = string;
+export type FolderNameSheetResult = string
 
-export type UseFolderNameSheetParams = { initialName?: string };
+export type UseFolderNameSheetParams = { initialName?: string }
 
 export type UseFolderNameSheetResult = {
-  name: string;
-  setName: (value: string) => void;
-  canSubmit: boolean;
-  submit: () => void;
-};
+    name: string
+    setName: (value: string) => void
+    canSubmit: boolean
+    submit: () => void
+}
 
 export const useFolderNameSheet = ({
-  initialName,
+    initialName,
 }: UseFolderNameSheetParams): UseFolderNameSheetResult => {
-  const { resolve } = useBottomSheetResult<FolderNameSheetResult>();
-  const [name, setRawName] = useState(initialName ?? "");
-  const normalized = normalizeFolderName(name);
+    const { resolve } = useBottomSheetResult<FolderNameSheetResult>()
+    const [name, setRawName] = useState(initialName ?? '')
+    const normalized = normalizeFolderName(name)
 
-  const setName = useCallback((value: string) => {
-    setRawName(value.slice(0, FOLDER_NAME_MAX_LENGTH));
-  }, []);
-  const submit = useCallback(() => {
-    if (normalized !== null) resolve(normalized);
-  }, [normalized, resolve]);
+    const setName = useCallback((value: string) => {
+        setRawName(value.slice(0, FOLDER_NAME_MAX_LENGTH))
+    }, [])
+    const submit = useCallback(() => {
+        if (normalized !== null) resolve(normalized)
+    }, [normalized, resolve])
 
-  return { name, setName, canSubmit: normalized !== null, submit };
-};
+    return { name, setName, canSubmit: normalized !== null, submit }
+}

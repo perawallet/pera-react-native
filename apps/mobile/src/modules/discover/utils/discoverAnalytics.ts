@@ -10,22 +10,22 @@
  limitations under the License
  */
 
-import type { ChainId } from "@perawallet/wallet-core-chain-contract";
-import type { Nullable } from "@perawallet/wallet-core-shared";
-import { AnalyticsMetadataKey as Key } from "@analytics";
-import type { DiscoverDapp } from "../types";
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { AnalyticsMetadataKey as Key } from '@analytics'
+import type { DiscoverDapp } from '../types'
 
 export type DappEventPayload = {
-  [Key.DappName]: string;
-  [Key.DappUrl]: string;
-  [Key.ChainId]?: ChainId;
-};
+    [Key.DappName]: string
+    [Key.DappUrl]: string
+    [Key.ChainId]?: ChainId
+}
 
 /** Origin and path only: a typed url's query string and hash may carry user text or secrets. */
 export const stripUrlQueryAndHash = (url: string): string => {
-  const end = url.search(/[?#]/);
-  return end === -1 ? url : url.slice(0, end);
-};
+    const end = url.search(/[?#]/)
+    return end === -1 ? url : url.slice(0, end)
+}
 
 /**
  * Every dApp event's payload. The url is always cut to origin and path:
@@ -33,10 +33,10 @@ export const stripUrlQueryAndHash = (url: string): string => {
  * favorite events through the same path.
  */
 export const dappEventPayload = (
-  dapp: DiscoverDapp,
-  chain: Nullable<ChainId>,
+    dapp: DiscoverDapp,
+    chain: Nullable<ChainId>,
 ): DappEventPayload => ({
-  [Key.DappName]: dapp.name,
-  [Key.DappUrl]: stripUrlQueryAndHash(dapp.url),
-  ...(chain === null ? {} : { [Key.ChainId]: chain }),
-});
+    [Key.DappName]: dapp.name,
+    [Key.DappUrl]: stripUrlQueryAndHash(dapp.url),
+    ...(chain === null ? {} : { [Key.ChainId]: chain }),
+})

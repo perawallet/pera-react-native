@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { FolderNameSheet, type FolderNameSheetProps } from "./FolderNameSheet";
-export type { FolderNameSheetResult } from "./useFolderNameSheet";
+export { FolderNameSheet, type FolderNameSheetProps } from './FolderNameSheet'
+export type { FolderNameSheetResult } from './useFolderNameSheet'

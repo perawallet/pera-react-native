@@ -10,27 +10,27 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from "vitest";
-import { getActiveLocale } from "@perawallet/wallet-core-shared";
-import { formatNewsDate } from "../formatNewsDate";
+import { describe, expect, it, vi } from 'vitest'
+import { getActiveLocale } from '@perawallet/wallet-core-shared'
+import { formatNewsDate } from '../formatNewsDate'
 
-describe("formatNewsDate", () => {
-  it("formats day, short month and year in the active locale order", () => {
-    vi.mocked(getActiveLocale).mockReturnValue("en-GB");
-    expect(formatNewsDate(new Date("2026-11-09T10:00:00Z"))).toBe(
-      "09 Nov 2026",
-    );
-  });
+describe('formatNewsDate', () => {
+    it('formats day, short month and year in the active locale order', () => {
+        vi.mocked(getActiveLocale).mockReturnValue('en-GB')
+        expect(formatNewsDate(new Date('2026-11-09T10:00:00Z'))).toBe(
+            '09 Nov 2026',
+        )
+    })
 
-  it("returns an empty string for an invalid date instead of throwing", () => {
-    vi.mocked(getActiveLocale).mockReturnValue("en-GB");
-    expect(formatNewsDate(new Date("not a date"))).toBe("");
-  });
+    it('returns an empty string for an invalid date instead of throwing', () => {
+        vi.mocked(getActiveLocale).mockReturnValue('en-GB')
+        expect(formatNewsDate(new Date('not a date'))).toBe('')
+    })
 
-  it("orders the parts per locale", () => {
-    vi.mocked(getActiveLocale).mockReturnValue("en-US");
-    expect(formatNewsDate(new Date("2026-11-09T10:00:00Z"))).toBe(
-      "Nov 09, 2026",
-    );
-  });
-});
+    it('orders the parts per locale', () => {
+        vi.mocked(getActiveLocale).mockReturnValue('en-US')
+        expect(formatNewsDate(new Date('2026-11-09T10:00:00Z'))).toBe(
+            'Nov 09, 2026',
+        )
+    })
+})

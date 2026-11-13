@@ -10,32 +10,32 @@
  limitations under the License
  */
 
-import { useCallback } from "react";
+import { useCallback } from 'react'
 import {
-  useNavigation,
-  useRoute,
-  type RouteProp,
-} from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-  useDiscoverWebView,
-  type UseDiscoverWebViewResult,
-} from "@modules/discover/hooks";
-import type { RootStackParamList } from "@routes/types";
+    useDiscoverWebView,
+    type UseDiscoverWebViewResult,
+} from '@modules/discover/hooks'
+import type { RootStackParamList } from '@routes/types'
 
 export type UseDiscoverDetailScreenResult = UseDiscoverWebViewResult & {
-  handleBack: () => void;
-};
+    handleBack: () => void
+}
 
 export const useDiscoverDetailScreen = (): UseDiscoverDetailScreenResult => {
-  const route = useRoute<RouteProp<RootStackParamList, "DiscoverDetail">>();
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { url, isReady } = useDiscoverWebView(route.params?.path);
+    const route = useRoute<RouteProp<RootStackParamList, 'DiscoverDetail'>>()
+    const navigation =
+        useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+    const { url, isReady } = useDiscoverWebView(route.params?.path)
 
-  const handleBack = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
+    const handleBack = useCallback(() => {
+        navigation.goBack()
+    }, [navigation])
 
-  return { url, isReady, handleBack };
-};
+    return { url, isReady, handleBack }
+}

@@ -10,91 +10,91 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import { useRoute } from "@react-navigation/native";
-import { useNeedsMigration } from "@perawallet/wallet-core-migrate";
-import { isSafeRelativePath } from "@modules/webview";
-import { useDiscoverDetailScreen } from "../useDiscoverDetailScreen";
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useRoute } from '@react-navigation/native'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { isSafeRelativePath } from '@modules/webview'
+import { useDiscoverDetailScreen } from '../useDiscoverDetailScreen'
 
-const goBack = vi.fn();
+const goBack = vi.fn()
 
-vi.mock("@perawallet/wallet-core-config", () => ({
-  config: { discoverBaseUrl: "https://discover.example/" },
-}));
-vi.mock("@react-navigation/native", () => ({
-  useRoute: vi.fn(() => ({ params: {} })),
-  useNavigation: vi.fn(() => ({ goBack })),
-}));
-vi.mock("@perawallet/wallet-core-migrate", () => ({
-  useNeedsMigration: vi.fn(() => ({
-    isChecking: false,
-    needsMigration: false,
-  })),
-}));
-vi.mock("@modules/webview/hooks/handlers", () => ({
-  isSafeRelativePath: vi.fn(() => true),
-}));
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: { discoverBaseUrl: 'https://discover.example/' },
+}))
+vi.mock('@react-navigation/native', () => ({
+    useRoute: vi.fn(() => ({ params: {} })),
+    useNavigation: vi.fn(() => ({ goBack })),
+}))
+vi.mock('@perawallet/wallet-core-migrate', () => ({
+    useNeedsMigration: vi.fn(() => ({
+        isChecking: false,
+        needsMigration: false,
+    })),
+}))
+vi.mock('@modules/webview/hooks/handlers', () => ({
+    isSafeRelativePath: vi.fn(() => true),
+}))
 // Stands in for the real network store, which needs the shared store registry this spec mocks away.
-vi.mock("@perawallet/wallet-core-chain-shared", () => ({
-  getSelectedScope: (chainId: string) => ({ chainId, networkId: "mainnet" }),
-  useSelectedScope: (chainId: string) => ({ chainId, networkId: "mainnet" }),
-}));
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
+}))
 
 // These hooks reach the persisted favorites store and analytics, which need the
 // shared store helpers this spec mocks away; the screen hook never calls them.
-vi.mock("../../../hooks/useOpenDapp", () => ({}));
-vi.mock("../../../hooks/useToggleDiscoverFavorite", () => ({}));
-vi.mock("../../../hooks/useTopDapps", () => ({}));
-vi.mock("../../../hooks/useDiscoverDirectory", () => ({}));
+vi.mock('../../../hooks/useOpenDapp', () => ({}))
+vi.mock('../../../hooks/useToggleDiscoverFavorite', () => ({}))
+vi.mock('../../../hooks/useTopDapps', () => ({}))
+vi.mock('../../../hooks/useDiscoverDirectory', () => ({}))
 
-vi.mock("@perawallet/wallet-core-shared", async () => ({
-  ...(await vi.importActual<typeof import("@packages/shared/src/errors/base")>(
-    "@packages/shared/src/errors/base",
-  )),
-  logger: { warn: vi.fn() },
-  registerStore: vi.fn(),
-}));
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    ...(await vi.importActual<
+        typeof import('@packages/shared/src/errors/base')
+    >('@packages/shared/src/errors/base')),
+    logger: { warn: vi.fn() },
+    registerStore: vi.fn(),
+}))
 
-describe("useDiscoverDetailScreen", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (useRoute as Mock).mockReturnValue({
-      params: { path: "token-detail/ALGO" },
-    });
-    (useNeedsMigration as Mock).mockReturnValue({
-      isChecking: false,
-      needsMigration: false,
-    });
-    (isSafeRelativePath as Mock).mockReturnValue(true);
-  });
+describe('useDiscoverDetailScreen', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        ;(useRoute as Mock).mockReturnValue({
+            params: { path: 'token-detail/ALGO' },
+        })
+        ;(useNeedsMigration as Mock).mockReturnValue({
+            isChecking: false,
+            needsMigration: false,
+        })
+        ;(isSafeRelativePath as Mock).mockReturnValue(true)
+    })
 
-  it("appends the path param to the discover base url", () => {
-    const { result } = renderHook(() => useDiscoverDetailScreen());
-    expect(result.current.url).toBe(
-      "https://discover.example/token-detail/ALGO",
-    );
-  });
+    it('appends the path param to the discover base url', () => {
+        const { result } = renderHook(() => useDiscoverDetailScreen())
+        expect(result.current.url).toBe(
+            'https://discover.example/token-detail/ALGO',
+        )
+    })
 
-  it("falls back to the base url when the path param is unsafe", () => {
-    (useRoute as Mock).mockReturnValue({ params: { path: "//evil.com" } });
-    (isSafeRelativePath as Mock).mockReturnValue(false);
-    const { result } = renderHook(() => useDiscoverDetailScreen());
-    expect(result.current.url).toBe("https://discover.example/");
-  });
+    it('falls back to the base url when the path param is unsafe', () => {
+        ;(useRoute as Mock).mockReturnValue({ params: { path: '//evil.com' } })
+        ;(isSafeRelativePath as Mock).mockReturnValue(false)
+        const { result } = renderHook(() => useDiscoverDetailScreen())
+        expect(result.current.url).toBe('https://discover.example/')
+    })
 
-  it("is not ready while the migration gate is unsettled", () => {
-    (useNeedsMigration as Mock).mockReturnValue({
-      isChecking: true,
-      needsMigration: false,
-    });
-    const { result } = renderHook(() => useDiscoverDetailScreen());
-    expect(result.current.isReady).toBe(false);
-  });
+    it('is not ready while the migration gate is unsettled', () => {
+        ;(useNeedsMigration as Mock).mockReturnValue({
+            isChecking: true,
+            needsMigration: false,
+        })
+        const { result } = renderHook(() => useDiscoverDetailScreen())
+        expect(result.current.isReady).toBe(false)
+    })
 
-  it("pops the screen when the page requests back or close", () => {
-    const { result } = renderHook(() => useDiscoverDetailScreen());
-    act(() => result.current.handleBack());
-    expect(goBack).toHaveBeenCalledTimes(1);
-  });
-});
+    it('pops the screen when the page requests back or close', () => {
+        const { result } = renderHook(() => useDiscoverDetailScreen())
+        act(() => result.current.handleBack())
+        expect(goBack).toHaveBeenCalledTimes(1)
+    })
+})

@@ -10,64 +10,64 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-  },
-  searchContainer: {
-    flex: 1,
-  },
-  searchField: {
-    borderRadius: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  filters: {
-    paddingVertical: theme.spacing.md,
-  },
-  list: {
-    flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: theme.spacing.md,
-  },
-  linkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-  },
-  linkIcon: {
-    width: theme.spacing.xxl,
-    height: theme.spacing.xxl,
-    borderRadius: theme.spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.layerGray,
-  },
-  linkInfo: {
-    flex: 1,
-    gap: theme.spacing.xxs,
-  },
-  linkSubtitle: {
-    color: theme.colors.textGray,
-  },
-  notice: {
-    marginVertical: theme.spacing.sm,
-  },
-  emptyText: {
-    color: theme.colors.textGray,
-    paddingVertical: theme.spacing.xl,
-    textAlign: "center",
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        paddingTop: theme.spacing.md,
+    },
+    searchContainer: {
+        flex: 1,
+    },
+    searchField: {
+        borderRadius: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.sm,
+    },
+    filters: {
+        paddingVertical: theme.spacing.md,
+    },
+    list: {
+        flex: 1,
+    },
+    contentContainer: {
+        flexGrow: 1,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+    },
+    linkRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    linkIcon: {
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.spacing.sm,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.layerGray,
+    },
+    linkInfo: {
+        flex: 1,
+        gap: theme.spacing.xxs,
+    },
+    linkSubtitle: {
+        color: theme.colors.textGray,
+    },
+    notice: {
+        marginVertical: theme.spacing.sm,
+    },
+    emptyText: {
+        color: theme.colors.textGray,
+        paddingVertical: theme.spacing.xl,
+        textAlign: 'center',
+    },
+}))

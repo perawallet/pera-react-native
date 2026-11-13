@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { useRoute, type RouteProp } from "@react-navigation/native";
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-  useDiscoverWebView,
-  type UseDiscoverWebViewResult,
-} from "@modules/discover/hooks";
-import type { TabBarStackParamList } from "@routes/tabbar";
+    useDiscoverWebView,
+    type UseDiscoverWebViewResult,
+} from '@modules/discover/hooks'
+import type { TabBarStackParamList } from '@routes/tabbar'
 
-export type UseDiscoverScreenResult = UseDiscoverWebViewResult;
+export type UseDiscoverScreenResult = UseDiscoverWebViewResult
 
 export const useDiscoverScreen = (): UseDiscoverScreenResult => {
-  const route = useRoute<RouteProp<TabBarStackParamList, "Discover">>();
+    const route = useRoute<RouteProp<TabBarStackParamList, 'Discover'>>()
 
-  return useDiscoverWebView(route.params?.path);
-};
+    return useDiscoverWebView(route.params?.path)
+}

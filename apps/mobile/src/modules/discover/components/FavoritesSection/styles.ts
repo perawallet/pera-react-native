@@ -10,37 +10,37 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  section: {
-    gap: theme.spacing.sm,
-  },
-  empty: {
-    paddingVertical: theme.spacing.md,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-  },
-  icon: {
-    width: theme.spacing.xxl,
-    height: theme.spacing.xxl,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  info: {
-    flex: 1,
-    gap: theme.spacing.xxs,
-  },
-  count: {
-    color: theme.colors.textGray,
-  },
-  chevron: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
-    backgroundColor: theme.colors.layerGrayLighter,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    section: {
+        gap: theme.spacing.sm,
+    },
+    empty: {
+        paddingVertical: theme.spacing.md,
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    icon: {
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    info: {
+        flex: 1,
+        gap: theme.spacing.xxs,
+    },
+    count: {
+        color: theme.colors.textGray,
+    },
+    chevron: {
+        padding: theme.spacing.xs,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+}))

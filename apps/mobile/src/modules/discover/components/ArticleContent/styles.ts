@@ -10,49 +10,49 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  container: {
-    gap: theme.spacing.md,
-  },
-  italic: {
-    fontStyle: "italic",
-  },
-  link: {
-    color: theme.colors.linkPrimary,
-  },
-  listItem: {
-    flexDirection: "row",
-    gap: theme.spacing.sm,
-  },
-  listMarker: {
-    minWidth: theme.spacing.lg,
-  },
-  listBody: {
-    flex: 1,
-    gap: theme.spacing.xs,
-  },
-  list: {
-    gap: theme.spacing.xs,
-  },
-  quote: {
-    gap: theme.spacing.sm,
-    paddingLeft: theme.spacing.md,
-    borderLeftWidth: theme.spacing.xxs,
-    borderLeftColor: theme.colors.layerGray,
-  },
-  code: {
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-    backgroundColor: theme.colors.layerGrayLighter,
-  },
-  rule: {
-    height: theme.borders.sm,
-    backgroundColor: theme.colors.layerGray,
-  },
-  image: {
-    width: "100%",
-    borderRadius: theme.borderRadius.sm,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.md,
+    },
+    italic: {
+        fontStyle: 'italic',
+    },
+    link: {
+        color: theme.colors.linkPrimary,
+    },
+    listItem: {
+        flexDirection: 'row',
+        gap: theme.spacing.sm,
+    },
+    listMarker: {
+        minWidth: theme.spacing.lg,
+    },
+    listBody: {
+        flex: 1,
+        gap: theme.spacing.xs,
+    },
+    list: {
+        gap: theme.spacing.xs,
+    },
+    quote: {
+        gap: theme.spacing.sm,
+        paddingLeft: theme.spacing.md,
+        borderLeftWidth: theme.spacing.xxs,
+        borderLeftColor: theme.colors.layerGray,
+    },
+    code: {
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    rule: {
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGray,
+    },
+    image: {
+        width: '100%',
+        borderRadius: theme.borderRadius.sm,
+    },
+}))

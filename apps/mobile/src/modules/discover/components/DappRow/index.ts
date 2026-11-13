@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { DappRow, type DappRowProps } from "./DappRow";
+export { DappRow, type DappRowProps } from './DappRow'

@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import type { Optional } from "@perawallet/wallet-core-shared";
-import type { FontWeight, TypographyVariant } from "@theme/typography";
-import type { ArticleText } from "./articleHtml";
+import type { Optional } from '@perawallet/wallet-core-shared'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
+import type { ArticleText } from './articleHtml'
 
 export type ArticleRunStyle =
-  | { plain: true }
-  | {
-      plain: false;
-      variant: TypographyVariant;
-      weight: Optional<FontWeight>;
-      italic: boolean;
-      link: boolean;
-    };
+    | { plain: true }
+    | {
+          plain: false
+          variant: TypographyVariant
+          weight: Optional<FontWeight>
+          italic: boolean
+          link: boolean
+      }
 
 // 700, not 600: on iOS the bundled SemiBold file registers as DMSans18pt-SemiBold,
 // so the app's 600 face name does not resolve there and the run would draw regular.
-export const ARTICLE_BOLD: FontWeight = 700;
+export const ARTICLE_BOLD: FontWeight = 700
 
 /**
  * How a text run renders inside its block (`base`) or link. React Native lets
@@ -36,26 +36,26 @@ export const ARTICLE_BOLD: FontWeight = 700;
  * A weight swaps the font family, so a code run never takes one and stays mono.
  */
 export const articleRunStyle = (
-  run: ArticleText,
-  base: TypographyVariant,
-  inLink: boolean,
-  baseWeight?: FontWeight,
+    run: ArticleText,
+    base: TypographyVariant,
+    inLink: boolean,
+    baseWeight?: FontWeight,
 ): ArticleRunStyle => {
-  if (!run.bold && !run.italic && !run.code) return { plain: true };
-  if (run.code) {
+    if (!run.bold && !run.italic && !run.code) return { plain: true }
+    if (run.code) {
+        return {
+            plain: false,
+            variant: 'mono',
+            weight: undefined,
+            italic: run.italic,
+            link: inLink,
+        }
+    }
     return {
-      plain: false,
-      variant: "mono",
-      weight: undefined,
-      italic: run.italic,
-      link: inLink,
-    };
-  }
-  return {
-    plain: false,
-    variant: base,
-    weight: run.bold ? ARTICLE_BOLD : baseWeight,
-    italic: run.italic,
-    link: inLink,
-  };
-};
+        plain: false,
+        variant: base,
+        weight: run.bold ? ARTICLE_BOLD : baseWeight,
+        italic: run.italic,
+        link: inLink,
+    }
+}

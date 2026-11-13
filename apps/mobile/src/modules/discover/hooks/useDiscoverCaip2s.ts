@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import { useMemo } from "react";
-import type { ChainId } from "@perawallet/wallet-core-chain-contract";
-import { useSelectedScopes } from "@perawallet/wallet-core-chain-shared";
-import { discoverCaip2Of } from "../utils/discoverCaip2";
+import { useMemo } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
+import { discoverCaip2Of } from '../utils/discoverCaip2'
 
 export const useDiscoverCaip2s = (chainIds: readonly ChainId[]): string[] => {
-  const scopes = useSelectedScopes(chainIds);
-  return useMemo(
-    () =>
-      scopes.flatMap(({ chainId, networkId }) => {
-        const caip2 = discoverCaip2Of(chainId, networkId);
-        return caip2 === null ? [] : [caip2];
-      }),
-    [scopes],
-  );
-};
+    const scopes = useSelectedScopes(chainIds)
+    return useMemo(
+        () =>
+            scopes.flatMap(({ chainId, networkId }) => {
+                const caip2 = discoverCaip2Of(chainId, networkId)
+                return caip2 === null ? [] : [caip2]
+            }),
+        [scopes],
+    )
+}

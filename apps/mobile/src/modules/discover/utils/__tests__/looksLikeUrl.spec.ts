@@ -10,32 +10,32 @@
  limitations under the License
  */
 
-import { describe, expect, it } from "vitest";
-import { looksLikeUrl } from "../looksLikeUrl";
+import { describe, expect, it } from 'vitest'
+import { looksLikeUrl } from '../looksLikeUrl'
 
-describe("looksLikeUrl", () => {
-  it.each(["uni", "uniswap", "hello world", "javascript:alert(1)", ""])(
-    "is false for %j",
-    (query) => {
-      expect(looksLikeUrl(query)).toBe(false);
-    },
-  );
+describe('looksLikeUrl', () => {
+    it.each(['uni', 'uniswap', 'hello world', 'javascript:alert(1)', ''])(
+        'is false for %j',
+        query => {
+            expect(looksLikeUrl(query)).toBe(false)
+        },
+    )
 
-  it.each([
-    "uniswap.org",
-    "app.uniswap.org/x",
-    "https://app.uniswap.org/x",
-    "http://evil.com",
-    "HTTPS://Uniswap.org",
-    "  uniswap.org  ",
-    "uniswap.org:8080/x",
-    "uniswap.org?q=1",
-  ])("is true for %j", (query) => {
-    expect(looksLikeUrl(query)).toBe(true);
-  });
+    it.each([
+        'uniswap.org',
+        'app.uniswap.org/x',
+        'https://app.uniswap.org/x',
+        'http://evil.com',
+        'HTTPS://Uniswap.org',
+        '  uniswap.org  ',
+        'uniswap.org:8080/x',
+        'uniswap.org?q=1',
+    ])('is true for %j', query => {
+        expect(looksLikeUrl(query)).toBe(true)
+    })
 
-  it("is false for a query with whitespace inside", () => {
-    expect(looksLikeUrl("uniswap.org swap")).toBe(false);
-    expect(looksLikeUrl("https://a.io/ x")).toBe(false);
-  });
-});
+    it('is false for a query with whitespace inside', () => {
+        expect(looksLikeUrl('uniswap.org swap')).toBe(false)
+        expect(looksLikeUrl('https://a.io/ x')).toBe(false)
+    })
+})

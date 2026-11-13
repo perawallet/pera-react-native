@@ -11,7 +11,7 @@
  */
 
 export {
-  DappDetailsSheet,
-  type DappDetailsSheetProps,
-} from "./DappDetailsSheet";
-export type { DappDetailsSheetResult } from "./useDappDetailsSheet";
+    DappDetailsSheet,
+    type DappDetailsSheetProps,
+} from './DappDetailsSheet'
+export type { DappDetailsSheetResult } from './useDappDetailsSheet'

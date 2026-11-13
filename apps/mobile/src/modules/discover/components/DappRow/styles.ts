@@ -10,46 +10,46 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.sm,
-  },
-  main: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.md,
-  },
-  logo: {
-    width: theme.spacing.xxl,
-    height: theme.spacing.xxl,
-    borderRadius: theme.spacing.sm,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.layerGray,
-  },
-  info: {
-    flex: 1,
-    gap: theme.spacing.xxs,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.xs,
-  },
-  title: {
-    flexShrink: 1,
-  },
-  subtitle: {
-    color: theme.colors.textGray,
-  },
-  star: {
-    padding: theme.spacing.xs,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.sm,
+    },
+    main: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    logo: {
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.spacing.sm,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.layerGray,
+    },
+    info: {
+        flex: 1,
+        gap: theme.spacing.xxs,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    title: {
+        flexShrink: 1,
+    },
+    subtitle: {
+        color: theme.colors.textGray,
+    },
+    star: {
+        padding: theme.spacing.xs,
+    },
+}))

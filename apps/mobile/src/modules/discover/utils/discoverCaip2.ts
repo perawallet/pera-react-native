@@ -11,32 +11,33 @@
  */
 
 import {
-  defaultNetworkForTier,
-  type ChainDescriptor,
-  type ChainFamily,
-  type ChainId,
-  type ChainNetwork,
-  type NetworkId,
-} from "@perawallet/wallet-core-chain-contract";
-import { getChainDescriptor } from "@perawallet/wallet-core-chain-shared";
-import type { Nullable, Optional } from "@perawallet/wallet-core-shared";
+    defaultNetworkForTier,
+    type ChainDescriptor,
+    type ChainFamily,
+    type ChainId,
+    type ChainNetwork,
+    type NetworkId,
+} from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 // Total per family, so a new family fails type-checking until handled.
 // Discover's EVM directory is curated per chain, so EVM always sends mainnet.
 const DISCOVER_NETWORK_OF: Record<
-  ChainFamily,
-  (d: ChainDescriptor, selected: NetworkId) => Optional<ChainNetwork>
+    ChainFamily,
+    (d: ChainDescriptor, selected: NetworkId) => Optional<ChainNetwork>
 > = {
-  algorand: (d, selected) => d.networks.find((n) => n.id === selected),
-  evm: (d) => defaultNetworkForTier(d, "mainnet"),
-};
+    algorand: (d, selected) => d.networks.find(n => n.id === selected),
+    evm: d => defaultNetworkForTier(d, 'mainnet'),
+}
 
 export const discoverCaip2Of = (
-  chainId: ChainId,
-  networkId: NetworkId,
+    chainId: ChainId,
+    networkId: NetworkId,
 ): Nullable<string> => {
-  const descriptor = getChainDescriptor(chainId);
-  return (
-    DISCOVER_NETWORK_OF[descriptor.family](descriptor, networkId)?.caip2 ?? null
-  );
-};
+    const descriptor = getChainDescriptor(chainId)
+    return (
+        DISCOVER_NETWORK_OF[descriptor.family](descriptor, networkId)?.caip2 ??
+        null
+    )
+}

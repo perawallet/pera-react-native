@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { DiscoverDappsScreen } from "./DiscoverDappsScreen";
+export { DiscoverDappsScreen } from './DiscoverDappsScreen'

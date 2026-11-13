@@ -10,67 +10,67 @@
  limitations under the License
  */
 
-import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useBottomSheetResult } from "@modules/bottom-sheet";
-import { useFolderNameSheet } from "../useFolderNameSheet";
+import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useFolderNameSheet } from '../useFolderNameSheet'
 
-vi.mock("@modules/bottom-sheet", () => ({ useBottomSheetResult: vi.fn() }));
+vi.mock('@modules/bottom-sheet', () => ({ useBottomSheetResult: vi.fn() }))
 
-const resolve = vi.fn();
+const resolve = vi.fn()
 
-describe("useFolderNameSheet", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(useBottomSheetResult).mockReturnValue({
-      resolve,
-      dismiss: vi.fn(),
-    } as never);
-  });
+describe('useFolderNameSheet', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.mocked(useBottomSheetResult).mockReturnValue({
+            resolve,
+            dismiss: vi.fn(),
+        } as never)
+    })
 
-  it("cannot submit a blank name", () => {
-    // Arrange
-    const { result } = renderHook(() => useFolderNameSheet({}));
+    it('cannot submit a blank name', () => {
+        // Arrange
+        const { result } = renderHook(() => useFolderNameSheet({}))
 
-    // Act
-    act(() => result.current.setName("   "));
+        // Act
+        act(() => result.current.setName('   '))
 
-    // Assert
-    expect(result.current.canSubmit).toBe(false);
-  });
+        // Assert
+        expect(result.current.canSubmit).toBe(false)
+    })
 
-  it("submits the trimmed name", () => {
-    // Arrange
-    const { result } = renderHook(() => useFolderNameSheet({}));
-    act(() => result.current.setName("  Swap "));
+    it('submits the trimmed name', () => {
+        // Arrange
+        const { result } = renderHook(() => useFolderNameSheet({}))
+        act(() => result.current.setName('  Swap '))
 
-    // Act
-    act(() => result.current.submit());
+        // Act
+        act(() => result.current.submit())
 
-    // Assert
-    expect(result.current.canSubmit).toBe(true);
-    expect(resolve).toHaveBeenCalledWith("Swap");
-  });
+        // Assert
+        expect(result.current.canSubmit).toBe(true)
+        expect(resolve).toHaveBeenCalledWith('Swap')
+    })
 
-  it("does not resolve when the name is invalid", () => {
-    // Arrange
-    const { result } = renderHook(() => useFolderNameSheet({}));
+    it('does not resolve when the name is invalid', () => {
+        // Arrange
+        const { result } = renderHook(() => useFolderNameSheet({}))
 
-    // Act
-    act(() => result.current.submit());
+        // Act
+        act(() => result.current.submit())
 
-    // Assert
-    expect(resolve).not.toHaveBeenCalled();
-  });
+        // Assert
+        expect(resolve).not.toHaveBeenCalled()
+    })
 
-  it("starts from the initial name when renaming", () => {
-    // Arrange / Act
-    const { result } = renderHook(() =>
-      useFolderNameSheet({ initialName: "Old" }),
-    );
+    it('starts from the initial name when renaming', () => {
+        // Arrange / Act
+        const { result } = renderHook(() =>
+            useFolderNameSheet({ initialName: 'Old' }),
+        )
 
-    // Assert
-    expect(result.current.name).toBe("Old");
-    expect(result.current.canSubmit).toBe(true);
-  });
-});
+        // Assert
+        expect(result.current.name).toBe('Old')
+        expect(result.current.canSubmit).toBe(true)
+    })
+})

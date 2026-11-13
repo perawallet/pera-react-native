@@ -10,116 +10,116 @@
  limitations under the License
  */
 
-import type { NavigatorScreenParams } from "@react-navigation/native";
+import type { NavigatorScreenParams } from '@react-navigation/native'
 import type {
-  OnboardingStackParamList,
-  AddAccountStackParamList,
-} from "@modules/onboarding";
-import type { TabBarStackParamList } from "@routes/tabbar";
-import type { SettingsStackParamsList } from "@modules/settings";
-import type { ContactsStackParamsList } from "@modules/contacts";
-import type { AccountStackParamsList } from "@modules/accounts";
+    OnboardingStackParamList,
+    AddAccountStackParamList,
+} from '@modules/onboarding'
+import type { TabBarStackParamList } from '@routes/tabbar'
+import type { SettingsStackParamsList } from '@modules/settings'
+import type { ContactsStackParamsList } from '@modules/contacts'
+import type { AccountStackParamsList } from '@modules/accounts'
 import type {
-  ChainId,
-  ChainScope,
-  TransactionNative,
-  TransactionRecord,
-} from "@perawallet/wallet-core-chain-contract";
+    ChainId,
+    ChainScope,
+    TransactionNative,
+    TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
 import type {
-  SuspectedPoisoning,
-  TransactionHistoryItem,
-} from "@perawallet/wallet-core-transactions";
-import type { Optional } from "@perawallet/wallet-core-shared";
-import type { MessagesStackParamList } from "@modules/messages";
-import type { MultisigStackParamList } from "@modules/multisig";
+    SuspectedPoisoning,
+    TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import type { MessagesStackParamList } from '@modules/messages'
+import type { MultisigStackParamList } from '@modules/multisig'
 import type {
-  PeraCardStackParamList,
-  CardOnboardingStackParamList,
-  PeraCardFlowParamList,
-} from "@modules/card";
-import type { BackupStackParamList } from "@modules/backup";
-import type { SearchStackParamsList } from "@modules/search";
+    PeraCardStackParamList,
+    CardOnboardingStackParamList,
+    PeraCardFlowParamList,
+} from '@modules/card'
+import type { BackupStackParamList } from '@modules/backup'
+import type { SearchStackParamsList } from '@modules/search'
 import type {
-  RekeyToLedgerStackParamList,
-  RekeyToQuantumStackParamList,
-  RekeyToSharedStackParamList,
-  RekeyToStandardStackParamList,
-  RescanRekeyedStackParamList,
-  UndoRekeyStackParamList,
-} from "@modules/rekey";
+    RekeyToLedgerStackParamList,
+    RekeyToQuantumStackParamList,
+    RekeyToSharedStackParamList,
+    RekeyToStandardStackParamList,
+    RescanRekeyedStackParamList,
+    UndoRekeyStackParamList,
+} from '@modules/rekey'
 
 export type RootStackParamList = {
-  MigrationSplash: undefined;
-  Onboarding: NavigatorScreenParams<OnboardingStackParamList>;
-  TabBar: NavigatorScreenParams<TabBarStackParamList>;
-  ScanQR: undefined;
-  CameraAccess: undefined;
-  AddAccount: NavigatorScreenParams<AddAccountStackParamList>;
-  Messages: NavigatorScreenParams<MessagesStackParamList>;
-  Settings: NavigatorScreenParams<SettingsStackParamsList>;
-  Contacts: NavigatorScreenParams<ContactsStackParamsList>;
-  Search: NavigatorScreenParams<SearchStackParamsList>;
-  Multisig: NavigatorScreenParams<MultisigStackParamList>;
-  PeraCard: NavigatorScreenParams<PeraCardStackParamList>;
-  BackupWallet: NavigatorScreenParams<BackupStackParamList>;
-  RekeyToStandard: NavigatorScreenParams<RekeyToStandardStackParamList>;
-  RekeyToLedger: NavigatorScreenParams<RekeyToLedgerStackParamList>;
-  RekeyToQuantum: NavigatorScreenParams<RekeyToQuantumStackParamList>;
-  RekeyToShared: NavigatorScreenParams<RekeyToSharedStackParamList>;
-  RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>;
-  UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>;
-  Staking: undefined;
-  /** Discover page pushed over the current screen; `path` is a relative
-   * Discover route (e.g. `token-detail/ALGO`), validated on load. */
-  DiscoverDetail: { path: string };
-  DiscoverSearch: undefined;
-  DiscoverNews: undefined;
-  DiscoverNewsDetail: { newsId: string };
-  DiscoverFolder: { folderId: string };
-  DiscoverAllFavorites: undefined;
-  DiscoverAllFolders: undefined;
-  /** Native dApp directory; opens on `chainId` when it supports Discover. */
-  DiscoverDapps: Optional<{ chainId?: ChainId }>;
-  BannersCarouselModal: Optional<{ bannerId?: string }>;
-  GroupTransactionList: {
-    groupId: string;
-    /** The history row the group was opened from; heads the list with its hero. */
-    historyTransaction?: TransactionHistoryItem;
-  };
-  TransactionDetails: {
-    scope: ChainScope;
-    transactionId?: string;
-    transaction?: TransactionNative;
-    /**
-     * The SQLite history row the user tapped. Lets the screen render
-     * offline from local data while the indexer fetch (enrichment)
-     * is paused or in flight. Carries Decimal fields, so it must not be
-     * persisted or deep-linked — see the same param on
-     * `SigningStackParamList['TransactionDetails']`.
-     */
-    historyTransaction?: TransactionHistoryItem;
-    /** The history record the user tapped, on a chain that keeps no cached rows; see the same param on `SigningStackParamList['TransactionDetails']`. */
-    historyRecord?: TransactionRecord;
-    /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
-    suspectedPoisoning?: SuspectedPoisoning;
-    groupId?: string;
-  };
-} & PeraCardFlowParamList;
+    MigrationSplash: undefined
+    Onboarding: NavigatorScreenParams<OnboardingStackParamList>
+    TabBar: NavigatorScreenParams<TabBarStackParamList>
+    ScanQR: undefined
+    CameraAccess: undefined
+    AddAccount: NavigatorScreenParams<AddAccountStackParamList>
+    Messages: NavigatorScreenParams<MessagesStackParamList>
+    Settings: NavigatorScreenParams<SettingsStackParamsList>
+    Contacts: NavigatorScreenParams<ContactsStackParamsList>
+    Search: NavigatorScreenParams<SearchStackParamsList>
+    Multisig: NavigatorScreenParams<MultisigStackParamList>
+    PeraCard: NavigatorScreenParams<PeraCardStackParamList>
+    BackupWallet: NavigatorScreenParams<BackupStackParamList>
+    RekeyToStandard: NavigatorScreenParams<RekeyToStandardStackParamList>
+    RekeyToLedger: NavigatorScreenParams<RekeyToLedgerStackParamList>
+    RekeyToQuantum: NavigatorScreenParams<RekeyToQuantumStackParamList>
+    RekeyToShared: NavigatorScreenParams<RekeyToSharedStackParamList>
+    RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>
+    UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>
+    Staking: undefined
+    /** Discover page pushed over the current screen; `path` is a relative
+     * Discover route (e.g. `token-detail/ALGO`), validated on load. */
+    DiscoverDetail: { path: string }
+    DiscoverSearch: undefined
+    DiscoverNews: undefined
+    DiscoverNewsDetail: { newsId: string }
+    DiscoverFolder: { folderId: string }
+    DiscoverAllFavorites: undefined
+    DiscoverAllFolders: undefined
+    /** Native dApp directory; opens on `chainId` when it supports Discover. */
+    DiscoverDapps: Optional<{ chainId?: ChainId }>
+    BannersCarouselModal: Optional<{ bannerId?: string }>
+    GroupTransactionList: {
+        groupId: string
+        /** The history row the group was opened from; heads the list with its hero. */
+        historyTransaction?: TransactionHistoryItem
+    }
+    TransactionDetails: {
+        scope: ChainScope
+        transactionId?: string
+        transaction?: TransactionNative
+        /**
+         * The SQLite history row the user tapped. Lets the screen render
+         * offline from local data while the indexer fetch (enrichment)
+         * is paused or in flight. Carries Decimal fields, so it must not be
+         * persisted or deep-linked — see the same param on
+         * `SigningStackParamList['TransactionDetails']`.
+         */
+        historyTransaction?: TransactionHistoryItem
+        /** The history record the user tapped, on a chain that keeps no cached rows; see the same param on `SigningStackParamList['TransactionDetails']`. */
+        historyRecord?: TransactionRecord
+        /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
+        suspectedPoisoning?: SuspectedPoisoning
+        groupId?: string
+    }
+} & PeraCardFlowParamList
 
 export type AppStackParamList = RootStackParamList &
-  OnboardingStackParamList &
-  AddAccountStackParamList &
-  TabBarStackParamList &
-  SettingsStackParamsList &
-  ContactsStackParamsList &
-  AccountStackParamsList &
-  MultisigStackParamList &
-  PeraCardStackParamList &
-  CardOnboardingStackParamList &
-  BackupStackParamList &
-  RekeyToStandardStackParamList &
-  RekeyToLedgerStackParamList &
-  RekeyToSharedStackParamList &
-  RescanRekeyedStackParamList &
-  UndoRekeyStackParamList &
-  SearchStackParamsList;
+    OnboardingStackParamList &
+    AddAccountStackParamList &
+    TabBarStackParamList &
+    SettingsStackParamsList &
+    ContactsStackParamsList &
+    AccountStackParamsList &
+    MultisigStackParamList &
+    PeraCardStackParamList &
+    CardOnboardingStackParamList &
+    BackupStackParamList &
+    RekeyToStandardStackParamList &
+    RekeyToLedgerStackParamList &
+    RekeyToSharedStackParamList &
+    RescanRekeyedStackParamList &
+    UndoRekeyStackParamList &
+    SearchStackParamsList

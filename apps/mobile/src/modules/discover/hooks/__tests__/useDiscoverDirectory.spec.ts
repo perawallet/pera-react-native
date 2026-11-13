@@ -10,68 +10,68 @@
  limitations under the License
  */
 
-import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  useDiscoverProjectsQuery,
-  type PeraProject,
-} from "@perawallet/wallet-core-projects";
-import { useCapableChainIds } from "@hooks/useCapableChainIds";
+    useDiscoverProjectsQuery,
+    type PeraProject,
+} from '@perawallet/wallet-core-projects'
+import { useCapableChainIds } from '@hooks/useCapableChainIds'
 import {
-  registerEthereumChain,
-  restoreAlgorandOnlyChains,
-} from "@test-utils/chain-fixtures";
-import { useDiscoverDirectory } from "../useDiscoverDirectory";
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
+import { useDiscoverDirectory } from '../useDiscoverDirectory'
 
-vi.mock("@hooks/useCapableChainIds", () => ({ useCapableChainIds: vi.fn() }));
+vi.mock('@hooks/useCapableChainIds', () => ({ useCapableChainIds: vi.fn() }))
 
 const projects: PeraProject[] = [
-  { chains: [], url: "https://A.io/", verificationTier: "verified" },
-  { chains: [], url: "https://b.io", verificationTier: "unverified" },
-];
+    { chains: [], url: 'https://A.io/', verificationTier: 'verified' },
+    { chains: [], url: 'https://b.io', verificationTier: 'unverified' },
+]
 
-describe("useDiscoverDirectory", () => {
-  beforeEach(() => {
-    registerEthereumChain();
-    vi.mocked(useCapableChainIds).mockReturnValue(["algorand", "ethereum"]);
-    vi.mocked(useDiscoverProjectsQuery).mockReset();
-    vi.mocked(useDiscoverProjectsQuery).mockReturnValue({
-      data: projects,
-      isLoading: false,
-      isError: false,
-    } as never);
-  });
-  afterEach(() => {
-    restoreAlgorandOnlyChains();
-  });
+describe('useDiscoverDirectory', () => {
+    beforeEach(() => {
+        registerEthereumChain()
+        vi.mocked(useCapableChainIds).mockReturnValue(['algorand', 'ethereum'])
+        vi.mocked(useDiscoverProjectsQuery).mockReset()
+        vi.mocked(useDiscoverProjectsQuery).mockReturnValue({
+            data: projects,
+            isLoading: false,
+            isError: false,
+        } as never)
+    })
+    afterEach(() => {
+        restoreAlgorandOnlyChains()
+    })
 
-  const lastCall = () =>
-    vi.mocked(useDiscoverProjectsQuery).mock.calls.at(-1)?.[0];
+    const lastCall = () =>
+        vi.mocked(useDiscoverProjectsQuery).mock.calls.at(-1)?.[0]
 
-  it("queries every discover chain and returns the list and verified set", () => {
-    const { result } = renderHook(() => useDiscoverDirectory());
-    expect(lastCall()?.chains).toHaveLength(2);
-    expect(lastCall()?.chains).toContain("eip155:1");
-    expect(lastCall()?.isEnabled).toBe(true);
-    expect(result.current.projects).toEqual(projects);
-    expect(result.current.verifiedUrls).toEqual(new Set(["https://a.io"]));
-  });
+    it('queries every discover chain and returns the list and verified set', () => {
+        const { result } = renderHook(() => useDiscoverDirectory())
+        expect(lastCall()?.chains).toHaveLength(2)
+        expect(lastCall()?.chains).toContain('eip155:1')
+        expect(lastCall()?.isEnabled).toBe(true)
+        expect(result.current.projects).toEqual(projects)
+        expect(result.current.verifiedUrls).toEqual(new Set(['https://a.io']))
+    })
 
-  it("passes isEnabled false through while both chains are present", () => {
-    renderHook(() => useDiscoverDirectory({ isEnabled: false }));
-    expect(lastCall()?.chains).toHaveLength(2);
-    expect(lastCall()?.isEnabled).toBe(false);
-  });
+    it('passes isEnabled false through while both chains are present', () => {
+        renderHook(() => useDiscoverDirectory({ isEnabled: false }))
+        expect(lastCall()?.chains).toHaveLength(2)
+        expect(lastCall()?.isEnabled).toBe(false)
+    })
 
-  it("is disabled with no discover chain and defaults data to []", () => {
-    vi.mocked(useCapableChainIds).mockReturnValue([]);
-    vi.mocked(useDiscoverProjectsQuery).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: false,
-    } as never);
-    const { result } = renderHook(() => useDiscoverDirectory());
-    expect(lastCall()?.isEnabled).toBe(false);
-    expect(result.current.projects).toEqual([]);
-  });
-});
+    it('is disabled with no discover chain and defaults data to []', () => {
+        vi.mocked(useCapableChainIds).mockReturnValue([])
+        vi.mocked(useDiscoverProjectsQuery).mockReturnValue({
+            data: undefined,
+            isLoading: false,
+            isError: false,
+        } as never)
+        const { result } = renderHook(() => useDiscoverDirectory())
+        expect(lastCall()?.isEnabled).toBe(false)
+        expect(result.current.projects).toEqual([])
+    })
+})

@@ -10,64 +10,67 @@
  limitations under the License
  */
 
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
-import { PWButton, PWInput, PWSheetLayout, PWView } from "@components/core";
-import { SheetHeader } from "@modules/bottom-sheet";
-import { useLanguage } from "@hooks/useLanguage";
-import { useFolderNameSheet } from "./useFolderNameSheet";
-import { useStyles } from "./styles";
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
+import { PWButton, PWInput, PWSheetLayout, PWView } from '@components/core'
+import { SheetHeader } from '@modules/bottom-sheet'
+import { useLanguage } from '@hooks/useLanguage'
+import { useFolderNameSheet } from './useFolderNameSheet'
+import { useStyles } from './styles'
 
 export type FolderNameSheetProps = {
-  mode: "create" | "rename";
-  initialName?: string;
-};
+    mode: 'create' | 'rename'
+    initialName?: string
+}
 
 /** Asks for a folder name; open it with `useBottomSheet().request<FolderNameSheetResult>`. */
 export const FolderNameSheet = ({
-  mode,
-  initialName,
+    mode,
+    initialName,
 }: FolderNameSheetProps) => {
-  const { t } = useLanguage();
-  const styles = useStyles();
-  const sheet = useFolderNameSheet({ initialName });
+    const { t } = useLanguage()
+    const styles = useStyles()
+    const sheet = useFolderNameSheet({ initialName })
 
-  return (
-    <PWSheetLayout
-      horizontalPadding="none"
-      header={
-        <SheetHeader
-          title={t(
-            mode === "create"
-              ? "discover.folders.name_sheet.title_new"
-              : "discover.folders.name_sheet.title_rename",
-          )}
-        />
-      }
-    >
-      <PWView style={styles.inputContainer}>
-        <PWInput
-          testID="discover_folder_name_input"
-          value={sheet.name}
-          onChangeText={sheet.setName}
-          placeholder={t("discover.folders.name_sheet.placeholder")}
-          autoFocus
-          returnKeyType="done"
-          InputComponent={BottomSheetTextInput}
-        />
-      </PWView>
-      <PWView style={styles.buttonContainer}>
-        <PWButton
-          testID="discover_folder_name_submit"
-          variant="primary"
-          title={t(
-            mode === "create"
-              ? "discover.folders.name_sheet.create"
-              : "discover.folders.name_sheet.save",
-          )}
-          onPress={sheet.submit}
-          isDisabled={!sheet.canSubmit}
-        />
-      </PWView>
-    </PWSheetLayout>
-  );
-};
+    return (
+        <PWSheetLayout
+            horizontalPadding='none'
+            header={
+                <SheetHeader
+                    title={t(
+                        mode === 'create'
+                            ? 'discover.folders.name_sheet.title_new'
+                            : 'discover.folders.name_sheet.title_rename',
+                    )}
+                />
+            }
+        >
+            <PWView style={styles.inputContainer}>
+                <PWInput
+                    testID='discover_folder_name_input'
+                    value={sheet.name}
+                    onChangeText={sheet.setName}
+                    placeholder={t('discover.folders.name_sheet.placeholder')}
+                    autoFocus
+                    // A folder name is the user's own word; autocorrect would rewrite it on submit.
+                    autoCorrect={false}
+                    returnKeyType='done'
+                    onSubmitEditing={sheet.submit}
+                    InputComponent={BottomSheetTextInput}
+                />
+            </PWView>
+            <PWView style={styles.buttonContainer}>
+                <PWButton
+                    testID='discover_folder_name_submit'
+                    variant='primary'
+                    title={t(
+                        mode === 'create'
+                            ? 'discover.folders.name_sheet.create'
+                            : 'discover.folders.name_sheet.save',
+                    )}
+                    onPress={sheet.submit}
+                    isDisabled={!sheet.canSubmit}
+                />
+            </PWView>
+        </PWSheetLayout>
+    )
+}

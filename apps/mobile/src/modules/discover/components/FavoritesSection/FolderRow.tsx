@@ -11,50 +11,67 @@
  */
 
 import {
-  PWIcon,
-  PWText,
-  PWTouchableOpacity,
-  PWView,
-  type IconName,
-} from "@components/core";
-import { useLanguage } from "@hooks/useLanguage";
-import { useStyles } from "./styles";
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    type IconName,
+} from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles'
 
 export type FolderRowProps = {
-  name: string;
-  count: number;
-  icon: Extract<IconName, "folder" | "star">;
-  onPress: () => void;
-  testID?: string;
-};
+    name: string
+    count: number
+    icon: Extract<IconName, 'folder' | 'star'>
+    onPress: () => void
+    testID?: string
+}
 
 /** A favorites folder (or the All favorites entry): icon, name, "N dApps", chevron. */
 export const FolderRow = ({
-  name,
-  count,
-  icon,
-  onPress,
-  testID,
+    name,
+    count,
+    icon,
+    onPress,
+    testID,
 }: FolderRowProps) => {
-  const styles = useStyles();
-  const { t } = useLanguage();
+    const styles = useStyles()
+    const { t } = useLanguage()
 
-  return (
-    <PWTouchableOpacity style={styles.row} onPress={onPress} testID={testID}>
-      <PWView style={styles.icon}>
-        <PWIcon name={icon} variant="secondary" />
-      </PWView>
-      <PWView style={styles.info}>
-        <PWText variant="h4" numberOfLines={1}>
-          {name}
-        </PWText>
-        <PWText variant="caption" style={styles.count}>
-          {t("discover.favorites.dapp_count", { count })}
-        </PWText>
-      </PWView>
-      <PWView style={styles.chevron}>
-        <PWIcon name="chevron-right" size="sm" variant="secondary" />
-      </PWView>
-    </PWTouchableOpacity>
-  );
-};
+    return (
+        <PWTouchableOpacity
+            style={styles.row}
+            onPress={onPress}
+            testID={testID}
+        >
+            <PWView style={styles.icon}>
+                <PWIcon
+                    name={icon}
+                    variant='secondary'
+                />
+            </PWView>
+            <PWView style={styles.info}>
+                <PWText
+                    variant='h4'
+                    numberOfLines={1}
+                >
+                    {name}
+                </PWText>
+                <PWText
+                    variant='caption'
+                    style={styles.count}
+                >
+                    {t('discover.favorites.dapp_count', { count })}
+                </PWText>
+            </PWView>
+            <PWView style={styles.chevron}>
+                <PWIcon
+                    name='chevron-right'
+                    size='sm'
+                    variant='secondary'
+                />
+            </PWView>
+        </PWTouchableOpacity>
+    )
+}

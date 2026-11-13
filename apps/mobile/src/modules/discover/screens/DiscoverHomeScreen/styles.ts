@@ -10,28 +10,28 @@
  limitations under the License
  */
 
-import { makeStyles } from "@rneui/themed";
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  content: {
-    gap: theme.spacing.md,
-    paddingTop: theme.spacing.md,
-  },
-  title: {
-    paddingBottom: theme.spacing.xs,
-  },
-  section: {
-    gap: theme.spacing.sm,
-  },
-  chips: {
-    paddingVertical: theme.spacing.xs,
-  },
-  emptyDapps: {
-    paddingVertical: theme.spacing.lg,
-  },
-  newsCard: {
-    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: news card width (about two thirds of a phone screen, so the next card peeks)
-    width: 240,
-    marginRight: theme.spacing.md,
-  },
-}));
+export const useStyles = makeStyles(theme => ({
+    content: {
+        gap: theme.spacing.md,
+        paddingTop: theme.spacing.md,
+    },
+    title: {
+        paddingBottom: theme.spacing.xs,
+    },
+    section: {
+        gap: theme.spacing.sm,
+    },
+    chips: {
+        paddingVertical: theme.spacing.xs,
+    },
+    emptyDapps: {
+        paddingVertical: theme.spacing.lg,
+    },
+    newsCard: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: news card width (about two thirds of a phone screen, so the next card peeks)
+        width: 240,
+        marginRight: theme.spacing.md,
+    },
+}))
