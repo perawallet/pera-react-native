@@ -76,6 +76,36 @@
             "about": "Hakkında",
             "website": "Web sitesi",
             "open": "Aç"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Yeni klasör",
+                "title_rename": "Klasörü yeniden adlandır",
+                "placeholder": "Klasör adı",
+                "create": "Oluştur",
+                "save": "Kaydet"
+            },
+            "empty": "Bu klasörde henüz dApp yok"
+        },
+        "favorites": {
+            "title": "Favoriler",
+            "new_folder": "Yeni klasör",
+            "all_favorites": "Tüm favoriler",
+            "dapp_count": "{{count}} dApp",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Tümünü gör",
+            "empty_title": "Henüz favorin yok",
+            "empty_body": "dApp'leri keşfetmeye başla",
+            "all_folders_title": "Tüm klasörler",
+            "added_toast": {
+                "title": "Favorilere eklendi",
+                "body": "Bir klasöre eklemek için dokun"
+            }
+        },
+        "add_to_folder": {
+            "title": "Klasöre ekle",
+            "new_folder": "Yeni klasör",
+            "done": "Tamam"
         }
     },
     "account_menu": {

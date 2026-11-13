@@ -14,8 +14,38 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { render, screen } from '@test-utils/render'
-import { PWBottomSheet, type PWBottomSheetSize } from '../PWBottomSheet'
+import {
+    bottomSheetNotifier,
+    PWBottomSheet,
+    type PWBottomSheetSize,
+} from '../PWBottomSheet'
 import { Text } from 'react-native'
+
+// The shared mock's NotifierWrapper takes no ref; this one hands out a stable
+// handle per wrapper, as the real class-based NotifierRoot does.
+vi.mock('react-native-notifier', async () => {
+    const ReactActual = await vi.importActual<typeof import('react')>('react')
+    return {
+        NotifierWrapper: ReactActual.forwardRef(
+            ({ children }: { children?: React.ReactNode }, ref) => {
+                ReactActual.useImperativeHandle(
+                    ref,
+                    () => ({
+                        showNotification: vi.fn(),
+                        hideNotification: vi.fn(),
+                    }),
+                    [],
+                )
+                return ReactActual.createElement(
+                    ReactActual.Fragment,
+                    null,
+                    children,
+                )
+            },
+        ),
+        Notifier: { showNotification: vi.fn(), hideNotification: vi.fn() },
+    }
+})
 
 // Track what props BottomSheetModal receives
 let capturedProps: Record<string, unknown> = {}
@@ -149,6 +179,30 @@ describe('PWBottomSheet', () => {
         )
 
         expect(screen.queryByText('Sheet Content')).toBeNull()
+    })
+
+    it('hands the notifier back to the sheet underneath when the top sheet closes', () => {
+        const sheets = (isUpperVisible: boolean) => (
+            <>
+                <PWBottomSheet isVisible={true}>
+                    <Text>Lower</Text>
+                </PWBottomSheet>
+                <PWBottomSheet isVisible={isUpperVisible}>
+                    <Text>Upper</Text>
+                </PWBottomSheet>
+            </>
+        )
+        const { rerender, unmount } = render(sheets(true))
+        const upper = bottomSheetNotifier.current
+        expect(upper).not.toBeNull()
+
+        rerender(sheets(false))
+
+        expect(bottomSheetNotifier.current).not.toBeNull()
+        expect(bottomSheetNotifier.current).not.toBe(upper)
+
+        unmount()
+        expect(bottomSheetNotifier.current).toBeNull()
     })
 
     it('does NOT fire onBackdropPress on programmatic dismiss', () => {

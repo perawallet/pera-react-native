@@ -18,13 +18,28 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
     },
     heading: {
         flexShrink: 1,
         flexDirection: 'row',
         alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    action: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+    },
+    actionLabel: {
+        color: theme.colors.linkPrimary,
+    },
+    titleRow: {
+        flexShrink: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xxs,
     },
     title: {
         flexShrink: 1,

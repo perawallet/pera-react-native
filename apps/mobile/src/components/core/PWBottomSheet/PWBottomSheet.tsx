@@ -18,18 +18,18 @@ import {
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
-import { createRef, useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { isIOS } from '@utils/platform'
 import { useStyles } from './styles'
 import { Keyboard, useWindowDimensions, View } from 'react-native'
-import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+import { NotifierWrapper } from 'react-native-notifier'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from './inSheetContext'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useSheetNotifierRef } from './sheetNotifier'
 import type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
-export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
+export { bottomSheetNotifier } from './sheetNotifier'
 export type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
 type DefaultPropsReturn = {
@@ -71,6 +71,7 @@ export const PWBottomSheet = ({
     avoidKeyboard = true,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
+    const notifierRef = useSheetNotifierRef()
     const insets = useSafeAreaInsets()
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
@@ -210,7 +211,7 @@ export const PWBottomSheet = ({
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup
-                ref={bottomSheetNotifier}
+                ref={notifierRef}
                 componentProps={{ ContainerComponent: SafeAreaView }}
             >
                 <PWInBottomSheetContext.Provider value={true}>

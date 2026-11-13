@@ -27,6 +27,15 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
         padding: theme.spacing.lg,
     },
+    // Figma home carousel: 240 x 120 image (radius 12), then a 2-line title and the date.
+    plainBanner: {
+        borderRadius: theme.borderRadius.lg,
+        overflow: 'hidden',
+    },
+    plainBody: {
+        gap: theme.spacing.xs,
+        paddingTop: theme.spacing.md,
+    },
     date: {
         color: theme.colors.textGray,
     },

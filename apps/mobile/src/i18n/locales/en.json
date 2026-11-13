@@ -76,6 +76,36 @@
             "about": "About",
             "website": "Website",
             "open": "Open"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "New Folder",
+                "title_rename": "Rename Folder",
+                "placeholder": "Folder name",
+                "create": "Create",
+                "save": "Save"
+            },
+            "empty": "No dApps in this folder yet"
+        },
+        "favorites": {
+            "title": "Favorites",
+            "new_folder": "New Folder",
+            "all_favorites": "All favorites",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "See all",
+            "empty_title": "No favorites yet",
+            "empty_body": "Start exploring the dApps",
+            "all_folders_title": "All Folders",
+            "added_toast": {
+                "title": "Added to favorites",
+                "body": "Tap to add it to a folder"
+            }
+        },
+        "add_to_folder": {
+            "title": "Add to Folder",
+            "new_folder": "New folder",
+            "done": "Done"
         }
     },
     "account_menu": {
