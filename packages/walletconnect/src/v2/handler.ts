@@ -1803,20 +1803,32 @@ export const createWalletConnectV2Handler = (
         ) {
             throw new WalletConnectInvalidSessionError('No session found')
         }
-        // Every chain the namespace holds answers with this one address.
-        const namespaceChains = [
+        const servedChainsOf = (caip2Ids: readonly string[]): ChainId[] => [
             ...new Set(
-                (namespace.chains ?? []).flatMap((caip2): ChainId[] => {
+                caip2Ids.flatMap((caip2): ChainId[] => {
                     const served = v2ChainForCaip2(caip2)
                     return served ? [served.chainId] : []
                 }),
             ),
         ]
+        const namespaceChains = servedChainsOf(namespace.chains ?? [])
+        // Like the connect sheet: the chain the switch names and the dApp's
+        // required chains gate it. Optional ones don't, since dApps such as
+        // Uniswap list networks few accounts have all of.
+        const gatingChains = [
+            chainId,
+            ...servedChainsOf(
+                requestedChains(
+                    chain.support,
+                    (session?.requiredNamespaces ?? {}) as ProposalNamespaces,
+                ),
+            ).filter(required => namespaceChains.includes(required)),
+        ]
         if (
             normalized === undefined ||
             !canSignWith ||
-            namespaceChains.length === 0 ||
-            !namespaceChains.every(served => canSignWith(served, normalized))
+            !namespaceChains.includes(chainId) ||
+            !gatingChains.every(gating => canSignWith(gating, normalized))
         ) {
             throw new ConnectionsError(
                 'unauthorized-account',

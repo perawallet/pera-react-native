@@ -163,6 +163,23 @@ describe('useChangeConnectionAccount', () => {
         )
     })
 
+    // A WalletConnect session holds every network the dApp listed, optional
+    // ones included; requiring all of them left the picker empty.
+    it('offers accounts missing another network the session holds', async () => {
+        const { result } = renderHook(() =>
+            useChangeConnectionAccount({
+                ...CONNECTION,
+                evmChainIds: ['ethereum', 'base'],
+            }),
+        )
+
+        await act(() => result.current.handleChangeAccount())
+
+        expect(mocks.pickAccount).toHaveBeenCalledWith(
+            expect.objectContaining({ accounts: [ONE, TWO] }),
+        )
+    })
+
     it('changes nothing when the picker is dismissed', async () => {
         const { result } = renderHook(() =>
             useChangeConnectionAccount(CONNECTION),

@@ -33,7 +33,7 @@ export type ChangeableConnection = {
     id: ConnectionId
     /** The addresses the connection holds, every chain's. */
     accounts: readonly string[]
-    /** The connection's EVM chains; the new account must sign on all of them. */
+    /** The connection's EVM chains; the first is the one the change names. */
     evmChainIds: readonly ChainId[]
 }
 
@@ -81,11 +81,11 @@ export const useChangeConnectionAccount = ({
         isBusyRef.current = true
         const failed = t('walletconnect.settings.change_account_failed')
         try {
-            const candidates = accountsSigningOnAll(
-                accounts,
-                accounts,
-                evmChainIds,
-            )
+            // Only the chain the change names: a session also holds the dApp's
+            // optional networks, and the handler checks the required ones.
+            const candidates = accountsSigningOnAll(accounts, accounts, [
+                evmChainId,
+            ])
             const picked = await pickAccount({
                 accounts: candidates,
                 chainId: evmChainId,
@@ -109,7 +109,6 @@ export const useChangeConnectionAccount = ({
     }, [
         registry,
         evmChainId,
-        evmChainIds,
         accounts,
         pickAccount,
         activeEvmAccount,

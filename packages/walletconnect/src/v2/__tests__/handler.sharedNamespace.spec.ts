@@ -30,7 +30,7 @@ import {
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
-import type { WalletKitFactory } from '../client'
+import type { WalletKitFactory, WalletKitSession } from '../client'
 import { createWalletConnectV2Handler } from '../handler'
 import {
     createFakeWalletKit,
@@ -218,8 +218,10 @@ afterEach(() => {
 const open = async (
     seed: Parameters<typeof memoryStore>[0] = [],
     walletKit = createFakeWalletKit(),
+    canSignWith?: (chainId: ChainId, address: string) => boolean,
 ) => {
     const handler = createWalletConnectV2Handler({
+        canSignWith,
         getNetworkId: chainId => selectedNetworks[chainId],
         isDappConnectEnabled: chainId => connectable.has(chainId),
         projectId: 'a-reown-project-id',
@@ -811,5 +813,63 @@ describe('accountsChanged on a shared namespace', () => {
         await handler.notify?.(TOPIC, removed('base'))
 
         expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+})
+
+describe('changeAccount on a session with optional networks', () => {
+    const NEW_ETH = '0x3333333333333333333333333333333333333333'
+    const both = [ETHEREUM_MAINNET, BASE_MAINNET]
+
+    // The new account has Ethereum but not Base.
+    const liveOnBoth = async (
+        requiredNamespaces: WalletKitSession['requiredNamespaces'] = {},
+    ) =>
+        await open(
+            [{ ...record, metadata: { ...record.metadata, chains: both } }],
+            createFakeWalletKit({
+                [TOPIC]: makeSession({
+                    namespaces: {
+                        eip155: {
+                            chains: both,
+                            accounts: both.map(caip2 => `${caip2}:${ETH}`),
+                            methods: ['eth_sendTransaction'],
+                            events: ['accountsChanged'],
+                        },
+                    },
+                    requiredNamespaces,
+                }),
+            }),
+            chainId => chainId === 'ethereum',
+        )
+
+    // Uniswap lists Base as optional; an account without it still switches.
+    it('switches to an account missing an optional network the session holds', async () => {
+        const { handler, walletKit } = await liveOnBoth({
+            eip155: { chains: [ETHEREUM_MAINNET], methods: [], events: [] },
+        })
+
+        await handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH)
+
+        expect(walletKit.updateSession).toHaveBeenCalledTimes(1)
+    })
+
+    it('refuses an account missing a required network', async () => {
+        const { handler, walletKit } = await liveOnBoth({
+            eip155: { chains: both, methods: [], events: [] },
+        })
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'ethereum', NEW_ETH),
+        ).rejects.toThrow()
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
+    })
+
+    it('refuses an account that cannot sign on the network the switch names', async () => {
+        const { handler, walletKit } = await liveOnBoth()
+
+        await expect(
+            handler.changeAccount?.(TOPIC, 'base', NEW_ETH),
+        ).rejects.toThrow()
+        expect(walletKit.updateSession).not.toHaveBeenCalled()
     })
 })
