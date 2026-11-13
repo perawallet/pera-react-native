@@ -12,13 +12,13 @@
 
 import { Fragment, type ReactNode } from 'react'
 import { PWText, PWView } from '@components/core'
-import type { TypographyVariant } from '@theme/typography'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
 import {
     toArticleLinkUrl,
     type ArticleBlock,
     type ArticleInline,
 } from '../../utils/articleHtml'
-import { articleRunStyle } from '../../utils/articleRunStyle'
+import { ARTICLE_BOLD, articleRunStyle } from '../../utils/articleRunStyle'
 import { ArticleImage } from './ArticleImage'
 import { useStyles } from './styles'
 
@@ -31,14 +31,20 @@ export type ArticleContentProps = {
 
 const HTTPS_SRC = /^https:\/\//i
 
-const HEADING_VARIANT = {
-    1: 'h2',
-    2: 'h3',
-    3: 'h4',
-    4: 'h4',
-    5: 'h4',
-    6: 'h4',
-} as const
+type HeadingLook = { variant: TypographyVariant; weight?: FontWeight }
+
+const BODY_LOOK: HeadingLook = { variant: 'body' }
+
+// h4 is weight 600, which draws regular on iOS (see ARTICLE_BOLD), so the
+// smaller headings set bold themselves; h4 and below step down to body size.
+const HEADING_LOOK: Record<1 | 2 | 3 | 4 | 5 | 6, HeadingLook> = {
+    1: { variant: 'h2' },
+    2: { variant: 'h3' },
+    3: { variant: 'h4', weight: ARTICLE_BOLD },
+    4: { variant: 'body', weight: ARTICLE_BOLD },
+    5: { variant: 'body', weight: ARTICLE_BOLD },
+    6: { variant: 'body', weight: ARTICLE_BOLD },
+}
 
 export const ArticleContent = ({
     blocks,
@@ -50,7 +56,7 @@ export const ArticleContent = ({
     // Each run inherits from the Text around it (block or link), see articleRunStyle.
     const renderInline = (
         pieces: ArticleInline[],
-        base: TypographyVariant,
+        base: HeadingLook,
         inLink: boolean,
     ): ReactNode =>
         pieces.map((piece, index) => {
@@ -66,7 +72,8 @@ export const ArticleContent = ({
                 return (
                     <PWText
                         key={index}
-                        variant={base}
+                        variant={base.variant}
+                        weight={base.weight}
                         style={styles.link}
                         onPress={() => onLinkPress(piece.href)}
                         testID='discover_news_article_link'
@@ -75,7 +82,12 @@ export const ArticleContent = ({
                     </PWText>
                 )
             }
-            const look = articleRunStyle(piece, base, inLink)
+            const look = articleRunStyle(
+                piece,
+                base.variant,
+                inLink,
+                base.weight,
+            )
             if (look.plain) {
                 return <Fragment key={index}>{piece.value}</Fragment>
             }
@@ -98,23 +110,21 @@ export const ArticleContent = ({
         items.map((block, index) => {
             switch (block.type) {
                 case 'heading': {
+                    const heading = HEADING_LOOK[block.level]
                     return (
                         <PWText
                             key={index}
-                            variant={HEADING_VARIANT[block.level]}
+                            variant={heading.variant}
+                            weight={heading.weight}
                         >
-                            {renderInline(
-                                block.children,
-                                HEADING_VARIANT[block.level],
-                                false,
-                            )}
+                            {renderInline(block.children, heading, false)}
                         </PWText>
                     )
                 }
                 case 'paragraph': {
                     return (
                         <PWText key={index}>
-                            {renderInline(block.children, 'body', false)}
+                            {renderInline(block.children, BODY_LOOK, false)}
                         </PWText>
                     )
                 }

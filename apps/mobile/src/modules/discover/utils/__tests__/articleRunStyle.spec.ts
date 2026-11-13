@@ -53,6 +53,18 @@ describe('articleRunStyle', () => {
         )
     })
 
+    it('never gives a code run a weight, since a weight swaps the mono family out', () => {
+        expect(
+            articleRunStyle(run({ code: true, bold: true }), 'h4', false, 700),
+        ).toMatchObject({ variant: 'mono', weight: undefined })
+    })
+
+    it("keeps the block's own weight on an italic run inside a bold heading", () => {
+        expect(
+            articleRunStyle(run({ italic: true }), 'h4', false, 700),
+        ).toMatchObject({ variant: 'h4', weight: 700, italic: true })
+    })
+
     it('keeps the link colour on a marked run inside a link', () => {
         expect(
             articleRunStyle(run({ bold: true }), 'body', true),

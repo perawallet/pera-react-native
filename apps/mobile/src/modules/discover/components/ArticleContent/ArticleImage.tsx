@@ -20,6 +20,8 @@ export type ArticleImageProps = {
 
 // Wide enough for most article images until the real size is known.
 const DEFAULT_IMAGE_ASPECT = 16 / 9
+// A portrait image is boxed at 3:4 and letterboxed, so it never fills screens of scrolling.
+const MIN_IMAGE_ASPECT = 3 / 4
 
 /** An article image at full width, at its own aspect once it has loaded. */
 export const ArticleImage = ({ src }: ArticleImageProps) => {
@@ -38,7 +40,8 @@ export const ArticleImage = ({ src }: ArticleImageProps) => {
             onError={() => setHasFailed(true)}
             onLoad={event => {
                 const { width, height } = event.source
-                if (width > 0 && height > 0) setAspectRatio(width / height)
+                if (width > 0 && height > 0)
+                    setAspectRatio(Math.max(width / height, MIN_IMAGE_ASPECT))
             }}
         />
     )
