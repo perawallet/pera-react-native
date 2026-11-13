@@ -27,7 +27,10 @@ export type PWListItemLayoutProps = {
     left?: ReactNode
     /** Flexible main slot. Fills the space the sticky slots leave behind. */
     children: ReactNode
-    /** Sticky trailing slot (value, chevron, action). Never shrinks. */
+    /**
+     * Sticky trailing slot (value, chevron, action). Never shrinks; past
+     * `rightMaxWidthRatio` its content truncates.
+     */
     right?: ReactNode
     /**
      * Hairline divider aligned to the start of the `center` slot, running to the
@@ -46,6 +49,13 @@ export type PWListItemLayoutProps = {
     leftMaxWidthRatio?: number
     /** Flex-grow weight for the center slot (default `1`). */
     centerFlex?: number
+    /**
+     * Caps the right slot to this fraction (0–1) of the row width so its
+     * content truncates past the cap, for a trailing value with no length cap
+     * such as an amount in a token's own unit. Omit to size the slot to its
+     * content.
+     */
+    rightMaxWidthRatio?: number
     /**
      * Vertical alignment of the sticky slots against the content. `center`
      * (default) suits single-line rows; `top` pins the leading/trailing slots
@@ -73,13 +83,20 @@ export const PWListItemLayout = ({
     leftFlex = 0,
     leftMaxWidthRatio,
     centerFlex = 1,
+    rightMaxWidthRatio,
     align = 'center',
     onPress,
     onLongPress,
     style,
     testID,
 }: PWListItemLayoutProps) => {
-    const styles = useStyles({ leftFlex, leftMaxWidthRatio, centerFlex, align })
+    const styles = useStyles({
+        leftFlex,
+        leftMaxWidthRatio,
+        centerFlex,
+        rightMaxWidthRatio,
+        align,
+    })
 
     const content = (
         <>

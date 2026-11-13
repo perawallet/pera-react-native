@@ -10,10 +10,19 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@test-utils/render'
+import type { ReactNode } from 'react'
+import { ThemeProvider } from '@rneui/themed'
+import {
+    render,
+    renderHook,
+    fireEvent,
+    screen,
+    getTestTheme,
+} from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { Text } from 'react-native'
 import { PWListItemLayout } from '../PWListItemLayout'
+import { useStyles } from '../styles'
 
 describe('PWListItemLayout', () => {
     it('renders the left, center, and right slots', () => {
@@ -108,6 +117,44 @@ describe('PWListItemLayout', () => {
             fireEvent.contextMenu(item!)
 
             expect(onLongPress).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('rightMaxWidthRatio', () => {
+        const stylesFor = (rightMaxWidthRatio?: number) =>
+            renderHook(
+                () =>
+                    useStyles({
+                        leftFlex: 0,
+                        centerFlex: 1,
+                        rightMaxWidthRatio,
+                        align: 'center',
+                    }),
+                {
+                    wrapper: ({ children }: { children: ReactNode }) => (
+                        <ThemeProvider theme={getTestTheme()}>
+                            {children}
+                        </ThemeProvider>
+                    ),
+                },
+            ).result.current
+
+        it('sizes the right slot to its content by default', () => {
+            const styles = stylesFor()
+
+            expect(styles.right).toMatchObject({ flexShrink: 0 })
+            expect(styles.right.maxWidth).toBeUndefined()
+        })
+
+        it('caps the right slot at the ratio and still lets the center give way first', () => {
+            const styles = stylesFor(0.5)
+
+            expect(styles.right).toMatchObject({
+                flexShrink: 0,
+                maxWidth: '50%',
+            })
+            expect(styles.center).toMatchObject({ flexShrink: 1 })
+            expect(styles.center.maxWidth).toBeUndefined()
         })
     })
 })
