@@ -30,9 +30,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useConnectAccountPicker } from '../../hooks/useConnectAccountPicker'
 
 export type UseConnectionEvmAccountResult = {
-    /** The first requested EVM chain; absent when the proposal asks for none. */
+    /** The first required EVM chain, else the first requested; absent when the proposal asks for none. */
     evmChainId: Optional<ChainId>
-    /** Accounts that sign on every requested EVM chain, in the given order. */
+    /** Accounts that sign on every required EVM chain and on `evmChainId`, in the given order. */
     evmCandidates: WalletAccount[]
     /** The one account EVM chains are granted to; `null` when none can be. */
     evmAccount: Nullable<WalletAccount>
@@ -48,10 +48,23 @@ export const useConnectionEvmAccount = (
 ): UseConnectionEvmAccountResult => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const evmChainId = evmChainIds[0]
+    const { requiredChains } = proposal.requested
+    // dApps such as Uniswap list many optional networks; an account lacking
+    // some still connects on the ones it has, so only required networks (all
+    // of them when the protocol can't tell) and the one shown gate the row.
+    const gatingChainIds = useMemo(() => {
+        const required = requiredChains
+            ? evmChainIds.filter(chainId => requiredChains.includes(chainId))
+            : evmChainIds
+        const shown = required[0] ?? evmChainIds[0]
+        return shown === undefined
+            ? []
+            : [shown, ...required.filter(chainId => chainId !== shown)]
+    }, [evmChainIds, requiredChains])
+    const evmChainId = gatingChainIds[0]
     const evmCandidates = useMemo(
-        () => accountsSigningOnAll(sortedAccounts, accounts, evmChainIds),
-        [sortedAccounts, accounts, evmChainIds],
+        () => accountsSigningOnAll(sortedAccounts, accounts, gatingChainIds),
+        [sortedAccounts, accounts, gatingChainIds],
     )
     const { selectedAccountId } = useSelectedAccountId()
     const storedConnections = useConnectionsStore(state => state.connections)
@@ -106,13 +119,13 @@ export const useConnectionEvmAccount = (
     // own note never says why the EVM row is.
     const evmNoAccountsNote = useMemo(
         () =>
-            evmChainIds.length === 0 || evmCandidates.length > 0
+            gatingChainIds.length === 0 || evmCandidates.length > 0
                 ? undefined
                 : t(
-                      firstUnreachableChainsNote(accounts, evmChainIds) ??
+                      firstUnreachableChainsNote(accounts, gatingChainIds) ??
                           i18nKey('walletconnect.request.no_accounts'),
                   ),
-        [evmChainIds, evmCandidates.length, accounts, t],
+        [gatingChainIds, evmCandidates.length, accounts, t],
     )
 
     return {

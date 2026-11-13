@@ -13,7 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    // The approval header centres its children, which would shrink the field
+    // to its content and cut the placeholder.
     container: {
+        alignSelf: 'stretch',
         gap: theme.spacing.md,
     },
     label: {

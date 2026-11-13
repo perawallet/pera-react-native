@@ -146,6 +146,65 @@ describe('useConnectionEvmAccount', () => {
         expect(result.current.evmAccount?.id).toBe('two')
     })
 
+    // Uniswap lists Base and others as optional; an account without them
+    // still connects, on the networks it has.
+    it('offers accounts missing an optional network', () => {
+        const { result } = render(['ethereum', 'base'], {
+            requested: {
+                networks: ['mainnet'],
+                chains: ['ethereum', 'base'],
+                requiredChains: ['ethereum'],
+                methods: [],
+            },
+        })
+
+        expect(result.current.evmCandidates.map(({ id }) => id)).toEqual([
+            'one',
+            'two',
+        ])
+        expect(result.current.evmChainId).toBe('ethereum')
+    })
+
+    it('leaves out accounts missing a required network', () => {
+        mocks.accounts = [
+            ONE,
+            {
+                id: 'both',
+                chains: {
+                    ethereum: { address: '0x3' },
+                    base: { address: '0x3' },
+                },
+            },
+        ]
+
+        const { result } = render(['ethereum', 'base'], {
+            requested: {
+                networks: ['mainnet'],
+                chains: ['ethereum', 'base'],
+                requiredChains: ['ethereum', 'base'],
+                methods: [],
+            },
+        })
+
+        expect(result.current.evmCandidates.map(({ id }) => id)).toEqual([
+            'both',
+        ])
+    })
+
+    it('shows the first required network when an optional one comes first', () => {
+        const { result } = render(['base', 'ethereum'], {
+            requested: {
+                networks: ['mainnet'],
+                chains: ['base', 'ethereum'],
+                requiredChains: ['ethereum'],
+                methods: [],
+            },
+        })
+
+        expect(result.current.evmChainId).toBe('ethereum')
+        expect(result.current.evmCandidates).toHaveLength(2)
+    })
+
     it('offers nothing for a proposal without an EVM chain', () => {
         const { result } = render([])
 
