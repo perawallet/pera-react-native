@@ -116,6 +116,7 @@ export type SourceType =
     | 'gift-card'
     | 'injected' // injected page provider (browser extension, in-app browser)
     | 'replacement' // the wallet re-pricing one of its own pending transactions
+    | 'approval-revoke' // the wallet withdrawing a token approval the account gave
 
 /**
  * Sources that pause at `awaiting_user` for the in-app review flow. Everything
@@ -132,6 +133,7 @@ export const INTERACTIVE_SOURCES = [
     'gift-card',
     'injected',
     'replacement',
+    'approval-revoke',
 ] as const satisfies readonly SourceType[]
 
 export const isInteractiveSource = (
