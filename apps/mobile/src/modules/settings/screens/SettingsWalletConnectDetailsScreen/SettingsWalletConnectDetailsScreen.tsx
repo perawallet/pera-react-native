@@ -28,7 +28,7 @@ import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpanda
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@components/AccountDisplay'
-import { PermissionItem } from '@modules/walletconnect'
+import { ConnectAccountRow, PermissionItem } from '@modules/walletconnect'
 import { useSettingsWalletConnectDetailsScreen } from './useSettingsWalletConnectDetailsScreen'
 import { useStyles } from './styles'
 
@@ -60,6 +60,10 @@ export const SettingsWalletConnectDetailsScreen = ({
         deleteModalState,
         handleDelete,
         handleOpenLink,
+        evmChainId,
+        activeEvmAccount,
+        isChangingAccount,
+        handleChangeAccount,
     } = useSettingsWalletConnectDetailsScreen(connection)
 
     const deleteTitle = t(copy.deleteTitleKey)
@@ -121,6 +125,16 @@ export const SettingsWalletConnectDetailsScreen = ({
                         </PWText>
                     </KeyValueRow>
                 </PWView>
+                {evmChainId !== undefined && (
+                    <ConnectAccountRow
+                        account={activeEvmAccount}
+                        chainId={evmChainId}
+                        labelKey='change'
+                        onPress={() => void handleChangeAccount()}
+                        isDisabled={isChangingAccount}
+                        testID='wc_details_change_account'
+                    />
+                )}
                 {!!connectedAccounts?.length && (
                     <PWView style={styles.accountContainer}>
                         <PWText>

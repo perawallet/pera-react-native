@@ -15,12 +15,13 @@ import {
     isSignRequestAwaitingPreflight,
     isSignRequestPastApproval,
     isSignRequestPending,
+    useSigningEvent,
     useSigningRequest,
     GenesisHashMismatchError,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
+import { AppError, logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     enqueueInboundRequest,
     isConnectionAlive,
@@ -34,6 +35,7 @@ import {
     failConnectionRequest,
     rebuildWireError,
     resolveConnectionRequest,
+    sendConnectionsControlMessage,
     submitConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
@@ -179,6 +181,31 @@ export const useSignRequestApprovalScreen =
             databaseReadiness,
             t,
         ])
+
+        // The host hears of an approval only with this window's answer; told
+        // when signing starts, an account change while it signs (a Ledger
+        // confirming) leaves it to finish rather than declining it.
+        const connectionRequest =
+            approval?.kind === 'connection-request' ? approval : null
+        useSigningEvent(
+            event =>
+                event.type === 'signing-started' &&
+                connectionRequest !== null &&
+                event.request.transportId === connectionRequest.connectionId,
+            () => {
+                if (!connectionRequest) return
+                sendConnectionsControlMessage({
+                    kind: 'mark-request-approved',
+                    connectionId: connectionRequest.connectionId,
+                    correlationId: connectionRequest.correlationId,
+                }).catch((markError: unknown) => {
+                    logger.warn(
+                        '[dapp] marking a connection request approved failed',
+                        { error: markError },
+                    )
+                })
+            },
+        )
 
         // The persist-backed queue can hold a foreign request (a pending multisig
         // cosign from another window) at its head, so only the request this screen

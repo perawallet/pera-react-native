@@ -222,6 +222,7 @@ const makeRegistry = () => {
     const registry: ConnectionRegistry = {
         reportError,
         register: vi.fn(),
+        changeAccount: vi.fn(async () => {}),
         initialize: vi.fn(async () => {}),
         teardown: vi.fn(async () => {}),
         pair: vi.fn(async () => 'pairing-id'),
@@ -990,6 +991,76 @@ describe('useConnectionSigningAdapter', () => {
             send({ kind: 'connection-closed', connectionId: 'c1' })
 
             expect(mockRemoveSignRequest.mock.calls).toEqual([[waiting]])
+        })
+
+        // The account it was raised for has been replaced on the connection.
+        it('rejects a withdrawn request the user has not approved, as a decline', async () => {
+            const waiting = { id: 'sr-waiting' }
+            mockEnqueue.mockResolvedValueOnce(waiting as never)
+            mockIsSignRequestPastApproval.mockReturnValue(false)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = txnMessage()
+            send(message)
+            await Promise.resolve()
+
+            send({
+                kind: 'request-withdrawn',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(waiting)
+            expect(message.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ failure: 'user-rejected' }),
+            )
+        })
+
+        // Already declined when it was withdrawn: a later enqueue failure
+        // must neither answer it again nor toast a request the user never saw.
+        it('declines a request withdrawn mid-enqueue once, even when the enqueue then fails', async () => {
+            let fail: (error: Error) => void = () => {}
+            mockEnqueue.mockReturnValueOnce(
+                new Promise<never>((_resolve, reject) => {
+                    fail = reject
+                }),
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = txnMessage()
+            send(message)
+            await Promise.resolve()
+
+            send({
+                kind: 'request-withdrawn',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+            fail(new Error('fee calculator down'))
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(message.reject).toHaveBeenCalledTimes(1)
+            expect(registry.reportError).not.toHaveBeenCalled()
+        })
+
+        it('lets an approved request finish when it is withdrawn', async () => {
+            const approved = { id: 'sr-approved' }
+            mockEnqueue.mockResolvedValueOnce(approved as never)
+            mockIsSignRequestPastApproval.mockReturnValue(true)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry, CHAIN_ID))
+            const message = txnMessage()
+            send(message)
+            await Promise.resolve()
+
+            send({
+                kind: 'request-withdrawn',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+            expect(message.reject).not.toHaveBeenCalled()
         })
 
         it('leaves an approved request to finish on expiry too', async () => {

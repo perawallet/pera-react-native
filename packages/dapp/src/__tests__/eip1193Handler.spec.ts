@@ -2093,6 +2093,97 @@ describe('createEip1193ConnectionHandler', () => {
             expect(raisedOf(messages)).toHaveLength(2)
         })
 
+        describe('changeAccount', () => {
+            it('narrows the site to the new account and tells its tabs', async () => {
+                const { handler, store, transport } = await connected([
+                    siteOn(ORIGIN, [ADDR_X, ADDR_GONE]),
+                ])
+
+                await handler.changeAccount?.(ID, 'ethereum', ADDR_Y)
+
+                expect((await store.get(ID))?.accounts).toEqual([ADDR_Y])
+                expect((await store.get(ID))?.metadata?.chainId).toBe(
+                    'ethereum',
+                )
+                expect(notificationsOf(transport, 'accountsChanged')).toEqual([
+                    { origin: ORIGIN, params: [ADDR_Y] },
+                ])
+            })
+
+            // The one on screen goes back to whoever holds it, which declines
+            // it unless the user already approved it (a send then finishes).
+            // Those still queued behind it were never seen, so they are
+            // declined here and none surfaces later for the old account.
+            it('hands the request on screen back and declines the ones queued behind it', async () => {
+                const { handler, messages, sign } = await connected()
+                const head = sign()
+                const queued = sign()
+                await flush()
+
+                await handler.changeAccount?.(ID, 'ethereum', ADDR_Y)
+                await flush()
+
+                const [raised] = raisedOf(messages)
+                expect(messages).toContainEqual({
+                    kind: 'request-withdrawn',
+                    connectionId: raised!.connectionId,
+                    correlationId: raised!.correlationId,
+                })
+                expect(head.response).toBeUndefined()
+                expect(errorOf(queued.response!)?.code).toBe(
+                    EIP1193_ERROR_CODE.userRejected,
+                )
+            })
+
+            it('answers the page 4001 once the holder declines the handed-back request', async () => {
+                const { handler, messages, sign } = await connected()
+                const head = sign()
+                await flush()
+
+                await handler.changeAccount?.(ID, 'ethereum', ADDR_Y)
+                await raisedOf(messages)[0]!.reject(
+                    new DappRequestRejectedError(),
+                )
+                await flush()
+
+                expect(errorOf(head.response!)?.code).toBe(
+                    EIP1193_ERROR_CODE.userRejected,
+                )
+            })
+
+            it('does nothing when the address is already the only one', async () => {
+                const { handler, transport, sign } = await connected()
+                const pending = sign()
+                await flush()
+
+                await handler.changeAccount?.(ID, 'ethereum', ADDR_X)
+                await flush()
+
+                expect(notificationsOf(transport, 'accountsChanged')).toEqual(
+                    [],
+                )
+                expect(pending.response).toBeUndefined()
+            })
+
+            it('refuses an address the wallet cannot sign for, changing nothing', async () => {
+                const { handler, store } = await connected()
+
+                await expect(
+                    handler.changeAccount?.(ID, 'ethereum', ADDR_GONE),
+                ).rejects.toMatchObject({ code: 'unauthorized-account' })
+
+                expect((await store.get(ID))?.accounts).toEqual([ADDR_X])
+            })
+
+            it('refuses a site it does not hold', async () => {
+                const { handler } = await connected([])
+
+                await expect(
+                    handler.changeAccount?.(ID, 'ethereum', ADDR_Y),
+                ).rejects.toMatchObject({ code: 'unknown-connection' })
+            })
+        })
+
         it('an answer that cannot be encoded answers -32603 and advances the queue', async () => {
             const { messages, sign } = await connected()
             const adapter = dappRequestChainAdapters.get('ethereum')

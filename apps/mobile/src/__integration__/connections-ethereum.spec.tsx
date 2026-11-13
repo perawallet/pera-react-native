@@ -63,6 +63,7 @@ import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
     chainAccountOf,
     useAccountsStore,
+    ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -321,12 +322,36 @@ const bothRequired = () => ({
     },
 })
 
+const EVM_ROW = 'wc_evm_account_row'
+
+// EVM chains take one account from the row (picked through the picker when
+// the row shows another); every other chain checks its row in the list.
 const selectRows = async (...accounts: WalletAccount[]) => {
     await waitFor(() => {
         expect(findButton('common.connect.label')).toBeTruthy()
     })
-    for (const { id } of accounts) {
-        const testId = `wc_account_row_${id}`
+    for (const account of accounts) {
+        if (!account.chains.algorand) {
+            await waitFor(() =>
+                expect(screen.getByTestId(EVM_ROW)).toBeTruthy(),
+            )
+            const name = account.name ?? ''
+            if (!within(screen.getByTestId(EVM_ROW)).queryByText(name)) {
+                fireEvent.click(screen.getByTestId(EVM_ROW))
+                const option = `connect_account_picker-${ownAddressOf(account)}`
+                await waitFor(() =>
+                    expect(screen.getByTestId(option)).toBeTruthy(),
+                )
+                fireEvent.click(screen.getByTestId(option))
+            }
+            await waitFor(() =>
+                expect(
+                    within(screen.getByTestId(EVM_ROW)).getByText(name),
+                ).toBeTruthy(),
+            )
+            continue
+        }
+        const testId = `wc_account_row_${account.id}`
         await waitFor(() => expect(screen.getByTestId(testId)).toBeTruthy(), {
             timeout: 5000,
         })
@@ -447,9 +472,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
 
             await selectRows(ETHEREUM_ACCOUNT)
 
-            const row = screen.getByTestId(
-                `wc_account_row_${ETHEREUM_ACCOUNT.id}`,
-            )
+            const row = screen.getByTestId(EVM_ROW)
             const avatarBadge = within(
                 within(row).getByTestId('account_avatar_badge'),
             ).getByTestId('avatar_badge')
@@ -568,6 +591,60 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             payload?.[AnalyticsMetadataKey.ChainId],
                     ),
             ).toEqual(['algorand', 'ethereum'])
+        })
+
+        it('Given a connected Ethereum session, when its account is changed from Pera, then the session holds only the new address and the dApp is told', async () => {
+            const OTHER = '0x00000000000000000000000000000000000000b2'
+            const other: WalletAccount = {
+                id: 'eth-conn-other',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 1 },
+                },
+                chains: { ethereum: { address: OTHER, keyPairId: 'eth-key' } },
+                name: 'Other',
+            }
+            useAccountsStore
+                .getState()
+                .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT, other])
+            await mountProvider()
+            const walletKit = await propose({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETH_MAINNET],
+                        methods: ['eth_sendTransaction'],
+                        events: ['accountsChanged'],
+                    },
+                },
+            })
+            await selectRows(ETHEREUM_ACCOUNT)
+            await connect(walletKit)
+
+            await act(async () => {
+                await captured.registry!.changeAccount(
+                    V2_SESSION_TOPIC,
+                    'ethereum',
+                    OTHER,
+                )
+            })
+
+            const { namespaces } = (walletKit.updateSession as Mock).mock
+                .calls[0][0] as {
+                namespaces: Record<string, { accounts: string[] }>
+            }
+            expect(namespaces.eip155.accounts).toEqual([
+                `${ETH_MAINNET}:${OTHER}`,
+            ])
+            expect(walletKit.emitSessionEvent).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    event: { name: 'accountsChanged', data: [OTHER] },
+                }),
+            )
+            expect(
+                (await getProvider().connections.store.get(V2_SESSION_TOPIC))
+                    ?.accounts,
+            ).toEqual([OTHER])
         })
 
         it('Given a proposal requiring eth_sign and eth_signTypedData_v3, when the user connects, then the session lists both but Settings grants only eth_sendTransaction, and calls to them, eth_signTransaction, eth_sendRawTransaction, wallet_getPermissions and the unlisted wallet_addEthereumChain are answered 4200 without a review while eth_chainId is answered', async () => {

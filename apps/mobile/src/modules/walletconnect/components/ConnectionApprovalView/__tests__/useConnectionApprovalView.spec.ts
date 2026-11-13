@@ -147,6 +147,25 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
     }
 })
 
+const selection = vi.hoisted(() => ({
+    selectedAccountId: undefined as string | undefined,
+    connections: [] as unknown[],
+    pickAccount: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-connections')
+    >()),
+    useConnectionsStore: (
+        select: (state: { connections: unknown[] }) => unknown,
+    ) => select({ connections: selection.connections }),
+}))
+
+vi.mock('../../../hooks/useConnectAccountPicker', () => ({
+    useConnectAccountPicker: () => ({ pickAccount: selection.pickAccount }),
+}))
+
 const enabling = vi.hoisted(() => ({
     current: undefined as string | undefined,
 }))
@@ -165,6 +184,19 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useAllAccounts: () => ACCOUNTS,
     useSigningAccountsOn: () => ACCOUNTS,
+    useSelectedAccountId: () => ({
+        selectedAccountId: selection.selectedAccountId,
+    }),
+    findAccountByAddressOn: (
+        accounts: typeof ACCOUNTS,
+        chainId: string,
+        address: string,
+    ) =>
+        accounts.find(
+            account =>
+                (account.chains as Record<string, { address: string }>)[chainId]
+                    ?.address === address,
+        ),
     firstUnreachableChainsNote,
     eligibleChains: () => eligible.current,
     hasCustody: (account: { id: string }, kind: string) =>
@@ -187,6 +219,20 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
                 (account.chains as Record<string, { address: string }>)[chainId]
                     ?.address ?? [],
         ),
+    // The package's own resolves signers through its unmocked internals.
+    accountsSigningOnAll: (
+        accounts: (typeof ACCOUNTS)[number][],
+        _all: unknown,
+        chainIds: readonly string[],
+    ) =>
+        chainIds.length === 0
+            ? []
+            : accounts.filter(account =>
+                  chainIds.every(
+                      chainId =>
+                          (account.chains as Record<string, unknown>)[chainId],
+                  ),
+              ),
 }))
 
 const makeProposal = (overrides = {}) => ({
@@ -206,6 +252,9 @@ const makeProposal = (overrides = {}) => ({
 
 describe('useConnectionApprovalView', () => {
     beforeEach(() => {
+        selection.selectedAccountId = undefined
+        selection.connections = []
+        selection.pickAccount.mockReset().mockResolvedValue(null)
         confirmQuantumDappUsage.mockReset().mockResolvedValue('continue')
         firstUnreachableChainsNote.mockReset().mockReturnValue(null)
     })
@@ -269,7 +318,11 @@ describe('useConnectionApprovalView', () => {
 
             expect(
                 result.current.accountRows.map(({ account }) => account.id),
-            ).toEqual(['acct-eth-only', 'acct-both', 'acct-algo'])
+            ).toEqual(['acct-both', 'acct-algo'])
+            expect(result.current.evmCandidates.map(({ id }) => id)).toEqual([
+                'acct-eth-only',
+                'acct-both',
+            ])
         })
 
         it('sorts by the value totals of every chain, keyed by chain and address', () => {
@@ -325,7 +378,8 @@ describe('useConnectionApprovalView', () => {
                 },
             })
 
-        it('shows each account on the first requested chain it signs on', () => {
+        // EVM chains take one account from the account row instead.
+        it('lists accounts only for the requested chains outside the EVM family', () => {
             const { result } = renderHook(() =>
                 useConnectionApprovalView(
                     proposalOn(['ethereum', 'algorand']) as never,
@@ -339,8 +393,7 @@ describe('useConnectionApprovalView', () => {
                 ]),
             ).toEqual([
                 ['acct-algo', 'algorand'],
-                ['acct-both', 'ethereum'],
-                ['acct-eth-only', 'ethereum'],
+                ['acct-both', 'algorand'],
             ])
         })
 
@@ -550,6 +603,168 @@ describe('useConnectionApprovalView', () => {
         })
     })
 
+    describe('the EVM account row', () => {
+        beforeEach(() => {
+            totals.sort.mockReset()
+            totals.sort.mockImplementation((accounts: unknown[]) => ({
+                sortedAccounts: accounts,
+            }))
+        })
+
+        const proposalOn = (
+            chains: string[],
+            extra: Record<string, unknown> = {},
+        ) =>
+            makeProposal({
+                requested: {
+                    networks: chains.map(() => 'mainnet'),
+                    chains,
+                    methods: [],
+                    ...extra,
+                },
+            })
+
+        it('preselects the account selected in Pera and approves only its address', async () => {
+            selection.selectedAccountId = 'acct-eth-only'
+            const proposal = proposalOn(['ethereum'])
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposal as never),
+            )
+
+            expect(result.current.accountRows).toEqual([])
+            expect(result.current.evmChainId).toBe('ethereum')
+            expect(result.current.evmAccount?.id).toBe('acct-eth-only')
+            expect(result.current.canConnect).toBe(true)
+
+            await act(() => result.current.handleConnect())
+
+            expect(proposal.approve).toHaveBeenCalledWith(['0xCCCC'])
+        })
+
+        it('falls back to the first account that can sign on the EVM chains', () => {
+            selection.selectedAccountId = 'acct-algo'
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['ethereum']) as never),
+            )
+
+            expect(result.current.evmAccount?.id).toBe('acct-both')
+        })
+
+        // A site asking again (to switch, or after a flag) must not move the
+        // user off the account it already has.
+        it('starts a re-prompt on the account the site is already connected with', () => {
+            selection.selectedAccountId = 'acct-both'
+            selection.connections = [
+                {
+                    id: 'eip1193:https://app.uniswap.org',
+                    kind: 'eip1193',
+                    accounts: ['0xCCCC'],
+                    origin: { requesterOrigin: 'https://app.uniswap.org' },
+                },
+            ]
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    makeProposal({
+                        kind: 'eip1193',
+                        requesterOrigin: 'https://app.uniswap.org',
+                        requested: {
+                            networks: ['mainnet'],
+                            chains: ['ethereum'],
+                            methods: [],
+                        },
+                    }) as never,
+                ),
+            )
+
+            expect(result.current.evmAccount?.id).toBe('acct-eth-only')
+        })
+
+        it('switches to the account picked in the picker', async () => {
+            selection.pickAccount.mockResolvedValueOnce('acct-eth-only')
+            const proposal = proposalOn(['ethereum'])
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposal as never),
+            )
+
+            await act(() => result.current.handleEvmAccountPress())
+
+            expect(selection.pickAccount).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    chainId: 'ethereum',
+                    selectedAccountId: 'acct-both',
+                }),
+            )
+            expect(result.current.evmAccount?.id).toBe('acct-eth-only')
+        })
+
+        it('keeps the account when the picker is dismissed', async () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['ethereum']) as never),
+            )
+
+            await act(() => result.current.handleEvmAccountPress())
+
+            expect(result.current.evmAccount?.id).toBe('acct-both')
+        })
+
+        it('blocks Connect when a required EVM chain has no account to give', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['algorand', 'base'], {
+                        requiredChains: ['base'],
+                    }) as never,
+                ),
+            )
+
+            act(() => result.current.handleAccountPress('acct-algo'))
+
+            expect(result.current.evmAccount).toBeNull()
+            expect(result.current.canConnect).toBe(false)
+        })
+
+        it('connects on the other chains when an optional EVM chain has no account', async () => {
+            const proposal = proposalOn(['algorand', 'base'])
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposal as never),
+            )
+
+            act(() => result.current.handleAccountPress('acct-algo'))
+            await act(() => result.current.handleConnect())
+
+            expect(result.current.canConnect).toBe(true)
+            expect(proposal.approve).toHaveBeenCalledWith(['AAAA'])
+        })
+
+        it('says why the EVM row is empty on a mixed proposal, and keeps the list for Algorand', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['algorand', 'base']) as never,
+                ),
+            )
+
+            expect(result.current.evmNoAccountsNote).toBe(
+                'walletconnect.request.no_accounts',
+            )
+            expect(result.current.hasAccountList).toBe(true)
+        })
+
+        it('has no checkbox list for an EVM-only proposal', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['ethereum']) as never),
+            )
+
+            expect(result.current.hasAccountList).toBe(false)
+        })
+
+        it('cannot connect an EVM-only request without an account', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['base']) as never),
+            )
+
+            expect(result.current.canConnect).toBe(false)
+        })
+    })
+
     it('approves through the proposal, with no registry lookup', async () => {
         const proposal = makeProposal()
         const { result } = renderHook(() =>
@@ -631,7 +846,8 @@ describe('useConnectionApprovalView', () => {
         expect(proposal.reject).toHaveBeenCalled()
     })
 
-    it('approves every selected account on each requested chain it has an entry on', async () => {
+    it('approves the EVM account once and every checked account on the other chains', async () => {
+        selection.selectedAccountId = 'acct-eth-only'
         const proposal = makeProposal({
             requested: {
                 networks: ['mainnet'],
@@ -647,13 +863,14 @@ describe('useConnectionApprovalView', () => {
         act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
+        // acct-both is checked for Algorand only: its 0x address is not granted.
         expect(proposal.approve).toHaveBeenCalledWith([
+            '0xCCCC',
             'BBBB',
-            '0xBBBB',
             'AAAA',
         ])
         expect(confirmQuantumDappUsage).toHaveBeenCalledWith(
-            ['BBBB', '0xBBBB', 'AAAA'],
+            ['0xCCCC', 'BBBB', 'AAAA'],
             'algorand',
         )
     })
@@ -831,11 +1048,11 @@ describe('useConnectionApprovalView', () => {
         ])
     })
 
-    it('tracks SessionApproved only for the requested chains a selected account holds', async () => {
+    it('tracks SessionApproved only for the requested chains a granted account holds', async () => {
         const proposal = makeProposal({
             requested: {
                 networks: ['mainnet'],
-                chains: ['algorand', 'ethereum'],
+                chains: ['algorand', 'base'],
                 methods: [],
             },
         })

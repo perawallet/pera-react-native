@@ -1155,7 +1155,8 @@
             "unavailable_body": "Lütfen birazdan tekrar dene.",
             "offline_title": "Çevrimdışısın",
             "offline_body": "Bu sayfa internet bağlantısı olmadan yüklenemez. Yeniden çevrimiçi olduğunda kendiliğinden yüklenecek.",
-            "unknown_host": "Bilinmeyen site"
+            "unknown_host": "Bilinmeyen site",
+            "connected_account_a11y": "Bağlı hesap, değiştirmek için dokun"
         },
         "done": "Bitti",
         "save": "Kaydet",
@@ -4015,7 +4016,10 @@
             "error_delivery_failed": "Pera, cevabını iletmek için uygulamaya ulaşamadı; uygulama hâlâ bekliyor olabilir. Uygulamadan tekrar dene.",
             "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir.",
             "origin_scam": "Bu uygulama güvenlik riski olarak işaretlendi. Güvenmiyorsan bağlanma.",
-            "origin_unverified": "Pera bu uygulamanın web sitesini doğrulayamadı."
+            "origin_unverified": "Pera bu uygulamanın web sitesini doğrulayamadı.",
+            "connect_account": "Hesap bağla",
+            "choose_account": "Bir hesap seç",
+            "account_picker_title": "Hesap seç"
         },
         "permissions": {
             "heading": "Bu uygulama şunları yapabilir",
@@ -4051,7 +4055,9 @@
             "network_label": "{{chain}} {{network}}",
             "permissions": "Gelişmiş izinler",
             "permissions_info_title": "Gelişmiş izinler",
-            "permissions_info_body": "WalletConnect, cüzdanların ve dApp’lerin güvenli şekilde bağlanmasını ve etkileşim kurmasını sağlayan bir web3 iletişim protokolüdür. WalletConnect her yeni sürümde, üçüncü taraf projelerden gelen işlem isteklerini işlemek, imzalamak ve/veya görüntülemek için yeni yöntemler sunar."
+            "permissions_info_body": "WalletConnect, cüzdanların ve dApp’lerin güvenli şekilde bağlanmasını ve etkileşim kurmasını sağlayan bir web3 iletişim protokolüdür. WalletConnect her yeni sürümde, üçüncü taraf projelerden gelen işlem isteklerini işlemek, imzalamak ve/veya görüntülemek için yeni yöntemler sunar.",
+            "change_account": "Hesabı değiştir",
+            "change_account_failed": "Hesap değiştirilemedi. Tekrar dene."
         }
     },
     "staking": {

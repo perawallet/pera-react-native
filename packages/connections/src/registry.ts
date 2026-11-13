@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { configuredScopes } from '@perawallet/wallet-core-config'
 import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
@@ -51,6 +54,16 @@ export interface ConnectionRegistryClient {
     methodsFor(connection: Connection): string[]
     disconnect(id: ConnectionId): Promise<void>
     disconnectAll(): Promise<void>
+    /**
+     * Narrows the connection to one account on `chainId`'s namespace; see
+     * `ConnectionHandler.changeAccount`. Throws `unsupported-operation` for a
+     * kind whose handler cannot.
+     */
+    changeAccount(
+        id: ConnectionId,
+        chainId: ChainId,
+        address: string,
+    ): Promise<void>
     subscribeToProposals(listener: (p: ConnectionProposal) => void): () => void
     subscribeToErrors(
         listener: (error: Error, scope?: ConnectionErrorScope) => void,
@@ -248,6 +261,13 @@ export const createConnectionRegistry = (options: {
                 correlationId,
             })
         },
+        onRequestWithdrawn: (connectionId, correlationId) => {
+            emitMessage({
+                kind: 'request-withdrawn',
+                connectionId,
+                correlationId,
+            })
+        },
         onError: emitError,
     })
 
@@ -401,6 +421,16 @@ export const createConnectionRegistry = (options: {
         disconnect: async id => {
             const handler = await handlerForConnection(id)
             await handler.disconnect(id)
+        },
+        changeAccount: async (id, chainId, address) => {
+            const handler = await handlerForConnection(id)
+            if (!handler.changeAccount) {
+                throw new ConnectionsError(
+                    'unsupported-operation',
+                    `Connection kind ${handler.kind} cannot change its account`,
+                )
+            }
+            await handler.changeAccount(id, chainId, address)
         },
         disconnectAll: async () => {
             // allSettled: one unreachable peer must not abort the sweep.

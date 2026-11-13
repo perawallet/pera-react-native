@@ -29,6 +29,7 @@ import type {
     PeraEvmContractFixtures,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import type { FakeWalletKit } from '@test-utils/walletkit-stub'
+import { selectEvmConnectAccount } from '@test-utils/connect-account'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 
 // The query client reads its deployments once, when the integration setup
@@ -230,11 +231,7 @@ const connectEthereum = async (): Promise<FakeWalletKit> => {
             }),
         )
     })
-    const row = `wc_account_row_${ETHEREUM_ACCOUNT.id}`
-    await waitFor(() => expect(screen.getByTestId(row)).toBeTruthy(), {
-        timeout: 5000,
-    })
-    fireEvent.click(screen.getByTestId(row))
+    await selectEvmConnectAccount(ETHEREUM_ACCOUNT)
     await waitFor(() =>
         expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
             false,

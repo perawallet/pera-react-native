@@ -40,6 +40,7 @@ const makeRegistry = () => {
         })),
         scopesFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
+        changeAccount: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
         subscribeToProposals: listener => {
             proposalListeners.add(listener)

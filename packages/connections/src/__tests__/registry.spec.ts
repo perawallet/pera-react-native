@@ -666,6 +666,60 @@ describe('createConnectionRegistry', () => {
         expect(alpha.disconnect).not.toHaveBeenCalled()
     })
 
+    describe('changeAccount', () => {
+        const storeBeta = () =>
+            store.upsert({
+                id: 'c1',
+                kind: 'beta',
+                name: 'Peer',
+                peer: { name: 'Peer' },
+                accounts: ['0xA'],
+                status: 'active',
+                createdAt: 0,
+                lastActiveAt: 0,
+            })
+
+        it('routes to the handler of the connection kind', async () => {
+            const changeAccount = vi.fn(async () => {})
+            const alpha = makeHandler('alpha', { changeAccount })
+            const beta = makeHandler('beta', {
+                changeAccount: vi.fn(async () => {}),
+            })
+            const registry = createConnectionRegistry({ store })
+            registry.register(alpha)
+            registry.register(beta)
+            await storeBeta()
+
+            await registry.changeAccount('c1', 'ethereum', '0xB')
+
+            expect(beta.changeAccount).toHaveBeenCalledWith(
+                'c1',
+                'ethereum',
+                '0xB',
+            )
+            expect(changeAccount).not.toHaveBeenCalled()
+        })
+
+        it('refuses a connection whose handler cannot change accounts', async () => {
+            const registry = createConnectionRegistry({ store })
+            registry.register(makeHandler('beta'))
+            await storeBeta()
+
+            await expect(
+                registry.changeAccount('c1', 'ethereum', '0xB'),
+            ).rejects.toMatchObject({ code: 'unsupported-operation' })
+        })
+
+        it('refuses a connection it does not hold', async () => {
+            const registry = createConnectionRegistry({ store })
+            registry.register(makeHandler('beta'))
+
+            await expect(
+                registry.changeAccount('nope', 'ethereum', '0xB'),
+            ).rejects.toMatchObject({ code: 'unknown-connection' })
+        })
+    })
+
     it('disconnectAll sweeps every handler even when one fails', async () => {
         const alpha = makeHandler('alpha', {
             disconnectAll: vi.fn(async () => {

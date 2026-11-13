@@ -27,6 +27,12 @@ const mocks = vi.hoisted(() => ({
     useApprovalArming: vi.fn(),
     useProjectByUrlQuery: vi.fn(),
     selectedNetworks: {} as Record<string, string>,
+    pickAccount: vi.fn(),
+}))
+
+vi.mock('@modules/walletconnect', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/walletconnect')>()),
+    useConnectAccountPicker: () => ({ pickAccount: mocks.pickAccount }),
 }))
 
 const NETWORKS: Record<string, { id: string; displayName: string }[]> = {
@@ -73,7 +79,12 @@ vi.mock('@hooks/useApprovalArming.web', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    firstPreferredAccountId: (
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    ).firstPreferredAccountId,
     useSigningAccountsOn: mocks.useSigningAccountsOn,
     useSelectedAccountId: mocks.useSelectedAccountId,
     useAllAccounts: () => mocks.allAccounts,
@@ -145,6 +156,96 @@ describe('useWcConnectScreen', () => {
         mocks.selectedNetworks = {}
         mocks.allAccounts = [ACCOUNT_A]
         mocks.firstUnreachableChainsNote.mockReturnValue(null)
+        mocks.pickAccount.mockResolvedValue(null)
+    })
+
+    describe('an EVM proposal', () => {
+        const EVM_A = {
+            id: 'evm-a',
+            name: 'EVM A',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xAAAA' } },
+        }
+        const EVM_B = {
+            id: 'evm-b',
+            name: 'EVM B',
+            custody: { kind: 'local', seed: null },
+            chains: { ethereum: { address: '0xBBBB' } },
+        }
+        const evmProposal = (overrides: Record<string, unknown> = {}) =>
+            proposalApproval({
+                connectionKind: 'dapp-eip1193',
+                requested: {
+                    networks: ['mainnet'],
+                    chains: ['ethereum'],
+                    methods: ['eth_accounts'],
+                },
+                ...overrides,
+            })
+
+        beforeEach(() => {
+            mocks.useSigningAccountsOn.mockReturnValue([EVM_A, EVM_B])
+            mocks.useSelectedAccountId.mockReturnValue({
+                selectedAccountId: 'evm-b',
+            })
+        })
+
+        // The empty row is what keeps a decoy under Connect from granting.
+        it('starts a page-opened window with no account, so Connect waits for a pick', () => {
+            const { result } = render(
+                evmProposal({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            expect(result.current.isEvm).toBe(true)
+            expect(result.current.evmAccount).toBeNull()
+            expect(result.current.canConnect).toBe(false)
+        })
+
+        it('approves exactly the one account picked', async () => {
+            mocks.pickAccount.mockResolvedValueOnce('evm-a')
+            const { result } = render(
+                evmProposal({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            await act(() => result.current.handleEvmAccountPress())
+            act(() => result.current.handleConnect())
+
+            expect(result.current.evmAccount?.id).toBe('evm-a')
+            expect(mocks.approve).toHaveBeenCalledWith(['0xAAAA'])
+        })
+
+        it('preselects the active account for a pairing the user started', () => {
+            const { result } = render(evmProposal())
+
+            expect(result.current.evmAccount?.id).toBe('evm-b')
+            expect(result.current.canConnect).toBe(true)
+        })
+
+        it('does not open the picker before the window is armed', async () => {
+            mocks.useApprovalArming.mockReturnValue(false)
+            const { result } = render(
+                evmProposal({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            await act(() => result.current.handleEvmAccountPress())
+
+            expect(mocks.pickAccount).not.toHaveBeenCalled()
+        })
+
+        it('keeps the pick when the picker is dismissed', async () => {
+            const { result } = render(evmProposal())
+
+            await act(() => result.current.handleEvmAccountPress())
+
+            expect(result.current.evmAccount?.id).toBe('evm-b')
+        })
+    })
+
+    it('is not an EVM proposal on Algorand', () => {
+        const { result } = render()
+
+        expect(result.current.isEvm).toBe(false)
+        expect(result.current.evmAccount).toBeNull()
     })
 
     it("explains an empty account list with the kind's note for the requested chain", () => {

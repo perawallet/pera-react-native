@@ -1147,7 +1147,8 @@
             "unavailable_body": "Bitte versuche es gleich noch einmal.",
             "offline_title": "Du bist offline",
             "offline_body": "Diese Seite kann ohne Internetverbindung nicht geladen werden. Sie wird automatisch neu geladen, sobald du wieder online bist.",
-            "unknown_host": "Unbekannte Website"
+            "unknown_host": "Unbekannte Website",
+            "connected_account_a11y": "Verbundenes Konto, tippe zum Ändern"
         },
         "done": "Fertig",
         "save": "Speichern",
@@ -4007,7 +4008,10 @@
             "origin_unverified": "Pera konnte die Website dieser App nicht verifizieren.",
             "networks_betanet": "Betanet",
             "error_network_mismatch": "Diese App wollte sich mit einem anderen Netzwerk verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
-            "error_delivery_failed": "Pera konnte die App nicht erreichen, um deine Antwort zu übermitteln — sie wartet möglicherweise noch. Versuche es erneut über die App."
+            "error_delivery_failed": "Pera konnte die App nicht erreichen, um deine Antwort zu übermitteln — sie wartet möglicherweise noch. Versuche es erneut über die App.",
+            "connect_account": "Konto verbinden",
+            "choose_account": "Wähle ein Konto",
+            "account_picker_title": "Konto auswählen"
         },
         "permissions": {
             "heading": "Diese App kann",
@@ -4043,7 +4047,9 @@
             "permissions": "Erweiterte Berechtigungen",
             "permissions_info_title": "Erweiterte Berechtigungen",
             "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen.",
-            "disconnect_failed_title": "Trennen nicht möglich"
+            "disconnect_failed_title": "Trennen nicht möglich",
+            "change_account": "Konto ändern",
+            "change_account_failed": "Das Konto konnte nicht geändert werden. Versuche es erneut."
         }
     },
     "staking": {

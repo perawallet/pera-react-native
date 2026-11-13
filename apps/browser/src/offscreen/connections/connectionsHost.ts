@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import type {
-    ChainId,
-    NetworkId,
-    SignedTransaction,
+import {
+    isChainId,
+    type ChainId,
+    type NetworkId,
+    type SignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { AppError, logger, toError } from '@perawallet/wallet-core-shared'
 import {
@@ -92,6 +93,13 @@ export const startConnectionsHost = (
     const { registry } = deps
     const proposals = new Map<string, ConnectionProposal>()
     const requests = new Map<string, InboundRequest>()
+    // Approved in the window and being signed (a Ledger still confirming): the
+    // window answers it, so a withdrawal must not pre-empt that answer.
+    const approvedRequests = new Set<string>()
+    const forgetRequest = (key: string): boolean => {
+        approvedRequests.delete(key)
+        return requests.delete(key)
+    }
     const requesterOrigins = new Map<string, string>()
     const unsettledPairings = new Set<string>()
     // A page can trigger `pair` at will; one open notice at a time stops a hostile
@@ -171,7 +179,7 @@ export const startConnectionsHost = (
         correlationId: string,
     ): void => {
         const key = requestKey(connectionId, correlationId)
-        if (!requests.delete(key)) return
+        if (!forgetRequest(key)) return
         void deps
             .requestApproval({
                 kind: 'connection-request-withdrawn',
@@ -189,6 +197,24 @@ export const startConnectionsHost = (
     registry.subscribeToMessages(message => {
         if (message.kind === 'request-expired') {
             withdrawRequest(message.connectionId, message.correlationId)
+            return
+        }
+        // Still here means the window has not answered it. One the user has
+        // not approved is declined; an approved one is left for the window's
+        // answer. A send leaves this table before it is broadcast either way.
+        if (message.kind === 'request-withdrawn') {
+            const key = requestKey(message.connectionId, message.correlationId)
+            const open = requests.get(key)
+            if (!open || approvedRequests.has(key)) return
+            withdrawRequest(message.connectionId, message.correlationId)
+            open.reject(new DappRequestRejectedError()).catch(
+                (error: unknown) => {
+                    logger.warn('[connections-host] request decline failed', {
+                        connectionId: message.connectionId,
+                        error,
+                    })
+                },
+            )
             return
         }
         if (message.kind === 'connection-closed') {
@@ -215,7 +241,7 @@ export const startConnectionsHost = (
                 verifiedOrigin: message.verifiedOrigin,
             })
             .catch((error: unknown) => {
-                requests.delete(key)
+                forgetRequest(key)
                 logger.error('[connections-host] request approval failed', {
                     key,
                     error,
@@ -363,7 +389,7 @@ export const startConnectionsHost = (
                       ),
             )
         }
-        requests.delete(key)
+        forgetRequest(key)
         return ok()
     }
 
@@ -384,7 +410,7 @@ export const startConnectionsHost = (
         }
         // Claimed before the broadcast, so a late decline or withdrawal finds
         // nothing to answer.
-        requests.delete(key)
+        forgetRequest(key)
         request.commit?.()
         let txId: string
         try {
@@ -447,6 +473,26 @@ export const startConnectionsHost = (
             }
             case 'disconnect-all': {
                 return registry.disconnectAll().then(() => ok())
+            }
+            case 'mark-request-approved': {
+                const key = requestKey(
+                    message.connectionId,
+                    message.correlationId,
+                )
+                if (requests.has(key)) approvedRequests.add(key)
+                return ok()
+            }
+            case 'change-account': {
+                if (!isChainId(message.chainId)) {
+                    return fail(`Unknown chain ${message.chainId}`)
+                }
+                return registry
+                    .changeAccount(
+                        message.connectionId,
+                        message.chainId,
+                        message.address,
+                    )
+                    .then(() => ok())
             }
             case 'reconnect-all': {
                 registry.reconnect()
