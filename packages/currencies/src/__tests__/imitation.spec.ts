@@ -48,12 +48,9 @@ describe('imitatedCurrencyOf', () => {
         expect(imitatedCurrencyOf(algorand('741'), unitName)).toBe(code)
     })
 
-    it.each(['USDC', 'xALGO', 'ALGOS', 'XAU'])(
-        'leaves %j alone',
-        unitName => {
-            expect(imitatedCurrencyOf(algorand('741'), unitName)).toBeNull()
-        },
-    )
+    it.each(['USDC', 'xALGO', 'ALGOS', 'XAU'])('leaves %j alone', unitName => {
+        expect(imitatedCurrencyOf(algorand('741'), unitName)).toBeNull()
+    })
 
     it.each(['', undefined])('ignores a missing name %j', unitName => {
         expect(imitatedCurrencyOf(algorand('741'), unitName)).toBeNull()
