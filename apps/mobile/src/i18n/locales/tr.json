@@ -84,7 +84,8 @@
                 "placeholder": "Klasör adı",
                 "create": "Oluştur",
                 "save": "Kaydet"
-            }
+            },
+            "empty": "Bu klasörde henüz dApp yok"
         },
         "favorites": {
             "title": "Favoriler",
@@ -94,7 +95,8 @@
             "dapp_count_one": "{{count}} dApp",
             "see_all": "Tümünü gör",
             "empty_title": "Henüz favorin yok",
-            "empty_body": "dApp'leri keşfetmeye başla"
+            "empty_body": "dApp'leri keşfetmeye başla",
+            "all_folders_title": "Tüm klasörler"
         }
     },
     "account_menu": {

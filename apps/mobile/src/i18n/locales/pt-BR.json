@@ -84,7 +84,8 @@
                 "placeholder": "Nome da pasta",
                 "create": "Criar",
                 "save": "Salvar"
-            }
+            },
+            "empty": "Ainda não há dApps nesta pasta"
         },
         "favorites": {
             "title": "Favoritos",
@@ -94,7 +95,8 @@
             "dapp_count_one": "{{count}} dApp",
             "see_all": "Ver tudo",
             "empty_title": "Nenhum favorito ainda",
-            "empty_body": "Comece a explorar os dApps"
+            "empty_body": "Comece a explorar os dApps",
+            "all_folders_title": "Todas as pastas"
         }
     },
     "account_menu": {

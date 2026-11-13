@@ -10,17 +10,18 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { DiscoverEvent, trackEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { FolderNameSheet, type FolderNameSheetResult } from '../FolderNameSheet'
+import { useFolderRows, type FolderRowItem } from '../../hooks/useFolderRows'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 
 /** Folder rows the home shows before "See all". */
 export const HOME_FOLDER_LIMIT = 4
 
-export type FavoritesFolderRow = { id: string; name: string; count: number }
+export type FavoritesFolderRow = FolderRowItem
 
 export type UseFavoritesSectionResult = {
     favoriteCount: number
@@ -39,20 +40,9 @@ export const useFavoritesSection = (): UseFavoritesSectionResult => {
     const navigation = useAppNavigation()
     const { request } = useBottomSheet()
     const favoriteCount = useDiscoverFavoritesStore(s => s.favoriteOrder.length)
-    const folders = useDiscoverFavoritesStore(s => s.folders)
-    const folderOrder = useDiscoverFavoritesStore(s => s.folderOrder)
     const createFolder = useDiscoverFavoritesStore(s => s.createFolder)
 
-    const rows = useMemo(
-        () =>
-            folderOrder.flatMap(id => {
-                const folder = folders[id]
-                return folder
-                    ? [{ id, name: folder.name, count: folder.items.length }]
-                    : []
-            }),
-        [folders, folderOrder],
-    )
+    const rows = useFolderRows()
 
     const openNewFolder = useCallback(async () => {
         const name = await request<FolderNameSheetResult>({
