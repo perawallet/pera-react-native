@@ -27,6 +27,7 @@ export type UseDiscoverDirectoryResult = {
     verifiedUrls: ReadonlySet<string>
     isLoading: boolean
     isError: boolean
+    refetch: () => Promise<unknown>
 }
 
 // The every-discover-chain project list that search filters locally. Home
@@ -47,5 +48,6 @@ export const useDiscoverDirectory = ({
         verifiedUrls,
         isLoading: query.isLoading,
         isError: query.isError,
+        refetch: () => query.refetch(),
     }
 }

@@ -84,6 +84,7 @@ const mockDirectory = (verified: string[] = []) =>
         verifiedUrls: new Set(verified),
         isLoading: false,
         isError: false,
+        refetch: vi.fn(),
     })
 
 const setup = () => renderHook(() => useDiscoverSearchScreen())
@@ -514,6 +515,7 @@ describe('useDiscoverSearchScreen', () => {
                 verifiedUrls: new Set(),
                 isLoading: false,
                 isError: true,
+                refetch: vi.fn(),
             })
             expect(setup().result.current.isDappSearchUnavailable).toBe(true)
         })
@@ -524,6 +526,7 @@ describe('useDiscoverSearchScreen', () => {
                 verifiedUrls: new Set(),
                 isLoading: false,
                 isError: true,
+                refetch: vi.fn(),
             })
             expect(setup().result.current.isDappSearchUnavailable).toBe(false)
         })

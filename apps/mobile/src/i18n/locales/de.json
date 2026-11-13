@@ -57,6 +57,15 @@
             "no_results": "Keine Ergebnisse",
             "assets_unavailable": "Die Asset-Suche ist momentan nicht verfügbar",
             "dapps_unavailable": "Die dApp-Suche ist momentan nicht verfügbar"
+        },
+        "dapps": {
+            "title": "dApps",
+            "list_title": "dApps auf Pera",
+            "sort_popular": "Beliebt",
+            "sort_alphabetical": "Alphabetisch (A-Z)",
+            "apply_prompt": "Möchtest du dein Projekt zu Discover hinzufügen?",
+            "apply_cta": "Für Discover bewerben",
+            "load_failure": "dApps konnten nicht geladen werden"
         }
     },
     "account_menu": {

@@ -1,0 +1,260 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useMemo, useState } from 'react'
+import { Linking } from 'react-native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AnalyticsMetadataKey as Key,
+    DiscoverEvent,
+    trackEvent,
+} from '@analytics'
+import type { FilterOption } from '@components/FilterSelection'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { toChainFilterOptions } from '@modules/assets'
+import type { RootStackParamList } from '@routes/types'
+import { useDiscoverChainIds } from '../../hooks/useDiscoverChainIds'
+import { useDiscoverDirectory } from '../../hooks/useDiscoverDirectory'
+import { useOpenDapp } from '../../hooks/useOpenDapp'
+import { useToggleDiscoverFavorite } from '../../hooks/useToggleDiscoverFavorite'
+import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
+import type { DiscoverDapp } from '../../types'
+import {
+    directoryCategories,
+    filterDirectory,
+    toDirectoryDapps,
+    type DappSort,
+    type DirectoryDapp,
+} from '../../utils/dappDirectory'
+import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
+
+// The web app's verification form; it opens outside the app, as on the web.
+const APPLY_FOR_DISCOVER_URL =
+    'https://explorer.perawallet.app/project-verification/'
+
+// English labels go to analytics so events do not split by language.
+const SORTS: { id: DappSort; labelKey: string; analyticsLabel: string }[] = [
+    {
+        id: 'popular',
+        labelKey: 'discover.dapps.sort_popular',
+        analyticsLabel: 'Popular',
+    },
+    {
+        id: 'a-z',
+        labelKey: 'discover.dapps.sort_alphabetical',
+        analyticsLabel: 'Alphabetical (A-Z)',
+    },
+]
+const ALL_ANALYTICS_LABEL = 'All'
+
+export type DappSortOption = { id: DappSort; label: string }
+
+export type UseDiscoverDappsScreenResult = {
+    chainOptions: FilterOption<Nullable<ChainId>>[]
+    selectedChainId: Nullable<ChainId>
+    selectedChainName: string
+    selectChain: (id: Nullable<ChainId>) => void
+    sort: DappSort
+    sortLabel: string
+    sortOptions: DappSortOption[]
+    selectSort: (id: DappSort) => void
+    categoryOptions: FilterOption<Nullable<string>>[]
+    selectedCategory: Nullable<string>
+    selectCategory: (category: Nullable<string>) => void
+    items: DirectoryDapp[]
+    showChains: boolean
+    isLoading: boolean
+    isError: boolean
+    retry: () => void
+    isFavorite: (url: string) => boolean
+    isVerified: (url: string) => boolean
+    toggleFavorite: (dapp: DiscoverDapp) => void
+    openDapp: (dapp: DiscoverDapp) => void
+    openSearch: () => void
+    applyForDiscover: () => void
+}
+
+export const useDiscoverDappsScreen = (): UseDiscoverDappsScreenResult => {
+    const { t } = useLanguage()
+    const navigation = useAppNavigation()
+    const route = useRoute<RouteProp<RootStackParamList, 'DiscoverDapps'>>()
+    const { openDapp: openDappPage } = useOpenDapp()
+    const toggle = useToggleDiscoverFavorite()
+    const favorites = useDiscoverFavoritesStore(s => s.favorites)
+    const discoverChainIds = useDiscoverChainIds()
+    const directory = useDiscoverDirectory()
+
+    const [pickedChainId, setPickedChainId] = useState<Nullable<ChainId>>(
+        route.params?.chainId ?? null,
+    )
+    const [sort, setSort] = useState<DappSort>('popular')
+    const [pickedCategory, setPickedCategory] = useState<Nullable<string>>(null)
+
+    const allLabel = t('discover.search.filter_all')
+    const chainOptions = useMemo(
+        () =>
+            toChainFilterOptions(discoverChainIds, {
+                allLabel,
+                testIDPrefix: 'discover_dapps_chain',
+            }),
+        [discoverChainIds, allLabel],
+    )
+    // A chain that lost Discover (or never had it) reads as All.
+    const selectedChainId =
+        pickedChainId !== null && discoverChainIds.includes(pickedChainId)
+            ? pickedChainId
+            : null
+    const selectedChainName =
+        selectedChainId === null
+            ? ''
+            : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
+
+    const all = useMemo(
+        () => toDirectoryDapps(directory.projects),
+        [directory.projects],
+    )
+    const onChain = useMemo(
+        () =>
+            filterDirectory(all, {
+                chainId: selectedChainId,
+                category: null,
+                sort,
+            }),
+        [all, selectedChainId, sort],
+    )
+    const categories = useMemo(() => directoryCategories(onChain), [onChain])
+    const selectedCategory =
+        pickedCategory !== null && categories.includes(pickedCategory)
+            ? pickedCategory
+            : null
+    const items = useMemo(
+        () =>
+            selectedCategory === null
+                ? onChain
+                : onChain.filter(({ dapp }) =>
+                      dapp.categories.includes(selectedCategory),
+                  ),
+        [onChain, selectedCategory],
+    )
+    const categoryOptions = useMemo(
+        () => [
+            {
+                value: null,
+                label: allLabel,
+                testID: 'discover_dapps_category_all',
+            },
+            ...categories.map(category => ({
+                value: category,
+                label: category,
+                testID: `discover_dapps_category_${category}`,
+            })),
+        ],
+        [categories, allLabel],
+    )
+    const sortOptions = useMemo(
+        () => SORTS.map(({ id, labelKey }) => ({ id, label: t(labelKey) })),
+        [t],
+    )
+    const sortLabel =
+        sortOptions.find(option => option.id === sort)?.label ?? ''
+
+    const selectChain = useCallback((id: Nullable<ChainId>) => {
+        setPickedChainId(id)
+        trackEvent(DiscoverEvent.DappFilterTap, {
+            [Key.FilterName]:
+                id === null
+                    ? ALL_ANALYTICS_LABEL
+                    : (chainDisplayNameOf(id) ?? id),
+            ...(id === null ? {} : { [Key.ChainId]: id }),
+        })
+    }, [])
+    const selectSort = useCallback((id: DappSort) => {
+        setSort(id)
+        setPickedCategory(null)
+        trackEvent(DiscoverEvent.DappFilterTap, {
+            [Key.FilterName]:
+                SORTS.find(option => option.id === id)?.analyticsLabel ?? id,
+        })
+    }, [])
+    const selectCategory = useCallback((category: Nullable<string>) => {
+        setPickedCategory(category)
+        trackEvent(DiscoverEvent.DappFilterTap, {
+            [Key.FilterName]: category ?? ALL_ANALYTICS_LABEL,
+        })
+    }, [])
+
+    const verifiedUrls = directory.verifiedUrls
+    const isVerified = useCallback(
+        (url: string) => verifiedUrls.has(normalizeDappUrl(url) ?? ''),
+        [verifiedUrls],
+    )
+    const isFavorite = useCallback(
+        (url: string) => {
+            const key = normalizeDappUrl(url)
+            return key !== null && key in favorites
+        },
+        [favorites],
+    )
+    const toggleFavorite = useCallback(
+        (dapp: DiscoverDapp) => toggle(dapp, selectedChainId),
+        [toggle, selectedChainId],
+    )
+    const openDapp = useCallback(
+        (dapp: DiscoverDapp) => openDappPage(dapp, selectedChainId),
+        [openDappPage, selectedChainId],
+    )
+    const openSearch = useCallback(() => {
+        trackEvent(DiscoverEvent.SearchBarTap)
+        navigation.navigate('DiscoverSearch')
+    }, [navigation])
+    const applyForDiscover = useCallback(() => {
+        trackEvent(DiscoverEvent.ApplyForVerificationTap, {
+            [Key.Category]: 'project',
+        })
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- a constant Pera URL
+        void Linking.openURL(APPLY_FOR_DISCOVER_URL)
+    }, [])
+    const directoryRefetch = directory.refetch
+    const retry = useCallback(() => {
+        void directoryRefetch()
+    }, [directoryRefetch])
+
+    return {
+        chainOptions,
+        selectedChainId,
+        selectedChainName,
+        selectChain,
+        sort,
+        sortLabel,
+        sortOptions,
+        selectSort,
+        categoryOptions,
+        selectedCategory,
+        selectCategory,
+        items,
+        // Icons only when the list mixes chains (All with chips to pick from).
+        showChains: selectedChainId === null && chainOptions.length > 0,
+        isLoading: directory.isLoading,
+        isError: directory.isError,
+        retry,
+        isFavorite,
+        isVerified,
+        toggleFavorite,
+        openDapp,
+        openSearch,
+        applyForDiscover,
+    }
+}

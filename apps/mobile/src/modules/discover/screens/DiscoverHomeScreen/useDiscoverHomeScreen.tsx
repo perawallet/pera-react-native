@@ -53,6 +53,7 @@ export type UseDiscoverHomeScreenResult = {
     refresh: () => Promise<void>
     openSearch: () => void
     openDapp: (dapp: DiscoverDapp) => void
+    openDappDirectory: () => void
 }
 
 export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
@@ -152,6 +153,13 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         navigation.navigate('DiscoverSearch')
     }, [navigation])
 
+    const openDappDirectory = useCallback(() => {
+        trackEvent(DiscoverEvent.TopDappsButtonTap)
+        navigation.navigate('DiscoverDapps', {
+            chainId: selectedChainId ?? undefined,
+        })
+    }, [navigation, selectedChainId])
+
     return {
         chainOptions,
         selectedChainId,
@@ -166,5 +174,6 @@ export const useDiscoverHomeScreen = (): UseDiscoverHomeScreenResult => {
         refresh,
         openSearch,
         openDapp,
+        openDappDirectory,
     }
 }
