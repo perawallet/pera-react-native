@@ -230,6 +230,19 @@
         "empty_title": "Gizlenecek token yok",
         "empty_body": "Bu hesapta gizlenebilecek token yok."
     },
+    "token_approvals": {
+        "title": "Token onayları",
+        "unlimited": "Sınırsız",
+        "all_items": "{{collection}} içindeki tüm öğeler",
+        "revoke": "İptal et",
+        "revoke_unavailable": "Token bilgileri yüklenemedi, bu yüzden burada iptal edilemiyor.",
+        "empty_title": "Açık onay yok",
+        "empty_body": "Bu hesap için açık token veya koleksiyon onayı bulunamadı.",
+        "error_title": "Onaylar yüklenemedi",
+        "error_body": "Bağlantını kontrol et ve tekrar dene.",
+        "revoke_error_title": "İptal onaylanmadı",
+        "revoke_error_body": "Tekrar denemeden önce listede onayın güncel durumuna bak."
+    },
     "token_visibility": {
         "hide": "Tokenı gizle",
         "unhide": "Tokenı göster",
@@ -526,6 +539,7 @@
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
+        "token_approvals": "Token onayları",
         "rekey_option_ledger_title": "Bir Ledger hesabına",
         "rekey_option_ledger_description": "İşlemler Ledger cihazında yetkilendirilecek.",
         "rekey_option_standard_title": "Bir standart hesaba",
