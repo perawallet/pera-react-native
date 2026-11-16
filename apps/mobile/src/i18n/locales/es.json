@@ -1090,6 +1090,19 @@
             "update_to_restore": "Actualiza Pera para restaurar {{count}} cuentas más.",
             "update_to_restore_one": "Actualiza Pera para restaurar {{count}} cuenta más."
         },
+        "restore_accounts": {
+            "title": "Elige las cuentas que quieres restaurar",
+            "description": "Esta copia de seguridad contiene {{count}} cuentas. Elige cuáles añadir a este dispositivo.",
+            "description_one": "Esta copia de seguridad contiene {{count}} cuenta. Elige si quieres añadirla a este dispositivo.",
+            "description_empty": "Esta copia de seguridad no contiene cuentas. Sus contactos y ajustes se añadirán a este dispositivo.",
+            "all_accounts": "Todas las cuentas",
+            "selected_accounts": "Cuentas seleccionadas",
+            "left_out_hint": "Las cuentas que no elijas se quedan en la copia de seguridad. Puedes añadirlas a este dispositivo más tarde desde Copia de seguridad en la nube.",
+            "device_notice_title": "Las cuentas de este dispositivo se incluirán en la copia de seguridad",
+            "device_notice_body": "Las {{count}} cuentas de este dispositivo se añadirán a esta copia de seguridad. Cualquiera que tenga su frase de copia de seguridad y su clave de cifrado podrá acceder a ellas, incluidas sus passphrases de recuperación y claves privadas.",
+            "device_notice_body_one": "La cuenta de este dispositivo se añadirá a esta copia de seguridad. Cualquiera que tenga su frase de copia de seguridad y su clave de cifrado podrá acceder a ella, incluida su passphrase de recuperación o clave privada.",
+            "restore": "Restaurar"
+        },
         "restore_scan": {
             "title": "Escanear código QR",
             "instructions": "Abre Copia de seguridad en la nube en tu otro dispositivo, elige «Sincronizar con otros dispositivos» y escanea el código que aparece.",

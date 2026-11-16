@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/routes'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import { makeStyles } from '@rneui/themed'
 
-// The restore screens are shared with the cloud-backup stack, whose
-// `CloudBackupOverview` exit does not exist here; a restore reached from the
-// import flow ends like every other import.
-export const ImportFlowRestoreEncryptionKeyRoute = () => {
-    const { exitAccountFlow } = useExitAccountFlow()
-    return <CloudBackupRestoreEncryptionKeyScreen onDone={exitAccountFlow} />
-}
+export const useStyles = makeStyles(theme => ({
+    header: {
+        gap: theme.spacing.md,
+        paddingBottom: theme.spacing.md,
+    },
+    hint: {
+        color: theme.colors.textGray,
+    },
+}))

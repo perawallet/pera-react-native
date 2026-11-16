@@ -1090,6 +1090,19 @@
             "update_to_restore": "Atualize o Pera para restaurar mais {{count}} contas.",
             "update_to_restore_one": "Atualize o Pera para restaurar mais {{count}} conta."
         },
+        "restore_accounts": {
+            "title": "Escolha as contas para restaurar",
+            "description": "Este backup contém {{count}} contas. Escolha quais adicionar a este dispositivo.",
+            "description_one": "Este backup contém {{count}} conta. Escolha se quer adicioná-la a este dispositivo.",
+            "description_empty": "Este backup não contém contas. Os contatos e as configurações dele serão adicionados a este dispositivo.",
+            "all_accounts": "Todas as contas",
+            "selected_accounts": "Contas selecionadas",
+            "left_out_hint": "As contas que você não escolher continuam no backup. Você pode adicioná-las a este dispositivo depois, em Backup na nuvem.",
+            "device_notice_title": "As contas deste dispositivo entrarão no backup",
+            "device_notice_body": "As {{count}} contas deste dispositivo serão adicionadas a este backup. Qualquer pessoa com a frase de backup e a chave de criptografia dele poderá acessá-las, incluindo as passphrases de recuperação e as chaves privadas.",
+            "device_notice_body_one": "A conta deste dispositivo será adicionada a este backup. Qualquer pessoa com a frase de backup e a chave de criptografia dele poderá acessá-la, incluindo a passphrase de recuperação ou a chave privada.",
+            "restore": "Restaurar"
+        },
         "restore_scan": {
             "title": "Escanear código QR",
             "instructions": "Abra Backup na nuvem no seu outro dispositivo, escolha “Sincronizar com outros dispositivos” e escaneie o código exibido.",

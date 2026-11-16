@@ -132,8 +132,7 @@ export const ALGORAND_ONLY_FEATURES: readonly AlgorandOnlyFeature[] = [
     ...entries(BACKUP_FORMAT, [
         'apps/mobile/src/modules/cloud-backup/components/BackupAccountRow/BackupAccountRow.tsx',
         'apps/mobile/src/modules/cloud-backup/hooks/useBackupSyncLifecycle.ts',
-        'apps/mobile/src/modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen/useCloudBackupRestoreEncryptionKeyScreen.ts',
-        'apps/mobile/src/modules/cloud-backup/screens/CloudBackupRestoreScanScreen/useCloudBackupRestoreScanScreen.tsx',
+        'apps/mobile/src/modules/cloud-backup/screens/CloudBackupRestoreSelectAccountsScreen/useCloudBackupRestoreSelectAccountsScreen.ts',
     ]),
     ...entries(PASSKEY_SEED_REF, [
         'apps/mobile/src/modules/cloud-backup/hooks/useProvenPasskeysQuery.ts',

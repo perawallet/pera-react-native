@@ -1090,6 +1090,19 @@
             "update_to_restore": "{{count}} hesabı daha geri yüklemek için Pera’yı güncelle.",
             "update_to_restore_one": "{{count}} hesabı daha geri yüklemek için Pera’yı güncelle."
         },
+        "restore_accounts": {
+            "title": "Geri yüklenecek hesapları seç",
+            "description": "Bu yedeklemede {{count}} hesap var. Bu cihaza hangilerini eklemek istediğini seç.",
+            "description_one": "Bu yedeklemede {{count}} hesap var. Bu cihaza eklemek isteyip istemediğini seç.",
+            "description_empty": "Bu yedeklemede hesap yok. Kişileri ve ayarları bu cihaza eklenecek.",
+            "all_accounts": "Tüm hesaplar",
+            "selected_accounts": "Seçili hesaplar",
+            "left_out_hint": "Seçmediğin hesaplar yedeklemede kalır. Onları daha sonra Bulut yedekleme üzerinden bu cihaza ekleyebilirsin.",
+            "device_notice_title": "Bu cihazdaki hesapların yedeklenecek",
+            "device_notice_body": "Bu cihazdaki {{count}} hesap bu yedeklemeye eklenecek. Yedekleme ifadesine ve şifreleme anahtarına sahip olan herkes, kurtarma passphrase’leri ve özel anahtarları dahil bu hesaplara erişebilir.",
+            "device_notice_body_one": "Bu cihazdaki hesap bu yedeklemeye eklenecek. Yedekleme ifadesine ve şifreleme anahtarına sahip olan herkes, kurtarma passphrase’i veya özel anahtarı dahil bu hesaba erişebilir.",
+            "restore": "Geri yükle"
+        },
         "restore_scan": {
             "title": "QR kodu tara",
             "instructions": "Diğer cihazında Bulut yedekleme ekranını aç, “Diğer cihazlarla eşitle” seçeneğini seç ve gösterilen kodu tara.",

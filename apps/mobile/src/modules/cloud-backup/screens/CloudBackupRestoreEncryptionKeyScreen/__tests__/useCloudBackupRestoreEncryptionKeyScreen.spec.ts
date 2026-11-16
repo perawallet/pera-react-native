@@ -14,8 +14,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { CloudBackupRestoreError } from '@perawallet/wallet-core-backup'
 
-const restore = vi.fn()
-const onDone = vi.fn()
+const prepare = vi.fn()
+const navigate = vi.fn()
+const requirePinVerification = vi.fn()
 const showToast = vi.fn()
 const clearDraft = vi.fn()
 let hasMnemonic = true
@@ -23,6 +24,12 @@ let isRestoring = false
 let importedKey: unknown = null
 
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({ navigate }),
+}))
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({ requirePinVerification }),
+}))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (k: string, o?: unknown) => (o ? `${k}:${JSON.stringify(o)}` : k),
@@ -40,15 +47,12 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     useCloudBackupRestoreDraftStore: (sel: (s: unknown) => unknown) =>
         sel(restoreDraftState()),
     readCloudBackupImportedKey: () => importedKey,
-    useRestoreCloudBackupMutation: (
-        _scope: unknown,
-        options: {
-            onSuccess: (result: unknown) => void
-            onError: (error: unknown) => void
-        },
-    ) => {
+    usePrepareCloudBackupRestoreMutation: (options: {
+        onSuccess: () => void
+        onError: (error: unknown) => void
+    }) => {
         ;(globalThis as Record<string, unknown>).__cbs = options
-        return { mutate: restore, isPending: isRestoring }
+        return { mutate: prepare, isPending: isRestoring }
     },
 }))
 
@@ -71,7 +75,7 @@ const IMPORTED_KEY = {
 }
 
 const renderScreen = () =>
-    renderHook(() => useCloudBackupRestoreEncryptionKeyScreen({ onDone }))
+    renderHook(() => useCloudBackupRestoreEncryptionKeyScreen())
 
 describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     beforeEach(() => {
@@ -79,17 +83,52 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         hasMnemonic = true
         isRestoring = false
         importedKey = null
+        requirePinVerification.mockResolvedValue(true)
     })
 
-    it('runs restore with the entered key', () => {
+    const pressRestore = async (result: {
+        current: { handleRestore: () => void }
+    }) => {
+        await act(async () => result.current.handleRestore())
+    }
+
+    it('verifies the PIN, then prepares the restore with the entered key', async () => {
         const { result } = renderScreen()
         act(() => result.current.handleKeyChange('c2FsdA=='))
-        act(() => result.current.handleRestore())
+        await pressRestore(result)
 
         expect(trackEvent).toHaveBeenCalledWith(
             CloudBackupEvent.RestoreEncryptionKeyProceed,
         )
-        expect(restore).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+        expect(requirePinVerification).toHaveBeenCalledTimes(1)
+        expect(prepare).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+    })
+
+    it('does not restore when the PIN is not verified', async () => {
+        requirePinVerification.mockResolvedValue(false)
+        const { result } = renderScreen()
+        act(() => result.current.handleKeyChange('c2FsdA=='))
+        await pressRestore(result)
+
+        expect(prepare).not.toHaveBeenCalled()
+    })
+
+    it('asks for the PIN once when pressed twice while the PIN sheet opens', async () => {
+        let verify!: (verified: boolean) => void
+        requirePinVerification.mockReturnValue(
+            new Promise<boolean>(resolve => {
+                verify = resolve
+            }),
+        )
+        const { result } = renderScreen()
+        act(() => result.current.handleKeyChange('c2FsdA=='))
+
+        act(() => result.current.handleRestore())
+        act(() => result.current.handleRestore())
+        await act(async () => verify(true))
+
+        expect(requirePinVerification).toHaveBeenCalledTimes(1)
+        expect(prepare).toHaveBeenCalledTimes(1)
     })
 
     it('starts empty when no key was imported', () => {
@@ -99,36 +138,37 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         expect(result.current.canRestore).toBe(false)
     })
 
-    it('starts filled in with the imported key and restores with its Argon2id settings', () => {
+    it('starts filled in with the imported key and restores with its Argon2id settings', async () => {
         importedKey = IMPORTED_KEY
         const { result } = renderScreen()
 
         expect(result.current.encryptionKey).toBe(IMPORTED_KEY.salt)
         expect(result.current.canRestore).toBe(true)
 
-        act(() => result.current.handleRestore())
+        await pressRestore(result)
 
-        expect(restore).toHaveBeenCalledWith(IMPORTED_KEY)
+        expect(prepare).toHaveBeenCalledWith(IMPORTED_KEY)
     })
 
-    it('restores an edited imported key on the default Argon2id settings', () => {
+    it('restores an edited imported key on the default Argon2id settings', async () => {
         importedKey = IMPORTED_KEY
         const { result } = renderScreen()
 
         act(() => result.current.handleKeyChange('c2FsdA=='))
-        act(() => result.current.handleRestore())
+        await pressRestore(result)
 
-        expect(restore).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+        expect(prepare).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
     })
 
-    it('does not run restore without a retained phrase', () => {
+    it('does not run restore without a retained phrase', async () => {
         hasMnemonic = false
         const { result } = renderScreen()
         act(() => result.current.handleKeyChange('c2FsdA=='))
-        act(() => result.current.handleRestore())
+        await pressRestore(result)
 
         expect(trackEvent).not.toHaveBeenCalled()
-        expect(restore).not.toHaveBeenCalled()
+        expect(requirePinVerification).not.toHaveBeenCalled()
+        expect(prepare).not.toHaveBeenCalled()
     })
 
     it('blocks a second press while the restore is in flight', () => {
@@ -139,18 +179,17 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         expect(result.current.canRestore).toBe(false)
     })
 
-    it('clears the draft and hands the exit back to the caller on success', () => {
+    it('opens the account choice once the backup is downloaded, keeping the draft', () => {
         renderScreen()
         const cbs = (globalThis as Record<string, unknown>).__cbs as {
-            onSuccess: (s: unknown) => void
+            onSuccess: () => void
         }
-        act(() =>
-            cbs.onSuccess({
-                summary: { imported: 2, skippedDuplicate: 0, failed: [] },
-            }),
+        act(() => cbs.onSuccess())
+
+        expect(navigate).toHaveBeenCalledWith(
+            'CloudBackupRestoreSelectAccounts',
         )
-        expect(clearDraft).toHaveBeenCalled()
-        expect(onDone).toHaveBeenCalled()
+        expect(clearDraft).not.toHaveBeenCalled()
     })
 
     it('scrubs the restore draft when the screen unmounts', () => {

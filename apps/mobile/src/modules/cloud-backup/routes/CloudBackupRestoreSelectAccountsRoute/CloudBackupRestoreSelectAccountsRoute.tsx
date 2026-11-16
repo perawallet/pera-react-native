@@ -10,4 +10,12 @@
  limitations under the License
  */
 
-export { CloudBackupRestoreEncryptionKeyRoute } from './CloudBackupRestoreEncryptionKeyRoute'
+import { CloudBackupRestoreSelectAccountsScreen } from '../../screens/CloudBackupRestoreSelectAccountsScreen'
+import { useCloudBackupRestoreExit } from '../../hooks/useCloudBackupRestoreExit'
+
+// The restore screens are shared with the import flow, which has no
+// `CloudBackupOverview` to land on, so each stack names its own exit.
+export const CloudBackupRestoreSelectAccountsRoute = () => {
+    const { exitToOverview } = useCloudBackupRestoreExit()
+    return <CloudBackupRestoreSelectAccountsScreen onDone={exitToOverview} />
+}

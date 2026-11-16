@@ -11,4 +11,3 @@
  */
 
 export { CloudBackupRestoreEncryptionKeyScreen } from './CloudBackupRestoreEncryptionKeyScreen'
-export type { CloudBackupRestoreEncryptionKeyScreenProps } from './CloudBackupRestoreEncryptionKeyScreen'

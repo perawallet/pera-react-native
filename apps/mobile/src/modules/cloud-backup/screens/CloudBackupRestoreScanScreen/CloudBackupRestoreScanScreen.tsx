@@ -21,14 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCloudBackupRestoreScanScreen } from './useCloudBackupRestoreScanScreen'
 import { useStyles } from './styles'
 
-export type CloudBackupRestoreScanScreenProps = {
-    /** Where to go once the keys are in; see `useRestoreOutcome`. */
-    onDone: () => void
-}
-
-export const CloudBackupRestoreScanScreen = ({
-    onDone,
-}: CloudBackupRestoreScanScreenProps) => {
+export const CloudBackupRestoreScanScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
@@ -38,7 +31,7 @@ export const CloudBackupRestoreScanScreen = ({
         handleScanSuccess,
         handleOpenScanner,
         handleCloseScanner,
-    } = useCloudBackupRestoreScanScreen({ onDone })
+    } = useCloudBackupRestoreScanScreen()
 
     return (
         <>
