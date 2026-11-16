@@ -149,8 +149,6 @@ export const useSwapToAssetSelectionList = ({
         q: debouncedSearchFilter || undefined,
     })
 
-    const handleRetry = useCallback(() => refetch(), [refetch])
-
     const handleEndReached = useCallback(() => {
         if (hasNextPage) fetchNextPage()
     }, [hasNextPage, fetchNextPage])
@@ -269,7 +267,7 @@ export const useSwapToAssetSelectionList = ({
         isChainShown: selectedChainId === null && chainOptions.length > 0,
         isLoading,
         isLoadError,
-        handleRetry,
+        handleRetry: refetch,
         handleEndReached,
         handleAssetSelected,
         searchPlaceholder: t(swapAssetSearchPlaceholderKey(visibleChainIds)),

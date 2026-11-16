@@ -235,6 +235,40 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockRefetch).toHaveBeenCalledTimes(1)
         })
 
+        it('retries a failed read under a picked network, then lists its tokens', () => {
+            mockDestinationScopes.current = [ALGO_SCOPE, ETH_SCOPE]
+            const failed = {
+                assets: [],
+                isLoading: false,
+                isError: true,
+                isSuccess: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: mockRefetch,
+            }
+            mockUseSwapPairsInfiniteQuery.mockReturnValue(failed)
+            const { result, rerender } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(result.current.isLoadError).toBe(true)
+            expect(result.current.crossNetworkEmptyState).toBeNull()
+            act(() => result.current.handleRetry())
+            expect(mockRefetch).toHaveBeenCalledTimes(1)
+
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                ...failed,
+                assets: [ETH_NATIVE],
+                isError: false,
+                isSuccess: true,
+            })
+            rerender()
+
+            expect(result.current.isLoadError).toBe(false)
+            expect(result.current.items).toHaveLength(1)
+        })
+
         it('reports no error when the pairs read succeeded', () => {
             const { result } = renderHook(() =>
                 useSwapToAssetSelectionList(defaultParams),
