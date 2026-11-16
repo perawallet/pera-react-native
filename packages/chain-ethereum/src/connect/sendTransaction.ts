@@ -61,7 +61,7 @@ const REVERTED_ESTIMATE_GAS = 500_000n
 
 // A dApp's request is flagged for review when what its gas and fees authorise,
 // or would cost at the current base fee, is more than this many times what the
-// wallet's own pricing would.
+// wallet would pay at its Fast preset.
 // The review copy states this multiplier in words; a test pins it to 2n so changing it breaks loudly.
 export const DAPP_HIGH_FEE_MULTIPLIER = 2n
 
@@ -313,20 +313,20 @@ export const buildEthereumSendTransaction = async (
         fees.presets.normal,
         request,
     )
+    // Against Fast, not Normal: dApps and wagmi default their tip near the
+    // fast percentile, so a Normal baseline flags nearly every ordinary request.
     // The cap and the price actually paid are both checked: a max fee just
-    // under the threshold can still charge several times the normal price.
-    const normal = fees.presets.normal
+    // under the threshold can still charge well over twice the Fast price.
+    const { fast } = fees.presets
     const paidPerGas = (price: bigint, tip: bigint) =>
         price < fees.baseFeePerGas + tip ? price : fees.baseFeePerGas + tip
     const hasHighFee =
         gas * maxFeePerGas >
-            DAPP_HIGH_FEE_MULTIPLIER *
-                estimate.gasLimit *
-                normal.maxFeePerGas ||
+            DAPP_HIGH_FEE_MULTIPLIER * estimate.gasLimit * fast.maxFeePerGas ||
         gas * paidPerGas(maxFeePerGas, maxPriorityFeePerGas) >
             DAPP_HIGH_FEE_MULTIPLIER *
                 estimate.gasLimit *
-                paidPerGas(normal.maxFeePerGas, normal.maxPriorityFeePerGas)
+                paidPerGas(fast.maxFeePerGas, fast.maxPriorityFeePerGas)
     const payload: EthereumTransactionPayload = {
         from,
         transaction: {

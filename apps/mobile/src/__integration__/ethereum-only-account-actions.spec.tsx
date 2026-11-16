@@ -20,7 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 
 // The notifications screen reads `deviceInfo.getAppVersion()`, which only the
@@ -32,7 +32,10 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { EVM_CHAIN_NETWORKS } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    EVM_CHAIN_NETWORKS,
+} from '@perawallet/wallet-core-chain-contract'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -45,12 +48,14 @@ import { server } from '@test-utils/msw-server'
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { longPress } from '@test-utils/rnw'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { AccountSelection } from '@modules/accounts'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
 
 import { SheetHost } from './__fixtures__/accountOptions'
-import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { TWO_CHAIN_ACCOUNT } from './__fixtures__/multichainHoldings'
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const ETHEREUM_RPC_URL = 'https://ethereum.rpc.test/'
 const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
@@ -96,7 +101,7 @@ const ALGO_WATCH: WalletAccount = {
     name: 'Algo watch',
 }
 
-describe('Flow: an Ethereum-only account in its options sheet, Settings → Notifications and the account header', () => {
+describe('Flow: accounts in their options sheet, Settings → Notifications and the account header', () => {
     beforeAll(async () => {
         await setupTestDatabase()
     })
@@ -189,5 +194,65 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
         await waitFor(() =>
             expect(Clipboard.setStringAsync).toHaveBeenCalledWith(ETH_ADDRESS),
         )
+    })
+
+    it('Given an account on Algorand and Ethereum selected, when the account header renders, then it shows only the name, and a long-press still copies its Algorand address', async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        useAccountsStore.getState().setSelectedAccountId(TWO_CHAIN_ACCOUNT.id)
+
+        renderWithNavigation(() => <AccountSelection />, 'AccountSelectionHost')
+
+        expect(await screen.findByText('Both chains')).toBeTruthy()
+        expect(screen.queryByTestId('account_display_secondary_row')).toBeNull()
+        const { truncate } = addressCodecs.get(ALGORAND_CHAIN_ID)
+        expect(screen.queryByText(truncate(ALGO25_TEST_ADDRESS))).toBeNull()
+
+        await longPress(screen.getByTestId('account_selection_button'))
+        await waitFor(() =>
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                ALGO25_TEST_ADDRESS,
+            ),
+        )
+    })
+
+    it('Given an Algorand-only account selected, when the account header renders, then its shortened address shows under the name', async () => {
+        useAccountsStore.getState().setAccounts([ALGO_WATCH])
+        useAccountsStore.getState().setSelectedAccountId(ALGO_WATCH.id)
+
+        renderWithNavigation(() => <AccountSelection />, 'AccountSelectionHost')
+
+        expect(await screen.findByText('Algo watch')).toBeTruthy()
+        const { truncate } = addressCodecs.get(ALGORAND_CHAIN_ID)
+        expect(
+            within(
+                screen.getByTestId('account_display_secondary_row'),
+            ).getByText(truncate(ALGO25_TEST_ADDRESS)),
+        ).toBeTruthy()
+    })
+
+    it('Given two multi-chain accounts that share a name, when one is selected, then the header keeps its shortened address to tell them apart', async () => {
+        const sibling: WalletAccount = {
+            ...TWO_CHAIN_ACCOUNT,
+            id: 'two-chains-sibling',
+            chains: {
+                algorand: { address: HD_TEST_ADDRESS, keyPairId: 'a-key-2' },
+                ethereum: {
+                    address: '0x1111111111111111111111111111111111111111',
+                    keyPairId: 'e-key-2',
+                },
+            },
+        }
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT, sibling])
+        useAccountsStore.getState().setSelectedAccountId(TWO_CHAIN_ACCOUNT.id)
+
+        renderWithNavigation(() => <AccountSelection />, 'AccountSelectionHost')
+
+        expect(await screen.findByText('Both chains')).toBeTruthy()
+        const { truncate } = addressCodecs.get(ALGORAND_CHAIN_ID)
+        expect(
+            within(
+                screen.getByTestId('account_display_secondary_row'),
+            ).getByText(truncate(ALGO25_TEST_ADDRESS)),
+        ).toBeTruthy()
     })
 })

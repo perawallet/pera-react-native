@@ -25,6 +25,7 @@ const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const QUOTE = { quoteId: 'quote-1' } as SwapQuote
 const COST = {
     networkFee: new Decimal(21_000),
+    expectedNetworkFee: new Decimal(10_500),
     shortfall: null,
     needsSpendApproval: false,
     nativeSymbol: 'NAT',

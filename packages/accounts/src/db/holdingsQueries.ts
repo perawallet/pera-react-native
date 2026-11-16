@@ -49,7 +49,6 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
-import { isOptInChain } from '../chainProtocol'
 import { isNotSuspiciousSql } from './holdingSuspicion'
 import { hiddenHoldingSql } from './holdingVisibility'
 import type { AccountHoldingsFilters } from './holdingsRepository'
@@ -220,18 +219,7 @@ async function queryHoldingRows({
         )
     }
     if (hideSuspicious) {
-        // The user chose every asset on an opt-in chain, so its rows stay.
-        const optInScopes = sources
-            .filter(({ scope }) => isOptInChain(scope.chainId))
-            .map(({ scope }) => toScopeKey(scope))
-        conditions.push(
-            optInScopes.length > 0
-                ? or(
-                      isNotSuspiciousSql(),
-                      inArray(AccountAssetHoldingsSchema.scope, optInScopes),
-                  )!
-                : isNotSuspiciousSql(),
-        )
+        conditions.push(isNotSuspiciousSql())
     }
     if (excludeHidden) {
         conditions.push(not(hiddenHoldingSql(sources)))

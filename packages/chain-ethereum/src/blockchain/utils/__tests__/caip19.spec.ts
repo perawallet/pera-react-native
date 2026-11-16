@@ -177,6 +177,7 @@ describe('native CAIP-19 ids per chain', () => {
         ['arbitrum', 'eip155:42161/slip44:60'],
         ['avalanche', 'eip155:43114/slip44:9000'],
         ['polygon', 'eip155:137/slip44:966'],
+        ['optimism', 'eip155:10/slip44:60'],
     ] as const)('names %s native as %s', (chainId, caip19) => {
         const chain = evmChainOf(chainId)
         const scope = evmScopeOf(chain)

@@ -22,6 +22,7 @@ import { trackEvent, HomeEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetActionButtons } from '@modules/assets'
+import { useSwapForNativeRoute } from '@modules/swap'
 import { useAccountOverviewModal } from '../../AccountOverview/AccountOverviewModalContext'
 
 export type NetworkFundingStateProps = {
@@ -35,8 +36,14 @@ export type UseNetworkFundingStateResult = {
     canReceive: boolean
     /** Fund buys onto this network and the account can sign on it. */
     canBuy: boolean
-    /** Swap runs on this network and the account can sign on it. */
+    /**
+     * The account holds another network's native coin it can swap into this
+     * network's. The empty state has nothing to pay with on its own network,
+     * so a same-network swap is never offered. False until holdings on other
+     * networks are read, so Receive and Buy don't wait on them.
+     */
     canSwap: boolean
+    swapTitle: string
     handleReceive: () => void
     handleBuy: () => void
     handleSwap: () => void
@@ -49,15 +56,15 @@ export const useNetworkFundingState = ({
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { openReceiveFundsOn } = useAccountOverviewModal()
-    const { canReceive, canBuy, canSwap } = useAssetActionButtons(
-        account,
-        chainId,
-    )
+    const { canReceive, canBuy } = useAssetActionButtons(account, chainId)
     // Matches AssetActionButtons: a watch account, or one with no signer on this
     // chain, would only fail at signing. Receive needs no signer.
     const canSign = useCanSignWith(account, chainId)
     const network = chainDisplayNameOf(chainId) ?? chainId
     const nativeSymbol = findNativeAsset(chainId)?.unitName ?? ''
+
+    const { params: swapParams, isPending: isSwapPending } =
+        useSwapForNativeRoute(account, chainId)
 
     const handleReceive = useCallback(
         () => openReceiveFundsOn(account, chainId),
@@ -70,9 +77,10 @@ export const useNetworkFundingState = ({
     }, [chainId, navigation])
 
     const handleSwap = useCallback(() => {
+        if (!swapParams) return
         trackEvent(HomeEvent.Swap, { [AnalyticsMetadataKey.ChainId]: chainId })
-        navigation.replace('TabBar', { screen: 'Swap' })
-    }, [chainId, navigation])
+        navigation.replace('TabBar', { screen: 'Swap', params: swapParams })
+    }, [swapParams, chainId, navigation])
 
     return {
         title: t('account_details.assets.funding_title', { network }),
@@ -82,7 +90,10 @@ export const useNetworkFundingState = ({
         }),
         canReceive,
         canBuy: canBuy && canSign,
-        canSwap: canSwap && canSign,
+        canSwap: !isSwapPending && swapParams !== null,
+        swapTitle: t('account_details.assets.funding_swap_for', {
+            symbol: nativeSymbol,
+        }),
         handleReceive,
         handleBuy,
         handleSwap,

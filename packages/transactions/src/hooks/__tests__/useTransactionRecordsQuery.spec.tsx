@@ -25,6 +25,7 @@ import {
     type ChainScope,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     MAX_AUTO_RECORD_FETCHES,
     MAX_RECORD_PAGE_READS,
@@ -119,7 +120,7 @@ describe('useTransactionRecordsQuery', () => {
         capability.isDecoding = false
         onlineManager.setOnline(true)
         queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
+            defaultOptions: { queries: { retry: false, retryDelay: 0 } },
         })
         wrapper = ({ children }) => (
             <QueryClientProvider client={queryClient}>
@@ -269,7 +270,7 @@ describe('useTransactionRecordsQuery', () => {
                 next: { cursor: `c${i}` },
             })
         }
-        mocks.getTransactionHistoryWithPending.mockRejectedValueOnce(
+        mocks.getTransactionHistoryWithPending.mockRejectedValue(
             new Error('history service refused'),
         )
 
@@ -285,7 +286,8 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         const callsAtFailure =
             mocks.getTransactionHistoryWithPending.mock.calls.length
-        expect(callsAtFailure).toBe(MAX_RECORD_PAGE_READS + 1)
+        // The failed page is read once more, quietly, before the error shows.
+        expect(callsAtFailure).toBe(MAX_RECORD_PAGE_READS + 2)
         expect(result.current.hasNextPage).toBe(true)
 
         mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
@@ -661,6 +663,61 @@ describe('useTransactionRecordsQuery', () => {
             ).toHaveBeenCalledTimes(1)
         })
 
+        test('stays a full re-read when its first attempt fails and the quiet retry runs', async () => {
+            const backend = threePages()
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 3)
+            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getTransactionHistoryWithPending.mockRejectedValueOnce(
+                new Error('not ready yet'),
+            )
+
+            await invalidate({ shouldRefetchAllPages: true })
+
+            expect(
+                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                    call => call[2],
+                ),
+            ).toEqual([
+                undefined,
+                undefined,
+                { cursor: 'c1' },
+                { cursor: 'c2' },
+            ])
+        })
+
+        test('resumes a full re-read at the page that failed, without re-reading the head', async () => {
+            const backend = threePages()
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 3)
+            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getTransactionHistoryWithPending.mockImplementation(
+                async (_address, _scope, page?: { cursor: string }) => {
+                    if (page?.cursor === 'c1' && !hasFailedC1) {
+                        hasFailedC1 = true
+                        throw new Error('not ready yet')
+                    }
+                    return backend[page?.cursor ?? 'head']
+                },
+            )
+            let hasFailedC1 = false
+
+            await invalidate({ shouldRefetchAllPages: true })
+
+            expect(
+                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                    call => call[2],
+                ),
+            ).toEqual([
+                undefined,
+                { cursor: 'c1' },
+                { cursor: 'c1' },
+                { cursor: 'c2' },
+            ])
+        })
+
         test('stays a full re-read when an invalidation cancels it part way', async () => {
             const backend = threePages()
             serve(backend)
@@ -1004,9 +1061,47 @@ describe('useTransactionRecordsQuery', () => {
         expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
     })
 
+    test('reads again once before reporting a failed read', async () => {
+        mocks.getTransactionHistoryWithPending
+            .mockRejectedValueOnce(new Error('not ready yet'))
+            .mockResolvedValueOnce({ items: [record('A', JAN_10)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['A']),
+        )
+        expect(result.current.isError).toBe(false)
+    })
+
+    test('does not read again for a Pera service the network lacks', async () => {
+        mocks.getTransactionHistoryWithPending.mockRejectedValue(
+            new PeraServiceUnavailableError(SCOPE),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
+    })
+
     test('reports a failed read as an error', async () => {
         const failure = new Error('history service refused')
-        mocks.getTransactionHistoryWithPending.mockRejectedValueOnce(failure)
+        mocks.getTransactionHistoryWithPending.mockRejectedValue(failure)
 
         const { result } = renderHook(
             () =>
@@ -1020,6 +1115,7 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toBe(failure)
         expect(result.current.records).toEqual([])
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(2)
     })
 
     test('stays idle without an address', () => {

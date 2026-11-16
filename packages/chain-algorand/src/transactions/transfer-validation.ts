@@ -13,8 +13,13 @@
 import type {
     BuildContext,
     TransactionIntent,
+    TransferIntent,
+    AssetOptInIntent,
 } from '@perawallet/wallet-core-chain-contract'
-import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
+import {
+    InvalidSendParamsError,
+    UnsupportedTransactionIntentError,
+} from '@perawallet/wallet-core-transactions'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { algorandNetworkOf } from '../network-id'
@@ -24,10 +29,16 @@ import { algorandNetworkOf } from '../network-id'
 const CANONICAL_ASSET_ID = /^(0|[1-9]\d*)$/
 
 /** Throws unless the intent can be built on the context's Algorand network. */
-export const assertBuildableIntent = (
+export function assertBuildableIntent(
     intent: TransactionIntent,
     context: BuildContext,
-): void => {
+): asserts intent is TransferIntent | AssetOptInIntent {
+    if (intent.kind === 'approval-revoke') {
+        throw new UnsupportedTransactionIntentError(
+            intent.kind,
+            ALGORAND_CHAIN_ID,
+        )
+    }
     algorandNetworkOf(context.scope)
     if (
         intent.assetRef.chainId !== ALGORAND_CHAIN_ID ||

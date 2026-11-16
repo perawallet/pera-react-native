@@ -44,7 +44,6 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { describeHolding } from '../chain-adapter'
-import { isOptInChain } from '../chainProtocol'
 import {
     useOtherRegisteredChainIds,
     useRegisteredChainIds,
@@ -158,11 +157,9 @@ export const summarizeHoldings = (
         }
         const nativeAssetValue = nativeAssetValueOf()
         // Listed, but never counted: a flagged token's price isn't one to trust, and a hidden one is the user's to keep out.
-        // An opt-in chain's asset was chosen by the user, so it counts.
         const isCounted =
             !holding.isHidden &&
-            (isOptInChain(chainId) ||
-                asset.peraMetadata?.verificationTier !== 'suspicious')
+            asset.peraMetadata?.verificationTier !== 'suspicious'
         if (isCounted) {
             if (nativeAssetValue) {
                 nativeValue = nativeValue.plus(nativeAssetValue)
@@ -382,14 +379,27 @@ export type UseAccountHoldingsAcrossChainsQueryResult = {
     isError: boolean
 }
 
+/** A holding of one of several accounts, on one chain. */
+export type AccountChainAssetBalance = ChainAssetBalance & {
+    accountId: string
+    /** The account's address on `scope`'s chain. */
+    address: string
+}
+
+export type UseAccountsHoldingsAcrossChainsQueryResult = {
+    assetBalances: AccountChainAssetBalance[]
+    isPending: boolean
+    /** A read failed; the other accounts' and chains' balances are still listed. */
+    isError: boolean
+}
+
 /**
- * Every holding the account has, on each registered chain it has an address
- * on. Each chain is read under `useAccountBalancesQuery`'s query key, so the
- * two share their cache.
+ * Every holding each account has, on each registered chain it has an address
+ * on. Each read shares `useAccountBalancesQuery`'s query key and cache.
  */
-export const useAccountHoldingsAcrossChainsQuery = (
-    account: Maybe<WalletAccount>,
-): UseAccountHoldingsAcrossChainsQueryResult => {
+export const useAccountsHoldingsAcrossChainsQuery = (
+    accounts: readonly WalletAccount[],
+): UseAccountsHoldingsAcrossChainsQueryResult => {
     const registeredChainIds = useRegisteredChainIds()
     // A primitive, so only a network switch re-keys the reads.
     const networksKey = useNetworkStore(state =>
@@ -399,20 +409,26 @@ export const useAccountHoldingsAcrossChainsQuery = (
             )
             .join(),
     )
+    // Account ids go last: the chain id and address never hold a `|`.
     const heldOn = useStableIdList(
-        account
-            ? registeredChainIds.flatMap(chainId => {
-                  const address = chainAccountOf(account, chainId)?.address
-                  return address ? [`${chainId}|${address}`] : []
-              })
-            : [],
+        accounts.flatMap(account =>
+            registeredChainIds.flatMap(chainId => {
+                const address = chainAccountOf(account, chainId)?.address
+                return address ? [`${chainId}|${address}|${account.id}`] : []
+            }),
+        ),
     )
 
     const entries = useMemo(() => {
         const networks = useNetworkStore.getState()
         return heldOn.map(id => {
-            const [chainId, address] = id.split('|') as [ChainId, string]
+            const [chainId, address, ...rest] = id.split('|') as [
+                ChainId,
+                string,
+                ...string[],
+            ]
             return {
+                accountId: rest.join('|'),
                 address,
                 scope: {
                     chainId,
@@ -447,12 +463,17 @@ export const useAccountHoldingsAcrossChainsQuery = (
     return useMemo(
         () => ({
             assetBalances: results.flatMap((r, i) => {
-                const scope = entries[i]?.scope
-                return scope
+                const entry = entries[i]
+                return entry
                     ? summarizeHoldings(
                           r.data?.holdings ?? [],
-                          scope.chainId,
-                      ).assetBalances.map(balance => ({ ...balance, scope }))
+                          entry.scope.chainId,
+                      ).assetBalances.map(balance => ({
+                          ...balance,
+                          scope: entry.scope,
+                          accountId: entry.accountId,
+                          address: entry.address,
+                      }))
                     : []
             }),
             isPending: results.some(r => r.isPending),
@@ -463,6 +484,14 @@ export const useAccountHoldingsAcrossChainsQuery = (
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [resultsSig, entries],
     )
+}
+
+/** `useAccountsHoldingsAcrossChainsQuery` for one account. */
+export const useAccountHoldingsAcrossChainsQuery = (
+    account: Maybe<WalletAccount>,
+): UseAccountHoldingsAcrossChainsQueryResult => {
+    const accounts = useMemo(() => (account ? [account] : []), [account])
+    return useAccountsHoldingsAcrossChainsQuery(accounts)
 }
 
 export const useAccountAssetBalanceQuery = (

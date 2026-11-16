@@ -430,6 +430,21 @@ describe('discoverWalletCandidates', () => {
         })
     })
 
+    it('marks a default chain found active as discovered, and one only derived as created', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [])
+        activeOn(families, ETHEREUM, [familyHdAddress('evm', 0, 0)])
+        activeOn(families, BASE, [])
+
+        const { accounts: found } = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+
+        expect(found[0].chains[ALGORAND]?.enabledBy).toBe('created')
+        expect(found[0].chains[ETHEREUM]?.enabledBy).toBe('discovery')
+    })
+
     it('returns the first account alone, marked as a fallback, when nothing is active', async () => {
         const families = registerChainFamilies(CHAIN_IDS)
         activeOn(families, ALGORAND, [])

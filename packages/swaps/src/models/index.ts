@@ -32,6 +32,12 @@ export type SwapsState = BaseStoreState & {
     receivingAccountId: Nullable<string>
     /** The chain the user chose to pay from; null picks the default. */
     sourceChainId: Nullable<ChainId>
+    /**
+     * The account a pick made the pair for, so switching to that account keeps
+     * the pair instead of resetting it; null when the pair follows whichever
+     * account is selected.
+     */
+    pairAccountId: Nullable<string>
     slippage: Nullable<string>
     isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
@@ -41,8 +47,19 @@ export type SwapsState = BaseStoreState & {
     setSourceChainId: (chainId: Nullable<ChainId>) => void
     /** Pays with `fromAsset` on `chainId`; clears the receive side and receiving account: they belong to the old chain. */
     setSourceAsset: (chainId: ChainId, fromAsset: string) => void
+    /** Pays with `fromAsset` on `chainId` from `accountId`, receiving `toAsset` when given, else the default. */
+    setAccountPair: (pair: SwapAccountPair) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
+}
+
+export type SwapAccountPair = {
+    accountId: string
+    chainId: ChainId
+    fromAsset: string
+    toAsset?: string
+    /** Where `toAsset` lives; unset means `chainId`'s own network. */
+    toAssetScope?: Nullable<ChainScope>
 }
 
 export type SwapConfigurationResult = {
@@ -186,6 +203,8 @@ export interface SwapHistoryItem {
     transactions: SwapOrderTransaction[]
     /** The router's `funding_method`, passed through unread. */
     fundingMethod: Nullable<string>
+    /** The account that paid; null on older rows or a chain this wallet doesn't run. */
+    sourceAccount: Nullable<SwapAccountAddress>
     createdAt: string
     updatedAt: string
 }
@@ -193,6 +212,10 @@ export interface SwapHistoryItem {
 export interface SwapAccountAddress {
     scope: ChainScope
     address: string
+}
+
+export type SwapAccountAddressWithId = SwapAccountAddress & {
+    accountId: string
 }
 
 export interface SwapTrackedAsset {
@@ -231,9 +254,14 @@ export type SwapTrackingState = BaseStoreState & {
 export interface SwapDistinctPairItem {
     assetIn: SwapAsset
     assetOut: SwapAsset
+    /** The account that paid the newest swap of this pair. */
+    sourceAccount: Nullable<SwapAccountAddress>
     swapDatetime: string
     pairKey: string
 }
+
+/** A recent pair, with the account that paid for it. */
+export type SwapHistoryPair = SwapDistinctPairItem & { accountId: string }
 
 /**
  * A single slot in a group's submission order, serialized for persistence.

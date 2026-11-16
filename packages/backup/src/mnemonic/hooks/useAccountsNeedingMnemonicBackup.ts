@@ -27,9 +27,16 @@ import {
     useDelegationAuthorities,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystoreStore,
+    getProvider,
+} from '@perawallet/wallet-extension-provider'
 import { useMnemonicBackupStore } from '../store'
-import { requiresMnemonicBackup } from './useRequiresMnemonicBackup'
+import {
+    requiresMnemonicBackup,
+    resolveBackedUpSeeds,
+    useBackedUpSeedIds,
+} from './useRequiresMnemonicBackup'
 import { isMnemonicBackupPromptDue } from './useShouldPromptMnemonicBackup'
 
 export type UseAccountsNeedingMnemonicBackupResult = {
@@ -44,7 +51,7 @@ export const useAccountsNeedingMnemonicBackup = (
     accounts: readonly WalletAccount[],
     scope: ChainScope,
 ): UseAccountsNeedingMnemonicBackupResult => {
-    const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
+    const { keys, backedUpSeedIds } = useBackedUpSeedIds()
     const canBackUpMnemonic = useChainCapability(
         scope.chainId,
         'mnemonicBackup',
@@ -93,7 +100,8 @@ export const useAccountsNeedingMnemonicBackup = (
                     requiresBackup: requiresMnemonicBackup(
                         account,
                         scope.chainId,
-                        backedUpKeyIds,
+                        keys,
+                        backedUpSeedIds,
                     ),
                     isFunded: fundedFlags[index] ?? false,
                     isDelegatedTo: authorities.has(addresses[index] ?? ''),
@@ -105,9 +113,10 @@ export const useAccountsNeedingMnemonicBackup = (
             accounts,
             addresses,
             authorities,
-            backedUpKeyIds,
+            backedUpSeedIds,
             canBackUpMnemonic,
             fundedKey,
+            keys,
             scope.chainId,
         ],
     )
@@ -130,7 +139,11 @@ export const findAccountsNeedingMnemonicBackup = async (
         getChainCapabilities(scope.chainId).mnemonicBackup
     if (!canBackUpMnemonic) return []
 
-    const backedUpKeyIds = useMnemonicBackupStore.getState().backedUpKeyIds
+    const keys = getKeystoreStore().state.keys
+    const { backedUpSeedIds } = resolveBackedUpSeeds(
+        keys,
+        useMnemonicBackupStore.getState().backedUpKeyIds,
+    )
     const addresses = accounts.map(
         account => chainAccountOf(account, scope.chainId)?.address ?? '',
     )
@@ -164,7 +177,8 @@ export const findAccountsNeedingMnemonicBackup = async (
             requiresBackup: requiresMnemonicBackup(
                 account,
                 scope.chainId,
-                backedUpKeyIds,
+                keys,
+                backedUpSeedIds,
             ),
             isFunded: fundedFlags[index] ?? false,
             isDelegatedTo: authorities.has(addresses[index] ?? ''),

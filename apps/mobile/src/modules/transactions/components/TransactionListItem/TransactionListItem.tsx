@@ -25,6 +25,9 @@ import {
 } from './useTransactionListItem'
 import type { AmountDisplay } from './amounts'
 
+// A token's own unit has no length cap, so the amount column is capped and cuts off rather than squeezing the title.
+const AMOUNT_MAX_WIDTH_RATIO = 0.5
+
 export type TransactionListItemProps = UseTransactionListItemParams & {
     /** Labels the row with its network, on a list that mixes them. */
     networkChainId?: ChainId
@@ -41,6 +44,7 @@ const TransactionListItemView = ({
         iconName,
         title,
         subtitle,
+        subtitleEllipsizeMode,
         amounts,
         amountsOverflowCount,
         fee,
@@ -49,6 +53,7 @@ const TransactionListItemView = ({
         handlePress,
         handleLongPress,
         isSuspectedPoisoning,
+        imitatedCurrency,
     } = useTransactionListItem(props)
 
     const getAmountStyle = (amount: AmountDisplay) => {
@@ -63,10 +68,15 @@ const TransactionListItemView = ({
             style={styles.container}
             // A title alone (a swap) sits centred against its stacked amounts.
             align={
-                subtitle || networkChainId || notice || isSuspectedPoisoning
+                subtitle ||
+                networkChainId ||
+                notice ||
+                isSuspectedPoisoning ||
+                imitatedCurrency !== null
                     ? 'top'
                     : 'center'
             }
+            rightMaxWidthRatio={AMOUNT_MAX_WIDTH_RATIO}
             onPress={handlePress}
             onLongPress={handleLongPress}
             left={
@@ -85,6 +95,7 @@ const TransactionListItemView = ({
                             currency={amount.currency}
                             assetId={amount.assetId}
                             precision='compact'
+                            abbreviateFrom='million'
                             assetDecimals={amount.decimals}
                             prefix={amount.prefix}
                             showSymbol
@@ -120,10 +131,12 @@ const TransactionListItemView = ({
             }
         >
             <PWView>
+                {/* The amounts never shrink, so a long swap pair needs a third line to keep the received token in view. */}
                 <PWText
                     variant='h4'
                     style={styles.title}
                     truncate
+                    numberOfLines={3}
                 >
                     {title}
                 </PWText>
@@ -131,7 +144,7 @@ const TransactionListItemView = ({
                     <PWText
                         style={styles.subtitle}
                         truncate
-                        ellipsizeMode='middle'
+                        ellipsizeMode={subtitleEllipsizeMode}
                     >
                         {subtitle}
                     </PWText>
@@ -155,6 +168,15 @@ const TransactionListItemView = ({
                         titleKey='transactions.suspected_poisoning.marker'
                         style={styles.notice}
                         testID={`transaction_row_suspected_poisoning_${id}`}
+                    />
+                )}
+                {imitatedCurrency !== null && (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='asset.imitated_currency.marker'
+                        params={{ code: imitatedCurrency }}
+                        style={styles.notice}
+                        testID={`transaction_row_imitated_currency_${id}`}
                     />
                 )}
             </PWView>

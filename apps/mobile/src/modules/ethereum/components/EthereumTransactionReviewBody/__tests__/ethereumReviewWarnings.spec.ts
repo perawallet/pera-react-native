@@ -109,7 +109,7 @@ describe('ethereumReviewWarningsOf', () => {
         expect(warning).toMatchObject({ requesterHost: 'observed.example' })
     })
 
-    it('orders a predicted failure, then the fee, the unchecked call and an unavailable simulation', () => {
+    it('orders a predicted failure, then the fee and the unchecked call, leaving an unavailable simulation to the changes card', () => {
         const reverted = ethereumReviewWarningsOf({
             presentation: presentationOf({ hasHighFee: true }),
             simulation: simulationOf({ status: 'reverted', reason: 'EXPIRED' }),
@@ -128,10 +128,31 @@ describe('ethereumReviewWarningsOf', () => {
             kind: 'predicted-failure',
             reason: 'EXPIRED',
         })
-        expect(kindsOf(unavailable)).toEqual([
-            'high-fee',
-            'unchecked-call',
-            'simulation-unavailable',
-        ])
+        expect(kindsOf(unavailable)).toEqual(['high-fee', 'unchecked-call'])
+    })
+
+    it('cautions when assets leave and nothing, not even a permission, comes back', () => {
+        const spend = [{ assetId: 'native' }] as never
+        const nothingBack = ethereumReviewWarningsOf({
+            presentation: presentationOf({ isTransfer: true }),
+            simulation: simulationOf({
+                status: 'success',
+                spend,
+                receive: [],
+                approvals: [],
+            }),
+        })
+        const swap = ethereumReviewWarningsOf({
+            presentation: presentationOf({ isTransfer: true }),
+            simulation: simulationOf({
+                status: 'success',
+                spend,
+                receive: spend,
+                approvals: [],
+            }),
+        })
+
+        expect(kindsOf(nothingBack)).toEqual(['nothing-back'])
+        expect(swap).toEqual([])
     })
 })

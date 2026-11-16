@@ -113,6 +113,7 @@ type V2Options = {
     projectId: string
     keyValueStorage: object
     startWhen: () => Promise<void>
+    canSignWith?: (chainId: string, address: string) => boolean
 }
 
 const mockCreateV1 = vi.fn((options: V1Options) => ({
@@ -122,6 +123,47 @@ const mockCreateV1 = vi.fn((options: V1Options) => ({
     deliverReject: vi.fn(async () => {}),
     deliverRejectInBackground: vi.fn(),
 }))
+const signingAddresses = vi.hoisted(() => ({
+    byChain: {} as Record<string, string[]>,
+}))
+const codecs = vi.hoisted(() => ({
+    areEqual: (a: string, b: string) => a === b,
+}))
+
+vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-chain-contract')
+        >()
+    return {
+        ...actual,
+        addressCodecs: new Proxy(actual.addressCodecs, {
+            get: (target, key, receiver) => {
+                if (key === 'has') return () => true
+                if (key === 'get') {
+                    return () => ({
+                        areEqual: (a: string, b: string) =>
+                            codecs.areEqual(a, b),
+                    })
+                }
+                const value = Reflect.get(target, key, receiver)
+                return typeof value === 'function' ? value.bind(target) : value
+            },
+        }),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    signingAccountAddressesOn: (chainId: string) =>
+        (signingAddresses.byChain[chainId] ?? []).map(address => ({
+            address,
+            name: address,
+        })),
+}))
+
 const mockCreateV2 = vi.fn((options: V2Options) => ({
     kind: 'walletconnect-v2',
     options,
@@ -454,6 +496,31 @@ describe('useConnectionsProvider', () => {
             true,
             false,
         ])
+    })
+
+    // The v2 handler holds no accounts; this is its only check before a
+    // session is moved to another address.
+    it('lets v2 move a session only to an address a held account signs for on that chain', () => {
+        signingAddresses.byChain = { ethereum: ['0xHELD'] }
+        codecs.areEqual = (a: string, b: string) => a === b
+        renderHook(() => useConnectionsProvider())
+        const { canSignWith } = mockCreateV2.mock.calls[0][0]
+
+        expect(canSignWith?.('ethereum', '0xHELD')).toBe(true)
+        expect(canSignWith?.('ethereum', '0xOTHER')).toBe(false)
+        expect(canSignWith?.('base', '0xHELD')).toBe(false)
+    })
+
+    // The v2 handler hands over its codec's checksummed form; the account
+    // store may hold another casing of the same address.
+    it('matches a held address through the chain codec, not by exact text', () => {
+        signingAddresses.byChain = { ethereum: ['0xheld'] }
+        codecs.areEqual = (a: string, b: string) =>
+            a.toLowerCase() === b.toLowerCase()
+        renderHook(() => useConnectionsProvider())
+        const { canSignWith } = mockCreateV2.mock.calls[0][0]
+
+        expect(canSignWith?.('ethereum', '0xHELD')).toBe(true)
     })
 
     it("reads each chain's selected network for v2", () => {

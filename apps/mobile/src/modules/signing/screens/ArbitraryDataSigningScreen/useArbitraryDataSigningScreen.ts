@@ -22,6 +22,7 @@ import {
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
+import { useHaptics } from '@hooks/useHaptics'
 import { useIsDataSigningBlocked } from '@hooks/useIsDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -53,6 +54,7 @@ export const useArbitraryDataSigningScreen =
         const navigation = useNavigation<NavigationProp>()
         const pipeline = useSigningPipeline()
         const { confirmQuantumDappUsage } = useQuantumDappWarning()
+        const haptics = useHaptics()
         const request =
             (pipeline.currentRequest as ArbitraryDataSignRequest) ?? null
         const isSigningBlocked = useIsDataSigningBlocked(request)
@@ -88,18 +90,27 @@ export const useArbitraryDataSigningScreen =
                         ALGORAND_CHAIN_ID,
                     )
                     if (decision === 'cancel') {
+                        haptics.light()
                         pipeline.fail()
                         return
                     }
                 }
 
+                haptics.medium()
                 pipeline.next()
             })()
-        }, [pipeline, request, confirmQuantumDappUsage, isSigningBlocked])
+        }, [
+            haptics,
+            pipeline,
+            request,
+            confirmQuantumDappUsage,
+            isSigningBlocked,
+        ])
 
         const handleReject = useCallback(() => {
+            haptics.light()
             pipeline.fail()
-        }, [pipeline])
+        }, [haptics, pipeline])
 
         const handleDetailsPress = useCallback(
             (message: PeraArbitraryDataMessage) => {

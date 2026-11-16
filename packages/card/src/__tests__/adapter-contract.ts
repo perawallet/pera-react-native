@@ -55,11 +55,20 @@ export interface CardContractFixtures {
     foreignLegNetwork: string
     autoDraw: {
         account: WalletAccount
+        /** The account's address on this chain, which the switch is keyed by. */
+        address: string
         cardAddress: string
         /** Makes the chain report auto-draw as already on (or off) for the account. */
         arrangeState(enabled: boolean): void
         /** Transactions the adapter has submitted to the chain so far. */
         submissions(): number
+    }
+    cardOwner: {
+        /** A card on this chain as GET /v1/wallet/external lists it. */
+        wallet: { address: string; network: string }
+        ownerAddress: string
+        /** Makes the chain report the card as owned by `ownerAddress`, or as no card. */
+        arrangeOwner(isCard: boolean): void
     }
 }
 
@@ -112,6 +121,12 @@ export const cardContractTests = (
 
                 expect(adapter.settlementAsset(scope)).toBeNull()
                 await expect(
+                    adapter.isAutoDrawEnabled(scope, fixtures.autoDraw.address),
+                ).resolves.toBe(false)
+                await expect(
+                    adapter.findCardOwner(scope, [fixtures.cardOwner.wallet]),
+                ).resolves.toBeNull()
+                await expect(
                     adapter.buildManualDeposit(fixtures.deposit.params, scope),
                 ).rejects.toThrow(
                     expect.objectContaining({
@@ -120,6 +135,37 @@ export const cardContractTests = (
                 )
             },
         )
+
+        it('finds the owner of the card Baanx has on record, skipping other chains', async () => {
+            fixtures.cardOwner.arrangeOwner(true)
+
+            await expect(
+                makeAdapter().findCardOwner(fixtures.scope, [
+                    { address: '0x0', network: fixtures.foreignLegNetwork },
+                    fixtures.cardOwner.wallet,
+                ]),
+            ).resolves.toBe(fixtures.cardOwner.ownerAddress)
+        })
+
+        it('finds no owner when Baanx lists no card on this chain', async () => {
+            fixtures.cardOwner.arrangeOwner(true)
+
+            await expect(
+                makeAdapter().findCardOwner(fixtures.scope, [
+                    { address: '0x0', network: fixtures.foreignLegNetwork },
+                ]),
+            ).resolves.toBeNull()
+        })
+
+        it('finds no owner for an address the chain does not know as a card', async () => {
+            fixtures.cardOwner.arrangeOwner(false)
+
+            await expect(
+                makeAdapter().findCardOwner(fixtures.scope, [
+                    fixtures.cardOwner.wallet,
+                ]),
+            ).resolves.toBeNull()
+        })
 
         it('builds a manual deposit as chain-neutral transactions on the scope', async () => {
             fixtures.deposit.arrangeBuild()
@@ -204,6 +250,20 @@ export const cardContractTests = (
                 ),
             ).toEqual(expect.stringContaining('HASH'))
         })
+
+        it.each([true, false])(
+            'reads auto-draw as %s when the chain says so',
+            async enabled => {
+                fixtures.autoDraw.arrangeState(enabled)
+
+                await expect(
+                    makeAdapter().isAutoDrawEnabled(
+                        fixtures.scope,
+                        fixtures.autoDraw.address,
+                    ),
+                ).resolves.toBe(enabled)
+            },
+        )
 
         it('does not submit again when auto-draw is already on', async () => {
             const { account, cardAddress } = fixtures.autoDraw

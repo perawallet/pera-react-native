@@ -19,6 +19,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    isEvmChainId,
     toScopeKey,
     type ChainId,
     type ChainNetwork,
@@ -26,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     generateOrderedUniqueId,
+    type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -43,6 +45,7 @@ import {
     getPreferredDappIcon,
     toConnectionPermissions,
     uniqueChainIds,
+    useChangeConnectionAccount,
     type ConnectionPermission,
 } from '@modules/walletconnect'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
@@ -151,12 +154,23 @@ export type UseSettingsWalletConnectDetailsScreenResult = {
     deleteModalState: ReturnType<typeof useModalState>
     handleDelete: () => void
     handleOpenLink: () => void
+    /** The session's first EVM chain; absent when it holds none. */
+    evmChainId: Optional<ChainId>
+    /** The account of the first EVM address the session holds; `null` once it left the wallet. */
+    activeEvmAccount: Nullable<WalletAccount>
+    isChangingAccount: boolean
+    handleChangeAccount: () => Promise<void>
 }
 
 export const useSettingsWalletConnectDetailsScreen = (
-    connection: ConnectionSettingsRow,
+    routeConnection: ConnectionSettingsRow,
 ): UseSettingsWalletConnectDetailsScreenResult => {
-    const { revoke } = useConnectionSettingsList()
+    const { revoke, connections } = useConnectionSettingsList()
+    // The route param is a snapshot from when the screen opened; an account
+    // change lands in the store.
+    const connection =
+        connections.find(({ id }) => id === routeConnection.id) ??
+        routeConnection
     const { showError } = useErrorToast()
     const { t } = useLanguage()
     const deleteModalState = useModalState()
@@ -225,6 +239,26 @@ export const useSettingsWalletConnectDetailsScreen = (
             })
     }
 
+    const evmChainIds = useMemo(
+        () =>
+            uniqueChainIds(
+                connection.networks
+                    .map(({ chainId }) => chainId)
+                    .filter(chainId => isEvmChainId(chainId)),
+            ),
+        [connection.networks],
+    )
+    const {
+        evmChainId,
+        activeEvmAccount,
+        isChanging: isChangingAccount,
+        handleChangeAccount,
+    } = useChangeConnectionAccount({
+        id: connection.id,
+        accounts: connection.accounts,
+        evmChainIds,
+    })
+
     const handleOpenLink = () => {
         // The peer url is dApp-asserted, never validated upstream; gate it to
         // https:// before it reaches the WebView.
@@ -246,5 +280,9 @@ export const useSettingsWalletConnectDetailsScreen = (
         deleteModalState,
         handleDelete,
         handleOpenLink,
+        evmChainId,
+        activeEvmAccount,
+        isChangingAccount,
+        handleChangeAccount,
     }
 }

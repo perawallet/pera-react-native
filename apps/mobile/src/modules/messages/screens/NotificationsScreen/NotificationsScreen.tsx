@@ -17,7 +17,13 @@ import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { LoadingView } from '@components/LoadingView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
-import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWRefreshControl,
+    PWScreen,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
 import { useStyles } from './styles'
@@ -39,6 +45,9 @@ export const NotificationsScreen = () => {
         isFetchingNextPage,
         keyExtractor,
         handleNotificationPress,
+        canMarkAllAsRead,
+        showMarkAllAsRead,
+        markAllAsRead,
         listRef,
         isUnavailableOnNetwork,
         isDeviceUnregistered,
@@ -66,6 +75,25 @@ export const NotificationsScreen = () => {
 
     return (
         <PWScreen scroll='never'>
+            {showMarkAllAsRead && (
+                <PWView style={styles.markAllRow}>
+                    <PWButton
+                        variant='link'
+                        paddingStyle='none'
+                        title={t('notifications.mark_all_read')}
+                        onPress={markAllAsRead}
+                        isDisabled={!canMarkAllAsRead}
+                        style={
+                            canMarkAllAsRead ? undefined : styles.markAllSpent
+                        }
+                        accessibilityElementsHidden={!canMarkAllAsRead}
+                        importantForAccessibility={
+                            canMarkAllAsRead ? 'auto' : 'no-hide-descendants'
+                        }
+                        testID='notifications_mark_all_read_button'
+                    />
+                </PWView>
+            )}
             <PWFlatList
                 pauseSyncOnInteraction
                 ref={listRef}

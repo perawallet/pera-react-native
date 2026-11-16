@@ -59,6 +59,8 @@ export const CHAIN_CAPABILITIES = [
     'csvExport',
     // Fetching a Pera Web backup needs the Pera backend.
     'peraWebImport',
+    // Listing and revoking the approvals an account has given; the list needs the Pera backend.
+    'tokenApprovals',
 ] as const
 
 /**

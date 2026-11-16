@@ -23,6 +23,9 @@ import { testKeystore } from './src/__tests__/secp256k1TestKeyStore'
 // not transitively pull in react-native-mmkv, which vitest can't load.
 const kvStore = new Map<string, string>()
 
+// `useSyncExternalStore` needs a stable snapshot, so an unset keystore must not hand out a new array per read.
+const NO_KEYS: never[] = []
+
 // A standalone account's secret format is read from its chain's descriptor, and
 // whether a chain is backed up from its capabilities.
 const chains = createChainRegistry()
@@ -73,9 +76,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({
         state: {
             get keys() {
-                return testKeystore.store?.state.keys ?? []
+                return testKeystore.store?.state.keys ?? NO_KEYS
             },
         },
+        subscribe: () => ({ unsubscribe: () => {} }),
     }),
     // Node's real WebCrypto, not a stub: `derivePasskeyMainKey` falls back to
     // it when no `subtle` is passed and needs a working PBKDF2.

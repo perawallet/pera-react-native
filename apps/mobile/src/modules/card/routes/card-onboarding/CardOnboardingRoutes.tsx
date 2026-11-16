@@ -28,6 +28,7 @@ import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddress
 import { CardOnboardingMailingAddressScreen } from '../../screens/CardOnboardingMailingAddressScreen'
 import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
 import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
+import { CardOnOtherAccountScreen } from '../../screens/CardOnOtherAccountScreen'
 import { CardCreateSigningScreen } from '../../screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '../../screens/CardAutoFundingSigningScreen'
 import type { CardOnboardingStackParamList } from './types'
@@ -84,6 +85,11 @@ export const CardOnboardingStackNavigator = () => {
             <Stack.Screen
                 name='CardOnboardingStatus'
                 component={CardOnboardingStatusScreen}
+                options={{ title: '' }}
+            />
+            <Stack.Screen
+                name='CardOnOtherAccount'
+                component={CardOnOtherAccountScreen}
                 options={{ title: '' }}
             />
             <Stack.Screen

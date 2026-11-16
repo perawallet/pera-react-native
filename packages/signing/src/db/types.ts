@@ -202,3 +202,9 @@ export interface TransactionBatch {
     createdAt: number
     updatedAt: number
 }
+
+/** The part of a batch row a run moves; a write names the state it expects and the one it leaves. */
+export type TransactionBatchState = Pick<
+    TransactionBatch,
+    'txIds' | 'signedRaw' | 'position' | 'outcome'
+>

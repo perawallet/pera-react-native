@@ -37,6 +37,7 @@ import {
 import type {
     BuildContext,
     ReviewContext,
+    TransactionIntent,
     TransferIntent,
 } from '@perawallet/wallet-core-chain-contract'
 import { getAssetById, type PeraAsset } from '@perawallet/wallet-core-assets'
@@ -212,6 +213,93 @@ describe('Ethereum transfer adapter', () => {
             }),
         ).toEqual({ functionName: 'transfer', args: [RECIPIENT, 250n] })
         expect(built.summary.kind).toBe('token-transfer')
+    })
+
+    describe('approval revoke', () => {
+        const USDC_ADDRESS = getAddress(USDC)
+        const OPERATOR = getAddress(
+            '0x1E0049783F008A0085193E00003D00cd54003c71',
+        )
+
+        const allowanceRevoke: TransactionIntent = {
+            kind: 'approval-revoke',
+            account: SENDER,
+            approval: {
+                kind: 'allowance',
+                assetRef: { chainId: 'ethereum', assetId: USDC },
+                spender: RECIPIENT,
+            },
+        }
+        const collectionRevoke: TransactionIntent = {
+            kind: 'approval-revoke',
+            account: SENDER,
+            approval: {
+                kind: 'collection',
+                collection: NFT_CONTRACT,
+                spender: OPERATOR,
+            },
+        }
+
+        it('builds approve(spender, 0) on the token, from the account, sending no ether', async () => {
+            useRpc()
+
+            const [built] = await adapter.build(allowanceRevoke, context)
+
+            const { from, transaction } =
+                built.payload as EthereumTransactionPayload
+            expect(from).toBe(getAddress(SENDER))
+            expect(transaction.to).toBe(USDC_ADDRESS)
+            expect(transaction.value).toBe(0n)
+            expect(transaction.nonce).toBe(4)
+            expect(
+                decodeFunctionData({
+                    abi: erc20Abi,
+                    data: transaction.data as Hex,
+                }),
+            ).toEqual({ functionName: 'approve', args: [RECIPIENT, 0n] })
+            expect(built.summary.title).toEqual({
+                key: 'transactions.list_item.revoke_approval',
+            })
+        })
+
+        it('builds setApprovalForAll(operator, false) on the collection', async () => {
+            useRpc()
+
+            const [built] = await adapter.build(collectionRevoke, context)
+
+            const { transaction } = built.payload as EthereumTransactionPayload
+            expect(transaction.to).toBe(NFT_CONTRACT)
+            expect(transaction.value).toBe(0n)
+            expect(
+                decodeFunctionData({
+                    abi: erc721Abi,
+                    data: transaction.data as Hex,
+                }),
+            ).toEqual({
+                functionName: 'setApprovalForAll',
+                args: [OPERATOR, false],
+            })
+        })
+
+        it('prices a revoke at the node gas estimate', async () => {
+            useRpc()
+
+            const estimate = await adapter.getFeeEstimate(
+                allowanceRevoke,
+                context,
+            )
+
+            expect(estimate.amount.gt(0)).toBe(true)
+            expect(estimate.presets).toBeDefined()
+        })
+
+        it('refuses a revoke for an account that is not an address', async () => {
+            useRpc()
+
+            await expect(
+                adapter.build({ ...allowanceRevoke, account: 'bob' }, context),
+            ).rejects.toThrow(InvalidSendParamsError)
+        })
     })
 
     it('builds a transaction the Ethereum planner asks the sender to sign', async () => {

@@ -17,6 +17,13 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    createFakeKeystore,
+    fakeChildKey,
+    fakeSeedKey,
+} from '../../../__tests__/fakeKeystore'
+
+const keystore = createFakeKeystore()
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -33,6 +40,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
         chains: { has: () => true },
     }),
+    getKeystoreStore: () => keystore.store,
 }))
 
 const fundedByAddress: Record<string, string[]> = {}
@@ -90,6 +98,13 @@ const local = (address: string): WalletAccount => ({
     chains: { algorand: { address, keyPairId: `kp-${address}` } },
 })
 
+// Each account's key is a child of its own seed, so a mark on the key counts for the seed.
+const keysFor = (addresses: string[]) =>
+    addresses.flatMap(address => [
+        fakeSeedKey(`seed-${address}`),
+        fakeChildKey(`kp-${address}`, `seed-${address}`),
+    ])
+
 const render = (accounts: WalletAccount[]) => {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false } },
@@ -104,6 +119,7 @@ const render = (accounts: WalletAccount[]) => {
 
 describe('useAccountsNeedingMnemonicBackup', () => {
     beforeEach(() => {
+        keystore.setKeys(keysFor(['A', 'B', 'C', 'D']))
         registerFakeBackupAdapter()
         useMnemonicBackupStore.getState().resetState()
         for (const key of Object.keys(fundedByAddress)) {
@@ -147,6 +163,7 @@ describe('useAccountsNeedingMnemonicBackup', () => {
 
 describe('findAccountsNeedingMnemonicBackup', () => {
     beforeEach(() => {
+        keystore.setKeys(keysFor(['A', 'B', 'C', 'D']))
         registerFakeBackupAdapter()
         useMnemonicBackupStore.getState().resetState()
         for (const key of Object.keys(fundedByAddress)) {

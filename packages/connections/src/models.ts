@@ -206,6 +206,16 @@ export type InboundMessage =
           correlationId: string
       }
     /**
+     * The wallet changed what the connection holds under an open request (its
+     * account was replaced): one the user has not approved is declined, one
+     * already approved finishes. See `ConnectionHandlerContext.onRequestWithdrawn`.
+     */
+    | {
+          kind: 'request-withdrawn'
+          connectionId: ConnectionId
+          correlationId: string
+      }
+    /**
      * The connection's record is gone, whichever side ended it; every request
      * it still has open must be let go of, as for `request-expired`.
      */

@@ -57,6 +57,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const mockHaptics = vi.hoisted(() => ({ success: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@modules/onboarding/hooks', () => ({
     useExitAccountFlow: vi.fn(),
 }))
@@ -77,7 +83,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         mockStoreAccounts.current = []
 
         vi.mocked(useRoute).mockReturnValue({
-            params: { accounts: MOCK_ACCOUNTS },
+            params: { accounts: MOCK_ACCOUNTS, hasImportedAccounts: true },
         } as unknown as ReturnType<typeof useRoute>)
 
         vi.mocked(useAllAccounts).mockReturnValue([])
@@ -160,6 +166,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
         // Pin the persisted shape: watch with no key, never a signer type.
         const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
             custody: { kind: string }
@@ -211,9 +218,46 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
         expect(mockSetAccounts).not.toHaveBeenCalled()
         expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
         expect(result.current.isImporting).toBe(false)
+    })
+
+    it('plays no success haptic on skip or an empty continue when nothing was imported before it', () => {
+        vi.mocked(useRoute).mockReturnValue({
+            params: { accounts: MOCK_ACCOUNTS },
+        } as unknown as ReturnType<typeof useRoute>)
+        const { result } = renderHook(() => useImportRekeyedAddressesScreen())
+
+        act(() => {
+            result.current.handleSkip()
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        expect(mockExitAccountFlow).toHaveBeenCalledTimes(2)
+        expect(mockHaptics.success).not.toHaveBeenCalled()
+    })
+
+    it('still plays success after picking accounts when nothing was imported before', () => {
+        vi.mocked(useRoute).mockReturnValue({
+            params: { accounts: MOCK_ACCOUNTS },
+        } as unknown as ReturnType<typeof useRoute>)
+        const { result } = renderHook(() => useImportRekeyedAddressesScreen())
+
+        act(() => {
+            result.current.toggleSelection('ACC1')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+        act(() => {
+            vi.runAllTimers()
+        })
+
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
     })
 
     it('handleSkip exits the account flow', () => {
@@ -222,5 +266,6 @@ describe('useImportRekeyedAddressesScreen', () => {
             result.current.handleSkip()
         })
         expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
     })
 })

@@ -18,6 +18,7 @@ import type {
     EthereumTransactionView,
     EvmActionAsset,
     EvmContractAction,
+    EvmLiquidityPosition,
     EvmSwapLeg,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
@@ -66,6 +67,13 @@ export type EthereumContractActionPresentation =
           amount: EthereumActionAmount
           isEntireBalance: boolean
       }
+    | {
+          kind: 'add-liquidity'
+          /** Each is the most the position manager can take; empty on an increase, whose calldata doesn't name the tokens. */
+          deposits: EthereumBoundedAmount[]
+          position: EvmLiquidityPosition
+      }
+    | { kind: 'remove-liquidity'; tokenId: string; isClosing: boolean }
 
 export type UseEthereumContractActionResult = {
     contractAction: Nullable<EthereumContractActionPresentation>
@@ -81,7 +89,8 @@ const tokenOf = (asset: EvmActionAsset, baseUnits: Decimal): TokenSlot =>
     asset.kind === 'token' ? { assetId: asset.contract, baseUnits } : NO_TOKEN
 
 // The three token records an action needs, in the order `present` reads them;
-// the third is the swap's fee token, whose record sizes every fee.
+// the third is the swap's fee token, whose record sizes every fee, and a
+// liquidity add's two deposits take the first two.
 const tokenSlotsOf = (
     action: Optional<EvmContractAction>,
 ): [TokenSlot, TokenSlot, TokenSlot] => {
@@ -101,6 +110,14 @@ const tokenSlotsOf = (
             return [
                 { assetId: action.asset, baseUnits: action.amount },
                 NO_TOKEN,
+                NO_TOKEN,
+            ]
+        }
+        case 'add-liquidity': {
+            const [first, second] = action.deposits
+            return [
+                first ? tokenOf(first.asset, first.maxAmount) : NO_TOKEN,
+                second ? tokenOf(second.asset, second.maxAmount) : NO_TOKEN,
                 NO_TOKEN,
             ]
         }
@@ -200,6 +217,30 @@ const present = (
                 assetContract: action.asset,
                 amount: tokenAmountOf(first, action.amount),
                 isEntireBalance: action.isEntireBalance,
+            }
+        }
+        case 'add-liquidity': {
+            return {
+                kind: 'add-liquidity',
+                deposits: action.deposits.map(
+                    ({ asset, maxAmount }, index) => ({
+                        ...(asset.kind === 'native'
+                            ? nativeAmountOf(nativeAsset, maxAmount)
+                            : tokenAmountOf(
+                                  index === 0 ? first : second,
+                                  maxAmount,
+                              )),
+                        bound: 'at-most' as const,
+                    }),
+                ),
+                position: action.position,
+            }
+        }
+        case 'remove-liquidity': {
+            return {
+                kind: 'remove-liquidity',
+                tokenId: action.tokenId,
+                isClosing: action.isClosing,
             }
         }
     }

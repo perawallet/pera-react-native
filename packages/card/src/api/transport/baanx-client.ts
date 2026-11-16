@@ -24,6 +24,7 @@ import { hasSecret, withSecret } from '@perawallet/wallet-core-kms'
 import { ACCESS_TOKEN_SECRET_ID } from '../../session/secret-ids'
 import type { CardTransportRequest, CardTransportResponse } from './types'
 import { parseResponse, toKyPath } from './http-helpers'
+import { logBaanxRequestError } from './baanx-error-log'
 
 // One ky instance per scope (Algorand mainnet → Baanx prod, testnet →
 // Baanx sandbox). Only the static `x-client-key` is attached at the client
@@ -49,7 +50,10 @@ const getClient = (scope: ChainScope): KyInstance => {
     const { baanxBaseUrl, baanxClientKey } = getPeraServicesConfig(scope)
     const client = ky.create({
         prefix: baanxBaseUrl,
-        hooks: { beforeRequest: [attachClientHeaders(baanxClientKey)] },
+        hooks: {
+            beforeRequest: [attachClientHeaders(baanxClientKey)],
+            beforeError: [logBaanxRequestError],
+        },
     })
     clients.set(key, client)
     return client

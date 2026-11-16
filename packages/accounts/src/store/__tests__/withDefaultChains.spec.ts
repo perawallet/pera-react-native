@@ -26,7 +26,11 @@ import {
     registerChainFamilies,
     type ChainFamilies,
 } from '../../__tests__/chainFamilies'
-import { useAccountsStore, withDefaultChains } from '../store'
+import {
+    useAccountsStore,
+    withDefaultChains,
+    withSelectedChains,
+} from '../store'
 
 const HD_SEED = 'hd-seed'
 const ETHEREUM_KEY = familyHdKeyId(HD_SEED, 'evm', 0, 0)
@@ -116,5 +120,57 @@ describe('withDefaultChains', () => {
         const account = await withDefaultChains(hdDraft())
 
         expect(Object.keys(account.chains)).toEqual([ALGORAND])
+    })
+})
+
+describe('withSelectedChains', () => {
+    const state = () => useAccountsStore.getState()
+
+    beforeEach(() => {
+        registerChainFamilies()
+        getKeystoreStore().state.keys = [
+            { id: HD_SEED, type: 'seed', metadata: { scheme: 'bip39' } },
+            {
+                id: 'hd-key',
+                type: 'ed25519',
+                metadata: { parentKeyId: HD_SEED },
+            },
+        ] as never
+        vi.mocked(getProvider().key.store.remove).mockClear()
+        state().resetState()
+    })
+
+    test('adds a listed chain the draft lacks, as created', async () => {
+        const account = await withSelectedChains(hdDraft(), [ALGORAND, BASE])
+
+        expect(Object.keys(account.chains)).toEqual([ALGORAND, BASE])
+        expect(account.chains[BASE]?.enabledBy).toBe('created')
+    })
+
+    test('drops an entry not listed and removes the key only it signed with', async () => {
+        const draft = await withDefaultChains(hdDraft())
+
+        const account = await withSelectedChains(draft, [ALGORAND])
+
+        expect(Object.keys(account.chains)).toEqual([ALGORAND])
+        expect(getProvider().key.store.remove).toHaveBeenCalledWith(
+            ETHEREUM_KEY,
+        )
+    })
+
+    test('keeps the key of a dropped chain that a listed chain signs with', async () => {
+        const draft = await withDefaultChains(hdDraft())
+
+        const account = await withSelectedChains(draft, [ALGORAND, BASE])
+
+        expect(Object.keys(account.chains)).toEqual([ALGORAND, BASE])
+        expect(account.chains[BASE]?.keyPairId).toBe(ETHEREUM_KEY)
+        expect(getProvider().key.store.remove).not.toHaveBeenCalled()
+    })
+
+    test('writes nothing to the store', async () => {
+        await withSelectedChains(hdDraft(), [ALGORAND, ETHEREUM])
+
+        expect(state().accounts).toEqual([])
     })
 })

@@ -49,6 +49,16 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@react-navigation/stack', () => ({}))
+
+const { mockHandleSubmitError } = vi.hoisted(() => ({
+    mockHandleSubmitError: vi.fn(),
+}))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({
+        handleSubmitError: mockHandleSubmitError,
+    }),
+}))
 vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-hardware-wallet')
@@ -316,6 +326,25 @@ describe('useTransactionProcessingScreen', () => {
         expect(mockShowToast).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
         )
+    })
+
+    it('hands a failed send to the submit-error haptic, but not a cancelled one', async () => {
+        const failure = new Error('Network error')
+        mockExecute.mockRejectedValueOnce(failure)
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(mockHandleSubmitError).toHaveBeenCalledWith(failure)
+    })
+
+    it('plays no transaction haptic when the user cancels the signing overlay', async () => {
+        mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(mockHandleSubmitError).not.toHaveBeenCalled()
     })
 
     it('shows an error toast and navigates back when execution fails with a non-cancel error', async () => {

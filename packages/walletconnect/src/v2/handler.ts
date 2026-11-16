@@ -28,6 +28,7 @@ import {
     pairingScope,
 } from '@perawallet/wallet-core-connections/handlerKit'
 import {
+    ConnectionsError,
     walletNoticeChainId,
     type ConnectionHandler,
     type ConnectionProposal,
@@ -229,6 +230,12 @@ export type CreateWalletConnectV2HandlerOptions = {
      * client itself.
      */
     startWhen?: () => Promise<void>
+    /**
+     * Whether a held account can sign for `address` on `chainId`; the handler
+     * holds no wallet accounts itself. Without it no session's account can be
+     * changed.
+     */
+    canSignWith?: (chainId: ChainId, address: string) => boolean
 }
 
 const dedupe = (values: string[]): string[] => [...new Set(values)]
@@ -374,6 +381,7 @@ export const createWalletConnectV2Handler = (
         keyValueStorage,
         createWalletKit = createWalletKitClient,
         startWhen,
+        canSignWith,
     } = options
 
     const kit = createHandlerKit(WALLET_CONNECT_V2_KIND, {
@@ -408,8 +416,12 @@ export const createWalletConnectV2Handler = (
     // missing from here has been approved, rejected or expired.
     const pendingProposals = new Map<number, string>()
     // Request id to session topic: `session_request_expire` carries only the
-    // id, and the registry addresses requests by connection.
-    const pendingRequests = new Map<number, string>()
+    // id, and the registry addresses requests by connection. The namespace
+    // lets an account switch withdraw only its own family's requests.
+    const pendingRequests = new Map<
+        number,
+        { topic: string; namespace: string }
+    >()
     // Pairings the caller gave up on. Tombstoned rather than forgotten,
     // because a slow dApp can still deliver a proposal on one and a sheet
     // appearing from nowhere is worse than a map entry per abandon.
@@ -473,7 +485,7 @@ export const createWalletConnectV2Handler = (
         // WalletKit has dropped the request, so any answer now fails with
         // "No matching key": the sheet has to go, and the user hears why.
         bind(walletKit, 'session_request_expire', ({ id }) => {
-            const topic = pendingRequests.get(id)
+            const topic = pendingRequests.get(id)?.topic
             if (topic === undefined) return
             pendingRequests.delete(id)
             kit.currentContext()?.onRequestExpired(topic, String(id))
@@ -751,7 +763,7 @@ export const createWalletConnectV2Handler = (
             pendingRequests.delete(id)
         }
 
-        pendingRequests.set(id, topic)
+        pendingRequests.set(id, { topic, namespace: support.namespace })
         requireContext().onMessage({
             kind: 'request',
             chainId: chain.chainId,
@@ -1755,6 +1767,173 @@ export const createWalletConnectV2Handler = (
         })
     }
 
+    // Raised for the account being replaced. The subscriber holding each one
+    // declines it unless the user already approved it, so a send already
+    // signing is not answered 4001 while it broadcasts.
+    const withdrawPendingRequests = (
+        topic: string,
+        namespace: string,
+    ): void => {
+        const context = requireContext()
+        for (const [requestId, pending] of pendingRequests) {
+            if (pending.topic !== topic || pending.namespace !== namespace) {
+                continue
+            }
+            context.onRequestWithdrawn(topic, String(requestId))
+        }
+    }
+
+    const changeAccount = async (
+        id: ConnectionId,
+        chainId: ChainId,
+        address: string,
+    ): Promise<void> => {
+        const chain = v2ChainFor(chainId)
+        if (!chain) {
+            throw new ConnectionsError(
+                'unsupported-chain',
+                `WalletConnect v2 does not serve ${chainId}`,
+            )
+        }
+        const [normalized] = addressesOnChain(chainId, [address])
+        const walletKit = requireClient()
+        const session = walletKit.getActiveSessions()[
+            id
+        ] as Optional<WalletKitSession>
+        const namespace = session?.namespaces[
+            chain.support.namespace
+        ] as Optional<WalletKitSession['namespaces'][string]>
+        const stored = await store().get(id)
+        if (
+            !session ||
+            !namespace ||
+            !stored ||
+            !isWalletConnectV2Connection(stored)
+        ) {
+            throw new WalletConnectInvalidSessionError('No session found')
+        }
+        const servedChainsOf = (caip2Ids: readonly string[]): ChainId[] => [
+            ...new Set(
+                caip2Ids.flatMap((caip2): ChainId[] => {
+                    const served = v2ChainForCaip2(caip2)
+                    return served ? [served.chainId] : []
+                }),
+            ),
+        ]
+        const namespaceChains = servedChainsOf(namespace.chains ?? [])
+        // Like the connect sheet: the chain the switch names and the dApp's
+        // required chains gate it. Optional ones don't, since dApps such as
+        // Uniswap list networks few accounts have all of.
+        const gatingChains = [
+            chainId,
+            ...servedChainsOf(
+                requestedChains(
+                    chain.support,
+                    (session?.requiredNamespaces ?? {}) as ProposalNamespaces,
+                ),
+            ).filter(required => namespaceChains.includes(required)),
+        ]
+        if (
+            normalized === undefined ||
+            !canSignWith ||
+            !namespaceChains.includes(chainId) ||
+            !gatingChains.every(gating => canSignWith(gating, normalized))
+        ) {
+            throw new ConnectionsError(
+                'unauthorized-account',
+                'The wallet cannot sign for that account on this session',
+            )
+        }
+        const held = addressesOnChain(chainId, stored.accounts)
+        if (held.length === 1 && held[0] === normalized) return
+
+        // Store first, then reject: a request read before the store write
+        // would be raised for the account being replaced.
+        const latest = await store().get(id)
+        const current =
+            latest && isWalletConnectV2Connection(latest) ? latest : stored
+        await store().upsert({
+            ...current,
+            accounts: [
+                ...current.accounts.filter(
+                    existing =>
+                        addressesOnChain(chainId, [existing]).length === 0,
+                ),
+                normalized,
+            ],
+        })
+        withdrawPendingRequests(id, chain.support.namespace)
+        let updated = namespace
+        try {
+            // Re-read after the store awaits: a chain switch landing meanwhile
+            // changed the namespaces, and the copy read above would undo it.
+            const live = walletKit.getActiveSessions()[
+                id
+            ] as Optional<WalletKitSession>
+            const liveNamespace = live?.namespaces[
+                chain.support.namespace
+            ] as Optional<WalletKitSession['namespaces'][string]>
+            if (!live || !liveNamespace) {
+                throw new WalletConnectInvalidSessionError('No session found')
+            }
+            updated = liveNamespace
+            await walletKit.updateSession({
+                topic: id,
+                namespaces: {
+                    ...live.namespaces,
+                    [chain.support.namespace]: {
+                        ...liveNamespace,
+                        accounts: (liveNamespace.chains ?? []).map(caip2 =>
+                            toCaip10Account(caip2, normalized),
+                        ),
+                    },
+                },
+            })
+        } catch (error) {
+            // The dApp still holds the old account; the record must say so.
+            // Re-read: a disconnect may have removed it meanwhile, and only
+            // the accounts this switch wrote are put back.
+            const now = await store().get(id)
+            if (now && isWalletConnectV2Connection(now)) {
+                await store().upsert({
+                    ...now,
+                    accounts: [
+                        ...now.accounts.filter(
+                            existing =>
+                                addressesOnChain(chainId, [existing]).length ===
+                                0,
+                        ),
+                        ...addressesOnChain(chainId, current.accounts),
+                    ],
+                })
+            }
+            throw error
+        }
+
+        if (!(updated.events ?? []).includes('accountsChanged')) return
+        const active = chain.support.caip2ChainIdFor(getNetworkId(chainId))
+        const owned = (updated.chains ?? []).filter(
+            caip2 => chain.support.networkForCaip2ChainId(caip2) !== null,
+        )
+        const emitOn =
+            active !== null && owned.includes(active) ? active : owned[0]
+        if (emitOn === undefined) return
+        // Best effort, like a chain switch: the session already holds the
+        // new account, and a dApp that misses this reads it on its next call.
+        await walletKit
+            .emitSessionEvent({
+                topic: id,
+                event: { name: 'accountsChanged', data: [normalized] },
+                chainId: emitOn,
+            })
+            .catch((error: unknown) => {
+                logger.warn('[WC v2] announcing a changed account failed', {
+                    connectionId: id,
+                    error,
+                })
+            })
+    }
+
     // The record goes whatever the relay says: a dApp the user removed must
     // not reappear in settings because the peer was unreachable.
     const disconnect = async (id: ConnectionId): Promise<void> => {
@@ -1764,6 +1943,8 @@ export const createWalletConnectV2Handler = (
 
     return {
         kind: WALLET_CONNECT_V2_KIND,
+
+        changeAccount,
 
         canHandleUri: isV2PairingUri,
 

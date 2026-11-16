@@ -20,7 +20,7 @@ import { createEvmnetChainContext, installedKms } from './context'
 import { EVMNET, EVMNET_CHAINS, type EvmnetChain } from './evmnet'
 
 /**
- * Registers the six chains as the app's bootstrap does, on testnet scopes
+ * Registers every evmnet chain as the app's bootstrap does, on testnet scopes
  * pointing at evmnet, so registry lookups (planners, reviewers, codecs)
  * resolve to the real EVM adapters.
  */

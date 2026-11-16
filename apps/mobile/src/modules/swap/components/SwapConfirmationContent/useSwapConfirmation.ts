@@ -34,10 +34,13 @@ import {
     useSwapSourceCostQuery,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { useHaptics } from '@hooks/useHaptics'
+import { useHapticOnCrossing } from '@hooks/useHapticOnCrossing'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { formatSwapFee, formatSwapSlippage } from '../../utils/formatSwapFee'
 import { useStyles } from './styles'
+import { useSwapNetworkFeeWarning } from './useSwapNetworkFeeWarning'
 
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
@@ -83,6 +86,8 @@ type UseSwapConfirmationResult = {
     needsSpendApproval: boolean
     /** Non-null while the account can't pay the source chain's fee: confirm stays off. */
     insufficientFeeMessage: Nullable<string>
+    /** Set when the network fee is more than 10% of the swap's value; confirm stays on. */
+    highNetworkFeeMessage: Nullable<string>
     slippageDisplay: string
     hasHighPriceImpact: boolean
     /** Null when the route reports no price impact. */
@@ -99,6 +104,7 @@ export const useSwapConfirmation = ({
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const haptics = useHaptics()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { usdToPreferred } = useCurrency(scope)
@@ -208,6 +214,13 @@ export const useSwapConfirmation = ({
           })
         : null
 
+    const highNetworkFeeMessage = useSwapNetworkFeeWarning({
+        quote,
+        scope,
+        sourceCost,
+        isSourceCostLoading,
+    })
+
     const slippageDisplay = useMemo(
         () =>
             quote.request.slippage
@@ -223,6 +236,8 @@ export const useSwapConfirmation = ({
             ) ?? false,
         [quote.priceImpact],
     )
+
+    useHapticOnCrossing(hasHighPriceImpact, haptics.warning)
 
     const priceImpactDisplay = useMemo(() => {
         if (!quote.priceImpact) return null
@@ -265,6 +280,7 @@ export const useSwapConfirmation = ({
         networkFeeDisplay,
         needsSpendApproval: sourceCost?.needsSpendApproval ?? false,
         insufficientFeeMessage,
+        highNetworkFeeMessage,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,

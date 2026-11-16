@@ -73,6 +73,7 @@ const makeFakeRegistry = () => {
         scopesFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
+        changeAccount: vi.fn(async () => {}),
         reconnect: vi.fn(),
         reportError: (error, scope) => {
             for (const listener of errorListeners) listener(error, scope)
@@ -596,6 +597,84 @@ describe('startConnectionsHost', () => {
             ])
         })
 
+        it('withdraws a request whose account was changed and declines it to the dApp', async () => {
+            const request = makeRequest({ correlationId: '7' })
+            fake.emitMessage(request)
+            requestApproval.mockClear()
+
+            fake.emitMessage({
+                kind: 'request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            expect(requestApproval).toHaveBeenCalledWith({
+                kind: 'connection-request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+            expect(request.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ failure: 'user-rejected' }),
+            )
+        })
+
+        // Signing (a Ledger still confirming) after the user approved: the
+        // window's answer is still coming, so the switch must not pre-empt it.
+        it('leaves a request the window marked approved to finish when its account is changed', async () => {
+            const request = makeRequest({ correlationId: '7' })
+            fake.emitMessage(request)
+            requestApproval.mockClear()
+            await control({
+                kind: 'mark-request-approved',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            fake.emitMessage({
+                kind: 'request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            expect(request.reject).not.toHaveBeenCalled()
+            expect(requestApproval).not.toHaveBeenCalled()
+            expect(
+                await control({
+                    kind: 'respond',
+                    connectionId: 'conn-1',
+                    correlationId: '7',
+                    outcome: {
+                        ok: true,
+                        result: { type: 'sign-transactions', signed: ['c2ln'] },
+                    },
+                }),
+            ).toEqual({ ok: true })
+        })
+
+        // A mark for a request the host does not hold must not linger and
+        // spare a later request that reuses its key.
+        it('ignores an approval mark for a request it does not hold yet', async () => {
+            expect(
+                await control({
+                    kind: 'mark-request-approved',
+                    connectionId: 'conn-1',
+                    correlationId: '7',
+                }),
+            ).toEqual({ ok: true })
+            const request = makeRequest({ correlationId: '7' })
+            fake.emitMessage(request)
+
+            fake.emitMessage({
+                kind: 'request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            expect(request.reject).toHaveBeenCalledWith(
+                expect.objectContaining({ failure: 'user-rejected' }),
+            )
+        })
+
         it('withdraws nothing for an expiry on a request already answered', () => {
             fake.emitMessage({
                 kind: 'request-expired',
@@ -1090,6 +1169,21 @@ describe('startConnectionsHost', () => {
             )
             expect(fake.registry.disconnect).toHaveBeenCalledWith('conn-1')
             expect(fake.registry.disconnectAll).toHaveBeenCalledTimes(1)
+        })
+
+        it('routes change-account to the registry', async () => {
+            await control({
+                kind: 'change-account',
+                connectionId: 'conn-1',
+                chainId: 'ethereum',
+                address: '0xB',
+            })
+
+            expect(fake.registry.changeAccount).toHaveBeenCalledWith(
+                'conn-1',
+                'ethereum',
+                '0xB',
+            )
         })
 
         it('sweeps sockets through the registry on reconnect-all', () => {

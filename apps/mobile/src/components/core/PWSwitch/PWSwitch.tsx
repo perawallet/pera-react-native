@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { Switch as RNESwitch } from '@rneui/themed'
+import { useHaptics } from '@hooks/useHaptics'
 import { getTestProps } from '@utils/test-id-helper'
 
 import type { StyleProp, ViewStyle } from 'react-native'
@@ -33,10 +35,19 @@ export const PWSwitch = ({
     testID,
     ...props
 }: PWSwitchProps) => {
+    const haptics = useHaptics()
+    const handleValueChange = useCallback(
+        (next: boolean) => {
+            haptics.selection()
+            onValueChange(next)
+        },
+        [haptics, onValueChange],
+    )
+
     return (
         <RNESwitch
             value={value}
-            onValueChange={onValueChange}
+            onValueChange={handleValueChange}
             disabled={disabled}
             style={style}
             color={color}

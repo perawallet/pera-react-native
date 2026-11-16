@@ -36,6 +36,7 @@ import {
     useCardFundingAccount,
     useIsCardAutoFundingActive,
     useCardWithdraw,
+    useSyncCardFundingTypeFromChain,
 } from '../../hooks'
 // Imported directly (not via the hooks barrel) to avoid an import cycle: it
 // pulls in a sheet component that imports from that barrel.
@@ -87,6 +88,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const navigation = useAppNavigation()
     const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()
+    useSyncCardFundingTypeFromChain()
     const isAutoFunding = useIsCardAutoFundingActive()
     const fundingTypeLabel = isAutoFunding
         ? t('peraCard.account.funding_type_enabled_auto')

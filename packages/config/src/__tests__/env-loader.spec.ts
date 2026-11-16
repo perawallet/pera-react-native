@@ -462,6 +462,17 @@ describe('env-loader', () => {
             ])
         })
 
+        test('accepts the approvals service in an EVM Pera services list', () => {
+            process.env.ETHEREUM_MAINNET_PERA_SERVICES = 'history,approvals'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.ethereumMainnetPeraServices).toEqual([
+                'history',
+                'approvals',
+            ])
+        })
+
         test('overrides boolean flags correctly', () => {
             process.env.DEBUG_ENABLED = 'true'
             process.env.PROFILING_ENABLED = 'true'

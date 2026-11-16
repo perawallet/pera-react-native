@@ -18,7 +18,7 @@ export {
     getStoredIntegrityToken,
 } from './getValidIntegrityToken'
 export {
-    buildIntegrityHeaders,
+    buildIntegrityHeadersWhenReady,
     canCallIntegrityGuardedRoute,
     INTEGRITY_BYPASS_HEADER,
     INTEGRITY_TOKEN_HEADER,

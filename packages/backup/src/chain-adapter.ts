@@ -111,11 +111,6 @@ export interface BackupChainAdapter {
         account: WalletAccount,
         mnemonic: string,
     ): Nullable<SecretsBackupPayload>
-    /**
-     * The id one backup state is kept under for every account the same
-     * recovery phrase restores; `null` for an account without one.
-     */
-    mnemonicBackupKeyId(account: WalletAccount): Nullable<string>
     /** Imports one account from its raw ed25519 key and marks it backed up. */
     useImportFromSeed(): ImportFromSeed
     /**

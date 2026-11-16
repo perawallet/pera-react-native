@@ -47,6 +47,18 @@ vi.mock('@hooks/useErrorToast', () => ({
 }))
 vi.mock('@hooks/useLanguage')
 
+const { mockPlaySuccess, mockHandleSubmitError } = vi.hoisted(() => ({
+    mockPlaySuccess: vi.fn(),
+    mockHandleSubmitError: vi.fn(),
+}))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({
+        playSuccess: mockPlaySuccess,
+        handleSubmitError: mockHandleSubmitError,
+    }),
+}))
+
 import { useAssetOptInDeeplink } from '../useAssetOptInDeeplink'
 
 const ASSET_ID = '31566704'
@@ -166,6 +178,48 @@ describe('useAssetOptInDeeplink', () => {
             'add_asset.opt_in.failed_title',
         )
         expect(mockShowToast).not.toHaveBeenCalled()
+    })
+
+    it('plays the success haptic with the success toast', async () => {
+        mockRequestByType.mockResolvedValueOnce('confirm')
+        const { result } = renderHook(() => useAssetOptInDeeplink())
+
+        await act(async () => {
+            await result.current({
+                chainId: 'algorand',
+                assetId: ASSET_ID,
+                address: LINK_ADDRESS,
+            })
+        })
+
+        expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
+        expect(mockHandleSubmitError).not.toHaveBeenCalled()
+    })
+
+    it('hands a failed opt-in to the submit-error haptic, but not a cancelled one', async () => {
+        const optInError = new Error('refused')
+        mockRequestByType.mockResolvedValue('confirm')
+        mockOptIn
+            .mockRejectedValueOnce(optInError)
+            .mockRejectedValueOnce(new UserRejectedSigningError())
+        const { result } = renderHook(() => useAssetOptInDeeplink())
+        const run = () =>
+            act(async () => {
+                await result.current({
+                    chainId: 'algorand',
+                    assetId: ASSET_ID,
+                    address: LINK_ADDRESS,
+                })
+            })
+
+        await run()
+        expect(mockHandleSubmitError).toHaveBeenCalledWith(optInError)
+
+        mockHandleSubmitError.mockClear()
+        await run()
+
+        expect(mockHandleSubmitError).not.toHaveBeenCalled()
+        expect(mockPlaySuccess).not.toHaveBeenCalled()
     })
 
     it('does nothing on a chain whose assets need no opt-in', async () => {

@@ -88,6 +88,12 @@ vi.mock('@hooks/useNodeErrorMessage', () => ({
     }),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ medium: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('useArc60SigningScreen', () => {
     beforeEach(() => {
         registerAlgorandReviewerAdapter()
@@ -176,6 +182,8 @@ describe('useArc60SigningScreen', () => {
         expect(mockTrackEvent).not.toHaveBeenCalled()
         expect(mockPipeline.next).toHaveBeenCalledTimes(1)
         expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.medium).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
     })
 
     it('rejects the request when the quantum dApp warning is cancelled', async () => {
@@ -198,6 +206,8 @@ describe('useArc60SigningScreen', () => {
         )
         expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
         expect(mockPipeline.next).not.toHaveBeenCalled()
+        expect(mockHaptics.medium).not.toHaveBeenCalled()
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
     })
 
     it('blocks confirmation when the signer is a quantum account', () => {

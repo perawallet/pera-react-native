@@ -11,9 +11,14 @@
  */
 
 import { describe, expect, test } from 'vitest'
+import { QueryClient } from '@tanstack/react-query'
 import { queryKeyReferencesScope } from '@perawallet/wallet-core-chain-contract'
 import { CardWalletKind } from '../../models'
-import { cardQueryKeys, MODULE_PREFIX } from '../querykeys'
+import {
+    cardQueryKeys,
+    invalidateCardQueries,
+    MODULE_PREFIX,
+} from '../querykeys'
 
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
@@ -47,5 +52,40 @@ describe('cardQueryKeys', () => {
 
         expect(full.slice(0, 2)).toEqual(prefix.slice(0, 2))
         expect(full[2]).toMatchObject(prefix[2])
+    })
+})
+
+describe('invalidateCardQueries', () => {
+    const arrange = () => {
+        const queryClient = new QueryClient()
+        const statusKey = cardQueryKeys.status(TESTNET)
+        const switchKey = cardQueryKeys.autoDrawEnabled(TESTNET, 'OWNER')
+        const otherKey = ['accounts', 'list']
+        queryClient.setQueryData(statusKey, null)
+        queryClient.setQueryData(switchKey, true)
+        queryClient.setQueryData(otherKey, [])
+        const isStale = (key: readonly unknown[]) =>
+            queryClient.getQueryState(key)?.isInvalidated
+        return { queryClient, statusKey, switchKey, otherKey, isStale }
+    }
+
+    test('marks every card query stale and leaves other modules alone', () => {
+        const { queryClient, statusKey, switchKey, otherKey, isStale } =
+            arrange()
+
+        invalidateCardQueries(queryClient)
+
+        expect(isStale(statusKey)).toBe(true)
+        expect(isStale(switchKey)).toBe(true)
+        expect(isStale(otherKey)).toBe(false)
+    })
+
+    test('can keep a just-confirmed auto-draw switch', () => {
+        const { queryClient, statusKey, switchKey, isStale } = arrange()
+
+        invalidateCardQueries(queryClient, { exceptAutoDrawSwitch: true })
+
+        expect(isStale(statusKey)).toBe(true)
+        expect(isStale(switchKey)).toBe(false)
     })
 })

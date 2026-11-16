@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import { logger, queryClient } from '@perawallet/wallet-core-shared'
 
 import {
@@ -71,7 +71,7 @@ export const requestFeeDelegation = async (
             method: 'POST',
             url: '/api/v3/fee-delegation',
             data: request,
-            headers: buildIntegrityHeaders(),
+            headers: await buildIntegrityHeadersWhenReady(),
             signal,
         })
     } catch (error) {

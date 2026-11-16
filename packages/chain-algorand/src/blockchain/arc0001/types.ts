@@ -68,4 +68,9 @@ export type Arc0001ResolveResult = {
     allDecoded: PeraTransaction[]
     toSign: Arc0001ResolvedTransaction[]
     signerOverrides: Map<number, string>
+    /**
+     * Index in the request → the dApp's own `stxn` (base64), returned as is
+     * for a transaction the wallet doesn't sign.
+     */
+    passthrough: Map<number, string>
 }

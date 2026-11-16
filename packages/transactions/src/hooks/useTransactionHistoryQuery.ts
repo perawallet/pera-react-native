@@ -24,6 +24,7 @@ import {
     fetchMoreTransactions,
 } from '../history-adapter'
 import { MAX_PENDING_HISTORY_ROWS } from '../pending-history'
+import { shouldRetryHistoryRead } from './historyReadRetry'
 import { transactionQueryKeys } from './querykeys'
 import {
     TransactionHistoryStatuses,
@@ -477,6 +478,7 @@ export const useTransactionHistoryQuery = (
         // branches) so an offline load-more resolves with a terminal page
         // rather than rejecting.
         networkMode: 'always',
+        retry: shouldRetryHistoryRead,
         enabled: isEnabled && !!accountAddress,
     })
 

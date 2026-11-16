@@ -17,7 +17,17 @@ import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
-import { DiscoverDetailScreen } from '@modules/discover/routes'
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
+import {
+    DiscoverAllFavoritesScreen,
+    DiscoverAllFoldersScreen,
+    DiscoverDappsScreen,
+    DiscoverDetailScreen,
+    DiscoverFolderScreen,
+    DiscoverNewsDetailScreen,
+    DiscoverNewsScreen,
+    DiscoverSearchScreen,
+} from '@modules/discover/routes'
 import { withAgeGate } from '@components/AgeGated'
 import { BannersCarouselModalScreen } from '@modules/banners/routes'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -44,7 +54,7 @@ import { useIsOnboarding } from '@modules/onboarding'
 import { MigrationSplashScreen } from '@modules/migration'
 
 import type { RootStackParamList } from './types'
-import { fullScreenLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig/routes'
@@ -66,6 +76,9 @@ const RootStack = createNativeStackNavigator<RootStackParamList>()
 // Age-gated at the navigator so the screen (and its data fetching) only mounts
 // for users who pass the gate; blocked users see the restricted view instead.
 const GatedStakingScreen = withAgeGate(StakingScreen)
+// Deeplinks reach these directly, past the age-gated Discover tab.
+const GatedDiscoverNewsScreen = withAgeGate(DiscoverNewsScreen)
+const GatedDiscoverNewsDetailScreen = withAgeGate(DiscoverNewsDetailScreen)
 
 export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
@@ -76,6 +89,9 @@ export const MainRoutes = () => {
     const { needsMigration } = useNeedsMigration()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const isAllowed = useCapabilityCheck()
+    // A multichain build shows the native Discover, which owns the search
+    // route; an Algorand-only one keeps the web app and its detail route.
+    const isNativeDiscover = useIsNativeDiscover()
     const rekeyRequirement = rekeyRequirementFor(ALGORAND_CHAIN_ID)
 
     return (
@@ -228,19 +244,115 @@ export const MainRoutes = () => {
                                 component={GatedStakingScreen}
                             />
                         )}
-                        {isAllowed({
-                            platform: 'discoverTab',
-                            anyChain: 'discover',
-                        }) && (
-                            <RootStack.Screen
-                                name='DiscoverDetail'
-                                options={headeredScreen(
-                                    'asset_details.markets.title',
-                                )}
-                                layout={fullScreenLayout}
-                                component={DiscoverDetailScreen}
-                            />
-                        )}
+                        {!isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverDetail'
+                                    options={headeredScreen(
+                                        'asset_details.markets.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverDetailScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverSearch'
+                                    layout={safeAreaLayout}
+                                    component={DiscoverSearchScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverDapps'
+                                    options={headeredScreen(
+                                        'discover.dapps.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverDappsScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverNews'
+                                    options={headeredScreen(
+                                        'discover.news.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={GatedDiscoverNewsScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverNewsDetail'
+                                    options={headeredScreen(
+                                        'discover.news.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={GatedDiscoverNewsDetailScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverFolder'
+                                    options={headeredScreen(
+                                        'discover.favorites.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverFolderScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverAllFavorites'
+                                    options={headeredScreen(
+                                        'discover.favorites.all_favorites',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverAllFavoritesScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverAllFolders'
+                                    options={headeredScreen(
+                                        'discover.favorites.all_folders_title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverAllFoldersScreen}
+                                />
+                            )}
                         <RootStack.Screen
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}

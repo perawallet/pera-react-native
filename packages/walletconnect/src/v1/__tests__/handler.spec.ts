@@ -563,6 +563,7 @@ describe('walletconnect v1 handler behaviour', () => {
             onMessage,
             onDisconnected,
             onRequestExpired: vi.fn(),
+            onRequestWithdrawn: vi.fn(),
             onError,
         }
         const handler = createWalletConnectV1Handler({
@@ -1155,6 +1156,7 @@ describe('walletconnect v1 handler behaviour', () => {
             onMessage,
             onDisconnected: vi.fn(),
             onRequestExpired: vi.fn(),
+            onRequestWithdrawn: vi.fn(),
             onError: vi.fn(),
         })
         await handler.restore()

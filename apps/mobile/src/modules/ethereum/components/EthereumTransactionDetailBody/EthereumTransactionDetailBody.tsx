@@ -24,10 +24,8 @@ export const EthereumTransactionDetailBody = ({
     transaction,
     scope,
 }: EthereumTransactionDetailBodyProps) => {
-    const { presentation, summary } = useEthereumTransactionDetailBody(
-        transaction,
-        scope,
-    )
+    const { presentation, summary, source, verifiedOrigin } =
+        useEthereumTransactionDetailBody(transaction, scope)
 
     if (!presentation || !summary) {
         return null
@@ -36,8 +34,13 @@ export const EthereumTransactionDetailBody = ({
     return (
         <TransactionDetailLayout
             summary={summary}
+            isHeroShown={summary.status !== undefined}
             chainSection={
-                <EthereumTransactionDetailSection presentation={presentation} />
+                <EthereumTransactionDetailSection
+                    presentation={presentation}
+                    source={source}
+                    verifiedOrigin={verifiedOrigin}
+                />
             }
         />
     )

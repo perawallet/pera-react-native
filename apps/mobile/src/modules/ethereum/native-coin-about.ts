@@ -32,6 +32,7 @@ export const EVM_NATIVE_COIN_ABOUT: Record<EvmChainId, EvmNativeCoinAbout> = {
     ethereum: ETHER,
     base: ETHER,
     arbitrum: ETHER,
+    optimism: ETHER,
     bsc: {
         descriptionKey: i18nKey('asset_details.about.native_description.bnb'),
         websiteUrl: 'https://www.bnbchain.org',

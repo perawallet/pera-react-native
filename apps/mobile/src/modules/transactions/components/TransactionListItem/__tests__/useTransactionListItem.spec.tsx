@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createQueryClientWrapper } from '@test-utils/render'
+import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -292,6 +293,47 @@ describe('useTransactionListItem', () => {
         })
     })
 
+    describe('imitated currency', () => {
+        beforeEach(() => {
+            vi.mocked(imitatedCurrencyOf).mockImplementation((_ref, name) =>
+                name === 'ALGO' ? 'ALGO' : null,
+            )
+        })
+
+        afterEach(() => {
+            vi.mocked(imitatedCurrencyOf).mockReset()
+            vi.mocked(imitatedCurrencyOf).mockReturnValue(null)
+        })
+
+        it('flags a received asset whose stored unit name imitates a currency', () => {
+            stored([{ assetId: '31566704', unitName: 'ALGO', decimals: 6 }])
+
+            const row = renderRow(golden('asset transfer received'))
+
+            expect(row.imitatedCurrency).toBe('ALGO')
+            expect(imitatedCurrencyOf).toHaveBeenCalledWith(
+                { chainId: 'algorand', assetId: '31566704' },
+                'ALGO',
+            )
+        })
+
+        it('has no imitated currency on an ordinary row', () => {
+            const row = renderRow(golden('asset transfer received'))
+
+            expect(row.imitatedCurrency).toBeNull()
+        })
+
+        it('names the leg that imitates when only one of two does', () => {
+            vi.mocked(imitatedCurrencyOf).mockImplementation(ref =>
+                ref.assetId === '0' ? 'USD' : null,
+            )
+
+            const row = renderRow(golden('swap'))
+
+            expect(row.imitatedCurrency).toBe('USD')
+        })
+    })
+
     describe('interactions', () => {
         it('passes the transaction to onPress', () => {
             const onPress = vi.fn()
@@ -465,6 +507,54 @@ describe('useTransactionListItem with a record', () => {
         expect(row.title).toBe('transactions.list_item.send')
         expect(row.subtitle).toBe('Counterparty')
         expect(useCounterpartyName).toHaveBeenCalledWith('0xbob', 'ethereum')
+    })
+
+    it('truncates a counterparty name in the middle', () => {
+        expect(renderRecord().subtitleEllipsizeMode).toBe('middle')
+    })
+
+    it('truncates a subtitle at the end when the summary asks for it', () => {
+        const row = renderRecord(
+            {},
+            {
+                ...record,
+                summary: {
+                    ...record.summary,
+                    subtitle: {
+                        key: i18nKey(
+                            'transactions.list_item.interpreted_title',
+                        ),
+                        params: { title: 'Uniswap' },
+                    },
+                    subtitleEllipsis: 'tail',
+                },
+            },
+        )
+
+        expect(row.subtitleEllipsizeMode).toBe('tail')
+    })
+
+    it('truncates an NFT subtitle in the middle, keeping its token id', () => {
+        const row = renderRecord(
+            {},
+            {
+                ...record,
+                summary: {
+                    ...record.summary,
+                    kind: 'nft-transfer',
+                    subtitle: {
+                        key: i18nKey('transactions.list_item.nft_subtitle'),
+                        params: {
+                            collection:
+                                '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+                            tokenId: '1234',
+                        },
+                    },
+                },
+            },
+        )
+
+        expect(row.subtitleEllipsizeMode).toBe('middle')
     })
 
     it("names an approval's token by its stored unit name", () => {

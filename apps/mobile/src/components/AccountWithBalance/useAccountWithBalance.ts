@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import {
     accountValueKey,
     accountValueOf,
+    isLedgerAccount,
     isWatchAccount,
     multisigParametersOf,
     useAccountChainId,
@@ -73,16 +74,17 @@ export type UseAccountWithBalanceResult = {
      */
     crossChainTotal: Optional<CrossChainTotal>
     /**
-     * The one network a watch account sits on, on a row that stands for the
-     * whole account. Unset for an account that spans networks or that the
-     * wallet can sign for, whose type already says what it is.
+     * The one network a watch or Ledger account sits on, on a row that stands
+     * for the whole account. A Ledger can hold an account per network, so its
+     * type alone no longer tells them apart. Unset for an account that spans
+     * networks or that the wallet holds the keys to.
      */
     singleNetworkChainId: Optional<ChainId>
     /** The member count of a joint account, which the avatar badge shows. */
     jointParticipantCount: Optional<number>
     /** A joint account's required approvals out of its members, e.g. "Shared · 2 of 3 signers"; unset once it is rekeyed, as its members no longer sign. */
     jointSignersLabel: Optional<string>
-    /** A whole-account row names only a watch account's type or network under it, unless its name is shared; the name and value say the rest. */
+    /** A whole-account row names only a watch account's type or a watch or Ledger account's one network under it, unless its name is shared; the name and value say the rest. */
     shouldShowSecondaryLabel: boolean
     /** A whole-account row whose name another account also shows, so it shows its address to tell them apart. */
     hasDuplicateName: boolean
@@ -175,7 +177,9 @@ export const useAccountWithBalance = (
     )
 
     const singleNetworkChainId =
-        isChainAgnostic && isWatchAccount(account) && sources.length === 1
+        isChainAgnostic &&
+        (isWatchAccount(account) || isLedgerAccount(account)) &&
+        sources.length === 1
             ? sources[0]?.scope.chainId
             : undefined
     const { t } = useLanguage()
@@ -209,7 +213,10 @@ export const useAccountWithBalance = (
         jointParticipantCount,
         jointSignersLabel,
         shouldShowSecondaryLabel:
-            !isChainAgnostic || isWatchAccount(account) || hasDuplicateName,
+            !isChainAgnostic ||
+            isWatchAccount(account) ||
+            singleNetworkChainId !== undefined ||
+            hasDuplicateName,
         hasDuplicateName,
     }
 }

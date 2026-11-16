@@ -11,7 +11,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { cleanup, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -209,5 +210,71 @@ describe('Flow: Messages — inbox & notifications lists', () => {
                 ).length,
             ).toBeGreaterThan(0)
         })
+    })
+
+    it('Given an unread notification, when the user taps Mark all as read, then the newest id is posted and the action is spent', async () => {
+        const row = (isUnread: boolean) => ({
+            id: '101',
+            type: 'transaction',
+            account_address: ALGO25_TEST_ADDRESS,
+            message: 'You received 5 ALGO',
+            url: null,
+            creation_datetime: '2024-01-02T00:00:00Z',
+            is_unread: isUnread,
+            icon: null,
+        })
+        const status = (hasUnreadNotifications: boolean) =>
+            mockMessageStatus({
+                deviceID: DEVICE_ID,
+                response: {
+                    hasUnreadItems: hasUnreadNotifications,
+                    hasUnreadNotifications,
+                    hasUnreadInboxItems: false,
+                    unreadInboxCount: 0,
+                },
+            })
+        const list = (isUnread: boolean) =>
+            mockNotificationList({
+                deviceID: DEVICE_ID,
+                response: {
+                    next: null,
+                    previous: null,
+                    results: [row(isUnread)],
+                },
+            })
+        const postedBodies: unknown[] = []
+        server.use(
+            mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }),
+            status(true),
+            list(true),
+            http.put(
+                `*/v1/devices/${DEVICE_ID}/update-last-seen-notification/`,
+                async ({ request }) => {
+                    postedBodies.push(await request.json())
+                    // The server's read state flips once the PUT lands.
+                    server.use(status(false), list(false))
+                    return new HttpResponse(null, { status: 204 })
+                },
+            ),
+        )
+
+        renderWithNavigation(NotificationsScreen, 'Notifications')
+
+        const action = await screen.findByTestId(
+            'notifications_mark_all_read_button',
+        )
+        fireEvent.click(action)
+
+        await waitFor(() => {
+            expect(postedBodies).toEqual([{ last_seen_notification_id: 101 }])
+        })
+        await waitFor(() => {
+            expect(
+                screen
+                    .getByTestId('notifications_mark_all_read_button')
+                    .getAttribute('aria-disabled'),
+            ).toBe('true')
+        })
+        expect(screen.getByText('You received 5 ALGO')).toBeTruthy()
     })
 })

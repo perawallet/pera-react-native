@@ -65,6 +65,12 @@ export const CAPABILITY_ADAPTERS = {
     privateKeys: ['accounts'],
     customNetworks: ['custom node'],
     nft: ['accounts', 'assets'],
+    tokenApprovals: [
+        'transfer',
+        'transactionPlanner',
+        'reviewer',
+        'broadcaster',
+    ],
 } as const satisfies Partial<Record<ChainCapability, readonly string[]>>
 
 export type CapabilityAdapterName =

@@ -18,7 +18,10 @@ import {
     useAccountAssetBalanceQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetVerificationTier,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
@@ -59,7 +62,7 @@ export type UseAssetHoldingsResult = {
     setSelectedPoint: (point: Nullable<AccountAssetBalanceHistoryItem>) => void
     canCopyAmount: boolean
     handleCopyAmount: () => void
-    /** Set for a token Pera hasn't vetted, on a chain where anyone can send one unasked. */
+    /** Set for a token Pera flags suspicious, on a chain where anyone can send one unasked; an opt-in chain shows the tier in its own verification section. */
     tokenWarning: Nullable<{ title: string; body: string }>
 }
 
@@ -116,18 +119,16 @@ export const useAssetHoldings = ({
         void copyToClipboard(fullAmount, { body: label })
     }, [tokenAmount, asset.unitName, copyToClipboard, privacyMode])
 
-    const unvettedTier = unvettedTierOf(asset, scope.chainId)
+    const isSuspicious =
+        unvettedTierOf(asset, scope.chainId) ===
+        PeraAssetVerificationTier.suspicious
     const tokenWarning = useMemo(() => {
-        if (unvettedTier === null) return null
+        if (!isSuspicious) return null
         return {
-            title: t(
-                unvettedTier === 'suspicious'
-                    ? 'asset_details.token_warning.suspicious_title'
-                    : 'asset_details.token_warning.unverified_title',
-            ),
+            title: t('asset_details.token_warning.suspicious_title'),
             body: t('asset_details.token_warning.body'),
         }
-    }, [unvettedTier, t])
+    }, [isSuspicious, t])
 
     return {
         assetHolding,

@@ -16,12 +16,13 @@ export const useStyles = makeStyles(theme => ({
     content: {
         flexGrow: 1,
         gap: theme.spacing.lg,
-        justifyContent: 'space-between',
+    },
+    header: {
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+        paddingTop: theme.spacing.sm,
     },
     footer: {
         gap: theme.spacing.md,
-    },
-    paddedDivider: {
-        marginVertical: theme.spacing.xs,
     },
 }))

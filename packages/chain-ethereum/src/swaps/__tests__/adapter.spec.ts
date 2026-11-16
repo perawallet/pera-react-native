@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 import { testChainContext } from '../../__tests__/context'
-import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { BASE, BSC, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { createEvmSwapAdapter } from '../adapter'
 
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -56,8 +56,8 @@ describe('createEvmSwapAdapter', () => {
 
     it("defaults the receive side to the row's asset, or the native one", () => {
         expect(adapter.defaultReceiveAssetId).toBe(USDC)
-        expect(createEvmSwapAdapter(ctx, BASE).defaultReceiveAssetId).toBe(
-            BASE.nativeAsset.assetId,
+        expect(createEvmSwapAdapter(ctx, BSC).defaultReceiveAssetId).toBe(
+            BSC.nativeAsset.assetId,
         )
     })
 

@@ -115,6 +115,12 @@ const sendAccount = vi.hoisted(() => ({
     pick: vi.fn(),
 }))
 
+// An Algorand-only build, whose Discover tab is the web app; the native
+// Discover routing has its own cases in useDiscoverPathDeeplink.spec.
+vi.mock('@hooks/useIsNativeDiscover', () => ({
+    useIsNativeDiscover: () => false,
+}))
+
 vi.mock('@modules/multisig', () => ({
     usePendingSignaturesSheet: () => ({
         showSignRequest: mockShowSignRequest,

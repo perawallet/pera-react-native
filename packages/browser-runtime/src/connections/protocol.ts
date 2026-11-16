@@ -377,6 +377,21 @@ export type ConnectionsControlMessage = {
     | { kind: 'abandon-pairing'; pairingId: string }
     | { kind: 'disconnect'; connectionId: string }
     | { kind: 'disconnect-all' }
+    /**
+     * The user approved the request in the window and it is being signed; a
+     * withdrawal then leaves it for the window's answer.
+     */
+    | {
+          kind: 'mark-request-approved'
+          connectionId: string
+          correlationId: string
+      }
+    | {
+          kind: 'change-account'
+          connectionId: string
+          chainId: string
+          address: string
+      }
     | { kind: 'reconnect-all' }
     | { kind: 'approve-proposal'; proposalId: string; accounts: string[] }
     | { kind: 'reject-proposal'; proposalId: string; reason?: string }
@@ -411,6 +426,8 @@ export type ConnectionsControlResultByKind = {
     'abandon-pairing': void
     disconnect: void
     'disconnect-all': void
+    'change-account': void
+    'mark-request-approved': void
     'reconnect-all': void
     'approve-proposal': { connection: Connection }
     'reject-proposal': void
@@ -470,6 +487,19 @@ export const isConnectionsControlMessage = (
         }
         case 'disconnect': {
             return typeof value.connectionId === 'string'
+        }
+        case 'mark-request-approved': {
+            return (
+                typeof value.connectionId === 'string' &&
+                typeof value.correlationId === 'string'
+            )
+        }
+        case 'change-account': {
+            return (
+                typeof value.connectionId === 'string' &&
+                typeof value.chainId === 'string' &&
+                typeof value.address === 'string'
+            )
         }
         case 'disconnect-all':
         case 'reconnect-all': {

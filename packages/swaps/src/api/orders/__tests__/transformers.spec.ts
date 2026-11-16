@@ -116,4 +116,29 @@ describe('transformSwapOrderItem', () => {
 
         expect(item.fundingMethod).toBe('deposit')
     })
+
+    test('reads the paying account off its CAIP-10 id', () => {
+        const item = transformSwapOrderItem(
+            swapOrderItemSchema.parse(
+                routerOrderItem({ source_account: 'fake-a:main:PAYER' }),
+            ),
+            swapAssetRefOf,
+        )
+
+        expect(item.sourceAccount).toEqual({
+            scope: SCOPE_A,
+            address: 'PAYER',
+        })
+    })
+
+    test('has no paying account on a chain the wallet does not run', () => {
+        const item = transformSwapOrderItem(
+            swapOrderItemSchema.parse(
+                routerOrderItem({ source_account: 'nope:1:PAYER' }),
+            ),
+            swapAssetRefOf,
+        )
+
+        expect(item.sourceAccount).toBeNull()
+    })
 })

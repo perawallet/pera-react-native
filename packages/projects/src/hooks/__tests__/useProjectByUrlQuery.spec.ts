@@ -30,6 +30,7 @@ const mockProject: PeraProject = {
     url: 'https://tinyman.org',
     verificationTier: 'verified',
     logoPng: 'https://tinyman.org/logo.png',
+    chains: [],
 }
 
 const createWrapper = () => {

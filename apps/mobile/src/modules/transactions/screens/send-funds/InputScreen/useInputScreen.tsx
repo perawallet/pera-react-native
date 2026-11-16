@@ -41,6 +41,7 @@ import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useHaptics } from '@hooks/useHaptics'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -146,6 +147,7 @@ export const useInputScreen = () => {
     }, [])
     const { errorToast } = useToast()
     const { t } = useLanguage()
+    const haptics = useHaptics()
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -374,6 +376,7 @@ export const useInputScreen = () => {
     ])
 
     const showExceedsBalance = useCallback(() => {
+        haptics.error()
         errorToast(
             t('send_funds.input.exceeds_max_title'),
             t('send_funds.input.exceeds_max_body'),
@@ -381,7 +384,7 @@ export const useInputScreen = () => {
                 notifier: bottomSheetNotifier.current ?? undefined,
             },
         )
-    }, [errorToast, t])
+    }, [errorToast, t, haptics])
 
     const handleNext = useCallback(async () => {
         const amountValue =

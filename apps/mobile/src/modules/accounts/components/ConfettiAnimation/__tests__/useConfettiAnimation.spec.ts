@@ -16,8 +16,15 @@ import { useConfettiAnimation } from '../useConfettiAnimation'
 
 const RENDER_DELAY_MS = 500
 
+const mockHaptics = vi.hoisted(() => ({ success: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('useConfettiAnimation', () => {
     beforeEach(() => {
+        mockHaptics.success.mockClear()
         vi.useFakeTimers()
     })
 
@@ -37,6 +44,28 @@ describe('useConfettiAnimation', () => {
         })
 
         expect(result.current.isVisible).toBe(true)
+    })
+
+    it('plays the success haptic when the confetti appears, not before', () => {
+        renderHook(() => useConfettiAnimation({ play: true }))
+
+        expect(mockHaptics.success).not.toHaveBeenCalled()
+
+        act(() => {
+            vi.advanceTimersByTime(RENDER_DELAY_MS)
+        })
+
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
+    })
+
+    it('plays no haptic while it is not asked to play', () => {
+        renderHook(() => useConfettiAnimation({ play: false }))
+
+        act(() => {
+            vi.advanceTimersByTime(RENDER_DELAY_MS * 2)
+        })
+
+        expect(mockHaptics.success).not.toHaveBeenCalled()
     })
 
     it('hides the confetti and reports the end once it finishes', () => {

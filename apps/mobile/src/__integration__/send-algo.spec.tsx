@@ -34,6 +34,7 @@ import {
 } from '@testing-library/react'
 import i18n from 'i18next'
 import { http, HttpResponse } from 'msw'
+import * as Haptics from 'expo-haptics'
 import { Notifier } from 'react-native-notifier'
 import { useNavigation } from '@react-navigation/native'
 
@@ -258,6 +259,12 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         // Algod POST happened with the signed, grouped transaction.
         expect(sendSpy).toHaveBeenCalled()
+
+        // The success haptic plays with the success screen, once.
+        expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1)
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+            Haptics.NotificationFeedbackType.Success,
+        )
 
         // Sender state survived the screen transitions.
         expect(useAccountsStore.getState().selectedAccountId).toBe(sender.id)
@@ -517,9 +524,16 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
         })
         expectFlowEvents(analytics, 'sendFailed', 'algorand')
+
+        // A node refusal is one failure haptic, never a success.
+        expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1)
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+            Haptics.NotificationFeedbackType.Error,
+        )
     })
 
     it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces the status-unknown notice and leaves for History without reaching success', async () => {
+        vi.mocked(Haptics.notificationAsync).mockClear()
         await seedAlgo25Sender()
         useSendFundsStore
             .getState()
@@ -578,6 +592,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             'TabBar',
             expect.objectContaining({ screen: 'Home' }),
         )
+
+        // The send may still land: no result is on screen, so no haptic.
+        expect(Haptics.notificationAsync).not.toHaveBeenCalled()
     })
 
     it('Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure', async () => {

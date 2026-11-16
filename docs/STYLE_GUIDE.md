@@ -36,6 +36,18 @@ does X" above `useX`, change-log narration, commented-out code.
 
 One line is the norm and three is a lot. Longer explanations belong in `docs/`.
 
+## Haptics
+
+Every haptic is a semantic call on `useHaptics()` from `@hooks/useHaptics`. Pick the method that names
+the moment (`copy()`, `txSuccess()`, `pinDigit()`); when a new moment needs its own feel, add a method
+to the hook rather than reusing a raw one. The hook applies the Haptic feedback setting, the web
+capability gate and unsupported-device handling, so callers just call. `no-restricted-imports` fails a
+direct `expo-haptics` import anywhere else.
+
+A haptic that marks a threshold being crossed (an amount passing a limit, a price impact passing a warning level) goes through
+`useHapticOnCrossing(isCrossed, play)`, which plays on the false-to-true change only, so it never repeats while the value stays past it.
+When the value only changes inside an input handler (a keypad), compare the previous and next value there instead.
+
 ## Images
 
 SVG for icons, logos and anything that has to scale. WebP for photos, complex images and

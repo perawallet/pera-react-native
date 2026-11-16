@@ -18,6 +18,8 @@ export type MnemonicBackupState = BaseStoreState & {
 
 export type MnemonicBackupActions = {
     markBackedUp: (keyId: string) => void
+    /** Replaces each marked key id with the seed id it resolves to, in one write. */
+    upgradeBackedUpKeyIds: (seedIdByKeyId: Record<string, string>) => void
     isBackedUp: (keyId: Maybe<string>) => boolean
 }
 

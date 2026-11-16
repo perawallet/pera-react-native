@@ -15,6 +15,10 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import {
+    useScopedSignRequestId,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
+import {
     useEthereumTransactionPresentation,
     type EthereumTransactionPresentation,
 } from '../../../hooks/useEthereumTransactionPresentation'
@@ -36,6 +40,11 @@ vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
 
 vi.mock('../../../hooks/useEthereumTransactionPresentation', () => ({
     useEthereumTransactionPresentation: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useScopedSignRequestId: vi.fn(),
+    useSigningRequest: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -68,6 +77,62 @@ const bodyOf = (presentation: EthereumTransactionPresentation | null) => {
 describe('useEthereumTransactionDetailBody', () => {
     beforeEach(() => {
         vi.mocked(useEthereumTransactionPresentation).mockReset()
+        vi.mocked(useSigningRequest).mockReset()
+        vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: undefined,
+        } as unknown as ReturnType<typeof useSigningRequest>)
+        vi.mocked(useScopedSignRequestId).mockReset()
+        vi.mocked(useScopedSignRequestId).mockReturnValue(null)
+    })
+
+    describe('the request under review', () => {
+        const REQUEST = {
+            id: 'request-1',
+            sourceMetadata: { url: 'https://evil.example' },
+            verifiedOrigin: 'https://evil.example',
+        }
+
+        beforeEach(() => {
+            vi.mocked(useSigningRequest).mockReturnValue({
+                currentRequest: REQUEST,
+            } as unknown as ReturnType<typeof useSigningRequest>)
+        })
+
+        it("Given a transaction before it is mined inside its request's signing sheet, then it carries the request's source and attested origin", () => {
+            vi.mocked(useScopedSignRequestId).mockReturnValue(REQUEST.id)
+
+            const { source, verifiedOrigin } = bodyOf(presentationOf())
+
+            expect(source).toEqual(REQUEST.sourceMetadata)
+            expect(verifiedOrigin).toBe('https://evil.example')
+        })
+
+        it('Given a pending transaction opened outside any signing sheet while a request is queued, then it carries no request', () => {
+            const { source, verifiedOrigin } = bodyOf(presentationOf())
+
+            expect(source).toBeUndefined()
+            expect(verifiedOrigin).toBeUndefined()
+        })
+
+        it('Given a signing sheet scoped to a different request than the open one, then it carries no request', () => {
+            vi.mocked(useScopedSignRequestId).mockReturnValue('request-2')
+
+            const { source, verifiedOrigin } = bodyOf(presentationOf())
+
+            expect(source).toBeUndefined()
+            expect(verifiedOrigin).toBeUndefined()
+        })
+
+        it("Given a transaction already mined, then it carries no request even inside that request's sheet", () => {
+            vi.mocked(useScopedSignRequestId).mockReturnValue(REQUEST.id)
+
+            const { source, verifiedOrigin } = bodyOf(
+                presentationOf({ view: { from: ME, isMined: true } }),
+            )
+
+            expect(source).toBeUndefined()
+            expect(verifiedOrigin).toBeUndefined()
+        })
     })
 
     it("Given a transfer before it is signed, then it has no status, with the sent asset as the hero's amount, no id and no fee yet", () => {

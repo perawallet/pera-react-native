@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import {
     isPeraServiceUnavailableError,
     queryClient,
@@ -53,7 +53,7 @@ export const fetchEvmTransactionSimulation = async (
             scope,
             method: 'POST',
             url: simulationPath(eip155ChainIdOf(scope, chain)),
-            headers: buildIntegrityHeaders(),
+            headers: await buildIntegrityHeadersWhenReady(),
             data: {
                 from: request.from.toLowerCase(),
                 to: request.to.toLowerCase(),

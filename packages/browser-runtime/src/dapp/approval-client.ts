@@ -37,6 +37,7 @@ import {
     type ConnectionRequestFailed,
     type PendingApproval,
 } from './approval-bridge'
+import { sendConnectionsControlMessage } from '../connections/client'
 
 const isPendingApproval = (value: unknown): value is PendingApproval =>
     typeof value === 'object' && value !== null && 'origin' in value
@@ -163,6 +164,21 @@ export const declineConnectionRequest = async (
               requestId,
               toWalletFailure(dappRequestFailureOf(error)),
           )
+
+/**
+ * The user approved the request and it is signing (a Ledger may still be
+ * confirming): an account change meanwhile leaves it for this window's answer.
+ * Sent to the offscreen host directly, since it settles nothing at the bridge.
+ */
+export const markConnectionRequestApproved = async (
+    connectionId: string,
+    correlationId: string,
+): Promise<void> =>
+    sendConnectionsControlMessage({
+        kind: 'mark-request-approved',
+        connectionId,
+        correlationId,
+    })
 
 /**
  * Hands a signed send to the host, which broadcasts it and answers the dApp,

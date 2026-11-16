@@ -1081,11 +1081,6 @@ export const getModuleComponentSections = (): GallerySection[] => [
                 launch: { kind: 'action', run: () => undefined },
             },
             {
-                id: 'comp-signing-account-display',
-                label: 'SigningAccountDisplay (needs live accounts store)',
-                launch: { kind: 'action', run: () => undefined },
-            },
-            {
                 id: 'comp-signing-action-buttons',
                 label: 'SigningActionButtons (needs signing pipeline)',
                 launch: { kind: 'action', run: () => undefined },
@@ -1113,11 +1108,6 @@ export const getModuleComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-transaction-signing-view',
                 label: 'TransactionSigningView (needs live signing state)',
-                launch: { kind: 'action', run: () => undefined },
-            },
-            {
-                id: 'comp-transaction-summary-header',
-                label: 'TransactionSummaryHeader (needs TransactionNative)',
                 launch: { kind: 'action', run: () => undefined },
             },
         ],

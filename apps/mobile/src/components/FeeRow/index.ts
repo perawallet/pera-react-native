@@ -11,8 +11,6 @@
  */
 
 export { FeeRow } from './FeeRow'
-export { FeeSummary } from './FeeSummary'
-export type { FeeSummaryProps } from './FeeSummary'
 export { feeAssetAmountPropsOf } from './feeAssetAmountProps'
 export type { FeeAssetAmountProps } from './feeAssetAmountProps'
 export { FEE_ROW_TEST_ID } from './types'

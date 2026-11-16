@@ -18,9 +18,10 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-        // Any bottom padding opts out of PWScrollView's tab-bar inset padding,
-        // which would leave a gap under a single row of chips.
-        paddingBottom: 0,
+        // A horizontal scroller clips its other axis, so a flush chip border is
+        // lost to the extension popup's fractional zoom. Any vertical padding
+        // also opts out of PWScrollView's tab-bar inset.
+        paddingVertical: theme.spacing.xxs,
     },
     chip: {
         paddingVertical: theme.spacing.xs,

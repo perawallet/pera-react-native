@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import type { PWResultViewVariant } from '@components/core'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useAsbImportFlowStore,
@@ -37,6 +38,7 @@ export const useAsbImportResultScreen = (): UseAsbImportResultScreenResult => {
     const { t } = useLanguage()
     const reset = useAsbImportFlowStore(state => state.reset)
     const { exitAccountFlow } = useExitAccountFlow()
+    const haptics = useHaptics()
 
     const importedCount = route.params?.importedCount ?? 0
     const skippedDuplicateCount = route.params?.skippedDuplicateCount ?? 0
@@ -77,6 +79,10 @@ export const useAsbImportResultScreen = (): UseAsbImportResultScreenResult => {
             body: t('onboarding.asb_import.result.failed_body'),
         }
     }, [importedCount, skippedDuplicateCount, failedCount, t])
+
+    useEffect(() => {
+        if (variant === 'success') haptics.success()
+    }, [variant, haptics])
 
     const handleDone = useCallback(() => {
         reset()

@@ -15,7 +15,6 @@ import {
     type AssetRef,
     type BalanceChange,
     type I18nKey,
-    type LocalizedText,
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
@@ -80,6 +79,14 @@ const AAVE_POOL_ACTIONS: ReadonlyMap<string, PlainActionKind> = new Map([
     ['repay', 'repay'],
     ['repayWithPermit', 'repay'],
     ['repayWithATokens', 'repay'],
+])
+
+const AAVE_GATEWAY_ACTIONS: ReadonlyMap<string, PlainActionKind> = new Map([
+    ['depositETH', 'supply'],
+    ['withdrawETH', 'withdraw'],
+    ['withdrawETHWithPermit', 'withdraw'],
+    ['borrowETH', 'borrow'],
+    ['repayETH', 'repay'],
 ])
 
 const WRAPPED_NATIVE_ACTIONS: ReadonlyMap<string, PlainActionKind> = new Map([
@@ -211,6 +218,9 @@ const knownContractAction = (
         case 'aave-v3-pool': {
             return actionByMethod(AAVE_POOL_ACTIONS, facts.method)
         }
+        case 'aave-v3-gateway': {
+            return actionByMethod(AAVE_GATEWAY_ACTIONS, facts.method)
+        }
         case 'wrapped-native': {
             return actionByMethod(WRAPPED_NATIVE_ACTIONS, facts.method)
         }
@@ -219,7 +229,9 @@ const knownContractAction = (
             return positionAction(facts)
         }
         case 'uniswap-universal-router':
-        case 'uniswap-permit2': {
+        case 'uniswap-permit2':
+        case 'aave-v3-rewards':
+        case 'aave-v3-adapter': {
             return shapeAction(facts)
         }
     }
@@ -245,9 +257,12 @@ export const classifyEvmHistoryCall = (
 /** The subtitle naming a well-known contract; a proper noun, never translated. */
 export const knownContractSubtitle = (
     contract: KnownEvmContract,
-): LocalizedText => ({
-    key: INTERPRETED_TITLE,
-    params: { title: contract.name },
+): Pick<TransactionSummary, 'subtitle' | 'subtitleEllipsis'> => ({
+    subtitle: {
+        key: INTERPRETED_TITLE,
+        params: { title: contract.projectName ?? contract.name },
+    },
+    subtitleEllipsis: 'tail',
 })
 
 /**
@@ -263,7 +278,7 @@ export const historyActionSummary = (
     const { isActionUnknown: _unknown, ...known } = base
     const named: TransactionSummary = {
         ...known,
-        ...(contract && { subtitle: knownContractSubtitle(contract) }),
+        ...(contract && knownContractSubtitle(contract)),
         ...(action.isInferred && { isInferred: true }),
     }
     switch (action.kind) {

@@ -83,6 +83,9 @@ export type ImportFlowParamList = {
     ImportSelectAddresses: ImportSelectAddressesParams
     ImportRekeyedAddresses: {
         accounts: WalletAccount[]
+        // True when the step before already saved accounts, so leaving this
+        // screen ends a successful import rather than a rescan that found nothing.
+        hasImportedAccounts: boolean
     }
     // `null` is the chain's standalone kind.
     // `wordCount` absent: the kind's first word count.

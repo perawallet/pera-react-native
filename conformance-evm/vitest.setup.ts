@@ -21,6 +21,7 @@ import {
     EVMNET_CHAINS,
     assertEvmnetReachable,
     isAutomine,
+    isOpStackEvmnetChain,
     txpoolCounts,
     type EvmnetChain,
 } from './src/harness/evmnet'
@@ -71,7 +72,7 @@ beforeAll(async () => {
     await eachChain(async chain => {
         await assertEvmnetReachable(chain)
         await installMulticall3(chain)
-        if (chain === 'base') {
+        if (isOpStackEvmnetChain(chain)) {
             await installOpStackPredeploys(chain)
         }
         await topUpDevFunder(chain)

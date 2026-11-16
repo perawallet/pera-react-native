@@ -102,6 +102,39 @@ describe('titleKeyOf', () => {
         ).toBe('transactions.list_item.wrap')
     })
 
+    it('titles a liquidity add and removal', () => {
+        expect(
+            titleKeyOf(
+                view({
+                    action: {
+                        kind: 'add-liquidity',
+                        deposits: [],
+                        position: { kind: 'new' },
+                    },
+                }),
+                null,
+                {
+                    kind: 'add-liquidity',
+                    deposits: [],
+                    position: { kind: 'new' },
+                },
+            ),
+        ).toBe('transactions.list_item.add_liquidity')
+        expect(
+            titleKeyOf(
+                view({
+                    action: {
+                        kind: 'remove-liquidity',
+                        tokenId: '7',
+                        isClosing: false,
+                    },
+                }),
+                null,
+                { kind: 'remove-liquidity', tokenId: '7', isClosing: false },
+            ),
+        ).toBe('transactions.list_item.remove_liquidity')
+    })
+
     it('lets an approval win over an action', () => {
         expect(
             titleKeyOf(view({ action: swapAction }), approval({}), swap),
@@ -125,17 +158,21 @@ describe('titleKeyOf', () => {
 })
 
 describe('iconNameOf', () => {
-    it('uses the swap icon for a swap and the contract call icon for another action', () => {
+    it('gives each action its own icon', () => {
         expect(iconNameOf(view(), null, swap)).toBe('transactions/swap')
-        expect(iconNameOf(view(), null, wrap)).toBe(
-            'transactions/application-call',
-        )
+        expect(iconNameOf(view(), null, wrap)).toBe('transactions/swap')
+        expect(
+            iconNameOf(view(), null, {
+                kind: 'supply',
+                assetContract: ROUTER,
+                amount,
+                isEntireBalance: false,
+            } as EthereumContractActionPresentation),
+        ).toBe('fund')
     })
 
     it('uses the approval icon for an approval, even with an action', () => {
-        expect(iconNameOf(view(), approval({}), swap)).toBe(
-            'transactions/application-call',
-        )
+        expect(iconNameOf(view(), approval({}), swap)).toBe('key')
     })
 
     it('uses the send icon for a read transfer and a transfer', () => {
@@ -148,9 +185,7 @@ describe('iconNameOf', () => {
     })
 
     it('uses the contract call icon for an unread call', () => {
-        expect(iconNameOf(view(), null, null)).toBe(
-            'transactions/application-call',
-        )
+        expect(iconNameOf(view(), null, null)).toBe('code')
     })
 })
 

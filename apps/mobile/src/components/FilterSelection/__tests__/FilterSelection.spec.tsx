@@ -14,6 +14,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { FilterSelection, type FilterOption } from '../FilterSelection'
 
+const mockHaptics = vi.hoisted(() => ({ selection: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 type Filter = 'all' | 'fiat' | 'crypto'
 
 const OPTIONS: FilterOption<Filter>[] = [
@@ -50,6 +56,23 @@ describe('FilterSelection', () => {
         fireEvent.click(screen.getByTestId('filter-fiat'))
 
         expect(onSelect).toHaveBeenCalledWith('fiat')
+    })
+
+    it('plays the selection haptic for an unselected chip only', () => {
+        mockHaptics.selection.mockClear()
+        render(
+            <FilterSelection
+                options={OPTIONS}
+                selectedValue='all'
+                onSelect={vi.fn()}
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('filter-all'))
+        expect(mockHaptics.selection).not.toHaveBeenCalled()
+
+        fireEvent.click(screen.getByTestId('filter-fiat'))
+        expect(mockHaptics.selection).toHaveBeenCalledTimes(1)
     })
 
     it('supports a null option value (e.g. an "all" filter)', () => {

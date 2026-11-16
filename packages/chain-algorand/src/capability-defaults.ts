@@ -57,6 +57,7 @@ export const algorandCapabilityDefaults: ChainCapabilities = {
     priceAlerts: true,
     csvExport: true,
     peraWebImport: true,
+    tokenApprovals: false,
 }
 
 // These need the Pera backend, which BetaNet and custom nodes don't have.

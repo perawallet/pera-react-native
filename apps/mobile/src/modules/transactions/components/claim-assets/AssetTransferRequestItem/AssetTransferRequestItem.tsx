@@ -13,18 +13,14 @@
 import { PWBadge, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
-import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
+import { useAssetTransferRequestItem } from './useAssetTransferRequestItem'
 import { AssetAmount } from '@components/AssetAmount'
 import { AssetIcon } from '@components/AssetIcon'
 import { AssetNameBadge } from '@modules/assets'
 import { PreferredAmount } from '@components/PreferredAmount'
-import {
-    useSingleAssetDetailsQuery,
-    toWholeUnits,
-} from '@perawallet/wallet-core-assets'
+import { ChainNotice } from '@components/ChainNotice'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useMemo } from 'react'
 
 export type AssetTransferRequestItemProps = {
     item: AssetInboxRequest
@@ -39,34 +35,12 @@ export const AssetTransferRequestItem = ({
 }: AssetTransferRequestItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { asset, senders, totalAmount, usdValue } = item
-    const { data: fullAsset } = useSingleAssetDetailsQuery(asset.assetId, scope)
-    const resolvedAsset = useMemo(() => {
-        if (!fullAsset) return asset
-        return {
-            ...fullAsset,
-            peraMetadata: {
-                ...fullAsset.peraMetadata,
-                logo: fullAsset.peraMetadata?.logo ?? asset.peraMetadata?.logo,
-                collectible:
-                    fullAsset.peraMetadata?.collectible ??
-                    asset.peraMetadata?.collectible,
-            },
-        }
-    }, [fullAsset, asset])
+    const { asset, senders, usdValue } = item
+    const { resolvedAsset, senderDisplayName, amount, imitatedCurrency } =
+        useAssetTransferRequestItem(item, scope)
 
     const firstSender = senders.results[0]
     const remainingCount = senders.count - 1
-    const { displayName: senderDisplayName } = useResolvedAddress(
-        firstSender?.sender.address ?? '',
-        scope,
-        { enabled: !!firstSender?.sender.address && !firstSender?.sender.name },
-    )
-
-    const amount = useMemo(
-        () => toWholeUnits(totalAmount, asset),
-        [totalAmount, asset],
-    )
 
     return (
         <PWTouchableOpacity
@@ -121,6 +95,14 @@ export const AssetTransferRequestItem = ({
                         usdPrice={usdValue ?? undefined}
                     />
                 </PWView>
+                {imitatedCurrency !== null && (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='asset.imitated_currency.marker'
+                        params={{ code: imitatedCurrency }}
+                        testID={`asset_inbox_request_imitated_currency_${asset.assetId}`}
+                    />
+                )}
             </PWView>
         </PWTouchableOpacity>
     )

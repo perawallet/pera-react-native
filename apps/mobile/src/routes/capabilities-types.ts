@@ -50,6 +50,11 @@ export type RouteCapabilities = {
      * the stored consent yet, so asking there would record a choice it ignores.
      */
     analyticsConsent: boolean
+    /**
+     * The Haptic feedback toggle and every useHaptics() call. Off on web:
+     * desktop browsers have no haptics motor, so the toggle would be a no-op.
+     */
+    hapticFeedback: boolean
     developerSettings: boolean
     /** Developer screen gallery. Off in production bundles, where Metro drops
      * its code entirely (see metro-build-gates.js), not just its entry points. */

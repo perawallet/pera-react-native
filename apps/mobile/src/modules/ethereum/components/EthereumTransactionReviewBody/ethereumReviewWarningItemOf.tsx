@@ -50,14 +50,16 @@ export const ethereumReviewWarningItemOf = (
         case 'unchecked-call': {
             return {
                 id: 'ethereum_contract_call_warning',
+                title: t('signing.review.caution_title'),
                 message: t(warning.notice.titleKey, warning.notice.params),
                 isHighRisk: false,
             }
         }
-        case 'simulation-unavailable': {
+        case 'nothing-back': {
             return {
-                id: 'ethereum_simulation_unavailable',
-                message: t('ethereum.simulation.unavailable'),
+                id: 'ethereum_nothing_back_warning',
+                title: t('signing.review.nothing_back_title'),
+                message: t('signing.review.nothing_back_body'),
                 isHighRisk: false,
             }
         }

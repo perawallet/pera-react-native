@@ -20,6 +20,7 @@ import type { SettingsStackParamsList } from '@modules/settings'
 import type { ContactsStackParamsList } from '@modules/contacts'
 import type { AccountStackParamsList } from '@modules/accounts'
 import type {
+    ChainId,
     ChainScope,
     TransactionNative,
     TransactionRecord,
@@ -71,6 +72,14 @@ export type RootStackParamList = {
     /** Discover page pushed over the current screen; `path` is a relative
      * Discover route (e.g. `token-detail/ALGO`), validated on load. */
     DiscoverDetail: { path: string }
+    DiscoverSearch: undefined
+    DiscoverNews: undefined
+    DiscoverNewsDetail: { newsId: string }
+    DiscoverFolder: { folderId: string }
+    DiscoverAllFavorites: undefined
+    DiscoverAllFolders: undefined
+    /** Native dApp directory; opens on `chainId` when it supports Discover. */
+    DiscoverDapps: Optional<{ chainId?: ChainId }>
     BannersCarouselModal: Optional<{ bannerId?: string }>
     GroupTransactionList: {
         groupId: string

@@ -83,7 +83,7 @@ describe('evm hd derivation conformance', () => {
         )
     })
 
-    it('derives the same address on all six chains', async () => {
+    it('derives the same address on every chain', async () => {
         const session = await createEvmConformanceSession()
         const mnemonic = generateMnemonic(wordlist, 256)
         const expected = await castAddressFromMnemonic({ mnemonic })
@@ -96,7 +96,7 @@ describe('evm hd derivation conformance', () => {
             addresses.push(account.address)
         }
 
-        expect(addresses).toHaveLength(6)
+        expect(addresses).toHaveLength(EVMNET_CHAINS.length)
         expect(addresses).toEqual(addresses.map(() => expected))
     })
 

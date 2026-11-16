@@ -41,6 +41,13 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
+// These hooks reach the persisted favorites store and analytics, which need the
+// shared store helpers this spec mocks away; the screen hook never calls them.
+vi.mock('../../../hooks/useOpenDapp', () => ({}))
+vi.mock('../../../hooks/useToggleDiscoverFavorite', () => ({}))
+vi.mock('../../../hooks/useTopDapps', () => ({}))
+vi.mock('../../../hooks/useDiscoverDirectory', () => ({}))
+
 vi.mock('@perawallet/wallet-core-shared', async () => ({
     ...(await vi.importActual<
         typeof import('@packages/shared/src/errors/base')

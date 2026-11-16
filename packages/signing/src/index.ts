@@ -62,6 +62,7 @@ export {
     type MultisigSignerInput,
     type PQSigningInfo,
     type PlannerChainAdapter,
+    type SignedFor,
     type ProposeSignRequestFn,
     type ResolveHandoffOutcomeArgs,
     type ResolveMinFeeForSenderParams,
@@ -103,7 +104,10 @@ export {
 } from './models'
 
 export { chainIdOfSignRequest, scopeOfSignRequest } from './models/chain'
-export { SigningRequestScopeProvider } from './hooks/SigningRequestScope'
+export {
+    SigningRequestScopeProvider,
+    useScopedSignRequestId,
+} from './hooks/SigningRequestScope'
 export type {
     HardwareChildSnapshot,
     HardwareSigningOperation,
@@ -196,6 +200,7 @@ export {
     decodeArbitraryDataForDisplay,
     getDelegatedUnsignableReason,
     resolveAllSignerAddresses,
+    resolveSigningAccounts,
     reviewedAddressesOf,
     reviewerChainAdapters,
     type ArbitraryDataDisplay,
@@ -248,6 +253,7 @@ export {
     InvalidSignableDataError,
     NoLocalParticipantsError,
     ReviewRequiredError,
+    SignerKeyMissingError,
     SigningError,
     SourceError,
     SubmissionError,
@@ -260,8 +266,12 @@ export { walletConnectHandoffs } from './pipeline/walletConnectHandoffs'
 export type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
 export { createSigningStrategySelector } from './pipeline/signing/getSigningStrategy'
 export { SIGNING_ERROR_KEYS } from './pipeline/errors'
-export { resolveSigningAccount } from './machine/utils/resolveSigningAccount'
 export {
+    resolveGroupSigningAccount,
+    resolveSigningAccount,
+} from './machine/utils/resolveSigningAccount'
+export {
+    hasSignerCredential,
     resolveSignerCredential,
     type SignerCredential,
     type SignerCustody,
@@ -306,6 +316,7 @@ export {
     TransactionBatchesSchema,
     type TransactionBatch,
     type TransactionBatchOutcome,
+    type TransactionBatchState,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     getUnsyncedSubmissionSpends,
@@ -337,7 +348,11 @@ export {
 
 export { useHardwareSigningStore } from './store/hardwareSigningStore'
 export { signTransactionsInBackground } from './background-signing'
-export { isSignRequestPending, rehydrateSigningStore } from './store'
+export {
+    isSignRequestPending,
+    rehydrateSigningStore,
+    wasRestoredFromStorage,
+} from './store'
 
 export {
     BLE_CLASS_ERROR_KINDS,

@@ -80,15 +80,18 @@ test('popup.html body renders 360x600 physical px regardless of ambient viewport
     // unrelated size-mismatch assertion below.
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 
-    const size = await page.evaluate(() => {
-        const rect = document.body.getBoundingClientRect()
-        return {
-            width: Math.round(rect.width),
-            height: Math.round(rect.height),
-        }
+    const rect = await page.evaluate(() => {
+        const { width, height } = document.body.getBoundingClientRect()
+        return { width, height }
     })
 
-    expect(size).toEqual({ width: 360, height: 600 })
+    expect({
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+    }).toEqual({ width: 360, height: 600 })
+    // A body even a fraction past Chrome's 600px cap makes the popup's
+    // auto-sizing alternate layouts every frame at fractional display scales.
+    expect(rect.height).toBeLessThanOrEqual(600)
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 

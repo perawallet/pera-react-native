@@ -30,6 +30,7 @@ describe('ChainId', () => {
             | 'arbitrum'
             | 'avalanche'
             | 'polygon'
+            | 'optimism'
         >()
         expectTypeOf<ChainFamily>().toEqualTypeOf<'algorand' | 'evm'>()
     })

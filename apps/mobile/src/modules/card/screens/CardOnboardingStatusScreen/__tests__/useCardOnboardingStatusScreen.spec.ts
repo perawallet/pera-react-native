@@ -58,6 +58,14 @@ vi.mock('../useFinishRegistrationOnVerified', () => ({
     useFinishRegistrationOnVerified: (...args: unknown[]) =>
         mockFinishRegistration(...args),
 }))
+let mockIsCardOnOtherAccount = false
+let mockIsCardLookupPending = false
+vi.mock('../useStatusCardOnOtherAccount', () => ({
+    useStatusCardOnOtherAccount: () => ({
+        isCardOnOtherAccount: mockIsCardOnOtherAccount,
+        isCardLookupPending: mockIsCardLookupPending,
+    }),
+}))
 const mockGoToNextStep = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -287,6 +295,8 @@ beforeEach(() => {
     mockOnboardingRecord = { phase: null, email: 'john@example.com' }
     mockStoredCountryIso = 'GB'
     mockFinishRegistration.mockReturnValue(FINISH_IDLE)
+    mockIsCardOnOtherAccount = false
+    mockIsCardLookupPending = false
 })
 
 describe('useCardOnboardingStatusScreen', () => {
@@ -609,6 +619,26 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(result.current.connectedAccount?.chains.algorand?.address).toBe(
             'ADDR1',
         )
+    })
+
+    it('withholds card creation when the issued card is bound to another account', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'standalone', { name: 'Spending' })]
+        mockIsCardOnOtherAccount = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.isFundsConnected).toBe(false)
+    })
+
+    it('withholds card creation until Baanx says whether a card exists', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'standalone', { name: 'Spending' })]
+        mockIsCardLookupPending = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.isFundsConnected).toBe(false)
     })
 
     it('connects the chosen account locally, without linking it anywhere', async () => {

@@ -26,8 +26,9 @@ import type {
 } from './context'
 import type { SignerCustody } from './utils/resolveSignerCredential'
 import {
+    groupSignerKeyOf,
     isInteractiveSource,
-    isKeyedByPlanner,
+    isKeyedBySigner,
     type AnalyzedSignableGroup,
     type SignableAnalysis,
     type SigningResult,
@@ -71,7 +72,7 @@ const signLocalKeyGroups = async (
     const planned = groups.filter(group =>
         isPlannerSigned(
             group,
-            input.groupSigners.get(group.signerAddress),
+            input.groupSigners.get(groupSignerKeyOf(group)),
             input.scope.chainId,
         ),
     )
@@ -114,7 +115,7 @@ const getAnalyzedGroupsForCustody = (
     return allGroups
         .map((g, i) => ({ ...g, analysis: allAnalyses[i] }))
         .filter(
-            g => signers.get(g.signerAddress)?.custody === custody,
+            g => signers.get(groupSignerKeyOf(g))?.custody === custody,
         ) as AnalyzedSignableGroup[]
 }
 
@@ -599,7 +600,7 @@ export const signingMachine = setup({
                         context.signerAddress,
                         'signerAddress',
                     ),
-                    isKeyedByPlanner: isKeyedByPlanner(
+                    isKeyedBySigner: isKeyedBySigner(
                         assertDefined(
                             context.signableGroups,
                             'signableGroups',

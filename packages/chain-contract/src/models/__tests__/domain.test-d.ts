@@ -14,6 +14,7 @@ import type { Decimal } from 'decimal.js'
 import { assertType, describe, expectTypeOf, it } from 'vitest'
 import type {
     AccountChainState,
+    ApprovalRevokeIntent,
     AssetOptInIntent,
     AssetRef,
     ChainAccountNative,
@@ -147,12 +148,12 @@ describe('UnsignedTransaction', () => {
 })
 
 describe('TransactionIntent', () => {
-    it('is a transfer or an asset opt-in, told apart by kind', () => {
+    it('is a transfer, an asset opt-in or an approval revoke, told apart by kind', () => {
         expectTypeOf<TransactionIntent>().toEqualTypeOf<
-            TransferIntent | AssetOptInIntent
+            TransferIntent | AssetOptInIntent | ApprovalRevokeIntent
         >()
         expectTypeOf<TransactionIntent['kind']>().toEqualTypeOf<
-            'transfer' | 'asset-opt-in'
+            'transfer' | 'asset-opt-in' | 'approval-revoke'
         >()
     })
 

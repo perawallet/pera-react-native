@@ -21,6 +21,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
@@ -49,13 +50,14 @@ export type UseImportRekeyedAddressesScreenResult = {
 
 export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScreenResult {
     const {
-        params: { accounts },
+        params: { accounts, hasImportedAccounts },
     } = useRoute<ImportRekeyedAddressesRouteProp>()
     const { t } = useLanguage()
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const allAccounts = useAllAccounts()
 
     const { exitAccountFlow } = useExitAccountFlow()
+    const haptics = useHaptics()
     const { setAccounts } = useSetAccounts()
 
     const alreadyImportedAddresses = useMemo(() => {
@@ -94,6 +96,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         })
 
         if (accountsToAdd.length === 0) {
+            if (hasImportedAccounts) haptics.success()
             exitAccountFlow()
             return
         }
@@ -105,14 +108,24 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
             // flow) must not be dropped with the stale snapshot.
             const currentAccounts = getAllAccounts()
             setAccounts([...currentAccounts, ...accountsToAdd])
+            haptics.success()
             exitAccountFlow()
             setIsImporting(false)
         })
-    }, [accounts, selectedAddresses, exitAccountFlow, setAccounts, scope])
+    }, [
+        accounts,
+        selectedAddresses,
+        exitAccountFlow,
+        haptics,
+        hasImportedAccounts,
+        setAccounts,
+        scope,
+    ])
 
     const handleSkip = useCallback(() => {
+        if (hasImportedAccounts) haptics.success()
         exitAccountFlow()
-    }, [exitAccountFlow])
+    }, [exitAccountFlow, haptics, hasImportedAccounts])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0

@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
@@ -24,7 +24,12 @@ import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountSc
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { seedOf, useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    useMnemonicBackupStore,
+    useRequiresMnemonicBackup,
+} from '@perawallet/wallet-core-backup'
+import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
@@ -106,6 +111,7 @@ const startAlgo25ImportThroughMnemonic = async (words: string[]) => {
 describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
     beforeEach(() => {
         resetTestKeystore()
+        useMnemonicBackupStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
         useOnboardingStore.getState().reset()
         vi.mocked(Notifier.showNotification).mockClear()
@@ -170,6 +176,13 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
         expect(
             addressOf(useAccountsStore.getState().getSelectedAccount()!),
         ).toBe(ALGO25_TEST_ADDRESS)
+        expect(
+            useMnemonicBackupStore.getState().isBackedUp(seedOf(accounts[0])),
+        ).toBe(true)
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(accounts[0], ALGORAND_CHAIN_ID),
+        )
+        expect(result.current).toBe(false)
     })
 
     it('Given the Algo25 word slots are rendered, then every slot is a sensitive input so the keyboard neither learns the words nor composes them in an IME', async () => {

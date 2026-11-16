@@ -72,6 +72,7 @@ const PRODUCTION_ALGORAND_CAPABILITIES = {
     priceAlerts: true,
     csvExport: true,
     peraWebImport: true,
+    tokenApprovals: false,
 }
 
 const { FIXTURE_PINNED_HOSTS } = vi.hoisted(() => ({

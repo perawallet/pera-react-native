@@ -16,6 +16,15 @@ import { renderHook, act } from '@testing-library/react'
 const mocks = vi.hoisted(() => ({
     consent: null as 'granted' | 'denied' | null,
     setConsent: vi.fn(),
+    isHapticEnabled: true,
+    setHapticEnabled: vi.fn(),
+}))
+
+vi.mock('@hooks/useHapticFeedbackSetting', () => ({
+    useHapticFeedbackSetting: () => ({
+        isEnabled: mocks.isHapticEnabled,
+        setIsEnabled: mocks.setHapticEnabled,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -31,6 +40,8 @@ describe('useSettingsAdvancedScreen', () => {
     beforeEach(() => {
         mocks.consent = null
         mocks.setConsent.mockClear()
+        mocks.isHapticEnabled = true
+        mocks.setHapticEnabled.mockClear()
     })
 
     it('shows analytics as off until consent is granted', () => {
@@ -53,5 +64,17 @@ describe('useSettingsAdvancedScreen', () => {
         act(() => result.current.handleAnalyticsToggle(false))
 
         expect(mocks.setConsent.mock.calls).toEqual([['granted'], ['denied']])
+    })
+
+    it('mirrors the haptic feedback setting and forwards toggles to it', () => {
+        mocks.isHapticEnabled = false
+        const { result } = renderHook(() => useSettingsAdvancedScreen())
+
+        expect(result.current.isHapticFeedbackEnabled).toBe(false)
+
+        act(() => result.current.handleHapticFeedbackToggle(true))
+        act(() => result.current.handleHapticFeedbackToggle(false))
+
+        expect(mocks.setHapticEnabled.mock.calls).toEqual([[true], [false]])
     })
 })

@@ -290,7 +290,6 @@ describe('buildWidgetSnapshot', () => {
             'USD',
             'de',
             true,
-            false,
             undefined,
         )
     })
@@ -306,7 +305,6 @@ describe('buildWidgetSnapshot', () => {
             'USD',
             'en',
             true,
-            false,
             2,
         )
     })

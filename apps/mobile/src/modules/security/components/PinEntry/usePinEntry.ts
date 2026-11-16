@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { NumpadKey } from '@components/core'
 import { PIN_LENGTH } from '@perawallet/wallet-core-security'
+import { useHaptics } from '@hooks/useHaptics'
 
 const COMPLETION_DELAY = 100
 
@@ -24,6 +25,8 @@ type UsePinEntryParams = {
     length?: number
     /** A new value starts a new step, so the digits entered so far are dropped. */
     resetKey?: string
+    /** Rising edge plays the wrong-PIN haptic, in step with the circles' shake. */
+    hasError?: boolean
 }
 
 type UsePinEntryResult = {
@@ -37,8 +40,14 @@ export const usePinEntry = ({
     onPinChange,
     length = PIN_LENGTH,
     resetKey,
+    hasError = false,
 }: UsePinEntryParams): UsePinEntryResult => {
     const [pin, setPin] = useState('')
+    const { pinDigit, pinError } = useHaptics()
+    // Read by the key handler so its identity stays stable across digits (the
+    // numpad re-renders on a new one) and two quick presses see each other.
+    const pinRef = useRef(pin)
+    pinRef.current = pin
     // Reset during render, not in an effect: a mount effect can flush after the
     // first tap and wipe that digit, so the PIN never completes.
     const [entryKey, setEntryKey] = useState(resetKey)
@@ -47,6 +56,10 @@ export const usePinEntry = ({
         setPin('')
     }
 
+    useEffect(() => {
+        if (hasError) pinError()
+    }, [hasError, pinError])
+
     const clearPin = useCallback(() => {
         setPin('')
     }, [])
@@ -54,12 +67,19 @@ export const usePinEntry = ({
     const handleKeyPress = useCallback(
         (key: NumpadKey) => {
             if (key === 'delete') {
+                pinRef.current = pinRef.current.slice(0, -1)
                 setPin(prev => {
                     const newPin = prev.slice(0, -1)
                     onPinChange?.(newPin)
                     return newPin
                 })
                 return
+            }
+
+            // Outside the updater, which must stay pure.
+            if (pinRef.current.length < length) {
+                pinRef.current += key
+                pinDigit()
             }
 
             setPin(prev => {
@@ -77,7 +97,7 @@ export const usePinEntry = ({
                 return newPin
             })
         },
-        [onPinComplete, onPinChange, length],
+        [onPinComplete, onPinChange, length, pinDigit],
     )
 
     return {

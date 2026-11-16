@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import * as Haptics from 'expo-haptics'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import {
     useNavigation,
@@ -20,7 +19,6 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    chainIdOfAddress,
     findAccountByAnyChainAddress,
     useAccountsStore,
     type WalletAccount,
@@ -28,7 +26,7 @@ import {
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -70,23 +68,16 @@ export const useBackupVerificationScreen =
             if (!address) return null
             return findAccountByAnyChainAddress(accounts, address) ?? null
         }, [address, accounts])
-        // The home chain only stands in while no account is found, when
-        // nothing gets marked.
-        const homeChainId = useHomeChainScope().chainId
-        const chainId =
-            account && address
-                ? (chainIdOfAddress(account, address) ?? homeChainId)
-                : homeChainId
-
         const { picks, isLoading, error } = useRandomMnemonicForAddress(
             address,
             account,
             VERIFICATION_WORD_COUNT,
         )
 
-        const markBackupComplete = useMarkMnemonicBackupComplete(chainId)
+        const markBackupComplete = useMarkMnemonicBackupComplete()
         const { t } = useLanguage()
         const { errorToast } = useToast()
+        const haptics = useHaptics()
 
         useEffect(() => {
             trackEvent(OnboardingEvent.VerifyPassphrase)
@@ -99,11 +90,9 @@ export const useBackupVerificationScreen =
         }, [account, markBackupComplete, navigation])
 
         const onWrong = useCallback(() => {
-            void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Error,
-            )
+            haptics.error()
             errorToast(t('backup.verification.error_message'), '')
-        }, [errorToast, t])
+        }, [errorToast, haptics, t])
 
         const correctPairs = useMemo(() => picks ?? [], [picks])
 

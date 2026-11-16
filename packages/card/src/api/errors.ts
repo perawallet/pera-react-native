@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { BAANX_CORRELATION_ID_HEADER } from './transport/baanx-headers'
 
 /** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
 export type CardApiError = {
@@ -22,6 +23,8 @@ export type CardApiError = {
     message?: string
     /** Baanx's login 400 says when it only lacks the 2FA code. */
     isOtpRequired?: boolean
+    /** Baanx's `x-correlation-id`, the id its support traces a call by. */
+    correlationId?: string
 }
 
 type BodyReadable = {
@@ -32,6 +35,7 @@ type BodyReadable = {
 type JsonReadable = BodyReadable & {
     clone?: () => BodyReadable
     status?: unknown
+    headers?: { get?: (name: string) => Nullable<string> }
 }
 
 /** Safely pulls the `response` object off an unknown thrown value. */
@@ -47,6 +51,17 @@ const getResponse = (error: unknown): Optional<JsonReadable> => {
 const getStatus = (error: unknown): Optional<number> => {
     const status = getResponse(error)?.status
     return typeof status === 'number' ? status : undefined
+}
+
+const getCorrelationId = (error: unknown): Optional<string> => {
+    try {
+        const id = getResponse(error)?.headers?.get?.(
+            BAANX_CORRELATION_ID_HEADER,
+        )
+        return typeof id === 'string' && id.length > 0 ? id : undefined
+    } catch {
+        return undefined
+    }
 }
 
 /**
@@ -150,6 +165,12 @@ const resolveErrorBody = async (error: unknown): Promise<unknown> => {
 export const getCardApiError = async (
     error: unknown,
 ): Promise<CardApiError> => {
+    const apiError = await parseCardApiError(error)
+    const correlationId = getCorrelationId(error)
+    return correlationId ? { ...apiError, correlationId } : apiError
+}
+
+const parseCardApiError = async (error: unknown): Promise<CardApiError> => {
     const status = getStatus(error)
     const body = await resolveErrorBody(error)
 

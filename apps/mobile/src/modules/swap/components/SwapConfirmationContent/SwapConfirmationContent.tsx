@@ -72,6 +72,7 @@ export const SwapConfirmationContent = ({
         networkFeeDisplay,
         needsSpendApproval,
         insufficientFeeMessage,
+        highNetworkFeeMessage,
         slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
@@ -162,6 +163,17 @@ export const SwapConfirmationContent = ({
                 >
                     <PWText style={styles.warningText}>
                         {t('swap.quote.high_price_impact_warning')}
+                    </PWText>
+                </PWView>
+            )}
+
+            {highNetworkFeeMessage && (
+                <PWView
+                    style={styles.warningBanner}
+                    testID='swap-confirm-high-network-fee'
+                >
+                    <PWText style={styles.warningText}>
+                        {highNetworkFeeMessage}
                     </PWText>
                 </PWView>
             )}

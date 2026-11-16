@@ -10,36 +10,91 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useEffect, useMemo } from 'react'
+import { seedOf, type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    resolveSeedKeyFrom,
+    useKeystoreKeys,
+} from '@perawallet/wallet-core-kms'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { backupChainAdapters } from '../../chain-adapter'
 import { useMnemonicBackupStore } from '../store'
-import { getMnemonicBackupKeyId } from '../utils'
 
-// Returns true only when the account owns a mnemonic-backup key and that key
-// has not yet been marked backed up. Accounts without a recovery-phrase concept
-// (watch, hardware, multisig) and already-backed-up accounts both return
-// false, so consumers don't have to re-check the account type themselves.
+type KeystoreKeys = ReturnType<typeof useKeystoreKeys>
+
+/**
+ * Each backup mark resolved to its seed. A mark made under a signing child key
+ * counts for its seed; a mark whose key is gone matches no seed. `upgrades`
+ * maps each such child key to its seed so the mark can be saved under the seed
+ * instead.
+ */
+export const resolveBackedUpSeeds = (
+    keys: KeystoreKeys,
+    backedUpKeyIds: Readonly<Record<string, boolean>>,
+): {
+    backedUpSeedIds: ReadonlySet<string>
+    upgrades: Record<string, string>
+} => {
+    const seedIds = new Set<string>()
+    const seedIdByKeyId: Record<string, string> = {}
+    for (const markedId of Object.keys(backedUpKeyIds)) {
+        try {
+            const seedId = resolveSeedKeyFrom(keys, markedId).id
+            seedIds.add(seedId)
+            if (seedId !== markedId) seedIdByKeyId[markedId] = seedId
+        } catch {
+            continue
+        }
+    }
+    return { backedUpSeedIds: seedIds, upgrades: seedIdByKeyId }
+}
+
+/** The keystore and the seeds marked backed up, for checking several accounts at once. */
+export const useBackedUpSeedIds = (): {
+    keys: KeystoreKeys
+    backedUpSeedIds: ReadonlySet<string>
+} => {
+    const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
+    const upgradeBackedUpKeyIds = useMnemonicBackupStore(
+        state => state.upgradeBackedUpKeyIds,
+    )
+    const keys = useKeystoreKeys()
+    const { backedUpSeedIds, upgrades } = useMemo(
+        () => resolveBackedUpSeeds(keys, backedUpKeyIds),
+        [backedUpKeyIds, keys],
+    )
+
+    // A child-key mark dies with its key when the account is removed, so it is
+    // rewritten under the seed as soon as the keystore can resolve it. This
+    // runs here, not in the store's migrate, which runs before the keystore
+    // has loaded. Rows race to write the same upgrade, which is idempotent.
+    useEffect(() => {
+        if (Object.keys(upgrades).length > 0) upgradeBackedUpKeyIds(upgrades)
+    }, [upgrades, upgradeBackedUpKeyIds])
+
+    return { keys, backedUpSeedIds }
+}
+
+// Backup state lives on the seed, so every account one recovery phrase
+// restores shares it. An account with no seed (watch, hardware, multisig, a
+// raw private key) has no phrase to write down and is never prompted.
 export const useRequiresMnemonicBackup = (
     account: Maybe<WalletAccount>,
     chainId: ChainId,
 ): boolean => {
-    const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
-    return requiresMnemonicBackup(account, chainId, backedUpKeyIds)
+    const { keys, backedUpSeedIds } = useBackedUpSeedIds()
+    return requiresMnemonicBackup(account, chainId, keys, backedUpSeedIds)
 }
 
 export const requiresMnemonicBackup = (
     account: Maybe<WalletAccount>,
     chainId: ChainId,
-    backedUpKeyIds: Readonly<Record<string, boolean>>,
+    keys: KeystoreKeys,
+    backedUpSeedIds: ReadonlySet<string>,
 ): boolean => {
-    // A read on a chain with no backup adapter is "nothing to back up";
-    // getMnemonicBackupKeyId stays loud so a wrong-chain mark-complete throws.
     if (!account || !backupChainAdapters.has(chainId)) return false
 
-    const keyId = getMnemonicBackupKeyId(account, chainId)
-    if (keyId === null) return false
-
-    return !backedUpKeyIds[keyId]
+    const seedId = seedOf(account, keys)
+    return seedId !== undefined && !backedUpSeedIds.has(seedId)
 }

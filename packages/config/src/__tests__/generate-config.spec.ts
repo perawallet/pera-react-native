@@ -198,6 +198,15 @@ describe('tools/dev/generate-config.sh', () => {
         expect(output).toContain('cardAutoDrawTemplateHash: "abc123"')
     })
 
+    test('emits the Baanx tenant ids from *_BAANX_TENANT_ID', () => {
+        const output = run({
+            MAINNET_BAANX_TENANT_ID: 'mainnet-tenant',
+            TESTNET_BAANX_TENANT_ID: 'testnet-tenant',
+        })
+        expect(output).toContain('mainnetBaanxTenantId: "mainnet-tenant"')
+        expect(output).toContain('testnetBaanxTenantId: "testnet-tenant"')
+    })
+
     test('emits the chain list and per-chain capability lists', () => {
         const output = run({
             CHAINS: 'algorand',

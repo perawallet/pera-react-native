@@ -12,6 +12,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useHaptics } from '@hooks/useHaptics'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { LedgerSigningContent } from '../LedgerSigningContent'
@@ -37,9 +38,20 @@ import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSignin
 export const useLedgerSigningDriver = (): void => {
     const { pendingSignRequests } = useSigningRequest()
     const requestId = pendingSignRequests[0]?.id ?? null
-    const { isVisible } = useLedgerSigningContent()
+    const { isVisible, status } = useLedgerSigningContent()
+    const haptics = useHaptics()
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
     const openIdRef = useRef<Nullable<string>>(null)
+    const promptedRequestIdRef = useRef<Nullable<string>>(null)
+
+    // Keyed on the request, not the status: a multi-transaction group cycles
+    // awaiting-approval and signing once per transaction.
+    useEffect(() => {
+        if (status !== 'awaitingApproval' || !requestId) return
+        if (promptedRequestIdRef.current === requestId) return
+        promptedRequestIdRef.current = requestId
+        haptics.light()
+    }, [status, requestId, haptics])
 
     useEffect(() => {
         // Namespace the Ledger sheet id so it can never collide with the

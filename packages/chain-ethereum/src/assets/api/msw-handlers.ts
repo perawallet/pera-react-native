@@ -142,7 +142,7 @@ const hasIntegrityToken = (headers: Headers): boolean =>
 /**
  * The backend's guard on every EVM route: 401 without an API key, 403 without
  * an app-integrity token or the staging bypass. A request that skips
- * queryClient or `buildIntegrityHeaders` fails here as it would there.
+ * queryClient or `buildIntegrityHeadersWhenReady` fails here as it would there.
  */
 export const rejectUnauthenticated = (request: Request) => {
     if (!request.headers.get('x-api-key')) {

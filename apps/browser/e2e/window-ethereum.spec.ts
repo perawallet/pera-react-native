@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url'
 import {
     openApprovalSurface,
     expectApprovalSurfaceUrl,
-    selectAccountAndArmConnect,
+    selectEvmAccountAndArmConnect,
     standInForToolbarPopup,
     tapToConfirm,
     trackPageErrors,
@@ -383,13 +383,12 @@ test.describe('signing from a connected dApp', () => {
         await startRequest('connect', { method: 'eth_requestAccounts' })
         const { approvalPage } = await openApproval()
         const connectButton = approvalPage.getByTestId('wc-connect-connect')
-        const firstRow = approvalPage
-            .locator('[data-testid^="wc_account_row_"]')
-            .first()
-        await expect(firstRow).toBeVisible({ timeout: 20_000 })
-        await expect(firstRow.getByTestId('chain_icon_ethereum')).toBeVisible()
-        const rowText = (await firstRow.textContent()) ?? ''
-        await selectAccountAndArmConnect(approvalPage, connectButton)
+        const row = await selectEvmAccountAndArmConnect(
+            approvalPage,
+            connectButton,
+        )
+        await expect(row.getByTestId('chain_icon_ethereum')).toBeVisible()
+        const rowText = (await row.textContent()) ?? ''
         await connectButton.click()
         const connected = await outcomeOf('connect')
         expect(connected.code, connected.message).toBeUndefined()
@@ -438,26 +437,21 @@ test.describe('signing from a connected dApp', () => {
         await expect(
             approvalPage.getByTestId('signing_transaction_review'),
         ).toBeVisible({ timeout: 20_000 })
-        await expect(
-            approvalPage.getByTestId('ethereum_review_fee'),
-        ).toBeInViewport()
         const confirm = approvalPage.getByTestId('signing-confirm-slide')
         await expect(confirm).toBeVisible({ timeout: 20_000 })
         await expect(confirm).toBeInViewport()
-        // A plain transfer fits the popup's 360x600, so shrink further for the body to scroll.
+        // Shrink so even a short review overflows and the body has to scroll.
         await approvalPage.setViewportSize({ width: 360, height: 420 })
         const viewDetails = approvalPage.getByTestId('ethereum_view_details')
         // Guards the premise: if the review fits, scrolling proves nothing.
         await expect(viewDetails).not.toBeInViewport()
         await viewDetails.scrollIntoViewIfNeeded()
         await expect(viewDetails).toBeInViewport()
-        for (const pinned of [
-            'ethereum_review_header',
-            'ethereum_review_fee',
-            'signing-confirm-slide',
-        ]) {
-            await expect(approvalPage.getByTestId(pinned)).toBeInViewport()
-        }
+        // Only Confirm is pinned; the action, changes and fee scroll with the body.
+        await expect(confirm).toBeInViewport()
+        await expect(
+            approvalPage.getByTestId('ethereum_review_fee'),
+        ).toBeVisible()
         await tapToConfirm(approvalPage, confirm)
 
         const sent = await outcomeOf('send')

@@ -11,9 +11,12 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { cardAdapterFor } from '../chain-adapter'
+import { useCardStore } from '../store'
+import { cardQueryKeys } from './querykeys'
 
 export type UseCardAutoDrawResult = {
     /** Registers the delegation, then switches auto-draw on chain. */
@@ -28,15 +31,36 @@ export const useCardAutoDraw = (scope: ChainScope): UseCardAutoDrawResult => {
     // The chain picks the hook, so a scope must not change chain while mounted.
     const useAutoDraw = cardAdapterFor(scope).useAutoDraw
     const operations = useAutoDraw()
+    const queryClient = useQueryClient()
+
+    // The stored funding type is reconciled against the cached switch, so the
+    // cache must hold the state just confirmed. Re-reading instead can reach a
+    // node that has not seen that round yet and undo the user's switch.
+    const recordSwitch = useCallback(
+        (isEnabled: boolean) => {
+            const ownerAddress =
+                useCardStore.getState().connectedFundingSourceAddress
+            queryClient.setQueryData(
+                cardQueryKeys.autoDrawEnabled(scope, ownerAddress),
+                isEnabled,
+            )
+        },
+        [queryClient, scope],
+    )
 
     const enableAutoDraw = useCallback(
-        (account: WalletAccount, cardAddress: string) =>
-            operations.enableAutoDraw(account, cardAddress, scope),
-        [operations, scope],
+        async (account: WalletAccount, cardAddress: string) => {
+            await operations.enableAutoDraw(account, cardAddress, scope)
+            recordSwitch(true)
+        },
+        [operations, scope, recordSwitch],
     )
     const disableAutoDraw = useCallback(
-        (account: WalletAccount) => operations.disableAutoDraw(account, scope),
-        [operations, scope],
+        async (account: WalletAccount) => {
+            await operations.disableAutoDraw(account, scope)
+            recordSwitch(false)
+        },
+        [operations, scope, recordSwitch],
     )
 
     return useMemo(

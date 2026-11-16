@@ -28,3 +28,31 @@ export const mockProjects = ({
         HttpResponse.json(response, { status }),
     )
 }
+
+export type MockDiscoverProjectsParams = {
+    response: ProjectApiResponse[]
+    status?: number
+    chains?: string
+}
+
+export const mockDiscoverProjects = ({
+    response,
+    status = 200,
+    chains,
+}: MockDiscoverProjectsParams): HttpHandler => {
+    validateMockResponse(
+        projectListResponseSchema,
+        response,
+        'mockDiscoverProjects',
+    )
+    return http.get('*/v1/discover/projects/', ({ request }) => {
+        // Falls through to the next handler unless the chains filter matches.
+        if (
+            chains !== undefined &&
+            new URL(request.url).searchParams.get('chains') !== chains
+        ) {
+            return undefined
+        }
+        return HttpResponse.json(response, { status })
+    })
+}

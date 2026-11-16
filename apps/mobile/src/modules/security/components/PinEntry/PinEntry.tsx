@@ -50,6 +50,7 @@ export const PinEntry = ({
         onPinChange,
         onErrorAnimationComplete,
         resetKey: title,
+        hasError,
     })
 
     const handleNumpadKeyPress = useCallback(

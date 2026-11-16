@@ -34,6 +34,7 @@ import {
     useNativeAsset,
     toWholeUnits,
 } from '@perawallet/wallet-core-assets'
+import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {
@@ -48,6 +49,8 @@ type UseAssetClaimDetailScreenResult = {
     claimGainLabel: Nullable<string>
     isClaimBlocked: boolean
     isRejectBlocked: boolean
+    /** Code the claimed asset's unit name imitates (the chain's native ticker or a fiat code), or null. */
+    imitatedCurrency: Nullable<string>
     handleClaim: () => void
     handleRejectPress: () => void
     canBuy: boolean
@@ -204,6 +207,20 @@ export const useAssetClaimDetailScreen =
             return formatAssetAmount(request.nativeGainOnClaim, nativeAsset)
         }, [request, nativeAsset])
 
+        const imitatedCurrency = useMemo(
+            () =>
+                request
+                    ? imitatedCurrencyOf(
+                          {
+                              chainId: scope.chainId,
+                              assetId: request.asset.assetId,
+                          },
+                          request.asset.unitName,
+                      )
+                    : null,
+            [request, scope.chainId],
+        )
+
         return {
             request,
             chainId: scope.chainId,
@@ -213,6 +230,7 @@ export const useAssetClaimDetailScreen =
             receiverAccount: account ?? null,
             isClaimBlocked,
             isRejectBlocked,
+            imitatedCurrency,
             handleClaim,
             canBuy,
             handleAddFunds,

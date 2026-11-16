@@ -19,7 +19,7 @@ import type * as ConfigModule from '@perawallet/wallet-core-config'
 
 export const PERA_URL = 'https://pera.test'
 export const TEST_API_KEY = 'test-api-key'
-/** What `vitest.setup.ts` makes `buildIntegrityHeaders` send. */
+/** What `vitest.setup.ts` makes `buildIntegrityHeadersWhenReady` send. */
 export const TEST_INTEGRITY_TOKEN = 'test-integrity-token'
 
 /**

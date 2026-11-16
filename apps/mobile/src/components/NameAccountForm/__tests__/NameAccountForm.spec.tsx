@@ -45,6 +45,7 @@ vi.mock('@components/core', async () => {
         PWView: Passthrough,
         PWText: Passthrough,
         PWButton: () => <button type='button' />,
+        PWIcon: () => null,
         PWLoadingOverlay: () => null,
         PWInput: ({ rightIcon }: { rightIcon?: ReactNode }) => (
             <div>{rightIcon}</div>
@@ -90,6 +91,32 @@ describe('NameAccountForm', () => {
         fireEvent.click(screen.getByTestId('name_account_clear_button'))
 
         expect(Keyboard.dismiss).not.toHaveBeenCalled()
+    })
+
+    it('shows the label, hint and content below the input only when given', () => {
+        const { rerender } = renderForm({
+            label: 'Name',
+            hint: 'Only you can see this name',
+            belowInput: <span>Networks</span>,
+        })
+
+        expect(screen.getByText('Name')).toBeTruthy()
+        expect(screen.getByText('Only you can see this name')).toBeTruthy()
+        expect(screen.getByText('Networks')).toBeTruthy()
+
+        rerender(
+            <NameAccountForm
+                title='Name account'
+                description='Give it a name'
+                finishButtonTitle='Finish'
+                loadingTitle='Saving'
+                value='My Account'
+                onChangeText={vi.fn()}
+                onFinish={vi.fn()}
+                isLoading={false}
+            />,
+        )
+        expect(screen.queryByText('Only you can see this name')).toBeNull()
     })
 
     it('hides the clear button when the value is empty', () => {

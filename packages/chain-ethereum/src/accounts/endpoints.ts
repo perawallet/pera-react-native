@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import {
     partition,
     queryClient,
@@ -51,7 +51,7 @@ const requestShouldRefresh = async (
         scope,
         method: 'POST',
         url: SHOULD_REFRESH_PATH,
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         data: {
             chain: `eip155:${eip155ChainIdOf(scope, chain)}`,
             account_addresses: addresses,

@@ -113,7 +113,7 @@ proves, its prerequisites and its known gaps.
 ## Local EVM nodes (evmnet)
 
 ```sh
-pnpm evmnet          # six Anvil nodes, one per EVM chain on its testnet chain id (ports 8545-8550)
+pnpm evmnet          # seven Anvil nodes, one per EVM chain on its testnet chain id (ports 8545-8551)
 pnpm evmnet:status
 pnpm evmnet:reset    # recreate every node from a fresh chain
 pnpm evmnet:stop

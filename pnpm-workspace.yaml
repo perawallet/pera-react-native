@@ -44,7 +44,7 @@ catalog:
   # pin: follows @scure/bip39
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
-  "@perawallet/walletconnect": 1.0.3
+  "@perawallet/walletconnect": 1.0.4
   "@playwright/test": ^1.53.0
   # Exact: every module peers on the identical app version; move all five
   # together.
@@ -124,6 +124,7 @@ catalog:
   # pin: hold 3.30.0
   fallow: 3.30.0
   fast-glob: ^3.3.2
+  htmlparser2: 12.0.0
   jsdom: ^30.0.1
   ky: ^2.0.2
   lanekeep: 0.14.0
@@ -167,11 +168,6 @@ minimumReleaseAge: 10080
 
 auditConfig:
   ignoreGhsas:
-    # node-forge has no patched release (first_patched_version: null; 1.4.1,
-    # which the override floors to, doesn't fix it). Its only consumers are
-    # @expo/cli and @expo/code-signing-certificates, dev/build tooling that never
-    # ships to a device. Drop this entry once a fix lands.
-    - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
     # braces has no patched release (first_patched_version: null; npm's latest
     # is 3.0.3). Its only consumer is micromatch under metro-file-map and
     # @expo/metro-file-map, which match our own build globs, never user input,
@@ -322,6 +318,11 @@ patchedDependencies:
   # The popup lays out under `html { zoom: 0.85 }`, which `Dimensions` doesn't see:
   # it divides window size by the root's computed zoom (a no-op at 1), in both
   # builds (`dist` for Metro web, `dist/cjs` for vitest). Drop if the zoom goes.
+  # `ScrollView` also hands its own style, `overflow: auto` included, to the
+  # `refreshControl` it wraps itself in, making the wrapper a second scroller
+  # without the inner one's hidden scrollbar. On Windows a subpixel overflow
+  # there shows a classic scrollbar that narrows the list, and the wrapper
+  # takes the tail of an animated wheel scroll. The patch pins it to `hidden`.
   "react-native-web@0.21.4": patches/react-native-web@0.21.4.patch
   # RN 0.88 removed the legacy `RCTBaseTextInputView.h`; the Swift bridging
   # header still imports it though no source uses the class. Drop once
@@ -444,9 +445,9 @@ overrides:
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0
-  # Eleven advisories patched in 1.4.1 (TLS, PKCS#12, X.509, AES-GCM, PEM); the
-  # one it leaves open is in auditConfig.ignoreGhsas.
-  node-forge@<1.4.1: 1.4.1
+  # @expo/cli's range still admits releases with open TLS, PKCS#12, X.509,
+  # AES-GCM, PEM and http-header advisories; 1.4.3 is the first clean one.
+  node-forge@<1.4.3: 1.4.3
   # One copy of each crypto library per major, enforced by
   # pera/single-copy-packages. The 1.x lines are closed (1.9.7 and 1.8.0 are
   # their last releases), and every 1.x consumer imports only subpaths and

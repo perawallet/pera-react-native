@@ -118,6 +118,22 @@ describe.each(SCOPES)('useRestoreEscrowCardMutation ($chainId)', SCOPE => {
         expect(mockRestoreEscrowCard).not.toHaveBeenCalled()
     })
 
+    it('rejects when every lookup failed, so a network failure is not read as no card', async () => {
+        const failure = new Error('offline')
+        fetchFundingAddressLink.mockRejectedValue(failure)
+        const { result } = renderHook(
+            () => useRestoreEscrowCardMutation(SCOPE),
+            {
+                wrapper,
+            },
+        )
+
+        await expect(
+            result.current.mutateAsync(['OWNER', 'OTHER']),
+        ).rejects.toBe(failure)
+        expect(mockRestoreEscrowCard).not.toHaveBeenCalled()
+    })
+
     it('skips the backend entirely when there are no addresses to check', async () => {
         const { result } = renderHook(
             () => useRestoreEscrowCardMutation(SCOPE),

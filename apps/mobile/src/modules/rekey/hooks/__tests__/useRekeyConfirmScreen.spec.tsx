@@ -45,6 +45,12 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@modules/webview', () => ({
     useWebView: () => ({ pushWebView: vi.fn() }),
 }))
@@ -176,6 +182,7 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
         })
 
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
         expect(mockSubmitAsync).not.toHaveBeenCalled()
     })
 
@@ -228,6 +235,7 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
             expect(mockSubmitAsync).toHaveBeenCalledTimes(1)
         })
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockHaptics.warning).not.toHaveBeenCalled()
     })
 
     it('does not request the downgrade warning when the source is not quantum', async () => {
@@ -418,6 +426,7 @@ describe('useRekeyConfirmScreen - previous rekey warning', () => {
             copy: config.warningCopy,
             testID: config.warningTestID,
         })
+        expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
         expect(mockSubmitAsync).not.toHaveBeenCalled()
     })
 })

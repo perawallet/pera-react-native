@@ -57,6 +57,10 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
             overflow: 'hidden',
             flexShrink: 1,
         },
+        titleActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
         titleIconContainer: {
             alignItems: 'center',
             justifyContent: 'center',

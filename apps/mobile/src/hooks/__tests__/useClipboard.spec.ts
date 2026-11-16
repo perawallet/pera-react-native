@@ -15,7 +15,6 @@ import type { NotifierRoot } from 'react-native-notifier'
 import { renderHook, act } from '@testing-library/react'
 import { useClipboard } from '../useClipboard'
 import * as Clipboard from 'expo-clipboard'
-import * as Haptics from 'expo-haptics'
 import { useToast } from '../useToast'
 
 vi.mock('expo-clipboard', () => ({
@@ -23,9 +22,10 @@ vi.mock('expo-clipboard', () => ({
     getStringAsync: vi.fn(),
 }))
 
-vi.mock('expo-haptics', () => ({
-    notificationAsync: vi.fn(),
-    NotificationFeedbackType: { Success: 'success' },
+const mockCopyHaptic = vi.hoisted(() => vi.fn())
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => ({ copy: mockCopyHaptic }),
 }))
 
 vi.mock('../useToast', () => ({
@@ -56,9 +56,7 @@ describe('useClipboard', () => {
         })
 
         expect(Clipboard.setStringAsync).toHaveBeenCalledWith('test text')
-        expect(Haptics.notificationAsync).toHaveBeenCalledWith(
-            Haptics.NotificationFeedbackType.Success,
-        )
+        expect(mockCopyHaptic).toHaveBeenCalledTimes(1)
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'common.copied_to_clipboard.title',

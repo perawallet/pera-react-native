@@ -172,10 +172,10 @@ describe('account holdings queries', () => {
             expect(await idsOf()).toEqual(['10', '20', '30', '40'])
         })
 
-        it('keeps a suspicious row on a chain where the user opts in to each asset', async () => {
+        it('drops a suspicious row on a chain where the user opts in to each asset', async () => {
             registerFakeNativeAsset(6, { requiresAssetOptIn: true })
 
-            expect(await idsOf(true)).toEqual(['10', '20', '30', '40'])
+            expect(await idsOf(true)).toEqual(['20', '30', '40'])
         })
     })
 

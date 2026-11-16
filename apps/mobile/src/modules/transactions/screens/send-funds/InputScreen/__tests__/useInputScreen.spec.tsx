@@ -176,6 +176,12 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ error: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()
@@ -479,6 +485,18 @@ describe('useInputScreen', () => {
         expect(result.current.cryptoValue).toBeFalsy()
     })
 
+    it('plays no haptic while typing past MAX, since nothing shows until Next', () => {
+        const { result } = renderHook(() => useInputScreen())
+
+        for (const key of '99999') {
+            act(() => {
+                result.current.handleKey(key)
+            })
+        }
+
+        expect(mockHaptics.error).not.toHaveBeenCalled()
+    })
+
     it('validates input on next (error if empty)', async () => {
         const { result } = renderHook(() => useInputScreen())
         await act(async () => {
@@ -539,6 +557,7 @@ describe('useInputScreen', () => {
             expect.any(String),
             expect.anything(),
         )
+        expect(mockHaptics.error).toHaveBeenCalledTimes(1)
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
@@ -555,6 +574,8 @@ describe('useInputScreen', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(sheetProps().title).toBe('send_funds.input.min_balance_title')
         expect(mockErrorToast).not.toHaveBeenCalled()
+        // A choice to make, not an error.
+        expect(mockHaptics.error).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 

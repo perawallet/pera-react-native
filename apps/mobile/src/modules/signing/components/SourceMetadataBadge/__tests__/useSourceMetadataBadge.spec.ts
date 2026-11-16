@@ -44,6 +44,7 @@ const verifiedTinyman: PeraProject = {
     name: 'Tinyman',
     url: 'https://tinyman.org',
     verificationTier: 'verified',
+    chains: [],
 }
 
 // Only `data` is read by the hook; the rest of TanStack's UseQueryResult union

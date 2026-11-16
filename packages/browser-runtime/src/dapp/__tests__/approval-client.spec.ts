@@ -25,12 +25,21 @@ import {
     getCurrentApproval,
     getPendingApproval,
     failConnectionRequest,
+    markConnectionRequestApproved,
     rejectApproval,
     rejectPasskey,
     resolveApproval,
     resolvePasskey,
     submitConnectionRequest,
 } from '../approval-client'
+
+const { sendConnectionsControlMessage } = vi.hoisted(() => ({
+    sendConnectionsControlMessage: vi.fn(async () => undefined),
+}))
+
+vi.mock('../../connections/client', () => ({
+    sendConnectionsControlMessage,
+}))
 
 const sendMessage = vi.fn()
 const connect = vi.fn()
@@ -41,6 +50,20 @@ beforeEach(() => {
     globalThis.chrome = {
         runtime: { sendMessage, connect },
     } as unknown as typeof chrome
+})
+
+// Straight to the offscreen host, not through the bridge: it settles nothing.
+describe('markConnectionRequestApproved', () => {
+    it('tells the host the request is approved and signing', async () => {
+        await markConnectionRequestApproved('conn-1', '7')
+
+        expect(sendConnectionsControlMessage).toHaveBeenCalledWith({
+            kind: 'mark-request-approved',
+            connectionId: 'conn-1',
+            correlationId: '7',
+        })
+        expect(sendMessage).not.toHaveBeenCalled()
+    })
 })
 
 describe('getPendingApproval', () => {

@@ -133,6 +133,7 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                         setSelectedAccountId(account.id)
                         navigation.replace('ImportRekeyedAddresses', {
                             accounts: rekeyed,
+                            hasImportedAccounts: false,
                         })
                         return
                     }

@@ -204,7 +204,7 @@ describe('account portfolio queries', () => {
             }
         })
 
-        it('counts a suspicious token on a chain where the user opts in to each asset', async () => {
+        it('leaves a suspicious token out of the USD value on a chain where the user opts in to each asset', async () => {
             registerFakeNativeAsset(6, { requiresAssetOptIn: true })
             await upsertAssets({
                 db,
@@ -226,8 +226,8 @@ describe('account portfolio queries', () => {
                 scope: MAINNET_SCOPE,
             })
 
-            // '100' counts again: 2 * $1 + 1 * $3.
-            expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(5, 6)
+            // Only '200' counts: 1 * $3.
+            expect(totals.nonNativeUsdValue.toNumber()).toBeCloseTo(3, 6)
         })
 
         it('reports no native amount or price for an account with no native row', async () => {

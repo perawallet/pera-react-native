@@ -13,7 +13,7 @@
 import type React from 'react'
 import { withAgeGate } from '@components/AgeGated'
 import { TabbarEvent } from '@analytics'
-import { DiscoverScreen } from '@modules/discover/routes'
+import { DiscoverTabScreen } from '@modules/discover/routes'
 import { OnrampScreen } from '@modules/onramp/routes'
 import { SwapScreen } from '@modules/swap/routes'
 import { MenuScreen } from '@modules/menu/routes'
@@ -24,7 +24,7 @@ import type { TabBarStackParamList } from './tab-types'
 
 // Age-gated at the navigator so the screens (and their side effects) only
 // mount for users who pass the gate (moved verbatim from tabbar.tsx).
-const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
+const GatedDiscoverScreen = withAgeGate(DiscoverTabScreen)
 const GatedSwapScreen = withAgeGate(SwapScreen)
 const GatedOnrampScreen = withAgeGate(OnrampScreen)
 

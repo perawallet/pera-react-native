@@ -20,6 +20,7 @@ import type {
 } from '../../hooks/useEthereumContractAction'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { ActionAmount } from './ActionAmount'
+import { PositionRow } from './PositionRow'
 import { SwapFeeRow } from './SwapFeeRow'
 import { SwapLegRow } from './SwapLegRow'
 import { useStyles } from './styles'
@@ -72,6 +73,46 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                             presentation={presentation}
                         />
                     ))}
+                </>
+            )
+        }
+        case 'add-liquidity': {
+            const add =
+                view.action?.kind === 'add-liquidity' ? view.action : undefined
+            if (!add) return null
+            return (
+                <>
+                    {action.deposits.map((deposit, index) => (
+                        <SwapLegRow
+                            key={index}
+                            testID={`ethereum_action_deposit_${index}`}
+                            title={t(
+                                'ethereum.contract_action.deposit_at_most',
+                            )}
+                            leg={deposit}
+                            token={add.deposits[index].asset}
+                            presentation={presentation}
+                        />
+                    ))}
+                    <PositionRow position={action.position} />
+                </>
+            )
+        }
+        case 'remove-liquidity': {
+            return (
+                <>
+                    <PositionRow
+                        position={{ kind: 'existing', tokenId: action.tokenId }}
+                    />
+                    {action.isClosing && (
+                        <PWText
+                            testID='ethereum_action_closes_position'
+                            variant='caption'
+                            style={styles.note}
+                        >
+                            {t('ethereum.contract_action.closes_position')}
+                        </PWText>
+                    )}
                 </>
             )
         }

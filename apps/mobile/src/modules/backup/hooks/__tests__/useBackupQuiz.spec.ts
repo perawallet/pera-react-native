@@ -15,6 +15,12 @@ import { act, renderHook } from '@testing-library/react'
 import type { MnemonicWordAtPosition } from '@perawallet/wallet-core-kms'
 import { useBackupQuiz } from '../useBackupQuiz'
 
+const mockHaptics = vi.hoisted(() => ({ selection: vi.fn(), error: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 const CORRECT_PAIRS: MnemonicWordAtPosition[] = [
     { index: 3, word: 'alpha' },
     { index: 7, word: 'bravo' },
@@ -49,6 +55,25 @@ describe('useBackupQuiz', () => {
             expect(item.correctWord).toBe(CORRECT_PAIRS[i].word)
             expect(item.selectedWord).toBeNull()
         })
+    })
+
+    test('plays the same selection haptic for a right and a wrong word', () => {
+        mockHaptics.selection.mockClear()
+        const { result } = renderHook(() =>
+            useBackupQuiz(CORRECT_PAIRS, DISTRACTOR_POOL, vi.fn(), vi.fn()),
+        )
+        const item = result.current.items[0]
+        const wrongWord = item.options.find(w => w !== item.correctWord)!
+
+        act(() => {
+            result.current.onSelect(0, item.correctWord)
+        })
+        act(() => {
+            result.current.onSelect(0, wrongWord)
+        })
+
+        expect(mockHaptics.selection).toHaveBeenCalledTimes(2)
+        expect(mockHaptics.error).not.toHaveBeenCalled()
     })
 
     test('isFilled flips to true once every item has a selection', () => {

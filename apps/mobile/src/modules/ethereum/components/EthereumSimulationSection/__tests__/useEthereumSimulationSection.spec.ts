@@ -29,6 +29,13 @@ import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import type { EthereumTransactionPresentation } from '../../../hooks/useEthereumTransactionPresentation'
 import { useEthereumSimulationSection } from '../useEthereumSimulationSection'
 
+const mockShareability = vi.hoisted(() => ({
+    current: { isChecking: false, isShareable: true },
+}))
+vi.mock('@modules/signing/hooks/useRequestShareability', () => ({
+    useRequestShareability: () => mockShareability.current,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
@@ -266,6 +273,22 @@ describe('useEthereumSimulationSection', () => {
         })
     })
 
+    it('is loading, and asks nothing, while the request addresses are still being checked', () => {
+        mockShareability.current = { isChecking: true, isShareable: false }
+
+        expect(render()).toEqual({ status: 'loading' })
+        expect(isRequested()).toBe(false)
+        mockShareability.current = { isChecking: false, isShareable: true }
+    })
+
+    it('asks nothing for a request naming a scam-listed address', () => {
+        mockShareability.current = { isChecking: false, isShareable: false }
+
+        expect(render()).toEqual({ status: 'hidden' })
+        expect(isRequested()).toBe(false)
+        mockShareability.current = { isChecking: false, isShareable: true }
+    })
+
     it('is loading while the prediction is pending', () => {
         answering({ isPending: true })
 
@@ -318,6 +341,74 @@ describe('useEthereumSimulationSection', () => {
             usdPrice: new Decimal(1),
         })
         expect(state.approvals).toEqual([])
+    })
+
+    describe('a position NFT the store has no record of', () => {
+        const MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+        const MANAGER_NFT = `${MANAGER}/987654`
+        const mintOf = (assetId: string) =>
+            answering({
+                data: success({
+                    assetChanges: [
+                        {
+                            assetId,
+                            standard: 'erc721',
+                            amount: new Decimal(1),
+                        },
+                    ],
+                }),
+            })
+        const labelled = (to: string) =>
+            presentationOf(
+                {
+                    knownContract: {
+                        name: 'Uniswap V3 Positions',
+                        projectDomain: 'uniswap.org',
+                    },
+                },
+                { ...PRICED, to } as EthereumTransactionView,
+            )
+
+        it('is named after the known contract that was called, with its token id', () => {
+            mintOf(MANAGER_NFT)
+
+            const state = render(labelled(MANAGER))
+
+            expect(state.status).toBe('success')
+            if (state.status !== 'success') return
+            expect(state.receive[0]).toMatchObject({
+                isCollectible: true,
+                collectibleTitle: 'Uniswap V3 Positions',
+                collectibleSubtitle: '#987654',
+            })
+        })
+
+        it('is left as it was when another contract minted it', () => {
+            mintOf(`${COLLECTION}/7`)
+
+            const state = render(labelled(MANAGER))
+
+            expect(state.status).toBe('success')
+            if (state.status !== 'success') return
+            expect(state.receive[0].collectibleTitle).not.toBe(
+                'Uniswap V3 Positions',
+            )
+        })
+
+        it('is left as it was when the called contract has no label', () => {
+            mintOf(MANAGER_NFT)
+
+            const state = render(
+                presentationOf({}, {
+                    ...PRICED,
+                    to: MANAGER,
+                } as EthereumTransactionView),
+            )
+
+            expect(state.status).toBe('success')
+            if (state.status !== 'success') return
+            expect(state.receive[0].collectibleTitle).toBeUndefined()
+        })
     })
 
     it('leaves out a delta of zero, which moves nothing', () => {

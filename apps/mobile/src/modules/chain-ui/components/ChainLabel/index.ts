@@ -10,3 +10,4 @@
  limitations under the License
  */
 export { ChainLabel, type ChainLabelProps } from './ChainLabel'
+export { useChainNetworkLabel } from './useChainLabel'

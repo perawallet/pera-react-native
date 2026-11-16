@@ -95,6 +95,7 @@ type PendingRequest = {
     request: Nullable<SignRequest>
     dismiss?: () => void
     isWithdrawn: boolean
+    reject: RequestMessage['reject']
 }
 
 export type PendingRequestLedger = Map<string, PendingRequest>
@@ -115,6 +116,7 @@ const trackRequest = (
         request,
         dismiss,
         isWithdrawn: false,
+        reject: message.reject,
     })
 }
 
@@ -175,6 +177,25 @@ const withdrawExpiredRequest = (
     const key = requestKey(message)
     const entry = deps.pendingRequests.get(key)
     if (entry) withdrawTrackedRequest(deps, key, entry)
+}
+
+const declineWithdrawnRequest = (
+    message: { connectionId: ConnectionId; correlationId: string },
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const key = requestKey(message)
+    const entry = deps.pendingRequests.get(key)
+    if (!entry) return
+    if (entry.request && deps.isSignRequestPastApproval(entry.request.id)) {
+        return
+    }
+    withdrawTrackedRequest(deps, key, entry)
+    entry.reject(new DappRequestRejectedError()).catch((error: unknown) => {
+        logger.warn('[connections] declining a withdrawn request failed', {
+            connectionId: message.connectionId,
+            error,
+        })
+    })
 }
 
 const withdrawClosedConnection = (
@@ -238,6 +259,20 @@ const declineRequest = (
 ): void => {
     onError?.(error, { connectionId: message.connectionId })
     rejectInBackground(message, error)
+}
+
+// A request withdrawn while it was being enqueued has had its answer (a
+// decline, or none for an expiry); a later failure must not answer it again.
+const declineUnlessWithdrawn = (
+    deps: EnqueueInboundRequestDeps,
+    message: RequestMessage,
+    error: Error,
+    onError?: ConnectionErrorReporter,
+): void => {
+    const isWithdrawn =
+        deps.pendingRequests.get(requestKey(message))?.isWithdrawn ?? false
+    forgetRequest(deps, message)
+    if (!isWithdrawn) declineRequest(message, error, onError)
 }
 
 /**
@@ -635,8 +670,7 @@ const enqueueSendTransactionRequest = (
                 settleTrackedRequest(deps, message, signRequest)
             },
             (error: unknown) => {
-                forgetRequest(deps, message)
-                declineRequest(message, toError(error), onError)
+                declineUnlessWithdrawn(deps, message, toError(error), onError)
             },
         )
 }
@@ -701,8 +735,7 @@ const enqueueSendBatchRequest = (
                 settleTrackedRequest(deps, message, signRequest)
             },
             (error: unknown) => {
-                forgetRequest(deps, message)
-                declineRequest(message, toError(error), onError)
+                declineUnlessWithdrawn(deps, message, toError(error), onError)
             },
         )
 }
@@ -885,16 +918,28 @@ export const enqueueInboundRequest = (
         withdrawExpiredRequest(message, deps)
         return
     }
+    if (message.kind === 'request-withdrawn') {
+        declineWithdrawnRequest(message, deps)
+        return
+    }
     if (message.kind === 'connection-closed') {
         withdrawClosedConnection(message.connectionId, deps)
         return
     }
     if (message.kind !== 'request') return
 
-    const breach = pendingCapacityBreach(
-        openRequestConnections(deps),
-        message.connectionId,
-    )
+    const openConnections = openRequestConnections(deps)
+    // A fresh WalletKit client (any teardown and re-init) re-emits every
+    // request it still holds. Answering the copy would answer the original.
+    if (deps.pendingRequests.has(requestKey(message))) {
+        logger.debug('[connections] ignored a re-delivered request', {
+            connectionId: message.connectionId,
+            correlationId: message.correlationId,
+        })
+        return
+    }
+
+    const breach = pendingCapacityBreach(openConnections, message.connectionId)
     if (breach) {
         // Not toasted: a peer flooding requests would flood the user too.
         logger.warn('[connections] refused a request over the pending cap', {
@@ -982,8 +1027,12 @@ export const enqueueInboundRequest = (
         enqueued.then(
             request => settleTrackedRequest(deps, message, request ?? null),
             (error: unknown) => {
-                forgetRequest(deps, message)
-                declineRequest(message, toError(error), deps.onError)
+                declineUnlessWithdrawn(
+                    deps,
+                    message,
+                    toError(error),
+                    deps.onError,
+                )
             },
         )
         return

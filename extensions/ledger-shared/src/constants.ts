@@ -14,6 +14,7 @@ import {
     DeviceModelId,
     getBluetoothServiceUuids,
     getInfosForServiceUuid,
+    identifyUSBProductId,
 } from '@ledgerhq/devices'
 import { StatusCodes } from '@ledgerhq/errors'
 import type { HardwareWalletAppVersion } from '@perawallet/wallet-extension-hardware-wallet'
@@ -22,6 +23,8 @@ import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 
 /** @ledgerhq/devices model IDs -> our user-facing names. */
 const DEVICE_MODEL_MAP: Partial<Record<DeviceModelId, LedgerDeviceModel>> = {
+    [DeviceModelId.nanoS]: 'nanoS',
+    [DeviceModelId.nanoSP]: 'nanoSPlus',
     [DeviceModelId.nanoX]: 'nanoX',
     [DeviceModelId.stax]: 'stax',
     [DeviceModelId.europa]: 'flex',
@@ -49,24 +52,42 @@ export const resolveDeviceModel = (
     return 'nanoX'
 }
 
-/** USB product IDs (vendor 0x2C97) from https://developers.ledger.com. */
-const USB_PRODUCT_ID_MODELS: ReadonlyMap<number, LedgerDeviceModel> = new Map([
-    [0x00_01, 'nanoS'],
-    [0x00_04, 'nanoX'],
-    [0x40_11, 'nanoSPlus'],
-    [0x60_11, 'stax'],
-    [0x70_11, 'flex'],
-])
-
 /** Shown in place of a model for an unrecognized USB product ID. */
 export const UNKNOWN_USB_LEDGER_MODEL = 'ledger'
 
+// Ledger encodes the model in the product id's high byte and the USB interface
+// mix in the low byte (0x4011, 0x4015 are both a Nano X), so exact-id lookup
+// misses most devices; `identifyUSBProductId` handles both schemes.
 export const resolveUsbDeviceModel = (
     productId: Maybe<number>,
-): LedgerDeviceModel | typeof UNKNOWN_USB_LEDGER_MODEL =>
-    (typeof productId === 'number'
-        ? USB_PRODUCT_ID_MODELS.get(productId)
-        : undefined) ?? UNKNOWN_USB_LEDGER_MODEL
+): LedgerDeviceModel | typeof UNKNOWN_USB_LEDGER_MODEL => {
+    if (typeof productId !== 'number') return UNKNOWN_USB_LEDGER_MODEL
+    const deviceModel = identifyUSBProductId(productId)
+    return (
+        (deviceModel && DEVICE_MODEL_MAP[deviceModel.id]) ??
+        UNKNOWN_USB_LEDGER_MODEL
+    )
+}
+
+// Product names are trademarks, so they stay untranslated like the BLE
+// advertised name does.
+const LEDGER_PRODUCT_NAMES: Record<LedgerDeviceModel, string> = {
+    nanoS: 'Ledger Nano S',
+    nanoSPlus: 'Ledger Nano S Plus',
+    nanoX: 'Ledger Nano X',
+    stax: 'Ledger Stax',
+    flex: 'Ledger Flex',
+    nanoGen5: 'Ledger Nano Gen5',
+}
+
+export const UNKNOWN_USB_LEDGER_NAME = 'Ledger (USB)'
+
+export const usbLedgerDisplayName = (
+    model: LedgerDeviceModel | typeof UNKNOWN_USB_LEDGER_MODEL,
+): string =>
+    model === UNKNOWN_USB_LEDGER_MODEL
+        ? UNKNOWN_USB_LEDGER_NAME
+        : LEDGER_PRODUCT_NAMES[model]
 
 /**
  * Standard codes from @ledgerhq/errors. An app's own non-standard codes belong

@@ -36,7 +36,12 @@ import {
     oracleOpStackFees,
 } from '../../harness/contracts'
 import { createEvmConformanceEnv } from '../../harness/context'
-import { EVMNET, anvilRpc } from '../../harness/evmnet'
+import {
+    EVMNET,
+    OP_STACK_EVMNET_CHAINS,
+    anvilRpc,
+    type EvmnetChain,
+} from '../../harness/evmnet'
 import { OP_STACK_ORACLE_READINGS } from '../../vectors/opStackPredeploys'
 import {
     buildTransfer,
@@ -47,29 +52,30 @@ import {
 const RECIPIENT: Address = '0x000000000000000000000000000000000000dEaD'
 
 const readOracle = async (
+    chain: EvmnetChain,
     sig: string,
     args: readonly string[] = [],
 ): Promise<string> =>
-    castCall({ chain: 'base', to: OP_STACK_GAS_PRICE_ORACLE, sig, args })
+    castCall({ chain, to: OP_STACK_GAS_PRICE_ORACLE, sig, args })
 
 /**
- * Proves Base's fee read prices the OP-stack L1 data and operator fees from
+ * Proves each OP-stack chain's fee read prices the OP-stack L1 data and operator fees from
  * the real GasPriceOracle and L1Block contracts (captured from Base Sepolia),
  * and that the node charges the sender exactly that surcharge on top of gas.
  * A mocked oracle can't show the app calls the right contract with a
  * transaction the oracle prices like the node does.
  */
-describe('evm op-stack l1 fee (base)', () => {
+describe.each(OP_STACK_EVMNET_CHAINS)('evm op-stack l1 fee (%s)', chain => {
     it("answers exactly as Base Sepolia's oracle did at the captured block", async () => {
         for (const flag of [
             'isEcotone()(bool)',
             'isFjord()(bool)',
             'isIsthmus()(bool)',
         ]) {
-            expect(await readOracle(flag)).toBe('true')
+            expect(await readOracle(chain, flag)).toBe('true')
         }
         const amount = async (sig: string, args?: readonly string[]) =>
-            BigInt(await readOracle(sig, args))
+            BigInt(await readOracle(chain, sig, args))
 
         // Oracle parity: the live chain's own answers, recorded by the capture.
         const expected = OP_STACK_ORACLE_READINGS
@@ -90,7 +96,7 @@ describe('evm op-stack l1 fee (base)', () => {
     })
 
     it("estimates a transaction above the Fjord minimum within 1% of the oracle's answer for the transaction it signs", async () => {
-        const env = await createEvmConformanceEnv('base')
+        const env = await createEvmConformanceEnv(chain)
         const sender = await createRawKeyEvmAccount(env)
         // eth_estimateGas refuses a sender that can't pay for the gas it estimates.
         await fundEvmAccount(env, sender.address, 10n ** 18n)
@@ -102,7 +108,7 @@ describe('evm op-stack l1 fee (base)', () => {
         const fees = await readTransferFees(
             client,
             {
-                chainId: EVMNET.base.eip155ChainId,
+                chainId: EVMNET[chain].eip155ChainId,
                 from: sender.address,
                 to: RECIPIENT,
                 value: 0n,
@@ -113,10 +119,10 @@ describe('evm op-stack l1 fee (base)', () => {
         )
 
         const oracle = await oracleOpStackFees({
-            chain: 'base',
+            chain,
             raw: serializeTransaction({
                 type: 'eip1559',
-                chainId: EVMNET.base.eip155ChainId,
+                chainId: EVMNET[chain].eip155ChainId,
                 nonce: 0,
                 to: RECIPIENT,
                 value: 0n,
@@ -125,7 +131,7 @@ describe('evm op-stack l1 fee (base)', () => {
                 ...fees.presets.normal,
             }),
             gasUsed: fees.gas,
-            block: BigInt(await anvilRpc<Hex>('base', 'eth_blockNumber')),
+            block: BigInt(await anvilRpc<Hex>(chain, 'eth_blockNumber')),
         })
 
         const priced = oracle.l1DataFee + oracle.operatorFee
@@ -140,7 +146,7 @@ describe('evm op-stack l1 fee (base)', () => {
     })
 
     it('estimates the oracle surcharge and the node charges exactly it', async () => {
-        const env = await createEvmConformanceEnv('base')
+        const env = await createEvmConformanceEnv(chain)
         const sender = await createRawKeyEvmAccount(env)
         await fundEvmAccount(env, sender.address, 10n ** 18n)
         const value = 1000n
@@ -148,7 +154,7 @@ describe('evm op-stack l1 fee (base)', () => {
         const fees = await readTransferFees(
             client,
             {
-                chainId: EVMNET.base.eip155ChainId,
+                chainId: EVMNET[chain].eip155ChainId,
                 from: sender.address,
                 to: RECIPIENT,
                 value,
@@ -169,7 +175,7 @@ describe('evm op-stack l1 fee (base)', () => {
         const receipt = await expectEvmConformant({
             env,
             intent: {
-                chainId: EVMNET.base.eip155ChainId,
+                chainId: EVMNET[chain].eip155ChainId,
                 from: sender.address,
                 nonce: 0,
                 to: RECIPIENT,
@@ -183,7 +189,7 @@ describe('evm op-stack l1 fee (base)', () => {
 
         // Oracle parity: the app's surcharge is the oracle's price for the transaction it signed.
         const oracle = await oracleOpStackFees({
-            chain: 'base',
+            chain,
             raw,
             gasUsed: receipt.gasUsed,
             block: receipt.blockNumber - 1n,
@@ -212,7 +218,7 @@ describe('evm op-stack l1 fee (base)', () => {
         // Anvil charges the fee but omits `l1Fee` from the receipt, so the
         // balance delta is the proof; once it reports one, this flags it.
         const nodeReceipt = await anvilRpc<{ l1Fee?: Hex }>(
-            'base',
+            chain,
             'eth_getTransactionReceipt',
             [hash],
         )

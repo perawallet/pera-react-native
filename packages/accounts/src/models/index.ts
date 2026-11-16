@@ -189,6 +189,17 @@ export type AccountsState = BaseStoreState & {
         options?: EnableChainOptions,
     ) => Promise<WalletAccount>
     /**
+     * Drops the account's entries on `chainIds` and removes each key no
+     * account signs with any more. Leaves data cached for their addresses,
+     * which another chain in the same family may share. Throws
+     * `AccountNotFoundError`, and `LastChainRemovalError` rather than leave
+     * the account on no chain.
+     */
+    disableChains: (
+        accountId: string,
+        chainIds: readonly ChainId[],
+    ) => Promise<WalletAccount>
+    /**
      * Probes each eligible chain in a family the account is already on, and
      * not enabled on yet, once for activity and enables the active ones as
      * `'discovery'`. Never rejects; a chain whose probe fails reads as
@@ -197,7 +208,8 @@ export type AccountsState = BaseStoreState & {
     discoverChains: (accountId: string) => Promise<ChainId[]>
     /**
      * Enables, as `'discovery'`, each chain active at an index of seed
-     * `walletId`'s HD tree, creating the account there if none holds it.
+     * `walletId`'s HD tree, creating the account there if none holds it, and
+     * marks an entry the account already has as `'discovery'` when active.
      * `declinedIndexes` stay untouched on every chain. Never rejects.
      * `rootKey`, the seed's XHD root, lets chains that derive from it skip a
      * keystore save per probed index; the walk zeroes it once probing ends.

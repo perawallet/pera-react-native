@@ -22,6 +22,8 @@ export type ChainChipProps = {
     chainId: ChainId
     /** Drops the pill, so the icon lines up with text beside it. */
     isBare?: boolean
+    /** A bordered pill with the label in the main text color. */
+    isOutlined?: boolean
     style?: StyleProp<ViewStyle>
     testID?: string
 }
@@ -29,6 +31,7 @@ export type ChainChipProps = {
 export const ChainChip = ({
     chainId,
     isBare = false,
+    isOutlined = false,
     style,
     testID,
 }: ChainChipProps) => {
@@ -37,7 +40,12 @@ export const ChainChip = ({
 
     return (
         <PWView
-            style={[styles.container, !isBare && styles.pill, style]}
+            style={[
+                styles.container,
+                !isBare && styles.pill,
+                !isBare && isOutlined && styles.outlined,
+                style,
+            ]}
             testID={testID}
         >
             <ChainIcon
@@ -46,7 +54,7 @@ export const ChainChip = ({
             />
             <PWText
                 variant='body'
-                style={styles.label}
+                style={[styles.label, isOutlined && styles.outlinedLabel]}
                 numberOfLines={1}
             >
                 {chainDisplayNameOf(chainId) ?? chainId}

@@ -119,9 +119,10 @@ vi.mock('expo-clipboard', () => ({
     setImageAsync: vi.fn(),
 }))
 
-vi.mock('expo-haptics', () => ({
-    notificationAsync: vi.fn(),
-    NotificationFeedbackType: { Success: 'success' },
+const mockHaptics = vi.hoisted(() => ({ copy: vi.fn(), success: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
 }))
 
 // lottie-react-native ships .tsx source under lib/commonjs that vitest can't
@@ -566,12 +567,14 @@ describe('useCollectibleDetail', () => {
                 useCollectibleDetail('12345', 'algorand'),
             )
 
+            mockHaptics.copy.mockClear()
             await result.current.handleCopyImage()
 
             expect(mockGetImageBase64).toHaveBeenCalledWith(
                 'https://example.com/full.png',
                 'collectible_12345',
             )
+            expect(mockHaptics.copy).toHaveBeenCalledTimes(1)
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
             )
@@ -599,12 +602,14 @@ describe('useCollectibleDetail', () => {
                 useCollectibleDetail('12345', 'algorand'),
             )
 
+            mockHaptics.success.mockClear()
             await result.current.handleSaveImage()
 
             expect(mockSaveImageToDevice).toHaveBeenCalledWith(
                 'https://example.com/full.png',
                 'collectible_12345.png',
             )
+            expect(mockHaptics.success).toHaveBeenCalledTimes(1)
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
             )

@@ -27,6 +27,18 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
     },
+    outlined: {
+        gap: theme.spacing.sm,
+        paddingLeft: theme.spacing.sm,
+        paddingRight: theme.spacing.lg,
+        paddingVertical: theme.spacing.xs,
+        backgroundColor: theme.colors.background,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGrayLighter,
+    },
+    outlinedLabel: {
+        color: theme.colors.textMain,
+    },
     label: {
         color: theme.colors.textGray,
         flexShrink: 1,

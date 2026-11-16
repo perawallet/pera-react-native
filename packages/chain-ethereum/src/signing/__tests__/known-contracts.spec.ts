@@ -51,6 +51,9 @@ describe('KNOWN_EVM_CONTRACTS', () => {
                     'uniswap-permit2',
                     'wrapped-native',
                     'aave-v3-pool',
+                    'aave-v3-gateway',
+                    'aave-v3-rewards',
+                    'aave-v3-adapter',
                     'uniswap-v3-position-manager',
                     'uniswap-v4-position-manager',
                 ]),
@@ -113,6 +116,7 @@ describe('findKnownEvmContract', () => {
             address: V3_POSITIONS,
             kind: 'uniswap-v3-position-manager',
             name: 'Uniswap V3 Positions',
+            projectName: 'Uniswap',
             projectDomain: 'uniswap.org',
             source: 'https://developers.uniswap.org/docs/protocols/v3/deployments/v3-ethereum-deployments',
         })
@@ -186,9 +190,15 @@ describe('knownSpenderOf', () => {
         })
     })
 
-    it('leaves the Uniswap position managers unlabelled, so an approval to one keeps its warning', () => {
-        expect(knownSpenderOf(1, V3_POSITIONS)).toBeUndefined()
-        expect(knownSpenderOf(1, V4_POSITIONS)).toBeUndefined()
+    it('labels both Uniswap position managers with the project domain', () => {
+        expect(knownSpenderOf(1, V3_POSITIONS)).toEqual({
+            name: 'Uniswap V3 Positions',
+            projectDomain: 'uniswap.org',
+        })
+        expect(knownSpenderOf(1, V4_POSITIONS)).toEqual({
+            name: 'Uniswap V4 Positions',
+            projectDomain: 'uniswap.org',
+        })
     })
 
     it('still labels the Universal Router', () => {

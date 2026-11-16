@@ -22,6 +22,7 @@ import {
     CardEvent,
     CloudBackupEvent,
     ContactsEvent,
+    DiscoverEvent,
     FundEvent,
     HomeEvent,
     MenuEvent,
@@ -107,6 +108,8 @@ const CHAIN_AGNOSTIC_EVENTS: readonly string[] = [
     ...Object.values(ContactsEvent),
     // Pera Card runs on its own card account, outside the chain accounts.
     ...Object.values(CardEvent),
+    // Discover browses a cross-chain directory; the chip chain is optional context.
+    ...Object.values(DiscoverEvent),
 ]
 
 const allEvents = Object.entries(contexts)

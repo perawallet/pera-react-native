@@ -24,6 +24,7 @@ import {
     useAccountBalancesQuery,
     useAccountAssetBalanceQuery,
     useAccountHoldingsAcrossChainsQuery,
+    useAccountsHoldingsAcrossChainsQuery,
 } from '../useAccountBalancesQuery'
 import {
     onlineManager,
@@ -346,7 +347,7 @@ describe('useAccountBalances', () => {
         expect(result.current.portfolioNativeValue).toEqual(new Decimal(1))
     })
 
-    it('counts a suspicious token on a chain where the user opts in to each asset', async () => {
+    it('lists a suspicious token on a chain where the user opts in to each asset but leaves it out of the totals', async () => {
         registerFakeNativeAsset(6, { requiresAssetOptIn: true })
         const spam = asaRow('666', 1_000_000, 6, 100, 'Flagged')
         mockGetAccountHoldingsPage.mockResolvedValue([
@@ -356,6 +357,31 @@ describe('useAccountBalances', () => {
                 asset: {
                     ...spam.asset!,
                     peraMetadata: { verificationTier: 'suspicious' },
+                },
+            },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account], SCOPE),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const accountData = result.current.accountBalances.get('ADDR1')
+        expect(accountData?.assetBalances.map(b => b.assetId)).toContain('666')
+        expect(accountData?.usdValue).toEqual(new Decimal(2))
+    })
+
+    it('counts a priced unverified token in the totals', async () => {
+        const token = asaRow('555', 1_000_000, 6, 100, 'Unreviewed')
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2),
+            {
+                ...token,
+                asset: {
+                    ...token.asset!,
+                    peraMetadata: { verificationTier: 'unverified' },
                 },
             },
         ])
@@ -799,6 +825,42 @@ describe('useAccountHoldingsAcrossChainsQuery', () => {
 
         expect(result.current.assetBalances.map(b => b.scope.chainId)).toEqual([
             'algorand',
+        ])
+    })
+
+    it('tags each holding with the account and address it belongs to', async () => {
+        mockGetAccountHoldingsPage.mockImplementation(
+            async ({ accountAddress }: { accountAddress: string }) =>
+                accountAddress === 'ALGO2'
+                    ? [algoRow(5_000_000, 1)]
+                    : [algoRow(3_000_000, 1)],
+        )
+        const first = buildTestAccount(
+            { kind: 'watch' },
+            { algorand: { address: 'ALGO1' } },
+            { id: 'first' },
+        )
+        const second = buildTestAccount(
+            { kind: 'watch' },
+            { algorand: { address: 'ALGO2' } },
+            { id: 'second' },
+        )
+
+        const { result } = renderHook(
+            () => useAccountsHoldingsAcrossChainsQuery([first, second]),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(
+            result.current.assetBalances.map(b => ({
+                accountId: b.accountId,
+                address: b.address,
+                amount: b.amount,
+            })),
+        ).toEqual([
+            { accountId: 'first', address: 'ALGO1', amount: new Decimal(3) },
+            { accountId: 'second', address: 'ALGO2', amount: new Decimal(5) },
         ])
     })
 

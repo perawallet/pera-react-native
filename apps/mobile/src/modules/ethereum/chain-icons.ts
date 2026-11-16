@@ -24,6 +24,7 @@ import AvalancheIcon from '@assets/icons/chains/avalanche.svg'
 import BaseIcon from '@assets/icons/chains/base.svg'
 import BscIcon from '@assets/icons/chains/bsc.svg'
 import EthereumIcon from '@assets/icons/chains/ethereum.svg'
+import OptimismIcon from '@assets/icons/chains/optimism.svg'
 import PolygonIcon from '@assets/icons/chains/polygon.svg'
 
 // Partial on purpose: a chain added without a logo keeps the initials placeholder.
@@ -34,6 +35,7 @@ const EVM_CHAIN_ICONS: Partial<Record<EvmChainId, ComponentType<SvgProps>>> = {
     arbitrum: ArbitrumIcon,
     avalanche: AvalancheIcon,
     polygon: PolygonIcon,
+    optimism: OptimismIcon,
 }
 
 export const ethereumChainIcon = (
@@ -50,6 +52,7 @@ const EVM_NATIVE_ASSET_ICONS: Record<EvmChainId, ComponentType<SvgProps>> = {
     bsc: BscIcon,
     avalanche: AvalancheIcon,
     polygon: PolygonIcon,
+    optimism: EthereumIcon,
 }
 
 export const ethereumNativeAssetIcon = (

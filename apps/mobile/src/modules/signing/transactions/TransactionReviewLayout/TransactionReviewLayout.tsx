@@ -11,66 +11,92 @@
  */
 
 import type { ReactNode } from 'react'
-import { useTheme } from '@rneui/themed'
-import { PWDivider, PWScreen, PWView } from '@components/core'
+import { PWScreen, PWView } from '@components/core'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
 import {
     ReviewWarningsBanner,
     type ReviewWarningItem,
 } from '@modules/signing/components/ReviewWarningsBanner'
+import {
+    ReviewScrollHint,
+    useReviewScrollHint,
+} from '@modules/signing/components/ReviewScrollHint'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { useStyles } from './styles'
 import { useTransactionReviewLayout } from './useTransactionReviewLayout'
 
+/**
+ * One template for every transaction a chain reviews, slot by slot: who asked,
+ * the action and its target, what changes, cautions, details, then a way into
+ * the technical details. A chain fills the slots it has data for.
+ */
 export type TransactionReviewLayoutProps = {
-    /** Pinned above the scrolling body. */
-    header?: ReactNode
-    /** What the transaction is, first in the scrolling body. */
-    hero?: ReactNode
-    /** The review's own warnings, folded into one banner. */
+    /** The requesting site; absent for a request the wallet started itself. */
+    requester?: ReactNode
+    /** What the transaction does and what it is aimed at. */
+    action?: ReactNode
+    /** What leaves and enters the wallet, or the permission it grants. */
+    changes?: ReactNode
+    /** The chain's cautions, one card each, most serious first. */
     warnings?: readonly ReviewWarningItem[]
-    /** What the transaction will do, after the hero and the warnings. */
-    summary?: ReactNode
-    participants: ReactNode
-    /** The cost, in the scrolling body right after the participants. A chain passes this or `stickyFee`. */
-    fee?: ReactNode
-    /** The cost, pinned directly above `actions` so it is on screen beside Confirm. */
-    stickyFee?: ReactNode
-    /** What the transaction does in full, last in the scrolling body. */
+    /** From, Network and Network fee. */
     details?: ReactNode
+    /** Chain-specific facts after the details, such as a key registration's fields. */
+    extra?: ReactNode
+    /** The link into the technical details. */
+    technicalDetails?: ReactNode
     /** The screen's Confirm and Cancel. */
     actions: ReactNode
 }
 
 export const TransactionReviewLayout = ({
-    header,
-    hero,
+    requester,
+    action,
+    changes,
     warnings,
-    summary,
-    participants,
-    fee,
-    stickyFee,
     details,
+    extra,
+    technicalDetails,
     actions,
 }: TransactionReviewLayoutProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { warningItems } = useTransactionReviewLayout(warnings)
+    const {
+        scrollRef,
+        isMoreBelow,
+        handleScroll,
+        handleBodyLayout,
+        handleContentSizeChange,
+        handleScrollToEnd,
+    } = useReviewScrollHint()
 
     return (
         <PWScreen
-            header={header}
+            scrollRef={scrollRef}
+            onScroll={handleScroll}
+            onBodyLayout={handleBodyLayout}
+            onContentSizeChange={handleContentSizeChange}
             footer={
                 <PWView style={styles.footer}>
-                    {stickyFee}
+                    <ReviewScrollHint
+                        isVisible={isMoreBelow}
+                        onPress={handleScrollToEnd}
+                    />
                     {actions}
                 </PWView>
             }
             testID='signing_transaction_review'
         >
             <PWView style={styles.content}>
-                {hero}
+                {(!!requester || !!action) && (
+                    <PWView style={styles.header}>
+                        {requester}
+                        {action}
+                    </PWView>
+                )}
+
+                {changes}
 
                 <ReviewWarningsBanner items={warningItems} />
 
@@ -80,18 +106,11 @@ export const TransactionReviewLayout = ({
 
                 <RequestAddressWarning />
 
-                {summary}
+                {!!details && <PWView>{details}</PWView>}
 
-                <PWDivider
-                    color={theme.colors.layerGray}
-                    style={styles.paddedDivider}
-                />
+                {extra}
 
-                {participants}
-
-                {fee}
-
-                {details}
+                {technicalDetails}
             </PWView>
         </PWScreen>
     )

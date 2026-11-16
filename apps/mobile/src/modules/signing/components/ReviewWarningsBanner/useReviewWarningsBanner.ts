@@ -20,8 +20,6 @@ import {
 import type { ReviewWarningItem } from './types'
 
 export type UseReviewWarningsBannerResult = {
-    /** Two or more items fold behind a count; one shows in full. */
-    isCollapsible: boolean
     hasHighRisk: boolean
     isAcknowledged: boolean
     toggleAcknowledged: () => void
@@ -49,7 +47,6 @@ export const useReviewWarningsBanner = (
     }, [highRiskIds, requestId])
 
     return {
-        isCollapsible: items.length > 1,
         hasHighRisk,
         isAcknowledged,
         toggleAcknowledged,

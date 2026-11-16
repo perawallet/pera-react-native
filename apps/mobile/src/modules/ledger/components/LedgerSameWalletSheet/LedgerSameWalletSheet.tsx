@@ -13,6 +13,7 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import type { LedgerErrorPreset } from '@modules/ledger/utils'
 
 /** `undefined` (cancel or swipe-away) abandons the add. */
@@ -30,16 +31,21 @@ export const LedgerSameWalletSheet = ({
     failure,
 }: LedgerSameWalletSheetProps) => {
     const { t } = useLanguage()
+    const { resolve, dismiss } = useBottomSheetResult<LedgerSameWalletChoice>()
     const separateLabel = t('ledger.verify.same_wallet_separate')
     // A failure a retry can't clear leaves the separate account as the way on.
     const canRead = failure === null || failure.isRetryable
+    // The layout draws confirm, cancel, tertiary in that order, so the
+    // separate choice takes the cancel slot to sit above the Cancel link.
     return (
         <ConfirmActionContent<LedgerSameWalletChoice>
             icon='ledger'
             title={t('ledger.verify.same_wallet_title')}
             message={[
                 failure?.body,
-                t('ledger.verify.same_wallet_body', { appName }),
+                canRead
+                    ? t('ledger.verify.same_wallet_body', { appName })
+                    : t('ledger.verify.same_wallet_body_separate_only'),
             ]
                 .filter(Boolean)
                 .join('\n\n')}
@@ -47,14 +53,15 @@ export const LedgerSameWalletSheet = ({
                 canRead ? t('ledger.verify.same_wallet_confirm') : separateLabel
             }
             confirmValue={canRead ? 'read' : 'separate'}
-            tertiaryLabel={canRead ? separateLabel : undefined}
-            tertiaryVariant='secondary'
-            tertiaryValue='separate'
-            cancelLabel={t('common.cancel.label')}
+            cancelLabel={canRead ? separateLabel : undefined}
+            onCancel={() => resolve('separate')}
+            tertiaryLabel={t('common.cancel.label')}
+            tertiaryVariant='link'
+            onTertiary={dismiss}
             testID='ledger-same-wallet-sheet'
             confirmTestID='ledger-same-wallet-confirm'
-            tertiaryTestID='ledger-same-wallet-separate'
-            cancelTestID='ledger-same-wallet-cancel'
+            cancelTestID='ledger-same-wallet-separate'
+            tertiaryTestID='ledger-same-wallet-cancel'
         />
     )
 }

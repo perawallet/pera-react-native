@@ -35,6 +35,7 @@ import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/
 import { getOnboardingNextRoute } from '../../utils/onboardingRoute'
 import { useFinishRegistrationOnVerified } from './useFinishRegistrationOnVerified'
 import { resolveDocumentsState, type DocumentsState } from './documentsState'
+import { useStatusCardOnOtherAccount } from './useStatusCardOnOtherAccount'
 import { useStatusFundingSource } from './useStatusFundingSource'
 import { useStatusFundingType } from './useStatusFundingType'
 
@@ -185,10 +186,15 @@ export const useCardOnboardingStatusScreen =
             >()
         const {
             connectedAddress,
-            isFundsConnected,
+            isFundsConnected: hasFundingSource,
             connectedAccount,
             handleConnectAccount,
         } = useStatusFundingSource(scope)
+        const { isCardOnOtherAccount, isCardLookupPending } =
+            useStatusCardOnOtherAccount(scope)
+        // A locally picked account can't fund a card that's bound elsewhere.
+        const isFundsConnected =
+            hasFundingSource && !isCardOnOtherAccount && !isCardLookupPending
 
         // Once KYC is approved this screen becomes the card hub, so a back
         // action (header arrow, swipe, or Android hardware back) exits to the

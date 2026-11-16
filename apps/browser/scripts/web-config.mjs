@@ -90,6 +90,8 @@ export const WEB_CONFIG_ALLOWLIST = [
     'testnetBaanxBaseUrl',
     'mainnetBaanxClientKey',
     'testnetBaanxClientKey',
+    'mainnetBaanxTenantId',
+    'testnetBaanxTenantId',
     'mainnetCardW3CardAppId',
     'testnetCardW3CardAppId',
     'mainnetCardKillswitchAppId',

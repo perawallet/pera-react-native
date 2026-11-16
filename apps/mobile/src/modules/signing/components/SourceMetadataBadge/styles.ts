@@ -13,7 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 // lanekeep-ignore-next-line pera/no-numeric-sizes reason: source badge icon size
-const ICON_SIZE = 20
+const ICON_SIZE = 24
 
 export const useStyles = makeStyles(theme => ({
     wrapper: {
@@ -23,18 +23,25 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        backgroundColor: theme.colors.modalityBg,
-        borderRadius: ICON_SIZE,
-        paddingVertical: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.md,
+        maxWidth: '100%',
         gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
+        paddingLeft: theme.spacing.xs,
+        paddingRight: theme.spacing.md,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.borderRadius.full,
+        backgroundColor: theme.colors.background,
+    },
+    iconFrame: {
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+        borderRadius: theme.borderRadius.full,
+        overflow: 'hidden',
     },
     icon: {
         width: ICON_SIZE,
         height: ICON_SIZE,
-        borderRadius: theme.borderRadius.full,
     },
     iconFallback: {
         width: ICON_SIZE,
@@ -44,17 +51,12 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         backgroundColor: theme.colors.layerGrayLighter,
     },
-    name: {
-        color: theme.colors.textWhite,
-    },
-    separator: {
-        color: theme.colors.textGrayLighter,
-    },
     url: {
-        color: theme.colors.textGrayLighter,
+        flexShrink: 1,
+        color: theme.colors.textMain,
     },
     requestOrigin: {
         textAlign: 'center',
-        color: theme.colors.textMain,
+        color: theme.colors.textGray,
     },
 }))

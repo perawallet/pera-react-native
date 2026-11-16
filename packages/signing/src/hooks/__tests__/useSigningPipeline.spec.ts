@@ -602,7 +602,12 @@ describe('useSigningPipeline', () => {
                     transport: 'network',
                     txs: [{}],
                 },
-                signableGroups: [{ signerAddress: 'A123' }],
+                signableGroups: [
+                    {
+                        signerAddress: 'A123',
+                        data: { type: 'transactions' },
+                    },
+                ],
                 deps: {
                     scope: { chainId: TEST_CHAIN_ID, networkId: 'mainnet' },
                 },

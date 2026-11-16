@@ -14,6 +14,7 @@ import { describe, expect, test } from 'vitest'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     routerAccountId,
+    routerAccountIdOrNull,
     routerAssetIdOf,
     scopeOfRouterChain,
     swapAssetRefOf,
@@ -51,6 +52,16 @@ describe('router ids', () => {
 
     test('builds a router account id from the scope', () => {
         expect(routerAccountId(SCOPE_A, 'ADDR')).toBe('fake-a:main:ADDR')
+    })
+
+    test('has no account id, rather than throwing, on a network the router has no id for', () => {
+        expect(
+            routerAccountIdOrNull(
+                { chainId: 'algorand', networkId: 'custom' },
+                'A',
+            ),
+        ).toBeNull()
+        expect(routerAccountIdOrNull(SCOPE_A, 'ADDR')).toBe('fake-a:main:ADDR')
     })
 
     test('refuses a network the router has no id for', () => {

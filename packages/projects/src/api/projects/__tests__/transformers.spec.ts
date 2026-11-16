@@ -17,6 +17,8 @@ import type { ProjectApiResponse } from '../schema'
 describe('transformProject', () => {
     test('transforms a full project response to domain model', () => {
         const response: ProjectApiResponse = {
+            id: 'p1',
+            chains: ['eip155:1'],
             name: 'Tinyman',
             url: 'https://tinyman.org',
             description: 'A decentralized exchange',
@@ -33,6 +35,8 @@ describe('transformProject', () => {
         const result = transformProject(response)
 
         expect(result).toEqual({
+            id: 'p1',
+            chains: ['eip155:1'],
             name: 'Tinyman',
             url: 'https://tinyman.org',
             description: 'A decentralized exchange',
@@ -62,6 +66,21 @@ describe('transformProject', () => {
         expect(result.textColor).toBeUndefined()
         expect(result.backgroundImage).toBeUndefined()
         expect(result.popularityScore).toBeUndefined()
+    })
+})
+
+describe('transformProject id and chains', () => {
+    test.each([
+        ['absent', {}],
+        ['null', { chains: null }],
+    ])('maps chains that are %s to [] and leaves id unset', (_label, extra) => {
+        const result = transformProject({
+            name: 'Tinyman',
+            ...extra,
+        } as ProjectApiResponse)
+
+        expect(result.chains).toEqual([])
+        expect(result.id).toBeUndefined()
     })
 })
 

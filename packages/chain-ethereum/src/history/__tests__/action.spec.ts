@@ -375,7 +375,7 @@ describe('historyActionSummary', () => {
             titleAssets: { from: NATIVE_REF, to: USDT_REF },
             subtitle: {
                 key: 'transactions.list_item.interpreted_title',
-                params: { title: 'Uniswap Universal Router' },
+                params: { title: 'Uniswap' },
             },
         })
     })

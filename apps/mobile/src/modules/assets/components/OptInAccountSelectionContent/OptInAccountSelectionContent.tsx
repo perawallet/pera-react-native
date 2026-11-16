@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import {
-    useSigningAccounts,
+    useSigningAccountsOn,
     type WalletAccount,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
@@ -40,7 +40,7 @@ export const OptInAccountSelectionContent = ({
 }: OptInAccountSelectionContentProps) => {
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<string>()
-    const signableAccounts = useSigningAccounts(chainId)
+    const signableAccounts = useSigningAccountsOn([chainId])
 
     const handleSelect = useCallback(
         (account: WalletAccount) => {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useEffect, useMemo } from 'react'
 import { skipToken, useInfiniteQuery } from '@tanstack/react-query'
 import {
     toScopeKey,
@@ -21,8 +22,8 @@ import type { SwapAsset, SwapAssetRef } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 const PAGE_SIZE = 50
-// Bounds the skip-ahead over pages the scope filter empties, so a router that
-// keeps answering with off-scope rows can't loop the query forever.
+// Bounds the skip-ahead over pages the scope filter empties or that only repeat
+// listed tokens, so a router that keeps answering with them can't loop forever.
 const MAX_SKIPPED_PAGES = 10
 
 export type UseSwapPairsInfiniteQueryParams = {
@@ -45,6 +46,32 @@ export type UseSwapPairsInfiniteQueryResult = {
 
 const isOnAnyScope = (asset: SwapAsset, scopeKeys: Set<string>): boolean =>
     scopeKeys.has(toScopeKey(asset.ref))
+
+type UniqueAssets = {
+    assets: SwapAsset[]
+    /** Pages at the end that held rows but added no new token. */
+    trailingRepeatPages: number
+}
+
+// The router returns one row per aggregator, so the same token can repeat
+// within a page and across pages.
+const uniqueAssets = (pages: SwapPairsPage[]): UniqueAssets => {
+    const seen = new Set<string>()
+    const assets: SwapAsset[] = []
+    let trailingRepeatPages = 0
+    for (const page of pages) {
+        const before = assets.length
+        for (const asset of page.assets) {
+            const key = `${toScopeKey(asset.ref)}/${asset.assetId}`
+            if (seen.has(key)) continue
+            seen.add(key)
+            assets.push(asset)
+        }
+        const isRepeatPage = page.assets.length > 0 && assets.length === before
+        trailingRepeatPages = isRepeatPage ? trailingRepeatPages + 1 : 0
+    }
+    return { assets, trailingRepeatPages }
+}
 
 const fetchVisiblePage = async (
     anchor: SwapAssetRef,
@@ -102,13 +129,38 @@ export const useSwapPairsInfiniteQuery = ({
             lastPage.next ?? undefined,
     })
 
+    const pages = query.data?.pages
+    const { assets, trailingRepeatPages } = useMemo(
+        () => uniqueAssets(pages ?? []),
+        [pages],
+    )
+
+    const {
+        hasNextPage,
+        isFetchingNextPage,
+        isFetchNextPageError,
+        fetchNextPage,
+    } = query
+    // A page of repeats doesn't grow the list, so onEndReached won't fire again.
+    const shouldSkipRepeatPage =
+        trailingRepeatPages > 0 &&
+        trailingRepeatPages <= MAX_SKIPPED_PAGES &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        !isFetchNextPageError
+    // Keyed on the count too: a fetch that resolves within one render never
+    // flips the flag, and the next repeat page would go unfetched.
+    useEffect(() => {
+        if (shouldSkipRepeatPage) void fetchNextPage({ cancelRefetch: false })
+    }, [shouldSkipRepeatPage, trailingRepeatPages, fetchNextPage])
+
     return {
-        assets: query.data?.pages.flatMap(page => page.assets) ?? [],
+        assets,
         isLoading: query.isLoading,
         isSuccess: query.isSuccess,
-        hasNextPage: query.hasNextPage,
+        hasNextPage,
         // A list fires onEndReached repeatedly; without this a second call
         // would cancel the page already loading.
-        fetchNextPage: () => void query.fetchNextPage({ cancelRefetch: false }),
+        fetchNextPage: () => void fetchNextPage({ cancelRefetch: false }),
     }
 }

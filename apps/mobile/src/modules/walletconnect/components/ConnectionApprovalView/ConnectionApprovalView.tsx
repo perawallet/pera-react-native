@@ -18,6 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SiteSafetyGate } from '@modules/site-safety'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ConnectionApprovalAccountRow } from '../ConnectionApprovalAccountRow'
+import { ConnectAccountRow } from '../ConnectAccountRow'
 import { ConnectionApprovalViewHeader } from './ConnectionApprovalViewHeader'
 import {
     useConnectionApprovalView,
@@ -38,6 +39,12 @@ export const ConnectionApprovalView = ({
     const { t } = useLanguage()
     const {
         accountRows,
+        evmChainId,
+        evmAccount,
+        handleEvmAccountPress,
+        evmNoAccountsNote,
+        hasAccountList,
+        canConnect,
         title,
         peerName,
         requestedNetworks,
@@ -97,15 +104,42 @@ export const ConnectionApprovalView = ({
                         originWarning={originWarning}
                         verifiedOriginLabel={verifiedOriginLabel}
                         hasSiteWarning={siteSafety.verdict.kind !== 'clear'}
+                        evmAccountRow={
+                            evmChainId !== undefined && (
+                                <>
+                                    <ConnectAccountRow
+                                        account={evmAccount}
+                                        chainId={evmChainId}
+                                        labelKey='connect'
+                                        onPress={() =>
+                                            void handleEvmAccountPress()
+                                        }
+                                        isDisabled={!evmAccount}
+                                        testID='wc_evm_account_row'
+                                    />
+                                    {evmNoAccountsNote && (
+                                        <PWText
+                                            style={styles.noAccounts}
+                                            testID='wc_evm_no_accounts'
+                                        >
+                                            {evmNoAccountsNote}
+                                        </PWText>
+                                    )}
+                                </>
+                            )
+                        }
+                        hasAccountList={hasAccountList}
                     />
                 }
                 ListEmptyComponent={
-                    <PWText
-                        style={styles.noAccounts}
-                        testID='wc_connection_no_accounts'
-                    >
-                        {noAccountsNote}
-                    </PWText>
+                    hasAccountList || evmChainId === undefined ? (
+                        <PWText
+                            style={styles.noAccounts}
+                            testID='wc_connection_no_accounts'
+                        >
+                            {noAccountsNote}
+                        </PWText>
+                    ) : null
                 }
                 showsVerticalScrollIndicator={false}
                 inBottomSheet
@@ -126,10 +160,7 @@ export const ConnectionApprovalView = ({
                     title={t('common.connect.label')}
                     onPress={() => void handleConnect()}
                     style={styles.connectButton}
-                    isDisabled={
-                        !selectedAccounts.length ||
-                        !siteSafety.isApprovalAllowed
-                    }
+                    isDisabled={!canConnect || !siteSafety.isApprovalAllowed}
                     isLoading={isConnecting}
                     testID='wc_connect_button'
                 />

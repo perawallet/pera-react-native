@@ -25,6 +25,9 @@ export type CardOnboardingStackParamList = {
     // One-shot flag from the add-account returnTo: on arrival, link the
     // just-created (globally selected) account as the funding source.
     CardOnboardingStatus: { autoConnectSelected?: boolean }
+    // Baanx issued this user a card, but its funding account isn't in this
+    // wallet; the checklist hands over here instead of offering a second card.
+    CardOnOtherAccount: undefined
     CardOnboardingPersonalDetails: undefined
     // BoP residents only, when Baanx's phase asks for it.
     CardOnboardingAdditionalDetails: undefined

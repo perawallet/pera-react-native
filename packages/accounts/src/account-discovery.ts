@@ -199,9 +199,9 @@ export async function discoverWalletCandidates({
                     .get(chainId)
                     .hdKeyPairId(walletKeyId, index),
             }
-            chains[chainId] = isEnabledByDefault(chainId)
-                ? keyed
-                : withEnablement(keyed, 'discovery')
+            chains[chainId] = activeEntry
+                ? withEnablement(keyed, 'discovery')
+                : keyed
         }
         const chainId = preferDefaultChain(Object.keys(chains) as ChainId[])
         if (chainId === undefined) return []

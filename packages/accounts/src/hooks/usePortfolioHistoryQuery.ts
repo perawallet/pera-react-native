@@ -42,9 +42,9 @@ export type UsePortfolioHistoryQueryResult = {
     isRetrying: boolean
     isPaused: boolean
     error: Nullable<Error>
-    /** True when a source's chain has no portfolio history: a chart without it would understate the total. */
+    /** True when a source's chain has no portfolio history and no other chain has points to plot beside it. */
     isUnavailableOnNetwork: boolean
-    /** Chains whose history failed while another chain's loaded: `data` plots the rest without them. */
+    /** Chains whose history failed or isn't served while another chain's loaded: `data` plots the rest without them. */
     excludedChainIds: ChainId[]
     /** `excludedChainIds` isn't empty: `data` falls short of the total of every source. */
     isPartial: boolean
@@ -83,12 +83,15 @@ export const usePortfolioHistoryQuery = (
     const { usdToPreferred } = useCurrency(currencyScope)
     const check = useChainCapabilityCheck()
     const groups = useMemo(() => groupByScope(sources), [sources])
-    const isCapabilityOff = groups.some(
+    const offFlags = groups.map(
         ({ scope }) =>
             !check({
                 chain: { chainId: scope.chainId, capability: 'balanceHistory' },
             }),
     )
+    const offKey = offFlags.join()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- offKey re-runs the memo: check is a new function every render
+    const isOff = useMemo(() => offFlags, [offKey])
 
     const queryKeys = useMemo(
         () =>
@@ -117,10 +120,9 @@ export const usePortfolioHistoryQuery = (
                     : (lastErrors.current.get(hash) ?? null)
                 return { hasFailed, error }
             })
-            // One chain's failure leaves the others plottable; the chart then
-            // names what it left out. An integrity block is the user's to
-            // resolve, so it still fails the chart rather than hiding a chain,
-            // and so does a failure beside chains with no points to plot.
+            // A chain whose history failed or isn't served is left out while
+            // another plots. An integrity block still fails the chart: the
+            // user has to resolve it.
             const failed = failures.map(
                 ({ hasFailed, error }) =>
                     hasFailed && !isIntegrityRequiredError(error),
@@ -128,28 +130,37 @@ export const usePortfolioHistoryQuery = (
             const holdsError = failures.map(
                 ({ hasFailed, error }) => hasFailed && error !== null,
             )
+            const isUnserved = results.map(
+                (result, index) =>
+                    isOff[index] === true || result.data === null,
+            )
+            const isLeftOut = results.map(
+                (_, index) => failed[index] === true || isUnserved[index],
+            )
             const isPartial =
-                failed.some(Boolean) &&
+                isLeftOut.some(Boolean) &&
                 results.some(
                     (result, index) =>
-                        !failed[index] &&
+                        !isLeftOut[index] &&
                         (result.isPending || (result.data?.length ?? 0) > 0),
                 )
             const countedIndexes = results.flatMap((_, index) =>
-                isPartial && failed[index] ? [] : [index],
+                isPartial && isLeftOut[index] ? [] : [index],
             )
             const counted = countedIndexes.map(index => results[index]!)
             const excludedChainIds = isPartial
                 ? [
                       ...new Set(
                           groups
-                              .filter((_, index) => failed[index])
+                              .filter((_, index) => isLeftOut[index])
                               .map(({ scope }) => scope.chainId),
                       ),
                   ]
                 : EMPTY_CHAIN_IDS
             return {
-                hasSourceMissing: counted.some(result => result.data === null),
+                hasSourceMissing: countedIndexes.some(
+                    index => isUnserved[index],
+                ),
                 // The sum skips empty series, so a chain still loading or
                 // failed must not reach it as one, or the chart would plot
                 // the rest alone.
@@ -177,12 +188,16 @@ export const usePortfolioHistoryQuery = (
                     failures[
                         countedIndexes.find(index => holdsError[index]) ?? -1
                     ]?.error ?? null,
-                refetchAll: () => {
-                    for (const result of results) void result.refetch()
+                // The observer's refetch() ignores `enabled` and would still
+                // fire the doomed request on a chain without history.
+                refetchServed: () => {
+                    results.forEach((result, index) => {
+                        if (!isOff[index]) void result.refetch()
+                    })
                 },
             }
         },
-        [usdToPreferred, groups, queryHashes],
+        [usdToPreferred, groups, queryHashes, isOff],
     )
 
     const combined = useQueries({
@@ -190,7 +205,7 @@ export const usePortfolioHistoryQuery = (
             queryKey: queryKeys[index],
             // Callers gate this on what they render: it hits a slow network
             // endpoint.
-            enabled: enabled && !isCapabilityOff,
+            enabled: enabled && !isOff[index],
             // A chain the backend hasn't switched on has no priced value in
             // the total either, so it adds nothing rather than failing.
             queryFn: ({ signal }): Promise<Nullable<PortfolioHistoryPoint[]>> =>
@@ -204,7 +219,7 @@ export const usePortfolioHistoryQuery = (
         combine,
     })
 
-    const isUnavailableOnNetwork = isCapabilityOff || combined.hasSourceMissing
+    const isUnavailableOnNetwork = combined.hasSourceMissing
     const excludedChainIds = isUnavailableOnNetwork
         ? EMPTY_CHAIN_IDS
         : combined.excludedChainIds
@@ -224,10 +239,6 @@ export const usePortfolioHistoryQuery = (
         isUnavailableOnNetwork,
         excludedChainIds,
         isPartial: excludedChainIds.length > 0,
-        // The observer's refetch() ignores `enabled` and would still fire the
-        // doomed request on a chain without the source.
-        refetch: () => {
-            if (!isCapabilityOff) combined.refetchAll()
-        },
+        refetch: combined.refetchServed,
     }
 }

@@ -1,0 +1,73 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it } from 'vitest'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { discoverPathTarget } from '../discoverPathTarget'
+
+describe('discoverPathTarget', () => {
+    it.each([undefined, '', 'main/home', '/main/home'])(
+        'maps %j to home',
+        path => {
+            expect(discoverPathTarget(path)).toEqual({ kind: 'home' })
+        },
+    )
+
+    it.each(['token-detail/ALGO', '/token-detail/ALGO?x=1'])(
+        'maps %s to the native Algorand asset',
+        path => {
+            expect(discoverPathTarget(path)).toEqual({
+                kind: 'asset',
+                assetId: nativeAssetFor('algorand').assetId,
+                chainId: 'algorand',
+            })
+        },
+    )
+
+    it('maps a numeric token-detail path to that asset id', () => {
+        expect(discoverPathTarget('token-detail/31566704')).toEqual({
+            kind: 'asset',
+            assetId: '31566704',
+            chainId: 'algorand',
+        })
+    })
+
+    it.each(['news', '/news/', 'news?x=1', 'news//'])(
+        'maps %s to the native news list',
+        path => {
+            expect(discoverPathTarget(path)).toEqual({ kind: 'news' })
+        },
+    )
+
+    it.each([
+        ['news/12', '12'],
+        ['/news/12?utm=x', '12'],
+        ['news/ab-c#top', 'ab-c'],
+        ['news/12/comments', '12'],
+    ])('maps %s to the native news detail %s', (path, newsId) => {
+        expect(discoverPathTarget(path)).toEqual({ kind: 'newsDetail', newsId })
+    })
+
+    it.each(['/main/browser', 'main/browser?x=1'])(
+        'maps %s to the native dApp directory',
+        path => {
+            expect(discoverPathTarget(path)).toEqual({ kind: 'dapps' })
+        },
+    )
+
+    it.each(['main/game', '/test'])(
+        'marks %s unported, keeping the original path',
+        path => {
+            expect(discoverPathTarget(path)).toEqual({ kind: 'unported', path })
+        },
+    )
+})

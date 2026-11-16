@@ -42,6 +42,17 @@ const { STYLES, mockUseAssetsQuery } = vi.hoisted(() => ({
 
 vi.mock('../styles', () => ({ useStyles: () => STYLES }))
 
+const mockUseSwapNetworkFeeWarning = vi.hoisted(() => vi.fn())
+vi.mock('../useSwapNetworkFeeWarning', () => ({
+    useSwapNetworkFeeWarning: mockUseSwapNetworkFeeWarning,
+}))
+
+const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: mockUseAssetsQuery,
     formatAssetAmount: (
@@ -69,6 +80,7 @@ const ASSETS: Record<string, { assetId: string; name: string }> = {
 
 const SOURCE_COST: SwapSourceCost = {
     networkFee: new Decimal(10).pow(15),
+    expectedNetworkFee: new Decimal(10).pow(14),
     shortfall: null,
     needsSpendApproval: false,
     nativeSymbol: 'ETH',
@@ -104,6 +116,8 @@ const mockCurrency = (usdToPreferred: (usd: Decimal) => Decimal | null) =>
 
 describe('useSwapConfirmation', () => {
     beforeEach(() => {
+        mockHaptics.warning.mockClear()
+        mockUseSwapNetworkFeeWarning.mockReturnValue(null)
         mockUseAssetsQuery.mockReset()
         mockUseAssetsQuery.mockImplementation((_scope, ids: string[]) => ({
             data: new Map(ids.map(id => [id, ASSETS[id]])),
@@ -145,6 +159,25 @@ describe('useSwapConfirmation', () => {
             const { result } = renderConfirmation(makeQuote())
 
             expect(result.current.needsSpendApproval).toBe(true)
+        })
+
+        it('passes the estimate and its loading state to the high-fee warning', () => {
+            vi.mocked(useSwapSourceCostQuery).mockReturnValue({
+                sourceCost: SOURCE_COST,
+                isLoading: true,
+            })
+            mockUseSwapNetworkFeeWarning.mockReturnValue('high fee')
+            const quote = makeQuote()
+
+            const { result } = renderConfirmation(quote)
+
+            expect(mockUseSwapNetworkFeeWarning).toHaveBeenCalledWith({
+                quote,
+                scope: SCOPE,
+                sourceCost: SOURCE_COST,
+                isSourceCostLoading: true,
+            })
+            expect(result.current.highNetworkFeeMessage).toBe('high fee')
         })
 
         it('names the shortfall so confirmation can stay off', () => {
@@ -508,6 +541,21 @@ describe('useSwapConfirmation', () => {
         const { result } = renderConfirmation(quote)
 
         expect(result.current.slippageDisplay).toBe('1%')
+    })
+
+    it('plays the warning haptic once for a quote at the high price impact threshold', () => {
+        const { rerender } = renderConfirmation(
+            makeQuote({ priceImpact: new Decimal('5') }),
+        )
+        rerender()
+
+        expect(mockHaptics.warning).toHaveBeenCalledTimes(1)
+    })
+
+    it('plays no warning haptic just under the threshold', () => {
+        renderConfirmation(makeQuote({ priceImpact: new Decimal('4.99') }))
+
+        expect(mockHaptics.warning).not.toHaveBeenCalled()
     })
 
     it.each([

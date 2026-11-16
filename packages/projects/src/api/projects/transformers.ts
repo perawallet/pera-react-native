@@ -16,6 +16,7 @@ import type { PeraProject } from '../../models/types'
 export const transformProject = (
     response: ProjectApiResponse,
 ): PeraProject => ({
+    id: response.id,
     name: response.name,
     url: response.url,
     description: response.description,
@@ -32,6 +33,7 @@ export const transformProject = (
             order: category.order || undefined,
         })) || [],
     popularityScore: response.popularity_score || undefined,
+    chains: response.chains ?? [],
 })
 
 export const transformProjectList = (

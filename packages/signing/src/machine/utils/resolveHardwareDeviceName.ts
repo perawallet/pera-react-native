@@ -12,13 +12,13 @@
 
 import {
     findAccountByAddressOn,
-    hardwareDeviceOf,
+    hardwareDeviceNameOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AnalyzedSignableGroup } from '../../pipeline/types'
-import { resolveSigningAccount } from './resolveSigningAccount'
+import { resolveGroupSigningAccount } from './resolveSigningAccount'
 
 /**
  * Resolves the human-readable device name for the account that will actually
@@ -47,10 +47,9 @@ export const resolveHardwareDeviceName = (
 
     let accountForSigning: WalletAccount
     try {
-        accountForSigning = resolveSigningAccount(
+        accountForSigning = resolveGroupSigningAccount(
+            firstGroup,
             signerAccount,
-            firstGroup.source,
-            firstGroup.data.type,
             allAccounts,
             chainId,
         )
@@ -60,5 +59,5 @@ export const resolveHardwareDeviceName = (
         return null
     }
 
-    return hardwareDeviceOf(accountForSigning)?.device.deviceName ?? null
+    return hardwareDeviceNameOf(accountForSigning)
 }

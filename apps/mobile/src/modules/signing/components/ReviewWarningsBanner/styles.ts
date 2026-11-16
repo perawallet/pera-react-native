@@ -12,44 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    hasHighRisk: boolean
-}
-
-export const useStyles = makeStyles((theme, { hasHighRisk }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
-        gap: theme.spacing.md,
-        padding: theme.spacing.lg,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: hasHighRisk
-            ? theme.colors.suspiciousBannerBg
-            : theme.colors.warningSurface,
-    },
-    // The panel's own header margin is for a standalone list row.
-    panelHeader: {
-        marginTop: 0,
-    },
-    summaryContainer: {
-        flex: 1,
-        minWidth: 0,
-    },
-    rows: {
-        gap: theme.spacing.md,
-    },
-    foldedRows: {
-        gap: theme.spacing.md,
-        paddingTop: theme.spacing.md,
-    },
-    title: {
-        color: theme.colors.textMain,
-    },
-    row: {
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
     },
 }))
 
 export const useReviewWarningTextStyles = makeStyles(theme => ({
     text: {
-        color: theme.colors.textMain,
+        color: theme.colors.textGray,
     },
 }))

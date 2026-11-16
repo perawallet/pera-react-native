@@ -11,13 +11,17 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    seedOf,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     buildBackupCredentialsFile,
     deriveBackupKeys,
@@ -29,6 +33,8 @@ import {
     useBackupSyncStateStore,
     useCloudBackupRestoreDraftStore,
     useResolveHdSeedForBackup,
+    useMnemonicBackupStore,
+    useRequiresMnemonicBackup,
     useResolveMnemonicForBackup,
     createBackupSyncStoreSources,
     initializeBackupSyncManager,
@@ -151,9 +157,22 @@ const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
     },
 ]
 
+// An account whose seed can't be resolved also reads as not requiring a
+// backup, so the mark on the seed is asserted too.
+const expectRestoredBackedUp = (account: WalletAccount): void => {
+    expect(useMnemonicBackupStore.getState().isBackedUp(seedOf(account))).toBe(
+        true,
+    )
+    const { result } = renderHook(() =>
+        useRequiresMnemonicBackup(account, ALGORAND_CHAIN_ID),
+    )
+    expect(result.current).toBe(false)
+}
+
 describe('Flow: Cloud backup → Restore', () => {
     beforeEach(async () => {
         resetTestKeystore()
+        useMnemonicBackupStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
         useContactsStore.getState().resetState()
         useCloudBackupStore.getState().resetState()
@@ -209,6 +228,7 @@ describe('Flow: Cloud backup → Restore', () => {
             .accounts.find(a => addressOf(a) === ALGO25_TEST_ADDRESS)
         expect(restored?.custody).toEqual({ kind: 'local', seed: null })
         expect(restored?.name).toBe('Restored')
+        expectRestoredBackedUp(restored!)
 
         // The restore has to hand the sync engine the versions the server
         // holds. Tracking an item at 0 offers it as new, the server refuses
@@ -330,6 +350,8 @@ describe('Flow: Cloud backup → Restore', () => {
         })
         expect(restoredFirst?.name).toBe('HD First')
         expect(restoredSecond?.name).toBe('HD Second')
+        expectRestoredBackedUp(restoredFirst!)
+        expectRestoredBackedUp(restoredSecond!)
 
         expect(useBackupSyncStateStore.getState().syncState).not.toBeNull()
         await expectRestoreLandedOnOverview()

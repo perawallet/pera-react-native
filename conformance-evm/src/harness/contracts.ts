@@ -115,7 +115,7 @@ const ZERO_ADDRESS: Address = '0x0000000000000000000000000000000000000000'
 
 /** No deposit transaction ever updates L1Block on Anvil, so the L1 prices stay those of the captured block. */
 export const installOpStackPredeploys = async (
-    chain: 'base',
+    chain: EvmnetChain,
 ): Promise<void> => {
     for (const { address, code, storage } of OP_STACK_PREDEPLOYS) {
         await anvilRpc(chain, 'anvil_setCode', [address, code])
@@ -138,7 +138,7 @@ export const installOpStackPredeploys = async (
  * for `gasUsed`.
  */
 export const oracleOpStackFees = async (input: {
-    chain: 'base'
+    chain: EvmnetChain
     raw: Hex
     gasUsed: bigint
     block: bigint

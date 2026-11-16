@@ -15,6 +15,7 @@ import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
 import { useToast } from '@hooks/useToast'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import {
     useSwapExecution,
     type SwapExecutionStatus,
@@ -84,6 +85,7 @@ export const useSwapConfirmationActions = ({
     const inFlightRef = useRef(false)
     const { t } = useLanguage()
     const { infoToast } = useToast()
+    const { playSuccess } = useTransactionOutcomeHaptics()
     const destinationScope = scopeOfSwapAsset(quote.request.destinationAsset)
     const { ensureReceivable } = useEnsureSwapDestination(destinationScope)
 
@@ -108,6 +110,8 @@ export const useSwapConfirmationActions = ({
                       )
                     : await execute(quote)
             if (outcome.kind === 'success') {
+                // With the sheet's confirmed state, which the same status flip renders.
+                playSuccess()
                 // The pair chips and the "see all" list are both derived from
                 // the account's swap record, which this swap just changed.
                 // Nothing else refreshes them and the swap screen stays mounted
@@ -179,6 +183,7 @@ export const useSwapConfirmationActions = ({
         t,
         infoToast,
         invalidateSwapHistory,
+        playSuccess,
     ])
 
     const handleClose = useCallback(

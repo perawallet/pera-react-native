@@ -14,12 +14,17 @@ import {
     useCallback,
     useContext,
     useEffect,
+    useImperativeHandle,
+    useRef,
     useState,
     type ReactNode,
+    type Ref,
 } from 'react'
 import {
     Keyboard,
     type LayoutChangeEvent,
+    type NativeScrollEvent,
+    type NativeSyntheticEvent,
     type StyleProp,
     type ViewStyle,
 } from 'react-native'
@@ -39,6 +44,8 @@ import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { PWScreenNestedContext } from './nestedContext'
 import { usePWScreenInsets } from './usePWScreenInsets'
 import { useStyles, type HorizontalPaddingMode } from './styles'
+
+const SCROLL_EVENT_THROTTLE = 32
 
 export type PWScreenProps = {
     /** Sticky top zone, above the body. Most screens leave this to the
@@ -61,8 +68,22 @@ export type PWScreenProps = {
      * against a viewport height it snapshots at load. */
     keyboardAvoidance?: 'auto' | 'never'
     horizontalPadding?: HorizontalPaddingMode
+    /** Body scroll events (`scroll='auto'` only). */
+    onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    /** Body viewport size. Pair with `onContentSizeChange` to tell whether the body overflows. */
+    onBodyLayout?: (event: LayoutChangeEvent) => void
+    onContentSizeChange?: (width: number, height: number) => void
+    scrollRef?: Ref<PWScreenScrollHandle>
     style?: StyleProp<ViewStyle>
     testID?: string
+}
+
+export type PWScreenScrollHandle = {
+    scrollToEnd: (options?: { animated?: boolean }) => void
+}
+
+type ScrollableBody = {
+    scrollToEnd: (options?: { animated?: boolean }) => void
 }
 
 /**
@@ -79,9 +100,21 @@ export const PWScreen = ({
     scroll = 'auto',
     keyboardAvoidance = 'auto',
     horizontalPadding = 'xl',
+    onScroll,
+    onBodyLayout,
+    onContentSizeChange,
+    scrollRef,
     style,
     testID,
 }: PWScreenProps) => {
+    const bodyRef = useRef<ScrollableBody>(null)
+    useImperativeHandle(
+        scrollRef,
+        () => ({
+            scrollToEnd: options => bodyRef.current?.scrollToEnd(options),
+        }),
+        [],
+    )
     const { theme } = useTheme()
     const { bottomInset, isBottomHandledOutside } = usePWScreenInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
@@ -133,6 +166,10 @@ export const PWScreen = ({
             // sheet owns keyboard handling, so no KeyboardAwareScrollView here.
             return (
                 <BottomSheetScrollView
+                    ref={bodyRef as never}
+                    onScroll={onScroll}
+                    onLayout={onBodyLayout}
+                    onContentSizeChange={onContentSizeChange}
                     style={styles.body}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -145,6 +182,11 @@ export const PWScreen = ({
         }
         return (
             <KeyboardAwareScrollView
+                ref={bodyRef as never}
+                onScroll={onScroll}
+                onLayout={onBodyLayout}
+                onContentSizeChange={onContentSizeChange}
+                scrollEventThrottle={SCROLL_EVENT_THROTTLE}
                 style={styles.body}
                 contentContainerStyle={styles.scrollContent}
                 bottomOffset={

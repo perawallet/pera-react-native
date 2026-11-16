@@ -135,7 +135,7 @@ const renderAddAsset = () =>
         'AddAsset',
     )
 
-const addByContract = async (sheetTestID: string) => {
+const addByContract = async (sheetTestID?: string) => {
     renderAddAsset()
     fireEvent.change(
         await screen.findByPlaceholderText('add_asset.search_placeholder_evm'),
@@ -148,8 +148,9 @@ const addByContract = async (sheetTestID: string) => {
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         ),
     )
+    if (sheetTestID === undefined) return
     await screen.findByTestId(sheetTestID)
-    fireEvent.click(screen.getByTestId('add_asset_unverified_token_confirm'))
+    fireEvent.click(screen.getByTestId('add_asset_suspicious_token_confirm'))
 }
 
 const heldAmountOf = async (assetId: string) =>
@@ -192,8 +193,8 @@ describe("Flow: an Ethereum account holding a token Pera doesn't list", () => {
         vi.restoreAllMocks()
     })
 
-    it('Given the account holds an unlisted token, when the user pastes its contract in Add Asset and accepts the unverified warning, then the token is added with its balance and offers no Remove', async () => {
-        await addByContract('add_asset_unverified_token_sheet')
+    it('Given the account holds an unlisted token, when the user pastes its contract in Add Asset, then the token is added with no confirmation, with its balance and offers no Remove', async () => {
+        await addByContract()
 
         await waitFor(
             async () =>

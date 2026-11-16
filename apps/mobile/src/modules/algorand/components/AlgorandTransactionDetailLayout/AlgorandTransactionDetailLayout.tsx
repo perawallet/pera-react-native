@@ -33,6 +33,7 @@ export const AlgorandTransactionDetailLayout = ({
     return (
         <TransactionDetailLayout
             summary={summary}
+            isHeroShown={summary.status !== undefined}
             warnings={
                 summary.status === 'pending' ? (
                     <TransactionWarnings transaction={transaction} />

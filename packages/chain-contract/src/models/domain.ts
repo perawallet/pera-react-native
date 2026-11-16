@@ -206,6 +206,11 @@ export interface TransactionSummary {
     counterparty?: string
     /** Shown instead of the counterparty's name when set. */
     subtitle?: LocalizedText
+    /**
+     * Where the row cuts a `subtitle` that doesn't fit: `tail` for a name read from its start,
+     * such as a protocol. Absent means middle, which keeps an address's or token id's end visible.
+     */
+    subtitleEllipsis?: 'tail'
     /** Unsigned: the sign comes from `direction`. `balanceChanges` carry their own sign. */
     amount?: { assetRef: AssetRef; value: Decimal; display?: AssetDisplayHint }
     /** Shown instead of `amount` when set. */
@@ -334,7 +339,38 @@ export type AssetOptInIntent = {
     assetRef: AssetRef
 }
 
-export type TransactionIntent = TransferIntent | AssetOptInIntent
+/** A standing permission an account has given another party over its tokens. */
+export type TokenApproval =
+    | {
+          kind: 'allowance'
+          assetRef: AssetRef
+          /** In the chain's address format. */
+          spender: string
+          /** Base units of the token; absent when unlimited. */
+          amount?: Decimal
+          knownSpender?: KnownSpender
+      }
+    | {
+          kind: 'collection'
+          /** The collection's contract in the chain's address format. */
+          collection: string
+          collectionName?: string
+          /** May move every item the account holds in `collection`. */
+          spender: string
+          knownSpender?: KnownSpender
+      }
+
+/** Only built by a chain whose tokens carry standing approvals; withdraws the approval entirely. */
+export type ApprovalRevokeIntent = {
+    kind: 'approval-revoke'
+    account: string
+    approval: TokenApproval
+}
+
+export type TransactionIntent =
+    | TransferIntent
+    | AssetOptInIntent
+    | ApprovalRevokeIntent
 
 export interface BuildContext {
     scope: ChainScope

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import type { AssetGroup } from '@perawallet/wallet-core-assets'
 import {
     logger,
@@ -104,7 +104,7 @@ export const fetchCrossChainAssetGroups = async (
         scope: algorandScope(network),
         method: 'POST',
         url: '/api/v4/assets/',
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         data: { ids: [...assetIdOf.keys()] },
     })
     const { results } = crossChainAssetGroupsResponseSchema.parse(data)
@@ -139,7 +139,7 @@ export const fetchAssetItems = async (
         scope: algorandScope(network),
         method: 'POST',
         url: '/api/v4/assets/',
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         // A string: device ids are 63-bit, and the endpoint refuses a JSON
         // number because a JS number rounds them above 2^53.
         data: deviceId ? { ids, device_id: deviceId } : { ids },

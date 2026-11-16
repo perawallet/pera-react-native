@@ -35,6 +35,7 @@ const evmChainIds = new Set<string>([
     'arbitrum',
     'avalanche',
     'polygon',
+    'optimism',
 ])
 const chains = {
     ...registry,
@@ -52,7 +53,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 // Every Pera EVM route is integrity-guarded; the MSW handlers refuse a request
 // without a token, so specs see the header the app would send.
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    buildIntegrityHeaders: () => ({
+    buildIntegrityHeadersWhenReady: async () => ({
         'x-app-integrity-token': 'test-integrity-token',
     }),
 }))

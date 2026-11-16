@@ -30,3 +30,51 @@ index 9c38f81b447537dc404c2e556bb3c84c2c86d5b6..6fb20ed6a63999522a31721dfb824de0
    } else {
      var docEl = win.document.documentElement;
      height = docEl.clientHeight;
+diff --git a/dist/cjs/exports/ScrollView/index.js b/dist/cjs/exports/ScrollView/index.js
+index e78d71f..945331c 100644
+--- a/dist/cjs/exports/ScrollView/index.js
++++ b/dist/cjs/exports/ScrollView/index.js
+@@ -578,7 +578,7 @@ class ScrollView extends _react.default.Component {
+     }), contentContainer);
+     if (refreshControl) {
+       return /*#__PURE__*/_react.default.cloneElement(refreshControl, {
+-        style: props.style
++        style: [props.style, styles.refreshControlWrapper]
+       }, scrollView);
+     }
+     return scrollView;
+@@ -612,6 +612,10 @@ var styles = _StyleSheet.default.create({
+     justifyContent: 'center',
+     flexGrow: 1
+   },
++  refreshControlWrapper: {
++    overflowX: 'hidden',
++    overflowY: 'hidden'
++  },
+   stickyHeader: {
+     position: 'sticky',
+     top: 0,
+diff --git a/dist/exports/ScrollView/index.js b/dist/exports/ScrollView/index.js
+index 53f53d3..b79c78c 100644
+--- a/dist/exports/ScrollView/index.js
++++ b/dist/exports/ScrollView/index.js
+@@ -574,7 +574,7 @@ class ScrollView extends React.Component {
+     }), contentContainer);
+     if (refreshControl) {
+       return /*#__PURE__*/React.cloneElement(refreshControl, {
+-        style: props.style
++        style: [props.style, styles.refreshControlWrapper]
+       }, scrollView);
+     }
+     return scrollView;
+@@ -608,6 +608,10 @@ var styles = StyleSheet.create({
+     justifyContent: 'center',
+     flexGrow: 1
+   },
++  refreshControlWrapper: {
++    overflowX: 'hidden',
++    overflowY: 'hidden'
++  },
+   stickyHeader: {
+     position: 'sticky',
+     top: 0,

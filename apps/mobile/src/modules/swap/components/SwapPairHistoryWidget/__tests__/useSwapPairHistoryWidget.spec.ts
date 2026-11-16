@@ -13,29 +13,35 @@
 import type { ReactElement } from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
+import type { SwapHistoryPair } from '@perawallet/wallet-core-swaps'
 import { SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
 import { useSwapPairHistoryWidget } from '../useSwapPairHistoryWidget'
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
-type Account = { chains: { algorand?: { address: string } } }
+type Account = { id: string; chains: { algorand?: { address: string } } }
 
 const {
     mockTrackEvent,
-    mockSetFromAsset,
-    mockSetToAsset,
+    mockSetAccountPair,
+    mockSetSelectedAccountId,
     mockRequestBottomSheet,
-    mockHistoryQuery,
-    selection,
+    state,
 } = vi.hoisted(() => ({
     mockTrackEvent: vi.fn(),
-    mockSetFromAsset: vi.fn(),
-    mockSetToAsset: vi.fn(),
+    mockSetAccountPair: vi.fn(),
+    mockSetSelectedAccountId: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
-    mockHistoryQuery: vi.fn(),
-    selection: { account: null as Account | null },
+    state: {
+        selected: null as Account | null,
+        recent: {
+            pairs: [] as SwapHistoryPair[],
+            isLoading: false,
+            isError: false,
+            isEnabled: true,
+        },
+    },
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -44,16 +50,17 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwaps: () => ({
-        setFromAsset: mockSetFromAsset,
-        setToAsset: mockSetToAsset,
-    }),
-    useDistinctPairsHistoryQuery: mockHistoryQuery,
+    useSwapsStore: (select: (store: unknown) => unknown) =>
+        select({ setAccountPair: mockSetAccountPair }),
+    useRecentSwapPairsQuery: () => state.recent,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: Account) => account.chains.algorand?.address,
-    useSelectedAccount: () => selection.account,
+    useSelectedAccount: () => state.selected,
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
+    }),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -65,113 +72,83 @@ vi.mock('@modules/swap/components/SwapHistoryContent', () => ({
 }))
 
 const ADDRESS = 'TESTADDRESS123'
+const MAIN: Account = { id: 'main', chains: { algorand: { address: ADDRESS } } }
 
-const assetOn = (chainId: string, assetId: string, unitName: string) => ({
+const assetOn = (assetId: string, unitName: string) => ({
     assetId,
-    ref: { chainId, networkId: 'mainnet', assetId },
+    ref: { ...SCOPE, assetId },
     unitName,
 })
 
-const PAIR = {
-    assetIn: assetOn('algorand', '0', 'ALGO'),
-    assetOut: assetOn('algorand', '31566704', 'USDC'),
-    swapDatetime: '2026-10-01T00:00:00Z',
-    pairKey: 'algorand/0|algorand/31566704',
-} as unknown as SwapDistinctPairItem
-
-const CROSS_CHAIN_PAIR = {
-    assetIn: assetOn('algorand', '0', 'ALGO'),
-    assetOut: assetOn('ethereum', '0x0', 'ETH'),
-    swapDatetime: '2026-10-02T00:00:00Z',
-    pairKey: 'algorand/0|ethereum/0x0',
-} as unknown as SwapDistinctPairItem
+const pairPaidBy = (accountId: string) =>
+    ({
+        assetIn: assetOn('0', 'ALGO'),
+        assetOut: assetOn('31566704', 'USDC'),
+        sourceAccount: { scope: SCOPE, address: ADDRESS },
+        swapDatetime: '2026-10-01T00:00:00Z',
+        pairKey: 'algorand/0|algorand/31566704',
+        accountId,
+    }) as unknown as SwapHistoryPair
 
 describe('useSwapPairHistoryWidget', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        selection.account = { chains: { algorand: { address: ADDRESS } } }
-        mockHistoryQuery.mockReturnValue({
-            data: undefined,
+        state.selected = MAIN
+        state.recent = {
+            pairs: [],
             isLoading: false,
             isError: false,
-        })
+            isEnabled: true,
+        }
     })
 
-    it('queries the swap pairs for the selected account', () => {
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        expect(result.current.address).toBe(ADDRESS)
-        expect(result.current.isEnabled).toBe(true)
-        expect(mockHistoryQuery).toHaveBeenCalledWith(ADDRESS, SCOPE)
-    })
-
-    it('disables the query when no account is selected', () => {
-        selection.account = null
-
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        expect(result.current.address).toBe('')
-        expect(result.current.isEnabled).toBe(false)
-        expect(mockHistoryQuery).toHaveBeenCalledWith('', SCOPE)
-    })
-
-    it('disables the query when the account has no address on the scope', () => {
-        selection.account = { chains: {} }
-
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        expect(result.current.address).toBe('')
-        expect(result.current.isEnabled).toBe(false)
-    })
-
-    it('returns no pairs before the query has data', () => {
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        expect(result.current.pairs).toEqual([])
-    })
-
-    it('passes through the pairs and query state', () => {
-        mockHistoryQuery.mockReturnValue({
-            data: [PAIR],
+    it('passes through the recent pairs and their state', () => {
+        const pair = pairPaidBy('main')
+        state.recent = {
+            pairs: [pair],
             isLoading: true,
             isError: true,
-        })
+            isEnabled: false,
+        }
 
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         expect(result.current).toMatchObject({
-            pairs: [PAIR],
+            pairs: [pair],
             isLoading: true,
             isError: true,
+            isEnabled: false,
         })
     })
 
-    it('leaves out a pair with a leg on another chain', () => {
-        mockHistoryQuery.mockReturnValue({
-            data: [CROSS_CHAIN_PAIR, PAIR],
-            isLoading: false,
-            isError: false,
+    it('restores the pair and switches to the account that paid for it', () => {
+        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
+
+        act(() => result.current.handlePairPress(pairPaidBy('other')))
+
+        expect(mockSetAccountPair).toHaveBeenCalledWith({
+            accountId: 'other',
+            chainId: 'algorand',
+            fromAsset: '0',
+            toAsset: '31566704',
         })
-
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        expect(result.current.pairs).toEqual([PAIR])
-    })
-
-    it('selects and tracks the pressed pair', () => {
-        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
-
-        act(() => result.current.handlePairPress(PAIR))
-
-        expect(mockSetFromAsset).toHaveBeenCalledWith('0')
-        expect(mockSetToAsset).toHaveBeenCalledWith('31566704')
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('other')
         expect(mockTrackEvent).toHaveBeenCalledWith(SwapEvent.SelectHistory, {
             [AnalyticsMetadataKey.ChainId]: 'algorand',
             [AnalyticsMetadataKey.SwapPairing]: 'ALGO/USDC',
         })
     })
 
-    it('opens the full history sheet for the account on see all', () => {
+    it('keeps the selected account when it paid for the pair', () => {
+        const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
+
+        act(() => result.current.handlePairPress(pairPaidBy('main')))
+
+        expect(mockSetAccountPair).toHaveBeenCalled()
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
+    })
+
+    it('opens the full history sheet for the selected account on see all', () => {
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         act(() => result.current.handleSeeAllPress())
@@ -195,7 +172,7 @@ describe('useSwapPairHistoryWidget', () => {
     })
 
     it('does nothing on see all without an address', () => {
-        selection.account = null
+        state.selected = null
         const { result } = renderHook(() => useSwapPairHistoryWidget(SCOPE))
 
         act(() => result.current.handleSeeAllPress())

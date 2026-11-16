@@ -12,7 +12,10 @@
 
 import type { StyleProp, ViewStyle } from 'react-native'
 import { PWScrollView, PWText, PWTouchableOpacity } from '@components/core'
+import { useHaptics } from '@hooks/useHaptics'
+import { SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { useStyles } from './styles'
+import { useFilterSelection } from './useFilterSelection'
 
 export type FilterOption<T> = {
     value: T
@@ -42,20 +45,35 @@ export const FilterSelection = <T,>({
     testID,
 }: FilterSelectionProps<T>) => {
     const styles = useStyles()
+    const haptics = useHaptics()
+    const {
+        scrollRef,
+        handleViewportLayout,
+        handleScroll,
+        chipLayoutHandlerOf,
+    } = useFilterSelection({ options, selectedValue })
 
     return (
         <PWScrollView
+            ref={scrollRef}
+            onLayout={handleViewportLayout}
+            onScroll={handleScroll}
+            scrollEventThrottle={SCROLL_EVENT_THROTTLE}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={[styles.row, contentContainerStyle]}
             testID={testID}
         >
-            {options.map(option => {
+            {options.map((option, index) => {
                 const isActive = option.value === selectedValue
                 return (
                     <PWTouchableOpacity
                         key={String(option.value)}
-                        onPress={() => onSelect(option.value)}
+                        onPress={() => {
+                            if (!isActive) haptics.selection()
+                            onSelect(option.value)
+                        }}
+                        onLayout={chipLayoutHandlerOf(index)}
                         testID={option.testID}
                         style={[styles.chip, isActive && styles.activeChip]}
                     >

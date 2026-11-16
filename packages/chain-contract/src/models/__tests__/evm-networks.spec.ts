@@ -65,7 +65,7 @@ describe('isEvmChainId', () => {
         expect(isEvmChainId(chainId)).toBe(true)
     })
 
-    it.each(['algorand', 'optimism', '', 'toString'])('rejects %j', value => {
+    it.each(['algorand', 'solana', '', 'toString'])('rejects %j', value => {
         expect(isEvmChainId(value)).toBe(false)
     })
 })

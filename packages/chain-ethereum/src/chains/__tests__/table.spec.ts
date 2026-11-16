@@ -42,6 +42,7 @@ describe('the EVM chain table', () => {
             'arbitrum',
             'avalanche',
             'polygon',
+            'optimism',
         ])
     })
 
@@ -71,6 +72,7 @@ describe('the EVM chain table', () => {
         ['arbitrum', 'ETH', 'https://arbiscan.io/address/0xA'],
         ['avalanche', 'AVAX', 'https://snowtrace.io/address/0xA'],
         ['polygon', 'POL', 'https://polygonscan.com/address/0xA'],
+        ['optimism', 'ETH', 'https://optimistic.etherscan.io/address/0xA'],
     ] as const)(
         'gives %s its own native coin %s and explorer',
         (id, symbol, accountUrl) => {
@@ -110,6 +112,18 @@ describe('the EVM chain table', () => {
         )
     })
 
+    it('prices Optimism as an OP-stack chain at the shared oracle and links Sepolia to its explorer', () => {
+        const { row, descriptor } = evmChainOf('optimism')
+
+        expect(row.fee).toEqual({
+            kind: 'eip1559-op-stack',
+            gasPriceOracleAddress: '0x420000000000000000000000000000000000000F',
+        })
+        expect(descriptor.explorer.transactionUrl('sepolia', '0xT')).toBe(
+            'https://sepolia-optimism.etherscan.io/tx/0xT',
+        )
+    })
+
     it('enables Ethereum alone by default', () => {
         const defaults = EVM_CHAINS.filter(
             ({ descriptor }) => descriptor.enabledByDefault,
@@ -136,6 +150,8 @@ describe('evmChainOfEip155Id', () => {
         [97, 'bsc', 'testnet'],
         [43113, 'avalanche', 'fuji'],
         [80002, 'polygon', 'amoy'],
+        [10, 'optimism', 'mainnet'],
+        [11155420, 'optimism', 'sepolia'],
     ])('resolves %i to %s/%s', (eip155ChainId, chainId, networkId) => {
         const owner = evmChainOfEip155Id(eip155ChainId)
 

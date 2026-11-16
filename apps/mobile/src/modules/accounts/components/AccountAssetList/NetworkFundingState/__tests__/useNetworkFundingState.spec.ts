@@ -27,13 +27,33 @@ const { mockTrackEvent, mockNavigate, mockReplace, mockOpenReceiveFundsOn } =
 const actions = vi.hoisted(() => ({
     canReceive: true,
     canBuy: true,
-    canSwap: true,
 }))
 
 const signer = vi.hoisted(() => ({ canSign: true }))
 
+const SWAP_PARAMS = {
+    assetIn: { chainId: 'algorand', assetId: '0' },
+    receive: {
+        scope: { chainId: 'base', networkId: 'mainnet' },
+        assetId: 'native',
+        accountId: 'a',
+    },
+}
+
+const swap = vi.hoisted(() => ({
+    params: null as unknown,
+    isPending: false,
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useCanSignWith: () => signer.canSign,
+}))
+
+vi.mock('@modules/swap', () => ({
+    useSwapForNativeRoute: () => ({
+        params: swap.params,
+        isPending: swap.isPending,
+    }),
 }))
 
 vi.mock('@analytics', async () => ({
@@ -83,8 +103,9 @@ describe('useNetworkFundingState', () => {
         vi.clearAllMocks()
         actions.canReceive = true
         actions.canBuy = true
-        actions.canSwap = true
         signer.canSign = true
+        swap.params = SWAP_PARAMS
+        swap.isPending = false
     })
 
     it('names the network and its native token in the copy', () => {
@@ -126,9 +147,14 @@ describe('useNetworkFundingState', () => {
         })
     })
 
-    it('opens Swap and tracks it on the network', () => {
+    it('offers Swap for the native coin and opens the cross-chain route', () => {
         const { result } = renderHook(() =>
             useNetworkFundingState({ account, chainId: 'base' }),
+        )
+
+        expect(result.current.canSwap).toBe(true)
+        expect(result.current.swapTitle).toBe(
+            'account_details.assets.funding_swap_for|{"symbol":"ETH"}',
         )
 
         result.current.handleSwap()
@@ -136,12 +162,40 @@ describe('useNetworkFundingState', () => {
         expect(mockTrackEvent).toHaveBeenCalledWith(HomeEvent.Swap, {
             [AnalyticsMetadataKey.ChainId]: 'base',
         })
-        expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
+        expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: SWAP_PARAMS,
+        })
     })
 
-    it('offers only the actions the network supports', () => {
+    it('hides Swap when no cross-chain route gets the native coin', () => {
+        swap.params = null
+
+        const { result } = renderHook(() =>
+            useNetworkFundingState({ account, chainId: 'base' }),
+        )
+
+        expect(result.current.canSwap).toBe(false)
+        result.current.handleSwap()
+        expect(mockReplace).not.toHaveBeenCalled()
+    })
+
+    it('keeps Swap off, but not Receive or Buy, while the route is undecided', () => {
+        swap.isPending = true
+
+        const { result } = renderHook(() =>
+            useNetworkFundingState({ account, chainId: 'base' }),
+        )
+
+        expect(result.current).toMatchObject({
+            canReceive: true,
+            canBuy: true,
+            canSwap: false,
+        })
+    })
+
+    it('offers Buy only where the network supports it', () => {
         actions.canBuy = false
-        actions.canSwap = false
 
         const { result } = renderHook(() =>
             useNetworkFundingState({ account, chainId: 'base' }),
@@ -150,7 +204,6 @@ describe('useNetworkFundingState', () => {
         expect(result.current).toMatchObject({
             canReceive: true,
             canBuy: false,
-            canSwap: false,
         })
     })
 
@@ -164,7 +217,6 @@ describe('useNetworkFundingState', () => {
         expect(result.current).toMatchObject({
             canReceive: true,
             canBuy: false,
-            canSwap: false,
         })
     })
 })

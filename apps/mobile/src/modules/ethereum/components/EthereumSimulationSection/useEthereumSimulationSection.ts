@@ -19,23 +19,30 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    parseEvmNftAssetId,
     simulationRequestOf,
     useEvmTransactionSimulationQuery,
     type EvmApprovalChange,
+    type EvmAssetChange,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     isExternalCallbackSource,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { balanceImpactItemOf, type BalanceImpactItem } from '@modules/signing'
+import {
+    balanceImpactItemOf,
+    useRequestShareability,
+    type BalanceImpactItem,
+} from '@modules/signing'
 import type { EthereumStandardCallPresentation } from '../../hooks/useEthereumStandardCall'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { isCallUnexplained } from '../EthereumContractCallDetails'
+import { isCallUnexplained } from '../../utils/contractCallNotice'
 
 export type EthereumApprovalGrant =
     | { kind: 'unlimited' }
@@ -152,6 +159,24 @@ const approvalOf = (
     }
 }
 
+// An NFT of the contract being called, such as a position it just minted, which the store may not know yet.
+const collectibleFallbackOf = (
+    change: EvmAssetChange,
+    asset: Optional<PeraAsset>,
+    knownContract: EthereumTransactionPresentation['knownContract'],
+    to: Optional<string>,
+): Optional<{ title: string; subtitle: string }> => {
+    if (asset || !knownContract || !to) return undefined
+    if (change.standard !== 'erc721' && change.standard !== 'erc1155') {
+        return undefined
+    }
+    const nft = parseEvmNftAssetId(change.assetId)
+    if (!nft || !sameAddress(nft.contract, to)) {
+        return undefined
+    }
+    return { title: knownContract.name, subtitle: `#${nft.tokenId}` }
+}
+
 /**
  * What a dApp call is predicted to do to the signer, once its simulation
  * answers. Nothing here blocks the review: it reads `loading` until the answer
@@ -163,7 +188,7 @@ const approvalOf = (
 export const useEthereumSimulationSection = (
     presentation: EthereumTransactionPresentation,
 ): EthereumSimulationSectionState => {
-    const { view, scope } = presentation
+    const { view, scope, knownContract } = presentation
     const { currentRequest } = useSigningRequest()
     const nativeAsset = useNativeAsset(scope)
     const isDecoding = useChainCapability(scope.chainId, 'contractDecoding')
@@ -172,12 +197,15 @@ export const useEthereumSimulationSection = (
     const request = useMemo(() => simulationRequestOf(view), [view])
     const revertedEstimate =
         'revertedEstimate' in view ? view.revertedEstimate : undefined
-    const isActive =
+    const { isChecking: isCheckingAddresses, isShareable } =
+        useRequestShareability()
+    const isWanted =
         isDecoding &&
         isDappRequest &&
         view.kind === 'contract-call' &&
         request !== null &&
         !revertedEstimate
+    const isActive = isWanted && isShareable
 
     const {
         data: answer,
@@ -226,6 +254,8 @@ export const useEthereumSimulationSection = (
                 reason: revertedEstimate.reason ?? null,
             }
         }
+        // Held until the request's addresses clear, so a scam-listed one is never sent to the simulator.
+        if (isWanted && isCheckingAddresses) return LOADING
         if (!isActive) return HIDDEN
         if (isSimulationPending) return LOADING
         if (isSimulationError || !answer || answer.status === 'unavailable') {
@@ -242,18 +272,25 @@ export const useEthereumSimulationSection = (
         const moved = answer.assetChanges.filter(
             change => !change.amount.isZero(),
         )
-        const items = moved.map(change =>
-            balanceImpactItemOf({
+        const items = moved.map(change => {
+            const asset =
+                change.assetId === nativeAsset.assetId
+                    ? nativeAsset
+                    : assets.get(change.assetId)
+            return balanceImpactItemOf({
                 assetId: change.assetId,
                 chainId: scope.chainId,
-                asset:
-                    change.assetId === nativeAsset.assetId
-                        ? nativeAsset
-                        : assets.get(change.assetId),
+                asset,
                 baseUnits: change.amount,
                 usdPrice: prices.get(change.assetId)?.usdPrice,
-            }),
-        )
+                collectibleFallback: collectibleFallbackOf(
+                    change,
+                    asset,
+                    knownContract,
+                    view.to,
+                ),
+            })
+        })
         // The decoded call's own review already shows its approval.
         const undecoded = answer.approvalChanges.filter(
             change => !isDecodedApproval(change, presentation.standardCall),
@@ -275,11 +312,15 @@ export const useEthereumSimulationSection = (
         }
     }, [
         revertedEstimate,
+        isWanted,
+        isCheckingAddresses,
         isActive,
         isSimulationPending,
         isSimulationError,
         answer,
         presentation,
+        knownContract,
+        view.to,
         isAssetsPending,
         isPricesPending,
         scope.chainId,

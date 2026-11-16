@@ -99,6 +99,30 @@ describe('getCardApiError', () => {
         expect(await getCardApiError(error)).toEqual({ status: 409 })
     })
 
+    it("carries Baanx's correlation id from the response headers", async () => {
+        const error = {
+            response: {
+                status: 502,
+                headers: new Headers({ 'x-correlation-id': 'cid-502' }),
+            },
+            data: { message: 'Internal server error' },
+        }
+
+        expect(await getCardApiError(error)).toEqual(
+            expect.objectContaining({
+                status: 502,
+                message: 'Internal server error',
+                correlationId: 'cid-502',
+            }),
+        )
+    })
+
+    it('leaves the correlation id out when the response has none', async () => {
+        const error = { response: { status: 502, headers: new Headers() } }
+
+        expect(await getCardApiError(error)).toEqual({ status: 502 })
+    })
+
     it("reads ky's pre-parsed (and body-consuming) error.data object", async () => {
         // ky consumes the body into `error.data`, so response.json() is dead.
         const error = {

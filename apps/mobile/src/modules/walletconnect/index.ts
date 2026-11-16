@@ -17,9 +17,23 @@ export {
     ConnectionApprovalAccountRow,
     type ConnectionApprovalAccountRowProps,
 } from './components/ConnectionApprovalAccountRow'
+export {
+    ConnectAccountRow,
+    type ConnectAccountRowProps,
+} from './components/ConnectAccountRow'
 export { ConnectionPermissionsPanel } from './components/ConnectionPermissionsPanel'
 export { PermissionItem } from './components/PermissionItem'
 export { WalletConnectErrorContent } from './components/WalletConnectErrorContent'
+export {
+    useChangeConnectionAccount,
+    type ChangeableConnection,
+    type UseChangeConnectionAccountResult,
+} from './hooks/useChangeConnectionAccount'
+export {
+    useConnectAccountPicker,
+    type PickAccountArgs,
+    type UseConnectAccountPickerResult,
+} from './hooks/useConnectAccountPicker'
 export { useReturnToDapp } from './hooks/useReturnToDapp'
 export { usePairingProgressStore } from './stores/usePairingProgressStore'
 export {

@@ -23,6 +23,13 @@ const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
 const mockUpdateAccount = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
+const mockEnableChain = vi.fn()
+const mockDisableChains = vi.fn()
+const mockWithSelectedChains = vi.fn()
+const mockRequestSheet = vi.fn()
+const mockAccountChainOptions = vi.hoisted(() =>
+    vi.fn((): { chainId: string; isEnabled: boolean }[] => []),
+)
 
 let mockRouteParams: Optional<{
     account?: unknown
@@ -65,6 +72,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         saveAccount: mockSaveAccount,
     }),
     useUpdateAccount: () => mockUpdateAccount,
+    useEnableChain: () => mockEnableChain,
+    useDisableChains: () => mockDisableChains,
+    withSelectedChains: (...args: unknown[]) => mockWithSelectedChains(...args),
+    accountChainOptions: mockAccountChainOptions,
     consumePendingAccountRollback: vi.fn(),
     clearPendingAccountRollback: vi.fn(),
     getAllAccounts: () => mockStoredAccounts.accounts,
@@ -86,7 +97,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         return `account_info.account_number ${Math.max(0, ...shown) + 1}`
     },
     accountNameKindOf: () => 'account',
-    hdIndexOf: () => undefined,
+    hdIndexOf: (account: { custody?: { seed?: string; hd?: unknown } }) =>
+        account?.custody?.seed === 'bip39' ? account.custody.hd : undefined,
     signingKeyOn: () => undefined,
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
@@ -103,6 +115,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isHardwareWalletAccount: (account: { custody?: { kind: string } }) =>
         account?.custody?.kind === 'hardware',
     WalletAccount: {} as unknown,
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequestSheet }),
+}))
+
+vi.mock('@utils/chainOptionDisplay', () => ({
+    displayChainOption: (option: { chainId: string }) => ({
+        ...option,
+        displayName: option.chainId,
+    }),
+}))
+
+vi.mock('../ChooseNetworksContent', () => ({
+    ChooseNetworksContent: () => null,
 }))
 
 const mockShowError = vi.fn()
@@ -144,12 +171,232 @@ vi.mock('react-i18next', async () => {
     }
 })
 
+type ScreenResult = { current: ReturnType<typeof useNameAccountScreen> }
+
+const openSheet = (result: ScreenResult) => {
+    act(() => result.current.handleEditNetworks())
+    const [{ contents }] = mockRequestSheet.mock.calls.at(-1)! as [
+        { contents: { props: { onChange: (chainIds: string[]) => void } } },
+    ]
+    return contents.props.onChange
+}
+
+const chooseInSheet = (result: ScreenResult, chainIds: string[]) => {
+    const onChange = openSheet(result)
+    act(() => onChange(chainIds))
+}
+
 describe('useNameAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockRouteParams = undefined
         mockStoredAccounts.accounts = []
         mockHomeChain.chainId = 'algorand'
+        mockAccountChainOptions.mockReturnValue([])
+    })
+
+    describe('network selection', () => {
+        const hdCustody = {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 0, keyIndex: 0 },
+        }
+        const draft = {
+            id: 'draft',
+            name: '',
+            chains: {
+                algorand: { address: 'ADDR', keyPairId: 'kp' },
+                ethereum: { address: '0xabc', keyPairId: 'kp-evm' },
+            },
+            custody: hdCustody,
+        }
+        const optionsOf = (enabled: string[], others: string[]) => [
+            ...enabled.map(chainId => ({ chainId, isEnabled: true })),
+            ...others.map(chainId => ({ chainId, isEnabled: false })),
+        ]
+
+        beforeEach(() => {
+            mockAccountChainOptions.mockReturnValue(
+                optionsOf(['algorand', 'ethereum'], ['base']),
+            )
+        })
+
+        it('starts a new HD account on the chains it was drafted with', () => {
+            mockRouteParams = { account: draft }
+
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(result.current.isChoosingNetworks).toBe(true)
+            expect(result.current.selectedChainIds).toEqual([
+                'algorand',
+                'ethereum',
+            ])
+        })
+
+        it('offers no choice when the account reaches a single chain', () => {
+            mockAccountChainOptions.mockReturnValue(optionsOf(['algorand'], []))
+            mockRouteParams = { account: draft }
+
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(result.current.isChoosingNetworks).toBe(false)
+        })
+
+        it('offers no choice for an account that is not HD', () => {
+            mockRouteParams = {
+                account: { ...draft, custody: { kind: 'watch' } },
+            }
+
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(result.current.isChoosingNetworks).toBe(false)
+        })
+
+        it('saves a new account on the chains chosen in the sheet', async () => {
+            mockRouteParams = { account: draft }
+            const chosen = {
+                ...draft,
+                chains: {
+                    algorand: draft.chains.algorand,
+                    base: { address: '0xabc', keyPairId: 'kp-evm' },
+                },
+            }
+            mockWithSelectedChains.mockResolvedValue(chosen)
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            chooseInSheet(result, ['algorand', 'base'])
+            expect(result.current.selectedChainIds).toEqual([
+                'algorand',
+                'base',
+            ])
+            act(() => {
+                result.current.handleNameChange('Named')
+            })
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockWithSelectedChains).toHaveBeenCalledWith(draft, [
+                'algorand',
+                'base',
+            ])
+            expect(mockSaveAccount).toHaveBeenCalledWith({
+                ...chosen,
+                name: 'Named',
+            })
+        })
+
+        it('lets a new account drop the chain it was created on', async () => {
+            mockRouteParams = { account: draft }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            chooseInSheet(result, ['ethereum'])
+
+            expect(result.current.selectedChainIds).toEqual(['ethereum'])
+        })
+
+        it('keeps the selection until the sheet reports a change', async () => {
+            mockRouteParams = { account: draft }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            openSheet(result)
+
+            expect(result.current.selectedChainIds).toEqual([
+                'algorand',
+                'ethereum',
+            ])
+        })
+
+        describe('on an imported account', () => {
+            const stored = {
+                ...draft,
+                id: 'imported',
+                name: 'Account #1',
+                chains: {
+                    algorand: {
+                        address: 'ADDR',
+                        keyPairId: 'kp',
+                        enabledBy: 'discovery',
+                    },
+                    ethereum: {
+                        address: '0xabc',
+                        keyPairId: 'kp-evm',
+                        enabledBy: 'created',
+                    },
+                },
+            }
+
+            beforeEach(() => {
+                mockStoredAccounts.accounts = [stored]
+                mockRouteParams = { account: stored }
+            })
+
+            it('requires the chains discovery found activity on', async () => {
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                chooseInSheet(result, [])
+
+                expect(result.current.selectedChainIds).toEqual(['algorand'])
+            })
+
+            it('renames it, then enables the chains added and disables the inactive ones dropped', async () => {
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                chooseInSheet(result, ['base'])
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockUpdateAccount).toHaveBeenCalledWith(stored)
+                expect(mockEnableChain).toHaveBeenCalledExactlyOnceWith(
+                    'imported',
+                    'base',
+                    'user',
+                )
+                expect(mockDisableChains).toHaveBeenCalledExactlyOnceWith(
+                    'imported',
+                    ['ethereum'],
+                )
+                expect(mockWithSelectedChains).not.toHaveBeenCalled()
+                expect(
+                    mockEnableChain.mock.invocationCallOrder[0],
+                ).toBeLessThan(mockDisableChains.mock.invocationCallOrder[0]!)
+            })
+
+            it('keeps a chain discovery found activity on after the choice was made', async () => {
+                const { result } = renderHook(() => useNameAccountScreen())
+                chooseInSheet(result, [])
+                mockStoredAccounts.accounts = [
+                    {
+                        ...stored,
+                        chains: {
+                            ...stored.chains,
+                            ethereum: {
+                                ...stored.chains.ethereum,
+                                enabledBy: 'discovery',
+                            },
+                        },
+                    },
+                ]
+
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockDisableChains).not.toHaveBeenCalled()
+            })
+
+            it('changes no chains when the user never edits them', async () => {
+                const { result } = renderHook(() => useNameAccountScreen())
+
+                await act(async () => {
+                    await result.current.handleFinish()
+                })
+
+                expect(mockEnableChain).not.toHaveBeenCalled()
+                expect(mockDisableChains).not.toHaveBeenCalled()
+            })
+        })
     })
 
     describe('with chains added after the hand-over', () => {

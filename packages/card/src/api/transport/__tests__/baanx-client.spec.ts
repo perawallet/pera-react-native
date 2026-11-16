@@ -27,8 +27,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     }),
 }))
 vi.mock('@perawallet/wallet-core-kms', () => ({ hasSecret, withSecret }))
+vi.mock('../baanx-error-log', () => ({ logBaanxRequestError: vi.fn() }))
 
 import { baanxDirectRequest, resetBaanxClients } from '../baanx-client'
+import { logBaanxRequestError } from '../baanx-error-log'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -96,6 +98,18 @@ describe('baanxDirectRequest', () => {
 
         expect(request.headers.get('x-client-key')).toBe('CK_TEST')
         expect(request.headers.get('Authorization')).toBeNull()
+    })
+
+    it('logs failed calls through the client beforeError hook', async () => {
+        await baanxDirectRequest({
+            scope: ALGORAND_MAINNET,
+            method: 'GET',
+            path: '/v1/card/status',
+        })
+
+        expect(kyCreate.mock.calls[0][0].hooks.beforeError).toEqual([
+            logBaanxRequestError,
+        ])
     })
 
     it('reads the access token from the keystore and attaches it per request', async () => {

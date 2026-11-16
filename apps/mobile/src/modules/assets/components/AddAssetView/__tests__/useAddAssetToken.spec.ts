@@ -39,7 +39,7 @@ const SOURCES = [
 
 const onEthereum = (
     assetId: string,
-    verificationTier?: 'verified' | 'suspicious',
+    verificationTier?: 'verified' | 'unverified' | 'suspicious',
 ): ScopedAssetSearchResult => ({
     scope: ETHEREUM_SCOPE,
     asset: {
@@ -174,12 +174,14 @@ describe('useAddAssetToken', () => {
         expect(mocks.addToken).not.toHaveBeenCalled()
     })
 
-    it('warns before adding an unverified token, and adds nothing if declined', async () => {
+    it('warns before adding a suspicious token, and adds nothing if declined', async () => {
         mocks.request.mockResolvedValueOnce(undefined)
         const { result } = render()
 
         await act(async () => {
-            await result.current.handleAddToken(onEthereum('0xNEW'))
+            await result.current.handleAddToken(
+                onEthereum('0xNEW', 'suspicious'),
+            )
         })
 
         expect(mocks.request).toHaveBeenCalledTimes(1)
@@ -191,11 +193,13 @@ describe('useAddAssetToken', () => {
         const { result } = render()
 
         await act(async () => {
-            await result.current.handleAddToken(onEthereum('0xNEW'))
+            await result.current.handleAddToken(
+                onEthereum('0xNEW', 'suspicious'),
+            )
         })
 
         expect(mocks.t).toHaveBeenCalledWith(
-            'add_asset.token.unverified_body',
+            'add_asset.token.suspicious_body',
             {
                 assetName: 'USDC',
                 address: '0xNEW…short',
@@ -203,7 +207,7 @@ describe('useAddAssetToken', () => {
         )
     })
 
-    it('gives a suspicious token its own, harder warning', async () => {
+    it('uses the suspicious copy and confirm label for a suspicious token', async () => {
         mocks.request.mockResolvedValueOnce(undefined)
         const { result } = render()
 
@@ -214,8 +218,8 @@ describe('useAddAssetToken', () => {
         })
 
         expect(mocks.t).toHaveBeenCalledWith('add_asset.token.suspicious_title')
-        expect(mocks.t).not.toHaveBeenCalledWith(
-            'add_asset.token.unverified_title',
+        expect(mocks.t).toHaveBeenCalledWith(
+            'add_asset.token.suspicious_confirm',
         )
         expect(mocks.addToken).not.toHaveBeenCalled()
     })
@@ -245,7 +249,7 @@ describe('useAddAssetToken', () => {
             () => new Promise<boolean>(resolve => (answer = resolve)),
         )
         const { result } = render()
-        const token = onEthereum('0xNEW')
+        const token = onEthereum('0xNEW', 'suspicious')
 
         await act(async () => {
             const first = result.current.handleAddToken(token)
@@ -279,16 +283,32 @@ describe('useAddAssetToken', () => {
         expect(mocks.removeToken).toHaveBeenCalledTimes(1)
     })
 
-    it('adds an unverified token once the warning is accepted', async () => {
+    it('adds a suspicious token once the warning is accepted', async () => {
         mocks.request.mockResolvedValueOnce(true)
         const { result } = render()
 
         await act(async () => {
-            await result.current.handleAddToken(onEthereum('0xNEW'))
+            await result.current.handleAddToken(
+                onEthereum('0xNEW', 'suspicious'),
+            )
         })
 
         expect(mocks.addToken).toHaveBeenCalledTimes(1)
     })
+
+    it.each([undefined, 'unverified'] as const)(
+        'adds a token with tier %s without a confirmation sheet',
+        async tier => {
+            const { result } = render()
+
+            await act(async () => {
+                await result.current.handleAddToken(onEthereum('0xNEW', tier))
+            })
+
+            expect(mocks.request).not.toHaveBeenCalled()
+            expect(mocks.addToken).toHaveBeenCalledTimes(1)
+        },
+    )
 
     it('shows an error toast when adding fails, and leaves the token unadded', async () => {
         const failure = new Error('offline')

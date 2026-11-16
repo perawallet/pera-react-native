@@ -63,6 +63,7 @@ import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
     chainAccountOf,
     useAccountsStore,
+    ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -240,6 +241,18 @@ const toastBodies = (): string[] =>
 
 const pendingSignRequests = () => useSigningStore.getState().pendingSignRequests
 
+const openTechnicalDetails = async () => {
+    fireEvent.click(screen.getAllByTestId('ethereum_view_details')[0])
+    await waitFor(() => {
+        expect(
+            screen.getAllByTestId('transaction_details_screen'),
+        ).not.toHaveLength(0)
+    })
+}
+
+const reviewTitle = () =>
+    screen.getAllByTestId('review_action_title')[0].textContent
+
 const findButton = (label: string): Optional<HTMLButtonElement> =>
     getAllPressables().find(button =>
         (button.textContent ?? '').includes(label),
@@ -309,12 +322,36 @@ const bothRequired = () => ({
     },
 })
 
+const EVM_ROW = 'wc_evm_account_row'
+
+// EVM chains take one account from the row (picked through the picker when
+// the row shows another); every other chain checks its row in the list.
 const selectRows = async (...accounts: WalletAccount[]) => {
     await waitFor(() => {
         expect(findButton('common.connect.label')).toBeTruthy()
     })
-    for (const { id } of accounts) {
-        const testId = `wc_account_row_${id}`
+    for (const account of accounts) {
+        if (!account.chains.algorand) {
+            await waitFor(() =>
+                expect(screen.getByTestId(EVM_ROW)).toBeTruthy(),
+            )
+            const name = account.name ?? ''
+            if (!within(screen.getByTestId(EVM_ROW)).queryByText(name)) {
+                fireEvent.click(screen.getByTestId(EVM_ROW))
+                const option = `connect_account_picker-${ownAddressOf(account)}`
+                await waitFor(() =>
+                    expect(screen.getByTestId(option)).toBeTruthy(),
+                )
+                fireEvent.click(screen.getByTestId(option))
+            }
+            await waitFor(() =>
+                expect(
+                    within(screen.getByTestId(EVM_ROW)).getByText(name),
+                ).toBeTruthy(),
+            )
+            continue
+        }
+        const testId = `wc_account_row_${account.id}`
         await waitFor(() => expect(screen.getByTestId(testId)).toBeTruthy(), {
             timeout: 5000,
         })
@@ -435,9 +472,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
 
             await selectRows(ETHEREUM_ACCOUNT)
 
-            const row = screen.getByTestId(
-                `wc_account_row_${ETHEREUM_ACCOUNT.id}`,
-            )
+            const row = screen.getByTestId(EVM_ROW)
             const avatarBadge = within(
                 within(row).getByTestId('account_avatar_badge'),
             ).getByTestId('avatar_badge')
@@ -556,6 +591,60 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             payload?.[AnalyticsMetadataKey.ChainId],
                     ),
             ).toEqual(['algorand', 'ethereum'])
+        })
+
+        it('Given a connected Ethereum session, when its account is changed from Pera, then the session holds only the new address and the dApp is told', async () => {
+            const OTHER = '0x00000000000000000000000000000000000000b2'
+            const other: WalletAccount = {
+                id: 'eth-conn-other',
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 1 },
+                },
+                chains: { ethereum: { address: OTHER, keyPairId: 'eth-key' } },
+                name: 'Other',
+            }
+            useAccountsStore
+                .getState()
+                .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT, other])
+            await mountProvider()
+            const walletKit = await propose({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETH_MAINNET],
+                        methods: ['eth_sendTransaction'],
+                        events: ['accountsChanged'],
+                    },
+                },
+            })
+            await selectRows(ETHEREUM_ACCOUNT)
+            await connect(walletKit)
+
+            await act(async () => {
+                await captured.registry!.changeAccount(
+                    V2_SESSION_TOPIC,
+                    'ethereum',
+                    OTHER,
+                )
+            })
+
+            const { namespaces } = (walletKit.updateSession as Mock).mock
+                .calls[0][0] as {
+                namespaces: Record<string, { accounts: string[] }>
+            }
+            expect(namespaces.eip155.accounts).toEqual([
+                `${ETH_MAINNET}:${OTHER}`,
+            ])
+            expect(walletKit.emitSessionEvent).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    event: { name: 'accountsChanged', data: [OTHER] },
+                }),
+            )
+            expect(
+                (await getProvider().connections.store.get(V2_SESSION_TOPIC))
+                    ?.accounts,
+            ).toEqual([OTHER])
         })
 
         it('Given a proposal requiring eth_sign and eth_signTypedData_v3, when the user connects, then the session lists both but Settings grants only eth_sendTransaction, and calls to them, eth_signTransaction, eth_sendRawTransaction, wallet_getPermissions and the unlisted wallet_addEthereumChain are answered 4200 without a review while eth_chainId is answered', async () => {
@@ -883,7 +972,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
             })
 
-            it('Given a valid request, when it is queued, then the review is titled for one transaction and shows the fee estimate and max fee', async () => {
+            it('Given a valid request, when it is queued, then the review is titled Send and shows the fee estimate and max fee', async () => {
                 const walletKit = await settle()
                 // Mounted first so the request FAQ is acknowledged before the
                 // request arrives; otherwise its sheet covers the review.
@@ -907,15 +996,16 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 expect(
                     screen.getAllByTestId('ethereum_review_fee'),
                 ).not.toHaveLength(0)
+                // The fee row shows once the node has priced the transaction.
+                await waitFor(() => {
+                    expect(
+                        screen.getAllByTestId('ethereum_review_fee_expected'),
+                    ).not.toHaveLength(0)
+                })
                 expect(
-                    screen.getAllByTestId('fee_summary_estimate'),
+                    screen.getAllByTestId('ethereum_review_fee_max'),
                 ).not.toHaveLength(0)
-                expect(
-                    screen.getAllByTestId('fee_summary_max'),
-                ).not.toHaveLength(0)
-                expect(
-                    screen.getAllByText('signing.transactions.title_one'),
-                ).not.toHaveLength(0)
+                expect(reviewTitle()).toBe('transactions.list_item.send')
                 expect(
                     screen.queryByText(
                         'signing.transaction_view.invalid_title',
@@ -923,7 +1013,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeNull()
             })
 
-            it('Given a call to a contract Pera cannot read, when it is queued, then its review leaves the raw call to View details, which shows it with its pricing and returns to the review', async () => {
+            it('Given a call to a contract Pera cannot read, when it is queued, then its review leaves the raw call to the technical details, which show it with its pricing and return to the review', async () => {
                 const walletKit = await settle()
                 renderSignReview()
                 const data = `0x3593564c${'0'.repeat(63)}1${'0'.repeat(64)}`
@@ -954,29 +1044,27 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toBeNull()
                 const fee = screen.getAllByTestId('ethereum_review_fee')[0]
                 const target = screen.getAllByTestId(
-                    'ethereum_contract_call_to',
+                    'ethereum_review_target_unverified',
                 )[0]
                 const viewDetails = screen.getAllByTestId(
                     'ethereum_view_details',
                 )[0]
                 expect(
-                    target.compareDocumentPosition(viewDetails) &
+                    target.compareDocumentPosition(fee) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
                 expect(
-                    viewDetails.compareDocumentPosition(fee) &
+                    fee.compareDocumentPosition(viewDetails) &
                         Node.DOCUMENT_POSITION_FOLLOWING,
                 ).toBeTruthy()
 
-                fireEvent.click(
-                    screen.getAllByTestId('ethereum_view_details')[0],
-                )
+                await openTechnicalDetails()
 
-                await waitFor(() => {
-                    expect(
-                        screen.getAllByTestId('transaction_details_screen'),
-                    ).not.toHaveLength(0)
-                })
+                expect(
+                    screen.getAllByTestId(
+                        'ethereum_interacting_with_contract_unverified',
+                    ),
+                ).not.toHaveLength(0)
                 expect(
                     screen.getAllByTestId('ethereum_contract_call_selector')[0]
                         .textContent,
@@ -1045,13 +1133,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     },
                     { timeout: 5000 },
                 )
-                const maxFee = screen.getAllByTestId('fee_summary_max')[0]
-                const warning = screen.getAllByTestId(
+                const warningText = screen.getAllByTestId(
                     'ethereum_high_fee_body',
-                )[0]
-                expect(warning.textContent).toContain(maxFee.textContent)
+                )[0].textContent
                 // No observed origin in this harness, so the sourceless copy.
-                expect(warning.textContent).toContain(
+                expect(warningText).toContain(
                     'ethereum.review_warnings.high_fee_body_no_source',
                 )
                 expect(
@@ -1062,9 +1148,58 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         screen.getAllByTestId('signing-confirm-slide')[0],
                     ),
                 ).toBe(false)
+
+                // The warning names the same figure as the Max fee row.
+                await openTechnicalDetails()
+                const maxFee =
+                    screen.getAllByTestId('ethereum_max_fee')[0]
+                        .lastElementChild?.textContent
+                expect(maxFee).toBeTruthy()
+                expect(warningText).toContain(maxFee)
             })
 
-            it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings fold into one banner', async () => {
+            it('Given a dApp that tips 1 gwei on a quiet network where Fast tips 1.5 gwei, when it is queued, then the review shows no high-fee warning', async () => {
+                const walletKit = await settle()
+                // Base 0.13 gwei; slow, normal and fast tips 0.01, 0.05 and 1.5 gwei.
+                server.use(
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_feeHistory: {
+                                oldestBlock: '0x1',
+                                baseFeePerGas: ['0x7bfa480', '0x7bfa480'],
+                                gasUsedRatio: [0.5],
+                                reward: [
+                                    ['0x989680', '0x2faf080', '0x59682f00'],
+                                ],
+                            },
+                        },
+                    }),
+                )
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    maxFeePerGas: '0x4aec4c40',
+                    maxPriorityFeePerGas: '0x3b9aca00',
+                })
+                await queued()
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('signing_transaction_review'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+
+                expect(
+                    screen.queryByTestId('ethereum_high_fee_warning'),
+                ).toBeNull()
+            })
+
+            it('Given an unknown contract call with a gas limit far above what it needs, when it is queued, then both warnings show, each in its own card, without blocking Confirm', async () => {
                 const walletKit = await settle()
                 renderSignReview()
 
@@ -1077,19 +1212,15 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
                 await queued()
 
-                await waitFor(
-                    () => {
-                        expect(
-                            screen.getAllByTestId('review_warnings_summary'),
-                        ).not.toHaveLength(0)
-                    },
+                const warnings = await waitFor(
+                    () => screen.getAllByTestId('review_warnings')[0],
                     { timeout: 5000 },
                 )
                 for (const id of [
                     'ethereum_high_fee_warning',
                     'ethereum_contract_call_warning',
                 ]) {
-                    expect(screen.getAllByTestId(id)).not.toHaveLength(0)
+                    expect(within(warnings).getByTestId(id)).toBeTruthy()
                 }
                 expect(
                     isElementDisabled(
@@ -1268,9 +1399,30 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     return { walletKit, request }
                 }
 
-                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning, a note that Pera cannot lower it and no deadline, and approving it answers the dApp', async () => {
+                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then the review asks for an unlimited permission, the technical details read as an approval with the unlimited warning, a note that Pera cannot lower it and no deadline, and approving it answers the dApp', async () => {
                     const { walletKit, request } = await reviewCall()
 
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_review_permission'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(reviewTitle()).toBe('signing.review.title_approve')
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_review_permission_amount',
+                        )[0].textContent,
+                    ).toBe('signing.review.permission_unlimited')
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_review_permission_unlimited',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+
+                    await openTechnicalDetails()
                     await waitFor(() => {
                         expect(
                             screen.getAllByTestId(
@@ -1278,11 +1430,6 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             ),
                         ).not.toHaveLength(0)
                     })
-                    expect(
-                        screen.getAllByText(
-                            /^signing\.spend_approval\.allow_title/,
-                        ),
-                    ).not.toHaveLength(0)
                     expect(
                         screen.getAllByText('signing.spend_approval.unlimited'),
                     ).not.toHaveLength(0)
@@ -1300,9 +1447,6 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     await waitFor(() => {
                         expect(screen.getAllByText('USDC')).not.toHaveLength(0)
                     })
-                    expect(
-                        screen.queryByTestId('ethereum_contract_call_warning'),
-                    ).toBeNull()
 
                     fireEvent.click(
                         screen.getAllByTestId(
@@ -1316,6 +1460,17 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             ),
                         ).not.toHaveLength(0)
                     })
+                    // A transaction says so; "signature" is for signature requests.
+                    expect(
+                        screen.getAllByText(
+                            'signing.spend_approval.spend_warning_transaction',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByText(
+                            'signing.spend_approval.spend_warning',
+                        ),
+                    ).toBeNull()
 
                     await act(async () => {
                         await request.approve([], { txIds: [HASH] })
@@ -1326,6 +1481,82 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             result: HASH,
                         })
                     })
+                })
+
+                it('Given an unlimited USDC approval for the Uniswap V3 Position Manager, when it is reviewed, then it asks for an unlimited permission and its technical details name Uniswap as a well-known contract with a verified spender, no deadline and no signature copy', async () => {
+                    const MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+                    await reviewCall(
+                        `0x095ea7b3${MANAGER.slice(2).toLowerCase().padStart(64, '0')}${'f'.repeat(64)}`,
+                    )
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'ethereum_review_permission_unlimited',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(reviewTitle()).toBe('signing.review.title_approve')
+
+                    await openTechnicalDetails()
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'signing.spend_approval.known_title',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Uniswap V3 Positions'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-spender-verified',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-deadline',
+                        ),
+                    ).toBeNull()
+
+                    fireEvent.click(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-warning',
+                        )[0],
+                    )
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-row-spend',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'signing.spend_approval.known_spend_note',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByText(
+                            'signing.spend_approval.spend_warning',
+                        ),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByText(
+                            'signing.spend_approval.spend_warning_transaction',
+                        ),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-row-site-mismatch',
+                        ),
+                    ).toBeNull()
                 })
 
                 it('Given the shipped Ethereum capabilities, when a dApp sends a standard token transfer, then it reads as a send of the token with no unknown-contract notice', async () => {
@@ -1419,17 +1650,35 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 const reviewRouterCall = (data: string) =>
                     reviewKnownCall(ROUTER, data)
 
-                it('Given a Universal Router swap, when it is reviewed, then it is titled Swap with the labelled router, what is paid and the least received, and no unknown-contract notice', async () => {
+                it('Given a Universal Router swap, when it is reviewed, then it is titled Swap with the labelled router and no unknown-contract notice, and its technical details show what is paid and the least received', async () => {
                     await reviewRouterCall(SWAP_DATA)
 
+                    await waitFor(() => {
+                        expect(reviewTitle()).toBe(
+                            'transactions.list_item.swap',
+                        )
+                    })
+                    const target = screen.getAllByTestId(
+                        'ethereum_review_target',
+                    )[0]
+                    expect(target.textContent).toContain(
+                        'Uniswap Universal Router',
+                    )
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_review_target_verified',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+
+                    await openTechnicalDetails()
                     await waitFor(() => {
                         expect(
                             screen.getAllByTestId('ethereum_action_receive'),
                         ).not.toHaveLength(0)
                     })
-                    expect(
-                        screen.getAllByText('transactions.list_item.swap'),
-                    ).not.toHaveLength(0)
                     expect(
                         screen.getAllByTestId('ethereum_known_contract'),
                     ).not.toHaveLength(0)
@@ -1457,22 +1706,26 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             'ethereum.contract_action.receive_at_least',
                         ),
                     ).not.toHaveLength(0)
-                    expect(
-                        screen.queryByTestId('ethereum_contract_call_warning'),
-                    ).toBeNull()
                 })
 
-                it('Given a swap that pays a stranger its whole output, when it is reviewed, then it stays a Swap but shows the fee with its recipient and keeps the unknown-contract notice', async () => {
+                it('Given a swap that pays a stranger its whole output, when it is reviewed, then it stays a Swap with the unknown-contract notice, and its technical details show the fee with its recipient', async () => {
                     await reviewRouterCall(HOSTILE_FEE_SWAP_DATA)
 
+                    await waitFor(() => {
+                        expect(reviewTitle()).toBe(
+                            'transactions.list_item.swap',
+                        )
+                    })
+                    expect(
+                        screen.getAllByTestId('ethereum_contract_call_warning'),
+                    ).not.toHaveLength(0)
+
+                    await openTechnicalDetails()
                     await waitFor(() => {
                         expect(
                             screen.getAllByTestId('ethereum_action_fee_0'),
                         ).not.toHaveLength(0)
                     })
-                    expect(
-                        screen.getAllByText('transactions.list_item.swap'),
-                    ).not.toHaveLength(0)
                     expect(
                         screen.getAllByText('ethereum.contract_action.fee'),
                     ).not.toHaveLength(0)
@@ -1495,18 +1748,16 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         ),
                     ).not.toHaveLength(0)
                     expect(
-                        screen.getAllByTestId('ethereum_contract_call_warning'),
-                    ).not.toHaveLength(0)
-                    expect(
                         screen.getAllByText(
                             'ethereum.contract_action.receive_at_least',
                         ),
                     ).not.toHaveLength(0)
                 })
 
-                it('Given a swap whose token it has no record of, when it is reviewed, then the amount is labelled as base units', async () => {
+                it('Given a swap whose token it has no record of, when its technical details are opened, then the amount is labelled as base units', async () => {
                     await reviewRouterCall(SWAP_DATA)
 
+                    await openTechnicalDetails()
                     await waitFor(() => {
                         expect(
                             screen.getAllByTestId('ethereum_action_receive'),
@@ -1525,7 +1776,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     ).not.toHaveLength(0)
                 })
 
-                it('Given a WETH deposit, when it is reviewed, then it is titled Wrap with the wrapped amount and the labelled token', async () => {
+                it('Given a WETH deposit, when it is reviewed, then it is titled Wrap with the labelled token, and its technical details show the wrapped amount', async () => {
                     await reviewKnownCall(
                         WETH,
                         DEPOSIT_DATA,
@@ -1533,47 +1784,140 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     )
 
                     await waitFor(() => {
+                        expect(reviewTitle()).toBe(
+                            'transactions.list_item.wrap',
+                        )
+                    })
+                    expect(
+                        screen.getAllByTestId('ethereum_review_target')[0]
+                            .textContent,
+                    ).toContain('Wrapped Ether')
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+
+                    await openTechnicalDetails()
+                    await waitFor(() => {
                         expect(
                             screen.getAllByTestId('ethereum_action_amount'),
                         ).not.toHaveLength(0)
                     })
+                })
+
+                it('Given an Aave supply, when it is reviewed, then it is titled Supply with the labelled pool, and its technical details show the asset and the amount', async () => {
+                    await reviewKnownCall(AAVE_POOL, SUPPLY_DATA)
+
+                    await waitFor(() => {
+                        expect(reviewTitle()).toBe(
+                            'transactions.list_item.supply',
+                        )
+                    })
                     expect(
-                        screen.getAllByText('transactions.list_item.wrap'),
-                    ).not.toHaveLength(0)
-                    expect(
-                        screen.getAllByText('Wrapped Ether'),
-                    ).not.toHaveLength(0)
+                        screen.getAllByTestId('ethereum_review_target')[0]
+                            .textContent,
+                    ).toContain('Aave V3 Pool')
                     expect(
                         screen.queryByTestId('ethereum_contract_call_warning'),
                     ).toBeNull()
-                })
 
-                it('Given an Aave supply, when it is reviewed, then it is titled Supply with the labelled pool, the asset and the amount', async () => {
-                    await reviewKnownCall(AAVE_POOL, SUPPLY_DATA)
-
+                    await openTechnicalDetails()
                     await waitFor(() => {
                         expect(
                             screen.getAllByTestId('ethereum_action_asset'),
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText('transactions.list_item.supply'),
-                    ).not.toHaveLength(0)
-                    expect(
-                        screen.getAllByText('Aave V3 Pool'),
-                    ).not.toHaveLength(0)
-                    expect(
                         screen.getAllByTestId('ethereum_action_amount'),
                     ).not.toHaveLength(0)
                     await waitFor(() => {
                         expect(screen.getAllByText('USDC')).not.toHaveLength(0)
                     })
+                })
+
+                // multicall([mint(USDC/WETH 0.05%, 353961 USDC, 0.000168 ETH, to the signer), refundETH()])
+                const ADD_LIQUIDITY_DATA =
+                    '0xac9650d800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000016488316456000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000000000001f4fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff2761a00000000000000000000000000000000000000000000000000000000000d89e600000000000000000000000000000000000000000000000000000000000566a9000000000000000000000000000000000000000000000000000098cb8c52800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000000000000000000006b49d20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000412210e8a00000000000000000000000000000000000000000000000000000000'
+                const ADD_LIQUIDITY_VALUE = '0x98cb8c528000'
+                // multicall([decreaseLiquidity(987654), collect(987654, to the signer), burn(987654)])
+                const REMOVE_LIQUIDITY_DATA =
+                    '0xac9650d80000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000a40c49ccbe00000000000000000000000000000000000000000000000000000000000f120600000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006b49d200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000084fc6f786500000000000000000000000000000000000000000000000000000000000f1206000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000ffffffffffffffffffffffffffffffff00000000000000000000000000000000ffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002442966c6800000000000000000000000000000000000000000000000000000000000f120600000000000000000000000000000000000000000000000000000000'
+                const V3_POSITION_MANAGER =
+                    '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+
+                it('Given a Uniswap V3 liquidity add paid partly in ether, when it is reviewed, then it is titled Add liquidity with the labelled manager and no unknown-contract notice, and its technical details show both deposits at most and the new position NFT', async () => {
+                    await reviewKnownCall(
+                        V3_POSITION_MANAGER,
+                        ADD_LIQUIDITY_DATA,
+                        ADD_LIQUIDITY_VALUE,
+                    )
+
+                    await waitFor(() => {
+                        expect(reviewTitle()).toBe(
+                            'transactions.list_item.add_liquidity',
+                        )
+                    })
+                    expect(
+                        screen.getAllByTestId('ethereum_review_target')[0]
+                            .textContent,
+                    ).toContain('Uniswap V3 Positions')
                     expect(
                         screen.queryByTestId('ethereum_contract_call_warning'),
                     ).toBeNull()
+
+                    await openTechnicalDetails()
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_position'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByTestId('ethereum_action_deposit_0'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_deposit_1'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.deposit_at_most',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.new_position',
+                        ),
+                    ).not.toHaveLength(0)
                 })
 
-                it('Given a router call with a command it cannot read, when it is reviewed, then it is a labelled Contract Call with the unknown-contract notice, not a Swap', async () => {
+                it('Given a Uniswap V3 removal that collects to the signer and burns, when it is reviewed, then it is titled Remove liquidity, and its technical details show the position number and say it closes the position', async () => {
+                    await reviewKnownCall(
+                        V3_POSITION_MANAGER,
+                        REMOVE_LIQUIDITY_DATA,
+                    )
+
+                    await waitFor(() => {
+                        expect(reviewTitle()).toBe(
+                            'transactions.list_item.remove_liquidity',
+                        )
+                    })
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+
+                    await openTechnicalDetails()
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_position'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(screen.getAllByText('#987654')).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_action_closes_position',
+                        ),
+                    ).not.toHaveLength(0)
+                })
+
+                it('Given a router call with a command it cannot read, when it is reviewed, then it is a contract interaction with the labelled router and the unknown-contract notice, not a Swap', async () => {
                     await reviewRouterCall(UNKNOWN_COMMAND_DATA)
 
                     await waitFor(() => {
@@ -1583,17 +1927,15 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             ),
                         ).not.toHaveLength(0)
                     })
+                    expect(reviewTitle()).toBe(
+                        'signing.review.title_contract_interaction',
+                    )
                     expect(
-                        screen.getAllByText(
-                            'transactions.list_item.contract_call',
-                        ),
-                    ).not.toHaveLength(0)
-                    expect(
-                        screen.getAllByText('Uniswap Universal Router'),
-                    ).not.toHaveLength(0)
-                    expect(
-                        screen.queryByText('transactions.list_item.swap'),
-                    ).toBeNull()
+                        screen.getAllByTestId('ethereum_review_target')[0]
+                            .textContent,
+                    ).toContain('Uniswap Universal Router')
+
+                    await openTechnicalDetails()
                     expect(
                         screen.queryByTestId('ethereum_action_pay'),
                     ).toBeNull()

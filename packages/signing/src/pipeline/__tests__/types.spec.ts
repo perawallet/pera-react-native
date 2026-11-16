@@ -19,3 +19,10 @@ describe('replacement source', () => {
         expect(isExternalCallbackSource('replacement')).toBe(false)
     })
 })
+
+describe('approval-revoke source', () => {
+    it('pauses for review and answers no outside caller', () => {
+        expect(isInteractiveSource('approval-revoke')).toBe(true)
+        expect(isExternalCallbackSource('approval-revoke')).toBe(false)
+    })
+})

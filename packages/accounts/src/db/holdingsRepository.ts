@@ -38,7 +38,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { describeHolding } from '../chain-adapter'
 import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
-import { isOptInChain } from '../chainProtocol'
 import { isNotSuspiciousSql } from './holdingSuspicion'
 import { hiddenHoldingSql } from './holdingVisibility'
 import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
@@ -328,7 +327,7 @@ export type AccountHoldingsFilters = {
     hideZeroBalanceNfts?: boolean
     /** Asset types to exclude regardless of holding amount. */
     excludeAssetTypes?: string[]
-    /** When true, rows whose asset Pera flags suspicious are excluded, except on an opt-in chain; rows with no metadata yet stay. */
+    /** When true, rows whose asset Pera flags suspicious are excluded; rows with no metadata yet stay. */
     hideSuspicious?: boolean
     /** Leaves out holdings the user hid, whatever the other filters keep. */
     excludeHidden?: boolean
@@ -426,8 +425,7 @@ export async function getAccountHoldings({
         )
     }
 
-    // The user chose every asset on an opt-in chain, so its rows stay.
-    if (hideSuspicious && !isOptInChain(scope.chainId)) {
+    if (hideSuspicious) {
         joinConditions.push(isNotSuspiciousSql())
     }
 

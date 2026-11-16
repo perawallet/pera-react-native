@@ -13,6 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerAlgorandRampAdapter } from '@test-utils/rampChainAdapter'
@@ -90,6 +91,12 @@ const buildRequest = (
         shouldUseFundsBeforeRejecting?: boolean
         nativeGainOnClaim?: Decimal
         nativeGainOnReject?: Decimal
+        asset?: {
+            assetId: string
+            decimals: number
+            name: string
+            unitName?: string
+        }
     } = {},
 ) => ({
     id: '123',
@@ -113,6 +120,60 @@ describe('useAssetClaimDetailScreen', () => {
         registerAlgorandRampAdapter()
         routeParams.current = { assetIndex: 0, scope: ALGORAND_SCOPE }
         mockAssetRequests = [buildRequest()]
+    })
+
+    describe('imitated currency', () => {
+        it('reports the code the claimed asset imitates', () => {
+            vi.mocked(imitatedCurrencyOf).mockReturnValueOnce('USD')
+            mockAssetRequests = [
+                buildRequest({
+                    asset: {
+                        assetId: '123',
+                        decimals: 0,
+                        name: 'Spoof',
+                        unitName: 'usd',
+                    },
+                }),
+            ]
+
+            const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+            expect(result.current.imitatedCurrency).toBe('USD')
+            expect(imitatedCurrencyOf).toHaveBeenCalledWith(
+                { chainId: 'algorand', assetId: '123' },
+                'usd',
+            )
+        })
+
+        it('judges the payload asset id and the unit name it renders', () => {
+            mockAssetRequests = [
+                buildRequest({
+                    asset: {
+                        assetId: '123',
+                        decimals: 0,
+                        name: 'TEST',
+                        unitName: 'TST',
+                    },
+                }),
+            ]
+
+            const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+            expect(result.current.imitatedCurrency).toBeNull()
+            expect(imitatedCurrencyOf).toHaveBeenCalledWith(
+                { chainId: 'algorand', assetId: '123' },
+                'TST',
+            )
+        })
+
+        it('is null when there is no request', () => {
+            mockAssetRequests = []
+
+            const { result } = renderHook(() => useAssetClaimDetailScreen())
+
+            expect(result.current.imitatedCurrency).toBeNull()
+            expect(imitatedCurrencyOf).not.toHaveBeenCalled()
+        })
     })
 
     it('does not block a claim the account can afford', () => {

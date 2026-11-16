@@ -147,8 +147,9 @@ environment, because staging builds sign real keys too:
 - The vendored template
   (`packages/chain-algorand/src/card/escrow/autodraw-teal.ts`) must hash to
   `CARD_AUTODRAW_TEMPLATE_HASH`, one SHA-256 for every network. It is
-  checked by `pnpm check:autodraw-hash` inside `pnpm build`, and again by
-  `verifyAutoDrawTealTemplate` before the user signs.
+  checked by `pnpm check:autodraw-hash` in every build (inside `pnpm build`
+  and `build:packages`, and as its own step in the extension build), and again
+  by `verifyAutoDrawTealTemplate` before the user signs.
 - The algod-compiled program must hash to the network's
   `*_CARD_AUTODRAW_PROGRAM_HASH` (`verifyAutoDrawProgram`). This one depends on
   the app ids and genesis hash, and is the only check that covers a node
@@ -158,7 +159,8 @@ Both pins are Bitrise secrets baked in by `tools/dev/generate-config.sh`, never
 remote config, so a change to the repo cannot supply its own expected value.
 Changing the template or redeploying a card app means running
 `pnpm check:autodraw-hash --print` and updating the matching secrets in the same
-change; otherwise the build refuses.
+change. A stale template pin fails the build; a stale program pin only shows on
+the device, as Auto Funding failing closed.
 
 ## Credits
 

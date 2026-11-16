@@ -14,7 +14,10 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import type { SignRequestStatus } from '@perawallet/wallet-core-multisig'
-import type { SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    SignerKeyMissingError,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
 import { useSignRequestFailure } from '../useSignRequestFailure'
 
 const mockConfig = vi.hoisted(() => ({ debugEnabled: false }))
@@ -86,6 +89,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             readonly nodeError: unknown,
         ) {
             super(`Submission ${classification}`)
+        }
+    },
+    SignerKeyMissingError: class SignerKeyMissingError extends Error {
+        readonly metadata: { params: { address: string } }
+        constructor(address: string) {
+            super(`Cannot sign with account ${address}`)
+            this.metadata = { params: { address } }
         }
     },
 }))
@@ -243,6 +253,23 @@ describe('useSignRequestFailure', () => {
         expect(mockT).toHaveBeenCalledWith(
             'signing.cannot_sign.rekeyed_auth_missing_body',
             { authAddress: 'AUTH_ADDR' },
+        )
+    })
+
+    it('explains a named signer whose own key the wallet lacks', () => {
+        const { result } = renderHook(() =>
+            useSignRequestFailure(
+                WALLETCONNECT_REQUEST,
+                new SignerKeyMissingError('NAMED_SIGNER'),
+            ),
+        )
+
+        expect(mockT).toHaveBeenCalledWith(
+            'signing.cannot_sign.signer_key_missing_body',
+            { authAddress: 'NAMED_SIGNER' },
+        )
+        expect(result.current.body).toBe(
+            'signing.cannot_sign.signer_key_missing_body',
         )
     })
 

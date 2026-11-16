@@ -528,7 +528,7 @@ const summarizeContractCall = (
     })
     const named = isDecoding ? contract : undefined
     if (action) return historyActionSummary(action, base, named, chain)
-    return named ? { ...base, subtitle: knownContractSubtitle(named) } : base
+    return named ? { ...base, ...knownContractSubtitle(named) } : base
 }
 
 /**

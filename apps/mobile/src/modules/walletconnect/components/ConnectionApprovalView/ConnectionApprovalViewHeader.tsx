@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
@@ -58,6 +59,10 @@ export type ConnectionApprovalViewHeaderProps = {
     verifiedOriginLabel?: string
     /** A phishing-list or look-alike hit on any of the proposal's origins. */
     hasSiteWarning?: boolean
+    /** The single EVM account row, shown above the account list. */
+    evmAccountRow?: ReactNode
+    /** False when every requested chain is an EVM chain, so no checkbox list follows. */
+    hasAccountList: boolean
 }
 
 export const ConnectionApprovalViewHeader = ({
@@ -74,6 +79,8 @@ export const ConnectionApprovalViewHeader = ({
     originWarning,
     verifiedOriginLabel,
     hasSiteWarning = false,
+    evmAccountRow,
+    hasAccountList,
 }: ConnectionApprovalViewHeaderProps) => {
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
     const styles = useStyles()
@@ -218,14 +225,18 @@ export const ConnectionApprovalViewHeader = ({
 
             <ConnectionPermissionsPanel permissions={permissions} />
 
-            <PWView style={styles.accountSelectionContainer}>
-                <PWText
-                    variant='h4'
-                    style={styles.permissionsTitle}
-                >
-                    {t('walletconnect.request.accounts_title')}
-                </PWText>
-            </PWView>
+            {evmAccountRow}
+
+            {hasAccountList && (
+                <PWView style={styles.accountSelectionContainer}>
+                    <PWText
+                        variant='h4'
+                        style={styles.permissionsTitle}
+                    >
+                        {t('walletconnect.request.accounts_title')}
+                    </PWText>
+                </PWView>
+            )}
         </PWView>
     )
 }

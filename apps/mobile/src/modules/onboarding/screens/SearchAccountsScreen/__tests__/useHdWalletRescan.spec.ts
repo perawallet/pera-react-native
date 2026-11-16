@@ -260,7 +260,7 @@ describe('useHdWalletRescan', () => {
         expect(mocks.setSelectedAccountId).toHaveBeenCalledWith('hd-1')
         expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
             'ImportRekeyedAddresses',
-            { accounts: rekeyed },
+            { accounts: rekeyed, hasImportedAccounts: false },
         )
     })
 

@@ -24,6 +24,7 @@ export * from './utils'
 export * from './account-names'
 export * from './signer-resolution'
 export * from './signingAccountAddresses'
+export * from './connectionAccountSelection'
 export * from './chain-adapter'
 export { receivesUnaskedAssets, canHideHolding } from './chainProtocol'
 export * from './presentation-adapter'
@@ -44,6 +45,7 @@ export {
     hydrateAccountChainStates,
     recordAuthority,
     getAllAccounts,
+    withSelectedChains,
     getSelectedAccount,
     getSelectedAccountId,
     setSelectedAccountId,

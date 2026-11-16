@@ -36,6 +36,11 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const mockHaptics = vi.hoisted(() => ({ light: vi.fn() }))
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 vi.mock('@perawallet/wallet-core-hardware-wallet', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-hardware-wallet')
@@ -166,5 +171,59 @@ describe('useLedgerSigningDriver', () => {
         mockPipelineWithChild(null)
         rerender()
         expect(dismissMock).toHaveBeenCalledWith('ledger-signing:req-1')
+    })
+
+    describe('the on-device prompt haptic', () => {
+        it('plays the light haptic once when the device starts waiting for approval', () => {
+            mockPendingRequests(['req-1'])
+            mockPipelineWithChild(
+                buildChildSnapshot({ active: 'awaiting_approval' }),
+            )
+
+            renderHook(() => useLedgerSigningDriver())
+
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not play again when a group cycles back to awaiting approval', () => {
+            mockPendingRequests(['req-1'])
+            mockPipelineWithChild(
+                buildChildSnapshot({ active: 'awaiting_approval' }),
+            )
+            const { rerender } = renderHook(() => useLedgerSigningDriver())
+
+            mockPipelineWithChild(buildChildSnapshot({ active: 'signing' }))
+            rerender()
+            mockPipelineWithChild(
+                buildChildSnapshot({ active: 'awaiting_approval' }),
+            )
+            rerender()
+
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+        })
+
+        it('plays again for the next request', () => {
+            mockPendingRequests(['req-1'])
+            mockPipelineWithChild(
+                buildChildSnapshot({ active: 'awaiting_approval' }),
+            )
+            const { rerender } = renderHook(() => useLedgerSigningDriver())
+
+            mockPendingRequests(['req-2'])
+            rerender()
+
+            expect(mockHaptics.light).toHaveBeenCalledTimes(2)
+        })
+
+        it('stays silent while searching or in an error state', () => {
+            mockPendingRequests(['req-1'])
+            mockPipelineWithChild(buildChildSnapshot({ active: 'searching' }))
+            const { rerender } = renderHook(() => useLedgerSigningDriver())
+
+            mockPipelineWithChild(buildChildSnapshot('error'))
+            rerender()
+
+            expect(mockHaptics.light).not.toHaveBeenCalled()
+        })
     })
 })

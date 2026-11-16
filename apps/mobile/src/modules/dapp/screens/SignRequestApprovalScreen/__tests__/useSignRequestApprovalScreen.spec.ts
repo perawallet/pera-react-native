@@ -37,6 +37,8 @@ const mocks = vi.hoisted(() => {
         encodeWalletOperationResult: vi.fn(),
         useAllAccounts: vi.fn(),
         confirmNetworkSwitch: vi.fn(),
+        useSigningEvent: vi.fn(),
+        markConnectionRequestApproved: vi.fn(async () => undefined),
     }
 })
 
@@ -47,6 +49,7 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: mocks.useSigningRequest,
     isSignRequestAwaitingPreflight: mocks.isSignRequestAwaitingPreflight,
+    useSigningEvent: mocks.useSigningEvent,
     isSignRequestPending: vi.fn(),
     isSignRequestPastApproval: vi.fn(),
     GenesisHashMismatchError: mocks.GenesisHashMismatchError,
@@ -68,6 +71,7 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
 
 vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     resolveConnectionRequest: mocks.resolveConnectionRequest,
+    markConnectionRequestApproved: mocks.markConnectionRequestApproved,
     declineConnectionRequest: mocks.declineConnectionRequest,
     failConnectionRequest: mocks.failConnectionRequest,
     submitConnectionRequest: mocks.submitConnectionRequest,
@@ -179,6 +183,32 @@ describe('useSignRequestApprovalScreen', () => {
     afterEach(() => {
         vi.useRealTimers()
         useApprovalConfirmedStore.getState().resetState()
+    })
+
+    // The host hears of an approval only with its answer; told now, an
+    // account change while this signs (a Ledger confirming) spares it.
+    it('tells the host once signing starts for this request', () => {
+        renderHook(() => useSignRequestApprovalScreen())
+        const [predicate, handler] = mocks.useSigningEvent.mock.lastCall as [
+            (event: unknown) => boolean,
+            (event: unknown) => void,
+        ]
+        const started = {
+            type: 'signing-started',
+            request: { transportId: 'connection-1' },
+        }
+
+        expect(
+            predicate({ ...started, request: { transportId: 'other' } }),
+        ).toBe(false)
+        expect(predicate({ ...started, type: 'awaiting-user' })).toBe(false)
+        expect(predicate(started)).toBe(true)
+        handler(started)
+
+        expect(mocks.markConnectionRequestApproved).toHaveBeenCalledWith(
+            'connection-1',
+            '9',
+        )
     })
 
     it('dismiss closes the popup', () => {

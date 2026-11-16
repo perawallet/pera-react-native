@@ -19,6 +19,7 @@ import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
 import { IntegrityBlockedView } from '@components/OfflineTolerantView'
 import { LoadingView } from '@components/LoadingView'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     CHART_ANIMATION_DURATION,
@@ -121,7 +122,8 @@ export const BalanceLineChart = <T,>({
         x: 0,
         y: { value: 0 },
     })
-    useChartPressSelection(pressState, series, onSelectionChanged)
+    const { chartTick } = useHaptics()
+    useChartPressSelection(pressState, series, onSelectionChanged, chartTick)
 
     const { renderState, handleRetry, chartBoundary, handleChartError } =
         useBalanceLineChart({

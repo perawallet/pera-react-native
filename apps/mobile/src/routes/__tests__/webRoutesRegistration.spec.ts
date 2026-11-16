@@ -54,8 +54,8 @@ const routesByCapability = {
     sharedAccounts: ['Multisig'],
     peraCard: ['PeraCard'],
     staking: ['Staking'],
-    // The asset-detail Markets link pushes this over the current screen.
-    discoverTab: ['DiscoverDetail'],
+    // DiscoverDetail and DiscoverSearch are pushed over the current screen.
+    discoverTab: ['DiscoverDetail', 'DiscoverSearch'],
 } as const
 
 describe('WebMainRoutes registration', () => {

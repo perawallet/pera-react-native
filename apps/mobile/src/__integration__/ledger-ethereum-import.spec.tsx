@@ -135,6 +135,10 @@ const confirmSameWallet = async () => {
     )
 }
 
+const chooseOnSameWalletSheet = async (testID: string) => {
+    fireEvent.click(await waitFor(() => screen.getByTestId(testID)))
+}
+
 const importIndexZero = async () => {
     const row = await waitFor(
         () => screen.getByTestId(`ledger_select_row_${ETHEREUM_ADDRESS}`),
@@ -293,5 +297,49 @@ describe('Flow: import a Ledger account on Ethereum', () => {
             },
             { timeout: 10_000 },
         )
+    })
+
+    it('Given the device already has an Algorand account at index 0, when the user adds the Ethereum address as a separate account, then it gets its own account without reading the Algorand app', async () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([ledgerOnAlgorand(ALGORAND_ADDRESS)])
+        renderEthereumImport()
+
+        await importIndexZero()
+        await chooseOnSameWalletSheet('ledger-same-wallet-separate')
+
+        await waitFor(
+            () => {
+                const accounts = useAccountsStore.getState().accounts
+                expect(accounts).toHaveLength(2)
+                const [held, created] = accounts
+                expect(held.chains.ethereum).toBeUndefined()
+                expect(
+                    sameAddress(
+                        created.chains.ethereum?.address,
+                        ETHEREUM_ADDRESS,
+                    ),
+                ).toBe(true)
+                expect(created.chains.algorand).toBeUndefined()
+            },
+            { timeout: 10_000 },
+        )
+    })
+
+    it('Given the device already has an Algorand account at index 0, when the user cancels the same-wallet sheet, then nothing is added', async () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([ledgerOnAlgorand(ALGORAND_ADDRESS)])
+        renderEthereumImport()
+
+        await importIndexZero()
+        await chooseOnSameWalletSheet('ledger-same-wallet-cancel')
+
+        await waitFor(() =>
+            expect(screen.queryByTestId('ledger-same-wallet-sheet')).toBeNull(),
+        )
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].chains.ethereum).toBeUndefined()
     })
 })

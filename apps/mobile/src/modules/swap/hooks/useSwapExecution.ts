@@ -29,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
 export type SwapExecutionStatus =
@@ -131,6 +132,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
 
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
+    const { handleSubmitError, playFailure } = useTransactionOutcomeHaptics()
     const { mutateAsync: executeSwap, reset: resetMutation } =
         useExecuteSwapMutation()
     const cancelRequestedRef = useRef(false)
@@ -188,7 +190,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 // An offline failure surfaces its own copy — never the algod
                 // fallback, which would blame the node for a request that
                 // never reached it.
-                case 'submission-failed': {
+                case 'submission-failed':
+                case 'reverted': {
                     const copy = resolveErrorCopy(
                         failure.error,
                         t,
@@ -231,6 +234,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         reason: 'prepare-failed',
                         error,
                     })
+                    playFailure()
                     setStatus('error')
                     setError({ phase: 'prepare', message })
                     return title === undefined
@@ -264,6 +268,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     throw error
                 }
                 const copy = resolveErrorCopy(error, t, undefined, getMessage)
+                playFailure()
                 setStatus('error')
                 setError({ phase: 'prepare', message: copy.body })
                 return {
@@ -288,6 +293,11 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             if (result.kind === 'failed') {
                 const { phase } = result.failure
+                if (result.failure.reason === 'submission-failed') {
+                    handleSubmitError(result.failure.error)
+                } else {
+                    playFailure()
+                }
                 const { message, title } = describeFailure(result.failure)
                 setError({ phase, message })
                 return title === undefined
@@ -296,7 +306,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
             return { kind: result.kind }
         },
-        [executeSwap, t, getMessage, describeFailure],
+        [
+            executeSwap,
+            t,
+            getMessage,
+            describeFailure,
+            handleSubmitError,
+            playFailure,
+        ],
     )
 
     const reset = useCallback(() => {

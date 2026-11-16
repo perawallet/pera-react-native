@@ -52,6 +52,8 @@ import {
     toEvmFeeEstimate,
     type EvmTransferFees,
 } from './fees'
+import { readEvmApprovals } from '../approvals/read-approvals'
+import { toEvmApprovalRevoke } from './approval-revoke'
 import { allocateEthereumNonce } from './nonce-pool'
 import { encodeEvmNftTransfer, readEvmNftTransferAsset } from './nft-transfer'
 import {
@@ -128,6 +130,23 @@ const toEvmTransfer = async (
     context: BuildContext,
 ): Promise<EvmTransfer> => {
     const chainId = eip155ChainIdOf(context.scope, chain)
+    if (intent.kind === 'approval-revoke') {
+        if (!isAddress(intent.account)) throw new InvalidSendParamsError()
+        const { to, data, summary } = toEvmApprovalRevoke(
+            intent.approval,
+            chain,
+        )
+        return {
+            call: {
+                chainId,
+                from: getAddress(intent.account),
+                to,
+                value: 0n,
+                data,
+            },
+            summary,
+        }
+    }
     if (intent.kind !== 'transfer') {
         throw new UnsupportedTransactionIntentError(intent.kind, chain.row.id)
     }
@@ -310,6 +329,8 @@ export const createEvmTransferAdapter = (
     getFeeEstimate: (intent, context) =>
         estimateEvmTransferFee(ctx, chain, intent, context),
     spendableBalance: createEvmSpendableBalance(chain),
+    listApprovals: (account, scope) =>
+        readEvmApprovals(ctx, chain, scope, account),
     buildReplacement: (request, context) =>
         buildEvmReplacement(ctx, chain, request, context),
     findBlockingGap: (request, context) =>

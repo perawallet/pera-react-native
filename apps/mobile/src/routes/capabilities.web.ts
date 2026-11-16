@@ -49,6 +49,7 @@ export const routeCapabilities: RouteCapabilities = {
     // awkward with a mouse), so the slide/tap choice would be a no-op here.
     confirmationModeSetting: false,
     analyticsConsent: false,
+    hapticFeedback: false,
     developerSettings: true, // internal builds need network/debug toggles
     developerGallery: isDeveloperGalleryIncluded,
     migrationDevTools: isMigrationDevToolsIncluded,

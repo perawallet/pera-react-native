@@ -12,13 +12,14 @@
 
 // The balance-impact summary rendered inside the live review sheet.
 // Proves the pipeline → computeBalanceImpact → BalanceImpactSummary path wires
-// up end-to-end: outgoing payments surface under the "you will spend" section.
-// The summary lives on the multi-transaction group view (TransactionListScreen)
-// — a single transaction conveys its impact through the signed header amount —
-// so the group review is what we exercise here. (Integration i18n returns keys
-// verbatim.) A group where nothing changes hands hides the summary entirely.
+// up end-to-end: outgoing payments surface on the "You send" side.
+// BalanceImpactSummary is what the multi-transaction group view
+// (TransactionListScreen) renders, so the group review is what we exercise here.
+// (Integration i18n returns keys verbatim.) A group where nothing changes hands
+// hides the summary entirely.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { within } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -39,6 +40,8 @@ import {
     drainPendingSignRequests,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import { ALGORAND_CHAIN_ID } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
@@ -67,7 +70,7 @@ describe('Flow: balance-impact summary in the review sheet', () => {
         )
     })
 
-    it('shows outgoing payments under the spend section', async () => {
+    it('shows outgoing payments on the send side of the wallet changes', async () => {
         await seedAlgo25Signer()
         // A multi-transaction group renders TransactionListScreen, whose
         // header hosts the balance-impact summary.
@@ -82,11 +85,18 @@ describe('Flow: balance-impact summary in the review sheet', () => {
 
         await waitFor(
             () => {
-                expect(
+                const changes = within(
                     screen.getByTestId('balance-impact-summary'),
+                ).getByTestId('review_wallet_changes')
+                expect(
+                    within(changes).getByTestId(
+                        `review_wallet_send_${nativeAssetFor(ALGORAND_CHAIN_ID).assetId}`,
+                    ),
                 ).toBeTruthy()
                 expect(
-                    screen.getByText('signing.balance_impact.spend_title'),
+                    within(changes).getByTestId(
+                        'review_wallet_receive_nothing',
+                    ),
                 ).toBeTruthy()
             },
             { timeout: 10_000 },

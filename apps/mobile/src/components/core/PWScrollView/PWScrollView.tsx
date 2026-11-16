@@ -10,23 +10,37 @@
  limitations under the License
  */
 
-import { useContext } from 'react'
+import { useContext, useImperativeHandle, useRef, type Ref } from 'react'
 import { getContainerTestProps } from '@utils/test-id-helper'
-import { type ScrollViewProps, StyleSheet } from 'react-native'
+import {
+    type ScrollView as RNScrollView,
+    type ScrollViewProps,
+    StyleSheet,
+} from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import {
+    BottomSheetScrollView,
+    type BottomSheetScrollViewMethods,
+} from '@gorhom/bottom-sheet'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { useStyles } from './styles'
 
+export type PWScrollViewRef = {
+    scrollTo: (options: { x?: number; y?: number; animated?: boolean }) => void
+}
+
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
     /** A plain ScrollView won't scroll inside a sheet; this swaps in gorhom's. */
     inBottomSheet?: boolean
+    /** Forwarded as a narrow handle: the sheet and plain scrollers have different ref types. */
+    ref?: Ref<PWScrollViewRef>
 }
 
 export const PWScrollView = ({
+    ref,
     testID,
     inBottomSheet,
     children,
@@ -44,6 +58,15 @@ export const PWScrollView = ({
     const isInBottomSheet = inBottomSheet ?? isInSheet
     const bottomInset = isInBottomSheet || !isInTabNavigator ? insets.bottom : 0
     const styles = useStyles({ bottomInset })
+    const scrollRef = useRef<RNScrollView>(null)
+    const sheetScrollRef = useRef<BottomSheetScrollViewMethods>(null)
+
+    useImperativeHandle(ref, () => ({
+        scrollTo: options =>
+            (isInBottomSheet ? sheetScrollRef : scrollRef).current?.scrollTo(
+                options,
+            ),
+    }))
 
     // Skip the default bottom padding if the caller set any bottom-affecting
     // padding: RN edge-specificity would otherwise silently override theirs.
@@ -59,6 +82,7 @@ export const PWScrollView = ({
     if (isInBottomSheet) {
         return (
             <BottomSheetScrollView
+                ref={sheetScrollRef}
                 keyboardShouldPersistTaps={
                     keyboardShouldPersistTaps ?? 'handled'
                 }
@@ -75,6 +99,7 @@ export const PWScrollView = ({
 
     return (
         <ScrollView
+            ref={scrollRef}
             // RN's default ('never') swallows the first tap on a child while an
             // input is focused; 'handled' lets the tap through.
             keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}

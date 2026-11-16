@@ -16,6 +16,7 @@ import Animated, {
     useAnimatedStyle,
     type SharedValue,
 } from 'react-native-reanimated'
+import { useHaptics } from '@hooks/useHaptics'
 import { PWView } from '../PWView'
 import { useTabBarStyles } from '../PWTabView/styles'
 import { PWPagerTabItem } from './PWPagerTabItem'
@@ -48,6 +49,7 @@ export const PWPagerTabBar = ({
     offset,
 }: PWPagerTabBarProps) => {
     const styles = useTabBarStyles()
+    const haptics = useHaptics()
     const [containerWidth, setContainerWidth] = useState(0)
 
     const handleLayout = (event: LayoutChangeEvent) => {
@@ -86,7 +88,12 @@ export const PWPagerTabBar = ({
                         title={tab.title}
                         index={tabIndex}
                         offset={offset}
-                        onPress={() => onIndexChange(tabIndex)}
+                        onPress={() => {
+                            if (tabIndex !== Math.round(offset.value)) {
+                                haptics.selection()
+                            }
+                            onIndexChange(tabIndex)
+                        }}
                     />
                 ))}
             </PWView>

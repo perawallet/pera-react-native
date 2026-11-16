@@ -277,6 +277,60 @@ describe('wallet operation wire codec', () => {
 })
 
 describe('isConnectionsControlMessage', () => {
+    it('accepts a mark-request-approved command naming the request', () => {
+        expect(
+            isConnectionsControlMessage({
+                scope: CONNECTIONS_CONTROL_SCOPE,
+                kind: 'mark-request-approved',
+                connectionId: 'c1',
+                correlationId: '7',
+            }),
+        ).toBe(true)
+    })
+
+    it.each(['connectionId', 'correlationId'])(
+        'rejects a mark-request-approved command without %s',
+        field => {
+            const message: Record<string, unknown> = {
+                scope: CONNECTIONS_CONTROL_SCOPE,
+                kind: 'mark-request-approved',
+                connectionId: 'c1',
+                correlationId: '7',
+            }
+            delete message[field]
+
+            expect(isConnectionsControlMessage(message)).toBe(false)
+        },
+    )
+
+    it('accepts a change-account command naming the connection, chain and address', () => {
+        expect(
+            isConnectionsControlMessage({
+                scope: CONNECTIONS_CONTROL_SCOPE,
+                kind: 'change-account',
+                connectionId: 'c1',
+                chainId: 'ethereum',
+                address: '0xB',
+            }),
+        ).toBe(true)
+    })
+
+    it.each(['connectionId', 'chainId', 'address'])(
+        'rejects a change-account command without %s',
+        field => {
+            const message: Record<string, unknown> = {
+                scope: CONNECTIONS_CONTROL_SCOPE,
+                kind: 'change-account',
+                connectionId: 'c1',
+                chainId: 'ethereum',
+                address: '0xB',
+            }
+            delete message[field]
+
+            expect(isConnectionsControlMessage(message)).toBe(false)
+        },
+    )
+
     it('accepts a pair command with an optional requester origin', () => {
         expect(
             isConnectionsControlMessage({

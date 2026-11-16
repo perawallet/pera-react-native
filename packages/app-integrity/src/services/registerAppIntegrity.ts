@@ -16,6 +16,7 @@ import {
     isConnectivityError,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { requestChallenge, attestDevice } from '../api/integrity'
 import { useAppIntegrityStore } from '../store'
@@ -31,7 +32,36 @@ export type RegisterAppIntegrityResult = {
     error?: string
 }
 
-export const registerAppIntegrity = async ({
+/** The longest a guarded request holds for the launch's attestation. */
+export const INTEGRITY_REGISTRATION_WAIT_MS = 10_000
+
+let inFlight: Nullable<{ promise: Promise<unknown>; startedAt: number }> = null
+
+/**
+ * Resolves when the registration in flight settles, at once when none is, or
+ * `timeoutMs` after it started: the deadline is the registration's, so a hung
+ * attestation costs each later call nothing. Never rejects. Before the launch
+ * hook has started one, nothing is in flight and this returns at once; guarded
+ * queries only mount after that hook's first effect.
+ */
+export const waitForIntegrityRegistration = (
+    timeoutMs: number = INTEGRITY_REGISTRATION_WAIT_MS,
+): Promise<void> => {
+    if (!inFlight) return Promise.resolve()
+    const { promise: pending, startedAt } = inFlight
+    const remaining = startedAt + timeoutMs - Date.now()
+    if (remaining <= 0) return Promise.resolve()
+    return new Promise<void>(resolve => {
+        const timer = setTimeout(resolve, remaining)
+        const done = () => {
+            clearTimeout(timer)
+            resolve()
+        }
+        pending.then(done, done)
+    })
+}
+
+const runRegistration = async ({
     deployment,
     signal,
 }: RegisterAppIntegrityParams): Promise<RegisterAppIntegrityResult> => {
@@ -120,4 +150,17 @@ export const registerAppIntegrity = async ({
         store.setError(message)
         return { status: 'error', error: message }
     }
+}
+
+export const registerAppIntegrity = (
+    params: RegisterAppIntegrityParams,
+): Promise<RegisterAppIntegrityResult> => {
+    const registration = runRegistration(params)
+    const entry = { promise: registration, startedAt: Date.now() }
+    inFlight = entry
+    const clear = () => {
+        if (inFlight === entry) inFlight = null
+    }
+    registration.then(clear, clear)
+    return registration
 }

@@ -28,6 +28,8 @@ export type SheetHeaderProps = {
     subtitle?: string | ReactNode
     rightAction?: ReactNode
     onClose?: () => void
+    /** Swaps the close icon for a back chevron, for a step pushed inside the sheet. */
+    onBack?: () => void
     /**
      * Force the close icon on/off. When omitted, the close icon shows only for
      * full/modal sheets or when pan-down-to-close is disabled. Set `true` to
@@ -47,6 +49,7 @@ export const SheetHeader = ({
     subtitle,
     rightAction,
     onClose,
+    onBack,
     showClose: showCloseProp,
     paddingStyle = 'dense',
     style,
@@ -61,6 +64,30 @@ export const SheetHeader = ({
 
     const isFullScreen = size === 'full' || size === 'modal'
     const showClose = showCloseProp ?? (isFullScreen || !isPanDownEnabled)
+
+    const renderLeft = () => {
+        if (onBack) {
+            return (
+                <PWIcon
+                    name='chevron-left'
+                    variant='primary'
+                    onPress={onBack}
+                    testID={testID ? `${testID}-back` : undefined}
+                    hitSlop={theme.spacing.xl}
+                />
+            )
+        }
+        if (!showClose) return undefined
+        return (
+            <PWIcon
+                name='cross'
+                variant='primary'
+                onPress={handleClose}
+                testID={testID ? `${testID}-close` : undefined}
+                hitSlop={theme.spacing.xl}
+            />
+        )
+    }
 
     const renderCenter = () => {
         if (typeof title !== 'string') return title
@@ -107,17 +134,7 @@ export const SheetHeader = ({
 
     return (
         <PWToolbar
-            left={
-                showClose ? (
-                    <PWIcon
-                        name='cross'
-                        variant='primary'
-                        onPress={handleClose}
-                        testID={testID ? `${testID}-close` : undefined}
-                        hitSlop={theme.spacing.xl}
-                    />
-                ) : undefined
-            }
+            left={renderLeft()}
             center={renderCenter()}
             right={rightAction}
             paddingStyle={paddingStyle}

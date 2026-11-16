@@ -69,6 +69,7 @@ export const PERA_SERVICES = [
     'nfts',
     'contracts',
     'simulations',
+    'approvals',
 ] as const
 
 export type PeraService = (typeof PERA_SERVICES)[number]

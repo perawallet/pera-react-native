@@ -120,6 +120,7 @@ const makeContext = (store = memoryStore()) => ({
     onMessage: vi.fn<ConnectionHandlerContext['onMessage']>(),
     onDisconnected: vi.fn<ConnectionHandlerContext['onDisconnected']>(),
     onRequestExpired: vi.fn<ConnectionHandlerContext['onRequestExpired']>(),
+    onRequestWithdrawn: vi.fn(),
     onError: vi.fn<ConnectionHandlerContext['onError']>(),
 })
 

@@ -21,7 +21,6 @@ import { HdDerivationTypeUnsupportedError } from '../accounts/errors'
 import {
     algorandBackupKindIdOf,
     algorandBackupLocalKindOf,
-    algorandMnemonicBackupKeyId,
     serializeAlgorandAccount,
     serializeAlgorandMnemonicSecret,
 } from './serialize-account'
@@ -77,7 +76,6 @@ export const algorandBackupAdapter: BackupChainAdapter = {
     localKindOf: algorandBackupLocalKindOf,
     kindIdOf: algorandBackupKindIdOf,
     serializeMnemonicSecret: serializeAlgorandMnemonicSecret,
-    mnemonicBackupKeyId: algorandMnemonicBackupKeyId,
     useImportFromSeed: () => useImportAlgo25FromSeed().importFromSeed,
     decodePrivateKey: decodePrivateKeyBytes,
     secureBackup: {

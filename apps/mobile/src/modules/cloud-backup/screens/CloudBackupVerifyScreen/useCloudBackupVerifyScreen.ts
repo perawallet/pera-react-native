@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import * as Haptics from 'expo-haptics'
 import { useCloudBackupDraftStore } from '@perawallet/wallet-core-backup'
 import {
     MNEMONIC_WORDLIST,
@@ -22,6 +21,7 @@ import {
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
 import { useBackRemovalGuard } from '@hooks/useBackRemovalGuard'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useRegisterCloudBackup } from '../../hooks/useRegisterCloudBackup'
@@ -70,11 +70,12 @@ const useVerificationPairs = (): VerificationPairs => {
 const useWrongAnswerFeedback = (): (() => void) => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const haptics = useHaptics()
 
     return useCallback(() => {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+        haptics.error()
         errorToast(t('cloud_backup.verify.error_message'), '')
-    }, [errorToast, t])
+    }, [errorToast, haptics, t])
 }
 
 type UseCloudBackupVerifyScreenResult = {

@@ -12,12 +12,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
 import { useAnyEnabledChainHasCapability } from '@perawallet/wallet-core-chain-shared'
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
+import {
+    getMessageStatusQueryKey,
+    getNotificationStatusQueryKey,
+    getNotificationsListQueryKey,
+} from '../querykeys'
 
 const modeState = vi.hoisted(() => ({ current: 'live' as WalletMode }))
 
@@ -214,6 +221,128 @@ describe('useMarkNotificationsAsReadMutation', () => {
                 'test-device-id',
                 12345,
             )
+        })
+    })
+
+    describe('optimistic read state', () => {
+        const listKey = getNotificationsListQueryKey('live', 'test-device-id')
+        const messageStatusKey = getMessageStatusQueryKey(
+            'live',
+            'test-device-id',
+        )
+        const notificationStatusKey = getNotificationStatusQueryKey(
+            'live',
+            'test-device-id',
+        )
+
+        const row = (id: string, isUnread: boolean) => ({
+            id,
+            creation_datetime: '2026-11-16T00:00:00Z',
+            is_unread: isUnread,
+        })
+
+        const seed = () => {
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false } },
+            })
+            queryClient.setQueryData(listKey, {
+                pageParams: [''],
+                pages: [
+                    {
+                        next: null,
+                        previous: null,
+                        results: [
+                            row('43', true),
+                            row('42', true),
+                            row('41', false),
+                        ],
+                    },
+                ],
+            })
+            queryClient.setQueryData(messageStatusKey, {
+                hasUnreadItems: true,
+                hasUnreadNotifications: true,
+                hasUnreadInboxItems: true,
+                unreadInboxCount: 2,
+            })
+            queryClient.setQueryData(notificationStatusKey, {
+                has_new_notification: true,
+            })
+            const wrapper = ({ children }: { children: React.ReactNode }) =>
+                React.createElement(
+                    QueryClientProvider,
+                    { client: queryClient },
+                    children,
+                )
+            return { queryClient, wrapper }
+        }
+
+        const unreadIds = (queryClient: QueryClient) =>
+            (
+                queryClient.getQueryData(listKey) as {
+                    pages: { results: { id: string; is_unread: boolean }[] }[]
+                }
+            ).pages[0].results
+                .filter(r => r.is_unread)
+                .map(r => r.id)
+
+        it('clears read state up to the last seen id before the request settles', async () => {
+            vi.mocked(updateLastSeenNotification).mockReturnValue(
+                new Promise(() => {}),
+            )
+            const { queryClient, wrapper } = seed()
+            const { result } = renderHook(
+                () => useMarkNotificationsAsReadMutation(),
+                { wrapper },
+            )
+
+            act(() => {
+                result.current.markAsRead(42)
+            })
+
+            await waitFor(() => {
+                expect(unreadIds(queryClient)).toEqual(['43'])
+            })
+            expect(queryClient.getQueryData(messageStatusKey)).toEqual({
+                hasUnreadItems: true,
+                hasUnreadNotifications: false,
+                hasUnreadInboxItems: true,
+                unreadInboxCount: 2,
+            })
+            expect(queryClient.getQueryData(notificationStatusKey)).toEqual({
+                has_new_notification: false,
+            })
+        })
+
+        it('restores the read state and refetches when the request fails', async () => {
+            vi.mocked(updateLastSeenNotification).mockRejectedValue(
+                new Error('Network error'),
+            )
+            const { queryClient, wrapper } = seed()
+            const { result } = renderHook(
+                () => useMarkNotificationsAsReadMutation(),
+                { wrapper },
+            )
+
+            act(() => {
+                result.current.markAsRead(43)
+            })
+
+            await waitFor(() => {
+                expect(updateLastSeenNotification).toHaveBeenCalled()
+            })
+            await waitFor(() => {
+                expect(unreadIds(queryClient)).toEqual(['43', '42'])
+            })
+            expect(
+                queryClient.getQueryData<{ hasUnreadNotifications: boolean }>(
+                    messageStatusKey,
+                )?.hasUnreadNotifications,
+            ).toBe(true)
+            expect(queryClient.getQueryData(notificationStatusKey)).toEqual({
+                has_new_notification: true,
+            })
+            expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true)
         })
     })
 })

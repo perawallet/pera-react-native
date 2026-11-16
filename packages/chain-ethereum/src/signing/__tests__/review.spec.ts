@@ -19,6 +19,7 @@ import {
     erc721Abi,
     getAddress,
     maxUint256,
+    parseAbi,
 } from 'viem'
 import type { Address, Hex, TransactionSerializableEIP1559 } from 'viem'
 import {
@@ -1042,7 +1043,7 @@ describe("a dApp's standard token calls", () => {
         ).not.toHaveProperty('knownSpender')
     })
 
-    it('name no spender for an approve to a Uniswap position manager, and still name the Universal Router', () => {
+    it('name the spender for an approve to a Uniswap position manager and to the Universal Router', () => {
         const approveTo = (
             spender: Address,
         ): TransactionSerializableEIP1559 => ({
@@ -1060,8 +1061,11 @@ describe("a dApp's standard token calls", () => {
                     approveTo('0xC36442b4a4522E871399CD717aBDD847Ab11FE88'),
                 ),
                 ETHEREUM,
-            ),
-        ).not.toHaveProperty('knownSpender')
+            )?.knownSpender,
+        ).toEqual({
+            name: 'Uniswap V3 Positions',
+            projectDomain: 'uniswap.org',
+        })
         expect(
             ethereumViewOf(
                 unsigned(
@@ -1318,6 +1322,84 @@ describe('a call to a known contract', () => {
         expect(ethereumReviewerAdapter.policy.autoApproveLocal(reviewed)).toBe(
             false,
         )
+    })
+
+    describe('a Uniswap V3 liquidity mint', () => {
+        const MANAGER: Address = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+        const managerAbi = parseAbi([
+            'struct MintParams { address token0; address token1; uint24 fee; int24 tickLower; int24 tickUpper; uint256 amount0Desired; uint256 amount1Desired; uint256 amount0Min; uint256 amount1Min; address recipient; uint256 deadline; }',
+            'function mint(MintParams params)',
+            'function refundETH()',
+            'function multicall(bytes[] data)',
+        ])
+        const mint = encodeFunctionData({
+            abi: managerAbi,
+            functionName: 'mint',
+            args: [
+                {
+                    token0: TOKEN,
+                    token1: WETH,
+                    fee: 500,
+                    tickLower: -887_270,
+                    tickUpper: 887_270,
+                    amount0Desired: 353_961n,
+                    amount1Desired: 168n * 10n ** 12n,
+                    amount0Min: 0n,
+                    amount1Min: 0n,
+                    recipient: SENDER,
+                    deadline: 1_800_000_000n,
+                },
+            ],
+        })
+        const add: RecordedCall = {
+            from: SENDER,
+            to: MANAGER,
+            value: 168n * 10n ** 12n,
+            data: encodeFunctionData({
+                abi: managerAbi,
+                functionName: 'multicall',
+                args: [
+                    [
+                        mint,
+                        encodeFunctionData({
+                            abi: managerAbi,
+                            functionName: 'refundETH',
+                        }),
+                    ],
+                ],
+            }),
+        }
+
+        it('is titled Add liquidity, with no unknown-contract warning, while contractDecoding is on', async () => {
+            const { reviewed, summary, view } = await reviewRecorded(
+                add,
+                DECODING,
+            )
+
+            expect(summary.title).toEqual({
+                key: 'transactions.list_item.add_liquidity',
+            })
+            expect(view.action).toMatchObject({
+                kind: 'add-liquidity',
+                position: { kind: 'new' },
+            })
+            expect(view.knownContract?.name).toBe('Uniswap V3 Positions')
+            expect(reviewed.warnings).toEqual([])
+            expect(
+                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
+            ).toBe(false)
+        })
+
+        it('stays an unknown contract call while contractDecoding is off', async () => {
+            const { reviewed, summary } = await reviewRecorded(add)
+
+            expect(summary.title).toEqual({
+                key: 'transactions.list_item.contract_call',
+            })
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({ type: 'unknown-contract' }),
+            ])
+        })
     })
 
     it('labels a router call with a command it cannot read, without calling it a swap or dropping the warning', async () => {

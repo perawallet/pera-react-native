@@ -19,7 +19,7 @@ import {
     isCallUnexplained,
     requesterHostOf,
     type ContractCallNotice,
-} from '../EthereumContractCallDetails'
+} from '../../utils/contractCallNotice'
 import type { EthereumSimulationSectionState } from '../EthereumSimulationSection'
 
 export type EthereumReviewWarning =
@@ -27,7 +27,8 @@ export type EthereumReviewWarning =
     /** `maxFee` is in wei. */
     | { kind: 'high-fee'; maxFee: Decimal; requesterHost: Optional<string> }
     | { kind: 'unchecked-call'; notice: ContractCallNotice }
-    | { kind: 'simulation-unavailable' }
+    /** The simulation sends assets out and brings nothing, not even a permission, back. */
+    | { kind: 'nothing-back' }
 
 type EthereumReviewWarningsParams = {
     presentation: EthereumTransactionPresentation
@@ -62,8 +63,14 @@ export const ethereumReviewWarningsOf = ({
             notice: contractCallNoticeOf(source, verifiedOrigin),
         })
     }
-    if (simulation.status === 'unavailable') {
-        warnings.push({ kind: 'simulation-unavailable' })
+    // A failed simulation isn't listed: the changes card says so in its place.
+    if (
+        simulation.status === 'success' &&
+        simulation.spend.length > 0 &&
+        simulation.receive.length === 0 &&
+        simulation.approvals.length === 0
+    ) {
+        warnings.push({ kind: 'nothing-back' })
     }
 
     return warnings

@@ -54,6 +54,12 @@ const {
 }))
 
 vi.mock('@hooks/useLanguage')
+
+const mockHaptics = vi.hoisted(() => ({ success: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
 vi.mock('@modules/chain-ui', () => ({
     networkListOf: (chainIds: string[]) => chainIds.join(' & '),
 }))
@@ -318,6 +324,22 @@ describe('useImportSelectAddressesScreen — import mode', () => {
             account: sampleDiscovered[0],
         })
         expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        expect(mockHaptics.success).not.toHaveBeenCalled()
+    })
+
+    test('hands the rekeyed step whether this step imported anything, and plays no success itself', async () => {
+        mockDiscoverDelegatedAccounts.mockResolvedValue([sampleDiscovered[0]])
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+            accounts: [sampleDiscovered[0]],
+            hasImportedAccounts: true,
+        })
+        expect(mockHaptics.success).not.toHaveBeenCalled()
     })
 
     test('multiple imported accounts keep auto-names and exit without NameAccount', async () => {
@@ -328,6 +350,7 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         })
 
         expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(mockHaptics.success).toHaveBeenCalledTimes(1)
         expect(mockReplace).not.toHaveBeenCalledWith(
             'NameAccount',
             expect.anything(),

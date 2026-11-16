@@ -17,5 +17,7 @@ export {
 
 export {
     mockProjects,
+    mockDiscoverProjects,
+    type MockDiscoverProjectsParams,
     type MockProjectsParams,
 } from './api/projects/msw-handlers'

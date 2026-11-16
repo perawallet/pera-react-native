@@ -91,6 +91,12 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
+const { mockPlaySuccess } = vi.hoisted(() => ({ mockPlaySuccess: vi.fn() }))
+
+vi.mock('@hooks/useTransactionOutcomeHaptics', () => ({
+    useTransactionOutcomeHaptics: () => ({ playSuccess: mockPlaySuccess }),
+}))
+
 vi.mock('@hooks/useLanguage')
 
 vi.mock('../../../hooks/useSwapExecution', () => ({
@@ -221,6 +227,7 @@ describe('useSwapConfirmationActions', () => {
         )
         expect(mockSchedule).toHaveBeenCalled()
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
+        expect(mockPlaySuccess).toHaveBeenCalledTimes(1)
     })
 
     it('resolves with cancelled when execute reports user rejection', async () => {
@@ -264,6 +271,7 @@ describe('useSwapConfirmationActions', () => {
             message: 'Pool drained',
         })
         expect(mockSchedule).not.toHaveBeenCalled()
+        expect(mockPlaySuccess).not.toHaveBeenCalled()
     })
 
     // F1: the submission-phase outcome's resolved title must reach the

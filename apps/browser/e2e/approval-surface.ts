@@ -249,3 +249,26 @@ export const selectAccountAndArmConnect = async (
     }
     await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
 }
+
+/**
+ * Picks the first offered account into the EVM connect row, then arms
+ * Connect. A page-opened window starts the row empty, and the row waits for
+ * the same arming as Connect before it opens the picker.
+ */
+export const selectEvmAccountAndArmConnect = async (
+    approvalPage: Page,
+    connectButton: Locator,
+): Promise<Locator> => {
+    const row = approvalPage.getByTestId('wc_evm_account_row')
+    await expect(row).toBeVisible({ timeout: 20_000 })
+    await armApprovalAction(approvalPage, row)
+    await row.click()
+    const option = approvalPage
+        .locator('[data-testid^="connect_account_picker-"]')
+        .first()
+    await expect(option).toBeVisible({ timeout: 20_000 })
+    await option.click()
+    await expect(option).toBeHidden()
+    await armApprovalAction(approvalPage, connectButton)
+    return row
+}

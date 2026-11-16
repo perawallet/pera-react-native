@@ -52,6 +52,18 @@ describe('projectQueryKeys', () => {
         ).toBe(true)
     })
 
+    describe('discover', () => {
+        test('sorts the chains so their order never splits the cache', () => {
+            expect(
+                projectQueryKeys.discover('live', 'ios', ['b', 'a']),
+            ).toEqual([
+                'projects',
+                'discover',
+                { deployment: 'live', platform: 'ios', chains: ['a', 'b'] },
+            ])
+        })
+    })
+
     describe('application', () => {
         test('includes the application id and scope in the key', () => {
             const key = projectQueryKeys.application('123', MAINNET)

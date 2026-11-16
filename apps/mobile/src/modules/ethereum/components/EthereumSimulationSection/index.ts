@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-export { EthereumSimulationSection } from './EthereumSimulationSection'
 export {
     useEthereumSimulationSection,
+    type EthereumApprovalGrant,
     type EthereumSimulationSectionState,
 } from './useEthereumSimulationSection'

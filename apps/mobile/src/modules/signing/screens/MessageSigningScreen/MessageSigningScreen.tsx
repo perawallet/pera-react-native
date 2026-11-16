@@ -117,7 +117,9 @@ export const MessageSigningScreen = () => {
                         <SpendApprovalWarning
                             approval={spendReview.approval}
                             scope={spendReview.scope}
-                            showsDeadline
+                            requestKind='signature'
+                            source={sourceMetadata}
+                            verifiedOrigin={verifiedOrigin}
                         />
                     )}
                     <RequestSiteWarning />

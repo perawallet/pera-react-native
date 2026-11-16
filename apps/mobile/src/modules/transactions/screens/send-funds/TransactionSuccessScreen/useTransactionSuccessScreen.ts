@@ -13,6 +13,7 @@
 import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import { useWebView } from '@modules/webview'
 import {
     useSendFunds,
@@ -72,6 +73,7 @@ export const useTransactionSuccessScreen =
             transactionId,
         )
         const { pushWebView } = useWebView()
+        const { playSuccess } = useTransactionOutcomeHaptics()
 
         const isClaimFlow =
             routeVariant === 'claim' || routeVariant === 'reject'
@@ -93,6 +95,10 @@ export const useTransactionSuccessScreen =
         }, [explorerUrl, pushWebView])
 
         const handleViewInExplorer = explorerUrl ? viewInExplorer : undefined
+
+        useEffect(() => {
+            playSuccess()
+        }, [playSuccess])
 
         useEffect(() => {
             const subscription = BackHandler.addEventListener(

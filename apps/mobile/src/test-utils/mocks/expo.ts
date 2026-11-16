@@ -107,9 +107,9 @@ vi.mock('expo-file-system', () => {
 })
 
 vi.mock('expo-haptics', () => ({
-    notificationAsync: vi.fn(),
-    impactAsync: vi.fn(),
-    selectionAsync: vi.fn(),
+    notificationAsync: vi.fn(() => Promise.resolve()),
+    impactAsync: vi.fn(() => Promise.resolve()),
+    selectionAsync: vi.fn(() => Promise.resolve()),
     NotificationFeedbackType: {
         Success: 'success',
         Warning: 'warning',

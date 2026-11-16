@@ -30,7 +30,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { AccountAssetHoldingsSchema } from './schema'
 import { holdingJoin } from './holdingJoin'
-import { isOptInChain } from '../chainProtocol'
 import { isNotSuspiciousSql } from './holdingSuspicion'
 import { hiddenHoldingSql } from './holdingVisibility'
 
@@ -42,7 +41,7 @@ export type AccountPortfolioTotals = {
     nativeAmount: Decimal
     /** USD per whole unit of the native asset; null until its price syncs. */
     nativeUsdPrice: Nullable<Decimal>
-    /** USD value of all non-native holdings; rows without a price, or that Pera flags suspicious or the user hid on a chain without opt-in, contribute 0. */
+    /** USD value of all non-native holdings; rows without a price, that Pera flags suspicious, or that the user hid, contribute 0. */
     nonNativeUsdValue: Decimal
     /** Number of holdings rows (includes the native holding). */
     holdingsCount: number
@@ -71,13 +70,10 @@ export async function getAccountPortfolioTotals({
 }): Promise<AccountPortfolioTotals> {
     const scopeKey = toScopeKey(scope)
     const native = nativeAssetFor(scope.chainId)
-    // The user chose every asset on an opt-in chain, so its values all count.
-    const isCounted = isOptInChain(scope.chainId)
-        ? sql`1`
-        : and(
-              isNotSuspiciousSql(),
-              not(hiddenHoldingSql([{ address: accountAddress, scope }])),
-          )!
+    const isCounted = and(
+        isNotSuspiciousSql(),
+        not(hiddenHoldingSql([{ address: accountAddress, scope }])),
+    )!
     const rows = await db
         .select({
             // The primary key leaves at most one native row, so MAX picks it.

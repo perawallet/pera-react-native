@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { http } from 'msw'
 import { setupServer } from 'msw/node'
 import {
     encodeFunctionData,
@@ -98,6 +99,36 @@ type NodeOptions = {
     balance?: Hex
     /** Answers `eth_call`, such as an allowance read. */
     callResult?: Hex
+    /** Every endpoint serves the one ledger, as an extension's separate contexts each reach the same node. */
+    rpcUrls?: readonly string[]
+}
+
+export type ReceiptHold = {
+    isWaiting: () => boolean
+    release: () => void
+}
+
+/**
+ * Parks receipt reads on `rpcUrl` until released, then lets them through.
+ * Answering `null` instead would not do: viem re-polls a receipt only on a new
+ * block, and the fixture node's block number never moves.
+ */
+const holdReceipts = (rpcUrl: string): ReceiptHold => {
+    let isWaiting = false
+    let release = (): void => {}
+    const released = new Promise<void>(resolve => {
+        release = resolve
+    })
+    server.use(
+        http.post(rpcUrl, async ({ request }) => {
+            const body = await request.clone().text()
+            if (!body.includes('eth_getTransactionReceipt')) return undefined
+            isWaiting = true
+            await released
+            return undefined
+        }),
+    )
+    return { isWaiting: () => isWaiting, release }
 }
 
 /**
@@ -112,63 +143,70 @@ export const fakeNode = ({
     baseFeeAfterFirstSend,
     balance = '0x0',
     callResult = '0x',
+    rpcUrls = [TEST_RPC_URL],
 }: NodeOptions = {}) => {
     const events: string[] = []
     const sent = new Map<Hex, Hex>()
     const toOf = new Map<Hex, Hex>()
     server.use(
-        ...evmRpcHandlers({
-            rpcUrl: TEST_RPC_URL,
-            responses: {
-                eth_getBalance: balance,
-                eth_call: callResult,
-                eth_getTransactionCount: () => `0x${sent.size.toString(16)}`,
-                eth_feeHistory: () => {
-                    const base =
-                        baseFeeAfterFirstSend && sent.size > 0
-                            ? baseFeeAfterFirstSend
-                            : '0x3b9aca00'
-                    return {
-                        oldestBlock: '0x1',
-                        baseFeePerGas: [base, base],
-                        gasUsedRatio: [0.5],
-                        reward: [['0x3b9aca00', '0x3b9aca00', '0x3b9aca00']],
-                    }
+        ...rpcUrls.flatMap(rpcUrl =>
+            evmRpcHandlers({
+                rpcUrl,
+                responses: {
+                    eth_getBalance: balance,
+                    eth_call: callResult,
+                    eth_getTransactionCount: () =>
+                        `0x${sent.size.toString(16)}`,
+                    eth_feeHistory: () => {
+                        const base =
+                            baseFeeAfterFirstSend && sent.size > 0
+                                ? baseFeeAfterFirstSend
+                                : '0x3b9aca00'
+                        return {
+                            oldestBlock: '0x1',
+                            baseFeePerGas: [base, base],
+                            gasUsedRatio: [0.5],
+                            reward: [
+                                ['0x3b9aca00', '0x3b9aca00', '0x3b9aca00'],
+                            ],
+                        }
+                    },
+                    eth_estimateGas: params => {
+                        const [call] = params as [{ to?: Hex }]
+                        return unestimable &&
+                            call.to?.toLowerCase() === unestimable.toLowerCase()
+                            ? new EvmRpcErrorFixture(3, 'execution reverted')
+                            : '0xfde8'
+                    },
+                    eth_sendRawTransaction: params => {
+                        const raw = params[0] as Hex
+                        const hash = keccak256(raw)
+                        sent.set(hash, raw)
+                        toOf.set(hash, parseTransaction(raw).to ?? '0x')
+                        events.push(`send:${hash}`)
+                        return hash
+                    },
+                    eth_getTransactionByHash: params =>
+                        sent.has(params[0] as Hex) ? HELD_BY_NODE : null,
+                    eth_getTransactionReceipt: params => {
+                        const hash = params[0] as Hex
+                        if (!isMining || !sent.has(hash)) return null
+                        const to = toOf.get(hash) ?? '0x'
+                        const status = statusFor(to)
+                        events.push(`receipt:${hash}:${status}`)
+                        return evmTransactionReceipt({
+                            transactionHash: hash,
+                            status,
+                        })
+                    },
                 },
-                eth_estimateGas: params => {
-                    const [call] = params as [{ to?: Hex }]
-                    return unestimable &&
-                        call.to?.toLowerCase() === unestimable.toLowerCase()
-                        ? new EvmRpcErrorFixture(3, 'execution reverted')
-                        : '0xfde8'
-                },
-                eth_sendRawTransaction: params => {
-                    const raw = params[0] as Hex
-                    const hash = keccak256(raw)
-                    sent.set(hash, raw)
-                    toOf.set(hash, parseTransaction(raw).to ?? '0x')
-                    events.push(`send:${hash}`)
-                    return hash
-                },
-                eth_getTransactionByHash: params =>
-                    sent.has(params[0] as Hex) ? HELD_BY_NODE : null,
-                eth_getTransactionReceipt: params => {
-                    const hash = params[0] as Hex
-                    if (!isMining || !sent.has(hash)) return null
-                    const to = toOf.get(hash) ?? '0x'
-                    const status = statusFor(to)
-                    events.push(`receipt:${hash}:${status}`)
-                    return evmTransactionReceipt({
-                        transactionHash: hash,
-                        status,
-                    })
-                },
-            },
-        }),
+            }),
+        ),
     )
     return {
         events,
         sent,
+        holdReceipts,
         sentCount: () => events.filter(e => e.startsWith('send:')).length,
     }
 }

@@ -12,7 +12,7 @@
 
 import { isHTTPError } from 'ky'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     CardTransport,
@@ -48,7 +48,7 @@ export const setSessionLostHandler = (
 const isUnauthorized = (error: unknown): boolean =>
     isHTTPError(error) && error.response?.status === 401
 
-const proxyRequest = <TData, TVars>(
+const proxyRequest = async <TData, TVars>(
     req: CardTransportRequest<TVars>,
 ): Promise<CardTransportResponse<TData>> =>
     queryClient<TData, TVars>({
@@ -60,7 +60,10 @@ const proxyRequest = <TData, TVars>(
         data: req.data,
         signal: req.signal,
         // Every `/api/v3/baanx/*` route sits behind the app-integrity guard.
-        headers: { ...buildIntegrityHeaders(), ...req.headers },
+        headers: {
+            ...(await buildIntegrityHeadersWhenReady()),
+            ...req.headers,
+        },
         responseType: req.responseType,
         ...(req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : {}),
     })

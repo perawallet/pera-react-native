@@ -29,6 +29,7 @@ import {
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { selectEvmConnectAccount } from '@test-utils/connect-account'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -185,11 +186,7 @@ const connectSession = async (): Promise<FakeWalletKit> => {
     await waitFor(() => {
         expect(findButton('common.connect.label')).toBeTruthy()
     })
-    const row = `wc_account_row_${ETHEREUM_ACCOUNT.id}`
-    await waitFor(() => expect(screen.getByTestId(row)).toBeTruthy(), {
-        timeout: 5000,
-    })
-    fireEvent.click(screen.getByTestId(row))
+    await selectEvmConnectAccount(ETHEREUM_ACCOUNT)
     await waitFor(() => {
         expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
             false,

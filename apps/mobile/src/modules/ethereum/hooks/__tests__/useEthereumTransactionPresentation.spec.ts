@@ -249,7 +249,7 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.titleKey).toBe(
             'transactions.list_item.contract_call',
         )
-        expect(result.current?.iconName).toBe('transactions/application-call')
+        expect(result.current?.iconName).toBe('code')
         expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_TOKEN)
         expect(result.current?.amount).toBeUndefined()
         expect(result.current?.isAmountLoading).toBe(false)
@@ -344,9 +344,7 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.titleKey).toBe(
                 'transactions.list_item.approval',
             )
-            expect(result.current?.iconName).toBe(
-                'transactions/application-call',
-            )
+            expect(result.current?.iconName).toBe('key')
             expect(result.current?.isTransfer).toBe(false)
             expect(result.current?.standardCall?.kind).toBe('token-approval')
             expect(result.current?.counterparty).toBe(
@@ -613,11 +611,17 @@ describe('useEthereumTransactionPresentation', () => {
         })
 
         it.each([
-            ['wrap', { kind: 'wrap', amount: new Decimal(10n ** 18n) }, 'wrap'],
+            [
+                'wrap',
+                { kind: 'wrap', amount: new Decimal(10n ** 18n) },
+                'wrap',
+                'transactions/swap',
+            ],
             [
                 'unwrap',
                 { kind: 'unwrap', amount: new Decimal(10n ** 18n) },
                 'unwrap',
+                'transactions/swap',
             ],
             [
                 'supply',
@@ -628,8 +632,9 @@ describe('useEthereumTransactionPresentation', () => {
                     isEntireBalance: false,
                 },
                 'supply',
+                'fund',
             ],
-        ])('titles a %s from its action', (_name, action, key) => {
+        ])('titles a %s from its action', (_name, action, key, icon) => {
             const { result } = renderHook(() =>
                 useEthereumTransactionPresentation(
                     knownNative({ knownContract: ROUTER_LABEL, action }),
@@ -639,9 +644,7 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.titleKey).toBe(
                 `transactions.list_item.${key}`,
             )
-            expect(result.current?.iconName).toBe(
-                'transactions/application-call',
-            )
+            expect(result.current?.iconName).toBe(icon)
         })
 
         it('keeps the contract call title for a label without an action', () => {
@@ -708,9 +711,7 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.titleKey).toBe(
                 'transactions.list_item.contract_call',
             )
-            expect(result.current?.iconName).toBe(
-                'transactions/application-call',
-            )
+            expect(result.current?.iconName).toBe('code')
             expect(result.current?.knownContract).toBeNull()
             expect(result.current?.contractAction).toBeNull()
             expect(result.current?.isContractActionLoading).toBe(false)

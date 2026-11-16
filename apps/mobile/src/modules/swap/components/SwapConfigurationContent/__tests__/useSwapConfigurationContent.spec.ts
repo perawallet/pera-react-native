@@ -27,8 +27,15 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     }),
 }))
 
+const mockHaptics = vi.hoisted(() => ({ selection: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('useSwapConfigurationContent', () => {
     beforeEach(() => {
+        mockHaptics.selection.mockClear()
         mockSlippage = null
         mockIsLocalCurrencyInput = false
     })
@@ -43,6 +50,45 @@ describe('useSwapConfigurationContent', () => {
         expect(result.current.slippageText).toBe('')
         expect(result.current.useLocalCurrency).toBe(false)
         expect(result.current.isApplyEnabled).toBe(true)
+    })
+
+    it('selects a slippage option with a selection haptic', () => {
+        const { result } = renderHook(() =>
+            useSwapConfigurationContent({ scope: SCOPE, onApply: vi.fn() }),
+        )
+
+        act(() => {
+            result.current.selectSlippageOption('1')
+        })
+
+        expect(result.current.slippageText).toBe('1')
+        expect(mockHaptics.selection).toHaveBeenCalledTimes(1)
+    })
+
+    it('plays no haptic when the option already selected is tapped again', () => {
+        mockSlippage = '1'
+        const { result } = renderHook(() =>
+            useSwapConfigurationContent({ scope: SCOPE, onApply: vi.fn() }),
+        )
+
+        act(() => {
+            result.current.selectSlippageOption('1')
+        })
+
+        expect(mockHaptics.selection).not.toHaveBeenCalled()
+    })
+
+    it('plays no haptic while slippage is typed', () => {
+        const { result } = renderHook(() =>
+            useSwapConfigurationContent({ scope: SCOPE, onApply: vi.fn() }),
+        )
+
+        act(() => {
+            result.current.setSlippageText('1,5')
+        })
+
+        expect(result.current.slippageText).toBe('1.5')
+        expect(mockHaptics.selection).not.toHaveBeenCalled()
     })
 
     it('initializes slippageText from persisted slippage', () => {

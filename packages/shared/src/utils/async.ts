@@ -169,6 +169,33 @@ export const createConcurrencyLimit = (limit: number): ConcurrencyLimit => {
     }
 }
 
+const heldLocks = new Set<string>()
+
+/**
+ * Runs `fn` under the lock `name`, or resolves `undefined` if another holder has
+ * it. Web Locks span every page and worker of an origin; without them the lock
+ * holds within this realm only.
+ */
+export const withLockIfFree = async <T>(
+    name: string,
+    fn: () => Promise<T>,
+): Promise<Optional<T>> => {
+    if (typeof navigator !== 'undefined' && navigator.locks) {
+        return navigator.locks.request(
+            name,
+            { ifAvailable: true },
+            async lock => (lock ? fn() : undefined),
+        )
+    }
+    if (heldLocks.has(name)) return undefined
+    heldLocks.add(name)
+    try {
+        return await fn()
+    } finally {
+        heldLocks.delete(name)
+    }
+}
+
 /**
  * Runs `read` on every item at once. A read that fails while others answer
  * resolves to `fallback`; when every read fails, rejects with the first

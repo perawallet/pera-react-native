@@ -151,12 +151,6 @@ export const fakeSerializeMnemonicSecret: BackupChainAdapter['serializeMnemonicS
         }
     }
 
-export const fakeMnemonicBackupKeyId: BackupChainAdapter['mnemonicBackupKeyId'] =
-    account =>
-        account.custody.kind === 'local'
-            ? (entryOf(account)?.keyPairId ?? null)
-            : null
-
 export const fakeBackupAdapter = (
     overrides: Partial<BackupChainAdapter> = {},
 ): BackupChainAdapter => ({
@@ -171,7 +165,6 @@ export const fakeBackupAdapter = (
     localKindOf: vi.fn(fakeLocalKindOf),
     kindIdOf: vi.fn(fakeKindIdOf),
     serializeMnemonicSecret: vi.fn(fakeSerializeMnemonicSecret),
-    mnemonicBackupKeyId: vi.fn(fakeMnemonicBackupKeyId),
     useImportFromSeed: vi.fn(() => vi.fn()),
     decodePrivateKey: vi.fn(() => null),
     secureBackup: {

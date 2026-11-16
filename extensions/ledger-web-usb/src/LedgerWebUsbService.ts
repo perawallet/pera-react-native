@@ -21,6 +21,7 @@ import {
     classifyLedgerError,
     LedgerDevicePickerUnavailableError,
     resolveUsbDeviceModel,
+    usbLedgerDisplayName,
 } from '@perawallet/wallet-extension-ledger-shared'
 
 export type LedgerWebUsbServiceOptions = {
@@ -72,7 +73,9 @@ export class LedgerWebUsbService implements HardwareWalletService {
                         const model = resolveUsbDeviceModel(device.productId)
                         onDevice({
                             id: key,
-                            name: device.productName || `Ledger ${model}`,
+                            name:
+                                device.productName ||
+                                usbLedgerDisplayName(model),
                             manufacturer: 'ledger',
                             transportType: 'usb',
                             model,

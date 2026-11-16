@@ -11,11 +11,8 @@
  */
 
 import { readAlgorandNative } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { FeeDisplay } from '../FeeDisplay'
-import { KeyRegistrationSummary } from '../KeyRegistrationSummary'
-import { SigningAccountDisplay } from '../SigningAccountDisplay/SigningAccountDisplay'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
-import { TransactionSummaryHeader } from '../TransactionSummaryHeader'
+import { AlgorandTransactionReview } from './AlgorandTransactionReview'
 
 export const AlgorandTransactionReviewBody = ({
     transaction,
@@ -26,30 +23,15 @@ export const AlgorandTransactionReviewBody = ({
     const view = readAlgorandNative(transaction)
 
     if (!view) {
-        return (
-            <TransactionReviewLayout
-                participants={null}
-                actions={actions}
-            />
-        )
+        return <TransactionReviewLayout actions={actions} />
     }
 
     return (
-        <TransactionReviewLayout
-            hero={
-                <TransactionSummaryHeader
-                    transaction={view}
-                    metadata={source}
-                    verifiedOrigin={verifiedOrigin}
-                />
-            }
-            participants={<SigningAccountDisplay transaction={view} />}
-            details={
-                view.txType === 'keyreg' ? (
-                    <KeyRegistrationSummary transaction={view} />
-                ) : undefined
-            }
-            fee={<FeeDisplay transaction={view} />}
+        <AlgorandTransactionReview
+            transaction={transaction}
+            view={view}
+            source={source}
+            verifiedOrigin={verifiedOrigin}
             actions={actions}
         />
     )

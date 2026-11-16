@@ -21,6 +21,7 @@ export type EvmnetChain =
     | 'arbitrum'
     | 'avalanche'
     | 'polygon'
+    | 'optimism'
 
 export type EvmnetNode = {
     rpcUrl: string
@@ -36,6 +37,7 @@ export const EVMNET_CHAINS: readonly EvmnetChain[] = [
     'arbitrum',
     'avalanche',
     'polygon',
+    'optimism',
 ]
 
 // Testnet scopes only: no mainnet chain id is ever signed. Ports and chain ids
@@ -77,7 +79,19 @@ export const EVMNET: Record<EvmnetChain, EvmnetNode> = {
         networkId: 'amoy',
         eip155ChainId: 80_002,
     },
+    optimism: {
+        rpcUrl: 'http://127.0.0.1:8551',
+        container: 'pera_evmnet_optimism',
+        networkId: 'sepolia',
+        eip155ChainId: 11_155_420,
+    },
 }
+
+export const isOpStackEvmnetChain = (chain: EvmnetChain): boolean =>
+    evmChainOf(chain).row.fee.kind === 'eip1559-op-stack'
+
+export const OP_STACK_EVMNET_CHAINS: readonly EvmnetChain[] =
+    EVMNET_CHAINS.filter(isOpStackEvmnetChain)
 
 const REACHABILITY_TIMEOUTS = { readMs: 3000, submitMs: 3000 }
 

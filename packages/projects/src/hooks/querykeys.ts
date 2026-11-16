@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
+import type { DiscoverPlatform } from '../api/projects/endpoints'
 
 const MODULE_PREFIX = 'projects'
 
@@ -19,6 +23,17 @@ export const projectQueryKeys = {
 
     byUrl: (url: string, scope: ChainScope) =>
         [MODULE_PREFIX, 'by-url', { url, scope }] as const,
+
+    discover: (
+        deployment: WalletMode,
+        platform: DiscoverPlatform,
+        chains: readonly string[],
+    ) =>
+        [
+            MODULE_PREFIX,
+            'discover',
+            { deployment, platform, chains: [...chains].sort() },
+        ] as const,
 
     application: (applicationId: string, scope: ChainScope) =>
         [MODULE_PREFIX, 'application', { applicationId, scope }] as const,

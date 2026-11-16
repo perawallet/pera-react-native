@@ -107,6 +107,22 @@ describe('discoverWalletAccounts', () => {
         })
     })
 
+    test('marks an active chain the account already holds as discovered, and leaves an inactive one as it was', async () => {
+        activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+        activeAt(ETHEREUM, [])
+        const holder = pathHolder({ account: 0, keyIndex: 0 })
+        state().setAccounts([holder])
+
+        const { accounts: changed } = await state().discoverWalletAccounts(SEED)
+
+        expect(changed).toEqual([])
+        expect(state().accounts[0].chains[ALGORAND]).toEqual({
+            ...holder.chains[ALGORAND],
+            enabledBy: 'discovery',
+        })
+        expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
+    })
+
     test('creates an account at an active index nobody holds, with only its active chains', async () => {
         activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
         activeAt(ETHEREUM, [{ account: 2, keyIndex: 0 }])

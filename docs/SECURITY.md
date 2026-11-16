@@ -98,17 +98,24 @@ from its calldata is in [Architecture](ARCHITECTURE.md#each-chain-reviews-its-ow
 
 ### RPC trust
 
-Each EVM network reads through one JSON-RPC URL fixed at build time (`<CHAIN>_<NET>_RPC_URL`), with
-no fallback and no certificate pinning: EVM chain modules declare no `pinnedHosts`. The RPC is trusted
-for what it reports (balances, nonces, gas and fee data, receipts, contract reads), so a wrong or
-malicious one can misreport balances and history, stall a send with a bad nonce, or fail it.
+Each EVM network reads through the JSON-RPC URLs fixed at build time in `<CHAIN>_<NET>_RPC_URL`: a
+main node, then at most one public fallback the client fails over to. A network can therefore trust
+two third parties. Only a developer's override on a test network (below) can change them at runtime. Each EVM module declares a pin group
+for hosts under `perawallet.app`, behind `enable_ssl_pinning_<id>_rpc`. A fallback on another domain
+is never pinned, and the pin doesn't reach requests made through the RPC transport on a device (see
+[Architecture](ARCHITECTURE.md#how-a-chain-reaches-its-backends)), so treat RPC traffic as unpinned.
+
+Each RPC is trusted for what it reports (balances, nonces, gas and fee data, receipts, contract
+reads), so a wrong or malicious one can misreport balances and history, stall a send with a bad
+nonce, or fail it.
 
 It cannot move a signature to another chain or have the wallet sign anything but the transaction the
 review showed: the EIP-155 chain id comes from the chain table, not the RPC, and the planner hashes
 the reviewed transaction. A fee it inflates shows on the review, and the build refuses to sign past
 the max fee the user confirmed; see [EVM fees](EVM_FEES.md).
 
-A developer's endpoint override is checked before it applies: `checkEvmRpcChainId`
+`tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed. A
+developer's endpoint override is checked before it applies: `checkEvmRpcChainId`
 (`packages/chain-ethereum/src/blockchain/utils/checkEvmRpcChainId.ts`) asks the URL for its chain id
 and rejects one serving another network, so a testnet can't be pointed at mainnet.
 

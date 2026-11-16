@@ -47,6 +47,7 @@ export const EVM_PERA_SERVICES = [
     'nfts',
     'contracts',
     'simulations',
+    'approvals',
 ] as const satisfies readonly PeraService[]
 
 // The build bakes the list as one flat string; a missing or empty list means
@@ -559,8 +560,6 @@ const productionConfig: Omit<
     // vars (bitrise secrets in CI, .env locally) via tools/dev/generate-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
-    // TODO(card): set the real Baanx tenant id for production via the
-    // MAINNET_BAANX_TENANT_ID env/secret before shipping the card to mainnet.
     mainnetBaanxTenantId: '',
     testnetBaanxTenantId: 'perawallet',
 

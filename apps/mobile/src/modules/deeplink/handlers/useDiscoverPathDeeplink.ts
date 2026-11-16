@@ -15,7 +15,9 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { isSafeRelativePath } from '@modules/webview'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import { navigateToScreen } from '../navigateToScreen'
+import { discoverPathTarget } from './discoverPathTarget'
 
 export type DiscoverPathDeeplinkHandler = (params: {
     path?: string
@@ -26,12 +28,15 @@ export type DiscoverPathDeeplinkHandler = (params: {
 
 /**
  * Validates the discover path against the same safe-relative-path check
- * the Discover screen runs (defense in depth) before navigating into the
- * Discover tab with the path forwarded as a route param.
+ * the Discover screen runs (defense in depth). An Algorand-only build hands
+ * the path to the Discover web app in its tab; a multichain build, whose
+ * Discover tab is native, routes to native asset details, the native dApp
+ * directory, native news or the Discover home, never to the web app.
  */
 export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
     const { errorToast } = useToast()
     const { t } = useLanguage()
+    const isNativeDiscover = useIsNativeDiscover()
 
     return useCallback(
         ({ path, sourceUrl, replaceCurrentScreen, onError }) => {
@@ -47,12 +52,61 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                 onError?.()
                 return false
             }
+            if (!isNativeDiscover) {
+                navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                    screen: 'Discover',
+                    params: { path },
+                })
+                return true
+            }
+            const target = discoverPathTarget(path)
+            if (target.kind === 'asset') {
+                navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                    screen: 'Home',
+                    params: {
+                        screen: 'AssetDetails',
+                        params: {
+                            assetId: target.assetId,
+                            chainId: target.chainId,
+                        },
+                    },
+                })
+                return true
+            }
+            if (target.kind === 'dapps') {
+                navigateToScreen(
+                    replaceCurrentScreen,
+                    'DiscoverDapps',
+                    undefined,
+                )
+                return true
+            }
+            if (target.kind === 'news') {
+                navigateToScreen(
+                    replaceCurrentScreen,
+                    'DiscoverNews',
+                    undefined,
+                )
+                return true
+            }
+            if (target.kind === 'newsDetail') {
+                navigateToScreen(replaceCurrentScreen, 'DiscoverNewsDetail', {
+                    newsId: target.newsId,
+                })
+                return true
+            }
+            // The native Discover never opens the Discover web app; a page it
+            // has no screen for lands on its home until one is ported.
+            if (target.kind === 'unported') {
+                logger.warn('DISCOVER_PATH has no native screen yet', {
+                    path: target.path,
+                })
+            }
             navigateToScreen(replaceCurrentScreen, 'TabBar', {
                 screen: 'Discover',
-                params: { path },
             })
             return true
         },
-        [errorToast, t],
+        [errorToast, t, isNativeDiscover],
     )
 }

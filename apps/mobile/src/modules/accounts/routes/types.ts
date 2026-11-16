@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { PeraCardAccountStackParamList } from '@modules/card'
 
 export type AccountTabKey = 'Overview' | 'Nfts' | 'History'
@@ -25,4 +28,6 @@ export type AccountStackParamsList = {
     CollectibleDetails?: { assetId: string; chainId: ChainId }
     HideTokens?: undefined
     RemoveAssets?: undefined
+    /** `scope` is the network whose approvals the screen lists. */
+    TokenApprovals: { accountId: string; scope: ChainScope }
 } & PeraCardAccountStackParamList

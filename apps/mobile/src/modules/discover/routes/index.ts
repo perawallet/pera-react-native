@@ -11,4 +11,12 @@
  */
 
 export { DiscoverDetailScreen } from '../screens/DiscoverDetailScreen'
-export { DiscoverScreen } from '../screens/DiscoverScreen'
+export { DiscoverSearchScreen } from '../screens/DiscoverSearchScreen'
+export { DiscoverNewsScreen } from '../screens/DiscoverNewsScreen'
+export { DiscoverNewsDetailScreen } from '../screens/DiscoverNewsDetailScreen'
+export { DiscoverFolderScreen } from '../screens/DiscoverFolderScreen'
+export { DiscoverAllFavoritesScreen } from '../screens/DiscoverAllFavoritesScreen'
+export { DiscoverAllFoldersScreen } from '../screens/DiscoverAllFoldersScreen'
+export { DiscoverDappsScreen } from '../screens/DiscoverDappsScreen'
+export { DiscoverHomeScreen } from '../screens/DiscoverHomeScreen'
+export { DiscoverTabScreen } from '../screens/DiscoverTabScreen'

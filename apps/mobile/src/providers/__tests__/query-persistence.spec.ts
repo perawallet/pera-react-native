@@ -152,7 +152,7 @@ describe('shouldDehydrateQuery', () => {
 
     it('never persists a prefix the policy does not list', () => {
         expect(
-            shouldDehydrateQuery(asQuery(['discover', 'feed'], 'success')),
+            shouldDehydrateQuery(asQuery(['unlisted', 'feed'], 'success')),
         ).toBe(false)
     })
 

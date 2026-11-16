@@ -41,6 +41,8 @@ vi.mock('@analytics', () => ({
     },
 }))
 
+const QUANTUM_SIGNER = vi.hoisted(() => ({ id: 'quantum-signer' }))
+
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
@@ -53,7 +55,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             sourceType === 'deeplink' ||
             sourceType === 'injected',
     ),
-    resolveAllSignerAddresses: vi.fn(() => ['QUANTUMADDRESS']),
+    resolveSigningAccounts: vi.fn(() => [QUANTUM_SIGNER]),
     chainIdOfSignRequest: vi.fn(
         (request: { chainId?: string }) => request.chainId ?? 'algorand',
     ),
@@ -77,10 +79,16 @@ vi.mock('../../../hooks/useReviewRiskGate', () => ({
     useReviewRiskGate: () => mockRiskGate,
 }))
 
-const mockConfirmQuantumDappUsage = vi.fn()
+const mockHaptics = vi.hoisted(() => ({ medium: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
+const mockConfirmQuantumDappSigners = vi.fn()
 vi.mock('@hooks/useQuantumDappWarning', () => ({
     useQuantumDappWarning: () => ({
-        confirmQuantumDappUsage: mockConfirmQuantumDappUsage,
+        confirmQuantumDappSigners: mockConfirmQuantumDappSigners,
     }),
 }))
 
@@ -142,7 +150,7 @@ describe('useSigningActionButtons', () => {
         ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
         ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
         mockGetPreference.mockReturnValue(undefined)
-        mockConfirmQuantumDappUsage.mockResolvedValue('continue')
+        mockConfirmQuantumDappSigners.mockResolvedValue('continue')
         mockAddressSafety.isConfirmBlocked = false
         mockAddressSafety.isListedAddressBlocking = false
         mockSiteSafety.isConfirmBlocked = false
@@ -171,6 +179,7 @@ describe('useSigningActionButtons', () => {
         })
 
         expect(mockNext).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.medium).toHaveBeenCalledTimes(1)
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
@@ -185,7 +194,8 @@ describe('useSigningActionButtons', () => {
 
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(mockNext).not.toHaveBeenCalled()
-        expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+        expect(mockHaptics.medium).not.toHaveBeenCalled()
+        expect(mockConfirmQuantumDappSigners).not.toHaveBeenCalled()
     })
 
     it('holds signing while a flagged site waits on acknowledgement', () => {
@@ -575,6 +585,7 @@ describe('useSigningActionButtons', () => {
                 wcPayload,
             )
             expect(mockFail).toHaveBeenCalledTimes(1)
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
         })
 
         it('tracks TransactionConfirmed only after the security guard is confirmed', async () => {
@@ -791,7 +802,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('rejects the request when the quantum dApp warning is cancelled', async () => {
-            mockConfirmQuantumDappUsage.mockResolvedValue('cancel')
+            mockConfirmQuantumDappSigners.mockResolvedValue('cancel')
 
             const { result } = renderHook(() => useSigningActionButtons())
             await act(async () => {
@@ -800,6 +811,8 @@ describe('useSigningActionButtons', () => {
 
             expect(mockFail).toHaveBeenCalledTimes(1)
             expect(mockNext).not.toHaveBeenCalled()
+            expect(mockHaptics.medium).not.toHaveBeenCalled()
+            expect(mockHaptics.light).toHaveBeenCalledTimes(1)
             expect(trackEvent).toHaveBeenCalledWith('wc_transaction_declined', {
                 dapp_name: '',
                 dapp_url: '',
@@ -809,7 +822,7 @@ describe('useSigningActionButtons', () => {
         })
 
         it('proceeds to signing when the quantum dApp warning is confirmed', async () => {
-            mockConfirmQuantumDappUsage.mockResolvedValue('continue')
+            mockConfirmQuantumDappSigners.mockResolvedValue('continue')
 
             const { result } = renderHook(() => useSigningActionButtons())
             await act(async () => {
@@ -817,8 +830,8 @@ describe('useSigningActionButtons', () => {
             })
 
             expect(mockNext).toHaveBeenCalledTimes(1)
-            expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(
-                ['QUANTUMADDRESS'],
+            expect(mockConfirmQuantumDappSigners).toHaveBeenCalledWith(
+                [QUANTUM_SIGNER],
                 'algorand',
             )
         })
@@ -831,7 +844,7 @@ describe('useSigningActionButtons', () => {
                 result.current.handleSignAndSend()
             })
 
-            expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+            expect(mockConfirmQuantumDappSigners).not.toHaveBeenCalled()
             expect(mockNext).toHaveBeenCalledTimes(1)
         })
     })

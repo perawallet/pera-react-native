@@ -87,7 +87,11 @@ export const SigningRoutes = () => {
             <Stack.Screen
                 name='SingleTransaction'
                 component={SingleTransactionScreen}
-                options={{ title: 'signing.transactions.title_one' }}
+                // The review opens on who asked and what for; a title above it only takes space.
+                options={{
+                    title: 'signing.transactions.title_one',
+                    headerShown: false,
+                }}
             />
             <Stack.Screen
                 name='TransactionList'

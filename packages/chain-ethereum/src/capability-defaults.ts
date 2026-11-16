@@ -40,12 +40,15 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'contractDecoding',
     // Still behind the app-wide enable_cloud_backup flag, as for Algorand.
     'cloudBackup',
+    'discover',
+    // Its candidate pairs come from the approvals service, so a scope without it shows the list's error, never a wrong one.
+    'tokenApprovals',
 ])
 
 // Off by default but safe for remote config to switch on: no Algorand-only code,
-// and no Pera endpoint a scope without a deployment could reach. Anything else
-// stays off.
-const SWITCHABLE: readonly ChainCapability[] = ['discover', 'onramp', 'swap']
+// and no Pera endpoint a scope without a deployment could reach. A chain row turns
+// these on where its routes and providers exist. Anything else stays off.
+const SWITCHABLE: readonly ChainCapability[] = ['onramp', 'swap']
 
 const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
 

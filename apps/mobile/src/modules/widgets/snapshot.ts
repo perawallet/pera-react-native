@@ -250,7 +250,6 @@ const formatAmount = (
         currencyCode,
         locale,
         true,
-        false,
         minPrecision,
     )
     // formatCurrency omits the symbol for ALGO, so name the unit explicitly.

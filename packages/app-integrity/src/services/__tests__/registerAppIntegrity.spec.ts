@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest'
 
 const attestDeviceMock = vi.fn()
 const requestChallengeMock = vi.fn()
@@ -53,7 +53,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { registerAppIntegrity } from '../registerAppIntegrity'
+import {
+    registerAppIntegrity,
+    waitForIntegrityRegistration,
+} from '../registerAppIntegrity'
 import { useAppIntegrityStore } from '../../store'
 
 describe('registerAppIntegrity', () => {
@@ -171,5 +174,97 @@ describe('registerAppIntegrity', () => {
         expect(result.status).toBe('error')
         expect(loggerMocks.error).not.toHaveBeenCalled()
         expect(loggerMocks.warn).toHaveBeenCalled()
+    })
+})
+
+describe('waitForIntegrityRegistration', () => {
+    beforeEach(() => {
+        useAppIntegrityStore.getState().resetState()
+        requestChallengeMock.mockReset().mockResolvedValue('challenge-1')
+        attestDeviceMock.mockReset().mockResolvedValue({
+            integrityToken: 'jwt',
+            expiresAt: '2026-07-01',
+        })
+        providerMock.deviceInfo.getDevicePlatform.mockReturnValue('android')
+        providerMock.deviceInfo.getAppEnvironment.mockReturnValue('production')
+        providerMock.appIntegrity.isSupported.mockResolvedValue(true)
+        providerMock.appIntegrity.attest
+            .mockReset()
+            .mockResolvedValue({ attestation: 'play-token' })
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    const isSettled = async (wait: Promise<void>): Promise<boolean> => {
+        let settled = false
+        void wait.then(() => {
+            settled = true
+        })
+        await vi.advanceTimersByTimeAsync(0)
+        return settled
+    }
+
+    it('resolves at once when nothing is in flight', async () => {
+        await expect(waitForIntegrityRegistration()).resolves.toBeUndefined()
+    })
+
+    it('holds until the registration in flight succeeds', async () => {
+        vi.useFakeTimers()
+        let release: (value: { attestation: string }) => void = () => {}
+        providerMock.appIntegrity.attest.mockReturnValue(
+            new Promise(resolve => {
+                release = resolve
+            }),
+        )
+        const registration = registerAppIntegrity({ deployment: 'live' })
+
+        const wait = waitForIntegrityRegistration()
+        expect(await isSettled(wait)).toBe(false)
+
+        release({ attestation: 'play-token' })
+        await registration
+        await expect(wait).resolves.toBeUndefined()
+    })
+
+    it('resolves, not rejects, when the registration in flight fails', async () => {
+        providerMock.appIntegrity.attest.mockRejectedValue(new Error('denied'))
+        const registration = registerAppIntegrity({ deployment: 'live' })
+
+        await expect(waitForIntegrityRegistration()).resolves.toBeUndefined()
+        await expect(registration).resolves.toMatchObject({ status: 'error' })
+    })
+
+    it('gives up after the timeout while the attestation hangs, and not again for later calls', async () => {
+        vi.useFakeTimers()
+        let release: (value: { attestation: string }) => void = () => {}
+        providerMock.appIntegrity.attest.mockReturnValue(
+            new Promise(resolve => {
+                release = resolve
+            }),
+        )
+        const registration = registerAppIntegrity({ deployment: 'live' })
+
+        const wait = waitForIntegrityRegistration(5_000)
+        await vi.advanceTimersByTimeAsync(4_999)
+        expect(await isSettled(wait)).toBe(false)
+
+        await vi.advanceTimersByTimeAsync(1)
+        await expect(wait).resolves.toBeUndefined()
+
+        // The deadline is the registration's: a later call doesn't wait again.
+        await expect(
+            waitForIntegrityRegistration(5_000),
+        ).resolves.toBeUndefined()
+
+        release({ attestation: 'play-token' })
+        await registration
+    })
+
+    it('resolves at once again after the registration settled', async () => {
+        await registerAppIntegrity({ deployment: 'live' })
+
+        await expect(waitForIntegrityRegistration()).resolves.toBeUndefined()
     })
 })

@@ -132,6 +132,7 @@ export type SourceKind =
     | 'card'
     | 'injected'
     | 'replacement'
+    | 'approval-revoke'
 
 export type TransportKind =
     | 'network'

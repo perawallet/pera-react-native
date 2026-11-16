@@ -23,12 +23,7 @@ export const EthereumTransactionReviewBody = ({
     const presentation = useEthereumTransactionPresentation(transaction)
 
     if (!presentation) {
-        return (
-            <TransactionReviewLayout
-                participants={null}
-                actions={actions}
-            />
-        )
+        return <TransactionReviewLayout actions={actions} />
     }
 
     return (

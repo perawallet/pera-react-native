@@ -17,6 +17,7 @@ import {
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
+import { useHaptics } from '@hooks/useHaptics'
 import {
     MAX_BALANCE_PERCENT,
     MAX_SLIPPAGE,
@@ -35,6 +36,7 @@ type UseSwapConfigurationContentResult = {
     isBalanceError: boolean
     slippageText: string
     setSlippageText: (text: string) => void
+    selectSlippageOption: (text: string) => void
     isSlippageError: boolean
     useLocalCurrency: boolean
     setUseLocalCurrency: (value: boolean) => void
@@ -65,6 +67,7 @@ export const useSwapConfigurationContent = ({
     onApply,
 }: UseSwapConfigurationContentParams): UseSwapConfigurationContentResult => {
     const { slippage, isLocalCurrencyInput } = useSwapSettings()
+    const haptics = useHaptics()
 
     const [balanceText, setBalanceTextState] = useState('')
     const [slippageText, setSlippageTextState] = useState(slippage ?? '')
@@ -91,6 +94,15 @@ export const useSwapConfigurationContent = ({
     const setSlippageText = useCallback((text: string) => {
         setSlippageTextState(normalize(text))
     }, [])
+
+    // Chips go through here so typing in the input never ticks.
+    const selectSlippageOption = useCallback(
+        (text: string) => {
+            if (normalize(text) !== slippageText) haptics.selection()
+            setSlippageText(text)
+        },
+        [haptics, setSlippageText, slippageText],
+    )
 
     const isBalanceError = useMemo(
         () => isBalanceInvalid(balanceText),
@@ -143,6 +155,7 @@ export const useSwapConfigurationContent = ({
         isBalanceError,
         slippageText,
         setSlippageText,
+        selectSlippageOption,
         isSlippageError,
         useLocalCurrency,
         setUseLocalCurrency,

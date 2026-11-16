@@ -38,6 +38,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
+import { useHaptics } from '@hooks/useHaptics'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
 import type {
@@ -46,7 +47,6 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { useCapability } from '@hooks/useCapability'
 import * as Clipboard from 'expo-clipboard'
-import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -157,6 +157,7 @@ export const useCollectibleDetail = (
     const isOwned = isOptedIn && assetAmount.greaterThan(0)
     const isOptedInNotOwned = isOptedIn && !isOwned
     const { showToast, errorToast } = useToast()
+    const haptics = useHaptics()
     const { showError } = useErrorToast()
 
     const explorerUrl =
@@ -271,9 +272,7 @@ export const useCollectibleDetail = (
             )
 
             await Clipboard.setImageAsync(base64)
-            void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-            )
+            haptics.copy()
             showToast({
                 title: t('asset_details.collectible.image_copied'),
                 body: '',
@@ -282,7 +281,7 @@ export const useCollectibleDetail = (
         } catch {
             errorToast(t('asset_details.collectible.image_copy_failed'), '')
         }
-    }, [assetId, getImageUrl, showToast, errorToast, t])
+    }, [assetId, getImageUrl, showToast, errorToast, haptics, t])
 
     const handleSaveImage = useCallback(async () => {
         if (!saveableMediaUrl) return
@@ -294,9 +293,7 @@ export const useCollectibleDetail = (
                 `collectible_${assetId}.${extension}`,
             )
 
-            void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-            )
+            haptics.success()
             showToast({
                 title: t('asset_details.collectible.media_saved'),
                 body: '',
@@ -312,7 +309,15 @@ export const useCollectibleDetail = (
             }
             errorToast(t('asset_details.collectible.media_save_failed'), '')
         }
-    }, [assetId, saveableMediaUrl, saveableMedia, showToast, errorToast, t])
+    }, [
+        assetId,
+        saveableMediaUrl,
+        saveableMedia,
+        showToast,
+        errorToast,
+        haptics,
+        t,
+    ])
 
     const handleSharePressed = useCallback(() => {
         const url = getChainDescriptor(scope.chainId).explorer.collectibleUrl(

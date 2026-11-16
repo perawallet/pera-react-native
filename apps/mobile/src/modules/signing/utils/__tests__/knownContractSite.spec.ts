@@ -1,0 +1,195 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it } from 'vitest'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import {
+    isFlaggedByVerify,
+    isKnownContractSite,
+    spenderSiteMismatchOf,
+} from '../knownContractSite'
+
+const verified = (
+    status: NonNullable<SignRequestSource['verification']>['status'],
+    verifiedOrigin?: string,
+): SignRequestSource => ({
+    name: 'Uniswap',
+    url: 'https://app.uniswap.org',
+    verification: { status, verifiedOrigin },
+})
+
+describe('isKnownContractSite', () => {
+    it('matches an origin the platform observed', () => {
+        expect(
+            isKnownContractSite(
+                'uniswap.org',
+                undefined,
+                'https://app.uniswap.org',
+            ),
+        ).toBe(true)
+    })
+
+    it('matches an origin WalletConnect Verify says is valid', () => {
+        expect(
+            isKnownContractSite(
+                'uniswap.org',
+                verified('valid', 'https://app.uniswap.org'),
+            ),
+        ).toBe(true)
+    })
+
+    it.each(['mismatch', 'unknown', 'scam'] as const)(
+        'ignores an origin Verify rates %s',
+        status => {
+            expect(
+                isKnownContractSite(
+                    'uniswap.org',
+                    verified(status, 'https://app.uniswap.org'),
+                ),
+            ).toBe(false)
+        },
+    )
+
+    it('never trusts the url the dApp claims for itself', () => {
+        expect(
+            isKnownContractSite('uniswap.org', {
+                name: 'Uniswap',
+                url: 'https://app.uniswap.org',
+            }),
+        ).toBe(false)
+    })
+
+    it('does not fall back to a Verify origin once the platform observed another', () => {
+        expect(
+            isKnownContractSite(
+                'uniswap.org',
+                verified('valid', 'https://app.uniswap.org'),
+                'https://evil.example',
+            ),
+        ).toBe(false)
+    })
+
+    it('rejects a look-alike origin', () => {
+        expect(
+            isKnownContractSite(
+                'uniswap.org',
+                undefined,
+                'https://app.uniswap.org.evil.example',
+            ),
+        ).toBe(false)
+    })
+
+    it('is false for a contract with no project domain', () => {
+        expect(
+            isKnownContractSite(
+                undefined,
+                undefined,
+                'https://app.uniswap.org',
+            ),
+        ).toBe(false)
+    })
+
+    it('is false with no origin at all', () => {
+        expect(isKnownContractSite('uniswap.org')).toBe(false)
+    })
+})
+
+describe('spenderSiteMismatchOf', () => {
+    it('is undefined for the project’s own site', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                undefined,
+                'https://app.uniswap.org',
+            ),
+        ).toBeUndefined()
+    })
+
+    it('names the host of another observed origin', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                undefined,
+                'https://evil.example',
+            ),
+        ).toBe('evil.example')
+    })
+
+    it('still flags an attested origin that does not parse to a real one', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                undefined,
+                'chrome-extension://abcdef',
+            ),
+        ).toBe('abcdef')
+    })
+
+    it('names the host of a valid Verify origin that is another site', () => {
+        expect(
+            spenderSiteMismatchOf(
+                'uniswap.org',
+                verified('valid', 'https://evil.example'),
+            ),
+        ).toBe('evil.example')
+    })
+
+    it.each(['unknown', 'mismatch'] as const)(
+        'is undefined when Verify rates the origin %s',
+        status => {
+            expect(
+                spenderSiteMismatchOf(
+                    'uniswap.org',
+                    verified(status, 'https://evil.example'),
+                ),
+            ).toBeUndefined()
+        },
+    )
+
+    it('never counts the url the dApp claims for itself', () => {
+        expect(
+            spenderSiteMismatchOf('uniswap.org', {
+                name: 'Evil',
+                url: 'https://evil.example',
+            }),
+        ).toBeUndefined()
+    })
+
+    it('is undefined for a contract with no project domain', () => {
+        expect(
+            spenderSiteMismatchOf(undefined, undefined, 'https://evil.example'),
+        ).toBeUndefined()
+    })
+})
+
+describe('isFlaggedByVerify', () => {
+    it.each(['mismatch', 'scam'] as const)(
+        'is true when Verify rates %s',
+        status => {
+            expect(isFlaggedByVerify(verified(status))).toBe(true)
+        },
+    )
+
+    it.each(['valid', 'unknown'] as const)(
+        'is false when Verify rates %s',
+        status => {
+            expect(isFlaggedByVerify(verified(status))).toBe(false)
+        },
+    )
+
+    it('is false with no Verify result', () => {
+        expect(isFlaggedByVerify({ url: 'https://app.uniswap.org' })).toBe(
+            false,
+        )
+        expect(isFlaggedByVerify()).toBe(false)
+    })
+})

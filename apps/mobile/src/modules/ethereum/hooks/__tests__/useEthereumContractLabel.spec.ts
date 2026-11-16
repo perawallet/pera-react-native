@@ -26,6 +26,11 @@ vi.mock('@perawallet/wallet-core-chain-ethereum', async importOriginal => ({
     useEvmContractMetadataQuery: vi.fn(),
 }))
 
+const mockShareability = vi.hoisted(() => ({ current: { isShareable: true } }))
+vi.mock('@modules/signing/hooks/useRequestShareability', () => ({
+    useRequestShareability: () => mockShareability.current,
+}))
+
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const POOL = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
 const BUNDLED = { name: 'Aave V3 Pool', projectDomain: 'aave.com' }
@@ -40,6 +45,19 @@ const answer = (data: EvmContractMetadata | null) => {
 describe('useEthereumContractLabel', () => {
     beforeEach(() => {
         answer(null)
+        mockShareability.current = { isShareable: true }
+    })
+
+    it('never looks up a request naming a scam-listed address', () => {
+        mockShareability.current = { isShareable: false }
+
+        renderHook(() => useEthereumContractLabel(SCOPE, POOL, BUNDLED))
+
+        expect(useEvmContractMetadataQuery).toHaveBeenCalledWith({
+            scope: SCOPE,
+            address: POOL,
+            isEnabled: false,
+        })
     })
 
     it("names the contract as Pera's curated metadata does, with its project's domain", () => {

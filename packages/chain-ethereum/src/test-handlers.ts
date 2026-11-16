@@ -15,12 +15,14 @@ export {
     encodeErc20Approve,
     encodeUnsignedEvmCall,
     erc20CallResponder,
+    evmApprovalCallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
     evmRpcTransaction,
     evmTransactionReceipt,
     readRawEvmTransaction,
     type Erc20Fixture,
+    type EvmApprovalFixture,
     type EvmRpcFixtures,
     type EvmRpcMethod,
     type EvmRpcResponder,
@@ -51,6 +53,13 @@ export {
     type PeraEvmHistoryFixtures,
 } from './history/api/msw-handlers'
 export type { EvmHistoryItemResponse } from './history/api/schema'
+export {
+    evmAllowanceCandidate,
+    evmOperatorCandidate,
+    peraEvmApprovalHandlers,
+    type PeraEvmApprovalFixtures,
+} from './approvals/api/msw-handlers'
+export type { ApprovalCandidateResponse } from './approvals/api/schema'
 export {
     contractMetadataResponse,
     verifiedAbiResponse,

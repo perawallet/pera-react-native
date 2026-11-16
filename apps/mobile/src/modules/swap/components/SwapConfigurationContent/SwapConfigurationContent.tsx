@@ -50,6 +50,7 @@ export const SwapConfigurationContent = ({
         isBalanceError,
         slippageText,
         setSlippageText,
+        selectSlippageOption,
         isSlippageError,
         useLocalCurrency,
         setUseLocalCurrency,
@@ -101,6 +102,7 @@ export const SwapConfigurationContent = ({
             <SlippageToleranceSection
                 text={slippageText}
                 onTextChange={setSlippageText}
+                onOptionSelect={selectSlippageOption}
                 isError={isSlippageError}
             />
             <PrimaryCurrencyToggle

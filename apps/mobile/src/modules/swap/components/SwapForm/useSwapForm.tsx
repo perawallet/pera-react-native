@@ -19,6 +19,7 @@ import {
     ownAddressOf,
     useAccountBalancesInvalidator,
     useSelectedAccount,
+    useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -35,6 +36,7 @@ import {
     swapAdapterFor,
     useSwaps,
     type SwapQuote,
+    type SwapQuoteFailure,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import {
@@ -47,6 +49,8 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
+import { useHaptics } from '@hooks/useHaptics'
+import { useHapticOnCrossing } from '@hooks/useHapticOnCrossing'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     clearTabResumeIntent,
@@ -70,6 +74,7 @@ import {
     SwapProviderContent,
     type SwapProviderResult,
 } from '../SwapProviderContent'
+import { useSwapMinimum } from './useSwapMinimum'
 
 type UseSwapFormResult = {
     selectedAccount: Nullable<WalletAccount>
@@ -86,13 +91,17 @@ type UseSwapFormResult = {
     payBalance: Nullable<Decimal>
     receiveBalance: Nullable<Decimal>
     isQuoteFetching: boolean
-    isQuoteError: boolean
+    quoteFailure: Nullable<SwapQuoteFailure>
     selectedQuote: Nullable<SwapQuote>
     providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
     /** Pay amount exceeds what the account actually holds of the pay asset. */
     hasInsufficientBalance: boolean
     isLocalCurrencyInput: boolean
+    /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
+    canUseMinimum: boolean
+    handleRetryQuote: () => void
+    handleUseMinimum: () => void
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handlePayAmountFocus: () => void
     handleSwapDirection: () => void
@@ -125,9 +134,11 @@ export const useSwapForm = (
         toAsset,
         slippage,
         isLocalCurrencyInput,
+        pairAccountId,
         setFromAsset,
         setToAsset,
         setSourceAsset,
+        setAccountPair,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
@@ -138,6 +149,7 @@ export const useSwapForm = (
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const selectedAccount = useSelectedAccount()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const selectedAddress = selectedAccount
         ? addressOn(selectedAccount, scope)
         : undefined
@@ -149,6 +161,7 @@ export const useSwapForm = (
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
     const { successToast, errorToast, infoToast } = useToast()
+    const haptics = useHaptics()
     const { t } = useLanguage()
 
     const { data: payAssets } = useAssetsQuery(scope, [fromAsset])
@@ -204,7 +217,8 @@ export const useSwapForm = (
         allQuotes,
         quotedAmount,
         isQuoteFetching,
-        isQuoteError,
+        quoteFailure,
+        pairMinimum,
         reset: resetQuotes,
         refresh: refreshQuotes,
     } = useSwapQuotes({
@@ -277,8 +291,15 @@ export const useSwapForm = (
         if (previousAddressRef.current === address) return
         previousAddressRef.current = address
         resetAmounts()
-        resetAssetPair()
-    }, [selectedAddress, resetAmounts, resetAssetPair])
+        // A pick that also chose the account made the pair for it.
+        if (selectedAccount?.id !== pairAccountId) resetAssetPair()
+    }, [
+        selectedAddress,
+        selectedAccount?.id,
+        pairAccountId,
+        resetAmounts,
+        resetAssetPair,
+    ])
 
     // The typed amount is denominated in the pay asset, so it cannot survive
     // the pay asset changing: quoting the old number against the new asset's
@@ -350,6 +371,17 @@ export const useSwapForm = (
         isPayBalanceError,
     ])
 
+    // The cue marks the user typing past their holding. An amount that arrived
+    // any other way (a flip, a resume) or on another pay asset is not entry.
+    const [enteredAmount, setEnteredAmount] =
+        useState<Nullable<{ amount: Nullable<Decimal>; assetId: string }>>(null)
+    const isInsufficientByEntry =
+        hasInsufficientBalance &&
+        enteredAmount !== null &&
+        enteredAmount.amount === payAmount &&
+        enteredAmount.assetId === fromAsset
+    useHapticOnCrossing(isInsufficientByEntry, haptics.error)
+
     const canSwap = useMemo(
         () =>
             selectedQuote !== null &&
@@ -366,12 +398,13 @@ export const useSwapForm = (
             shouldReopenConfirmRef.current = false
             isPercentageFillRef.current = false
             setPayAmount(amount)
+            setEnteredAmount({ amount, assetId: fromAsset })
             if (!isDecimalEqual(amount, quotedAmount)) {
                 resetQuotes()
                 setReceiveAmount(null)
             }
         },
-        [quotedAmount, resetQuotes],
+        [quotedAmount, resetQuotes, fromAsset],
     )
 
     const handlePayAmountFocus = useCallback(() => {
@@ -382,6 +415,7 @@ export const useSwapForm = (
 
     const handleSwapDirection = useCallback(() => {
         if (isCrossChain) return
+        haptics.light()
         previousFromAssetRef.current = toAsset
         isPercentageFillRef.current = false
         setFromAsset(toAsset)
@@ -392,6 +426,7 @@ export const useSwapForm = (
         resetQuotes()
     }, [
         isCrossChain,
+        haptics,
         fromAsset,
         toAsset,
         payAmount,
@@ -409,6 +444,19 @@ export const useSwapForm = (
             }),
         )
     }, [infoToast, t, payAsset, fromAsset])
+
+    const fillMinimum = useCallback((amount: Decimal) => {
+        shouldReopenConfirmRef.current = false
+        isPercentageFillRef.current = false
+        setPayAmount(amount)
+    }, [])
+    const { liftToMinimum, canUseMinimum, handleUseMinimum } = useSwapMinimum({
+        pairMinimum,
+        quoteFailure,
+        spendableMax: spendable?.max ?? null,
+        payDecimals: payAsset?.decimals ?? 0,
+        onFillMinimum: fillMinimum,
+    })
 
     const applyPercentageAmount = useCallback(
         (percentage: number) => {
@@ -431,7 +479,9 @@ export const useSwapForm = (
                 )
                 return
             }
-            const amount = spendable.max.mul(percentage).div(100).floor()
+            const amount = liftToMinimum(
+                spendable.max.mul(percentage).div(100).floor(),
+            )
             if (amount.isZero()) {
                 // Fee reserves can consume the whole balance; filling the
                 // field with 0 would read as a dead button too.
@@ -453,6 +503,7 @@ export const useSwapForm = (
             infoToast,
             errorToast,
             showBalanceTooLow,
+            liftToMinimum,
             t,
         ],
     )
@@ -496,6 +547,26 @@ export const useSwapForm = (
 
     const applyPaySelection = useCallback(
         (selection: SwapAssetSelection) => {
+            if (
+                selection.accountId &&
+                selection.accountId !== selectedAccount?.id
+            ) {
+                // The receive side survives an account switch on the same
+                // network, as it does a new pay asset on the same account.
+                const isSameScope =
+                    toScopeKey(selection.scope) === toScopeKey(scope)
+                setAccountPair({
+                    accountId: selection.accountId,
+                    chainId: selection.scope.chainId,
+                    fromAsset: selection.assetId,
+                    ...(isSameScope && {
+                        toAsset,
+                        toAssetScope: isCrossChain ? receiveScope : null,
+                    }),
+                })
+                setSelectedAccountId(selection.accountId)
+                return
+            }
             if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
                 setSourceAsset(selection.scope.chainId, selection.assetId)
                 return
@@ -509,7 +580,19 @@ export const useSwapForm = (
             // too so no frame shows the old amount against the new asset.
             resetAmounts()
         },
-        [scope, setSourceAsset, fromAsset, setFromAsset, resetAmounts],
+        [
+            scope,
+            toAsset,
+            isCrossChain,
+            receiveScope,
+            selectedAccount?.id,
+            setAccountPair,
+            setSelectedAccountId,
+            setSourceAsset,
+            fromAsset,
+            setFromAsset,
+            resetAmounts,
+        ],
     )
 
     const handleOpenPayAssetSelection = useCallback(async () => {
@@ -816,16 +899,19 @@ export const useSwapForm = (
         payBalance: payAssetBalance?.amount ?? null,
         receiveBalance: receiveAssetBalance?.amount ?? null,
         isQuoteFetching,
-        isQuoteError,
+        quoteFailure,
         selectedQuote,
         providerSelectionMode,
         canSwap,
         hasInsufficientBalance,
         isLocalCurrencyInput,
+        handleRetryQuote: refreshQuotes,
         handlePayAmountChange,
         handlePayAmountFocus,
         handleSwapDirection,
         handleMaxPress,
+        canUseMinimum,
+        handleUseMinimum,
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>
             void handleOpenReceiveAssetSelection(),

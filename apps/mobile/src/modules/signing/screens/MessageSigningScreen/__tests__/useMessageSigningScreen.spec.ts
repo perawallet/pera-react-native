@@ -75,6 +75,12 @@ const SIGNER_ACCOUNT = { id: 'account-1' }
 const SOURCE = { name: 'Fixture dApp' }
 const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' }
 
+const mockHaptics = vi.hoisted(() => ({ medium: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
+}))
+
 describe('useMessageSigningScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -120,6 +126,7 @@ describe('useMessageSigningScreen', () => {
         expect(mockAddressSafety.addresses).toEqual(named)
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(mockPipeline.next).not.toHaveBeenCalled()
+        expect(mockHaptics.medium).not.toHaveBeenCalled()
     })
 
     it('passes a listed address through, still holding approval', () => {
@@ -192,6 +199,8 @@ describe('useMessageSigningScreen', () => {
 
         expect(mockPipeline.next).toHaveBeenCalledTimes(1)
         expect(mockPipeline.fail).not.toHaveBeenCalled()
+        expect(mockHaptics.medium).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.light).not.toHaveBeenCalled()
     })
 
     it('rejects through the pipeline', () => {
@@ -201,6 +210,8 @@ describe('useMessageSigningScreen', () => {
 
         expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
         expect(mockPipeline.next).not.toHaveBeenCalled()
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.medium).not.toHaveBeenCalled()
     })
 
     it('is pending while the pipeline loads', () => {

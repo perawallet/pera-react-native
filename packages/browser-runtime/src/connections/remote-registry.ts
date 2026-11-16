@@ -158,6 +158,14 @@ export const createRemoteConnectionRegistry = (options: {
         disconnectAll: async () => {
             await sendConnectionsControlMessage({ kind: 'disconnect-all' })
         },
+        changeAccount: async (id, chainId, address) => {
+            await sendConnectionsControlMessage({
+                kind: 'change-account',
+                connectionId: id,
+                chainId,
+                address,
+            })
+        },
         subscribeToProposals: listener =>
             subscribe(proposalListeners, listener),
         subscribeToErrors: listener => subscribe(errorListeners, listener),

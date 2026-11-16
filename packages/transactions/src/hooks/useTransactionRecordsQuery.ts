@@ -36,6 +36,7 @@ import {
     getTransactionHistoryWithPending,
 } from '../pending-history'
 import { isFeePaidByAccount } from '../utils/fee'
+import { shouldRetryHistoryRead } from './historyReadRetry'
 import {
     consumeFullRefetchRequest,
     requestFullRefetch,
@@ -317,11 +318,21 @@ export const useTransactionRecordsQuery = ({
             for (const { next } of loaded ?? []) {
                 if (next) mergedPagesByCursor.delete(next)
             }
-            const { page, hasReachedLoadedPages } = await readPage(
-                null,
-                signal,
-                isFullRefetch ? undefined : loaded?.[0]?.newestMinedId,
-            )
+            let read: RecordsRead
+            try {
+                read = await readPage(
+                    null,
+                    signal,
+                    isFullRefetch ? undefined : loaded?.[0]?.newestMinedId,
+                )
+            } catch (error) {
+                // The quiet retry re-runs this first read with the flag already
+                // spent, so it would only refresh the head. A failed later page
+                // is resumed by the retry itself, so it needs no such care.
+                if (isFullRefetch) requestFullRefetch(cachedQuery)
+                throw error
+            }
+            const { page, hasReachedLoadedPages } = read
             if (!loaded || !hasReachedLoadedPages) return page
 
             const pages = mergeRefreshedFirstPage(loaded, page)
@@ -335,6 +346,7 @@ export const useTransactionRecordsQuery = ({
         initialPageParam: null as Nullable<PageRef>,
         getNextPageParam: (lastPage: RecordsPage) => lastPage.next ?? undefined,
         networkMode: 'always',
+        retry: shouldRetryHistoryRead,
         enabled: isEnabled && !!accountAddress,
     })
 

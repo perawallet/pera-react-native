@@ -10,70 +10,35 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
+import { PWView } from '@components/core'
+import { PreviewUnavailableCard } from '../PreviewUnavailableCard'
+import { WalletChangesCard } from '../WalletChangesCard'
 import { useBalanceImpactSummary } from './useBalanceImpactSummary'
-import { useStyles } from './styles'
-import { BalanceImpactSection } from './BalanceImpactSection'
 
+/** The request's expected balance impact across all its transactions. */
 export const BalanceImpactSummary = () => {
-    const styles = useStyles()
-    const { t } = useLanguage()
     const { receive, spend, hasImpact, isSimulating, simulationFailed } =
         useBalanceImpactSummary()
 
     // Simulation resolves the inner txns that carry the receive side. If it
     // failed, the impact is incomplete (spend may show, receive is unknown) —
-    // show an honest message rather than a partial impact that reads complete.
+    // say so rather than show a partial impact that reads complete.
     if (simulationFailed) {
         return (
-            <PWView
-                style={styles.container}
-                testID='balance-impact-summary'
-            >
-                <PWText
-                    variant='caption'
-                    style={styles.unavailableText}
-                >
-                    {t('signing.balance_impact.unavailable')}
-                </PWText>
+            <PWView testID='balance-impact-summary'>
+                <PreviewUnavailableCard />
             </PWView>
         )
     }
 
-    if (!hasImpact) {
-        // App-call movements only appear once simulation resolves the inner
-        // txns — surface that rather than flashing empty → populated.
-        if (isSimulating) {
-            return (
-                <PWView
-                    style={styles.container}
-                    testID='balance-impact-summary'
-                >
-                    <PWText
-                        variant='caption'
-                        style={styles.sectionTitle}
-                    >
-                        {t('signing.balance_impact.analyzing')}
-                    </PWText>
-                </PWView>
-            )
-        }
-        return null
-    }
+    if (!hasImpact && !isSimulating) return null
 
     return (
-        <PWView
-            style={styles.container}
-            testID='balance-impact-summary'
-        >
-            <BalanceImpactSection
-                title={t('signing.balance_impact.receive_title')}
-                items={receive}
-            />
-            <BalanceImpactSection
-                title={t('signing.balance_impact.spend_title')}
-                items={spend}
+        <PWView testID='balance-impact-summary'>
+            <WalletChangesCard
+                spend={spend}
+                receive={receive}
+                isLoading={!hasImpact}
             />
         </PWView>
     )

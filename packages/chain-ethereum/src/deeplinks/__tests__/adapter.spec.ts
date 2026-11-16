@@ -16,7 +16,7 @@ import { maxUint256 } from 'viem'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { createEvmAddressCodec } from '../../accounts/address-codec'
 import { createEvmDeeplinkAdapter } from '../adapter'
-import { BASE, ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM, OPTIMISM, POLYGON } from '../../__tests__/evm-chains'
 import type { EvmChain } from '../../chains/types'
 
 const adapter = createEvmDeeplinkAdapter(ETHEREUM)
@@ -348,7 +348,7 @@ describe('toAssetRef', () => {
 })
 
 describe('links for other EVM chains', () => {
-    beforeEach(() => registerCodecs(ETHEREUM, BASE, POLYGON))
+    beforeEach(() => registerCodecs(ETHEREUM, BASE, POLYGON, OPTIMISM))
     afterAll(() => registerCodecs(ETHEREUM))
 
     const paymentOf = (parse: typeof adapter.parse, input: string) => {
@@ -363,6 +363,8 @@ describe('links for other EVM chains', () => {
         ['8453', { chainId: 'base', networkId: 'mainnet' }],
         ['84532', { chainId: 'base', networkId: 'sepolia' }],
         ['137', { chainId: 'polygon', networkId: 'mainnet' }],
+        ['10', { chainId: 'optimism', networkId: 'mainnet' }],
+        ['11155420', { chainId: 'optimism', networkId: 'sepolia' }],
         ['1', { chainId: 'ethereum', networkId: 'mainnet' }],
     ])('reads @%s as %o', (eip155ChainId, target) => {
         expect(targetOf(`ethereum:${NATIVE}@${eip155ChainId}`)).toEqual(target)

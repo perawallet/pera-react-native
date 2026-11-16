@@ -16,6 +16,7 @@ import type {
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    ConnectionsError,
     dappRequestChainAdapters,
     dappRequestFailureOf,
     isDappUserRejection,
@@ -1134,6 +1135,35 @@ export const createEip1193ConnectionHandler = (
         }
     }
 
+    // The request on screen goes back to whoever holds it, which declines it
+    // unless the user already approved it, so a send already signing is not
+    // answered 4001 while it broadcasts. Those queued behind it were never
+    // seen and are declined here, or one would surface for the old account.
+    const withdrawSiteQueue = (id: ConnectionId): void => {
+        for (const [origin, queue] of siteQueues) {
+            if (eip1193ConnectionIdOf(origin) !== id) continue
+            for (const entry of [...queue]) {
+                if (entry.isCommitted || entry.isAnswered) continue
+                if (entry.raised) {
+                    requireContext().onRequestWithdrawn(
+                        entry.raised.connectionId,
+                        entry.raised.correlationId,
+                    )
+                    continue
+                }
+                removeQueued(entry)
+                void answerQueued(
+                    entry,
+                    jsonRpcError(
+                        entry.request.id,
+                        EIP1193_ERROR_CODE.userRejected,
+                        'The account was changed',
+                    ),
+                )
+            }
+        }
+    }
+
     const disconnect = async (id: ConnectionId): Promise<void> => {
         const connection = await getConnectionById(id)
         if (connection) await store().remove(id)
@@ -1149,6 +1179,40 @@ export const createEip1193ConnectionHandler = (
             [],
         )
         requireContext().onDisconnected(id)
+    }
+
+    const changeAccount = async (
+        id: ConnectionId,
+        _chainId: ChainId,
+        address: string,
+    ): Promise<void> => {
+        const connection = await getConnectionById(id)
+        if (!connection) {
+            throw new ConnectionsError(
+                'unknown-connection',
+                `No connection ${id}`,
+            )
+        }
+        // A site holds one chain; the account must sign on that one.
+        const isSignable = deps
+            .getAccounts(connection.metadata.chainId)
+            .some(held => held.address === address)
+        if (!isSignable) {
+            throw new ConnectionsError(
+                'unauthorized-account',
+                'The wallet cannot sign for that account here',
+            )
+        }
+        if (isSameList(connection.accounts, [address])) return
+        // Store first, then withdraw: a request read before the write would
+        // be raised for the account being replaced.
+        await store().upsert({ ...connection, accounts: [address] })
+        withdrawSiteQueue(id)
+        await notifyOrigin(
+            connection.origin.requesterOrigin,
+            EIP1193_EVENT.accountsChanged,
+            [address],
+        )
     }
 
     const dispatch = async (
@@ -1280,6 +1344,7 @@ export const createEip1193ConnectionHandler = (
 
     return {
         kind: EIP1193_DAPP_KIND,
+        changeAccount,
         async initialize(ctx) {
             kit.attach(ctx)
             unsubscribe = deps.transport.onRequest(onRequest)

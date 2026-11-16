@@ -11,26 +11,39 @@
  */
 
 import { useCallback } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { seedOf, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicBackupStore } from '../store'
-import { getMnemonicBackupKeyId } from '../utils'
 
 export type UseMarkMnemonicBackupCompleteResult = (
     account: WalletAccount,
 ) => void
 
-export const useMarkMnemonicBackupComplete = (
-    chainId: ChainId,
-): UseMarkMnemonicBackupCompleteResult => {
-    const markBackedUp = useMnemonicBackupStore(state => state.markBackedUp)
+const hasLocalKey = (account: WalletAccount): boolean =>
+    account.custody.kind === 'local' &&
+    Object.values(account.chains).some(entry => entry?.keyPairId)
 
-    return useCallback(
-        (account: WalletAccount) => {
-            const keyId = getMnemonicBackupKeyId(account, chainId)
-            if (keyId === null) return
-            markBackedUp(keyId)
-        },
-        [markBackedUp, chainId],
-    )
-}
+export const useMarkMnemonicBackupComplete =
+    (): UseMarkMnemonicBackupCompleteResult => {
+        const markBackedUp = useMnemonicBackupStore(state => state.markBackedUp)
+
+        return useCallback(
+            (account: WalletAccount) => {
+                const seedId = seedOf(account)
+                if (seedId === undefined) {
+                    // Imports and restores mark right after minting keys, so a
+                    // local account that still resolves no seed means the mark
+                    // raced the keystore and the reminder will wrongly stay.
+                    if (hasLocalKey(account)) {
+                        logger.warn(
+                            'useMarkMnemonicBackupComplete: no seed resolved for a local account',
+                            { accountId: account.id },
+                        )
+                    }
+                    return
+                }
+                markBackedUp(seedId)
+            },
+            [markBackedUp],
+        )
+    }

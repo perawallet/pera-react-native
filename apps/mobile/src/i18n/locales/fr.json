@@ -33,6 +33,81 @@
             "requester_verified_a11y_origin": "Vérifié : cette demande provient de votre onglet de navigateur sur {{origin}}"
         }
     },
+    "discover": {
+        "home": {
+            "title": "Discover",
+            "top_dapps": "dApps populaires",
+            "news": "Actualités",
+            "dapps_error": "Échec du chargement des dApps en vedette",
+            "dapps_empty": "Aucune dApp sur {{chain}} pour le moment"
+        },
+        "dapp_row": {
+            "favorite": "Ajouter aux favoris",
+            "unfavorite": "Retirer des favoris"
+        },
+        "search": {
+            "placeholder": "Rechercher ou saisir une URL",
+            "recent_title": "Recherches récentes",
+            "clear_all": "Tout effacer",
+            "no_recent": "Aucune recherche récente",
+            "filter_all": "Tout",
+            "filter_markets": "Marchés",
+            "filter_dapps": "dApps",
+            "search_web": "Rechercher sur le web",
+            "no_results": "Aucun résultat",
+            "assets_unavailable": "La recherche d’actifs est indisponible pour le moment",
+            "dapps_unavailable": "La recherche de dApps est indisponible pour le moment"
+        },
+        "news": {
+            "title": "Actualités",
+            "read": "Lire",
+            "load_failure": "Échec du chargement des détails de l’actualité.",
+            "list_failure": "Échec du chargement des actualités"
+        },
+        "dapps": {
+            "title": "dApps",
+            "list_title": "dApps sur Pera",
+            "sort_popular": "Populaire",
+            "sort_alphabetical": "Alphabétique (A-Z)",
+            "apply_prompt": "Vous souhaitez ajouter votre projet à Discover ?",
+            "apply_cta": "Postuler pour Discover",
+            "load_failure": "Échec du chargement des dApps",
+            "details": "Détails",
+            "about": "À propos",
+            "website": "Site web",
+            "open": "Ouvrir"
+        },
+        "folders": {
+            "name_sheet": {
+                "title_new": "Nouveau dossier",
+                "title_rename": "Renommer le dossier",
+                "placeholder": "Nom du dossier",
+                "create": "Créer",
+                "save": "Enregistrer"
+            },
+            "empty": "Aucune dApp dans ce dossier pour le moment"
+        },
+        "favorites": {
+            "title": "Favoris",
+            "new_folder": "Nouveau dossier",
+            "all_favorites": "Tous les favoris",
+            "dapp_count": "{{count}} dApps",
+            "dapp_count_one": "{{count}} dApp",
+            "see_all": "Tout voir",
+            "empty_title": "Aucun favori pour le moment",
+            "empty_body": "Commencez à explorer les dApps",
+            "all_folders_title": "Tous les dossiers",
+            "added_toast": {
+                "title": "Ajouté aux favoris",
+                "body": "Touchez pour l’ajouter à un dossier"
+            }
+        },
+        "add_to_folder": {
+            "title": "Ajouter à un dossier",
+            "new_folder": "Nouveau dossier",
+            "done": "Terminé"
+        }
+    },
     "account_menu": {
         "title": "Comptes",
         "sort": "Trier",
@@ -137,9 +212,7 @@
             "added_title": "Token ajouté",
             "added_body": "{{assetName}} ajouté sur {{chain}}",
             "add_failed_title": "Impossible d’ajouter le token",
-            "unverified_title": "Token non vérifié",
-            "unverified_body": "Pera n’a pas vérifié {{assetName}}. N’importe qui peut créer un token avec n’importe quel nom ou logo : vérifiez que son adresse de contrat, {{address}}, est bien celle attendue avant de l’ajouter.",
-            "unverified_confirm": "Ajouter quand même",
+            "suspicious_confirm": "Ajouter quand même",
             "suspicious_title": "Token suspect",
             "suspicious_body": "Pera a signalé {{assetName}} ({{address}}) comme suspect. Il pourrait imiter un autre token ou faire partie d’une arnaque. Ajoutez-le uniquement si vous faites confiance à sa provenance.",
             "remove_title": "Retirer {{assetName}} ?",
@@ -186,6 +259,19 @@
         "hidden_section": "Jetons masqués",
         "empty_title": "Aucun jeton à masquer",
         "empty_body": "Ce compte ne détient aucun jeton pouvant être masqué."
+    },
+    "token_approvals": {
+        "title": "Autorisations des jetons",
+        "unlimited": "Illimité",
+        "all_items": "Tous les éléments de {{collection}}",
+        "revoke": "Révoquer",
+        "revoke_unavailable": "Les informations du jeton n'ont pas pu être chargées ; la révocation est impossible ici.",
+        "empty_title": "Aucune autorisation ouverte",
+        "empty_body": "Aucune autorisation ouverte de jeton ou de collection n'a été trouvée pour ce compte.",
+        "error_title": "Impossible de charger les autorisations",
+        "error_body": "Vérifiez votre connexion et réessayez.",
+        "revoke_error_title": "Révocation non confirmée",
+        "revoke_error_body": "Vérifiez dans la liste l'état de l'autorisation avant de réessayer."
     },
     "token_visibility": {
         "hide": "Masquer le jeton",
@@ -291,7 +377,11 @@
     },
     "asset": {
         "deleted_label": "(Supprimé)",
-        "unverified_label": "Non vérifié"
+        "imitated_currency": {
+            "marker": "Imite {{code}}",
+            "title": "Cet actif n’est pas {{code}}",
+            "body": "Son nom d’unité est {{code}}, mais il s’agit d’un actif distinct que n’importe qui a pu créer. Le recevoir ne vous donne aucun {{code}}."
+        }
     },
     "asset_details": {
         "about": {
@@ -385,9 +475,8 @@
             "learn_more": "En savoir plus sur la vérification des ASA"
         },
         "token_warning": {
-            "unverified_title": "Jeton non vérifié",
             "suspicious_title": "Jeton suspect",
-            "body": "Pera n’a pas vérifié ce jeton. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
+            "body": "Pera a signalé ce jeton comme suspect. Vous ne l’avez pas demandé et il pourrait s’agir d’une arnaque. N’interagissez pas avec les sites web ou les liens qui s’y rapportent."
         },
         "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet",
         "toggle_amount_hint": "Appuyez pour basculer entre la valeur et le montant de l’actif"
@@ -414,6 +503,7 @@
             "nomatch_body": "Aucun actif ne correspond à votre recherche",
             "funding_title": "Commencez sur {{network}}",
             "funding_body": "Déposez des fonds pour commencer à utiliser ce réseau. Vous aurez besoin d’un peu de {{nativeSymbol}} sur {{network}} pour payer les frais de réseau.",
+            "funding_swap_for": "Swap vers {{symbol}}",
             "network_filter_all": "Tous",
             "see_networks": "Voir les réseaux",
             "hide_networks": "Masquer les réseaux",
@@ -484,6 +574,7 @@
         "undo_rekey": "Annuler le rekey",
         "rekeyed_to": "Rekey vers",
         "rekey_account": "Rekey du compte",
+        "token_approvals": "Autorisations des jetons",
         "rekey_option_ledger_title": "Vers un compte Ledger",
         "rekey_option_ledger_description": "Les transactions seront autorisées sur votre appareil Ledger.",
         "rekey_option_standard_title": "Vers un compte standard",
@@ -517,9 +608,9 @@
         "remove_rekey_error_message": "Vous ne pouvez pas supprimer ce compte avant d’avoir supprimé ses {{count}} compte(s) rekeyé(s)",
         "view_private_key": "Voir la clé privée",
         "networks_title": "Réseaux",
-        "add_network": "Ajouter",
-        "add_network_error": "Impossible d’ajouter ce réseau",
-        "add_network_success": "Réseau {{network}} ajouté",
+        "enable_network": "Activer",
+        "enable_network_error": "Impossible d’activer ce réseau",
+        "enable_network_success": "Réseau {{network}} activé",
         "see_all_networks": "Voir tous les réseaux",
         "view_passphrase": "Voir la passphrase",
         "network_options": "Plus d’options"
@@ -542,6 +633,7 @@
         "type_algo25": "Compte Algo25",
         "type_watch": "Compte de suivi",
         "type_ledger": "Compte Ledger",
+        "ledger_usb_device": "Ledger (USB)",
         "type_multisig": "Compte partagé",
         "type_multisig_signers": "Partagé · {{threshold}} signataires sur {{total}}",
         "type_quantum": "Compte quantique",
@@ -1118,7 +1210,8 @@
             "unavailable_body": "Veuillez réessayer dans un instant.",
             "offline_title": "Vous êtes hors ligne",
             "offline_body": "Cette page ne peut pas se charger sans connexion Internet. Elle se rechargera automatiquement dès votre retour en ligne.",
-            "unknown_host": "Site inconnu"
+            "unknown_host": "Site inconnu",
+            "connected_account_a11y": "Compte connecté, touchez pour changer"
         },
         "done": "Terminé",
         "save": "Enregistrer",
@@ -1446,6 +1539,11 @@
         }
     },
     "peraCard": {
+        "service_unavailable": {
+            "title": "Pera Card est temporairement indisponible",
+            "body": "Veuillez réessayer dans quelques minutes.",
+            "body_with_reference": "Veuillez réessayer dans quelques minutes. Référence : {{reference}}"
+        },
         "account": {
             "navigation_title": "Pera Card",
             "linked_to": "Lié à {{name}}",
@@ -1981,6 +2079,14 @@
             "error_body": "Nous n’avons pas pu démarrer la vérification. Veuillez réessayer.",
             "open_link_error_body": "Nous n’avons pas pu ouvrir la page de vérification. Veuillez réessayer."
         },
+        "card_on_other_account": {
+            "title": "Votre Pera Card est liée à un autre compte",
+            "body": "Le compte qui finance votre carte ne figure pas dans ce wallet. Ajoutez ce compte à Pera, puis vérifiez à nouveau.",
+            "body_with_address": "Votre carte est financée depuis {{address}}, qui ne figure pas dans ce wallet. Ajoutez ce compte à Pera, puis vérifiez à nouveau.",
+            "check_again": "Vérifier à nouveau",
+            "not_found_title": "Compte introuvable",
+            "not_found_body": "Aucun des comptes de ce wallet n’est lié à votre Pera Card."
+        },
         "setup_status": {
             "title": "Terminez la configuration et commencez à payer on-chain",
             "documents_title": "Envoyez vos documents",
@@ -2063,7 +2169,8 @@
         "empty_title": "Aucune notification pour le moment",
         "empty_body": "Vos transactions récentes, demandes d’actifs et autres transactions apparaîtront ici",
         "unavailable_title": "Notifications indisponibles",
-        "unavailable_body": "Nous n’avons pas pu configurer les notifications sur cet appareil. Vérifiez vos autorisations et votre connexion, puis réessayez."
+        "unavailable_body": "Nous n’avons pas pu configurer les notifications sur cet appareil. Vérifiez vos autorisations et votre connexion, puis réessayez.",
+        "mark_all_read": "Tout marquer comme lu"
     },
     "messages": {
         "tabs": {
@@ -2406,7 +2513,13 @@
         "name_account": {
             "title": "Nommez votre compte",
             "description": "Nommez votre compte pour l’identifier facilement lors de l’utilisation de Pera Wallet. Ces noms sont stockés localement et ne sont visibles que par vous.",
-            "finish_button": "Terminer la création"
+            "finish_button": "Terminer la création",
+            "setup_title": "Configurez votre compte",
+            "setup_description": "Choisissez un nom et les réseaux que vous souhaitez utiliser avec ce compte.",
+            "name_label": "Nom",
+            "name_hint": "Vous seul pouvez voir ce nom",
+            "networks_label": "Réseaux",
+            "edit_networks": "Modifier les réseaux"
         },
         "import_select_addresses": {
             "title": "Sélectionnez les adresses à ajouter",
@@ -2449,7 +2562,7 @@
         "add_account": {
             "title": "Ajouter un compte",
             "add_account_option_title": "Ajouter un compte",
-            "add_account_option_description": "Ajoutez un nouveau compte à votre Universal Wallet existant",
+            "add_account_option_description": "Ajoutez un compte à votre Pera Wallet",
             "import_account_option_title": "Importer un compte",
             "import_account_option_description": "Importez un compte existant ou connectez votre Ledger",
             "qr_scan_invalid_title": "QR code invalide",
@@ -2470,7 +2583,7 @@
             "quantum_creating_title": "Création de votre compte Quantum…",
             "terms_and_privacy": "En ajoutant un wallet, vous acceptez les <0>conditions générales</0> et la <1>politique de confidentialité</1> de Pera Wallet",
             "create_multisig_option_title": "Compte partagé Algorand",
-            "create_multisig_option_description": "Créez un nouveau compte multisignature à sécurité renforcée qui nécessite plusieurs signataires",
+            "create_multisig_option_description": "Créez un nouveau compte multisignature Algorand à sécurité renforcée qui nécessite plusieurs signataires",
             "pera_card_option_title": "Ajouter un compte Pera Card",
             "pera_card_option_description": "Dépensez vos cryptos dans le monde réel avec la Pera Card",
             "see_other_options": "Voir les autres options"
@@ -2923,7 +3036,9 @@
     },
     "chain_selection": {
         "title": "Choisir un réseau",
-        "add_action": "Ajouter"
+        "enable_action": "Activer",
+        "disable_action": "Désactiver",
+        "required": "Obligatoire"
     },
     "receive_funds": {
         "account_selection": {
@@ -3259,7 +3374,8 @@
         },
         "advanced": {
             "launch_label": "Paramètre de démarrage",
-            "confirmation_label": "Action de confirmation"
+            "confirmation_label": "Action de confirmation",
+            "haptics_label": "Retour haptique"
         },
         "launch": {
             "synopsis": "Choisissez le compte sur lequel Pera s’ouvre au démarrage de l’application.",
@@ -3452,10 +3568,7 @@
     "signing": {
         "view_details": "Voir les détails de la transaction",
         "balance_impact": {
-            "receive_title": "Vous recevrez",
-            "spend_title": "Vous dépenserez",
             "analyzing": "Analyse de la transaction…",
-            "unavailable": "Impossible de prévisualiser l’impact sur le solde — examinez attentivement les détails de la transaction avant de signer.",
             "entire_balance": "Totalité du solde {{unit}}",
             "closes_balance": "La totalité de votre solde restant est envoyée",
             "new_asset": "Nouvel actif créé par cette transaction"
@@ -3474,6 +3587,7 @@
         },
         "spend_approval": {
             "spend_warning": "Cette signature permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
+            "spend_warning_transaction": "Cette transaction permet à une autre adresse de déplacer des tokens depuis votre compte sans vous redemander votre accord.",
             "nft_spend_warning": "Cette signature permet à une autre adresse de déplacer ce NFT depuis votre compte sans vous redemander votre accord.",
             "spend_warning_bold": "Ne signez que si vous faites confiance à cette application.",
             "spender_caption": "Adresse autorisée : {{address}}",
@@ -3488,6 +3602,7 @@
             "known_description": "{{name}} est un contrat connu",
             "known_spend_note": "{{name}} est un contrat connu. Il ne peut déplacer ce token que dans le cadre d’une transaction ou d’une signature que vous approuvez.",
             "known_unlimited_note": "Le montant est illimité : vous n’aurez pas à autoriser de nouveau ce token pour {{name}}.",
+            "known_site_mismatch": "{{name}} appartient à {{domain}}, mais cette demande provient de {{site}}.",
             "unlimited_limit_note": "Pera ne peut pas réduire ce montant. Pour n’approuver que ce dont vous avez besoin, refusez et choisissez un montant plus petit dans l’application, si elle le permet.",
             "balance_label": "Votre solde",
             "allow_title": "Autoriser {{spender}} à utiliser vos {{asset}}",
@@ -3527,8 +3642,7 @@
             "multiple_transactions_title": "Plusieurs transactions",
             "transactions_count_one": "{{count}} transaction",
             "transactions_count_other": "{{count}} transactions",
-            "details": "Détails de la transaction",
-            "signing_with": "Compte signataire"
+            "details": "Détails de la transaction"
         },
         "external_transaction": {
             "pill_label": "Signée",
@@ -3557,6 +3671,7 @@
             "body": "Il s’agit d’un compte partagé et aucun de ses comptes signataires ne se trouve dans votre wallet. Ajoutez un compte signataire pour signer des transactions en son nom.",
             "rekeyed_auth_missing_body": "Ce compte a fait l’objet d’un rekey vers {{authAddress}}, qui ne se trouve pas dans ce wallet ; il ne peut donc pas signer de transactions. Importez le compte auth pour signer en son nom.",
             "rekeyed_auth_watch_body": "Ce compte a fait l’objet d’un rekey vers un compte de suivi, qui ne détient aucune clé de signature. Importez la clé du compte auth pour signer en son nom.",
+            "signer_key_missing_body": "Cette transaction doit être signée avec la clé propre de {{authAddress}}, qui ne se trouve pas dans ce wallet.",
             "signer_missing_body": "Cette demande doit être signée par un compte absent de votre wallet, elle ne peut donc pas être signée ici."
         },
         "transaction_request_faq": {
@@ -3612,8 +3727,54 @@
             "reason": "Motif du contrat : « {{reason}} »"
         },
         "review_warnings": {
-            "summary": "{{count}} points à vérifier",
             "acknowledge": "Je comprends les risques et je veux quand même signer"
+        },
+        "review": {
+            "caution_title": "Vérifiez attentivement",
+            "changes_note": "Les montants peuvent légèrement varier avant l’exécution de votre transaction.",
+            "changes_title": "Modifications estimées de votre portefeuille",
+            "fee_max": "Jusqu’à <0/> · payés en {{symbol}}",
+            "network_fee": "Frais de réseau",
+            "nothing": "Rien",
+            "nothing_back_body": "Des actifs quittent votre portefeuille et rien ne revient. Ne continuez que si vous vous y attendiez.",
+            "nothing_back_title": "Vous ne recevez rien en retour",
+            "permission_collection": "Tous vos NFT {{collection}}",
+            "permission_collection_note": "Il pourra déplacer chaque NFT de cette collection que vous détenez, maintenant et plus tard, jusqu’à ce que vous retiriez cette autorisation.",
+            "permission_no_change": "Aucun jeton ne quitte votre portefeuille avec cette transaction.",
+            "permission_revoke": "{{spender}} ne pourra plus dépenser",
+            "permission_spender": "{{spender}} pourra dépenser",
+            "permission_title": "Autorisation que vous accordez",
+            "permission_token": "{{collection}} n° {{tokenId}}",
+            "permission_unlimited": "{{symbol}} illimité",
+            "permission_unlimited_note": "Illimité signifie qu’il pourra déplacer tout votre {{symbol}}, maintenant et plus tard, jusqu’à ce que vous retiriez cette autorisation.",
+            "preview_unavailable_body": "Nous indiquons normalement exactement ce qui quitte et ce qui entre dans votre portefeuille. Cette fois, ce n’est pas possible : vérifiez attentivement la demande.",
+            "preview_unavailable_tip": "Ne continuez que si vous avez lancé cette opération vous-même sur {{host}}.",
+            "preview_unavailable_tip_generic": "Ne continuez que si vous avez lancé cette opération vous-même.",
+            "preview_unavailable_title": "Aperçu impossible",
+            "technical_details": "Détails techniques",
+            "technical_details_evm": "Contrat, fonction et détail des frais",
+            "title_approve": "Autoriser",
+            "title_clawback": "Récupération",
+            "title_contract_interaction": "Interaction avec un contrat",
+            "token_contract": "Contrat du jeton {{symbol}}",
+            "unverified": "Non vérifié",
+            "you_receive": "Vous recevez",
+            "you_send": "Vous envoyez",
+            "scroll_hint": "Faites défiler pour en voir plus",
+            "analyzing": "Analyse de la demande…",
+            "holder": "Prélevé sur",
+            "technical_details_generic": "Données de la transaction et détail des frais",
+            "net_change": "Variation nette",
+            "net_change_same": "Valeur à peu près identique"
+        },
+        "technical": {
+            "interacting_with": "Avec quoi vous interagissez",
+            "contract": "Contrat",
+            "contract_help": "Le code auquel vous envoyez cette transaction.",
+            "not_decoded": "Pera n’a pas pu décoder cette fonction et affiche donc le sélecteur brut.",
+            "known_match": "Contrat connu · correspond à {{domain}}",
+            "amount_sent": "Montant envoyé",
+            "transaction": "Transaction"
         }
     },
     "site_safety": {
@@ -3716,17 +3877,12 @@
             "nft_fallback": "{{collection}} · ID du token {{tokenId}}"
         },
         "contract_call": {
-            "advanced": "Avancé",
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
             "function_selector": "Sélecteur de fonction",
             "call_data": "Données de l’appel",
             "function": "Fonction",
-            "arguments": "Arguments",
             "argument_index": "Argument {{index}}",
             "implementation": "Implémentation",
-            "verified_source": "Nom tiré du code source vérifié du contrat.",
-            "verified_source_proxy": "Ce contrat est un proxy. Nom tiré du code source vérifié du contrat vers lequel il redirige.",
-            "lookup_failed": "Pera n’a pas pu récupérer le nom de fonction de ce contrat.",
             "unchecked_warning": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à {{domain}}.",
             "unchecked_warning_no_source": "Pera n’a pas pu vérifier ce que fait cette transaction. Ne continuez que si vous faites confiance à l’application qui l’a envoyée."
         },
@@ -3850,11 +4006,6 @@
             "transactions_count_other": "{{count}} transactions"
         },
         "summary": {
-            "payment_to": "Paiement à",
-            "opt_in": "Opt-in de l’actif {{asset}} pour",
-            "opt_out": "Opt-out de l’actif {{asset}} depuis",
-            "transfer": "Transfert de l’actif {{asset}} vers",
-            "clawback": "Clawback de l’actif {{asset}} depuis",
             "app_id": "ID de l’application : {{id}}"
         },
         "filter": {
@@ -3904,7 +4055,7 @@
             "networks_heading": "Réseaux",
             "networks_more": "+{{count}}",
             "networks_optional_note": "Facultatif. {{name}} fonctionne aussi sur ces réseaux.",
-            "network_added": "Ajouté",
+            "network_enabled": "Activé",
             "origin_verified": "Vérifié par WalletConnect",
             "accounts_title": "SÉLECTIONNER LES COMPTES",
             "no_accounts": "Aucun de vos comptes ne peut se connecter sur ce réseau.",
@@ -3922,7 +4073,10 @@
             "error_delivery_failed": "Pera n'a pas pu joindre l'application pour transmettre votre réponse ; elle est peut-être toujours en attente. Veuillez réessayer depuis l'application.",
             "quantum_fee_delivery_failed": "La demande n’a pas pu être traitée. Cette application ne prend peut-être pas en charge les frais de réseau plus élevés requis par les comptes Quantum.",
             "origin_scam": "Cette application a été signalée comme un risque de sécurité. Ne vous connectez que si vous lui faites confiance.",
-            "origin_unverified": "Pera n’a pas pu vérifier le site web de cette application."
+            "origin_unverified": "Pera n’a pas pu vérifier le site web de cette application.",
+            "connect_account": "Connecter un compte",
+            "choose_account": "Choisissez un compte",
+            "account_picker_title": "Sélectionner un compte"
         },
         "permissions": {
             "heading": "Cette application peut",
@@ -3958,7 +4112,9 @@
             "network_label": "{{chain}} {{network}}",
             "permissions": "Autorisations avancées",
             "permissions_info_title": "Autorisations avancées",
-            "permissions_info_body": "WalletConnect est un protocole de communication pour le web3, qui permet aux wallets et aux dApps de se connecter et d’interagir en toute sécurité. À chaque nouvelle version, WalletConnect introduit de nouvelles façons de traiter, de signer et/ou d’afficher les demandes de transaction provenant de projets tiers."
+            "permissions_info_body": "WalletConnect est un protocole de communication pour le web3, qui permet aux wallets et aux dApps de se connecter et d’interagir en toute sécurité. À chaque nouvelle version, WalletConnect introduit de nouvelles façons de traiter, de signer et/ou d’afficher les demandes de transaction provenant de projets tiers.",
+            "change_account": "Changer de compte",
+            "change_account_failed": "Impossible de changer de compte. Réessayez."
         }
     },
     "staking": {
@@ -4068,7 +4224,20 @@
             "confirm_swap": "Confirmer le swap",
             "slide_to_confirm": "Faites glisser pour confirmer",
             "high_price_impact_warning": "Ce swap a un impact important sur le prix. Vous pourriez recevoir sensiblement moins de tokens que prévu.",
-            "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer."
+            "high_network_fee_warning": "Les frais de réseau (~{{fee}}) représentent {{percent}} % de ce swap. Vous pouvez tout de même continuer.",
+            "quote_error": "Impossible d’obtenir des cotations. Veuillez réessayer.",
+            "amount_too_low": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}}.",
+            "amount_too_low_fiat": "Montant trop faible pour un swap sur {{network}}. Le minimum est de {{amount}} {{unit}} (~{{fiat}}).",
+            "use_minimum": "Utiliser le minimum",
+            "amount_too_low_unknown": "Montant trop faible pour un swap sur {{network}}. Essayez un montant plus élevé ou un réseau aux frais plus bas.",
+            "amount_too_high": "Montant trop élevé pour un swap. Le maximum est de {{amount}} {{unit}}.",
+            "amount_too_high_unknown": "Montant trop élevé pour un swap. Essayez un montant plus faible.",
+            "amount_invalid": "Ce montant ne peut pas être échangé. Essayez un autre montant.",
+            "no_route": "Aucune route de swap trouvée pour {{from}} → {{to}}. Essayez un autre token ou un autre montant.",
+            "unsupported": "Ce token ne peut pas être échangé dans Pera. Choisissez un autre token.",
+            "restricted": "Cet échange n’est pas disponible dans votre région.",
+            "network_unavailable": "Les échanges ne sont pas disponibles sur {{network}} pour le moment.",
+            "retry": "Réessayer"
         },
         "execution": {
             "error_title": "Échec du swap",
@@ -4136,6 +4305,10 @@
         "receiving_account": {
             "title": "Compte de réception",
             "label": "Recevoir sur"
+        },
+        "source_account": {
+            "title": "Sélectionner un compte",
+            "subtitle": "Vous avez <0>{{accounts}} comptes</0> avec cet actif. Choisissez-en un pour continuer."
         }
     },
     "onramp": {
@@ -4376,8 +4549,9 @@
             "upgrade_watch_body_other": "{{count}} de ces adresses figurent déjà dans votre wallet en tant que comptes de suivi. Les importer les convertira en comptes Ledger capables de signer des transactions. Leurs noms et paramètres seront conservés.",
             "upgrade_watch_confirm": "Convertir",
             "same_wallet_title": "Ajouter à votre compte Ledger existant ?",
-            "same_wallet_body": "Un compte de ce Ledger figure déjà dans votre wallet. Ouvrez l’application {{appName}} sur votre Ledger pour que Pera confirme que les deux adresses proviennent du même Ledger, puis continuez. Vous pouvez aussi ajouter cette adresse comme compte distinct.",
-            "same_wallet_confirm": "Continuer",
+            "same_wallet_body": "Un compte de ce Ledger figure déjà dans votre wallet. Pour y ajouter cette adresse, ouvrez l’application {{appName}} sur votre Ledger afin que Pera confirme que les deux adresses proviennent du même Ledger. L’ajout au compte existant garde les deux adresses ensemble. Un compte distinct apparaît comme une entrée à part dans votre liste de comptes.",
+            "same_wallet_body_separate_only": "Un compte de ce Ledger figure déjà dans votre wallet. Vous pouvez ajouter cette adresse comme compte distinct, qui apparaît comme une entrée à part dans votre liste de comptes.",
+            "same_wallet_confirm": "Ajouter au compte existant",
             "same_wallet_separate": "Ajouter comme compte distinct"
         },
         "signing": {
@@ -4958,7 +5132,11 @@
             "fee": "Frais",
             "fee_share": "{{percent}} du résultat de l’échange",
             "fee_recipient": "Versés à",
-            "base_units": "unités de base"
+            "base_units": "unités de base",
+            "deposit_at_most": "Vous déposez au maximum",
+            "position": "Position",
+            "new_position": "NFT de la nouvelle position",
+            "closes_position": "Ferme la position et brûle son NFT"
         },
         "pricing": {
             "gwei": "Gwei",
@@ -4968,23 +5146,13 @@
             "max_priority_fee_per_gas": "Frais de priorité max. par gas"
         },
         "known_contract": {
-            "title": "Contrat",
-            "verified": "Contrat vérifié",
-            "matches_site": "Correspond à {{domain}}"
+            "badge": "Contrat connu"
         },
         "review_warnings": {
             "high_fee_title": "Frais de réseau anormalement élevés",
-            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
-            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Normale. Vous paierez au maximum <0/> (frais maximum), généralement moins."
+            "high_fee_body": "{{domain}} a fixé les frais de cette transaction à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins.",
+            "high_fee_body_no_source": "L’application à l’origine de cette demande a fixé ses frais à plus du double de ce que Pera utiliserait avec son réglage Rapide. Vous paierez au maximum <0/> (frais maximum), généralement moins."
         },
-        "simulation": {
-            "title": "Modifications estimées",
-            "estimate_note": "Estimation établie sur le dernier bloc. Le résultat peut changer avant que votre transaction soit incluse.",
-            "approvals_title": "Autorisations",
-            "revoke_title": "Retirer l’autorisation d’utiliser vos {{asset}}",
-            "revoke_title_assets": "Retirer l’autorisation d’utiliser vos actifs",
-            "no_changes": "Aucune modification de vos soldes ni de vos autorisations n’est attendue.",
-            "unavailable": "Impossible de simuler cette transaction. Examinez-la attentivement avant de signer."
-        }
+        "simulation": {}
     }
 }

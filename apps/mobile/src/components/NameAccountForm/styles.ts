@@ -26,6 +26,14 @@ export const useStyles = makeStyles(theme => ({
     inputContainer: {
         paddingLeft: theme.spacing.md,
     },
+    secondaryText: {
+        color: theme.colors.textGray,
+    },
+    hint: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     clearButton: {
         paddingRight: theme.spacing.sm,
     },

@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-projects
-vi.mock('@perawallet/wallet-core-projects', () => ({
+vi.mock('@perawallet/wallet-core-projects', async () => ({
     useProjectByUrlQuery: vi.fn(() => ({
         data: null,
         isLoading: false,
@@ -31,6 +31,33 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
         isLoading: false,
         isError: false,
         error: null,
+    })),
+    projectQueryKeys: (
+        await vi.importActual<
+            typeof import('@packages/projects/src/hooks/querykeys')
+        >('@packages/projects/src/hooks/querykeys')
+    ).projectQueryKeys,
+    useDiscoverProjectsQuery: vi.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        refetch: vi.fn(async () => undefined),
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-discover', () => ({
+    useDiscoverNewsQuery: vi.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        refetch: vi.fn(async () => undefined),
+    })),
+    useDiscoverNewsDetailQuery: vi.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        isFetching: false,
+        refetch: vi.fn(async () => undefined),
     })),
 }))
 
@@ -93,18 +120,34 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { formatSwapRate, swapRate } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
     >('@packages/swaps/src/utils/swapQuoteHelpers')
-    const { swapFeeOf } = await vi.importActual<
+    const {
+        swapFeeOf,
+        swapNetworkFeeUsd,
+        swapNetworkFeeSharePercent,
+        HIGH_NETWORK_FEE_SHARE_PERCENT,
+    } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapFees')
     >('@packages/swaps/src/utils/swapFees')
     const { isSwapOrderSettled } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapOrderSettlement')
     >('@packages/swaps/src/utils/swapOrderSettlement')
+    const { swapQuoteFailureOf } = await vi.importActual<
+        typeof import('@packages/swaps/src/utils/routerErrors')
+    >('@packages/swaps/src/utils/routerErrors')
+    const { resolveRouterErrorBody } = await vi.importActual<
+        typeof import('@packages/swaps/src/api/router-error')
+    >('@packages/swaps/src/api/router-error')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
+        swapQuoteFailureOf,
+        resolveRouterErrorBody,
         formatSwapRate,
         swapRate,
         swapFeeOf,
+        swapNetworkFeeUsd,
+        swapNetworkFeeSharePercent,
+        HIGH_NETWORK_FEE_SHARE_PERCENT,
         isSwapOrderSettled,
         scopeOfSwapAsset: ({
             chainId,
@@ -441,6 +484,9 @@ vi.mock('@perawallet/wallet-core-settings', () => {
             getPreference: vi.fn(),
             setPreference: vi.fn(),
         })),
+        useSettingsStore: {
+            getState: () => ({ getPreference: vi.fn() }),
+        },
         useNotificationPreferences: vi.fn(() => ({
             disabledAccounts: [],
             setAccountEnabled: vi.fn(),
@@ -612,6 +658,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                   }
                 : undefined,
         ),
+        hardwareDeviceNameOf: vi.fn((account: any) => {
+            const name =
+                account?.custody?.kind === 'hardware'
+                    ? account.custody.device.deviceName
+                    : undefined
+            return name && !name.startsWith('/dev/') ? name : null
+        }),
         hardwareDetailsOf: vi.fn((account: any) =>
             account?.custody?.kind === 'hardware'
                 ? {
@@ -962,6 +1015,7 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             data: { usdPrice: new Decimal(1) },
             isPending: false,
         })),
+        imitatedCurrencyOf: vi.fn(() => null),
     }
 })
 

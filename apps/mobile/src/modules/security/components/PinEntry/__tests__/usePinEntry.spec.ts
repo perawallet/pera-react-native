@@ -18,6 +18,13 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     PIN_LENGTH: 4,
 }))
 
+const mockPinDigit = vi.fn()
+const mockPinError = vi.fn()
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => ({ pinDigit: mockPinDigit, pinError: mockPinError }),
+}))
+
 describe('usePinEntry', () => {
     const mockOnPinComplete = vi.fn()
     const mockOnPinChange = vi.fn()
@@ -231,5 +238,68 @@ describe('usePinEntry', () => {
         })
 
         expect(result.current.pin).toBe('1')
+    })
+
+    describe('haptics', () => {
+        it('plays pinDigit for each digit that lands', () => {
+            const { result } = renderHook(() =>
+                usePinEntry({ onPinComplete: mockOnPinComplete }),
+            )
+
+            act(() => result.current.handleKeyPress('1'))
+            act(() => result.current.handleKeyPress('2'))
+
+            expect(mockPinDigit).toHaveBeenCalledTimes(2)
+        })
+
+        it('stays silent for delete and for a digit past a full PIN', () => {
+            const { result } = renderHook(() =>
+                usePinEntry({ onPinComplete: mockOnPinComplete }),
+            )
+            for (const key of ['1', '2', '3', '4'] as const) {
+                act(() => result.current.handleKeyPress(key))
+            }
+            mockPinDigit.mockClear()
+
+            act(() => result.current.handleKeyPress('5'))
+            act(() => result.current.handleKeyPress('delete'))
+
+            expect(mockPinDigit).not.toHaveBeenCalled()
+        })
+
+        it('keeps the key handler stable across digits and counts presses that land before a re-render', () => {
+            const { result } = renderHook(() =>
+                usePinEntry({ onPinComplete: mockOnPinComplete }),
+            )
+            const first = result.current.handleKeyPress
+
+            act(() => {
+                for (const key of ['1', '2', '3', '4', '5'] as const) {
+                    result.current.handleKeyPress(key)
+                }
+            })
+
+            expect(result.current.handleKeyPress).toBe(first)
+            expect(mockPinDigit).toHaveBeenCalledTimes(4)
+        })
+
+        it('plays pinError once when hasError turns on, not on re-render or when it clears', () => {
+            const { rerender } = renderHook(
+                ({ hasError }) =>
+                    usePinEntry({ onPinComplete: mockOnPinComplete, hasError }),
+                { initialProps: { hasError: false } },
+            )
+            expect(mockPinError).not.toHaveBeenCalled()
+
+            rerender({ hasError: true })
+            rerender({ hasError: true })
+            expect(mockPinError).toHaveBeenCalledTimes(1)
+
+            rerender({ hasError: false })
+            expect(mockPinError).toHaveBeenCalledTimes(1)
+
+            rerender({ hasError: true })
+            expect(mockPinError).toHaveBeenCalledTimes(2)
+        })
     })
 })

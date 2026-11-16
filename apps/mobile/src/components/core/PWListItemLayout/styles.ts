@@ -19,6 +19,7 @@ type StyleProps = {
     leftFlex: number
     leftMaxWidthRatio?: number
     centerFlex: number
+    rightMaxWidthRatio?: number
     align: 'center' | 'top'
 }
 
@@ -28,7 +29,16 @@ const toPercent = (ratio?: number): Optional<DimensionValue> =>
         : (`${Math.round(ratio * 100)}%` as DimensionValue)
 
 export const useStyles = makeStyles(
-    (theme, { leftFlex, leftMaxWidthRatio, centerFlex, align }: StyleProps) => {
+    (
+        theme,
+        {
+            leftFlex,
+            leftMaxWidthRatio,
+            centerFlex,
+            rightMaxWidthRatio,
+            align,
+        }: StyleProps,
+    ) => {
         // `top` pins the sticky slots to the first line (multi-line rows like
         // inbox/notifications); `center` is the default single-line behaviour.
         const crossAlign = align === 'top' ? 'flex-start' : 'center'
@@ -67,9 +77,11 @@ export const useStyles = makeStyles(
                 flexShrink: 1,
             },
             // Sticky trailing slot — never shrinks, so it always shows in full
-            // and the center truncates first.
+            // and the center truncates first. Past `maxWidth` its own content
+            // truncates instead.
             right: {
                 flexShrink: 0,
+                maxWidth: toPercent(rightMaxWidthRatio),
             },
             // Absolutely positioned so it doesn't add height (which would push
             // the sticky slots off vertical-center). Pulled down by the row's

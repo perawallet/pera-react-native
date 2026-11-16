@@ -24,12 +24,15 @@ import {
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
     resolveUsbDeviceModel,
+    usbLedgerDisplayName,
 } from '@perawallet/wallet-extension-ledger-shared'
 
 type LedgerHIDDescriptor = {
     deviceId?: number | string
     productId?: number
     vendorId?: number
+    // Android's UsbDevice.getDeviceName(): the /dev/bus/usb/... node path, not
+    // a product name, so it is never shown.
     deviceName?: Nullable<string>
 }
 
@@ -74,8 +77,9 @@ export class RNLedgerUsbService implements HardwareWalletService {
                         descriptor: LedgerHIDDescriptor
                     }) => {
                         if (event.type !== 'add') return
-                        const { productId, deviceName } = event.descriptor
-                        const model = resolveUsbDeviceModel(productId)
+                        const model = resolveUsbDeviceModel(
+                            event.descriptor.productId,
+                        )
                         // If neither deviceId nor productId is present we skip
                         // the descriptor rather than emit a sentinel that would
                         // alias multiple devices in the connection-routing map.
@@ -83,7 +87,7 @@ export class RNLedgerUsbService implements HardwareWalletService {
                         if (id === undefined) return
                         onDevice({
                             id,
-                            name: deviceName || `Ledger ${model}`,
+                            name: usbLedgerDisplayName(model),
                             manufacturer: 'ledger',
                             transportType: 'usb',
                             model,

@@ -107,6 +107,18 @@ export class ChainNotEligibleError extends AccountError {
     }
 }
 
+/** Disabling the chains would leave the account on none. */
+export class LastChainRemovalError extends AccountError {
+    readonly accountId: string
+
+    constructor(accountId: string) {
+        super(`Account ${accountId} must keep a chain`, undefined, {
+            params: { accountId },
+        })
+        this.accountId = accountId
+    }
+}
+
 /**
  * A hardware account's address on a new chain comes from its device; the
  * caller has to read it there first.

@@ -26,6 +26,7 @@ import {
     type SigningLifecycleEvent,
 } from '@perawallet/wallet-core-signing'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useHaptics } from '@hooks/useHaptics'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 
@@ -48,6 +49,7 @@ type UseMessageSigningScreenResult = {
 
 export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
     const pipeline = useSigningPipeline()
+    const haptics = useHaptics()
     const { currentRequest, resolved } = pipeline
 
     // The bus's `signing-started` event lands before the next render of
@@ -77,12 +79,14 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
 
     const handleApprove = useCallback(() => {
         if (isConfirmBlocked) return
+        haptics.medium()
         pipeline.next()
-    }, [pipeline, isConfirmBlocked])
+    }, [haptics, pipeline, isConfirmBlocked])
 
     const handleReject = useCallback(() => {
+        haptics.light()
         pipeline.fail()
-    }, [pipeline])
+    }, [haptics, pipeline])
 
     return {
         summary,

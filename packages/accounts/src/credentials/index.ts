@@ -16,6 +16,7 @@ export {
     chainAccountOf,
     custodyOf,
     hardwareDetailsOf,
+    hardwareDeviceNameOf,
     hardwareDeviceOf,
     hasCustody,
     hasRecoverySeed,

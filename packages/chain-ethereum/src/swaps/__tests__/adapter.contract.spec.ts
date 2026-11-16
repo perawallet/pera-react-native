@@ -42,6 +42,7 @@ vi.mock('../../blockchain/utils/createEvmClient', () => ({
 vi.mock('../../transfer/fees', async importOriginal => ({
     ...(await importOriginal<typeof import('../../transfer/fees')>()),
     readEvmFeePresets: async () => ({
+        baseFeePerGas: 0n,
         presets: { normal: { maxFeePerGas: 1n, maxPriorityFeePerGas: 1n } },
     }),
 }))

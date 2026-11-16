@@ -269,7 +269,7 @@ describe('useAccountNetworks', () => {
         await waitFor(() =>
             expect(mocks.showToast).toHaveBeenCalledWith(
                 {
-                    title: 'account_options.add_network_success:Ethereum',
+                    title: 'account_options.enable_network_success:Ethereum',
                     body: '',
                     type: 'success',
                 },
@@ -315,7 +315,7 @@ describe('useAccountNetworks', () => {
         await waitFor(() =>
             expect(mocks.showError).toHaveBeenCalledWith(
                 error,
-                'account_options.add_network_error',
+                'account_options.enable_network_error',
                 { notifier: undefined },
             ),
         )

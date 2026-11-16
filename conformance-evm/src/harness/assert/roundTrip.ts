@@ -24,7 +24,7 @@ import { createEvmClient } from '@perawallet/wallet-core-chain-ethereum/blockcha
 import { nativeBalanceOf } from '../accounts'
 import { oracleOpStackFees } from '../contracts'
 import type { EvmConformanceEnv } from '../context'
-import { anvilRpc } from '../evmnet'
+import { anvilRpc, isOpStackEvmnetChain } from '../evmnet'
 import {
     compareEvmIntent,
     type ComparableEvmTransaction,
@@ -122,7 +122,7 @@ const opStackChargeWithoutReceiptField = async (
     raw: Hex,
     receipt: TransactionReceipt,
 ): Promise<bigint> => {
-    if (env.chain !== 'base') return 0n
+    if (!isOpStackEvmnetChain(env.chain)) return 0n
     const { l1DataFee, operatorFee } = await oracleOpStackFees({
         chain: env.chain,
         raw,
@@ -228,7 +228,7 @@ export const expectEvmConformant = async ({
         receiptL1Fee ??
         (await opStackChargeWithoutReceiptField(env, raw, receipt))
     const l1FeeSource =
-        receiptL1Fee === undefined && env.chain === 'base'
+        receiptL1Fee === undefined && isOpStackEvmnetChain(env.chain)
             ? ' priced by the GasPriceOracle, which matches the node only below the Fjord 100-byte minimum transaction size; a larger transaction can differ here'
             : ''
     const value = intent.value ?? 0n

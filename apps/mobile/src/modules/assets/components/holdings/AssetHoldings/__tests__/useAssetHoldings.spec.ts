@@ -100,20 +100,20 @@ describe('useAssetHoldings', () => {
         price(new Decimal('3000'))
     })
 
-    it.each([
-        ['unverified', 'asset_details.token_warning.unverified_title'],
-        ['suspicious', 'asset_details.token_warning.suspicious_title'],
-    ] as const)(
-        'warns about a %s token with the matching title',
-        (tier, title) => {
-            vi.mocked(unvettedTierOf).mockReturnValue(tier)
+    it('warns about a suspicious token', () => {
+        vi.mocked(unvettedTierOf).mockReturnValue('suspicious')
 
-            expect(render().result.current.tokenWarning).toEqual({
-                title,
-                body: 'asset_details.token_warning.body',
-            })
-        },
-    )
+        expect(render().result.current.tokenWarning).toEqual({
+            title: 'asset_details.token_warning.suspicious_title',
+            body: 'asset_details.token_warning.body',
+        })
+    })
+
+    it('has no warning for an unverified token', () => {
+        vi.mocked(unvettedTierOf).mockReturnValue('unverified')
+
+        expect(render().result.current.tokenWarning).toBeNull()
+    })
 
     it('has no warning for a token Pera vetted or one the user opted in to', () => {
         expect(render().result.current.tokenWarning).toBeNull()

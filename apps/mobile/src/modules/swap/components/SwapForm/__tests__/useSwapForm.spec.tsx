@@ -20,6 +20,9 @@ const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const mockSetFromAsset = vi.fn()
 const mockSetSourceAsset = vi.fn()
+const mockSetAccountPair = vi.fn()
+const mockSetSelectedAccountId = vi.fn()
+let mockPairAccountId: string | null = null
 const mockSetToAsset = vi.fn()
 const mockSetSlippage = vi.fn()
 const mockResetQuoteMutation = vi.fn()
@@ -41,6 +44,12 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ isFocused: () => mockIsFocused }),
+}))
+
+const mockHaptics = vi.hoisted(() => ({ error: vi.fn(), light: vi.fn() }))
+
+vi.mock('@hooks/useHaptics', () => ({
+    useHaptics: () => mockHaptics,
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -87,6 +96,11 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
             typeof import('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
         >('../../../../../../../../packages/swaps/src/utils/swapQuoteHelpers')
     ).pickBestByAmountOut,
+    swapQuoteFailureOf: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/swaps/src/utils/routerErrors')
+        >('../../../../../../../../packages/swaps/src/utils/routerErrors')
+    ).swapQuoteFailureOf,
     useSwaps: () => ({
         fromAsset: mockFromAsset,
         toAsset: mockToAsset,
@@ -95,6 +109,8 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
         setFromAsset: mockSetFromAsset,
         setToAsset: mockSetToAsset,
         setSourceAsset: mockSetSourceAsset,
+        pairAccountId: mockPairAccountId,
+        setAccountPair: mockSetAccountPair,
         setSlippage: mockSetSlippage,
         setIsLocalCurrencyInput: mockSetIsLocalCurrencyInput,
         resetAssetPair: mockResetAssetPair,
@@ -111,7 +127,8 @@ vi.mock('@perawallet/wallet-core-swaps', async () => ({
     }),
 }))
 
-const accountAt = (address: string) => ({
+const accountAt = (address: string, id = 'account-1') => ({
+    id,
     chains: { algorand: { address } },
 })
 let mockSelectedAccount = accountAt('TESTADDRESS123')
@@ -136,6 +153,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     addressOn: (account: { chains: { algorand?: { address: string } } }) =>
         account.chains.algorand?.address,
     useSelectedAccount: () => mockSelectedAccount,
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mockSetSelectedAccountId,
+    }),
     useAccountAssetBalanceQuery: (_account: unknown, assetId: string) => ({
         data:
             mockPayBalance && assetId !== mockUnheldAssetId
@@ -197,6 +217,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
+    chainDisplayNameOf: () => 'Algorand',
+}))
+
+vi.mock('../../../utils/formatSwapLimit', () => ({
+    formatSwapLimit: (limit: Decimal) => limit.toString(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -274,6 +299,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return a.equals(b)
         },
         useDebouncedValue: (value: unknown) => value,
+        isPeraNetworkError: () => false,
+        isNotFoundError: () => false,
+        isChainRefusedError: () => false,
         uint64IdToNumber: (id: string | number) => Number(id),
         baseUnitsToDisplayUnits,
         displayUnitsToBaseUnits,
@@ -287,9 +315,11 @@ vi.mock('../../SwapConfirmationContent', () => ({
 describe('useSwapForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockCreateQuotes.mockResolvedValue([])
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
+        mockPairAccountId = null
         mockSourceChainIds = ['algorand']
         mockSelectedAccount = accountAt('TESTADDRESS123')
         mockPayBalance = new Decimal('5000000')
@@ -325,6 +355,7 @@ describe('useSwapForm', () => {
             expect(result.current.isChainShown).toBe(true)
             expect(result.current.isReceivingAccountShown).toBe(true)
             expect(mockSetFromAsset).not.toHaveBeenCalled()
+            expect(mockHaptics.light).not.toHaveBeenCalled()
         })
 
         it('hides the receive asset from the pay picker on its own chain only', async () => {
@@ -460,6 +491,16 @@ describe('useSwapForm', () => {
         expect(result.current.payAmount).toEqual(new Decimal(5))
     })
 
+    it('plays the light haptic when the assets are flipped', () => {
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        act(() => {
+            result.current.handleSwapDirection()
+        })
+
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+    })
+
     it('handleSwapDirection swaps assets and amounts', () => {
         const { result } = renderHook(() => useSwapForm(SCOPE))
 
@@ -500,6 +541,68 @@ describe('useSwapForm', () => {
         expect(result.current.receiveAmount).toBeNull()
         expect(result.current.selectedQuote).toBeNull()
         expect(mockResetQuoteMutation).toHaveBeenCalled()
+    })
+
+    it('pays from the account picked with the asset, switching to it with the pair pinned to it', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '123',
+            scope: SCOPE,
+            side: 'pay',
+            accountId: 'account-2',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetAccountPair).toHaveBeenCalledWith({
+            accountId: 'account-2',
+            chainId: SCOPE.chainId,
+            fromAsset: '123',
+            toAsset: '31566704',
+            toAssetScope: null,
+        })
+        expect(mockSetSelectedAccountId).toHaveBeenCalledWith('account-2')
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+    })
+
+    it("drops the receive side when another account's pick moves the swap to another network", async () => {
+        const ethereum = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: 'native',
+            scope: ethereum,
+            side: 'pay',
+            accountId: 'account-2',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetAccountPair).toHaveBeenCalledWith({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+        })
+    })
+
+    it('keeps the selected account when the asset was picked on it', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce({
+            assetId: '123',
+            scope: SCOPE,
+            side: 'pay',
+            accountId: 'account-1',
+        })
+        const { result } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            await result.current.handleOpenPayAssetSelection()
+        })
+
+        expect(mockSetFromAsset).toHaveBeenCalledWith('123')
+        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
     })
 
     it('handleOpenPayAssetSelection no-ops when picker is dismissed', async () => {
@@ -660,6 +763,38 @@ describe('useSwapForm', () => {
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         })
+    })
+
+    it('plays no error haptic when a flip carries an amount past the new pay asset holding', async () => {
+        mockCreateQuotes.mockResolvedValue([
+            {
+                provider: 'tinyman',
+                amountOut: new Decimal('7000000'),
+                assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+                assetOut: {
+                    assetId: '31566704',
+                    unitName: 'USDC',
+                    decimals: 6,
+                },
+            },
+        ])
+        mockPayBalance = new Decimal(100)
+        const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+        mockPayBalance = new Decimal(3)
+        act(() => {
+            result.current.handleSwapDirection()
+        })
+        mockFromAsset = '31566704'
+        mockToAsset = '0'
+        rerender()
+
+        expect(result.current.hasInsufficientBalance).toBe(true)
+        expect(mockHaptics.light).toHaveBeenCalledTimes(1)
+        expect(mockHaptics.error).not.toHaveBeenCalled()
     })
 
     it('handleSwapDirection carries the amounts across the pair change', async () => {
@@ -934,6 +1069,20 @@ describe('useSwapForm', () => {
         expect(result.current.payAmount).toBeNull()
         expect(result.current.receiveAmount).toBeNull()
         expect(mockResetAssetPair).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the pair, not the amounts, when switching to the account it was picked for', async () => {
+        const { result, rerender } = renderHook(() => useSwapForm(SCOPE))
+        act(() => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        mockPairAccountId = 'account-2'
+        mockSelectedAccount = accountAt('OTHERADDRESS456', 'account-2')
+        rerender()
+
+        expect(result.current.payAmount).toBeNull()
+        expect(mockResetAssetPair).not.toHaveBeenCalled()
     })
 
     it('clears the form when the screen loses focus', async () => {
@@ -1313,6 +1462,40 @@ describe('useSwapForm', () => {
             expect(result.current.canSwap).toBe(false)
         })
 
+        it('plays the error haptic once when the amount crosses the holding, not while it stays over', () => {
+            mockPayBalance = new Decimal(50)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(60))
+            })
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(70))
+            })
+
+            expect(mockHaptics.error).toHaveBeenCalledTimes(1)
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(10))
+            })
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(80))
+            })
+
+            expect(mockHaptics.error).toHaveBeenCalledTimes(2)
+        })
+
+        it('plays no error haptic for an amount within the holding', () => {
+            mockPayBalance = new Decimal(50)
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(50))
+            })
+
+            expect(mockHaptics.error).not.toHaveBeenCalled()
+        })
+
         it('allows an amount within the holding', () => {
             mockPayBalance = new Decimal(50)
             const { result } = renderHook(() => useSwapForm(SCOPE))
@@ -1363,6 +1546,104 @@ describe('useSwapForm', () => {
             })
 
             expect(result.current.hasInsufficientBalance).toBe(false)
+        })
+    })
+
+    describe('quote failure', () => {
+        it('exposes why the router gave no quote', async () => {
+            mockCreateQuotes.mockResolvedValue([])
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(2))
+            })
+
+            expect(result.current.quoteFailure).toEqual({ kind: 'no-route' })
+        })
+
+        it('handleRetryQuote asks the router again for the same amount', async () => {
+            mockCreateQuotes.mockResolvedValue([])
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(2))
+            })
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+            await act(async () => {
+                result.current.handleRetryQuote()
+            })
+
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+            expect(mockCreateQuotes.mock.calls[1][0].sourceAmount).toEqual(
+                mockCreateQuotes.mock.calls[0][0].sourceAmount,
+            )
+        })
+    })
+
+    describe('the router minimum', () => {
+        const refuseBelow = (minimum: string) =>
+            mockCreateQuotes.mockRejectedValue({
+                error: 'Amount too low',
+                code: 'amount_too_low',
+                source_amount_minimum: minimum,
+            })
+
+        const typeRefusedAmount = async (
+            result: { current: ReturnType<typeof useSwapForm> },
+            minimum: string,
+        ) => {
+            refuseBelow(minimum)
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(1))
+            })
+        }
+
+        it('offers the minimum the account can afford and fills it', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '2000000')
+
+            expect(result.current.canUseMinimum).toBe(true)
+
+            await act(async () => {
+                result.current.handleUseMinimum()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(2))
+        })
+
+        it('does not offer a minimum above what the account can spend', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '6000000')
+
+            expect(result.current.canUseMinimum).toBe(false)
+        })
+
+        it('fills MAX as is when the balance cannot reach the minimum, so the router answers with its current floor', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '6000000')
+
+            act(() => {
+                result.current.handleMaxPress()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(5))
+            expect(mockInfoToast).not.toHaveBeenCalled()
+        })
+
+        it('lifts a percentage fill under the minimum up to it', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '2000000')
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                slippageTolerance: null,
+                balancePercentage: 25,
+                useLocalCurrency: false,
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfig()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(2))
         })
     })
 })

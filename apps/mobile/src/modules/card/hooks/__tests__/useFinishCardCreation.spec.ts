@@ -94,7 +94,10 @@ describe('useFinishCardCreation', () => {
         expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
             FundingType.Manual,
         )
-        expect(mockInvalidateCardQueries).toHaveBeenCalled()
+        expect(mockInvalidateCardQueries).toHaveBeenCalledWith(
+            expect.anything(),
+            { exceptAutoDrawSwitch: true },
+        )
         expect(mockNavigate).not.toHaveBeenCalled()
         expect(mockSuccessToast).not.toHaveBeenCalled()
 

@@ -34,7 +34,7 @@ vi.mock('@modules/accounts', () => ({
 vi.mock('@modules/accounts/routes', () => ({
     AccountStackNavigator: () => null,
 }))
-vi.mock('@modules/discover/routes', () => ({ DiscoverScreen: () => null }))
+vi.mock('@modules/discover/routes', () => ({ DiscoverTabScreen: () => null }))
 vi.mock('@modules/swap/routes', () => ({ SwapScreen: () => null }))
 vi.mock('@modules/onramp/routes', () => ({ OnrampScreen: () => null }))
 vi.mock('@modules/menu/routes', () => ({ MenuScreen: () => null }))

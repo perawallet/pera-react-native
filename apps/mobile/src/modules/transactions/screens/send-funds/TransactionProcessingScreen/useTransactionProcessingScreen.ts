@@ -15,7 +15,7 @@ import { BackHandler } from 'react-native'
 
 import {
     chainAccountOf,
-    hardwareDetailsOf,
+    hardwareDeviceNameOf,
     isHardwareWalletAccount,
     accountKindIdOf,
     resolveAuthAccount,
@@ -49,6 +49,7 @@ import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTransactionOutcomeHaptics } from '@hooks/useTransactionOutcomeHaptics'
 import {
     clearTabResumeIntent,
     completeTabResume,
@@ -109,6 +110,7 @@ export const useTransactionProcessingScreen =
         const { t } = useLanguage()
         const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
+        const { handleSubmitError } = useTransactionOutcomeHaptics()
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
@@ -231,6 +233,7 @@ export const useTransactionProcessingScreen =
                         navigation.goBack()
                         return
                     }
+                    handleSubmitError(error)
                     trackEvent(TransactionsEvent.Failed, {
                         [AnalyticsMetadataKey.ChainId]: scope.chainId,
                         [AnalyticsMetadataKey.ErrorCode]:
@@ -283,9 +286,9 @@ export const useTransactionProcessingScreen =
 
         const isHardwareSender =
             !!signingAccount && isHardwareWalletAccount(signingAccount)
-        const hardwareDeviceName =
-            (signingAccount && hardwareDetailsOf(signingAccount)?.deviceName) ??
-            null
+        const hardwareDeviceName = signingAccount
+            ? hardwareDeviceNameOf(signingAccount)
+            : null
 
         const ledgerAppName = useMemo(
             () => (isHardwareSender ? ledgerAppNameFor(scope.chainId) : null),

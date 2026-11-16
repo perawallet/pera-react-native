@@ -34,6 +34,8 @@ export type UseCardStatusQueryOptions = {
      * card until it turns ACTIVE.
      */
     refetchInterval?: CardStatusRefetchInterval
+    /** `'always'` for a caller that must not act on data cached before it mounted. */
+    refetchOnMount?: boolean | 'always'
 }
 
 /** `data` is `null` when no card has been ordered. */
@@ -63,5 +65,6 @@ export const useCardStatusQuery = (
         staleTime: config.reactQueryShortLivedStaleTime,
         enabled: options?.enabled ?? true,
         refetchInterval: options?.refetchInterval,
+        refetchOnMount: options?.refetchOnMount,
     })
 }

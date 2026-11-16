@@ -17,11 +17,13 @@ import {
     gt,
     inArray,
     isNotNull,
+    isNull,
     like,
     lt,
     notInArray,
     or,
     sql,
+    type SQL,
 } from 'drizzle-orm'
 import type { Decimal } from 'decimal.js'
 import {
@@ -35,6 +37,7 @@ import {
     ErrorCategory,
     generateOrderedUniqueId,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     parseScopeKey,
@@ -63,6 +66,7 @@ import {
     type SubmissionStatus,
     type TransactionBatch,
     type TransactionBatchOutcome,
+    type TransactionBatchState,
 } from './types'
 
 type SubmissionAttemptRow = typeof SubmissionAttemptsSchema.$inferSelect
@@ -757,23 +761,44 @@ export const getTransactionBatch = async ({
     return row ? batchFromDb(row) : null
 }
 
-export type UpdateTransactionBatchParams = {
+export type UpdateTransactionBatchParams = TransactionBatchState & {
     db?: Database
     id: string
-    txIds: string[]
-    signedRaw: Nullable<string>
-    position: number
-    outcome: TransactionBatchOutcome
+    /** The row as this writer last read or wrote it. */
+    expected: TransactionBatchState
 }
 
-export const updateTransactionBatch = async ({
-    db = getDatabase(),
-    id,
+// `eq(column, null)` never matches in SQL, so a null `signedRaw` needs IS NULL.
+const batchStateIs = ({
     txIds,
     signedRaw,
     position,
     outcome,
-}: UpdateTransactionBatchParams): Promise<void> => {
+}: TransactionBatchState): Optional<SQL> =>
+    and(
+        eq(TransactionBatchesSchema.txIdsJson, JSON.stringify(txIds)),
+        signedRaw === null
+            ? isNull(TransactionBatchesSchema.signedRaw)
+            : eq(TransactionBatchesSchema.signedRaw, signedRaw),
+        eq(TransactionBatchesSchema.position, position),
+        eq(TransactionBatchesSchema.outcome, outcome),
+    )
+
+/**
+ * Writes only while the row still holds `expected`, so a runner working from a
+ * stale copy cannot erase what another context saved. True when the row holds
+ * the written state afterwards: the drivers report no row count, and a write
+ * retried after a timeout that had already landed counts none.
+ */
+export const updateTransactionBatch = async ({
+    db = getDatabase(),
+    id,
+    expected,
+    txIds,
+    signedRaw,
+    position,
+    outcome,
+}: UpdateTransactionBatchParams): Promise<boolean> => {
     await db
         .update(TransactionBatchesSchema)
         .set({
@@ -783,8 +808,19 @@ export const updateTransactionBatch = async ({
             outcome,
             updatedAt: Date.now(),
         })
-        .where(eq(TransactionBatchesSchema.id, id))
+        .where(and(eq(TransactionBatchesSchema.id, id), batchStateIs(expected)))
         .run()
+    const landed = await db
+        .select({ id: TransactionBatchesSchema.id })
+        .from(TransactionBatchesSchema)
+        .where(
+            and(
+                eq(TransactionBatchesSchema.id, id),
+                batchStateIs({ txIds, signedRaw, position, outcome }),
+            ),
+        )
+        .get()
+    return landed !== undefined
 }
 
 export type GetRunningTransactionBatchesParams = {

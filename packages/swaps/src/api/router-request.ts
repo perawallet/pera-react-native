@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     queryClient,
@@ -42,7 +42,7 @@ export const routerRequest = async ({
         scope,
         method,
         url: `${SWAP_ROUTER_PATH}${path}`,
-        headers: buildIntegrityHeaders(),
+        headers: await buildIntegrityHeadersWhenReady(),
         ...(params ? { params } : {}),
         ...(data !== undefined ? { data } : {}),
     })

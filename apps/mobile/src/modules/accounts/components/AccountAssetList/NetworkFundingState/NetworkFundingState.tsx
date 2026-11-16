@@ -29,6 +29,7 @@ export const NetworkFundingState = (props: NetworkFundingStateProps) => {
         canReceive,
         canBuy,
         canSwap,
+        swapTitle,
         handleReceive,
         handleBuy,
         handleSwap,
@@ -66,7 +67,7 @@ export const NetworkFundingState = (props: NetworkFundingStateProps) => {
                 )}
                 {canSwap && (
                     <PWButton
-                        title={t('asset_details.action_buttons.swap')}
+                        title={swapTitle}
                         variant='secondary'
                         onPress={handleSwap}
                         testID='network_funding_swap_button'
