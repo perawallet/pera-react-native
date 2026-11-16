@@ -319,4 +319,45 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.assets.map(a => a.assetId)).toEqual(['7'])
     })
+
+    test('reports a failed first page as an error and recovers on refetch', async () => {
+        vi.mocked(fetchSwapPairs)
+            .mockRejectedValueOnce(new Error('500'))
+            .mockResolvedValueOnce({ assets: [asset('7')], next: null })
+
+        const { result } = renderHook(
+            () => useSwapPairsInfiniteQuery({ anchor: ANCHOR, scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.assets).toEqual([])
+
+        act(() => result.current.refetch())
+
+        await waitFor(() =>
+            expect(result.current.assets.map(a => a.assetId)).toEqual(['7']),
+        )
+        expect(result.current.isError).toBe(false)
+    })
+
+    test('keeps the loaded rows and reports no error when a later page fails', async () => {
+        vi.mocked(fetchSwapPairs)
+            .mockResolvedValueOnce({ assets: [asset('7')], next: 'c2' })
+            .mockRejectedValueOnce(new Error('500'))
+
+        const { result } = renderHook(
+            () => useSwapPairsInfiniteQuery({ anchor: ANCHOR, scope: SCOPE }),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.assets).toHaveLength(1))
+
+        act(() => result.current.fetchNextPage())
+
+        await waitFor(() =>
+            expect(fetchSwapPairs).toHaveBeenCalledTimes(2),
+        )
+        expect(result.current.isError).toBe(false)
+        expect(result.current.assets.map(a => a.assetId)).toEqual(['7'])
+    })
 })

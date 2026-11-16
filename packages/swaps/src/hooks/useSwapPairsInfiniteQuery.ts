@@ -40,8 +40,11 @@ export type UseSwapPairsInfiniteQueryResult = {
     isLoading: boolean
     /** True once a fetch completed; false while loading, disabled or failed, when `assets` is `[]` without meaning "no pairs". */
     isSuccess: boolean
+    /** The first page failed; a failed later page keeps the loaded rows and is not an error here. */
+    isError: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
+    refetch: () => void
 }
 
 const isOnAnyScope = (asset: SwapAsset, scopeKeys: Set<string>): boolean =>
@@ -158,9 +161,11 @@ export const useSwapPairsInfiniteQuery = ({
         assets,
         isLoading: query.isLoading,
         isSuccess: query.isSuccess,
+        isError: query.isError && !query.data?.pages.length,
         hasNextPage,
         // A list fires onEndReached repeatedly; without this a second call
         // would cancel the page already loading.
         fetchNextPage: () => void fetchNextPage({ cancelRefetch: false }),
+        refetch: () => void query.refetch(),
     }
 }
