@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCreateFolder } from '../../hooks/useCreateFolder'
-import { useFolderRows, type FolderRowItem } from '../../hooks/useFolderRows'
+import {
+    logosOf,
+    useFolderRows,
+    type FolderRowItem,
+} from '../../hooks/useFolderRows'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 
 /** Folder rows the home shows before "See all". */
@@ -23,6 +28,8 @@ export type FavoritesFolderRow = FolderRowItem
 
 export type UseFavoritesSectionResult = {
     favoriteCount: number
+    /** All favorites' row logos: the newest favorites first. */
+    favoriteLogos: Nullable<string>[]
     /** Newest first, at most `HOME_FOLDER_LIMIT`. */
     folders: FavoritesFolderRow[]
     hasMore: boolean
@@ -36,7 +43,13 @@ export type UseFavoritesSectionResult = {
 
 export const useFavoritesSection = (): UseFavoritesSectionResult => {
     const navigation = useAppNavigation()
-    const favoriteCount = useDiscoverFavoritesStore(s => s.favoriteOrder.length)
+    const favoriteOrder = useDiscoverFavoritesStore(s => s.favoriteOrder)
+    const favorites = useDiscoverFavoritesStore(s => s.favorites)
+    const favoriteCount = favoriteOrder.length
+    const favoriteLogos = useMemo(
+        () => logosOf([...favoriteOrder].reverse(), favorites),
+        [favoriteOrder, favorites],
+    )
 
     const rows = useFolderRows()
 
@@ -60,6 +73,7 @@ export const useFavoritesSection = (): UseFavoritesSectionResult => {
 
     return {
         favoriteCount,
+        favoriteLogos,
         folders: rows.slice(0, HOME_FOLDER_LIMIT),
         hasMore: rows.length > HOME_FOLDER_LIMIT,
         isEmpty: favoriteCount === 0 && rows.length === 0,

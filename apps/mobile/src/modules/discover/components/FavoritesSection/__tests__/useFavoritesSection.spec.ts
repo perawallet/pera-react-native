@@ -84,9 +84,44 @@ describe('useFavoritesSection', () => {
         // Assert
         expect(result.current.favoriteCount).toBe(2)
         expect(result.current.folders).toEqual([
-            { id: 'folder-1', name: 'One', count: 1 },
+            { id: 'folder-1', name: 'One', count: 1, logos: [null] },
         ])
         expect(result.current.hasMore).toBe(false)
+    })
+
+    it("gives each folder its first dApps' logos in folder order", () => {
+        store().addFavorite({
+            ...dapp('https://a.io'),
+            logo: 'https://a.io/l.png',
+        })
+        store().addFavorite(dapp('https://b.io'))
+        const id = store().createFolder('Swap')
+        store().setDappInFolder(id, 'https://b.io', true)
+        store().setDappInFolder(id, 'https://a.io', true)
+
+        const { result } = renderHook(() => useFavoritesSection())
+
+        expect(result.current.folders[0]?.logos).toEqual([
+            null,
+            'https://a.io/l.png',
+        ])
+    })
+
+    it('gives All favorites the newest logos first, at most three', () => {
+        ;['a', 'b', 'c', 'd'].forEach(name =>
+            store().addFavorite({
+                ...dapp(`https://${name}.io`),
+                logo: `https://${name}.io/l.png`,
+            }),
+        )
+
+        const { result } = renderHook(() => useFavoritesSection())
+
+        expect(result.current.favoriteLogos).toEqual([
+            'https://d.io/l.png',
+            'https://c.io/l.png',
+            'https://b.io/l.png',
+        ])
     })
 
     it('is empty only with no favorites and no folders', () => {

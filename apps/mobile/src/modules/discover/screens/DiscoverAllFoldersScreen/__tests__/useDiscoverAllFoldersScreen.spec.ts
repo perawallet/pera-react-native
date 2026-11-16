@@ -55,6 +55,7 @@ describe('useDiscoverAllFoldersScreen', () => {
             id: 'folder-5',
             name: 'E',
             count: 0,
+            logos: [],
         })
         expect(navigate).toHaveBeenCalledWith('DiscoverFolder', {
             folderId: 'folder-2',
