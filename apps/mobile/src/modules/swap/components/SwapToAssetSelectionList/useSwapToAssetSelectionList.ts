@@ -73,6 +73,9 @@ type UseSwapToAssetSelectionListResult = UseSwapCrossNetworkEmptyStateResult & {
     /** The list spans chains, so each row names its network. */
     isChainShown: boolean
     isLoading: boolean
+    /** The pairs read failed; the list is unknown, not empty. */
+    isLoadError: boolean
+    handleRetry: () => void
     handleEndReached: () => void
     handleAssetSelected: (item: AvailableAssetWithBalance) => void
     searchPlaceholder: string
@@ -135,14 +138,18 @@ export const useSwapToAssetSelectionList = ({
         assets: availableAssets,
         isLoading,
         isSuccess: isPairsSuccess,
+        isError: isLoadError,
         hasNextPage,
         fetchNextPage,
+        refetch,
     } = useSwapPairsInfiniteQuery({
         anchor,
         scope,
         destinationScopes: visibleScopes,
         q: debouncedSearchFilter || undefined,
     })
+
+    const handleRetry = useCallback(() => refetch(), [refetch])
 
     const handleEndReached = useCallback(() => {
         if (hasNextPage) fetchNextPage()
@@ -261,6 +268,8 @@ export const useSwapToAssetSelectionList = ({
         handleSelectChain,
         isChainShown: selectedChainId === null && chainOptions.length > 0,
         isLoading,
+        isLoadError,
+        handleRetry,
         handleEndReached,
         handleAssetSelected,
         searchPlaceholder: t(swapAssetSearchPlaceholderKey(visibleChainIds)),

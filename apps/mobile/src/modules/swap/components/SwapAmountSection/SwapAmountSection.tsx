@@ -87,6 +87,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const assetToFiat = payProps?.assetToFiat
     const {
         asset,
+        isBalanceShown,
         isPay,
         isFiatInput,
         displayValue,
@@ -169,31 +170,33 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
             label={isPay ? t('swap.form.you_pay') : t('swap.form.you_receive')}
             amountSize='h2'
             headerTrailing={
-                <PWView style={styles.balanceWrapper}>
-                    <PWText
-                        variant='body'
-                        style={styles.balance}
-                        truncate
-                    >
-                        <Trans
-                            i18nKey='swap.form.balance_label'
-                            components={[
-                                <AssetAmount
-                                    chainId={scope.chainId}
-                                    key='balance'
-                                    value={balance ?? new Decimal(0)}
-                                    asset={asset}
-                                    symbolPosition={
-                                        isNativeAsset ? 'start' : 'end'
-                                    }
-                                    variant='body'
-                                    style={styles.balance}
-                                    isInline
-                                />,
-                            ]}
-                        />
-                    </PWText>
-                </PWView>
+                isBalanceShown ? (
+                    <PWView style={styles.balanceWrapper}>
+                        <PWText
+                            variant='body'
+                            style={styles.balance}
+                            truncate
+                        >
+                            <Trans
+                                i18nKey='swap.form.balance_label'
+                                components={[
+                                    <AssetAmount
+                                        chainId={scope.chainId}
+                                        key='balance'
+                                        value={balance ?? new Decimal(0)}
+                                        asset={asset}
+                                        symbolPosition={
+                                            isNativeAsset ? 'start' : 'end'
+                                        }
+                                        variant='body'
+                                        style={styles.balance}
+                                        isInline
+                                    />,
+                                ]}
+                            />
+                        </PWText>
+                    </PWView>
+                ) : undefined
             }
             amount={renderAmount()}
             selector={

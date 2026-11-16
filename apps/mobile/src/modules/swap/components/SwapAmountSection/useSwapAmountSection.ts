@@ -39,6 +39,8 @@ type UseSwapAmountSectionParams = {
 
 type UseSwapAmountSectionResult = {
     asset: Optional<PeraAsset>
+    /** False until the asset resolves, so a balance never sits beside an empty selector. */
+    isBalanceShown: boolean
     isPay: boolean
     isFiatInput: boolean
     displayValue: string
@@ -224,6 +226,7 @@ export const useSwapAmountSection = ({
 
     return {
         asset,
+        isBalanceShown: asset !== undefined,
         isPay,
         isFiatInput,
         displayValue,
