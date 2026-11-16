@@ -12,8 +12,10 @@ PIPELINES_YML="$ROOT_DIR/ci/pipelines.yml"
 failures=0
 
 # The Pera services the staging backend serves for every EVM network; change
-# them only with the backend.
+# them only with the backend. NFTs are served for Ethereum alone: a network
+# that lists `nfts` without them answers 503 on every read.
 EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations"
+ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations"
 
 # Every build-gated chain and network, from the table generate-config.sh bakes
 # from. The staging expectations below are chain-ethereum's; another chain
@@ -114,8 +116,10 @@ for source in bitrise pipelines; do
                 "$(two_provider_list "$("$env_of" "$job" "$rpc_env")")"
         done <<< "$EVM_RPC_URL_ENVS"
         while read -r services_env; do
+            expected="$EVM_STAGING_SERVICES"
+            [[ "$services_env" == ETHEREUM_* ]] && expected="$ETHEREUM_STAGING_SERVICES"
             check "${job} lists the ${services_env}" \
-                "$EVM_STAGING_SERVICES" "$("$env_of" "$job" "$services_env")"
+                "$expected" "$("$env_of" "$job" "$services_env")"
         done <<< "$EVM_SERVICES_ENVS"
     done
 
