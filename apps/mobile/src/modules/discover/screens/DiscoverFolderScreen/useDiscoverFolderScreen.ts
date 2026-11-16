@@ -29,7 +29,7 @@ import type { DiscoverFavorite } from '../../types'
 export type UseDiscoverFolderScreenResult = UseFavoriteDappActionsResult & {
     folderId: string
     /** Null once the folder is gone (deleted elsewhere); the screen then leaves. */
-    folder: Nullable<FolderRowItem>
+    folder: Nullable<Omit<FolderRowItem, 'logos'>>
     dapps: DiscoverFavorite[]
 }
 

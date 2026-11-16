@@ -17,7 +17,7 @@
 // folder without ever removing a favorite.
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { mockDiscoverProjects } from '@perawallet/wallet-core-projects/test-handlers'
 import { server } from '@test-utils/msw-server'
@@ -236,6 +236,32 @@ describe('Flow: Discover favorite folders', () => {
             'discover_all_favorites_dapp_https://folks.example',
             'discover_all_favorites_dapp_https://tinyman.example',
         ])
+        await flush()
+    })
+
+    it('Given a folder with four dApps, then its row stacks three logos and +1', async () => {
+        const urls = ['Tinyman', 'Folks', 'Pact', 'Vestige'].map(name => {
+            store().addFavorite(dapp(name))
+            return `https://${name.toLowerCase()}.example`
+        })
+        const id = store().createFolder('DeFi')
+        urls.forEach(url => store().setDappInFolder(id, url, true))
+        store().createFolder('Empty')
+        renderWithNavigation(DiscoverAllFoldersScreen, 'DiscoverAllFolders')
+
+        const row = await screen.findByTestId(`discover_all_folders_${id}`)
+        expect(
+            within(row).getAllByTestId(/^discover_logo_stack_logo_/),
+        ).toHaveLength(3)
+        expect(
+            within(row).getByTestId('discover_logo_stack_more').textContent,
+        ).toBe('+1')
+        const emptyId = store().folderOrder[0]!
+        expect(
+            within(
+                screen.getByTestId(`discover_all_folders_${emptyId}`),
+            ).queryByTestId('discover_logo_stack'),
+        ).toBeNull()
         await flush()
     })
 
