@@ -61,6 +61,20 @@ ${WATCH_INFO_CREATE_BUTTON}         tid=watch_info_create_button
 ${OPTION_ALGORAND_EXPAND}           tid=account_network_algorand_expand
 # Rendered only for an account that is on Ethereum; a not-yet-added network shows _add instead.
 ${OPTION_ETHEREUM_COPY}             tid=account_network_ethereum_copy
+${OPTION_ETHEREUM_ADD}              tid=account_network_ethereum_add
+${OPTION_ETHEREUM_QR}               tid=account_network_ethereum_qr
+${OPTION_ETHEREUM_ROW}              tid=account_network_ethereum
+${OPTION_ALGORAND_QR}               tid=account_network_algorand_qr
+${OPTION_ALGORAND_MIN_BALANCE}      tid=account_algorand_min_balance
+${OPTION_REKEY}                     tid=account_option_rekey-account
+${NETWORKS_TITLE}                   tid=account_networks_title
+# Networks the account could be on but is not yet are folded behind this row.
+${NETWORKS_SEE_ALL}                 tid=account_networks_see_all
+${ACCOUNT_TYPE_INFO_LEARN_MORE}     tid=account-type-info-learn-more-button
+# The toggle carries no testID.
+${SEE_WALLET_STRUCTURE}             xpath=//*[@text='See wallet structure' or @label='See wallet structure']
+${STRUCTURE_ROW_ANY}                xpath=//*[starts-with(@content-desc,'account_structure_row_') or starts-with(@resource-id,'account_structure_row_') or starts-with(@name,'account_structure_row_')]
+${STRUCTURE_ETHEREUM_ICON}          tid=chain_icon_stack_ethereum
 
 # Shown only for an account on two or more chains.
 ${ASSET_NETWORK_FILTER}             tid=asset_network_filter
@@ -188,15 +202,49 @@ Account Name Should Be
     Open Account Options
     Wait Until Page Contains    ${name}    timeout=10s
 
-Require Account On Ethereum
-    [Documentation]    The asset network filter needs the account on two chains. The filter's own
-    ...                absence cannot tell a build without Ethereum from a broken filter, so ask the
-    ...                account options sheet, which offers an Ethereum copy action only then.
+Ensure Account On Ethereum
+    [Documentation]    Leaves the account options open with the selected account on Ethereum, adding
+    ...                the network when the build offers it and skipping when it does not. What a
+    ...                multichain screen lacks cannot tell a build without Ethereum from a broken
+    ...                screen; this sheet can.
     Open Account Options
-    ${on}=    Run Keyword And Return Status
-    ...    Wait Until Page Contains Element    ${OPTION_ETHEREUM_COPY}    timeout=5s
-    Skip If    not ${on}
-    ...    The account is not on Ethereum: this build is not multichain (CHAINS without ethereum).
+    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_ETHEREUM_COPY}
+    IF    ${on}    RETURN
+    ${folded}=    Run Keyword And Return Status    Page Should Contain Element    ${NETWORKS_SEE_ALL}
+    IF    ${folded}
+        Scroll Until Tappable    ${NETWORKS_SEE_ALL}
+        Tap    ${NETWORKS_SEE_ALL}
+    END
+    ${addable}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${OPTION_ETHEREUM_ADD}    timeout=5s
+    Skip If    not ${addable}
+    ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
+    Scroll Until Tappable    ${OPTION_ETHEREUM_ADD}
+    Tap    ${OPTION_ETHEREUM_ADD}
+    # Deriving the Ethereum key can ask for the PIN.
+    Unlock With Known Pins
+    Wait Until Page Contains Element    ${OPTION_ETHEREUM_COPY}    timeout=60s
+
+Options Should Offer No Key Actions
+    [Documentation]    With the account options open: nothing to reveal, rekey or derive Ethereum from.
+    Page Should Not Contain Element    ${OPTION_ETHEREUM_ROW}
+    Page Should Not Contain Element    ${NETWORKS_SEE_ALL}
+    Page Should Not Contain Element    ${OPTION_VIEW_PASSPHRASE}
+    Page Should Not Contain Element    ${OPTION_REKEY}
+
+Select Another Account Than
+    [Documentation]    From Home, selects the first account in the switcher that is not ${address}.
+    [Arguments]    ${address}
+    Open Account Switcher
+    @{addresses}=    Switcher Addresses
+    FOR    ${candidate}    IN    @{addresses}
+        IF    $candidate != $address
+            ${row}=    Switcher Row    ${candidate}
+            Tap    ${row}
+            Wait Until Switcher Closed
+            RETURN
+        END
+    END
     Go Home
 
 Receive Should Show Address
