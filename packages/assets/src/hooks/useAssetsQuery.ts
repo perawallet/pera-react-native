@@ -67,8 +67,8 @@ export const useAssetsQuery = (
             try {
                 await fetchAndPersistAssets(stableIds, scope)
             } catch (error) {
-                // A failed refresh of a stale row must not erase the stored
-                // one: an absent asset reads as "can't be swapped" downstream.
+                // A failed refresh must not hide a stored row: callers read an
+                // absent asset as nonexistent.
                 const stored = await getAssetsByIds({
                     assetIds: stableIds,
                     scope,
@@ -82,6 +82,7 @@ export const useAssetsQuery = (
                 logger.warn('Asset refresh failed; serving stored rows', {
                     scope,
                     count: stored.length,
+                    error,
                 })
                 return stored
             }
