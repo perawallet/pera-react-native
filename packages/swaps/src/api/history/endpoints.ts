@@ -11,7 +11,10 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { isPeraNetworkError, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isPeraNetworkError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { SwapHistoryItem } from '../../models'
 import { transformSwapOrderItem } from '../orders/transformers'
 import { cursorOf, routerRequest } from '../router-request'

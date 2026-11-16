@@ -354,9 +354,7 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
 
         act(() => result.current.fetchNextPage())
 
-        await waitFor(() =>
-            expect(fetchSwapPairs).toHaveBeenCalledTimes(2),
-        )
+        await waitFor(() => expect(fetchSwapPairs).toHaveBeenCalledTimes(2))
         expect(result.current.isError).toBe(false)
         expect(result.current.assets.map(a => a.assetId)).toEqual(['7'])
     })

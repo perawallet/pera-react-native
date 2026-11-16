@@ -210,7 +210,9 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(fetchDeviceSwapHistory).toHaveBeenCalledTimes(2))
+        await waitFor(() =>
+            expect(fetchDeviceSwapHistory).toHaveBeenCalledTimes(2),
+        )
         expect(fetchDeviceSwapHistory).toHaveBeenCalledWith(
             expect.objectContaining({
                 deviceId: 'device-live',

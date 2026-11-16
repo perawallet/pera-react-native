@@ -505,7 +505,9 @@ describe('useSwapQuotes', () => {
 
             const { result } = renderHook(() => useSwapQuotes(baseParams))
 
-            await waitFor(() => expect(result.current.allQuotes).toEqual([OFFER]))
+            await waitFor(() =>
+                expect(result.current.allQuotes).toEqual([OFFER]),
+            )
             expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
             expect(result.current.quoteFailure).toBeNull()
         },

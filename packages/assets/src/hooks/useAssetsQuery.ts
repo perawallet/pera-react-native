@@ -69,7 +69,10 @@ export const useAssetsQuery = (
             } catch (error) {
                 // A failed refresh of a stale row must not erase the stored
                 // one: an absent asset reads as "can't be swapped" downstream.
-                const stored = await getAssetsByIds({ assetIds: stableIds, scope })
+                const stored = await getAssetsByIds({
+                    assetIds: stableIds,
+                    scope,
+                })
                 const storedIds = new Set(stored.map(asset => asset.assetId))
                 const hasEveryId = stableIds.every(
                     id => id === nativeAsset.assetId || storedIds.has(id),
