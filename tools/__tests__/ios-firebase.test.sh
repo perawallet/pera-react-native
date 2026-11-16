@@ -31,7 +31,8 @@ PERA_TMPDIR="$WORK/signing"
 mkdir -m 0700 "$PERA_TMPDIR"
 ios_firebase_prepare_credentials
 check 'credential content is decoded' '{"private_key":"test-only-canary"}' "$(cat "$FIREBASE_IOS_SERVICE_CREDENTIALS_FILE")"
-mode=$(stat -f '%Lp' "$FIREBASE_IOS_SERVICE_CREDENTIALS_FILE" 2>/dev/null || stat -c '%a' "$FIREBASE_IOS_SERVICE_CREDENTIALS_FILE")
+# GNU form first: GNU stat reads BSD's -f as "report the filesystem" and prints that to stdout.
+mode=$(stat -c '%a' "$FIREBASE_IOS_SERVICE_CREDENTIALS_FILE" 2>/dev/null || stat -f '%Lp' "$FIREBASE_IOS_SERVICE_CREDENTIALS_FILE")
 check 'decoded credentials are private' 600 "$mode"
 FIREBASE_IOS_DISTRIBUTION=unexpected
 if ios_firebase_validate >"$WORK/error" 2>&1; then echo 'invalid flag was accepted' >&2; exit 1; fi
