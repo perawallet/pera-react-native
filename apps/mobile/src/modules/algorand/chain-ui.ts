@@ -60,6 +60,7 @@ export const algorandCollectibleDetailsDisplay: CollectibleDetailsDisplay = {
     creatorLabelKey: i18nKey('asset_details.collectible.creator'),
     hasTotalSupply: true,
     explorerLabelKey: i18nKey('asset_details.collectible.explorer'),
+    isIdentityLinked: true,
 }
 
 export const algorandChainUi: ChainUi = {

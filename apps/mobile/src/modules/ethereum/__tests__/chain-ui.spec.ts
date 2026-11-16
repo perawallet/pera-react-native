@@ -17,6 +17,7 @@ import { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import {
+    ethereumCollectibleDetailsDisplay,
     resolveEthereumAssetAbout,
     resolveEthereumAssetSupply,
 } from '../chain-ui'
@@ -128,5 +129,38 @@ describe('resolveEthereumAssetSupply', () => {
 
     it('has no figure for a token whose supply is unknown', () => {
         expect(resolveEthereumAssetSupply(paramsFor(USDC)).amount).toBeNull()
+    })
+})
+
+describe('ethereumCollectibleDetailsDisplay', () => {
+    const CONTRACT = '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D'
+
+    it('shows the token id alone and does not link the identity row', () => {
+        expect(
+            ethereumCollectibleDetailsDisplay.identityOf?.(`${CONTRACT}/1234`),
+        ).toBe('1234')
+        expect(ethereumCollectibleDetailsDisplay.isIdentityLinked).toBe(false)
+    })
+
+    it('falls back to the asset id when it is not a contract and token id', () => {
+        expect(ethereumCollectibleDetailsDisplay.identityOf?.('native')).toBe(
+            'native',
+        )
+    })
+
+    it('names both NFT standards', () => {
+        expect(ethereumCollectibleDetailsDisplay.standardLabels).toEqual({
+            erc721: 'ERC-721',
+            erc1155: 'ERC-1155',
+        })
+    })
+
+    it("links the NFT's Etherscan page by contract and token id", () => {
+        expect(
+            ethereum.descriptor.explorer.collectibleUrl(
+                'mainnet',
+                `${CONTRACT}/1234`,
+            ),
+        ).toBe(`https://etherscan.io/nft/${CONTRACT}/1234`)
     })
 })

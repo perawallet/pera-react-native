@@ -18,4 +18,5 @@ export const neutralCollectibleDetailsDisplay: CollectibleDetailsDisplay = {
     creatorLabelKey: i18nKey('asset_details.collectible.contract'),
     hasTotalSupply: false,
     explorerLabelKey: null,
+    isIdentityLinked: true,
 }

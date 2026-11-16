@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { evmNftItem, unknownAssetItem } from '../msw-handlers'
+import { evmNftItem, unknownAssetItem, unknownNftItem } from '../msw-handlers'
 import {
     assetItemSchema,
     nftItemSchema,
@@ -20,6 +20,7 @@ import {
     type NftItemResponse,
 } from '../schema'
 import {
+    isDescribedNftItem,
     toAssetMetadata,
     toNftAsset,
     toNftHolding,
@@ -212,9 +213,7 @@ describe('toNftAsset', () => {
         const asset = toNftAsset(
             nft({
                 primary_image: { url, preview_url: url },
-                media: [
-                    { type: 'image', url, preview_url: url, mime_type: null },
-                ],
+                media: [{ url, preview_url: url, mime_type: null }],
                 explorer_url: url,
             }),
             MAINNET,
@@ -264,8 +263,139 @@ describe('toNftHolding', () => {
 
     it.each([
         ['a zero balance', '0'],
-        ['no balance', undefined],
+        ['a null balance', null],
     ])('is no holding with %s', (_, balance) => {
         expect(toNftHolding(nft({ balance }), MAINNET, ETHEREUM)).toBeNull()
+    })
+})
+
+describe('nftItemSchema', () => {
+    it('reads the backend item as documented', () => {
+        const parsed = nftItemSchema.parse(evmNftItem())
+
+        expect(parsed.traits).toEqual([
+            { trait_type: 'Background', value: 'Orange' },
+        ])
+        expect(parsed.media).toHaveLength(1)
+    })
+
+    it('reads a missing preview_url as null and a null balance as no balance', () => {
+        const parsed = nftItemSchema.parse({
+            ...evmNftItem({ balance: null }),
+            primary_image: { url: 'https://nft.pera.test/1.png' },
+        })
+
+        expect(parsed.primary_image).toEqual({
+            url: 'https://nft.pera.test/1.png',
+            preview_url: null,
+        })
+        expect(parsed.balance).toBeNull()
+    })
+
+    it('drops one unreadable trait or media entry without the item', () => {
+        const parsed = nftItemSchema.parse({
+            ...evmNftItem(),
+            traits: [
+                { trait_type: 'Good', value: 7 },
+                { trait_type: 'Bad', value: { nested: true } },
+            ],
+            media: [
+                { url: 'https://nft.pera.test/a.png' },
+                { url: 5 },
+                { url: 'ipfs://x' },
+            ],
+        })
+
+        expect(parsed.traits).toEqual([{ trait_type: 'Good', value: '7' }])
+        expect(parsed.media.map(entry => entry.url)).toEqual([
+            'https://nft.pera.test/a.png',
+        ])
+    })
+})
+
+describe('toNftAsset media', () => {
+    const mediaOf = (overrides: Partial<NftItemResponse>) =>
+        toNftAsset(nft(overrides), MAINNET, ETHEREUM)?.peraMetadata?.collectible
+            ?.media
+
+    it.each([
+        ['video/mp4', 'video', 'mp4'],
+        ['audio/mpeg', 'audio', 'mpeg'],
+        ['model/gltf-binary', 'model', 'gltf-binary'],
+        ['image/webp', 'image', 'webp'],
+    ])('types %s as %s with extension %s', (mime, type, extension) => {
+        const media = mediaOf({
+            media: [
+                {
+                    url: 'https://nft.pera.test/other',
+                    preview_url: null,
+                    mime_type: mime,
+                },
+            ],
+        })
+
+        expect(media).toMatchObject([{ type, extension }])
+    })
+
+    it('reads an untyped entry as an image only at the primary image, with the URL extension', () => {
+        const media = mediaOf({
+            primary_image: {
+                url: 'https://nft.pera.test/1.PNG',
+                preview_url: null,
+            },
+            media: [
+                {
+                    url: 'https://nft.pera.test/1.PNG',
+                    preview_url: null,
+                    mime_type: null,
+                },
+                {
+                    url: 'https://nft.pera.test/other',
+                    preview_url: null,
+                    mime_type: null,
+                },
+            ],
+        })
+
+        expect(media).toMatchObject([
+            { type: 'image', extension: 'png' },
+            { type: 'unknown', extension: '' },
+        ])
+    })
+
+    it('shows the primary image itself when the preview is null', () => {
+        const asset = toNftAsset(
+            nft({
+                primary_image: {
+                    url: 'https://nft.pera.test/1.png',
+                    preview_url: null,
+                },
+            }),
+            MAINNET,
+            ETHEREUM,
+        )
+
+        expect(asset?.peraMetadata?.collectible?.primaryImage).toBe(
+            'https://nft.pera.test/1.png',
+        )
+    })
+})
+
+describe('isDescribedNftItem', () => {
+    it('is false for the blank answer to an unknown token, true once anything is known', () => {
+        const id = `eip155:1/erc721:${BAYC.toLowerCase()}/9`
+
+        expect(
+            isDescribedNftItem(nftItemSchema.parse(unknownNftItem(id))),
+        ).toBe(false)
+        expect(isDescribedNftItem(nft())).toBe(true)
+        expect(
+            isDescribedNftItem(
+                nftItemSchema.parse({
+                    ...unknownNftItem(id),
+                    traits: [{ trait_type: 'a', value: 'b' }],
+                }),
+            ),
+        ).toBe(true)
     })
 })

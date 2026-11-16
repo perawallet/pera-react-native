@@ -580,6 +580,19 @@ describe('useCollectibleDetail', () => {
             )
         })
 
+        it('names the file after an id with a slash without the slash', async () => {
+            const { result } = renderHook(() =>
+                useCollectibleDetail('0xabc/42', 'algorand'),
+            )
+
+            await result.current.handleCopyImage()
+
+            expect(mockGetImageBase64).toHaveBeenCalledWith(
+                'https://example.com/full.png',
+                'collectible_0xabc_42',
+            )
+        })
+
         it('shows an error toast when fetching the image fails', async () => {
             mockGetImageBase64.mockRejectedValueOnce(new Error('network error'))
 
@@ -612,6 +625,19 @@ describe('useCollectibleDetail', () => {
             expect(mockHaptics.success).toHaveBeenCalledTimes(1)
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
+            )
+        })
+
+        it('saves an id with a slash under a file name without it', async () => {
+            const { result } = renderHook(() =>
+                useCollectibleDetail('0xabc/42', 'algorand'),
+            )
+
+            await result.current.handleSaveImage()
+
+            expect(mockSaveImageToDevice).toHaveBeenCalledWith(
+                'https://example.com/full.png',
+                'collectible_0xabc_42.png',
             )
         })
 

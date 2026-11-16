@@ -107,6 +107,10 @@ export const useStyles = makeStyles(theme => ({
     searchInputContainer: {
         flex: 1,
     },
+    refreshNotice: {
+        marginHorizontal: theme.spacing.xl,
+        marginBottom: theme.spacing.md,
+    },
     chainFilter: {
         paddingTop: theme.spacing.md,
     },

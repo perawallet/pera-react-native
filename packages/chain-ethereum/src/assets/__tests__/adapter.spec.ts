@@ -1603,6 +1603,53 @@ describe('NFTs', () => {
         expect(asset.peraMetadata?.isUnique).toBe(false)
     })
 
+    it('takes the described ERC-1155 answer over the blank ERC-721 one, and stores it', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                nfts: {
+                    [ERC1155_ID]: evmNftItem({
+                        asset_id: ERC1155_ID,
+                        standard: 'erc1155',
+                    }),
+                },
+            }),
+        )
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        const asset = await ops.getAssetMetadata(ref(APE), SCOPE)
+
+        expect(asset.peraMetadata).toMatchObject({
+            isUnique: false,
+            collectible: { standard: 'erc1155', title: 'Bored Ape #1234' },
+        })
+        expect(repository.full).toHaveLength(1)
+    })
+
+    it('keeps the cached row when the backend answers blank for both standards', async () => {
+        const cached: PeraAsset = {
+            assetId: APE,
+            name: 'Stored ape',
+            decimals: 0,
+            creator: { address: BAYC },
+            totalSupply: ETHEREUM_NATIVE_ASSET.totalSupply,
+        }
+        repository.cached = cached
+        server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: nftServices }),
+            ETHEREUM,
+        )
+
+        await expect(ops.getAssetMetadata(ref(APE), SCOPE)).resolves.toBe(
+            cached,
+        )
+        expect(repository.full).toEqual([])
+    })
+
     it('falls back to the cached row when the backend fails', async () => {
         const cached: PeraAsset = {
             assetId: APE,
