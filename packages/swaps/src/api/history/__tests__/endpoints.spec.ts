@@ -75,7 +75,8 @@ describe('fetchDeviceSwapHistory', () => {
     })
     const accountParams = () =>
         (queryClient as Mock).mock.calls.map(
-            call => (call[0] as { params: { accounts?: string } }).params.accounts,
+            call =>
+                (call[0] as { params: { accounts?: string } }).params.accounts,
         )
     // The refusal memo is module state, so each test names its own device.
     let deviceId: string
