@@ -484,6 +484,33 @@ describe('useSwapQuotes', () => {
         expect(result.current.isQuoteFetching).toBe(false)
     })
 
+    it.each([
+        ['receive', '0'],
+        ['pay', '31566704'],
+    ])(
+        'leaves the router to decide when the %s lookup errored',
+        async (_side, presentId) => {
+            mockAssetsQueryResult = {
+                ...makeAssetsResult([presentId]),
+                isError: true,
+            }
+            mockUseAssetsQuery.mockImplementation(
+                (_scope: unknown, ids: string[]) =>
+                    ids[0] === presentId
+                        ? makeAssetsResult([presentId])
+                        : mockAssetsQueryResult,
+            )
+
+            mockCreateQuotes.mockResolvedValue([OFFER])
+
+            const { result } = renderHook(() => useSwapQuotes(baseParams))
+
+            await waitFor(() => expect(result.current.allQuotes).toEqual([OFFER]))
+            expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+            expect(result.current.quoteFailure).toBeNull()
+        },
+    )
+
     it('clears previously fetched quotes when the pair leaves the network', async () => {
         const quote = { quote_id: 'q1' }
         mockCreateQuotes.mockResolvedValue([quote])

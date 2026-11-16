@@ -125,9 +125,10 @@ export const useSwapQuotes = ({
     // Both assets must exist on the active network before quoting — a pair
     // seeded on another network (e.g. mainnet USDC after switching to
     // testnet) would just 404. fetchMissing resolves assets the user doesn't
-    // hold through the per-network API, so absence is authoritative. Empty
-    // ids while disabled so a caller that isn't quoting doesn't pay the
-    // lookup (useAssetsQuery has no enabled option of its own).
+    // hold through the per-network API, so absence after a successful lookup
+    // is authoritative. A failed lookup is unknown, not absent: the router
+    // decides. Empty ids while disabled so a caller that isn't quoting doesn't
+    // pay the lookup (useAssetsQuery has no enabled option of its own).
     // Each asset is checked on its own scope: a cross-chain receive asset
     // lives on another chain.
     const payAssets = useAssetsQuery(scope, enabled ? [fromAssetId] : [], {
@@ -139,8 +140,15 @@ export const useSwapQuotes = ({
         { fetchMissing: true },
     )
     const isPairChecked = payAssets.isFetched && receiveAssets.isFetched
-    const isPairOnNetwork =
-        payAssets.data.has(fromAssetId) && receiveAssets.data.has(toAssetId)
+    const isPayKnownAbsent =
+        payAssets.isFetched &&
+        !payAssets.isError &&
+        !payAssets.data.has(fromAssetId)
+    const isReceiveKnownAbsent =
+        receiveAssets.isFetched &&
+        !receiveAssets.isError &&
+        !receiveAssets.data.has(toAssetId)
+    const isPairOnNetwork = !isPayKnownAbsent && !isReceiveKnownAbsent
     const isPairUnsupported = enabled && isPairChecked && !isPairOnNetwork
 
     // Pair the server said it can't quote (404) — don't re-fire on every
