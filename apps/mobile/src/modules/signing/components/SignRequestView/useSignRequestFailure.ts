@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
+    SignerKeyMissingError,
     SubmissionError,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
@@ -185,6 +186,11 @@ const resolveFailureBody = (
     if (error instanceof DelegationTargetNotFoundError) {
         return t('signing.cannot_sign.rekeyed_auth_missing_body', {
             authAddress: String(error.metadata.params?.authorityAddress ?? ''),
+        })
+    }
+    if (error instanceof SignerKeyMissingError) {
+        return t('signing.cannot_sign.signer_key_missing_body', {
+            authAddress: String(error.metadata.params?.address ?? ''),
         })
     }
 

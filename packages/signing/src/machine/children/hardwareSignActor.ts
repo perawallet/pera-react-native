@@ -19,10 +19,10 @@ import {
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
-import { isKeyedByPlanner, type SigningPhase } from '../../pipeline/types'
+import type { SigningPhase } from '../../pipeline/types'
 import { signMessageGroupOnDevice } from '../actors/signers/signMessageGroupOnDevice'
 import { signPlannedGroupOnDevice } from '../actors/signers/signPlannedGroupOnDevice'
-import { resolveSigningAccount } from '../utils/resolveSigningAccount'
+import { resolveGroupSigningAccount } from '../utils/resolveSigningAccount'
 import {
     classifyLedgerErrorKind,
     isLedgerError,
@@ -189,16 +189,12 @@ export const hardwareSignActor = fromCallback<
                 if (!signerAccount) {
                     throw new HardwareWalletError('signer_not_found')
                 }
-                // A group keyed by its planner already names the key holder.
-                const accountForSigning = isKeyedByPlanner(group.data)
-                    ? signerAccount
-                    : resolveSigningAccount(
-                          signerAccount,
-                          group.source,
-                          group.data.type,
-                          allAccounts,
-                          scope.chainId,
-                      )
+                const accountForSigning = resolveGroupSigningAccount(
+                    group,
+                    signerAccount,
+                    allAccounts,
+                    scope.chainId,
+                )
                 if (!isHardwareWalletAccount(accountForSigning)) {
                     throw new HardwareWalletError('signer_not_found')
                 }

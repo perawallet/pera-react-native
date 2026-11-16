@@ -419,6 +419,24 @@ describe('algorandReviewerAdapter review parts', () => {
         )
     })
 
+    // ARC-0001: a dApp-named authAddr signs even when the wallet's records
+    // say the sender isn't rekeyed to it, as a transaction earlier in the
+    // group may rekey it.
+    it('reviews a dApp-named signer the wallet sender is not yet rekeyed to', async () => {
+        const neutral = chainNeutralGroup({
+            transaction: KINDS.payment,
+            authorizer: SECOND.toString(),
+        })
+        const named = {
+            ...neutral,
+            data: { ...neutral.data, isKeyedBySigner: true },
+        } as SignableGroup
+
+        const analysis = await review(named)
+
+        expect(analysis.signableAddresses).toEqual([SECOND.toString()])
+    })
+
     it("refuses for good a chain-neutral payload the planner can't read", async () => {
         const group = {
             signerAddress: WALLET.toString(),

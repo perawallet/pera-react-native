@@ -33,6 +33,7 @@ export const fakeReviewerAdapter = (
     classifyRequestStructure: vi.fn(() => 'single' as const),
     aggregateTransactionWarnings: vi.fn(() => []),
     resolveAllSignerAddresses: vi.fn(() => []),
+    resolveSigningAccounts: vi.fn(() => []),
     getDelegatedUnsignableReason: vi.fn(() => null),
     decodeArbitraryDataForDisplay: vi.fn(() => ({ kind: 'hex', hex: '' })),
     reviewedAddresses: vi.fn(() => []),

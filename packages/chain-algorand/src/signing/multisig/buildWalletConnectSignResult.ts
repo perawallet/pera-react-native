@@ -13,6 +13,16 @@
 import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
 
 /**
+ * The result before any signature: the dApp's own `stxn` where it sent one
+ * for a transaction the wallet doesn't sign, `null` everywhere else.
+ */
+export const emptySignResult = (
+    totalLength: number,
+    passthrough: Record<number, string> = {},
+): Nullable<string>[] =>
+    Array.from({ length: totalLength }, (_, i) => passthrough[i] ?? null)
+
+/**
  * Maps assembled signed-transaction bytes back into the WalletConnect
  * `algo_signTxn` result shape: a `totalLength`-slot array where each signed
  * item sits at its original group position (`indicesToSign[i]`) and every
@@ -29,8 +39,9 @@ export const buildWalletConnectSignResult = (
     signedBytes: Uint8Array[],
     indicesToSign: number[],
     totalLength: number,
+    passthrough: Record<number, string> = {},
 ): Nullable<string>[] => {
-    const result: Nullable<string>[] = new Array(totalLength).fill(null)
+    const result = emptySignResult(totalLength, passthrough)
     signedBytes.forEach((bytes, i) => {
         const idx = indicesToSign[i]
         if (idx === undefined || !bytes) return
