@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { createQueryClientWrapper } from '@test-utils/render'
+import { imitatedCurrencyOf } from '@perawallet/wallet-core-currencies'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -289,6 +290,47 @@ describe('useTransactionListItem', () => {
                 renderRow(golden('payment confirmed with an explicit status'))
                     .notice,
             ).toBeNull()
+        })
+    })
+
+    describe('imitated currency', () => {
+        beforeEach(() => {
+            vi.mocked(imitatedCurrencyOf).mockImplementation((_ref, name) =>
+                name === 'ALGO' ? 'ALGO' : null,
+            )
+        })
+
+        afterEach(() => {
+            vi.mocked(imitatedCurrencyOf).mockReset()
+            vi.mocked(imitatedCurrencyOf).mockReturnValue(null)
+        })
+
+        it('flags a received asset whose stored unit name imitates a currency', () => {
+            stored([{ assetId: '31566704', unitName: 'ALGO', decimals: 6 }])
+
+            const row = renderRow(golden('asset transfer received'))
+
+            expect(row.imitatedCurrency).toBe('ALGO')
+            expect(imitatedCurrencyOf).toHaveBeenCalledWith(
+                { chainId: 'algorand', assetId: '31566704' },
+                'ALGO',
+            )
+        })
+
+        it('has no imitated currency on an ordinary row', () => {
+            const row = renderRow(golden('asset transfer received'))
+
+            expect(row.imitatedCurrency).toBeNull()
+        })
+
+        it('names the leg that imitates when only one of two does', () => {
+            vi.mocked(imitatedCurrencyOf).mockImplementation(ref =>
+                ref.assetId === '0' ? 'USD' : null,
+            )
+
+            const row = renderRow(golden('swap'))
+
+            expect(row.imitatedCurrency).toBe('USD')
         })
     })
 

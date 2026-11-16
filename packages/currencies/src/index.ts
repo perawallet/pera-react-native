@@ -16,6 +16,7 @@ export * from './constants'
 export * from './hooks'
 export * from './models'
 export * from './utils'
+export { imitatedCurrencyOf } from './imitation'
 export { useCurrenciesStore } from './store'
 export { fetchCurrenciesList, fetchCurrency } from './api/currencies'
 export type {

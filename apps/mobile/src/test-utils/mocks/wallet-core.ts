@@ -1007,6 +1007,7 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
             data: { usdPrice: new Decimal(1) },
             isPending: false,
         })),
+        imitatedCurrencyOf: vi.fn(() => null),
     }
 })
 
