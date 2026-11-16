@@ -27,6 +27,9 @@ vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate }),
 }))
+vi.mock('@hooks/useNavigationLock', () => ({
+    useNavigationLock: () => ({ allowProgrammaticNavigation: () => {} }),
+}))
 vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({ requirePinVerification }),
 }))

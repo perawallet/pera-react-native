@@ -11,13 +11,10 @@
  */
 
 import React, { useCallback, useEffect } from 'react'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     BackupSyncQrUnsupportedVersionError,
     parseBackupSyncQrEnvelope,
     useCloudBackupRestoreDraftStore,
-    usePrepareCloudBackupRestoreMutation,
     type BackupSyncQrContents,
 } from '@perawallet/wallet-core-backup'
 import { scannerNotifier } from '@components/QRScannerView'
@@ -31,8 +28,7 @@ import {
     useCloudBackupRestoreProgress,
     type UseCloudBackupRestoreProgressResult,
 } from '../../hooks/useCloudBackupRestoreProgress'
-import { useRestoreFailureToast } from '../../hooks/useRestoreOutcome'
-import type { CloudBackupStackParamList } from '../../routes/types'
+import { usePrepareCloudBackupRestore } from '../../hooks/usePrepareCloudBackupRestore'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 
@@ -63,10 +59,6 @@ export type UseCloudBackupRestoreScanScreenResult = {
 export const useCloudBackupRestoreScanScreen =
     (): UseCloudBackupRestoreScanScreenResult => {
         const { t } = useLanguage()
-        const navigation =
-            useNavigation<
-                NativeStackNavigationProp<CloudBackupStackParamList>
-            >()
         const { requirePinVerification } = useRequirePinVerification()
         const { showToast } = useToast()
         const { request: requestBottomSheet } = useBottomSheet()
@@ -89,13 +81,7 @@ export const useCloudBackupRestoreScanScreen =
             close: handleCloseScanner,
         } = useModalState()
 
-        const onError = useRestoreFailureToast()
-        const { mutate: prepare, isPending: isRestoring } =
-            usePrepareCloudBackupRestoreMutation({
-                onSuccess: () =>
-                    navigation.navigate('CloudBackupRestoreSelectAccounts'),
-                onError,
-            })
+        const { prepare, isRestoring } = usePrepareCloudBackupRestore()
         const restoreProgress = useCloudBackupRestoreProgress()
 
         const handleScanned = useCallback(

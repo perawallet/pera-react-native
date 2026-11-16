@@ -11,12 +11,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     readCloudBackupImportedKey,
     useCloudBackupRestoreDraftStore,
-    usePrepareCloudBackupRestoreMutation,
     type BackupEncryptionKey,
     type RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
@@ -28,8 +25,7 @@ import {
     useCloudBackupRestoreProgress,
     type UseCloudBackupRestoreProgressResult,
 } from '../../hooks/useCloudBackupRestoreProgress'
-import { useRestoreFailureToast } from '../../hooks/useRestoreOutcome'
-import type { CloudBackupStackParamList } from '../../routes/types'
+import { usePrepareCloudBackupRestore } from '../../hooks/usePrepareCloudBackupRestore'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 
@@ -95,10 +91,6 @@ type UseCloudBackupRestoreEncryptionKeyScreenResult = {
 export const useCloudBackupRestoreEncryptionKeyScreen =
     (): UseCloudBackupRestoreEncryptionKeyScreenResult => {
         const { t } = useLanguage()
-        const navigation =
-            useNavigation<
-                NativeStackNavigationProp<CloudBackupStackParamList>
-            >()
         // Read once: editing the field must not be undone by a store update,
         // and the draft is written before this screen mounts.
         const [importedKey] = useState(readCloudBackupImportedKey)
@@ -106,16 +98,10 @@ export const useCloudBackupRestoreEncryptionKeyScreen =
             importedKey?.salt ?? '',
         )
         const hasMnemonic = useRestoreDraft()
-        const onError = useRestoreFailureToast()
-        const mutation = usePrepareCloudBackupRestoreMutation({
-            onSuccess: () =>
-                navigation.navigate('CloudBackupRestoreSelectAccounts'),
-            onError,
-        })
-        const isRestoring = mutation.isPending
+        const { prepare, isRestoring } = usePrepareCloudBackupRestore()
         const restoreProgress = useCloudBackupRestoreProgress()
         const handleRestore = useRestoreRunner(
-            mutation.mutate,
+            prepare,
             hasMnemonic,
             encryptionKey,
             importedKey,

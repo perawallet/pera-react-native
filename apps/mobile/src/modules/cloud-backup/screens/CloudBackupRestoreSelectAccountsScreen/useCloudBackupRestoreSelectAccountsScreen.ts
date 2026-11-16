@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
@@ -110,6 +110,9 @@ export const useCloudBackupRestoreSelectAccountsScreen = ({
     // The overlay is no modal: back and swipe still work under it, and the
     // restore owns the exit until it lands or fails.
     const [isLocked, setIsLocked] = useState(false)
+    // The lock renders a frame late; a second tap in that frame would start a
+    // second restore against the session the first one already took.
+    const isStartedRef = useRef(false)
     const { allowProgrammaticNavigation } = useNavigationLock(isLocked)
     const exit = useCallback(() => {
         allowProgrammaticNavigation()
@@ -124,6 +127,7 @@ export const useCloudBackupRestoreSelectAccountsScreen = ({
         (error: unknown) => {
             showFailure(error)
             allowProgrammaticNavigation()
+            isStartedRef.current = false
             setIsLocked(false)
             navigation.goBack()
         },
@@ -148,6 +152,8 @@ export const useCloudBackupRestoreSelectAccountsScreen = ({
     }, [])
 
     const handleRestore = useCallback(() => {
+        if (isStartedRef.current) return
+        isStartedRef.current = true
         setIsLocked(true)
         complete(mode === 'all' ? 'all' : selected)
     }, [complete, mode, selected])

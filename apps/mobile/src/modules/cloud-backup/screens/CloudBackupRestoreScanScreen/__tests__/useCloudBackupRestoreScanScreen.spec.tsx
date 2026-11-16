@@ -73,6 +73,9 @@ vi.mock('@components/QRScannerView', () => ({ scannerNotifier }))
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: navigateMock }),
 }))
+vi.mock('@hooks/useNavigationLock', () => ({
+    useNavigationLock: () => ({ allowProgrammaticNavigation: () => {} }),
+}))
 vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: requirePinMock,

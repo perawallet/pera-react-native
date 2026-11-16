@@ -200,6 +200,29 @@ describe('useCloudBackupRestoreSelectAccountsScreen', () => {
         expect(lockMock).toHaveBeenLastCalledWith(true)
     })
 
+    it('starts one restore when Restore is pressed twice before the lock renders', () => {
+        const { result } = renderScreen()
+
+        act(() => {
+            result.current.handleRestore()
+            result.current.handleRestore()
+        })
+
+        expect(completeMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('lets the user retry after a failed restore', () => {
+        const { result } = renderScreen()
+        act(() => result.current.handleRestore())
+
+        act(() =>
+            state.callbacks?.onError(new CloudBackupRestoreError('UNKNOWN')),
+        )
+        act(() => result.current.handleRestore())
+
+        expect(completeMock).toHaveBeenCalledTimes(2)
+    })
+
     it('unlocks before its own exit once restored', () => {
         renderScreen()
 
