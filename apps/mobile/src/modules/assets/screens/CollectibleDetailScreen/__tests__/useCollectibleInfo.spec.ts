@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useCollectibleInfo } from '../useCollectibleInfo'
@@ -139,6 +139,10 @@ describe('useCollectibleInfo', () => {
         Object.assign(mockCapabilities, { inAppWebView: true })
         mockExplorer.base = 'https://explorer.perawallet.app'
         mockChainUi.collectibleDetails = ALGORAND_DISPLAY
+    })
+
+    afterEach(() => {
+        vi.mocked(truncateAlgorandAddress).mockImplementation(a => a)
     })
 
     describe('on a network with no explorer', () => {
@@ -355,7 +359,6 @@ describe('useCollectibleInfo', () => {
                 `${'9'.repeat(10)}...${'9'.repeat(10)}`,
             )
             expect(mockCopyToClipboard).toHaveBeenCalledWith(tokenId)
-            vi.mocked(truncateAlgorandAddress).mockImplementation(a => a)
         })
 
         it('shows no standard row for a standard the chain does not name', () => {

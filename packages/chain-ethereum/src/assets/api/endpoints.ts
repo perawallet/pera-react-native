@@ -145,8 +145,9 @@ export const fetchWhitelist = async (
 
 /**
  * Every NFT `address` holds on the scope's chain, across all pages; a row
- * this client can't read is skipped. Rejects with a `PeraNetworkError` on a
- * failed page, so a partial list never stands in for the whole.
+ * this client can't read is skipped. Rejects on a failed page, so a partial
+ * list never stands in for the whole: with a `PeraServiceUnavailableError` when
+ * the chain has no NFT reads, and a plain `Error` on a malformed `next`.
  */
 export const fetchNftHoldings = async (
     scope: ChainScope,
@@ -193,7 +194,8 @@ export const fetchNftHoldings = async (
 
 /**
  * Whether `address` holds any NFT the backend lists: one GET of the first
- * page, never a cursor. Rejects with a `PeraNetworkError` on a failed request.
+ * page, never a cursor. Resolves `false` when the chain has no NFT reads;
+ * rejects with a `PeraNetworkError` on any other failed request.
  */
 export const fetchHasNftHoldings = async (
     scope: ChainScope,

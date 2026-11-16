@@ -94,8 +94,8 @@ type UseAccountNftsResult = {
     >
 }
 
-// Suspicious first: a search or chip that only matched hidden NFTs should say
-// how to show them, not that nothing matched.
+// A failed refresh comes first, then suspicious: a search or chip that only
+// matched hidden NFTs should say how to show them, not that nothing matched.
 const listEmptyCopy = ({
     t,
     isRefreshFailed,
@@ -407,8 +407,12 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             ? ''
             : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
     // A failed refresh keeps the stored NFTs, so the rows are stale, not gone;
-    // with none stored it must not read as "no NFTs yet".
-    const isRefreshFailed = hasUnrefreshedHoldings && rows.length === 0
+    // with none stored it must not read as "no NFTs yet". Rows are already
+    // search-filtered, so a search that matches nothing is not a failed refresh.
+    const isRefreshFailed =
+        hasUnrefreshedHoldings &&
+        rows.length === 0 &&
+        !debouncedSearchFilter.length
     const { title: listEmptyTitle, body: listEmptyBody } = listEmptyCopy({
         t,
         isRefreshFailed,
@@ -430,7 +434,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             rows.length === 0 &&
             !searchFilter.length &&
             !hasUnrefreshedHoldings,
-        showRefreshNotice: hasUnrefreshedHoldings && rows.length > 0,
+        showRefreshNotice: hasUnrefreshedHoldings && !isRefreshFailed,
         shouldShowNetwork: isMultiChain && selectedChainId === null,
         listEmptyTitle,
         listEmptyBody,

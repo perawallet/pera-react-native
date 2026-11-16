@@ -973,6 +973,24 @@ describe('useAccountNfts', () => {
             )
         })
 
+        it('reads a search that matches nothing as no match, and keeps the notice', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [],
+                isPending: false,
+                hasUnrefreshedHoldings: true,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+            act(() => {
+                result.current.setSearchFilter('nothing')
+            })
+
+            expect(result.current.showRefreshNotice).toBe(true)
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.nomatch_title',
+            )
+        })
+
         it('shows no notice when every network refreshed', () => {
             mockUseAccountCollectiblesQuery.mockReturnValue({
                 collectibles: [makeRow('100', 'Cool NFT')],

@@ -12,8 +12,8 @@ PIPELINES_YML="$ROOT_DIR/ci/pipelines.yml"
 failures=0
 
 # The Pera services the staging backend serves for every EVM network; change
-# them only with the backend. NFTs are served for Ethereum alone: a network
-# that lists `nfts` without them answers 503 on every read.
+# them only with the backend. NFTs are served for Ethereum alone: the backend
+# answers 422 `nft_not_supported` on any other network that lists `nfts`.
 EVM_STAGING_SERVICES="prices,assets,history,blockFollowing,contracts,simulations"
 ETHEREUM_STAGING_SERVICES="prices,assets,history,blockFollowing,nfts,contracts,simulations"
 
