@@ -155,13 +155,17 @@ export const seedEthereumAssets = async () => {
 }
 
 // The confirm step checks the synced native balance covers the worst-case fee.
-export const seedSenderEther = (wei: string) =>
+// A stored chain state also keeps the account from syncing on its first read;
+// with no Pera services (as on CI) that sync goes to the node, which drops seeded tokens.
+export const seedEtherAt = (accountAddress: string, wei: string) =>
     upsertAccountChainState({
-        accountAddress: SENDER,
+        accountAddress,
         scope: ETH_SCOPE,
         nativeBalance: new Decimal(wei),
         chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
     })
+
+export const seedSenderEther = (wei: string) => seedEtherAt(SENDER, wei)
 
 type Screen = Parameters<typeof renderWithNavigation>[0]
 

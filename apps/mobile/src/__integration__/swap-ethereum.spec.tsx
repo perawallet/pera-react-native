@@ -149,6 +149,7 @@ const {
     ETH_SCOPE,
     ETHEREUM_SECOND,
     ETHEREUM_SENDER,
+    seedEtherAt,
     seedEthereumAssets,
     seedSenderEther,
     RECEIVER,
@@ -656,6 +657,7 @@ describe('Flow: Swap from an Ethereum account', () => {
         useAccountsStore.getState().setAccounts([ETHEREUM_SENDER, second])
         useAccountsStore.getState().setSelectedAccountId(ETHEREUM_SENDER.id)
         await seedSenderEther('10000000000000000000')
+        await seedEtherAt(RECEIVER, '10000000000000000000')
         for (const [accountAddress, amount] of [
             [SENDER, '100000000'],
             [RECEIVER, '250000000'],
