@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { DISCOVER_ROW_LEAD_SIZE } from '../../utils/discoverLayout'
 
 type StyleProps = { bottomInset?: number }
 
@@ -36,15 +35,6 @@ export const useStyles = makeStyles(
         },
         remove: {
             padding: theme.spacing.xs,
-        },
-        logo: {
-            width: DISCOVER_ROW_LEAD_SIZE,
-            height: DISCOVER_ROW_LEAD_SIZE,
-            borderRadius: theme.borderRadius.full,
-            overflow: 'hidden',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.layerGray,
         },
         name: {
             flex: 1,

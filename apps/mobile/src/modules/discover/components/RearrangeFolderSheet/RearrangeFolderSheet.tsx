@@ -19,21 +19,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWButton,
     PWIcon,
-    PWImage,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import type { DiscoverFavorite } from '../../types'
+import { DappLogo } from '../DappLogo'
 import {
-    favoriteKeyOf,
     useRearrangeFolderSheet,
+    type RearrangeEntry,
 } from './useRearrangeFolderSheet'
 import { useStyles } from './styles'
 
 export type RearrangeFolderSheetProps = { folderId: string }
+
+const keyOf = (entry: RearrangeEntry) => entry.key
 
 /**
  * Reorders a folder's dApps and takes some out; open it with
@@ -50,69 +51,53 @@ export const RearrangeFolderSheet = ({
     const { remove, reorder } = sheet
 
     const renderItem = useCallback(
-        ({ item, drag, isActive }: RenderItemParams<DiscoverFavorite>) => {
-            const key = favoriteKeyOf(item)
-            return (
-                <ScaleDecorator activeScale={0.97}>
-                    <PWView
-                        style={styles.row}
-                        testID={`discover_rearrange_row_${key}`}
-                    >
-                        <PWTouchableOpacity
-                            onPress={() => remove(key)}
-                            style={styles.remove}
-                            accessibilityLabel={t(
-                                'discover.folders.rearrange.remove_label',
-                                { name: item.name },
-                            )}
-                            testID={`discover_rearrange_remove_${key}`}
-                        >
-                            <PWIcon
-                                name='cross'
-                                variant='secondary'
-                            />
-                        </PWTouchableOpacity>
-                        {item.logo ? (
-                            <PWImage
-                                source={{ uri: item.logo }}
-                                style={styles.logo}
-                            />
-                        ) : (
-                            <PWView style={styles.logo}>
-                                <PWIcon
-                                    name='globe'
-                                    variant='secondary'
-                                />
-                            </PWView>
+        ({ item, drag, isActive }: RenderItemParams<RearrangeEntry>) => (
+            <ScaleDecorator activeScale={0.97}>
+                <PWView
+                    style={styles.row}
+                    testID={`discover_rearrange_row_${item.key}`}
+                >
+                    <PWTouchableOpacity
+                        onPress={() => remove(item.key)}
+                        style={styles.remove}
+                        accessibilityLabel={t(
+                            'discover.folders.rearrange.remove_label',
+                            { name: item.dapp.name },
                         )}
-                        <PWText
-                            variant='bodyLarge'
-                            weight={500}
-                            numberOfLines={1}
-                            style={styles.name}
-                        >
-                            {item.name}
-                        </PWText>
-                        <PWTouchableOpacity
-                            onPressIn={drag}
-                            disabled={isActive}
-                            style={styles.dragHandle}
-                        >
-                            <PWIcon
-                                name='horizontal-line-stack'
-                                variant='secondary'
-                            />
-                        </PWTouchableOpacity>
-                    </PWView>
-                </ScaleDecorator>
-            )
-        },
+                        testID={`discover_rearrange_remove_${item.key}`}
+                    >
+                        <PWIcon
+                            name='cross'
+                            variant='secondary'
+                        />
+                    </PWTouchableOpacity>
+                    <DappLogo logo={item.dapp.logo} />
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                        numberOfLines={1}
+                        style={styles.name}
+                    >
+                        {item.dapp.name}
+                    </PWText>
+                    <PWTouchableOpacity
+                        onPressIn={drag}
+                        disabled={isActive}
+                        style={styles.dragHandle}
+                    >
+                        <PWIcon
+                            name='horizontal-line-stack'
+                            variant='secondary'
+                        />
+                    </PWTouchableOpacity>
+                </PWView>
+            </ScaleDecorator>
+        ),
         [styles, remove, t],
     )
 
     const handleDragEnd = useCallback(
-        ({ data }: { data: DiscoverFavorite[] }) =>
-            reorder(data.map(favoriteKeyOf)),
+        ({ data }: { data: RearrangeEntry[] }) => reorder(data.map(keyOf)),
         [reorder],
     )
 
@@ -134,9 +119,9 @@ export const RearrangeFolderSheet = ({
                 }
             />
             <DraggableFlatList
-                data={sheet.dapps}
+                data={sheet.entries}
                 renderItem={renderItem}
-                keyExtractor={favoriteKeyOf}
+                keyExtractor={keyOf}
                 onDragEnd={handleDragEnd}
                 activationDistance={10}
                 showsVerticalScrollIndicator={false}

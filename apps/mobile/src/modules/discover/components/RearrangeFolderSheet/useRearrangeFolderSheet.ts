@@ -12,60 +12,62 @@
 
 import { useCallback, useState } from 'react'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import {
-    selectFolderFavorites,
-    useDiscoverFavoritesStore,
-} from '../../store/useDiscoverFavoritesStore'
+import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../../types'
-import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
 /** What the sheet resolves with on Done: the folder's favorite keys, in order. */
 export type RearrangeFolderSheetResult = string[]
 
+/** A row of the working list: the folder's own key and its favorite. */
+export type RearrangeEntry = { key: string; dapp: DiscoverFavorite }
+
 export type UseRearrangeFolderSheetParams = { folderId: string }
 
 export type UseRearrangeFolderSheetResult = {
-    dapps: DiscoverFavorite[]
+    entries: RearrangeEntry[]
     reorder: (keys: string[]) => void
     remove: (key: string) => void
     done: () => void
     cancel: () => void
 }
 
-/** A favorite's store key; favorites only hold urls that normalise. */
-export const favoriteKeyOf = (dapp: Pick<DiscoverFavorite, 'url'>): string =>
-    normalizeDappUrl(dapp.url) ?? dapp.url
+const readEntries = (folderId: string): RearrangeEntry[] => {
+    const { folders, favorites } = useDiscoverFavoritesStore.getState()
+    return (folders[folderId]?.items ?? []).flatMap(key => {
+        const dapp = favorites[key]
+        return dapp ? [{ key, dapp }] : []
+    })
+}
 
 /**
- * The working list of the Rearrange sheet. Read once at mount and kept local
- * until Done, so Cancel or a dismiss changes nothing.
+ * The working list of the Rearrange sheet. Read once at mount, keyed by the
+ * folder's own keys, and kept local until Done, so Cancel or a dismiss
+ * changes nothing.
  */
 export const useRearrangeFolderSheet = ({
     folderId,
 }: UseRearrangeFolderSheetParams): UseRearrangeFolderSheetResult => {
     const { resolve, dismiss } =
         useBottomSheetResult<RearrangeFolderSheetResult>()
-    const [dapps, setDapps] = useState(() =>
-        selectFolderFavorites(useDiscoverFavoritesStore.getState(), folderId),
-    )
+    const [entries, setEntries] = useState(() => readEntries(folderId))
 
     const reorder = useCallback((keys: string[]) => {
-        setDapps(current => {
-            const byKey = new Map(current.map(d => [favoriteKeyOf(d), d]))
+        setEntries(current => {
+            const byKey = new Map(current.map(entry => [entry.key, entry]))
             return keys.flatMap(key => {
-                const dapp = byKey.get(key)
-                return dapp ? [dapp] : []
+                const entry = byKey.get(key)
+                return entry ? [entry] : []
             })
         })
     }, [])
     const remove = useCallback((key: string) => {
-        setDapps(current => current.filter(d => favoriteKeyOf(d) !== key))
+        setEntries(current => current.filter(entry => entry.key !== key))
     }, [])
     const done = useCallback(
-        () => resolve(dapps.map(favoriteKeyOf)),
-        [dapps, resolve],
+        () => resolve(entries.map(entry => entry.key)),
+        [entries, resolve],
     )
     const cancel = useCallback(() => dismiss(), [dismiss])
 
-    return { dapps, reorder, remove, done, cancel }
+    return { entries, reorder, remove, done, cancel }
 }

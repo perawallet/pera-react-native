@@ -27,7 +27,7 @@ const K1 = 'https://one.example'
 const K2 = 'https://two.example'
 
 const store = () => useDiscoverFavoritesStore.getState()
-const keysOf = (dapps: { url: string }[]) => dapps.map(d => d.url)
+const keysOf = (entries: { key: string }[]) => entries.map(e => e.key)
 
 describe('useRearrangeFolderSheet', () => {
     let folderId: string
@@ -65,7 +65,7 @@ describe('useRearrangeFolderSheet', () => {
             useRearrangeFolderSheet({ folderId }),
         )
 
-        expect(keysOf(result.current.dapps)).toEqual([K1, K2])
+        expect(keysOf(result.current.entries)).toEqual([K1, K2])
     })
 
     it('reorders the working list', () => {
@@ -75,7 +75,7 @@ describe('useRearrangeFolderSheet', () => {
 
         act(() => result.current.reorder([K2, K1]))
 
-        expect(keysOf(result.current.dapps)).toEqual([K2, K1])
+        expect(keysOf(result.current.entries)).toEqual([K2, K1])
         expect(store().folders[folderId]?.items).toEqual([K1, K2])
     })
 
@@ -86,7 +86,7 @@ describe('useRearrangeFolderSheet', () => {
 
         act(() => result.current.remove(K1))
 
-        expect(keysOf(result.current.dapps)).toEqual([K2])
+        expect(keysOf(result.current.entries)).toEqual([K2])
         expect(store().folders[folderId]?.items).toEqual([K1, K2])
         expect(store().isFavorite(K1)).toBe(true)
     })
@@ -101,6 +101,37 @@ describe('useRearrangeFolderSheet', () => {
         act(() => result.current.done())
 
         expect(resolve).toHaveBeenCalledWith([K2])
+    })
+
+    it("resolves the folder's own keys, even when a url no longer normalises to its key", () => {
+        // A stored favorite whose url would not normalise back to its key.
+        useDiscoverFavoritesStore.setState(state => ({
+            favorites: {
+                ...state.favorites,
+                'legacy-key': {
+                    url: 'not a url',
+                    name: 'Legacy',
+                    logo: null,
+                    categories: [],
+                    chains: [],
+                    addedAt: 1,
+                },
+            },
+            folders: {
+                ...state.folders,
+                [folderId]: {
+                    ...state.folders[folderId]!,
+                    items: ['legacy-key', K1],
+                },
+            },
+        }))
+        const { result } = renderHook(() =>
+            useRearrangeFolderSheet({ folderId }),
+        )
+
+        act(() => result.current.done())
+
+        expect(resolve).toHaveBeenCalledWith(['legacy-key', K1])
     })
 
     it('dismisses on cancel without touching the store', () => {

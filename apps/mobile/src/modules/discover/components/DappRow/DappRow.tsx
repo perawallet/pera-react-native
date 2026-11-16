@@ -15,13 +15,13 @@ import { ProjectVerificationIcon } from '@modules/projects'
 import {
     PWButton,
     PWIcon,
-    PWImage,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DiscoverDapp } from '../../types'
+import { DappLogo } from '../DappLogo'
 import { useStyles } from './styles'
 
 export type DappRowProps = {
@@ -62,19 +62,7 @@ export const DappRow = ({
                 onPress={onPress}
                 testID={testID ? `${testID}_open` : undefined}
             >
-                {dapp.logo ? (
-                    <PWImage
-                        source={{ uri: dapp.logo }}
-                        style={styles.logo}
-                    />
-                ) : (
-                    <PWView style={styles.logo}>
-                        <PWIcon
-                            name='globe'
-                            variant='secondary'
-                        />
-                    </PWView>
-                )}
+                <DappLogo logo={dapp.logo} />
                 <PWView style={styles.info}>
                     <PWView style={styles.titleRow}>
                         <PWText
