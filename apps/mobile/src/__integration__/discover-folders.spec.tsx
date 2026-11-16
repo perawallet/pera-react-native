@@ -21,6 +21,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { mockDiscoverProjects } from '@perawallet/wallet-core-projects/test-handlers'
 import { server } from '@test-utils/msw-server'
+import { pressIcon } from '@test-utils/pressIcon'
 import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { headeredScreen } from '@routes/screen-options'
@@ -82,18 +83,6 @@ const openSwapFolder = async () => {
     renderFolderWithHeader(id)
     await screen.findByTestId('discover_folder_title')
     return id
-}
-
-/** `PWIcon` takes `onPress`, which a DOM click does not reach. */
-const pressIcon = (testID: string): void => {
-    const icon = screen.getByTestId(testID) as unknown as Record<
-        string,
-        { onPress: () => void }
-    >
-    const propsKey = Object.keys(icon).find(key =>
-        key.startsWith('__reactProps'),
-    )!
-    act(() => icon[propsKey]!.onPress())
 }
 
 const chooseFromMenu = async (choice: string) => {

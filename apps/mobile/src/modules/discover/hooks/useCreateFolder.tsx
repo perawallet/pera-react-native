@@ -19,6 +19,7 @@ import {
     type FolderNameSheetResult,
 } from '../components/FolderNameSheet'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
+import { SCROLLING_AUTO_SHEET_OPTIONS } from '../utils/sheetOptions'
 
 /**
  * Asks for a folder name and creates the folder (holding `initialUrl` when given).
@@ -33,12 +34,7 @@ export const useCreateFolder = (): ((
         async (initialUrl?: string) => {
             const name = await request<FolderNameSheetResult>({
                 contents: <FolderNameSheet mode='create' />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: true,
-                    // PWSheetLayout scrolls only without the auto container.
-                    autoCreateContainer: false,
-                },
+                options: SCROLLING_AUTO_SHEET_OPTIONS,
             })
             if (name === undefined) return undefined
             const id = createFolder(name, initialUrl)

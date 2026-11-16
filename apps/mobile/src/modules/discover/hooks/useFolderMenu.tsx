@@ -31,15 +31,9 @@ import {
     type RearrangeFolderSheetResult,
 } from '../components/RearrangeFolderSheet'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
+import { SCROLLING_AUTO_SHEET_OPTIONS } from '../utils/sheetOptions'
 
 export type UseFolderMenuResult = { openMenu: () => Promise<void> }
-
-const AUTO_SHEET = {
-    size: 'auto',
-    enablePanDownToClose: true,
-    // PWSheetLayout scrolls only without the auto container.
-    autoCreateContainer: false,
-} as const
 
 const folderOf = (id: string) =>
     useDiscoverFavoritesStore.getState().folders[id]
@@ -59,7 +53,7 @@ export const useFolderMenu = (folderId: string): UseFolderMenuResult => {
                     initialName={folderOf(folderId)?.name}
                 />
             ),
-            options: AUTO_SHEET,
+            options: SCROLLING_AUTO_SHEET_OPTIONS,
         })
         if (name === undefined || !folderOf(folderId)) return
         useDiscoverFavoritesStore.getState().renameFolder(folderId, name)
@@ -101,7 +95,7 @@ export const useFolderMenu = (folderId: string): UseFolderMenuResult => {
         if (!folder) return
         const choice = await request<FolderMenuChoice>({
             contents: <FolderMenuSheet hasDapps={folder.items.length > 0} />,
-            options: AUTO_SHEET,
+            options: SCROLLING_AUTO_SHEET_OPTIONS,
         })
         if (choice === 'rename') await rename()
         else if (choice === 'rearrange') await rearrange()
