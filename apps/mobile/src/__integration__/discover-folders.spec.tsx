@@ -25,6 +25,7 @@ import { render } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { headeredScreen } from '@routes/screen-options'
 import { BottomSheetManager } from '@modules/bottom-sheet'
+import { useBottomSheetStore } from '@modules/bottom-sheet/store/bottomSheetStore'
 import { useDiscoverFavoritesStore } from '@modules/discover/store/useDiscoverFavoritesStore'
 import type { DiscoverDapp } from '@modules/discover/types'
 
@@ -104,6 +105,21 @@ describe('Flow: Discover favorite folders', () => {
     beforeEach(() => {
         server.use(mockDiscoverProjects({ response: [] }))
         store().resetState()
+    })
+
+    it('Given a folder, when its menu button is tapped twice, then one menu opens', async () => {
+        await openSwapFolder()
+
+        fireEvent.click(screen.getByTestId('discover_folder_menu_button'))
+        fireEvent.click(screen.getByTestId('discover_folder_menu_button'))
+
+        await screen.findByTestId('discover_folder_menu_rename')
+        await flush()
+        // The button's double-press guard keeps the second tap from stacking
+        // a second menu; the sheet stack is the truth, not the painted DOM.
+        expect(
+            useBottomSheetStore.getState().requests.filter(r => r.isVisible),
+        ).toHaveLength(1)
     })
 
     it('Given a folder, when it is renamed from its menu, then the header shows the new name', async () => {
