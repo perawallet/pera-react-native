@@ -236,6 +236,50 @@ describe('useDiscoverFavoritesStore folders', () => {
         expect(Object.keys(state().folders)).toEqual([id])
     })
 
+    describe('setFolderItems', () => {
+        const a = 'https://a.io'
+        const b = 'https://b.io'
+        const c = 'https://c.io'
+        const folderWith = (...urls: string[]) => {
+            urls.forEach(url => state().addFavorite(dapp(url)))
+            const id = state().createFolder('One')
+            urls.forEach(url => state().setDappInFolder(id, url, true))
+            return id
+        }
+
+        test('saves the given order', () => {
+            const id = folderWith(a, b, c)
+            state().setFolderItems(id, [c, a, b])
+            expect(state().folders[id]?.items).toEqual([c, a, b])
+        })
+
+        test('drops keys that are no longer favorites', () => {
+            const id = folderWith(a, b)
+            state().removeFavorite(b)
+            state().setFolderItems(id, [b, a])
+            expect(state().folders[id]?.items).toEqual([a])
+        })
+
+        test('keeps each key once', () => {
+            const id = folderWith(a, b)
+            state().setFolderItems(id, [a, a, b])
+            expect(state().folders[id]?.items).toEqual([a, b])
+        })
+
+        test('leaves an empty folder when every dApp is taken out', () => {
+            const id = folderWith(a, b)
+            state().setFolderItems(id, [])
+            expect(state().folders[id]?.items).toEqual([])
+        })
+
+        test('is a no-op for an unknown folder', () => {
+            folderWith(a)
+            const before = state().folders
+            state().setFolderItems('missing', [a])
+            expect(state().folders).toBe(before)
+        })
+    })
+
     test('deleteFolder keeps the favorites', () => {
         state().addFavorite(dapp('https://a.io'))
         const id = state().createFolder('One', 'https://a.io')
