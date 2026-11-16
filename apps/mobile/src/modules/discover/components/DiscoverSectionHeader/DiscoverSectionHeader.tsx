@@ -10,21 +10,22 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    type IconName,
-} from '@components/core'
+import type { ReactNode } from 'react'
+import ChevronRight20Icon from '@assets/icons/discover/chevron-right-20.svg'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type DiscoverSectionHeaderProps = {
     title: string
-    icon?: IconName
+    /** The section's 24 pt icon from the design. */
+    icon?: ReactNode
     onPress?: () => void
-    action?: { label: string; onPress: () => void; testID?: string }
+    action?: {
+        label: string
+        icon?: ReactNode
+        onPress: () => void
+        testID?: string
+    }
     testID?: string
 }
 
@@ -39,26 +40,17 @@ export const DiscoverSectionHeader = ({
 
     const heading = (
         <>
-            {icon ? (
-                <PWIcon
-                    name={icon}
-                    size='sm'
-                />
-            ) : null}
-            <PWText
-                variant='h3'
-                numberOfLines={1}
-                style={styles.title}
-            >
-                {title}
-            </PWText>
-            {onPress ? (
-                <PWIcon
-                    name='chevron-right'
-                    size='sm'
-                    variant='secondary'
-                />
-            ) : null}
+            {icon}
+            <PWView style={styles.titleRow}>
+                <PWText
+                    variant='h3'
+                    numberOfLines={1}
+                    style={styles.title}
+                >
+                    {title}
+                </PWText>
+                {onPress ? <ChevronRight20Icon /> : null}
+            </PWView>
         </>
     )
 
@@ -81,13 +73,20 @@ export const DiscoverSectionHeader = ({
                 </PWView>
             )}
             {action ? (
-                <PWButton
-                    variant='link'
-                    paddingStyle='none'
-                    title={action.label}
+                <PWTouchableOpacity
+                    style={styles.action}
                     onPress={action.onPress}
                     testID={action.testID}
-                />
+                >
+                    {action.icon}
+                    <PWText
+                        variant='bodyLarge'
+                        weight={500}
+                        style={styles.actionLabel}
+                    >
+                        {action.label}
+                    </PWText>
+                </PWTouchableOpacity>
             ) : null}
         </PWView>
     )

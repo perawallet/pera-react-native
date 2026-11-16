@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import { Fragment } from 'react'
+import NewsIcon from '@assets/icons/discover/news.svg'
+import TopDappsIcon from '@assets/icons/discover/top-dapps.svg'
 import {
     PWButton,
     PWFlatList,
@@ -26,6 +29,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AssetRowSkeleton } from '@modules/assets'
 import { DappRow } from '../../components/DappRow'
 import { DiscoverSectionHeader } from '../../components/DiscoverSectionHeader'
+import { FavoritesSection } from '../../components/FavoritesSection'
+import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
 import { dappHostOf } from '../../utils/normalizeDappUrl'
 import { useStyles } from './styles'
@@ -78,19 +83,27 @@ export const DiscoverHomeScreen = () => {
                 />
             )
         }
-        return topDapps.dapps.map(dapp => (
-            <DappRow
-                key={dapp.url}
-                dapp={dapp}
-                subtitle={dapp.categories[0] ?? dappHostOf(dapp.url)}
-                isFavorite={home.isFavorite(dapp.url)}
-                isVerified={home.isVerified(dapp.url)}
-                showChains={false}
-                onPress={() => home.openDapp(dapp)}
-                onToggleFavorite={() => home.toggleFavorite(dapp)}
-                testID={`discover_home_dapp_${dapp.url}`}
-            />
-        ))
+        return (
+            <PWView>
+                {topDapps.dapps.map((dapp, index) => (
+                    <Fragment key={dapp.url}>
+                        {index > 0 ? <RowDivider /> : null}
+                        <DappRow
+                            dapp={dapp}
+                            subtitle={
+                                dapp.categories[0] ?? dappHostOf(dapp.url)
+                            }
+                            isFavorite={home.isFavorite(dapp.url)}
+                            isVerified={home.isVerified(dapp.url)}
+                            showChains={false}
+                            onPress={() => home.openDapp(dapp)}
+                            onToggleFavorite={() => home.toggleFavorite(dapp)}
+                            testID={`discover_home_dapp_${dapp.url}`}
+                        />
+                    </Fragment>
+                ))}
+            </PWView>
+        )
     }
 
     const renderNewsCard = ({ item }: { item: DiscoverNewsCardItem }) => (
@@ -99,6 +112,7 @@ export const DiscoverHomeScreen = () => {
                 title={item.title}
                 banner={item.banner}
                 dateDisplay={item.dateDisplay}
+                variant='plain'
                 onPress={() => home.openNewsItem(item)}
                 testID={`discover_home_news_${item.id}`}
             />
@@ -121,21 +135,19 @@ export const DiscoverHomeScreen = () => {
                     />
                 }
             >
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('discover.home.title')}
-                </PWText>
+                <PWText variant='h1'>{t('discover.home.title')}</PWText>
                 <SearchInputTrigger
                     placeholder={t('discover.search.placeholder')}
                     onPress={home.openSearch}
                     testID='discover_home_search'
                 />
 
+                <FavoritesSection />
+
                 <PWView style={styles.section}>
                     <DiscoverSectionHeader
                         title={t('discover.home.top_dapps')}
+                        icon={<TopDappsIcon />}
                         onPress={home.openDappDirectory}
                         testID='discover_home_top_dapps_header'
                     />
@@ -144,7 +156,6 @@ export const DiscoverHomeScreen = () => {
                             options={home.chainOptions}
                             selectedValue={home.selectedChainId}
                             onSelect={home.selectChain}
-                            contentContainerStyle={styles.chips}
                             testID='discover_home_chain_filter'
                         />
                     ) : null}
@@ -155,6 +166,7 @@ export const DiscoverHomeScreen = () => {
                     <PWView style={styles.section}>
                         <DiscoverSectionHeader
                             title={t('discover.home.news')}
+                            icon={<NewsIcon />}
                             onPress={home.openNewsList}
                             testID='discover_home_news_header'
                         />

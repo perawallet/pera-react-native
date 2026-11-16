@@ -19,8 +19,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking'
 import { useIsNativeDiscover } from '@hooks/useIsNativeDiscover'
 import {
+    DiscoverAllFavoritesScreen,
+    DiscoverAllFoldersScreen,
     DiscoverDappsScreen,
     DiscoverDetailScreen,
+    DiscoverFolderScreen,
     DiscoverNewsDetailScreen,
     DiscoverNewsScreen,
     DiscoverSearchScreen,
@@ -306,6 +309,48 @@ export const MainRoutes = () => {
                                     )}
                                     layout={fullScreenLayout}
                                     component={GatedDiscoverNewsDetailScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverFolder'
+                                    options={headeredScreen(
+                                        'discover.favorites.title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverFolderScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverAllFavorites'
+                                    options={headeredScreen(
+                                        'discover.favorites.all_favorites',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverAllFavoritesScreen}
+                                />
+                            )}
+                        {isNativeDiscover &&
+                            isAllowed({
+                                platform: 'discoverTab',
+                                anyChain: 'discover',
+                            }) && (
+                                <RootStack.Screen
+                                    name='DiscoverAllFolders'
+                                    options={headeredScreen(
+                                        'discover.favorites.all_folders_title',
+                                    )}
+                                    layout={fullScreenLayout}
+                                    component={DiscoverAllFoldersScreen}
                                 />
                             )}
                         <RootStack.Screen
