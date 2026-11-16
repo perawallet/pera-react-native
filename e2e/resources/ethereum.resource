@@ -67,13 +67,12 @@ Open Ether Amount Entry
     Acknowledge Send Info
 
 Newest Ethereum Transaction Id
-    [Documentation]    The hash of the first Ethereum row in History, or empty when there is none.
-    ...                Ethereum hashes start with 0x and Algorand ids never do, so the prefix picks
-    ...                out Ethereum rows alone.
-    Wait Until Keyword Succeeds    45s    1s    History Should Be Loaded
+    [Documentation]    The hash of the first EVM row in History: EVM hashes start with 0x and Algorand
+    ...                ids never do. The funded wallet holds Sepolia ETH alone, so its EVM rows are
+    ...                Ethereum ones, and its funding transaction means no row is History still loading.
     ${rows}=    Rows With Prefix    ${ETHEREUM_TX_ROW_PREFIX}
-    ${found}=    Run Keyword And Return Status    Page Should Contain Element    ${rows}
-    IF    not ${found}    RETURN    ${EMPTY}
+    Wait Until Page Contains Element    ${rows}    timeout=45s
+    ...    error=History lists no Ethereum transaction, though the funded wallet has at least its funding one.
     ${id}=    Get Test ID    ${rows}
     RETURN    ${{ $id.removeprefix('transaction_row_') }}
 
@@ -82,11 +81,6 @@ Send Should Offer Ether Or Chains
     ${assets}=    Is Shown    ${SEND_ETHER_ROW}
     Should Be True    ${chains} or ${assets}    Send shows neither the chain list nor the asset list.
 
-History Should Be Loaded
-    ${empty}=    Run Keyword And Return Status    Page Should Contain Text    ${HISTORY_EMPTY_TEXT}
-    ${rows}=    Is Shown    ${TX_ROW_ANY}
-    Should Be True    ${empty} or ${rows}    History is still loading.
-
 New Ethereum Transaction Should Be Listed
     [Documentation]    The send shows in History before the backend indexes it, as a Pending row. A
     ...                block mined before History opened makes it already confirmed, which also passes:
@@ -94,7 +88,6 @@ New Ethereum Transaction Should Be Listed
     [Arguments]    ${previous}
     Pull To Refresh
     ${hash}=    Newest Ethereum Transaction Id
-    Should Not Be Empty    ${hash}    msg=History lists no Ethereum transaction yet.
     Should Not Be Equal    ${hash}    ${previous}    msg=No new Ethereum transaction appeared in History.
     ${notice}=    Set Variable    tid=transaction_row_notice_${hash}
     ${noticed}=    Is Shown    ${notice}
