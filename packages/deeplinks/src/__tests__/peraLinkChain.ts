@@ -49,21 +49,29 @@ export const PERA_LINK_TESTNET_CAIP2 =
 export const EVM_LINK_CHAIN_ID = 'ethereum' as ChainId
 export const EVM_LINK_CAIP2 = 'eip155:1'
 export const EVM_LINK_TESTNET_CAIP2 = 'eip155:11155111'
+export const EVM_LINK_L2_CHAIN_ID = 'base' as ChainId
+export const EVM_LINK_L2_CAIP2 = 'eip155:8453'
+
+const EVM_LINK_SCHEMES = ['evmfixture']
 
 const isHexAddress = (value: string): boolean =>
     /^0x[0-9a-fA-F]{40}$/.test(value)
 
 const NO_CAPABILITIES = {} as ChainCapabilities
 
-// byCaip2 reads only `id` and `networks`, so the rest of the descriptor is left out.
+// The parsers read only `id`, `networks` and `uriSchemes`, so the rest of the descriptor is left out.
 const linkDescriptor = (
     id: ChainId,
     networks: readonly { id: string; caip2: string }[],
-): ChainDescriptor => ({ id, networks }) as unknown as ChainDescriptor
+    uriSchemes: readonly string[],
+): ChainDescriptor =>
+    ({ id, networks, uriSchemes }) as unknown as ChainDescriptor
 
 /**
- * Registers the Pera-link chain plus a 0x-address chain, both with CAIP-2
- * networks; callers reset the codec, adapter and chain registries afterwards.
+ * Registers the Pera-link chain plus two 0x-address chains with CAIP-2
+ * networks. The second shares the first's scheme and so, like every EVM chain
+ * after the first, has no deeplink adapter of its own. Callers reset the codec,
+ * adapter and chain registries afterwards.
  */
 export const registerPeraLinkChains = (): void => {
     registerPeraLinkChain()
@@ -74,12 +82,11 @@ export const registerPeraLinkChains = (): void => {
         isValid: isHexAddress,
     }
     addressCodecs.register(evmCodec)
+    addressCodecs.register({ ...evmCodec, chainId: EVM_LINK_L2_CHAIN_ID })
     deeplinkAdapters.register({
-        ...fakeDeeplinkAdapter(EVM_LINK_CHAIN_ID, ['evmfixture'], evmCodec),
-        toAssetRef: raw =>
-            isHexAddress(raw)
-                ? { chainId: EVM_LINK_CHAIN_ID, assetId: raw }
-                : undefined,
+        ...fakeDeeplinkAdapter(EVM_LINK_CHAIN_ID, EVM_LINK_SCHEMES, evmCodec),
+        toAssetRef: (raw, chainId) =>
+            isHexAddress(raw) ? { chainId, assetId: raw } : undefined,
     })
 
     const { chains } = getProvider()
@@ -88,6 +95,7 @@ export const registerPeraLinkChains = (): void => {
             { id: 'mainnet', caip2: PERA_LINK_MAINNET_CAIP2 },
             { id: 'testnet', caip2: PERA_LINK_TESTNET_CAIP2 },
         ]),
+        ['peralinkfixture'],
         NO_CAPABILITIES,
     )
     chains.register(
@@ -95,6 +103,15 @@ export const registerPeraLinkChains = (): void => {
             { id: 'mainnet', caip2: EVM_LINK_CAIP2 },
             { id: 'sepolia', caip2: EVM_LINK_TESTNET_CAIP2 },
         ]),
+        EVM_LINK_SCHEMES,
+        NO_CAPABILITIES,
+    )
+    chains.register(
+        linkDescriptor(
+            EVM_LINK_L2_CHAIN_ID,
+            [{ id: 'mainnet', caip2: EVM_LINK_L2_CAIP2 }],
+            EVM_LINK_SCHEMES,
+        ),
         NO_CAPABILITIES,
     )
 }
