@@ -12,24 +12,27 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    isLegacyFavoritesMessage,
     LEGACY_FAVORITES_MAX,
     LEGACY_FAVORITES_MESSAGE_TYPE,
     legacyFavoritesReaderScript,
     parseLegacyFavoritesMessage,
 } from '../legacyFavorites'
 
-const message = (favorites: unknown) => ({
+const message = (favorites: unknown, unreadableKeys = 0) => ({
     type: LEGACY_FAVORITES_MESSAGE_TYPE,
     favorites,
+    unreadableKeys,
 })
 
 /** Runs the injected script against a fake page and returns what it posted. */
-const runReaderScript = (storage: Record<string, string>): unknown => {
+const runReaderScript = (
+    storage: Record<string, string>,
+    getItem: (key: string) => string | null = key => storage[key] ?? null,
+): unknown => {
     const posted: string[] = []
     const window = {
-        localStorage: {
-            getItem: (key: string) => storage[key] ?? null,
-        },
+        localStorage: { getItem },
         ReactNativeWebView: {
             postMessage: (data: string) => posted.push(data),
         },
@@ -65,6 +68,7 @@ describe('parseLegacyFavoritesMessage', () => {
                 { url: 'https://b.io', name: 'B', logo: null, categories: [] },
             ],
             skipped: 0,
+            unreadableKeys: 0,
         })
     })
 
@@ -78,7 +82,23 @@ describe('parseLegacyFavoritesMessage', () => {
             ]),
         )
 
-        expect(result).toEqual({ entries: [], skipped: 4 })
+        expect(result).toEqual({ entries: [], skipped: 4, unreadableKeys: 0 })
+    })
+
+    it('passes the unreadable key count through, 0 when absent or invalid', () => {
+        expect(
+            parseLegacyFavoritesMessage(message([], 1))?.unreadableKeys,
+        ).toBe(1)
+        expect(
+            parseLegacyFavoritesMessage({
+                type: LEGACY_FAVORITES_MESSAGE_TYPE,
+                favorites: [],
+            })?.unreadableKeys,
+        ).toBe(0)
+        expect(
+            parseLegacyFavoritesMessage(message([], -1 as number))
+                ?.unreadableKeys,
+        ).toBe(0)
     })
 
     it('turns a non-string logo into null', () => {
@@ -115,6 +135,15 @@ describe('parseLegacyFavoritesMessage', () => {
     })
 })
 
+describe('isLegacyFavoritesMessage', () => {
+    it("is true only for the reader's message type", () => {
+        expect(isLegacyFavoritesMessage(message(null))).toBe(true)
+        expect(isLegacyFavoritesMessage({ type: 'bridge', id: 1 })).toBe(false)
+        expect(isLegacyFavoritesMessage('nope')).toBe(false)
+        expect(isLegacyFavoritesMessage(undefined)).toBe(false)
+    })
+})
+
 describe('legacyFavoritesReaderScript', () => {
     const a = { name: 'A', url: 'https://a.io', logo: null }
     const b = { name: 'B', url: 'https://b.io', logo: null }
@@ -139,9 +168,26 @@ describe('legacyFavoritesReaderScript', () => {
         expect(runReaderScript({})).toEqual(message([]))
     })
 
-    it('posts null favorites when stored JSON is broken', () => {
-        expect(runReaderScript({ 'browser-favorites': '{oops' })).toEqual(
-            message(null),
-        )
+    it('keeps the readable key and counts the broken one', () => {
+        expect(
+            runReaderScript({
+                browserFavorites: '{oops',
+                'browser-favorites': JSON.stringify([b]),
+            }),
+        ).toEqual(message([b], 1))
+        expect(
+            runReaderScript({
+                browserFavorites: JSON.stringify([a]),
+                'browser-favorites': JSON.stringify({ not: 'a list' }),
+            }),
+        ).toEqual(message([a], 1))
+    })
+
+    it('posts null favorites only when no key can be read', () => {
+        expect(
+            runReaderScript({}, () => {
+                throw new Error('storage blocked')
+            }),
+        ).toEqual(message(null, 2))
     })
 })

@@ -74,6 +74,7 @@ export enum AnalyticsMetadataKey {
     ImportedCount = 'imported_count',
     SkippedCount = 'skipped_count',
     AlreadyFavoriteCount = 'already_favorite_count',
+    UnreadableKeyCount = 'unreadable_key_count',
     AttemptCount = 'attempt_count',
     FailureReason = 'failure_reason',
     TransactionId = 'tx_id',

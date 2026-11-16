@@ -23,6 +23,7 @@ vi.mock('../../../hooks/useLegacyFavoritesImport', () => ({
 
 const onMessage = vi.fn()
 const onFailure = vi.fn()
+const onPageLoad = vi.fn()
 
 const messageEvent = (url: string, data: string) =>
     ({ nativeEvent: { url, data } }) as WebViewMessageEvent
@@ -34,6 +35,7 @@ describe('useLegacyFavoritesImporter', () => {
             isActive: true,
             onMessage,
             onFailure,
+            onPageLoad,
         })
     })
 
@@ -98,7 +100,15 @@ describe('useLegacyFavoritesImporter', () => {
         })
     })
 
-    it('forwards unparseable data as undefined, which fails as malformed', () => {
+    it('reports the page load, which starts the timeout', () => {
+        const { result } = renderHook(() => useLegacyFavoritesImporter())
+
+        result.current.webViewProps.onLoad()
+
+        expect(onPageLoad).toHaveBeenCalledTimes(1)
+    })
+
+    it('forwards unparseable data as undefined, which the import ignores', () => {
         const { result } = renderHook(() => useLegacyFavoritesImporter())
 
         result.current.webViewProps.onMessage(

@@ -21,10 +21,14 @@ import {
 import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { isTrustedWebviewOrigin } from '@modules/webview'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
-import { parseLegacyFavoritesMessage } from '../utils/legacyFavorites'
+import {
+    isLegacyFavoritesMessage,
+    parseLegacyFavoritesMessage,
+} from '../utils/legacyFavorites'
 import { dappsByNormalizedUrl } from '../utils/toDiscoverDapp'
 import { useDiscoverDirectory } from './useDiscoverDirectory'
 
+/** How long the reader may take to answer once the page has loaded. */
 export const LEGACY_IMPORT_TIMEOUT_MS = 10_000
 
 // One attempt per app launch, however often the home mounts: a failed or
@@ -43,6 +47,8 @@ export type UseLegacyFavoritesImportResult = {
     isActive: boolean
     onMessage: (url: string, data: unknown) => void
     onFailure: (reason: 'load_error' | 'http_error') => void
+    /** The page finished loading: the reader's answer is due. */
+    onPageLoad: () => void
 }
 
 /**
@@ -59,6 +65,8 @@ export const useLegacyFavoritesImport = (): UseLegacyFavoritesImportResult => {
     const { projects, isLoading } = useDiscoverDirectory({
         isEnabled: status === 'pending' && phase === 'idle',
     })
+    // A slow network must not burn an attempt: the timeout starts at load.
+    const [isPageLoaded, setIsPageLoaded] = useState(false)
     const endedRef = useRef(false)
     const projectsRef = useRef(projects)
     projectsRef.current = projects
@@ -101,21 +109,24 @@ export const useLegacyFavoritesImport = (): UseLegacyFavoritesImportResult => {
     )
 
     useEffect(() => {
-        if (phase !== 'running') return
+        if (phase !== 'running' || !isPageLoaded) return
         const timer = setTimeout(
             () => fail('timeout'),
             LEGACY_IMPORT_TIMEOUT_MS,
         )
         return () => clearTimeout(timer)
-    }, [phase, fail])
+    }, [phase, isPageLoaded, fail])
+
+    const onPageLoad = useCallback(() => setIsPageLoaded(true), [])
 
     const onMessage = useCallback(
         (url: string, data: unknown) => {
             if (endedRef.current) return
-            if (!isTrustedWebviewOrigin(url, [config.discoverBaseUrl])) {
-                fail('untrusted_origin')
-                return
-            }
+            // Only the reader's own message counts. The Discover page posts its
+            // bridge messages here too, and older Android WebViews deliver
+            // subframes' messages; the timeout still covers a missing answer.
+            if (!isTrustedWebviewOrigin(url, [config.discoverBaseUrl])) return
+            if (!isLegacyFavoritesMessage(data)) return
             const parsed = parseLegacyFavoritesMessage(data)
             if (parsed === null) {
                 fail('malformed')
@@ -132,10 +143,16 @@ export const useLegacyFavoritesImport = (): UseLegacyFavoritesImportResult => {
                 [Key.ImportedCount]: result.imported,
                 [Key.SkippedCount]: parsed.skipped,
                 [Key.AlreadyFavoriteCount]: result.alreadyFavorite,
+                [Key.UnreadableKeyCount]: parsed.unreadableKeys,
             })
         },
         [end, fail],
     )
 
-    return { isActive: phase === 'running', onMessage, onFailure: fail }
+    return {
+        isActive: phase === 'running',
+        onMessage,
+        onFailure: fail,
+        onPageLoad,
+    }
 }

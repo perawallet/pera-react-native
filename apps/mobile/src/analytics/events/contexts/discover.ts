@@ -41,7 +41,6 @@ export type LegacyImportFailureReason =
     | 'timeout'
     | 'load_error'
     | 'http_error'
-    | 'untrusted_origin'
     | 'malformed'
 
 type DappPayload = {
@@ -76,6 +75,7 @@ export interface DiscoverRequiredPayloads {
         [Key.ImportedCount]: number
         [Key.SkippedCount]: number
         [Key.AlreadyFavoriteCount]: number
+        [Key.UnreadableKeyCount]: number
     }
     [DiscoverEvent.LegacyFavoritesImportFailed]: {
         [Key.AttemptCount]: number

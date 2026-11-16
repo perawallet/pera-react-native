@@ -31,33 +31,45 @@ export const LEGACY_FAVORITES_MAX = 500
  * Runs in a hidden WebView on the Discover origin. Reads the web app's
  * favorites the way its boot does (`useSetFavorites`): the older
  * `browserFavorites` key first, then `browser-favorites` entries whose url is
- * new. Unreadable storage posts `favorites: null`, which fails the attempt.
+ * new. Each key is read on its own, so a broken one is counted in
+ * `unreadableKeys` without losing the other. When no key can be read it posts
+ * `favorites: null`, which fails the attempt.
  */
 export const legacyFavoritesReaderScript = webViewScript`
 (function () {
+    var unreadableKeys = 0;
     var read = function (key) {
-        var raw = window.localStorage.getItem(key);
-        if (raw === null) return [];
-        var parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) throw new Error('not a list');
-        return parsed;
+        try {
+            var raw = window.localStorage.getItem(key);
+            if (raw === null) return [];
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (error) {
+            unreadableKeys += 1;
+            return null;
+        }
+        unreadableKeys += 1;
+        return null;
     };
-    var favorites;
-    try {
-        var legacy = read('browserFavorites');
-        var current = read('browser-favorites');
+    var legacy = read('browserFavorites');
+    var current = read('browser-favorites');
+    var favorites = null;
+    if (legacy !== null || current !== null) {
+        legacy = legacy || [];
         favorites = legacy.slice();
-        current.forEach(function (entry) {
+        (current || []).forEach(function (entry) {
             var known = legacy.some(function (old) {
                 return old && entry && old.url === entry.url;
             });
             if (!known) favorites.push(entry);
         });
-    } catch (error) {
-        favorites = null;
     }
     window.ReactNativeWebView.postMessage(
-        JSON.stringify({ type: ${LEGACY_FAVORITES_MESSAGE_TYPE}, favorites: favorites })
+        JSON.stringify({
+            type: ${LEGACY_FAVORITES_MESSAGE_TYPE},
+            favorites: favorites,
+            unreadableKeys: unreadableKeys
+        })
     );
 })();
 true;
@@ -86,17 +98,29 @@ const toLegacyFavorite = (raw: unknown): Nullable<LegacyFavorite> => {
 }
 
 /**
+ * Whether a WebView message is the reader script's. The Discover page posts
+ * its own bridge messages to the same channel; those are not for the import.
+ */
+export const isLegacyFavoritesMessage = (
+    data: unknown,
+): data is Record<string, unknown> =>
+    isRecord(data) && data.type === LEGACY_FAVORITES_MESSAGE_TYPE
+
+/**
  * The reader script's message, validated. Null when it is not that message or
  * its list is missing; invalid entries and those past the cap are counted in
  * `skipped`, never dropped silently.
  */
 export const parseLegacyFavoritesMessage = (
     data: unknown,
-): Nullable<{ entries: LegacyFavorite[]; skipped: number }> => {
-    if (!isRecord(data) || data.type !== LEGACY_FAVORITES_MESSAGE_TYPE) {
-        return null
-    }
+): Nullable<{
+    entries: LegacyFavorite[]
+    skipped: number
+    unreadableKeys: number
+}> => {
+    if (!isLegacyFavoritesMessage(data)) return null
     if (!Array.isArray(data.favorites)) return null
+    const { unreadableKeys } = data
     const considered = data.favorites.slice(0, LEGACY_FAVORITES_MAX)
     const entries = considered.flatMap(raw => {
         const favorite = toLegacyFavorite(raw)
@@ -105,5 +129,9 @@ export const parseLegacyFavoritesMessage = (
     return {
         entries,
         skipped: data.favorites.length - entries.length,
+        unreadableKeys:
+            Number.isInteger(unreadableKeys) && (unreadableKeys as number) > 0
+                ? (unreadableKeys as number)
+                : 0,
     }
 }

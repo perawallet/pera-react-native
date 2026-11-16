@@ -28,6 +28,7 @@ export type LegacyFavoritesReaderProps = {
     onMessage: (event: WebViewMessageEvent) => void
     onError: () => void
     onHttpError: () => void
+    onLoad: () => void
     onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean
     thirdPartyCookiesEnabled: false
     mixedContentMode: 'never'
@@ -43,7 +44,8 @@ export type UseLegacyFavoritesImporterResult = {
 /** The hidden reader WebView's handlers. */
 export const useLegacyFavoritesImporter =
     (): UseLegacyFavoritesImporterResult => {
-        const { isActive, onMessage, onFailure } = useLegacyFavoritesImport()
+        const { isActive, onMessage, onFailure, onPageLoad } =
+            useLegacyFavoritesImport()
 
         const handleMessage = useCallback(
             (event: WebViewMessageEvent) => {
@@ -51,7 +53,7 @@ export const useLegacyFavoritesImporter =
                 try {
                     data = JSON.parse(event.nativeEvent.data)
                 } catch {
-                    // Unparseable: the import fails the attempt as malformed.
+                    // Not JSON, so not the reader's: the import ignores it.
                     data = undefined
                 }
                 onMessage(event.nativeEvent.url, data)
@@ -79,13 +81,20 @@ export const useLegacyFavoritesImporter =
                 onMessage: handleMessage,
                 onError,
                 onHttpError,
+                onLoad: onPageLoad,
                 onShouldStartLoadWithRequest,
                 thirdPartyCookiesEnabled: false,
                 mixedContentMode: 'never',
                 setSupportMultipleWindows: false,
                 ...HARDENED_WEBVIEW_PROPS,
             }),
-            [handleMessage, onError, onHttpError, onShouldStartLoadWithRequest],
+            [
+                handleMessage,
+                onError,
+                onHttpError,
+                onPageLoad,
+                onShouldStartLoadWithRequest,
+            ],
         )
 
         return { isActive, webViewProps }

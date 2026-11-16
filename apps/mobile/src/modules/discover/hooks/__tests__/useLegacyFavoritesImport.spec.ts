@@ -31,9 +31,10 @@ vi.mock('@analytics', async () => ({
 vi.mock('../useDiscoverDirectory', () => ({ useDiscoverDirectory: vi.fn() }))
 
 const trustedUrl = `${config.discoverBaseUrl}/`
-const payload = (favorites: unknown) => ({
+const payload = (favorites: unknown, unreadableKeys = 0) => ({
     type: LEGACY_FAVORITES_MESSAGE_TYPE,
     favorites,
+    unreadableKeys,
 })
 const legacyA = { name: 'A', url: 'https://a.io', logo: null }
 const store = () => useDiscoverFavoritesStore.getState()
@@ -91,21 +92,52 @@ describe('useLegacyFavoritesImport', () => {
                 imported_count: 1,
                 skipped_count: 1,
                 already_favorite_count: 0,
+                unreadable_key_count: 0,
             },
         )
         expect(result.current.isActive).toBe(false)
     })
 
-    it('fails an untrusted origin without importing', () => {
+    it('reports a broken legacy key in the imported event', () => {
+        const { result } = renderHook(() => useLegacyFavoritesImport())
+
+        act(() => result.current.onMessage(trustedUrl, payload([legacyA], 1)))
+
+        expect(store().isFavorite('https://a.io')).toBe(true)
+        expect(trackEvent).toHaveBeenCalledWith(
+            DiscoverEvent.LegacyFavoritesImported,
+            expect.objectContaining({ unreadable_key_count: 1 }),
+        )
+    })
+
+    it('ignores a message from another origin and keeps waiting', () => {
         const { result } = renderHook(() => useLegacyFavoritesImport())
 
         act(() =>
-            result.current.onMessage('https://evil.io/', payload([legacyA])),
+            result.current.onMessage(
+                'https://ads.example/',
+                payload([legacyA]),
+            ),
         )
 
         expect(store().isFavorite('https://a.io')).toBe(false)
-        expect(store().legacyImport).toEqual({ status: 'pending', attempts: 1 })
-        expect(result.current.isActive).toBe(false)
+        expect(store().legacyImport).toEqual({ status: 'pending', attempts: 0 })
+        expect(result.current.isActive).toBe(true)
+    })
+
+    it("ignores the page's own messages and still imports the reader's", () => {
+        const { result } = renderHook(() => useLegacyFavoritesImport())
+
+        act(() => {
+            result.current.onMessage(trustedUrl, { type: 'bridge', id: 1 })
+            result.current.onMessage(trustedUrl, undefined)
+        })
+        expect(store().legacyImport).toEqual({ status: 'pending', attempts: 0 })
+        expect(result.current.isActive).toBe(true)
+
+        act(() => result.current.onMessage(trustedUrl, payload([legacyA])))
+
+        expect(store().isFavorite('https://a.io')).toBe(true)
     })
 
     it('fails a malformed payload', () => {
@@ -125,8 +157,18 @@ describe('useLegacyFavoritesImport', () => {
         expect(result.current.isActive).toBe(false)
     })
 
-    it('times out after 10 s', () => {
+    it('does not time out while the page is still loading', () => {
         const { result } = renderHook(() => useLegacyFavoritesImport())
+
+        act(() => vi.advanceTimersByTime(LEGACY_IMPORT_TIMEOUT_MS * 3))
+
+        expect(store().legacyImport).toEqual({ status: 'pending', attempts: 0 })
+        expect(result.current.isActive).toBe(true)
+    })
+
+    it('times out 10 s after the page loads', () => {
+        const { result } = renderHook(() => useLegacyFavoritesImport())
+        act(() => result.current.onPageLoad())
 
         act(() => vi.advanceTimersByTime(LEGACY_IMPORT_TIMEOUT_MS - 1))
         expect(store().legacyImport.attempts).toBe(0)
@@ -138,6 +180,7 @@ describe('useLegacyFavoritesImport', () => {
 
     it('ignores a message that arrives after the timeout', () => {
         const { result } = renderHook(() => useLegacyFavoritesImport())
+        act(() => result.current.onPageLoad())
         act(() => vi.advanceTimersByTime(LEGACY_IMPORT_TIMEOUT_MS))
 
         act(() => result.current.onMessage(trustedUrl, payload([legacyA])))
@@ -149,7 +192,8 @@ describe('useLegacyFavoritesImport', () => {
     it('tracks the give-up on the third failure', () => {
         store().recordLegacyImportFailure()
         store().recordLegacyImportFailure()
-        renderHook(() => useLegacyFavoritesImport())
+        const { result } = renderHook(() => useLegacyFavoritesImport())
+        act(() => result.current.onPageLoad())
 
         act(() => vi.advanceTimersByTime(LEGACY_IMPORT_TIMEOUT_MS))
 
@@ -180,6 +224,7 @@ describe('useLegacyFavoritesImport', () => {
 
     it('keeps the attempt when the home unmounts mid-attempt, touching nothing', () => {
         const first = renderHook(() => useLegacyFavoritesImport())
+        act(() => first.result.current.onPageLoad())
         first.unmount()
         act(() => vi.advanceTimersByTime(LEGACY_IMPORT_TIMEOUT_MS))
 
