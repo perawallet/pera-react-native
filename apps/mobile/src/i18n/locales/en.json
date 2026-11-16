@@ -2134,7 +2134,8 @@
         "empty_title": "No current notifications",
         "empty_body": "Your recent transactions, asset requests and other transactions will appear here",
         "unavailable_title": "Notifications unavailable",
-        "unavailable_body": "We couldn't set up notifications on this device. Check your permissions and connection, then try again."
+        "unavailable_body": "We couldn't set up notifications on this device. Check your permissions and connection, then try again.",
+        "mark_all_read": "Mark all as read"
     },
     "messages": {
         "tabs": {
