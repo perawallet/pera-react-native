@@ -12,8 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => {
+export const useStyles = makeStyles(theme => {
     return {
+        markAllRow: {
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            paddingTop: theme.spacing.md,
+        },
+        markAllSpent: {
+            opacity: 0,
+        },
         emptyView: {
             flex: 1,
             justifyContent: 'center',

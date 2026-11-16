@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react'
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    type RefObject,
+} from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -40,10 +47,18 @@ export type UseNotificationsScreenResult = {
     loadMoreItems: () => Promise<void>
     refetch: () => void
     handleNotificationPress: (notification: PeraNotification) => void
+    canMarkAllAsRead: boolean
+    /** Stays true after a tap so the row keeps its height and the list doesn't jump. */
+    showMarkAllAsRead: boolean
+    markAllAsRead: () => void
     listRef: RefObject<Nullable<PWFlatListRef>>
     isUnavailableOnNetwork: boolean
     isDeviceUnregistered: boolean
 }
+
+// The list is newest-first.
+const newestNotificationId = (notifications: PeraNotification[]) =>
+    Number(notifications[0].id)
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
@@ -85,10 +100,25 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         return () => {
             const { notifications, hasUnreadNotifications } = latestRef.current
             if (notifications.length > 0 && hasUnreadNotifications) {
-                markAsRead(parseInt(notifications[0].id, 10))
+                markAsRead(newestNotificationId(notifications))
             }
         }
     }, [markAsRead])
+
+    const canMarkAllAsRead =
+        !isUnavailableOnNetwork &&
+        notifications.length > 0 &&
+        (hasUnreadNotifications || notifications.some(n => n.isUnread))
+
+    const [hasMarkedAllAsRead, setHasMarkedAllAsRead] = useState(false)
+    const showMarkAllAsRead =
+        canMarkAllAsRead || (hasMarkedAllAsRead && notifications.length > 0)
+
+    const markAllAsRead = useCallback(() => {
+        if (!canMarkAllAsRead) return
+        setHasMarkedAllAsRead(true)
+        markAsRead(newestNotificationId(notifications))
+    }, [canMarkAllAsRead, markAsRead, notifications])
 
     const listRef = useRef<PWFlatListRef>(null)
 
@@ -121,6 +151,9 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         loadMoreItems,
         refetch: () => void refetch(),
         handleNotificationPress,
+        canMarkAllAsRead,
+        showMarkAllAsRead,
+        markAllAsRead,
         listRef,
         isUnavailableOnNetwork,
         isDeviceUnregistered,

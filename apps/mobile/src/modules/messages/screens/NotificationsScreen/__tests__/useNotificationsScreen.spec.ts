@@ -201,4 +201,91 @@ describe('useNotificationsScreen', () => {
 
         expect(result.current.isIntegrityBlocked).toBe(isRefusal)
     })
+
+    describe('mark all as read', () => {
+        const readStatus = {
+            hasUnreadItems: false,
+            hasUnreadInboxItems: false,
+            hasUnreadNotifications: false,
+            unreadInboxCount: 0,
+            isUnavailableOnNetwork: false,
+        }
+
+        it('marks up to the newest notification as read', () => {
+            mockList([notification('42'), notification('41')])
+
+            const { result } = renderHook(() => useNotificationsScreen())
+
+            expect(result.current.canMarkAllAsRead).toBe(true)
+            act(() => {
+                result.current.markAllAsRead()
+            })
+
+            expect(mockMarkAsRead).toHaveBeenCalledWith(42)
+        })
+
+        it('is offered for an unread row even when the status says otherwise', () => {
+            vi.mocked(useInboxStatus).mockReturnValue(readStatus)
+            mockList([{ id: '42', isUnread: true } as PeraNotification])
+
+            const { result } = renderHook(() => useNotificationsScreen())
+
+            expect(result.current.canMarkAllAsRead).toBe(true)
+        })
+
+        it('is hidden and inert when nothing is unread', () => {
+            vi.mocked(useInboxStatus).mockReturnValue(readStatus)
+            mockList([{ id: '42', isUnread: false } as PeraNotification])
+
+            const { result } = renderHook(() => useNotificationsScreen())
+            act(() => {
+                result.current.markAllAsRead()
+            })
+
+            expect(result.current.canMarkAllAsRead).toBe(false)
+            expect(mockMarkAsRead).not.toHaveBeenCalled()
+        })
+
+        it('is hidden when the list is empty', () => {
+            mockList([])
+
+            const { result } = renderHook(() => useNotificationsScreen())
+
+            expect(result.current.canMarkAllAsRead).toBe(false)
+        })
+
+        it('keeps the row after a tap so the list does not jump', () => {
+            mockList([notification('42')])
+            const { result, rerender } = renderHook(() =>
+                useNotificationsScreen(),
+            )
+
+            act(() => {
+                result.current.markAllAsRead()
+            })
+            vi.mocked(useInboxStatus).mockReturnValue(readStatus)
+            mockList([{ id: '42', isUnread: false } as PeraNotification])
+            rerender()
+
+            expect(result.current.canMarkAllAsRead).toBe(false)
+            expect(result.current.showMarkAllAsRead).toBe(true)
+        })
+
+        it('shows no row when nothing was unread', () => {
+            vi.mocked(useInboxStatus).mockReturnValue(readStatus)
+            mockList([{ id: '42', isUnread: false } as PeraNotification])
+
+            const { result } = renderHook(() => useNotificationsScreen())
+
+            expect(result.current.showMarkAllAsRead).toBe(false)
+        })
+
+        it('is hidden on a network without notifications', () => {
+            mockList([notification('42')], { isUnavailableOnNetwork: true })
+
+            const { result } = renderHook(() => useNotificationsScreen())
+
+            expect(result.current.canMarkAllAsRead).toBe(false)
+        })
+    })
 })
