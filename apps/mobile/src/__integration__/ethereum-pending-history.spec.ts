@@ -187,7 +187,6 @@ describe('Flow: an Ethereum send in history', () => {
         const records = await getPendingTransactionRecords({
             address: SENDER.toLowerCase(),
             scope: SCOPE,
-            listedIds: new Set(),
         })
 
         expect(records.map(record => record.id)).toEqual([hash])

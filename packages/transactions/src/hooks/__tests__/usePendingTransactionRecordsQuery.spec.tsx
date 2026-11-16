@@ -100,7 +100,6 @@ describe('usePendingTransactionRecordsQuery', () => {
         expect(mocks.getPendingTransactionRecords).toHaveBeenCalledWith({
             address: ADDRESS,
             scope: SCOPE,
-            listedIds: new Set(),
         })
     })
 

@@ -100,12 +100,8 @@ const minedRecord = (
 const ledger = (...attempts: SubmissionAttemptWithHistoryEntry[]) =>
     vi.mocked(getSubmissionAttemptsWithHistoryEntry).mockResolvedValue(attempts)
 
-const pendingRecords = (listedIds: string[] = []) =>
-    getPendingTransactionRecords({
-        address: ADDRESS,
-        scope: SCOPE,
-        listedIds: new Set(listedIds),
-    })
+const pendingRecords = () =>
+    getPendingTransactionRecords({ address: ADDRESS, scope: SCOPE })
 
 describe('getPendingTransactionRecords', () => {
     beforeEach(() => {
@@ -199,18 +195,6 @@ describe('getPendingTransactionRecords', () => {
 
         expect(record.fee).toBeUndefined()
         expect(record.isFeeMaximum).toBeUndefined()
-    })
-
-    it('leaves out an attempt once the chain lists its transaction', async () => {
-        ledger(attempt())
-
-        expect(await pendingRecords(['0xhash1'])).toEqual([])
-    })
-
-    it('leaves out a group attempt when any of its transactions is listed', async () => {
-        ledger(attempt({ txIds: ['0xfirst', '0xsecond'] }))
-
-        expect(await pendingRecords(['0xsecond'])).toEqual([])
     })
 
     it('matches the sender through the chain codec, not by string equality', async () => {

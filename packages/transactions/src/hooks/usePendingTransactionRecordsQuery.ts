@@ -50,11 +50,7 @@ export const usePendingTransactionRecordsQuery = ({
     const query = useQuery({
         queryKey: transactionQueryKeys.pendingRecords(accountAddress, scope),
         queryFn: () =>
-            getPendingTransactionRecords({
-                address: accountAddress,
-                scope,
-                listedIds: new Set(),
-            }),
+            getPendingTransactionRecords({ address: accountAddress, scope }),
         // SQLite only: offline is when these rows matter most.
         networkMode: 'always',
         enabled: isActive,

@@ -35,9 +35,9 @@ import {
 } from './utils/statusNotice'
 
 /**
- * Ceiling on synthesized pending rows per first-page fetch. Concurrent
- * in-flight groups for one account are a handful at most, so this only caps
- * the pathological case rather than shaping normal output.
+ * Ceiling on rows per ledger read, newest first. Resolved sends count until
+ * retention prunes them, but a send rate that reaches this is pathological, so
+ * it only caps that case rather than shaping normal output.
  */
 export const MAX_PENDING_HISTORY_ROWS = 50
 
@@ -81,22 +81,17 @@ const noticeOf = (
 export type GetPendingTransactionRecordsParams = {
     address: string
     scope: ChainScope
-    /** Ids the chain's history already lists; an attempt sharing any of its txids with them is left out. */
-    listedIds: ReadonlySet<string>
 }
 
 /**
  * Attempts the wallet broadcast for `address`, as history records, newest
  * first. Reads SQLite only, so it works offline. Resolved attempts
- * (confirmed, failed, replaced) stay until the chain lists them or retention
- * prunes them: the reconciler confirms a send before a cached history page
- * does, and a failed or replaced one is never listed, so it shows until
- * pruned.
+ * (confirmed, failed, replaced) stay until retention prunes them; a send the
+ * chain lists is left to the chain's record by {@link mergePendingRecords}.
  */
 export const getPendingTransactionRecords = async ({
     address,
     scope,
-    listedIds,
 }: GetPendingTransactionRecordsParams): Promise<TransactionRecord[]> => {
     const attempts = await getSubmissionAttemptsWithHistoryEntry({ scope })
     // A gas chain records the fee it signed for, the most the send can be charged.
@@ -112,7 +107,7 @@ export const getPendingTransactionRecords = async ({
             sender === null ||
             !isSameAddress(scope.chainId, sender, address) ||
             txIds.length === 0 ||
-            txIds.some(id => listedIds.has(id) || seen.has(id))
+            txIds.some(id => seen.has(id))
         ) {
             continue
         }

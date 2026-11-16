@@ -28,7 +28,7 @@ export type AccountHistoryTitleBarProps = {
     onSelectChain: (chainId: Nullable<ChainId>) => void
     /** Networks whose history failed while others' rows show; empty hides the notice. */
     failedNetworkNames: string[]
-    /** False when retrying can't help: the notice then offers no retry. */
+    /** False on a network without the service: the notice says so, with no retry. */
     isFailedRetryable: boolean
     onRetryFailed: () => void
     isCsvExportVisible: boolean

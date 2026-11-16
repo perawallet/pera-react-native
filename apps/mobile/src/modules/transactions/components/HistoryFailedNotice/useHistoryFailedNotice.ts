@@ -11,18 +11,27 @@
  */
 
 import { useMemo } from 'react'
-import type { ChainNoticeAction } from '@components/ChainNotice'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainNoticeAction,
+    ChainNoticeKind,
+} from '@components/ChainNotice'
 import { useNetworkStatus } from '@modules/network'
 
 export type UseHistoryFailedNoticeParams = {
     networkNames: string[]
-    /** False on a network without the service: a retry can only fail again. */
+    /**
+     * False on a network without the service: it never answers, so the notice
+     * says the history isn't there rather than that it failed, with no retry.
+     */
     isRetryable: boolean
     onRetry: () => void
 }
 
 export type UseHistoryFailedNoticeResult = {
     isVisible: boolean
+    kind: ChainNoticeKind
+    titleKey: I18nKey
     params: { networks: string }
     action?: ChainNoticeAction
 }
@@ -41,13 +50,17 @@ export const useHistoryFailedNotice = ({
     const action = useMemo(
         () =>
             isRetryable
-                ? { labelKey: 'common.retry.label', onPress: onRetry }
+                ? { labelKey: i18nKey('common.retry.label'), onPress: onRetry }
                 : undefined,
         [isRetryable, onRetry],
     )
 
     return {
         isVisible: hasInternet && networkNames.length > 0,
+        kind: isRetryable ? 'error' : 'warning',
+        titleKey: isRetryable
+            ? i18nKey('asset_details.transaction_list.network_failed')
+            : i18nKey('asset_details.transaction_list.network_unavailable'),
         params,
         action,
     }

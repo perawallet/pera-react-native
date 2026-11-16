@@ -36,6 +36,10 @@ describe('useHistoryFailedNotice', () => {
         )
 
         expect(result.current.isVisible).toBe(true)
+        expect(result.current.kind).toBe('error')
+        expect(result.current.titleKey).toBe(
+            'asset_details.transaction_list.network_failed',
+        )
         expect(result.current.params).toEqual({ networks: 'Ethereum, Base' })
         expect(result.current.action).toEqual({
             labelKey: 'common.retry.label',
@@ -43,7 +47,7 @@ describe('useHistoryFailedNotice', () => {
         })
     })
 
-    it('offers no retry where retrying cannot help', () => {
+    it('says the history is not available, without a retry, where the network lacks the service', () => {
         const { result } = renderHook(() =>
             useHistoryFailedNotice({
                 networkNames: ['Sepolia'],
@@ -53,6 +57,10 @@ describe('useHistoryFailedNotice', () => {
         )
 
         expect(result.current.isVisible).toBe(true)
+        expect(result.current.kind).toBe('warning')
+        expect(result.current.titleKey).toBe(
+            'asset_details.transaction_list.network_unavailable',
+        )
         expect(result.current.action).toBeUndefined()
     })
 

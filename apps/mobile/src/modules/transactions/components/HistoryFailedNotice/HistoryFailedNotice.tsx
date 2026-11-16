@@ -22,7 +22,7 @@ export type HistoryFailedNoticeProps = UseHistoryFailedNoticeParams & {
     testID?: string
 }
 
-/** Names the networks whose history couldn't be read while rows still show. */
+/** Names the networks whose history couldn't be read, or isn't served, while rows still show. */
 export const HistoryFailedNotice = ({
     style,
     testID,
@@ -30,6 +30,8 @@ export const HistoryFailedNotice = ({
 }: HistoryFailedNoticeProps) => {
     const {
         isVisible,
+        kind,
+        titleKey,
         params: copyParams,
         action,
     } = useHistoryFailedNotice(params)
@@ -38,8 +40,8 @@ export const HistoryFailedNotice = ({
 
     return (
         <ChainNotice
-            kind='error'
-            titleKey='asset_details.transaction_list.network_failed'
+            kind={kind}
+            titleKey={titleKey}
             params={copyParams}
             action={action}
             style={style}
