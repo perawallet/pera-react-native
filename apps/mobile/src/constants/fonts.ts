@@ -16,7 +16,9 @@ export const fontFamilies = {
     DMSANS: {
         400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
         500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
+        // iOS looks a font up by its PostScript name; the bundled SemiBold
+        // file's is DMSans18pt-SemiBold (its siblings are DMSans-*).
+        600: isIOS() ? 'DMSans18pt-SemiBold' : 'DMSansSemiBold',
         700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
     },
     DMMONO: {
