@@ -17,22 +17,27 @@ import { useCreateFolder } from '../../hooks/useCreateFolder'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import { normalizeDappUrl } from '../../utils/normalizeDappUrl'
 
-/** What the sheet resolves with; a pan-down close resolves `undefined`. */
-export type AddToFolderSheetResult = 'done'
+/**
+ * What the sheet resolves with once the dApp went into a folder; a pan-down
+ * close resolves `undefined`.
+ */
+export type AddToFolderSheetResult = { folderName: string }
 
-export type AddToFolderFolder = { id: string; name: string; checked: boolean }
+export type AddToFolderFolder = { id: string; name: string; holdsDapp: boolean }
 
 export type UseAddToFolderSheetParams = { url: string }
 
 export type UseAddToFolderSheetResult = {
     dappName: string
-    /** Newest first; `checked` when the dApp is in the folder. */
+    /** Newest first; `holdsDapp` when the dApp is already in the folder. */
     folders: AddToFolderFolder[]
-    toggle: (id: string) => void
+    /** Adds the dApp to the folder and closes; a no-op when it is there already. */
+    choose: (id: string) => void
+    /** Creates a folder holding the dApp and closes; a dismissed name sheet keeps it open. */
     openNewFolder: () => Promise<void>
-    done: () => void
 }
 
+/** One tap files the favorite into a folder; this sheet never takes it out. */
 export const useAddToFolderSheet = ({
     url,
 }: UseAddToFolderSheetParams): UseAddToFolderSheetResult => {
@@ -55,7 +60,7 @@ export const useAddToFolderSheet = ({
                           {
                               id,
                               name: folder.name,
-                              checked:
+                              holdsDapp:
                                   key !== null && folder.items.includes(key),
                           },
                       ]
@@ -72,29 +77,29 @@ export const useAddToFolderSheet = ({
         dismiss()
     }, [favorite, dismiss])
 
-    const toggle = useCallback(
+    const choose = useCallback(
         (id: string) => {
             const row = rows.find(r => r.id === id)
-            if (!row) return
-            setDappInFolder(id, url, !row.checked)
-            trackEvent(
-                row.checked
-                    ? DiscoverEvent.FolderDappRemove
-                    : DiscoverEvent.FolderDappAdd,
-            )
+            if (!row || row.holdsDapp) return
+            setDappInFolder(id, url, true)
+            trackEvent(DiscoverEvent.FolderDappAdd)
+            resolve({ folderName: row.name })
         },
-        [rows, setDappInFolder, url],
+        [rows, setDappInFolder, url, resolve],
     )
     const openNewFolder = useCallback(async () => {
-        await createFolder(url)
-    }, [createFolder, url])
-    const done = useCallback(() => resolve('done'), [resolve])
+        const id = await createFolder(url)
+        const folder =
+            id === undefined
+                ? undefined
+                : useDiscoverFavoritesStore.getState().folders[id]
+        if (folder) resolve({ folderName: folder.name })
+    }, [createFolder, url, resolve])
 
     return {
         dappName: favorite?.name ?? '',
         folders: rows,
-        toggle,
+        choose,
         openNewFolder,
-        done,
     }
 }
