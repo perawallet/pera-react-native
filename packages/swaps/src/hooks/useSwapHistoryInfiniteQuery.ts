@@ -14,7 +14,11 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { fetchSwapHistory, routerAccountId, type SwapHistoryPage } from '../api'
+import {
+    fetchDeviceSwapHistory,
+    routerAccountId,
+    type SwapHistoryPage,
+} from '../api'
 import type { SwapAccountAddress, SwapHistoryItem, SwapStatus } from '../models'
 import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
 import { swapQueryKeys } from './querykeys'
@@ -78,7 +82,7 @@ export const useSwapHistoryInfiniteQuery = (
             if (!requestScope) throw new Error('No swap account to read')
             return fetchVisiblePage(
                 cursor =>
-                    fetchSwapHistory(
+                    fetchDeviceSwapHistory(
                         {
                             deviceId: deviceId ?? '',
                             accounts: accounts.map(account =>

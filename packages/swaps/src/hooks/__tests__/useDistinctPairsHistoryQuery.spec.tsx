@@ -17,7 +17,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useDistinctPairsHistoryQuery } from '../useDistinctPairsHistoryQuery'
-import { fetchSwapHistory } from '../../api'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { fetchDeviceSwapHistory } from '../../api'
+import { routerRequest } from '../../api/router-request'
+import { routerOrderItem } from '../../api/__tests__/routerFixtures'
 import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -25,7 +28,12 @@ const ACCOUNT = { scope: SCOPE, address: 'ADDRESS' }
 
 vi.mock('../../api', async importOriginal => ({
     ...(await importOriginal<typeof import('../../api')>()),
-    fetchSwapHistory: vi.fn(),
+    fetchDeviceSwapHistory: vi.fn(),
+}))
+
+vi.mock('../../api/router-request', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../api/router-request')>()),
+    routerRequest: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -47,11 +55,12 @@ function createWrapper() {
 
 describe('swaps/useDistinctPairsHistoryQuery', () => {
     beforeEach(() => {
-        vi.mocked(fetchSwapHistory).mockReset()
+        vi.mocked(fetchDeviceSwapHistory).mockReset()
+        vi.mocked(routerRequest).mockReset()
     })
 
     test('derives the distinct pairs from the newest history page', async () => {
-        vi.mocked(fetchSwapHistory).mockResolvedValue({
+        vi.mocked(fetchDeviceSwapHistory).mockResolvedValue({
             results: [
                 makeSwapHistoryItem({ orderId: 'a' }),
                 makeSwapHistoryItem({ orderId: 'b' }),
@@ -66,7 +75,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(fetchSwapHistory).toHaveBeenCalledWith(
+        expect(fetchDeviceSwapHistory).toHaveBeenCalledWith(
             {
                 deviceId: 'device-live',
                 accounts: ['fake-a:main:ADDRESS'],
@@ -82,7 +91,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
 
     test('keeps who paid each pair', async () => {
         const paidBy = { scope: SCOPE, address: 'SECOND' }
-        vi.mocked(fetchSwapHistory).mockResolvedValue({
+        vi.mocked(fetchDeviceSwapHistory).mockResolvedValue({
             results: [
                 makeSwapHistoryItem({ orderId: 'a', sourceAccount: paidBy }),
             ],
@@ -103,7 +112,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             scope: SCOPE,
             address: `ADDR${index}`,
         }))
-        vi.mocked(fetchSwapHistory)
+        vi.mocked(fetchDeviceSwapHistory)
             .mockResolvedValueOnce({
                 results: [
                     makeSwapHistoryItem({
@@ -132,7 +141,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.data).toHaveLength(2))
         const batches = vi
-            .mocked(fetchSwapHistory)
+            .mocked(fetchDeviceSwapHistory)
             .mock.calls.map(([params]) => params.accounts.length)
         expect(batches).toEqual([20, 5])
         expect(result.current.data?.map(pair => pair.swapDatetime)).toEqual([
@@ -146,7 +155,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             scope: SCOPE,
             address: `ADDR${index}`,
         }))
-        vi.mocked(fetchSwapHistory)
+        vi.mocked(fetchDeviceSwapHistory)
             .mockRejectedValueOnce(new Error('boom'))
             .mockResolvedValueOnce({
                 results: [makeSwapHistoryItem({ orderId: 'a' })],
@@ -168,7 +177,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             scope: { chainId: 'algorand', networkId: 'custom' } as ChainScope,
             address: 'CUSTOM',
         }
-        vi.mocked(fetchSwapHistory).mockResolvedValue({
+        vi.mocked(fetchDeviceSwapHistory).mockResolvedValue({
             results: [makeSwapHistoryItem({ orderId: 'a' })],
             next: null,
         })
@@ -179,7 +188,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
-        expect(fetchSwapHistory).toHaveBeenCalledWith(
+        expect(fetchDeviceSwapHistory).toHaveBeenCalledWith(
             expect.objectContaining({ accounts: ['fake-a:main:ADDRESS'] }),
             SCOPE,
         )
@@ -191,7 +200,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             scope: { chainId: 'algorand', networkId: 'testnet' } as ChainScope,
             address: 'TESTNET',
         }
-        vi.mocked(fetchSwapHistory).mockResolvedValue({
+        vi.mocked(fetchDeviceSwapHistory).mockResolvedValue({
             results: [],
             next: null,
         })
@@ -201,15 +210,15 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(fetchSwapHistory).toHaveBeenCalledTimes(2))
-        expect(fetchSwapHistory).toHaveBeenCalledWith(
+        await waitFor(() => expect(fetchDeviceSwapHistory).toHaveBeenCalledTimes(2))
+        expect(fetchDeviceSwapHistory).toHaveBeenCalledWith(
             expect.objectContaining({
                 deviceId: 'device-live',
                 accounts: ['fake-a:main:ADDRESS'],
             }),
             SCOPE,
         )
-        expect(fetchSwapHistory).toHaveBeenCalledWith(
+        expect(fetchDeviceSwapHistory).toHaveBeenCalledWith(
             expect.objectContaining({
                 deviceId: 'device-developer',
                 accounts: ['fake-a:test:TESTNET'],
@@ -220,7 +229,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
     })
 
     test('leaves out orders the wallet did not fund itself', async () => {
-        vi.mocked(fetchSwapHistory).mockResolvedValue({
+        vi.mocked(fetchDeviceSwapHistory).mockResolvedValue({
             results: [
                 makeSwapHistoryItem({ orderId: 'a', fundingMethod: 'deposit' }),
             ],
@@ -241,11 +250,11 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             wrapper: createWrapper(),
         })
 
-        expect(fetchSwapHistory).not.toHaveBeenCalled()
+        expect(fetchDeviceSwapHistory).not.toHaveBeenCalled()
     })
 
     test('sets isError on failure', async () => {
-        vi.mocked(fetchSwapHistory).mockRejectedValue(new Error('boom'))
+        vi.mocked(fetchDeviceSwapHistory).mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(
             () => useDistinctPairsHistoryQuery([ACCOUNT]),
@@ -253,5 +262,34 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+    })
+
+    test('keeps the registered account pairs when the combined read names one the device lacks', async () => {
+        const { fetchDeviceSwapHistory: actualFetch } = await vi.importActual<
+            typeof import('../../api/history/endpoints')
+        >('../../api/history/endpoints')
+        vi.mocked(fetchDeviceSwapHistory).mockImplementation(actualFetch)
+        vi.mocked(routerRequest).mockImplementation(async ({ params }) => {
+            if (params?.accounts === 'fake-a:main:ADDRESS') {
+                return {
+                    next: null,
+                    results: [routerOrderItem({ funding_method: null })],
+                }
+            }
+            throw new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'account_not_on_device',
+            })
+        })
+        const unregistered = { scope: SCOPE, address: 'UNREGISTERED' }
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery([ACCOUNT, unregistered]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.isError).toBe(false)
+        expect(result.current.data).toHaveLength(1)
     })
 })

@@ -18,7 +18,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
-import { fetchSwapHistory, routerAccountIdOrNull } from '../api'
+import { fetchDeviceSwapHistory, routerAccountIdOrNull } from '../api'
 import type {
     SwapAccountAddress,
     SwapDistinctPairItem,
@@ -116,7 +116,7 @@ export const useDistinctPairsHistoryQuery = (
                     })),
                 ),
                 queryFn: async () => {
-                    const page = await fetchSwapHistory(
+                    const page = await fetchDeviceSwapHistory(
                         {
                             deviceId: deviceId ?? '',
                             accounts: batch.accounts.map(
