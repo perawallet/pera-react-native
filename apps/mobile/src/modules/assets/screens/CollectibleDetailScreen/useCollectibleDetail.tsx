@@ -261,7 +261,7 @@ export const useCollectibleDetail = (
         showError,
     ])
 
-    // An EVM NFT's id is `{contract}/{tokenId}`; a `/` would split the file path.
+    // An asset id can contain `/`, which would split the file path.
     const fileStem = assetId.replaceAll('/', '_')
 
     const handleCopyImage = useCallback(async () => {

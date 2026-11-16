@@ -139,6 +139,7 @@ export type NftItemResponse = {
     standard: 'erc721' | 'erc1155'
     token_id: string
     /** Base units, decimal; null on the metadata route, which isn't per account. */
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
     balance: Nullable<string>
     name: Nullable<string>
     description: Nullable<string>
