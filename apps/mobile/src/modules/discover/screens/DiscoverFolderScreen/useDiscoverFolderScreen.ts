@@ -44,12 +44,7 @@ export const useDiscoverFolderScreen = (): UseDiscoverFolderScreenResult => {
         () =>
             folderRecord
                 ? selectFolderFavorites(
-                      {
-                          favorites,
-                          favoriteOrder: [],
-                          folders: { [folderId]: folderRecord },
-                          folderOrder: [],
-                      },
+                      { favorites, folders: { [folderId]: folderRecord } },
                       folderId,
                   )
                 : [],

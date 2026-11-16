@@ -326,7 +326,7 @@ registerStore({
 
 /** Favorites in `favoriteOrder` order. Call inside `useMemo`, not as a store selector. */
 export const selectUnsortedFavorites = (
-    state: DiscoverFavoritesState,
+    state: Pick<DiscoverFavoritesState, 'favorites' | 'favoriteOrder'>,
 ): DiscoverFavorite[] =>
     state.favoriteOrder.flatMap(key => {
         const favorite = state.favorites[key]
@@ -335,12 +335,12 @@ export const selectUnsortedFavorites = (
 
 /** Favorites, newest first. Call inside `useMemo`, not as a store selector. */
 export const selectFavoritesNewestFirst = (
-    state: DiscoverFavoritesState,
+    state: Pick<DiscoverFavoritesState, 'favorites' | 'favoriteOrder'>,
 ): DiscoverFavorite[] => selectUnsortedFavorites(state).reverse()
 
 /** Folders in `folderOrder` order. Call inside `useMemo`, not as a store selector. */
 export const selectFolders = (
-    state: DiscoverFavoritesState,
+    state: Pick<DiscoverFavoritesState, 'folders' | 'folderOrder'>,
 ): DiscoverFolder[] =>
     state.folderOrder.flatMap(id => {
         const folder = state.folders[id]
@@ -349,7 +349,7 @@ export const selectFolders = (
 
 /** A folder's favorites in folder order; `[]` for a missing folder. Call inside `useMemo`. */
 export const selectFolderFavorites = (
-    state: DiscoverFavoritesState,
+    state: Pick<DiscoverFavoritesState, 'favorites' | 'folders'>,
     id: string,
 ): DiscoverFavorite[] =>
     (state.folders[id]?.items ?? []).flatMap(key => {
@@ -359,7 +359,7 @@ export const selectFolderFavorites = (
 
 /** The ids of the folders holding `url`. Call inside `useMemo`. */
 export const selectFolderIdsForUrl = (
-    state: DiscoverFavoritesState,
+    state: Pick<DiscoverFavoritesState, 'folders' | 'folderOrder'>,
     url: string,
 ): Set<string> => {
     const key = normalizeDappUrl(url)

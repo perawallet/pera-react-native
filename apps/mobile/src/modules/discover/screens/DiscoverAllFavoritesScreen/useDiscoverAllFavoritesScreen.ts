@@ -30,13 +30,7 @@ export const useDiscoverAllFavoritesScreen =
         const favorites = useDiscoverFavoritesStore(s => s.favorites)
         const favoriteOrder = useDiscoverFavoritesStore(s => s.favoriteOrder)
         const dapps = useMemo(
-            () =>
-                selectFavoritesNewestFirst({
-                    favorites,
-                    favoriteOrder,
-                    folders: {},
-                    folderOrder: [],
-                }),
+            () => selectFavoritesNewestFirst({ favorites, favoriteOrder }),
             [favorites, favoriteOrder],
         )
         return { ...actions, dapps }
