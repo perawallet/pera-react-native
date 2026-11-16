@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    test,
+    vi,
+    type Mock,
+} from 'vitest'
 import { PeraNetworkError, queryClient } from '@perawallet/wallet-core-shared'
 import { fetchDeviceSwapHistory, fetchSwapHistory } from '../endpoints'
 import { routerOrderItem, SCOPE_A } from '../../__tests__/routerFixtures'
@@ -59,90 +67,127 @@ describe('fetchDeviceSwapHistory', () => {
     const refusal = (status: number, backendCode: string) =>
         new PeraNetworkError('client', { status, backendCode })
     const notOnDevice = () => refusal(422, 'account_not_on_device')
-    const page = (...orders: ReturnType<typeof routerOrderItem>[]) => ({
-        data: { next: null, results: orders },
+    const page = (
+        next: string | null,
+        ...orders: ReturnType<typeof routerOrderItem>[]
+    ) => ({
+        data: { next, results: orders },
     })
-    const accountParam = (call: unknown[]) =>
-        (call[0] as { params: { accounts?: string } }).params.accounts
+    const accountParams = () =>
+        (queryClient as Mock).mock.calls.map(
+            call => (call[0] as { params: { accounts?: string } }).params.accounts,
+        )
+    // The refusal memo is module state, so each test names its own device.
+    let deviceId: string
+    let deviceCount = 0
+    const A = 'fake-a:main:A'
+    const B = 'fake-a:main:B'
+    const C = 'fake-a:main:C'
 
     beforeEach(() => {
         vi.clearAllMocks()
+        deviceId = `dev-${++deviceCount}`
     })
 
-    test('reads the accounts alone when the combined read names one the device lacks, keeping the registered ones', async () => {
-        ;(queryClient as Mock).mockImplementation(
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    const refuseAccounts = (...refused: string[]) =>
+        (queryClient as Mock).mockImplementation(
             async (request: { params: { accounts?: string } }) => {
-                if (request.params.accounts === 'fake-a:main:A') {
-                    return page(routerOrderItem({ order_id: 'a-1' }))
+                const named = (request.params.accounts ?? '').split(',')
+                if (named.some(account => refused.includes(account))) {
+                    throw notOnDevice()
                 }
-                throw notOnDevice()
+                return page('n2', routerOrderItem({ order_id: 'a-1' }))
             },
         )
 
+    test('drops the refused account and re-reads the rest so the cursor survives', async () => {
+        refuseAccounts(B)
+
         const result = await fetchDeviceSwapHistory(
-            { deviceId: 'dev-1', accounts: ['fake-a:main:A', 'fake-a:main:B'] },
+            { deviceId, accounts: [A, B], limit: 20 },
             SCOPE_A,
         )
 
         expect(result.results.map(item => item.orderId)).toEqual(['a-1'])
-        expect(result.next).toBeNull()
+        expect(result.next).toBe('n2')
+        expect(accountParams().at(-1)).toBe(A)
     })
 
-    test('dedupes shared orders, sorts newest first and slices to the limit', async () => {
-        ;(queryClient as Mock).mockImplementation(
-            async (request: { params: { accounts?: string } }) => {
-                if (request.params.accounts === 'fake-a:main:A,fake-a:main:B') {
-                    throw notOnDevice()
-                }
-                return request.params.accounts === 'fake-a:main:A'
-                    ? page(
-                          routerOrderItem({
-                              order_id: 'old',
-                              created_at: '2026-10-01T10:00:00Z',
-                          }),
-                          routerOrderItem({
-                              order_id: 'shared',
-                              created_at: '2026-10-03T10:00:00Z',
-                          }),
-                      )
-                    : page(
-                          routerOrderItem({
-                              order_id: 'shared',
-                              created_at: '2026-10-03T10:00:00Z',
-                          }),
-                          routerOrderItem({
-                              order_id: 'new',
-                              created_at: '2026-10-05T10:00:00Z',
-                          }),
-                      )
-            },
-        )
+    test('skips the refused account on later reads, pages included', async () => {
+        refuseAccounts(B)
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        vi.clearAllMocks()
 
         const result = await fetchDeviceSwapHistory(
-            {
-                deviceId: 'dev-1',
-                accounts: ['fake-a:main:A', 'fake-a:main:B'],
-                limit: 2,
-            },
+            { deviceId, accounts: [A, B], cursor: 'n2' },
             SCOPE_A,
         )
 
-        expect(result.results.map(item => item.orderId)).toEqual([
-            'new',
-            'shared',
-        ])
+        expect(accountParams()).toEqual([A])
+        expect(result.next).toBe('n2')
+    })
+
+    test('stops skipping a refused account once the memo expires', async () => {
+        vi.useFakeTimers()
+        refuseAccounts(B)
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        vi.clearAllMocks()
+        vi.advanceTimersByTime(6 * 60 * 1000)
+
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+
+        expect(accountParams()[0]).toBe(`${A},${B}`)
+    })
+
+    test('does not carry a refusal across devices', async () => {
+        refuseAccounts(B)
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        vi.clearAllMocks()
+
+        await fetchDeviceSwapHistory(
+            { deviceId: `${deviceId}-other`, accounts: [A, B] },
+            SCOPE_A,
+        )
+
+        expect(accountParams()[0]).toBe(`${A},${B}`)
+    })
+
+    test('is empty when every named account is refused', async () => {
+        refuseAccounts(A, B)
+
+        const result = await fetchDeviceSwapHistory(
+            { deviceId, accounts: [A, B] },
+            SCOPE_A,
+        )
+
+        expect(result).toEqual({ results: [], next: null })
+        vi.clearAllMocks()
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        expect(queryClient).not.toHaveBeenCalled()
     })
 
     test('is empty when the only account named is not on the device', async () => {
         ;(queryClient as Mock).mockRejectedValue(notOnDevice())
 
         const result = await fetchDeviceSwapHistory(
-            { deviceId: 'dev-1', accounts: ['fake-a:main:A'] },
+            { deviceId, accounts: [A] },
             SCOPE_A,
         )
 
         expect(result).toEqual({ results: [], next: null })
         expect(queryClient).toHaveBeenCalledTimes(1)
+    })
+
+    test('keeps the readable accounts when three are named and one is refused', async () => {
+        refuseAccounts(C)
+
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B, C] }, SCOPE_A)
+
+        expect(accountParams().at(-1)).toBe(`${A},${B}`)
     })
 
     test('is empty when the router does not know the device', async () => {
@@ -151,7 +196,7 @@ describe('fetchDeviceSwapHistory', () => {
         )
 
         const result = await fetchDeviceSwapHistory(
-            { deviceId: 'dev-1', accounts: [] },
+            { deviceId, accounts: [] },
             SCOPE_A,
         )
 
@@ -164,17 +209,14 @@ describe('fetchDeviceSwapHistory', () => {
         )
 
         await expect(
-            fetchDeviceSwapHistory(
-                { deviceId: 'dev-1', accounts: ['fake-a:main:A'] },
-                SCOPE_A,
-            ),
+            fetchDeviceSwapHistory({ deviceId, accounts: [A] }, SCOPE_A),
         ).rejects.toThrow()
     })
 
-    test('rejects when a per-account read fails for another reason', async () => {
+    test('rejects when a probe fails for another reason, remembering nothing', async () => {
         ;(queryClient as Mock).mockImplementation(
             async (request: { params: { accounts?: string } }) => {
-                if (request.params.accounts === 'fake-a:main:A') {
+                if (request.params.accounts === A) {
                     throw new PeraNetworkError('server', { status: 500 })
                 }
                 throw notOnDevice()
@@ -182,32 +224,23 @@ describe('fetchDeviceSwapHistory', () => {
         )
 
         await expect(
-            fetchDeviceSwapHistory(
-                {
-                    deviceId: 'dev-1',
-                    accounts: ['fake-a:main:A', 'fake-a:main:B'],
-                },
-                SCOPE_A,
-            ),
+            fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A),
         ).rejects.toThrow()
+        vi.clearAllMocks()
+        ;(queryClient as Mock).mockResolvedValue(page(null))
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        expect(accountParams()).toEqual([`${A},${B}`])
     })
 
-    test('rejects an account refusal on a later page instead of restarting the list', async () => {
+    test('rejects an account refusal on a page after the first', async () => {
         ;(queryClient as Mock).mockRejectedValue(notOnDevice())
 
         await expect(
             fetchDeviceSwapHistory(
-                {
-                    deviceId: 'dev-1',
-                    accounts: ['fake-a:main:A', 'fake-a:main:B'],
-                    cursor: 'n2',
-                },
+                { deviceId, accounts: [A, B], cursor: 'n2' },
                 SCOPE_A,
             ),
         ).rejects.toThrow()
         expect(queryClient).toHaveBeenCalledTimes(1)
-        expect(accountParam((queryClient as Mock).mock.calls[0])).toBe(
-            'fake-a:main:A,fake-a:main:B',
-        )
     })
 })

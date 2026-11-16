@@ -72,54 +72,80 @@ const isDeviceNotFoundError = (error: unknown): boolean =>
 
 const EMPTY_PAGE: SwapHistoryPage = { results: [], next: null }
 
+// Registering an account later makes it readable; the TTL lets it back in
+// without waiting for a relaunch.
+const REFUSAL_TTL_MS = 5 * 60 * 1000
+const refusedAt = new Map<string, number>()
+
+const refusalKey = (deviceId: string, account: string): string =>
+    `${deviceId}|${account}`
+
+const isRefused = (deviceId: string, account: string): boolean => {
+    const key = refusalKey(deviceId, account)
+    const at = refusedAt.get(key)
+    if (at === undefined) return false
+    if (Date.now() - at < REFUSAL_TTL_MS) return true
+    refusedAt.delete(key)
+    return false
+}
+
 /**
- * `fetchSwapHistory` limited to the swaps this device can read. The router
- * refuses a whole read when one named account isn't registered on the device
- * (EVM addresses only register through v4 device registration), so a read that
- * hits that is redone per account and the unregistered ones are dropped. A
- * refused later page rejects: restarting would repeat rows already shown.
+ * The router refuses a whole read that names an account not registered on the
+ * device (EVM addresses register only through v4 registration). Those accounts
+ * are found once and dropped from later reads so the cursor stays valid.
  */
 export const fetchDeviceSwapHistory = async (
     params: FetchSwapHistoryParams,
     scope: ChainScope,
     resolve?: ResolveSwapAssetRef,
 ): Promise<SwapHistoryPage> => {
+    const { deviceId } = params
+    const accounts = params.accounts.filter(
+        account => !isRefused(deviceId, account),
+    )
+    if (params.accounts.length > 0 && accounts.length === 0) return EMPTY_PAGE
+
+    const read = (named: string[]) =>
+        fetchSwapHistory({ ...params, accounts: named }, scope, resolve)
+
     try {
-        return await fetchSwapHistory(params, scope, resolve)
+        return await read(accounts)
     } catch (error) {
         if (isDeviceNotFoundError(error)) return EMPTY_PAGE
-        if (!isAccountNotOnDeviceError(error) || params.cursor) throw error
-        if (params.accounts.length <= 1) return EMPTY_PAGE
+        if (
+            !isAccountNotOnDeviceError(error) ||
+            params.cursor ||
+            accounts.length === 0
+        ) {
+            throw error
+        }
 
-        const pages = await Promise.all(
-            params.accounts.map(async account => {
+        const refuse = (account: string) =>
+            refusedAt.set(refusalKey(deviceId, account), Date.now())
+        if (accounts.length === 1) {
+            refuse(accounts[0])
+            return EMPTY_PAGE
+        }
+
+        const probes = await Promise.all(
+            accounts.map(async account => {
                 try {
-                    return await fetchSwapHistory(
-                        { ...params, accounts: [account], cursor: undefined },
+                    await fetchSwapHistory(
+                        { ...params, accounts: [account], limit: 1 },
                         scope,
                         resolve,
                     )
-                } catch (accountError) {
-                    if (isAccountNotOnDeviceError(accountError))
-                        return EMPTY_PAGE
-                    throw accountError
+                    return true
+                } catch (probeError) {
+                    if (isAccountNotOnDeviceError(probeError)) return false
+                    throw probeError
                 }
             }),
         )
+        const readable = accounts.filter((_, index) => probes[index])
+        if (readable.length === accounts.length) throw error
 
-        const byOrderId = new Map<string, SwapHistoryItem>()
-        for (const page of pages) {
-            for (const item of page.results) byOrderId.set(item.orderId, item)
-        }
-        const merged = [...byOrderId.values()].sort(
-            (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-        )
-        return {
-            results:
-                params.limit === undefined
-                    ? merged
-                    : merged.slice(0, params.limit),
-            next: null,
-        }
+        accounts.filter((_, index) => !probes[index]).forEach(refuse)
+        return readable.length === 0 ? EMPTY_PAGE : read(readable)
     }
 }
