@@ -159,7 +159,7 @@
     "lottie-react-native": "7.5.0",
     "react": "catalog:",
     "react-hook-form": "^7.90.0",
-    "react-i18next": "^17.1.11",
+    "react-i18next": "^18.0.1",
     "react-native": "catalog:",
     "react-native-advanced-input-mask": "1.4.6",
     "react-native-ble-plx": "3.5.1",
