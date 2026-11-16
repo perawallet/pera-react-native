@@ -82,27 +82,27 @@ Send Should Offer Ether Or Chains
     Should Be True    ${chains} or ${assets}    Send shows neither the chain list nor the asset list.
 
 New Ethereum Transaction Should Be Listed
-    [Documentation]    The send shows in History before the backend indexes it, as a Pending row. A
-    ...                block mined before History opened makes it already confirmed, which also passes:
-    ...                the pending state is asserted on the success screen.
+    [Documentation]    The send shows in History before the backend indexes it, under whichever notice
+    ...                its state has reached by then (Pending, or Confirming once mined); the pending
+    ...                state itself is asserted on the success screen.
     [Arguments]    ${previous}
     Pull To Refresh
     ${hash}=    Newest Ethereum Transaction Id
     Should Not Be Equal    ${hash}    ${previous}    msg=No new Ethereum transaction appeared in History.
-    ${notice}=    Set Variable    tid=transaction_row_notice_${hash}
-    ${noticed}=    Is Shown    ${notice}
-    IF    ${noticed}
-        ${text}=    Text Under    ${notice}
-        Should Contain    ${text}    Pending    msg=The new row's notice reads "${text}".
-    END
     RETURN    ${hash}
 
-Ethereum Transaction Should Be Confirmed
+Ethereum Transaction Outcome
+    [Documentation]    Empty once the row has no notice, which is confirmed, or the notice once it reads
+    ...                Failed, so a failed send ends a retry loop at once. Fails while Pending or Confirming.
     [Arguments]    ${hash}
     Pull To Refresh
     Page Should Contain Element    tid=transaction_row_${hash}
-    Page Should Not Contain Element    tid=transaction_row_notice_${hash}
-    ...    message=Transaction ${hash} is still pending or failed.
+    ${notice}=    Set Variable    tid=transaction_row_notice_${hash}
+    ${noticed}=    Is Shown    ${notice}
+    IF    not ${noticed}    RETURN    ${EMPTY}
+    ${text}=    Text Under    ${notice}
+    Should Contain    ${text}    Failed    msg=Transaction ${hash} is not final yet: "${text}".
+    RETURN    ${text}
 
 Pull To Refresh
     Swipe By Percent    50    40    50    85    duration=500ms

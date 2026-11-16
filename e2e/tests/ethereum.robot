@@ -23,7 +23,7 @@ Ethereum Send Reaches History On Sepolia
     [Documentation]    Sends to its own address, so a run spends only gas.
     # p1 keeps it out of the critical profile: a public Sepolia RPC stall would turn that red.
     [Tags]    id:ethereum.send.sepolia    p1
-    # An import, a Sepolia block and the History reconciler poll outlast the default five minutes.
+    # An import and the twelve Sepolia blocks a send needs to confirm outlast the default five minutes.
     [Timeout]    10 minutes
     [Teardown]    Leave Sepolia
     Import Funded Ethereum Wallet
@@ -45,4 +45,5 @@ Ethereum Send Reaches History On Sepolia
     Go Home
     Open History
     ${hash}=    Wait Until Keyword Succeeds    60s    3s    New Ethereum Transaction Should Be Listed    ${previous}
-    Wait Until Keyword Succeeds    4 min    15s    Ethereum Transaction Should Be Confirmed    ${hash}
+    ${outcome}=    Wait Until Keyword Succeeds    4 min    15s    Ethereum Transaction Outcome    ${hash}
+    Should Be Empty    ${outcome}    msg=Transaction ${hash} ended as "${outcome}" instead of confirming.
