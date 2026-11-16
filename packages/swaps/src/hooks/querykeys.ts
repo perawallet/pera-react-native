@@ -44,8 +44,12 @@ export const swapQueryKeys = {
         [MODULE_PREFIX, 'order', { orderId, scope }] as const,
     sourceCost: (quoteId: string, scope: ChainScope) =>
         [MODULE_PREFIX, 'source-cost', { quoteId, scope }] as const,
-    distinctPairsHistory: (address: string, scope: ChainScope) =>
-        [MODULE_PREFIX, 'distinct-pairs-history', { address, scope }] as const,
+    distinctPairsHistory: (accounts: SwapAccountAddress[]) =>
+        [
+            MODULE_PREFIX,
+            'distinct-pairs-history',
+            { accounts, scope: accounts.at(0)?.scope ?? null },
+        ] as const,
 }
 
 /**

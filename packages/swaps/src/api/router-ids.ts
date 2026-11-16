@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { swapAdapterFor, swapChainAdapters } from '../chain-adapter'
-import type { SwapAssetRef } from '../models'
+import type { SwapAccountAddress, SwapAssetRef } from '../models'
 
 /** Reads a router asset id (CAIP-19) as a wallet asset; null when no swap chain can. */
 export type ResolveSwapAssetRef = (
@@ -68,3 +68,28 @@ export const routerChainIdOf = (scope: ChainScope): string => {
 /** The router's account id (CAIP-10) for `address` on `scope`. */
 export const routerAccountId = (scope: ChainScope, address: string): string =>
     `${routerChainIdOf(scope)}:${address}`
+
+/** {@link routerAccountId}, or null when the router has no id for `scope`'s network, e.g. a custom node. */
+export const routerAccountIdOrNull = (
+    scope: ChainScope,
+    address: string,
+): Nullable<string> => {
+    try {
+        return routerAccountId(scope, address)
+    } catch (error) {
+        if (error instanceof PeraServiceUnavailableError) return null
+        throw error
+    }
+}
+
+/** Reads a router account id (CAIP-10) as a wallet address; null for a chain this wallet doesn't run. */
+export const swapAccountAddressOf = (
+    routerAccount: string,
+): Nullable<SwapAccountAddress> => {
+    // CAIP-10 is `<caip2>:<address>`, and the CAIP-2 part holds a ':' of its own.
+    const separator = routerAccount.lastIndexOf(':')
+    if (separator <= 0) return null
+    const scope = scopeOfRouterChain(routerAccount.slice(0, separator))
+    const address = routerAccount.slice(separator + 1)
+    return scope && address ? { scope, address } : null
+}

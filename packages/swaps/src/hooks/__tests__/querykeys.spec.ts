@@ -28,7 +28,7 @@ describe('swaps/hooks/querykeys', () => {
                 mainnet,
             ),
             swapQueryKeys.historyInfinite(accounts),
-            swapQueryKeys.distinctPairsHistory('ADDR', mainnet),
+            swapQueryKeys.distinctPairsHistory(accounts),
             swapQueryKeys.order('order-1', mainnet),
         ]
 
@@ -51,9 +51,7 @@ describe('swaps/hooks/querykeys', () => {
             getInvalidateSwapHistoryPredicate({ queryKey } as unknown as Query)
 
         expect(matches(swapQueryKeys.historyInfinite(accounts))).toBe(true)
-        expect(
-            matches(swapQueryKeys.distinctPairsHistory('ADDR', mainnet)),
-        ).toBe(true)
+        expect(matches(swapQueryKeys.distinctPairsHistory(accounts))).toBe(true)
         expect(matches(swapQueryKeys.pairs(null, undefined, mainnet))).toBe(
             false,
         )

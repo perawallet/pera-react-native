@@ -10,33 +10,33 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import type {
-    AssetWithAccountBalance,
-    ChainAssetBalance,
-} from '@perawallet/wallet-core-accounts'
-import type {
-    AssetRef,
     ChainId,
+    AssetRef,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
+import { PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
-import { AccountAssetSelectionList } from '@modules/assets'
+import { AccountAssetItemView, AssetSelectionList } from '@modules/assets'
+import { scopedAssetKey } from '@utils/scopedAssetKey'
+import type { SwapPayHolding } from '@perawallet/wallet-core-swaps'
+import { useStyles } from './styles'
 import { useSwapFromAssetSelectionList } from './useSwapFromAssetSelectionList'
 
 export type SwapFromAssetSelectionListProps = {
     scope: ChainScope
     excludeAsset?: AssetRef
-    onAssetSelected: (asset: ChainAssetBalance) => void
+    onAssetSelected: (holding: SwapPayHolding) => void
     emptyResultTitle: string
     emptyResultBody: string
     emptyChainResultBody: string
 }
 
-const filterSwappable = (item: AssetWithAccountBalance) =>
-    isSwappableAsset(item.asset)
+const keyOf = (holding: SwapPayHolding) =>
+    scopedAssetKey(holding.scope, holding.assetId)
 
 export const SwapFromAssetSelectionList = ({
     scope,
@@ -46,35 +46,82 @@ export const SwapFromAssetSelectionList = ({
     emptyResultBody,
     emptyChainResultBody,
 }: SwapFromAssetSelectionListProps) => {
+    const styles = useStyles()
     const {
+        holdings,
+        isLoading,
+        isError,
+        searchFilter,
+        setSearchFilter,
+        debouncedSearchFilter,
         chainOptions,
         selectedChainId,
-        visibleChainIds,
         isChainShown,
         handleSelectChain,
         searchPlaceholder,
-    } = useSwapFromAssetSelectionList(scope)
+        networkLabelOf,
+    } = useSwapFromAssetSelectionList(scope, excludeAsset)
+
+    const renderItem = useCallback(
+        ({ item }: { item: SwapPayHolding }) => (
+            <AccountAssetItemView
+                onPress={() => onAssetSelected(item)}
+                style={styles.item}
+                accountBalance={item}
+                scope={item.scope}
+                subtitle={
+                    <PWText
+                        style={styles.networkLabel}
+                        numberOfLines={1}
+                    >
+                        {networkLabelOf(item.scope.chainId)}
+                    </PWText>
+                }
+                // A restricted holding can't be transferred: it stays listed so
+                // the user knows it exists, but can't be picked.
+                disabled={item.restriction !== null}
+                showFrozenBadge={item.restriction !== null}
+                showChainBadge={isChainShown}
+                testID={
+                    isChainShown
+                        ? `asset-list-item-${item.scope.chainId}-${item.assetId}`
+                        : `asset-list-item-${item.assetId}`
+                }
+            />
+        ),
+        [isChainShown, onAssetSelected, networkLabelOf, styles],
+    )
+
+    const renderListEmpty = () => {
+        if (debouncedSearchFilter) {
+            return (
+                <EmptyView
+                    title={emptyResultTitle}
+                    body={emptyResultBody}
+                />
+            )
+        }
+        if (isError) return undefined
+        return selectedChainId !== null ? (
+            <EmptyView
+                title={emptyResultTitle}
+                body={emptyChainResultBody}
+            />
+        ) : undefined
+    }
 
     return (
-        <AccountAssetSelectionList
-            chainIds={visibleChainIds}
-            onAssetSelected={onAssetSelected}
-            isVisible
-            excludeAsset={excludeAsset}
-            filterAsset={filterSwappable}
-            inBottomSheet
-            isChainShown={isChainShown}
+        <AssetSelectionList
+            data={holdings}
+            renderItem={renderItem}
+            keyExtractor={keyOf}
+            searchValue={searchFilter}
+            onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}
-            emptyResultTitle={emptyResultTitle}
-            emptyResultBody={emptyResultBody}
-            emptyView={
-                selectedChainId !== null ? (
-                    <EmptyView
-                        title={emptyResultTitle}
-                        body={emptyChainResultBody}
-                    />
-                ) : undefined
-            }
+            isLoading={isLoading}
+            skeletonCount={3}
+            inBottomSheet
+            ListEmptyComponent={renderListEmpty()}
             searchAccessory={
                 chainOptions.length > 0 ? (
                     <FilterSelection<Nullable<ChainId>>

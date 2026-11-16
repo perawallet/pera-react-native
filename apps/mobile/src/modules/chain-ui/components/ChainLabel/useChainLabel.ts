@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -18,12 +19,19 @@ export type UseChainLabelResult = {
     label: string
 }
 
-export const useChainLabel = (chainId: ChainId): UseChainLabelResult => {
+/** Names a chain's network ("Ethereum network") for any chain, such as one per list row. */
+export const useChainNetworkLabel = (): ((chainId: ChainId) => string) => {
     const { t } = useLanguage()
+    return useCallback(
+        (chainId: ChainId) =>
+            t('account_details.assets.chain_network', {
+                chain: chainDisplayNameOf(chainId) ?? chainId,
+            }),
+        [t],
+    )
+}
 
-    return {
-        label: t('account_details.assets.chain_network', {
-            chain: chainDisplayNameOf(chainId) ?? chainId,
-        }),
-    }
+export const useChainLabel = (chainId: ChainId): UseChainLabelResult => {
+    const labelOf = useChainNetworkLabel()
+    return { label: labelOf(chainId) }
 }

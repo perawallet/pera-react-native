@@ -11,16 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import {
-    addressOn,
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { CHAIN_IDS } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
-    isSwapChain,
+    useSwapAccountsAddresses,
     type SwapAccountAddress,
 } from '@perawallet/wallet-core-swaps'
 
@@ -28,27 +22,10 @@ import {
 export const useSwapAccountAddresses = (
     account: Nullable<WalletAccount>,
 ): SwapAccountAddress[] => {
-    const chainIds = useMemo(
-        () =>
-            account
-                ? CHAIN_IDS.filter(
-                      chainId =>
-                          isSwapChain(chainId) &&
-                          !!chainAccountOf(account, chainId),
-                  )
-                : [],
-        [account],
-    )
-    const scopes = useSelectedScopes(chainIds)
-
+    const accounts = useMemo(() => (account ? [account] : []), [account])
+    const addresses = useSwapAccountsAddresses(accounts)
     return useMemo(
-        () =>
-            account
-                ? scopes.flatMap(scope => {
-                      const address = addressOn(account, scope)
-                      return address ? [{ scope, address }] : []
-                  })
-                : [],
-        [account, scopes],
+        () => addresses.map(({ scope, address }) => ({ scope, address })),
+        [addresses],
     )
 }

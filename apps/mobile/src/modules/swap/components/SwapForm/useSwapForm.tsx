@@ -19,6 +19,7 @@ import {
     ownAddressOf,
     useAccountBalancesInvalidator,
     useSelectedAccount,
+    useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -129,9 +130,11 @@ export const useSwapForm = (
         toAsset,
         slippage,
         isLocalCurrencyInput,
+        pairAccountId,
         setFromAsset,
         setToAsset,
         setSourceAsset,
+        setAccountPair,
         setSlippage,
         setIsLocalCurrencyInput,
         resetAssetPair,
@@ -142,6 +145,7 @@ export const useSwapForm = (
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const selectedAccount = useSelectedAccount()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const selectedAddress = selectedAccount
         ? addressOn(selectedAccount, scope)
         : undefined
@@ -282,8 +286,15 @@ export const useSwapForm = (
         if (previousAddressRef.current === address) return
         previousAddressRef.current = address
         resetAmounts()
-        resetAssetPair()
-    }, [selectedAddress, resetAmounts, resetAssetPair])
+        // A pick that also chose the account made the pair for it.
+        if (selectedAccount?.id !== pairAccountId) resetAssetPair()
+    }, [
+        selectedAddress,
+        selectedAccount?.id,
+        pairAccountId,
+        resetAmounts,
+        resetAssetPair,
+    ])
 
     // The typed amount is denominated in the pay asset, so it cannot survive
     // the pay asset changing: quoting the old number against the new asset's
@@ -515,6 +526,26 @@ export const useSwapForm = (
 
     const applyPaySelection = useCallback(
         (selection: SwapAssetSelection) => {
+            if (
+                selection.accountId &&
+                selection.accountId !== selectedAccount?.id
+            ) {
+                // The receive side survives an account switch on the same
+                // network, as it does a new pay asset on the same account.
+                const isSameScope =
+                    toScopeKey(selection.scope) === toScopeKey(scope)
+                setAccountPair({
+                    accountId: selection.accountId,
+                    chainId: selection.scope.chainId,
+                    fromAsset: selection.assetId,
+                    ...(isSameScope && {
+                        toAsset,
+                        toAssetScope: isCrossChain ? receiveScope : null,
+                    }),
+                })
+                setSelectedAccountId(selection.accountId)
+                return
+            }
             if (toScopeKey(selection.scope) !== toScopeKey(scope)) {
                 setSourceAsset(selection.scope.chainId, selection.assetId)
                 return
@@ -528,7 +559,19 @@ export const useSwapForm = (
             // too so no frame shows the old amount against the new asset.
             resetAmounts()
         },
-        [scope, setSourceAsset, fromAsset, setFromAsset, resetAmounts],
+        [
+            scope,
+            toAsset,
+            isCrossChain,
+            receiveScope,
+            selectedAccount?.id,
+            setAccountPair,
+            setSelectedAccountId,
+            setSourceAsset,
+            fromAsset,
+            setFromAsset,
+            resetAmounts,
+        ],
     )
 
     const handleOpenPayAssetSelection = useCallback(async () => {

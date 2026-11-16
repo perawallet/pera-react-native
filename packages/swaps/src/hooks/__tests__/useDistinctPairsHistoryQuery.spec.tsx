@@ -21,6 +21,7 @@ import { fetchSwapHistory } from '../../api'
 import { makeSwapHistoryItem } from '../../__tests__/swapHistoryFixture'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ACCOUNT = { scope: SCOPE, address: 'ADDRESS' }
 
 vi.mock('../../api', async importOriginal => ({
     ...(await importOriginal<typeof import('../../api')>()),
@@ -59,7 +60,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         })
 
         const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
+            () => useDistinctPairsHistoryQuery([ACCOUNT]),
             { wrapper: createWrapper() },
         )
 
@@ -78,6 +79,112 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         )
     })
 
+    test('keeps who paid each pair', async () => {
+        const paidBy = { scope: SCOPE, address: 'SECOND' }
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: [
+                makeSwapHistoryItem({ orderId: 'a', sourceAccount: paidBy }),
+            ],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery([ACCOUNT]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(result.current.data?.[0].sourceAccount).toEqual(paidBy)
+    })
+
+    test('names the accounts in batches and merges their pairs newest first', async () => {
+        const accounts = Array.from({ length: 25 }, (_, index) => ({
+            scope: SCOPE,
+            address: `ADDR${index}`,
+        }))
+        vi.mocked(fetchSwapHistory)
+            .mockResolvedValueOnce({
+                results: [
+                    makeSwapHistoryItem({
+                        orderId: 'older',
+                        createdAt: '2026-10-01T10:00:00Z',
+                    }),
+                ],
+                next: null,
+            })
+            .mockResolvedValueOnce({
+                results: [
+                    makeSwapHistoryItem({
+                        orderId: 'newer',
+                        assetOut: makeSwapHistoryItem().assetIn,
+                        assetIn: makeSwapHistoryItem().assetOut,
+                        createdAt: '2026-10-02T10:00:00Z',
+                    }),
+                ],
+                next: null,
+            })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery(accounts),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        const batches = vi
+            .mocked(fetchSwapHistory)
+            .mock.calls.map(([params]) => params.accounts.length)
+        expect(batches).toEqual([20, 5])
+        expect(result.current.data?.map(pair => pair.swapDatetime)).toEqual([
+            '2026-10-02T10:00:00Z',
+            '2026-10-01T10:00:00Z',
+        ])
+    })
+
+    test("keeps the other batches' pairs when one fails", async () => {
+        const accounts = Array.from({ length: 21 }, (_, index) => ({
+            scope: SCOPE,
+            address: `ADDR${index}`,
+        }))
+        vi.mocked(fetchSwapHistory)
+            .mockRejectedValueOnce(new Error('boom'))
+            .mockResolvedValueOnce({
+                results: [makeSwapHistoryItem({ orderId: 'a' })],
+                next: null,
+            })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery(accounts),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(result.current.isError).toBe(false)
+        expect(result.current.data).toHaveLength(1)
+    })
+
+    test('leaves out an account on a network the router has no id for, keeping the rest', async () => {
+        const customNode = {
+            scope: { chainId: 'algorand', networkId: 'custom' } as ChainScope,
+            address: 'CUSTOM',
+        }
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: [makeSwapHistoryItem({ orderId: 'a' })],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery([customNode, ACCOUNT]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(fetchSwapHistory).toHaveBeenCalledWith(
+            expect.objectContaining({ accounts: ['fake-a:main:ADDRESS'] }),
+            SCOPE,
+        )
+        expect(result.current.data).toHaveLength(1)
+    })
+
     test('leaves out orders the wallet did not fund itself', async () => {
         vi.mocked(fetchSwapHistory).mockResolvedValue({
             results: [
@@ -87,7 +194,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         })
 
         const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
+            () => useDistinctPairsHistoryQuery([ACCOUNT]),
             { wrapper: createWrapper() },
         )
 
@@ -95,8 +202,8 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         expect(result.current.data).toEqual([])
     })
 
-    test('is disabled without an address', () => {
-        renderHook(() => useDistinctPairsHistoryQuery('', SCOPE), {
+    test('is disabled without an account', () => {
+        renderHook(() => useDistinctPairsHistoryQuery([]), {
             wrapper: createWrapper(),
         })
 
@@ -107,7 +214,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         vi.mocked(fetchSwapHistory).mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(
-            () => useDistinctPairsHistoryQuery('ADDRESS', SCOPE),
+            () => useDistinctPairsHistoryQuery([ACCOUNT]),
             { wrapper: createWrapper() },
         )
 

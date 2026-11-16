@@ -4266,6 +4266,10 @@
         "receiving_account": {
             "title": "Compte de réception",
             "label": "Recevoir sur"
+        },
+        "source_account": {
+            "title": "Sélectionner un compte",
+            "subtitle": "Vous avez <0>{{accounts}} comptes</0> avec cet actif. Choisissez-en un pour continuer."
         }
     },
     "onramp": {

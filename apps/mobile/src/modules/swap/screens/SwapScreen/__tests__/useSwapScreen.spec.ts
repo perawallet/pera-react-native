@@ -50,6 +50,7 @@ const {
         signers: [] as Account[],
         swapChainAccounts: new Set<string>(),
         sourceChainId: null as string | null,
+        pairAccountId: null as string | null,
         swapScope: null as { chainId: string; networkId: string } | null,
         isIntroductionSeen: false,
         isFocused: true,
@@ -70,6 +71,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
             sourceChainId: string | null
             setSourceChainId: typeof mockSetSourceChainId
             setReceivingAccountId: typeof mockSetReceivingAccountId
+            pairAccountId: string | null
         }) => unknown,
     ) =>
         selector({
@@ -78,6 +80,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
             sourceChainId: state.sourceChainId,
             setSourceChainId: mockSetSourceChainId,
             setReceivingAccountId: mockSetReceivingAccountId,
+            pairAccountId: state.pairAccountId,
         }),
     useSwapSourceScope: (account: Account | null) =>
         account && state.swapChainAccounts.has(account.id)
@@ -138,6 +141,7 @@ describe('useSwapScreen', () => {
         state.isIntroductionSeen = false
         state.isFocused = true
         state.sourceChainId = null
+        state.pairAccountId = null
         state.swapScope = null
         mockSetSourceChainId.mockImplementation((chainId: string) => {
             state.sourceChainId = chainId
@@ -230,6 +234,17 @@ describe('useSwapScreen', () => {
         rerender()
 
         expect(mockSetSourceChainId).toHaveBeenCalledWith(null)
+    })
+
+    it('keeps a pair picked together with the account it switches to, even across chains', () => {
+        const { rerender } = renderHook(() => useSwapScreen())
+
+        state.pairAccountId = 'acc-2'
+        state.selected = { id: 'acc-2' }
+        state.swapScope = OTHER_SCOPE
+        rerender()
+
+        expect(mockSetSourceChainId).not.toHaveBeenCalled()
     })
 
     it('leaves the pair to the store when the source chain moved', () => {

@@ -54,6 +54,18 @@ export const ETHEREUM_SENDER: WalletAccount = {
     name: 'Eth sender',
 }
 
+// A second HD account holding at RECEIVER, for flows that choose between accounts.
+export const ETHEREUM_SECOND: WalletAccount = {
+    id: 'eth-second',
+    custody: {
+        kind: 'local',
+        seed: SeedScheme.Bip39,
+        hd: { account: 1, keyIndex: 0 },
+    },
+    chains: { ethereum: { address: RECEIVER, keyPairId: 'eth-key-2' } },
+    name: 'Second',
+}
+
 export const ALGORAND_SENDER: WalletAccount = {
     id: 'algo-sender',
     custody: { kind: 'local', seed: null },

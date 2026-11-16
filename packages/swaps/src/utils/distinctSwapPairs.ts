@@ -38,6 +38,7 @@ export const distinctSwapPairs = (
         pairs.set(pairKey, {
             assetIn: item.assetIn,
             assetOut: item.assetOut,
+            sourceAccount: item.sourceAccount,
             swapDatetime: item.createdAt,
             pairKey,
         })
