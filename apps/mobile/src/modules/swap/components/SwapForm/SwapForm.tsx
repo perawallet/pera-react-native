@@ -52,6 +52,8 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
         hasInsufficientBalance,
         isLocalCurrencyInput,
         handleRetryQuote,
+        canUseMinimum,
+        handleUseMinimum,
         handlePayAmountChange,
         handlePayAmountFocus,
         handleSwapDirection,
@@ -145,6 +147,7 @@ export const SwapForm = ({ scope, initialPayAmount }: SwapFormProps) => {
                     receiveScope={receiveScope}
                     receiveAssetId={receiveAssetId}
                     onRetry={handleRetryQuote}
+                    onUseMinimum={canUseMinimum ? handleUseMinimum : undefined}
                 />
             )}
 

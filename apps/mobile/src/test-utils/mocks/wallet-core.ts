@@ -120,7 +120,12 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { formatSwapRate, swapRate } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapQuoteHelpers')
     >('@packages/swaps/src/utils/swapQuoteHelpers')
-    const { swapFeeOf } = await vi.importActual<
+    const {
+        swapFeeOf,
+        swapNetworkFeeUsd,
+        swapNetworkFeeSharePercent,
+        HIGH_NETWORK_FEE_SHARE_PERCENT,
+    } = await vi.importActual<
         typeof import('@packages/swaps/src/utils/swapFees')
     >('@packages/swaps/src/utils/swapFees')
     const { isSwapOrderSettled } = await vi.importActual<
@@ -140,6 +145,9 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         formatSwapRate,
         swapRate,
         swapFeeOf,
+        swapNetworkFeeUsd,
+        swapNetworkFeeSharePercent,
+        HIGH_NETWORK_FEE_SHARE_PERCENT,
         isSwapOrderSettled,
         scopeOfSwapAsset: ({
             chainId,

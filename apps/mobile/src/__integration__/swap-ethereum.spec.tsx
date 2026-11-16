@@ -258,6 +258,13 @@ const routerAsset = (assetId: string, unitName: string, decimals: number) => ({
     cross_chain_asset_group: null,
 })
 
+type RouterFee = {
+    kind: 'pera' | 'network' | 'provider'
+    asset_id: string
+    amount: string
+    usd_value: Nullable<string>
+}
+
 const tokenToEtherOffer = {
     quote_id: 'quote-eth-1',
     aggregator: 'xo-v4',
@@ -271,9 +278,9 @@ const tokenToEtherOffer = {
     source_amount: TOKEN_UNITS.toString(),
     destination_amount_expected: '5000000000000000',
     destination_amount_minimum: '4900000000000000',
-    source_amount_usd_value: null,
-    destination_amount_usd_value: null,
-    fees: [],
+    source_amount_usd_value: null as Nullable<string>,
+    destination_amount_usd_value: null as Nullable<string>,
+    fees: [] as RouterFee[],
     funding_method: 'wallet_transaction',
     expires_at: null,
     deposit_address: null,
@@ -400,7 +407,7 @@ const startHost = async (): Promise<HostApi> => {
 }
 
 /** Takes a token swap from the real form as far as the open confirmation. */
-const openConfirmation = async () => {
+const openConfirmation = async (offer = tokenToEtherOffer) => {
     selectSender(ETHEREUM_SENDER)
     await seedSenderEther('10000000000000000000')
     await insertAssetHolding({
@@ -411,9 +418,7 @@ const openConfirmation = async () => {
     })
     useSwapsStore.getState().setFromAsset(TOKEN)
     useSwapsStore.getState().setToAsset(ETH_ASSET)
-    server.use(
-        mockCreateSwapQuotes({ response: { results: [tokenToEtherOffer] } }),
-    )
+    server.use(mockCreateSwapQuotes({ response: { results: [offer] } }))
     mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
     spyOnSwapSubmissionAndReports()
     renderWithNavigation(SwapFormHost, 'SwapFormHost')
@@ -548,7 +553,32 @@ describe('Flow: Swap from an Ethereum account', () => {
         ).toBe(true)
     })
 
-    it('Given the router says the amount is too small, when the quote is refused, then the form says the amount is too small and offers neither Swap nor Retry', async () => {
+    it('Given a network fee above 10% of the swap, when the confirmation opens, then it warns about the fee and can still be confirmed', async () => {
+        fakeNode()
+        await openConfirmation({
+            ...tokenToEtherOffer,
+            source_amount_usd_value: '1',
+            fees: [
+                {
+                    kind: 'network',
+                    asset_id: 'eip155:1/slip44:60',
+                    amount: '1000000000000000',
+                    usd_value: '5',
+                },
+            ],
+        })
+
+        expect(
+            await screen.findByTestId(
+                'swap-confirm-high-network-fee',
+                undefined,
+                FORM_TIMEOUT,
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('swap-confirm-insufficient-fee')).toBeNull()
+    })
+
+    it('Given the router says the amount is too small, when the quote is refused, then the form names the minimum, offers neither Swap nor Retry, and Use minimum fills it', async () => {
         await typeAmountOnTokenToEtherForm()
         server.use(
             mockCreateSwapQuotes({
@@ -568,9 +598,18 @@ describe('Flow: Swap from an Ethereum account', () => {
             undefined,
             FORM_TIMEOUT,
         )
-        expect(error.textContent).toBe('swap.quote.amount_too_low')
+        expect(error.textContent).toContain('swap.quote.amount_too_low')
         expect(screen.queryByTestId('swap-button')).toBeNull()
         expect(screen.queryByTestId('swap-quote-retry')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('swap-quote-use-minimum'))
+
+        await waitFor(() =>
+            expect(
+                (screen.getByTestId('swap-pay-input') as HTMLInputElement)
+                    .value,
+            ).toBe('0.002'),
+        )
     })
 
     it('Given the route is switched off, when the user taps Retry after it returns, then the error clears and the swap can be confirmed', async () => {

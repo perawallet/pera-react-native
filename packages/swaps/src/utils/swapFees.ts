@@ -16,7 +16,13 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Maybe,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import type { SwapSourceCost } from '../chain-adapter'
 import type { SwapFee, SwapFeeKind, SwapQuote } from '../models'
 
 /** The quote's first fee of `kind`; with `scope`, the first charged there. */
@@ -41,4 +47,43 @@ export const peraFeeInSourceAsset = (quote: SwapQuote): Decimal => {
         assetRefKey(fee.asset) === assetRefKey(quote.request.sourceAsset)
         ? fee.amount
         : new Decimal(0)
+}
+
+/** Percent of a swap's USD value above which its network fee is worth a warning. */
+export const HIGH_NETWORK_FEE_SHARE_PERCENT = new Decimal(10)
+
+/**
+ * The source chain's network fee in USD. The chain's own estimate is what the
+ * user pays, so it wins once the native coin has a price; otherwise the
+ * quote's USD figure for its source-chain fee. Null when neither is known.
+ */
+export const swapNetworkFeeUsd = ({
+    quote,
+    scope,
+    sourceCost,
+    nativeUsdPrice,
+}: {
+    quote: SwapQuote
+    scope: ChainScope
+    sourceCost: Nullable<SwapSourceCost>
+    nativeUsdPrice: Maybe<Decimal>
+}): Nullable<Decimal> => {
+    if (sourceCost && nativeUsdPrice?.greaterThan(0)) {
+        return baseUnitsToDisplayUnits(
+            sourceCost.networkFee,
+            sourceCost.nativeDecimals,
+        ).mul(nativeUsdPrice)
+    }
+    const quotedUsd = swapFeeOf(quote, 'network', scope)?.usdValue
+    return quotedUsd ? new Decimal(quotedUsd) : null
+}
+
+/** `networkFeeUsd` as a percent of the swap's USD value; null when the swap has no value. */
+export const swapNetworkFeeSharePercent = (
+    quote: SwapQuote,
+    networkFeeUsd: Decimal,
+): Nullable<Decimal> => {
+    if (!quote.amountInUsdValue) return null
+    const swapUsd = new Decimal(quote.amountInUsdValue)
+    return swapUsd.greaterThan(0) ? networkFeeUsd.div(swapUsd).mul(100) : null
 }

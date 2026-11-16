@@ -69,6 +69,8 @@ type UseSwapQuotesResult = {
      * Null while quoting or once offers arrive.
      */
     quoteFailure: Nullable<SwapQuoteFailure>
+    /** Base units of the pay asset: the router's last floor for this pair, kept across edits until an amount under it is quoted. */
+    pairMinimum: Nullable<Decimal>
     isQuoteError: boolean
     /** Clears the quotes and resets the underlying mutation. */
     reset: () => void
@@ -107,10 +109,18 @@ export const useSwapQuotes = ({
 
     const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
     const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
-    // Tied to the amount it answered: during the debounce after an edit the
-    // old failure (and its Retry) must not sit next to the new amount.
-    const [failed, setFailed] =
-        useState<Nullable<{ failure: SwapQuoteFailure; amount: Decimal }>>(null)
+    // Tied to the amount and pair it answered: during the debounce after an
+    // edit, or the render after a pair change, the old failure (and its Retry)
+    // must not sit next to the new inputs.
+    const [failed, setFailed] = useState<
+        Nullable<{
+            failure: SwapQuoteFailure
+            amount: Decimal
+            pairKey: string
+        }>
+    >(null)
+    const [knownMinimum, setKnownMinimum] =
+        useState<Nullable<{ amount: Decimal; pairKey: string }>>(null)
 
     // Both assets must exist on the active network before quoting — a pair
     // seeded on another network (e.g. mainnet USDC after switching to
@@ -230,6 +240,7 @@ export const useSwapQuotes = ({
                     setFailed({
                         failure: { kind: 'no-route' },
                         amount: debouncedPayAmount,
+                        pairKey,
                     })
                     setAllQuotes([])
                     setQuotedAmount(null)
@@ -238,16 +249,24 @@ export const useSwapQuotes = ({
 
                 setAllQuotes(result)
                 setQuotedAmount(debouncedPayAmount)
+                // The floor moves with price; an accepted amount under it proves it stale.
+                setKnownMinimum(known =>
+                    known?.pairKey === pairKey &&
+                    amountInBaseUnits.lessThan(known.amount)
+                        ? null
+                        : known,
+                )
                 Keyboard.dismiss()
             } catch (error) {
                 if (cancelled) return
                 if (isNotFoundError(error)) {
                     setNotFoundPair(pairKey)
                 } else {
-                    setFailed({
-                        failure: swapQuoteFailureOf(error),
-                        amount: debouncedPayAmount,
-                    })
+                    const failure = swapQuoteFailureOf(error)
+                    setFailed({ failure, amount: debouncedPayAmount, pairKey })
+                    if (failure.kind === 'amount-too-low' && failure.minimum) {
+                        setKnownMinimum({ amount: failure.minimum, pairKey })
+                    }
                 }
                 setAllQuotes([])
                 setQuotedAmount(null)
@@ -281,9 +300,13 @@ export const useSwapQuotes = ({
     ])
 
     const failureForAmount =
-        failed !== null && isDecimalEqual(payAmount, failed.amount)
+        failed !== null &&
+        failed.pairKey === pairKey &&
+        isDecimalEqual(payAmount, failed.amount)
             ? failed.failure
             : null
+    const pairMinimum =
+        knownMinimum?.pairKey === pairKey ? knownMinimum.amount : null
     const quoteFailure: Nullable<SwapQuoteFailure> =
         isPairUnsupported || notFoundPair === pairKey
             ? UNSUPPORTED_FAILURE
@@ -303,6 +326,7 @@ export const useSwapQuotes = ({
         quotedAmount,
         isQuoteFetching,
         quoteFailure,
+        pairMinimum,
         isQuoteError,
         reset,
         refresh,

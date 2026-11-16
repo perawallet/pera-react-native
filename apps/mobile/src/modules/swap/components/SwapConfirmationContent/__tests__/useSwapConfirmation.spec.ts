@@ -42,6 +42,11 @@ const { STYLES, mockUseAssetsQuery } = vi.hoisted(() => ({
 
 vi.mock('../styles', () => ({ useStyles: () => STYLES }))
 
+const mockUseSwapNetworkFeeWarning = vi.hoisted(() => vi.fn())
+vi.mock('../useSwapNetworkFeeWarning', () => ({
+    useSwapNetworkFeeWarning: mockUseSwapNetworkFeeWarning,
+}))
+
 const mockHaptics = vi.hoisted(() => ({ warning: vi.fn() }))
 
 vi.mock('@hooks/useHaptics', () => ({
@@ -111,6 +116,7 @@ const mockCurrency = (usdToPreferred: (usd: Decimal) => Decimal | null) =>
 describe('useSwapConfirmation', () => {
     beforeEach(() => {
         mockHaptics.warning.mockClear()
+        mockUseSwapNetworkFeeWarning.mockReturnValue(null)
         mockUseAssetsQuery.mockReset()
         mockUseAssetsQuery.mockImplementation((_scope, ids: string[]) => ({
             data: new Map(ids.map(id => [id, ASSETS[id]])),
@@ -152,6 +158,25 @@ describe('useSwapConfirmation', () => {
             const { result } = renderConfirmation(makeQuote())
 
             expect(result.current.needsSpendApproval).toBe(true)
+        })
+
+        it('passes the estimate and its loading state to the high-fee warning', () => {
+            vi.mocked(useSwapSourceCostQuery).mockReturnValue({
+                sourceCost: SOURCE_COST,
+                isLoading: true,
+            })
+            mockUseSwapNetworkFeeWarning.mockReturnValue('high fee')
+            const quote = makeQuote()
+
+            const { result } = renderConfirmation(quote)
+
+            expect(mockUseSwapNetworkFeeWarning).toHaveBeenCalledWith({
+                quote,
+                scope: SCOPE,
+                sourceCost: SOURCE_COST,
+                isSourceCostLoading: true,
+            })
+            expect(result.current.highNetworkFeeMessage).toBe('high fee')
         })
 
         it('names the shortfall so confirmation can stay off', () => {
