@@ -57,6 +57,8 @@ const snapshot = (
     isLoadFailed: false,
     isLoadUnavailable: false,
     isLoadIntegrityBlocked: false,
+    isRefreshFailed: false,
+    isRefreshUnavailable: false,
     hasNextPage: false,
     isSearchPaused: false,
     isRetrying: false,

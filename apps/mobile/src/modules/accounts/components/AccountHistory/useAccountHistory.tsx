@@ -10,62 +10,39 @@
  limitations under the License
  */
 
-import { useMemo, useCallback, useState, type ReactElement } from 'react'
+import { useCallback, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { FilterOption } from '@components/FilterSelection'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
-    chainDisplayNameOf,
-    useChainCapability,
-    useIsCapabilityRestricted,
-} from '@perawallet/wallet-core-chain-shared'
-import { useErrorToast } from '@hooks/useErrorToast'
-import { useLanguage } from '@hooks/useLanguage'
-import {
-    CSV_MIME_TYPE,
     historyItemGroupToOpen,
-    useCsvExportMutation,
     type SuspectedPoisoning,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { shareFile } from '@utils/shareFile'
-import {
-    trackEvent,
-    AccountDetailsEvent,
-    AnalyticsMetadataKey,
-} from '@analytics'
-import { useBottomSheet } from '@modules/bottom-sheet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { FilterOption } from '@components/FilterSelection'
+import { PWLoadingIndicator, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkStatus } from '@modules/network'
-import {
-    TransactionFilter,
-    TransactionsFilterContent,
-    type CustomDateRange,
-    type TransactionsFilterResult,
-} from '../TransactionsFilterContent'
-import type { AppStackParamList } from '@routes/types'
-import { getFilterTimes } from './utils'
 import {
     TransactionHistoryRow,
     TransactionHistorySearchOlder,
     type HistoryFeedProps,
     type TransactionListRow,
 } from '@modules/transactions'
-import { useAccountHistoryRows } from './useAccountHistoryRows'
-import {
-    PeraServiceUnavailableError,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { PWLoadingIndicator, PWView } from '@components/core'
+import type { AppStackParamList } from '@routes/types'
+import type {
+    CustomDateRange,
+    TransactionFilter,
+} from '../TransactionsFilterContent'
 import { useStyles } from './styles'
+import { useAccountHistoryCsvExport } from './useAccountHistoryCsvExport'
+import { useAccountHistoryFilter } from './useAccountHistoryFilter'
+import { useAccountHistoryRows } from './useAccountHistoryRows'
 
-/**
- * Return type for useAccountHistory hook.
- */
 export type UseAccountHistoryResult = {
-    /** Date headers and transaction rows, flattened for a recycling list */
     rows: TransactionListRow[]
-    /** Whether initial data is loading */
     isLoading: boolean
     /** Whether to render the cold-start skeleton (no read has resolved yet) */
     isInitialLoad: boolean
@@ -81,17 +58,11 @@ export type UseAccountHistoryResult = {
     /** The automatic search stopped after a run of empty pages, rows loaded or not; see `handleSearchOlder`. */
     isSearchPaused: boolean
     handleSearchOlder: () => void
-    /** Whether more data is being fetched */
     isFetchingNextPage: boolean
-    /** Whether there was an error */
     isError: boolean
-    /** Error if one occurred */
     error: Nullable<Error>
-    /** Whether there are more pages */
     hasNextPage: boolean
-    /** Function to load more transactions */
     handleLoadMore: () => void
-    /** Function to refresh the list */
     handleRefresh: () => void
     /** Renders one transaction row for the list. */
     renderItem: (params: { item: TransactionListRow }) => ReactElement
@@ -99,9 +70,7 @@ export type UseAccountHistoryResult = {
     renderFooter: () => Nullable<ReactElement>
     /** Opens the filter sheet. */
     handleFilterPress: () => void
-    /** Whether a refresh is in flight */
     isRefreshing: boolean
-    /** Whether data is empty */
     isEmpty: boolean
     /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
@@ -113,8 +82,10 @@ export type UseAccountHistoryResult = {
     isMerged: boolean
     /** One per network on a merged history; mount a `TransactionHistoryFeed` for each. */
     historyFeeds: HistoryFeedProps[]
-    /** Networks a merged history couldn't read while the others' rows show; retried by `handleRetry`. */
+    /** Networks that couldn't be read while rows show; retried by `handleRetry`. */
     failedNetworkNames: string[]
+    /** False on a network without the service, where a retry can only fail again. */
+    isFailedRetryable: boolean
     /** What an empty history says, naming the network when narrowed to one. */
     emptyBody: string
     /**
@@ -124,46 +95,24 @@ export type UseAccountHistoryResult = {
      * has to come from the network store instead.
      */
     isOfflineEmpty: boolean
-    /** Function to export transaction history to CSV */
     handleExportCsv: () => void
-    /** Whether CSV export is in progress */
     isExportingCsv: boolean
-    /** Whether the CSV export action should be offered to the user */
     isCsvExportVisible: boolean
-
-    /** Current active filter */
     activeFilter: TransactionFilter
-    /** Current custom range if active */
     customRange?: CustomDateRange
-    /** Function to open the filter bottom sheet */
     handleOpenFilter: () => Promise<void>
-    /** Function to handle pressing a transaction item */
     handleTransactionPress: (transaction: TransactionHistoryItem) => void
     /** Keyed by transaction id. */
     suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
 }
 
-/**
- * Hook that manages the transaction history state and logic for AccountHistory.
- *
- * Extracts all complex logic from the component following the component-level
- * hook pattern described in the project rules.
- */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
 
-    const [activeFilter, setActiveFilter] = useState<TransactionFilter>(
-        TransactionFilter.AllTime,
-    )
-    const [customRange, setCustomRange] = useState<CustomDateRange>()
-    const { request: requestBottomSheet } = useBottomSheet()
-
-    const { afterTime, beforeTime } = useMemo(
-        () => getFilterTimes(activeFilter, customRange),
-        [activeFilter, customRange],
-    )
+    const { activeFilter, customRange, afterTime, beforeTime, openFilter } =
+        useAccountHistoryFilter()
 
     const {
         rows,
@@ -180,6 +129,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isLoadFailed,
         isLoadUnavailable,
         isLoadIntegrityBlocked,
+        isRefreshUnavailable,
         suspectedPoisoningById,
         scope,
         accountAddress,
@@ -198,69 +148,20 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     // The event needs one chain, so on All it names the account's own; a
     // filter there covers every network.
-    const handleOpenFilter = useCallback(async () => {
-        trackEvent(AccountDetailsEvent.TransactionFilter, {
-            [AnalyticsMetadataKey.ChainId]: scope.chainId,
-        })
-        const result = await requestBottomSheet<TransactionsFilterResult>({
-            contents: (
-                <TransactionsFilterContent
-                    activeFilter={activeFilter}
-                    initialCustomRange={customRange}
-                />
-            ),
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-        if (!result) return
-        setActiveFilter(result.filter)
-        if (result.customRange) {
-            setCustomRange(result.customRange)
-        }
-    }, [requestBottomSheet, activeFilter, customRange, scope.chainId])
+    const handleOpenFilter = useCallback(
+        () => openFilter(scope.chainId),
+        [openFilter, scope.chainId],
+    )
 
     const { t } = useLanguage()
     const styles = useStyles()
-    const { showError } = useErrorToast()
-
-    const {
-        exportCsv,
-        isLoading: isExportingCsv,
-        isUnavailableOnNetwork,
-    } = useCsvExportMutation({
-        scope,
-        onSuccess: result => {
-            void (async () => {
-                try {
-                    await shareFile(result.filename, result.csvContent, {
-                        mimeType: CSV_MIME_TYPE,
-                    })
-                } catch (error) {
-                    showError(error, t('errors.general.title'))
-                }
-            })()
-        },
-        onError: error => {
-            showError(error, t('errors.general.title'))
-        },
-    })
-
-    const handleExportCsv = useCallback(() => {
-        trackEvent(AccountDetailsEvent.TransactionDownload, {
-            [AnalyticsMetadataKey.ChainId]: scope.chainId,
+    const { handleExportCsv, isExportingCsv, isCsvExportVisible } =
+        useAccountHistoryCsvExport({
+            scope,
+            accountAddress,
+            transactionCount,
+            isMerged,
         })
-        // Guarding the request would silence's central toast too, so
-        // the reason has to be raised here or the button would do nothing.
-        if (isUnavailableOnNetwork) {
-            showError(
-                new PeraServiceUnavailableError(scope),
-                t('common.network_unavailable.title'),
-            )
-            return
-        }
-        if (accountAddress) {
-            exportCsv({ accountAddress })
-        }
-    }, [accountAddress, exportCsv, isUnavailableOnNetwork, scope, showError, t])
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
@@ -304,24 +205,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         !isSearchPaused &&
         rows.length === 0 &&
         (!isFetched || hasNextPage)
-    // CSV export is only meaningful when there are transactions to export.
-    // The Pera export-history endpoint returns 404 for empty histories, so
-    // hiding the button avoids a guaranteed-failure user action. Gating on
-    // `transactionCount > 0` rather than `!isEmpty` also keeps the button
-    // hidden during the initial load (when results may still end up empty),
-    // avoiding a brief visible-then-gone flicker.
-    // A chain whose build has no CSV export hides the action outright; one that
-    // only restricts it on this network (BetaNet, custom) keeps it to explain why.
-    const hasCsvExport = useChainCapability(scope.chainId, 'csvExport')
-    const isCsvExportRestricted = useIsCapabilityRestricted(
-        scope.chainId,
-        'csvExport',
-    )
-    // Export is per network: on a merged history it would cover only one of them.
-    const isCsvExportVisible =
-        !isMerged &&
-        transactionCount > 0 &&
-        (hasCsvExport || isCsvExportRestricted)
 
     const emptyBody =
         networkChainId === null
@@ -399,6 +282,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isMerged,
         historyFeeds,
         failedNetworkNames,
+        isFailedRetryable: !isRefreshUnavailable,
         emptyBody,
         isOfflineEmpty,
         handleExportCsv,

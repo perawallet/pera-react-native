@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { memo, useMemo } from 'react'
+import { memo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
-import { ChainNotice } from '@components/ChainNotice'
 import { FilterSelection, type FilterOption } from '@components/FilterSelection'
 import { ChainLabel } from '@modules/chain-ui/icon'
+import { HistoryFailedNotice } from '@modules/transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -28,6 +28,8 @@ export type AccountHistoryTitleBarProps = {
     onSelectChain: (chainId: Nullable<ChainId>) => void
     /** Networks whose history failed while others' rows show; empty hides the notice. */
     failedNetworkNames: string[]
+    /** False when retrying can't help: the notice then offers no retry. */
+    isFailedRetryable: boolean
     onRetryFailed: () => void
     isCsvExportVisible: boolean
     isExportingCsv: boolean
@@ -47,6 +49,7 @@ export const AccountHistoryTitleBar = memo(
         chainFilterOptions,
         onSelectChain,
         failedNetworkNames,
+        isFailedRetryable,
         onRetryFailed,
         isCsvExportVisible,
         isExportingCsv,
@@ -55,15 +58,6 @@ export const AccountHistoryTitleBar = memo(
     }: AccountHistoryTitleBarProps) => {
         const styles = useStyles()
         const { t } = useLanguage()
-        const failedParams = useMemo(
-            () => ({ networks: failedNetworkNames.join(', ') }),
-            [failedNetworkNames],
-        )
-        const retryAction = useMemo(
-            () => ({ labelKey: 'common.retry.label', onPress: onRetryFailed }),
-            [onRetryFailed],
-        )
-
         return (
             <PWView style={styles.headerContainer}>
                 <PWView style={styles.titleBar}>
@@ -107,16 +101,13 @@ export const AccountHistoryTitleBar = memo(
                 ) : (
                     chainId !== null && <ChainLabel chainId={chainId} />
                 )}
-                {failedNetworkNames.length > 0 && (
-                    <ChainNotice
-                        kind='error'
-                        titleKey='asset_details.transaction_list.network_failed'
-                        params={failedParams}
-                        action={retryAction}
-                        style={styles.failedNotice}
-                        testID='history_network_failed'
-                    />
-                )}
+                <HistoryFailedNotice
+                    networkNames={failedNetworkNames}
+                    isRetryable={isFailedRetryable}
+                    onRetry={onRetryFailed}
+                    style={styles.failedNotice}
+                    testID='history_network_failed'
+                />
             </PWView>
         )
     },

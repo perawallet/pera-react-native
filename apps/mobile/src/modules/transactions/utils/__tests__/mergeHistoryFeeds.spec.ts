@@ -74,6 +74,8 @@ const feed = (
     isLoadFailed: false,
     isLoadUnavailable: false,
     isLoadIntegrityBlocked: false,
+    isRefreshFailed: false,
+    isRefreshUnavailable: false,
     hasNextPage: false,
     isSearchPaused: false,
     isRetrying: false,
@@ -271,6 +273,48 @@ describe('mergeHistoryFeeds', () => {
         expect(merged.transactionCount).toBe(0)
         expect(merged.hasNextPage).toBe(false)
         expect(merged.isFetched).toBe(true)
+    })
+
+    it('names a network that failed with only its own sends listed, and whether a retry can help', () => {
+        const unavailable = mergeHistoryFeeds([
+            feed(
+                ALGORAND,
+                buildTransactionListRows([algoAt('algo', JAN_1)], ALGORAND),
+            ),
+            feed(ETHEREUM, buildRecordListRows([ethAt('sent', JAN_1 + HOUR)]), {
+                isError: true,
+                isRefreshFailed: true,
+                isRefreshUnavailable: true,
+            }),
+        ])
+        const retryable = mergeHistoryFeeds([
+            feed(ALGORAND, [], { isError: true, isLoadFailed: true }),
+            feed(ETHEREUM, buildRecordListRows([ethAt('sent', JAN_1 + HOUR)]), {
+                isError: true,
+                isRefreshFailed: true,
+                isRefreshUnavailable: true,
+            }),
+        ])
+
+        expect(entryKeys(unavailable.rows)).toEqual(['sent', 'algo'])
+        expect(unavailable.isLoadFailed).toBe(false)
+        expect(unavailable.failedChainIds).toEqual(['ethereum'])
+        expect(unavailable.isRefreshFailed).toBe(true)
+        expect(unavailable.isRefreshUnavailable).toBe(true)
+        expect(retryable.failedChainIds).toEqual(['algorand', 'ethereum'])
+        expect(retryable.failedNetworkNames).toHaveLength(2)
+        expect(retryable.isRefreshUnavailable).toBe(false)
+    })
+
+    it('names no network when every one failed with nothing loaded', () => {
+        const merged = mergeHistoryFeeds([
+            feed(ALGORAND, [], { isError: true, isLoadFailed: true }),
+            feed(ETHEREUM, [], { isError: true, isLoadFailed: true }),
+        ])
+
+        expect(merged.isLoadFailed).toBe(true)
+        expect(merged.failedChainIds).toEqual([])
+        expect(merged.isRefreshFailed).toBe(false)
     })
 
     it('does not fail the load while another network has not reported yet', () => {

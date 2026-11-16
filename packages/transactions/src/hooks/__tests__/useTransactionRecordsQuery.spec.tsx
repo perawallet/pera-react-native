@@ -25,7 +25,10 @@ import {
     type ChainScope,
     type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import {
+    PeraNetworkError,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import {
     MAX_AUTO_RECORD_FETCHES,
     MAX_RECORD_PAGE_READS,
@@ -34,17 +37,21 @@ import {
 import { invalidateTransactionQueriesForAddresses } from '../querykeys'
 
 const mocks = vi.hoisted(() => ({
-    getTransactionHistoryWithPending: vi.fn(),
+    getMinedTransactionHistory: vi.fn(),
     getPendingTransactionRecords: vi.fn(),
+    ledgerListeners: new Set<() => void>(),
 }))
 
-// The real module reaches the accounts package, which needs a platform provider.
-// A page with no `minedItems` stands for one with no pending sends merged in.
-vi.mock('../../pending-history', () => ({
+vi.mock('../../pending-history', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../pending-history')>()),
     getPendingTransactionRecords: mocks.getPendingTransactionRecords,
-    getTransactionHistoryWithPending: async (...args: unknown[]) => {
-        const page = await mocks.getTransactionHistoryWithPending(...args)
-        return { minedItems: page.items, ...page }
+    getMinedTransactionHistory: mocks.getMinedTransactionHistory,
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    subscribeToSubmissionLedger: (listener: () => void) => {
+        mocks.ledgerListeners.add(listener)
+        return () => mocks.ledgerListeners.delete(listener)
     },
 }))
 
@@ -92,6 +99,11 @@ const record = (
     chainData: { family: 'evm' },
 })
 
+const pendingSend = (id: string, timestamp: number): TransactionRecord => ({
+    ...record(id, timestamp),
+    status: 'pending',
+})
+
 const DAY_MS = 86_400_000
 const JAN_10 = Date.parse('2026-01-10T12:00:00Z')
 
@@ -117,6 +129,7 @@ describe('useTransactionRecordsQuery', () => {
 
     beforeEach(() => {
         vi.resetAllMocks()
+        mocks.getPendingTransactionRecords.mockResolvedValue([])
         capability.isDecoding = false
         onlineManager.setOnline(true)
         queryClient = new QueryClient({
@@ -135,7 +148,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('starts a fresh list when contractDecoding flips, so loaded rows never keep the old labels', async () => {
-        mocks.getTransactionHistoryWithPending.mockResolvedValue({
+        mocks.getMinedTransactionHistory.mockResolvedValue({
             items: [record('A', JAN_10)],
         })
         const { result, rerender } = renderHook(
@@ -147,20 +160,18 @@ describe('useTransactionRecordsQuery', () => {
             { wrapper },
         )
         await waitFor(() => expect(result.current.records).toHaveLength(1))
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
 
         capability.isDecoding = true
         rerender()
 
         await waitFor(() =>
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(2),
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(2),
         )
     })
 
     test('lists records newest first and pages on the backend cursor', async () => {
-        mocks.getTransactionHistoryWithPending
+        mocks.getMinedTransactionHistory
             .mockResolvedValueOnce({
                 items: [record('B', JAN_10), record('A', JAN_10 - DAY_MS)],
                 next: { cursor: 'c1' },
@@ -190,7 +201,7 @@ describe('useTransactionRecordsQuery', () => {
                 'Z',
             ]),
         )
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenLastCalledWith(
+        expect(mocks.getMinedTransactionHistory).toHaveBeenLastCalledWith(
             ADDRESS,
             SCOPE,
             { cursor: 'c1' },
@@ -199,7 +210,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('reads past pages with nothing to show instead of settling on an empty one', async () => {
-        mocks.getTransactionHistoryWithPending
+        mocks.getMinedTransactionHistory
             .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
             .mockResolvedValueOnce({
                 items: [record('A', JAN_10)],
@@ -218,18 +229,18 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() =>
             expect(result.current.records.map(r => r.id)).toEqual(['A']),
         )
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(2)
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(2)
         expect(result.current.hasNextPage).toBe(true)
     })
 
     test('reads at most the cap per fetch, then asks for the next page itself', async () => {
         for (let i = 1; i <= MAX_RECORD_PAGE_READS; i++) {
-            mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            mocks.getMinedTransactionHistory.mockResolvedValueOnce({
                 items: [],
                 next: { cursor: `c${i}` },
             })
         }
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [record('A', JAN_10)],
         })
 
@@ -256,7 +267,7 @@ describe('useTransactionRecordsQuery', () => {
                 ],
             }),
         )
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenLastCalledWith(
+        expect(mocks.getMinedTransactionHistory).toHaveBeenLastCalledWith(
             ADDRESS,
             SCOPE,
             { cursor: `c${MAX_RECORD_PAGE_READS}` },
@@ -265,12 +276,12 @@ describe('useTransactionRecordsQuery', () => {
 
     test('stops asking for pages after a failed one until a retry', async () => {
         for (let i = 1; i <= MAX_RECORD_PAGE_READS; i++) {
-            mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+            mocks.getMinedTransactionHistory.mockResolvedValueOnce({
                 items: [],
                 next: { cursor: `c${i}` },
             })
         }
-        mocks.getTransactionHistoryWithPending.mockRejectedValue(
+        mocks.getMinedTransactionHistory.mockRejectedValue(
             new Error('history service refused'),
         )
 
@@ -285,12 +296,13 @@ describe('useTransactionRecordsQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         const callsAtFailure =
-            mocks.getTransactionHistoryWithPending.mock.calls.length
+            mocks.getMinedTransactionHistory.mock.calls.length
         // The failed page is read once more, quietly, before the error shows.
         expect(callsAtFailure).toBe(MAX_RECORD_PAGE_READS + 2)
         expect(result.current.hasNextPage).toBe(true)
+        expect(result.current.isNextPageError).toBe(true)
 
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [record('A', JAN_10)],
         })
         act(() => result.current.fetchNextPage())
@@ -298,13 +310,13 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() =>
             expect(result.current.records.map(r => r.id)).toEqual(['A']),
         )
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
             callsAtFailure + 1,
         )
     })
 
     test('pauses the search after its fetch budget and resumes on fetchNextPage', async () => {
-        mocks.getTransactionHistoryWithPending.mockImplementation(
+        mocks.getMinedTransactionHistory.mockImplementation(
             async (_address, _scope, page?: { cursor: string }) => ({
                 items: [],
                 next: { cursor: `${page?.cursor ?? 'c'}+` },
@@ -322,22 +334,20 @@ describe('useTransactionRecordsQuery', () => {
 
         const budget = MAX_AUTO_RECORD_FETCHES * MAX_RECORD_PAGE_READS
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
-            budget,
-        )
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(budget)
 
         act(() => result.current.fetchNextPage())
 
         await waitFor(() =>
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(2 * budget),
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
+                2 * budget,
+            ),
         )
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
     })
 
     test('caps a run of empty pages after a match too, rather than walking the whole history', async () => {
-        mocks.getTransactionHistoryWithPending.mockImplementation(
+        mocks.getMinedTransactionHistory.mockImplementation(
             async (_address, _scope, page?: { cursor: string }) => ({
                 items: page ? [] : [record('MATCH', JAN_10)],
                 next: { cursor: `${page?.cursor ?? 'c'}+` },
@@ -359,13 +369,13 @@ describe('useTransactionRecordsQuery', () => {
 
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
         expect(result.current.records.map(r => r.id)).toEqual(['MATCH'])
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
             1 + MAX_AUTO_RECORD_FETCHES * MAX_RECORD_PAGE_READS,
         )
     })
 
     test('stays paused, not loading, while a background refetch re-reads its pages', async () => {
-        mocks.getTransactionHistoryWithPending.mockImplementation(
+        mocks.getMinedTransactionHistory.mockImplementation(
             async (_address, _scope, page?: { cursor: string }) => ({
                 items: [],
                 next: { cursor: `${page?.cursor ?? 'c'}+` },
@@ -381,7 +391,7 @@ describe('useTransactionRecordsQuery', () => {
         )
         await waitFor(() => expect(result.current.isSearchPaused).toBe(true))
 
-        mocks.getTransactionHistoryWithPending.mockImplementation(
+        mocks.getMinedTransactionHistory.mockImplementation(
             () => new Promise(() => {}),
         )
         act(() => result.current.refetch())
@@ -390,17 +400,14 @@ describe('useTransactionRecordsQuery', () => {
         expect(result.current.isSearchPaused).toBe(true)
     })
 
-    test('keeps paging past a pending send older than the range start', async () => {
-        const staleSend = record('STALE_SEND', JAN_10 - DAY_MS)
-        mocks.getTransactionHistoryWithPending
-            .mockResolvedValueOnce({
-                items: [record('JAN10_LATE', JAN_10), staleSend],
-                minedItems: [record('JAN10_LATE', JAN_10)],
-                next: { cursor: 'c1' },
-            })
-            .mockResolvedValueOnce({
-                items: [record('JAN10_EARLY', JAN_10 - 1000)],
-            })
+    test('leaves out a ledger send older than the range start and keeps paging', async () => {
+        mocks.getPendingTransactionRecords.mockResolvedValue([
+            pendingSend('STALE_SEND', JAN_10 - DAY_MS),
+        ])
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
+            items: [record('JAN10_LATE', JAN_10)],
+            next: { cursor: 'c1' },
+        })
 
         const { result } = renderHook(
             () =>
@@ -412,8 +419,95 @@ describe('useTransactionRecordsQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'JAN10_LATE',
+            ]),
+        )
         expect(result.current.hasNextPage).toBe(true)
+    })
+
+    describe('when the backend read fails', () => {
+        const mount = () =>
+            renderHook(
+                () =>
+                    useTransactionRecordsQuery({
+                        accountAddress: ADDRESS,
+                        scope: SCOPE,
+                    }),
+                { wrapper },
+            )
+
+        test.each([
+            ['a network error', new PeraNetworkError('timeout')],
+            ['a 5xx', new PeraNetworkError('server', { status: 503 })],
+            [
+                'a network with no history service',
+                new PeraServiceUnavailableError(SCOPE),
+            ],
+        ])('still lists the ledger sends on %s', async (_name, failure) => {
+            mocks.getPendingTransactionRecords.mockResolvedValue([
+                pendingSend('STUCK', JAN_10),
+            ])
+            mocks.getMinedTransactionHistory.mockRejectedValue(failure)
+
+            const { result } = mount()
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.error).toBe(failure)
+            expect(result.current.isNextPageError).toBe(false)
+            expect(result.current.records.map(r => r.id)).toEqual(['STUCK'])
+            expect(result.current.records[0].status).toBe('pending')
+        })
+
+        test('merges the mined rows in once it answers, without a second row for the send', async () => {
+            mocks.getPendingTransactionRecords.mockResolvedValue([
+                pendingSend('SENT', JAN_10 + DAY_MS),
+            ])
+            mocks.getMinedTransactionHistory.mockRejectedValue(
+                new PeraNetworkError('server', { status: 502 }),
+            )
+            const { result } = mount()
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            mocks.getMinedTransactionHistory.mockResolvedValue({
+                items: [record('SENT', JAN_10 + DAY_MS), record('A', JAN_10)],
+            })
+            act(() => result.current.refetch())
+
+            await waitFor(() => expect(result.current.isError).toBe(false))
+            expect(result.current.records.map(r => r.id)).toEqual(['SENT', 'A'])
+            expect(result.current.records[0].status).toBe('confirmed')
+        })
+
+        test('lists a send made after a good load when the next refetch fails', async () => {
+            mocks.getMinedTransactionHistory.mockResolvedValue({
+                items: [record('A', JAN_10)],
+            })
+            const { result } = mount()
+            await waitFor(() =>
+                expect(result.current.records.map(r => r.id)).toEqual(['A']),
+            )
+
+            mocks.getPendingTransactionRecords.mockResolvedValue([
+                pendingSend('SENT', JAN_10 + DAY_MS),
+            ])
+            mocks.getMinedTransactionHistory.mockRejectedValue(
+                new PeraNetworkError('timeout'),
+            )
+            act(() => {
+                for (const listener of mocks.ledgerListeners) listener()
+                result.current.refetch()
+            })
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            await waitFor(() =>
+                expect(result.current.records.map(r => r.id)).toEqual([
+                    'SENT',
+                    'A',
+                ]),
+            )
+        })
     })
 
     describe('background refetch', () => {
@@ -421,12 +515,11 @@ describe('useTransactionRecordsQuery', () => {
             string,
             {
                 items: TransactionRecord[]
-                minedItems?: TransactionRecord[]
                 next?: { cursor: string }
             }
         >
         const serve = (backend: Backend) =>
-            mocks.getTransactionHistoryWithPending.mockImplementation(
+            mocks.getMinedTransactionHistory.mockImplementation(
                 async (_address, _scope, page?: { cursor: string }) =>
                     backend[page?.cursor ?? 'head'],
             )
@@ -487,14 +580,12 @@ describe('useTransactionRecordsQuery', () => {
             serve(backend)
             const { result } = mount()
             await loadPages(result, 3)
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
 
             await invalidate()
 
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(1)
-            expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledWith(
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledWith(
                 ADDRESS,
                 SCOPE,
                 undefined,
@@ -512,11 +603,12 @@ describe('useTransactionRecordsQuery', () => {
         })
 
         test('adds new records ahead and updates loaded ones in place, keeping every page and cursor', async () => {
-            const sent = record('SENT', undefined)
+            mocks.getPendingTransactionRecords.mockResolvedValue([
+                pendingSend('SENT', JAN_10 + DAY_MS),
+            ])
             const backend: Backend = {
                 head: {
-                    items: [sent, record('A', JAN_10)],
-                    minedItems: [record('A', JAN_10)],
+                    items: [record('A', JAN_10)],
                     next: { cursor: 'c1' },
                 },
                 c1: { items: [record('Z', JAN_10 - DAY_MS)] },
@@ -553,8 +645,8 @@ describe('useTransactionRecordsQuery', () => {
             serve(threePages())
             const { result } = mount()
             await loadPages(result, 2)
-            mocks.getTransactionHistoryWithPending.mockClear()
-            mocks.getTransactionHistoryWithPending.mockImplementation(
+            mocks.getMinedTransactionHistory.mockClear()
+            mocks.getMinedTransactionHistory.mockImplementation(
                 async (_address, _scope, page?: { cursor: string }) => {
                     const k = page ? Number(page.cursor.slice(1)) + 1 : 1
                     return {
@@ -566,9 +658,9 @@ describe('useTransactionRecordsQuery', () => {
 
             await invalidate()
 
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(MAX_RECORD_PAGE_READS + 1)
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(
+                MAX_RECORD_PAGE_READS + 1,
+            )
             expect(result.current.records.map(r => r.id)).toEqual([
                 'N1',
                 'N2',
@@ -596,7 +688,7 @@ describe('useTransactionRecordsQuery', () => {
             serve(backend)
             const { result } = mount({ assetId: USDC })
             await loadPages(result, 2)
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
             backend.head = {
                 items: [
                     record('USDC_NEW', JAN_10 + DAY_MS, USDC),
@@ -608,9 +700,7 @@ describe('useTransactionRecordsQuery', () => {
 
             await invalidate()
 
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(1)
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
             expect(result.current.records.map(r => r.id)).toEqual([
                 'USDC_NEW',
                 'USDC_OLD',
@@ -619,7 +709,7 @@ describe('useTransactionRecordsQuery', () => {
         })
 
         test('keeps a paused filtered search paused at one backend read', async () => {
-            mocks.getTransactionHistoryWithPending.mockImplementation(
+            mocks.getMinedTransactionHistory.mockImplementation(
                 async (_address, _scope, page?: { cursor: string }) => ({
                     items: [record(`E-${page?.cursor ?? 'c'}`, JAN_10)],
                     next: { cursor: `${page?.cursor ?? 'c'}+` },
@@ -630,13 +720,11 @@ describe('useTransactionRecordsQuery', () => {
                 expect(result.current.isSearchPaused).toBe(true),
             )
             const pageCount = cached().pages.length
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
 
             await invalidate()
 
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(1)
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
             expect(cached().pages).toHaveLength(pageCount)
             expect(result.current.isSearchPaused).toBe(true)
         })
@@ -645,22 +733,20 @@ describe('useTransactionRecordsQuery', () => {
             serve(threePages())
             const { result } = mount()
             await loadPages(result, 3)
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
 
             await invalidate({ shouldRefetchAllPages: true })
 
             expect(
-                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                mocks.getMinedTransactionHistory.mock.calls.map(
                     call => call[2],
                 ),
             ).toEqual([undefined, { cursor: 'c1' }, { cursor: 'c2' }])
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
 
             await invalidate()
 
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(1)
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
         })
 
         test('stays a full re-read when its first attempt fails and the quiet retry runs', async () => {
@@ -668,15 +754,15 @@ describe('useTransactionRecordsQuery', () => {
             serve(backend)
             const { result } = mount()
             await loadPages(result, 3)
-            mocks.getTransactionHistoryWithPending.mockClear()
-            mocks.getTransactionHistoryWithPending.mockRejectedValueOnce(
+            mocks.getMinedTransactionHistory.mockClear()
+            mocks.getMinedTransactionHistory.mockRejectedValueOnce(
                 new Error('not ready yet'),
             )
 
             await invalidate({ shouldRefetchAllPages: true })
 
             expect(
-                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                mocks.getMinedTransactionHistory.mock.calls.map(
                     call => call[2],
                 ),
             ).toEqual([
@@ -692,8 +778,8 @@ describe('useTransactionRecordsQuery', () => {
             serve(backend)
             const { result } = mount()
             await loadPages(result, 3)
-            mocks.getTransactionHistoryWithPending.mockClear()
-            mocks.getTransactionHistoryWithPending.mockImplementation(
+            mocks.getMinedTransactionHistory.mockClear()
+            mocks.getMinedTransactionHistory.mockImplementation(
                 async (_address, _scope, page?: { cursor: string }) => {
                     if (page?.cursor === 'c1' && !hasFailedC1) {
                         hasFailedC1 = true
@@ -707,7 +793,7 @@ describe('useTransactionRecordsQuery', () => {
             await invalidate({ shouldRefetchAllPages: true })
 
             expect(
-                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                mocks.getMinedTransactionHistory.mock.calls.map(
                     call => call[2],
                 ),
             ).toEqual([
@@ -723,7 +809,7 @@ describe('useTransactionRecordsQuery', () => {
             serve(backend)
             const { result } = mount()
             await loadPages(result, 3)
-            mocks.getTransactionHistoryWithPending.mockImplementation(
+            mocks.getMinedTransactionHistory.mockImplementation(
                 async (_address, _scope, page?: { cursor: string }) =>
                     page ? new Promise(() => {}) : backend.head,
             )
@@ -736,17 +822,19 @@ describe('useTransactionRecordsQuery', () => {
                 )
             })
             await waitFor(() =>
-                expect(
-                    mocks.getTransactionHistoryWithPending,
-                ).toHaveBeenCalledWith(ADDRESS, SCOPE, { cursor: 'c1' }),
+                expect(mocks.getMinedTransactionHistory).toHaveBeenCalledWith(
+                    ADDRESS,
+                    SCOPE,
+                    { cursor: 'c1' },
+                ),
             )
             serve(backend)
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
 
             await invalidate()
 
             expect(
-                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                mocks.getMinedTransactionHistory.mock.calls.map(
                     call => call[2],
                 ),
             ).toEqual([undefined, { cursor: 'c1' }, { cursor: 'c2' }])
@@ -764,20 +852,18 @@ describe('useTransactionRecordsQuery', () => {
             serve(backend)
             const { result } = mount()
             await loadPages(result, 2)
-            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getMinedTransactionHistory.mockClear()
 
             await invalidate()
 
-            expect(
-                mocks.getTransactionHistoryWithPending,
-            ).toHaveBeenCalledTimes(2)
+            expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(2)
             expect(result.current.records.map(r => r.id)).toEqual(['B', 'A'])
         })
 
-        test('replaces the page shown offline once the backend can be read', async () => {
+        test('lists the ledger sends offline, then the backend records once it can be read', async () => {
             onlineManager.setOnline(false)
             mocks.getPendingTransactionRecords.mockResolvedValue([
-                record('SENT', undefined),
+                pendingSend('SENT', JAN_10 + DAY_MS),
             ])
             const { result } = mount()
             await waitFor(() =>
@@ -785,7 +871,10 @@ describe('useTransactionRecordsQuery', () => {
             )
             serve({
                 head: {
-                    items: [record('A', JAN_10)],
+                    items: [
+                        record('SENT', JAN_10 + DAY_MS),
+                        record('A', JAN_10),
+                    ],
                     next: { cursor: 'c1' },
                 },
             })
@@ -794,14 +883,18 @@ describe('useTransactionRecordsQuery', () => {
             await invalidate()
 
             await waitFor(() =>
-                expect(result.current.records.map(r => r.id)).toEqual(['A']),
+                expect(result.current.records.map(r => r.id)).toEqual([
+                    'SENT',
+                    'A',
+                ]),
             )
+            expect(result.current.records[0].status).toBe('confirmed')
             expect(result.current.hasNextPage).toBe(true)
         })
     })
 
     test('keeps fetchNextPage and refetch stable across renders', async () => {
-        mocks.getTransactionHistoryWithPending.mockResolvedValue({
+        mocks.getMinedTransactionHistory.mockResolvedValue({
             items: [record('A', JAN_10)],
         })
 
@@ -823,7 +916,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('keeps only records that move the filtered asset', async () => {
-        mocks.getTransactionHistoryWithPending
+        mocks.getMinedTransactionHistory
             .mockResolvedValueOnce({
                 items: [record('ETH', JAN_10)],
                 next: { cursor: 'c1' },
@@ -852,7 +945,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('keeps a call the account paid gas for in the native asset’s History, but not one another address sent', async () => {
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [
                 gasOnly('OWN'),
                 gasOnly('OWN_SIGNED', '0xABC'),
@@ -881,7 +974,7 @@ describe('useTransactionRecordsQuery', () => {
 
     test('leaves out of the native asset’s History a token movement the account paid gas for, and a replaced or unsigned failed attempt', async () => {
         const paid = { fee: new Decimal(21_000), initiator: ADDRESS }
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [
                 { ...record('TOKEN_SEND', JAN_10, USDC), ...paid },
                 {
@@ -935,7 +1028,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('leaves a token’s History to the records that move it, whatever gas the account paid', async () => {
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [gasOnly('OWN'), record('USDC', JAN_10, USDC)],
         })
 
@@ -955,7 +1048,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('keeps the date range inclusive and stops paging once it passes its start', async () => {
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [
                 record('JAN11', JAN_10 + DAY_MS),
                 record('JAN10', JAN_10),
@@ -1003,12 +1096,12 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() =>
             expect(result.current.records.map(r => r.id)).toEqual(['SENT']),
         )
-        expect(mocks.getTransactionHistoryWithPending).not.toHaveBeenCalled()
+        expect(mocks.getMinedTransactionHistory).not.toHaveBeenCalled()
         expect(result.current.hasNextPage).toBe(false)
     })
 
     test('keeps the loaded pages and their cursor when a refetch runs offline', async () => {
-        mocks.getTransactionHistoryWithPending
+        mocks.getMinedTransactionHistory
             .mockResolvedValueOnce({
                 items: [record('B', JAN_10)],
                 next: { cursor: 'c1' },
@@ -1035,11 +1128,10 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.records.map(r => r.id)).toEqual(['B', 'A'])
         expect(result.current.hasNextPage).toBe(true)
-        expect(mocks.getPendingTransactionRecords).not.toHaveBeenCalled()
     })
 
     test('keeps the next-page cursor when loading more offline', async () => {
-        mocks.getTransactionHistoryWithPending.mockResolvedValueOnce({
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({
             items: [record('B', JAN_10)],
             next: { cursor: 'c1' },
         })
@@ -1058,11 +1150,11 @@ describe('useTransactionRecordsQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.hasNextPage).toBe(true)
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
     })
 
     test('reads again once before reporting a failed read', async () => {
-        mocks.getTransactionHistoryWithPending
+        mocks.getMinedTransactionHistory
             .mockRejectedValueOnce(new Error('not ready yet'))
             .mockResolvedValueOnce({ items: [record('A', JAN_10)] })
 
@@ -1082,7 +1174,7 @@ describe('useTransactionRecordsQuery', () => {
     })
 
     test('does not read again for a Pera service the network lacks', async () => {
-        mocks.getTransactionHistoryWithPending.mockRejectedValue(
+        mocks.getMinedTransactionHistory.mockRejectedValue(
             new PeraServiceUnavailableError(SCOPE),
         )
 
@@ -1096,12 +1188,12 @@ describe('useTransactionRecordsQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(1)
     })
 
     test('reports a failed read as an error', async () => {
         const failure = new Error('history service refused')
-        mocks.getTransactionHistoryWithPending.mockRejectedValue(failure)
+        mocks.getMinedTransactionHistory.mockRejectedValue(failure)
 
         const { result } = renderHook(
             () =>
@@ -1115,7 +1207,7 @@ describe('useTransactionRecordsQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toBe(failure)
         expect(result.current.records).toEqual([])
-        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(2)
+        expect(mocks.getMinedTransactionHistory).toHaveBeenCalledTimes(2)
     })
 
     test('stays idle without an address', () => {
@@ -1128,6 +1220,6 @@ describe('useTransactionRecordsQuery', () => {
             { wrapper },
         )
 
-        expect(mocks.getTransactionHistoryWithPending).not.toHaveBeenCalled()
+        expect(mocks.getMinedTransactionHistory).not.toHaveBeenCalled()
     })
 })

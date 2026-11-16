@@ -26,6 +26,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransactionList } from './useAssetTransactionList'
 import {
+    HistoryFailedNotice,
     TransactionHistoryRow,
     TransactionHistoryLoadState,
     TransactionHistorySearchOlder,
@@ -57,6 +58,8 @@ export const AssetTransactionList = ({
         isLoadUnavailable,
         isLoadIntegrityBlocked,
         isLoadOffline,
+        failedNetworkNames,
+        isFailedRetryable,
         handleRetry,
         isRetrying,
         isSearchPaused,
@@ -167,6 +170,13 @@ export const AssetTransactionList = ({
                                 )}
                             </PWView>
                         </PWView>
+                        <HistoryFailedNotice
+                            networkNames={failedNetworkNames}
+                            isRetryable={isFailedRetryable}
+                            onRetry={handleRetry}
+                            style={styles.failedNotice}
+                            testID='asset_history_network_failed'
+                        />
                     </PWView>
                 }
                 ListEmptyComponent={

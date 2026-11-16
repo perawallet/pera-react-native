@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
     isIntegrityRequiredError,
     isPeraServiceUnavailableError,
@@ -59,6 +60,12 @@ export type UseTransactionHistoryRowsResult = {
     /** The failure is a Pera service this network doesn't have, so retrying can't help. */
     isLoadUnavailable: boolean
     isLoadIntegrityBlocked: boolean
+    /** Rows show and a refresh of page one failed: the wallet's own sends stay listed beside the error. */
+    isRefreshFailed: boolean
+    /** See `isLoadUnavailable`. */
+    isRefreshUnavailable: boolean
+    /** What the failed-network notice names: this network while `isRefreshFailed`. */
+    failedNetworkNames: string[]
     hasNextPage: boolean
     /** See `UseTransactionRecordsQueryResult.isSearchPaused`; `fetchNextPage` resumes it. */
     isSearchPaused: boolean
@@ -145,10 +152,30 @@ export const useTransactionHistoryRows = ({
     // A failed read leaves `hasNextPage` set, so without this a screen reads
     // it as a load still in progress and the skeleton never leaves.
     const isLoadFailed = rows.length === 0 && query.isError
+    // Cached rows are read apart from the network, so only a records chain has
+    // rows that outlive a failed read. A later page's failure leaves page one
+    // standing and is the list's own business.
+    const isRefreshFailed =
+        !isRowCached &&
+        rows.length > 0 &&
+        recordsQuery.isError &&
+        !recordsQuery.isNextPageError
+    const failedNetworkNames = useMemo(
+        () =>
+            isRefreshFailed
+                ? [chainDisplayNameOf(scope.chainId) ?? scope.chainId]
+                : [],
+        [isRefreshFailed, scope.chainId],
+    )
     const { hasNextPage, fetchNextPage, refetch } = query
+    // Records say which page failed; a refresh of page one can fail with more
+    // pages loaded behind it. Cached rows only fail on a later page with some.
+    const isNextPageFailed = isRowCached
+        ? hasNextPage
+        : recordsQuery.isNextPageError
     const retry = useCallback(
-        () => (hasNextPage ? fetchNextPage() : refetch()),
-        [hasNextPage, fetchNextPage, refetch],
+        () => (isNextPageFailed ? fetchNextPage() : refetch()),
+        [isNextPageFailed, fetchNextPage, refetch],
     )
 
     return {
@@ -164,6 +191,10 @@ export const useTransactionHistoryRows = ({
             isLoadFailed && isPeraServiceUnavailableError(query.error),
         isLoadIntegrityBlocked:
             isLoadFailed && isIntegrityRequiredError(query.error),
+        isRefreshFailed,
+        isRefreshUnavailable:
+            isRefreshFailed && isPeraServiceUnavailableError(query.error),
+        failedNetworkNames,
         hasNextPage,
         isSearchPaused: !isRowCached && recordsQuery.isSearchPaused,
         fetchNextPage,

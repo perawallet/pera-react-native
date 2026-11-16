@@ -22,6 +22,7 @@ export {
 export { TransactionHistoryLoadState } from './components/TransactionHistoryLoadState'
 export { TransactionHistorySearchOlder } from './components/TransactionHistorySearchOlder'
 export { TransactionHistoryFeed } from './components/TransactionHistoryFeed'
+export { HistoryFailedNotice } from './components/HistoryFailedNotice'
 export { SendAccountSelectionContent } from './components/send-funds/SendAccountSelectionContent'
 export { SuspectedPoisoningNotice } from './components/address-safety/SuspectedPoisoningNotice'
 export {

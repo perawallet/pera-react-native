@@ -83,10 +83,10 @@ export {
     type FetchMoreTransactionsParams,
 } from './history-adapter'
 export {
+    getMinedTransactionHistory,
     getPendingTransactionRecords,
-    getTransactionHistoryWithPending,
+    mergePendingRecords,
     type GetPendingTransactionRecordsParams,
-    type HistoryPageWithPending,
 } from './pending-history'
 export * from './utils'
 

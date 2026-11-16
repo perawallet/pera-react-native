@@ -70,6 +70,10 @@ export type UseAssetTransactionListResult = {
     isLoadUnavailable: boolean
     isLoadIntegrityBlocked: boolean
     isLoadOffline: boolean
+    /** The network whose read failed while rows show; empty hides the notice. */
+    failedNetworkNames: string[]
+    /** False on a network without the service, where a retry can only fail again. */
+    isFailedRetryable: boolean
     handleRetry: () => void
     isRetrying: boolean
     isSearchPaused: boolean
@@ -134,6 +138,8 @@ export const useAssetTransactionList = ({
         isLoadFailed,
         isLoadUnavailable,
         isLoadIntegrityBlocked,
+        isRefreshUnavailable,
+        failedNetworkNames,
         suspectedPoisoningById,
     } = useTransactionHistoryRows({
         accountAddress,
@@ -284,6 +290,8 @@ export const useAssetTransactionList = ({
         isLoadUnavailable,
         isLoadIntegrityBlocked,
         isLoadOffline,
+        failedNetworkNames,
+        isFailedRetryable: !isRefreshUnavailable,
         handleRetry,
         isRetrying,
         isSearchPaused,
