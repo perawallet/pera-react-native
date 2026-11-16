@@ -22,6 +22,8 @@ import { PERA_LINK_CHAIN_ID, peraLinkChainFailure } from '../pera-link-chain'
 import {
     EVM_LINK_CAIP2,
     EVM_LINK_CHAIN_ID,
+    EVM_LINK_L2_CAIP2,
+    EVM_LINK_L2_CHAIN_ID,
     EVM_LINK_TESTNET_CAIP2,
     PERA_LINK_TESTNET_CAIP2,
     registerPeraLinkChains,
@@ -78,6 +80,20 @@ describe('Pera links with chain=', () => {
                 assetId: ERC20,
             })
         }
+    })
+
+    it("reads the asset id on a chain that shares another chain's adapter", () => {
+        const link = parseDeeplink(
+            `perawallet://app/asset-detail/?chain=${EVM_LINK_L2_CAIP2}&address=${EVM_ADDRESS}&assetId=${ERC20}`,
+        )
+
+        expect(link).toEqual({
+            type: DeeplinkType.ASSET_DETAIL,
+            sourceUrl: expect.any(String),
+            target: { chainId: EVM_LINK_L2_CHAIN_ID, networkId: 'mainnet' },
+            address: EVM_ADDRESS,
+            assetRef: { chainId: EVM_LINK_L2_CHAIN_ID, assetId: ERC20 },
+        })
     })
 
     it('opens the native asset of the chain the link names when assetId is absent', () => {
