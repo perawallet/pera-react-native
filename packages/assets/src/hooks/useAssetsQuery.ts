@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
-import { useStableIdList } from '@perawallet/wallet-core-shared'
+import { logger, useStableIdList } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getAssetsByIds } from '../db'
 import { fetchAndPersistAssets, nativeAssetFor } from '../chain-adapter'
@@ -60,8 +60,27 @@ export const useAssetsQuery = (
         // get an empty id list) don't mount a live observer per row.
         enabled: isEnabled,
         queryFn: async () => {
-            if (fetchMissing) {
+            if (!fetchMissing) {
+                return getAssetsByIds({ assetIds: stableIds, scope })
+            }
+
+            try {
                 await fetchAndPersistAssets(stableIds, scope)
+            } catch (error) {
+                // A failed refresh of a stale row must not erase the stored
+                // one: an absent asset reads as "can't be swapped" downstream.
+                const stored = getAssetsByIds({ assetIds: stableIds, scope })
+                const storedIds = new Set(stored.map(asset => asset.assetId))
+                const hasEveryId = stableIds.every(
+                    id => id === nativeAsset.assetId || storedIds.has(id),
+                )
+                if (!hasEveryId) throw error
+
+                logger.warn('Asset refresh failed; serving stored rows', {
+                    scope,
+                    count: stored.length,
+                })
+                return stored
             }
             return getAssetsByIds({ assetIds: stableIds, scope })
         },

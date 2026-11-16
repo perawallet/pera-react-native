@@ -195,6 +195,60 @@ describe('useAssetsQuery', () => {
             )
         })
 
+        it('serves the stored rows when the refresh fails and every id is stored', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+            mocks.syncAssets.mockRejectedValue(new Error('network down'))
+
+            const { result } = renderHook(
+                () =>
+                    useAssetsQuery(ALGORAND_MAINNET, ['123'], {
+                        fetchMissing: true,
+                    }),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.isError).toBe(false)
+            expect(result.current.data.get('123')?.name).toBe('Test Asset')
+        })
+
+        it('does not require a stored row for the native asset when serving stored rows after a failed refresh', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+            mocks.syncAssets.mockRejectedValue(new Error('network down'))
+
+            const { result } = renderHook(
+                () =>
+                    useAssetsQuery(ALGORAND_MAINNET, ['0', '123'], {
+                        fetchMissing: true,
+                    }),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.isError).toBe(false)
+            expect(result.current.data.get('123')?.name).toBe('Test Asset')
+            expect(result.current.data.get('0')).toBe(FAKE_NATIVE_ASSET)
+        })
+
+        it('errors when the refresh fails and an id is not stored', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+            mocks.syncAssets.mockRejectedValue(new Error('network down'))
+
+            const { result } = renderHook(
+                () =>
+                    useAssetsQuery(ALGORAND_MAINNET, ['123', '456'], {
+                        fetchMissing: true,
+                    }),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+
+            expect(result.current.data.size).toBe(0)
+        })
+
         it('does not refetch when ids reference changes but content is the same', async () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
