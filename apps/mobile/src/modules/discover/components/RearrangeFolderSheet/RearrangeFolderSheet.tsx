@@ -122,6 +122,7 @@ export const RearrangeFolderSheet = ({
                 title={t('discover.folders.rearrange.title')}
                 onClose={sheet.cancel}
                 showClose
+                testID='discover_rearrange_header'
                 rightAction={
                     <PWButton
                         variant='linkPositive'
