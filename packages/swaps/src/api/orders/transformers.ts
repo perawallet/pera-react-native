@@ -16,7 +16,11 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapHistoryItem, SwapOrder, SwapOrderStep } from '../../models'
 import { transformSwapAsset } from '../assets/transformers'
 import { toEpochMs } from '../quotes/transformers'
-import { scopeOfRouterChain, type ResolveSwapAssetRef } from '../router-ids'
+import {
+    scopeOfRouterChain,
+    swapAccountAddressOf,
+    type ResolveSwapAssetRef,
+} from '../router-ids'
 import {
     signTransactionsStepSchema,
     type CreateSwapOrderApiResponse,
@@ -79,6 +83,9 @@ export const transformSwapOrderItem = (
         role: transaction.role,
     })),
     fundingMethod: item.funding_method,
+    sourceAccount: item.source_account
+        ? swapAccountAddressOf(item.source_account)
+        : null,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
 })

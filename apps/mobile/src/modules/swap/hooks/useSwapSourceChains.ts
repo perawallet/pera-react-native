@@ -11,27 +11,18 @@
  */
 
 import { useMemo } from 'react'
-import {
-    useAccountChainOptionsResolver,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapSourceChainsResolver } from '@perawallet/wallet-core-swaps'
 
 /** The chains `account` can pay a swap from. */
 export const useSwapSourceChains = (
     account: Nullable<WalletAccount>,
 ): ChainId[] => {
-    const optionsOf = useAccountChainOptionsResolver('swap', {
-        isSignerRequired: true,
-    })
+    const sourceChainsOf = useSwapSourceChainsResolver()
     return useMemo(
-        () =>
-            account
-                ? optionsOf(account)
-                      .filter(option => option.isEnabled)
-                      .map(option => option.chainId)
-                : [],
-        [account, optionsOf],
+        () => (account ? sourceChainsOf(account) : []),
+        [account, sourceChainsOf],
     )
 }

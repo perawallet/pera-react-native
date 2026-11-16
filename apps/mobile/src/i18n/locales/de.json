@@ -4297,6 +4297,10 @@
         "receiving_account": {
             "title": "Empfangskonto",
             "label": "Empfangen auf"
+        },
+        "source_account": {
+            "title": "Konto auswählen",
+            "subtitle": "Du hast <0>{{accounts}} Konten</0> mit diesem Asset. Wähle eines aus, um fortzufahren."
         }
     },
     "onramp": {

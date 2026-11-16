@@ -147,7 +147,9 @@ const { useSwapExecution } =
     await import('@modules/swap/hooks/useSwapExecution')
 const {
     ETH_SCOPE,
+    ETHEREUM_SECOND,
     ETHEREUM_SENDER,
+    seedEtherAt,
     seedEthereumAssets,
     seedSenderEther,
     RECEIVER,
@@ -687,6 +689,51 @@ describe('Flow: Swap from an Ethereum account', () => {
         await settleRender()
         expect(useSwapsStore.getState().sourceChainId).toBe('ethereum')
         expect(useSwapsStore.getState().fromAsset).toBe(TOKEN)
+    })
+
+    it('Given two accounts holding the same token, when the user picks it and chooses the second account, then the swap pays from that account with the token', async () => {
+        const second = ETHEREUM_SECOND
+        useAccountsStore.getState().setAccounts([ETHEREUM_SENDER, second])
+        useAccountsStore.getState().setSelectedAccountId(ETHEREUM_SENDER.id)
+        await seedSenderEther('10000000000000000000')
+        await seedEtherAt(RECEIVER, '10000000000000000000')
+        for (const [accountAddress, amount] of [
+            [SENDER, '100000000'],
+            [RECEIVER, '250000000'],
+        ]) {
+            await insertAssetHolding({
+                accountAddress,
+                assetId: TOKEN,
+                scope: ETH_SCOPE,
+                amount: new Decimal(amount),
+            })
+        }
+        fakeNode()
+        // Ethereum's default receive asset is the token, which the pay picker leaves out.
+        useSwapsStore.getState().setFromAsset(ETH_ASSET)
+        useSwapsStore.getState().setToAsset(ETH_ASSET)
+        renderWithNavigation(SwapScreen, 'Swap')
+
+        fireEvent.click(await screen.findByTestId('swap-pay-asset-selector'))
+        fireEvent.click(await screen.findByTestId(`asset-list-item-${TOKEN}`))
+        expect(
+            await screen.findByTestId('swap_source_account_header-title'),
+        ).toBeTruthy()
+        fireEvent.click(
+            await screen.findByTestId(`swap_source_account_${second.id}`),
+        )
+
+        await waitFor(() =>
+            expect(useAccountsStore.getState().selectedAccountId).toBe(
+                second.id,
+            ),
+        )
+        await settleRender()
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: TOKEN,
+            pairAccountId: second.id,
+        })
     })
 
     it('Given an Ethereum asset with no Algorand pairs, when Swap To shows the Algorand chip, then it explains why and moves the swap to Algorand', async () => {

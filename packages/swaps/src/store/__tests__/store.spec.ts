@@ -50,6 +50,48 @@ describe('swaps/store', () => {
         expect(result.current.toAsset).toBeNull()
     })
 
+    test('setAccountPair pins the pair to the account it was picked for', () => {
+        useSwapsStore.getState().setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: '0xusdc',
+        })
+
+        expect(useSwapsStore.getState()).toMatchObject({
+            sourceChainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: '0xusdc',
+            pairAccountId: 'account-2',
+        })
+    })
+
+    test('setAccountPair keeps a receive asset on another network when given one', () => {
+        const base = { chainId: 'base', networkId: 'mainnet' } as const
+        useSwapsStore.getState().setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+            toAsset: 'native',
+            toAssetScope: base,
+        })
+
+        expect(useSwapsStore.getState().toAssetScope).toEqual(base)
+    })
+
+    test('setSourceChainId unpins the pair from its account', () => {
+        const store = useSwapsStore.getState()
+        store.setAccountPair({
+            accountId: 'account-2',
+            chainId: 'ethereum',
+            fromAsset: 'native',
+        })
+
+        store.setSourceChainId('algorand')
+
+        expect(useSwapsStore.getState().pairAccountId).toBeNull()
+    })
+
     test('setSourceChainId clears the pair and where it was going', () => {
         const store = useSwapsStore.getState()
         store.setFromAsset('1234')

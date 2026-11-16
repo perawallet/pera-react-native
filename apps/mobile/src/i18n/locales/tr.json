@@ -4305,6 +4305,10 @@
         "receiving_account": {
             "title": "Alıcı hesap",
             "label": "Alınacak hesap"
+        },
+        "source_account": {
+            "title": "Hesap seç",
+            "subtitle": "Bu varlığa sahip <0>{{accounts}} hesabın</0> var. Devam etmek için birini seç."
         }
     },
     "onramp": {

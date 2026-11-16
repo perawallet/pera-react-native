@@ -16,7 +16,7 @@ import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
-import { useChainLabel } from '../useChainLabel'
+import { useChainLabel, useChainNetworkLabel } from '../useChainLabel'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -52,6 +52,14 @@ describe('useChainLabel', () => {
 
         expect(result.current.label).toBe(
             'account_details.assets.chain_network:polygon',
+        )
+    })
+
+    it('names any chain it is handed, for one label per list row', () => {
+        const { result } = renderHook(() => useChainNetworkLabel())
+
+        expect(result.current('ethereum')).toBe(
+            'account_details.assets.chain_network:Ethereum',
         )
     })
 })

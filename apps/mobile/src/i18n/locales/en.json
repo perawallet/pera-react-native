@@ -4305,6 +4305,10 @@
         "receiving_account": {
             "title": "Receiving account",
             "label": "Receive to"
+        },
+        "source_account": {
+            "title": "Select account",
+            "subtitle": "You have <0>{{accounts}} accounts</0> with this asset. Choose one to continue."
         }
     },
     "onramp": {

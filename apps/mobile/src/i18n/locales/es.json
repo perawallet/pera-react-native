@@ -4305,6 +4305,10 @@
         "receiving_account": {
             "title": "Cuenta receptora",
             "label": "Recibir en"
+        },
+        "source_account": {
+            "title": "Selecciona una cuenta",
+            "subtitle": "Tienes <0>{{accounts}} cuentas</0> con este activo. Elige una para continuar."
         }
     },
     "onramp": {
