@@ -142,6 +142,23 @@ describe('useAddToFolderSheet', () => {
         expect(dismiss).not.toHaveBeenCalled()
     })
 
+    it('ignores taps after the first choice while the sheet closes', async () => {
+        request.mockResolvedValue('NFTs')
+        const first = store().createFolder('Swap')
+        const second = store().createFolder('DEX')
+        const { result } = renderHook(() => useAddToFolderSheet({ url: URL }))
+
+        act(() => result.current.choose(first))
+        act(() => result.current.choose(second))
+        await act(() => result.current.openNewFolder())
+
+        expect(store().folders[first]?.items).toEqual([URL])
+        expect(store().folders[second]?.items).toEqual([])
+        expect(store().folderOrder).toHaveLength(2)
+        expect(resolve).toHaveBeenCalledTimes(1)
+        expect(resolve).toHaveBeenCalledWith({ folderName: 'Swap' })
+    })
+
     it('closes itself when the dApp is no longer a favorite', () => {
         renderHook(() => useAddToFolderSheet({ url: URL }))
 

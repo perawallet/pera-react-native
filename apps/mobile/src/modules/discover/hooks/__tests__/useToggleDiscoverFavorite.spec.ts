@@ -11,7 +11,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DiscoverEvent, trackEvent } from '@analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
@@ -25,6 +25,13 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 vi.mock('@hooks/useToast', () => ({ useToast: vi.fn() }))
+// Keeps interpolation visible, so a toast's folder name can be asserted.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
+}))
 vi.mock('@modules/bottom-sheet', () => ({ useBottomSheet: vi.fn() }))
 
 const successToast = vi.fn()
@@ -57,6 +64,10 @@ describe('useToggleDiscoverFavorite', () => {
         vi.clearAllMocks()
         vi.mocked(useToast).mockReturnValue({ successToast } as never)
         vi.mocked(useBottomSheet).mockReturnValue({ request } as never)
+    })
+
+    afterEach(() => {
+        bottomSheetNotifier.current = null
     })
 
     it('favorites then unfavorites, tracking each', () => {
@@ -139,11 +150,10 @@ describe('useToggleDiscoverFavorite', () => {
         await act(async () => toastOnPress()())
 
         expect(successToast).toHaveBeenLastCalledWith(
-            'discover.add_to_folder.added',
+            'discover.add_to_folder.added {"folder":"Swap"}',
             '',
             { notifier: lower },
         )
-        bottomSheetNotifier.current = null
     })
 
     it('shows nothing when the sheet is dismissed', async () => {

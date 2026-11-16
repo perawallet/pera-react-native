@@ -77,24 +77,37 @@ export const useAddToFolderSheet = ({
         dismiss()
     }, [favorite, dismiss])
 
+    // The sheet stays mounted through its close animation: after the first
+    // choice, further taps must not file the dApp again.
+    const hasSettled = useRef(false)
+    const settle = useCallback(
+        (folderName: string) => {
+            hasSettled.current = true
+            resolve({ folderName })
+        },
+        [resolve],
+    )
+
     const choose = useCallback(
         (id: string) => {
+            if (hasSettled.current) return
             const row = rows.find(r => r.id === id)
             if (!row || row.holdsDapp) return
             setDappInFolder(id, url, true)
             trackEvent(DiscoverEvent.FolderDappAdd)
-            resolve({ folderName: row.name })
+            settle(row.name)
         },
-        [rows, setDappInFolder, url, resolve],
+        [rows, setDappInFolder, url, settle],
     )
     const openNewFolder = useCallback(async () => {
+        if (hasSettled.current) return
         const id = await createFolder(url)
         const folder =
             id === undefined
                 ? undefined
                 : useDiscoverFavoritesStore.getState().folders[id]
-        if (folder) resolve({ folderName: folder.name })
-    }, [createFolder, url, resolve])
+        if (folder) settle(folder.name)
+    }, [createFolder, url, settle])
 
     return {
         dappName: favorite?.name ?? '',
