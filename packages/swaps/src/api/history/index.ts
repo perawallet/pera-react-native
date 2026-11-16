@@ -11,6 +11,7 @@
  */
 
 export {
+    fetchDeviceSwapHistory,
     fetchSwapHistory,
     type FetchSwapHistoryParams,
     type SwapHistoryPage,

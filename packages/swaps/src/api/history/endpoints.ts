@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { isPeraNetworkError, type Nullable } from '@perawallet/wallet-core-shared'
 import type { SwapHistoryItem } from '../../models'
 import { transformSwapOrderItem } from '../orders/transformers'
 import { cursorOf, routerRequest } from '../router-request'
@@ -54,5 +54,69 @@ export const fetchSwapHistory = async (
             transformSwapOrderItem(item, resolve),
         ),
         next: cursorOf(parsed.next),
+    }
+}
+
+const isAccountNotOnDeviceError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    error.status === 422 &&
+    error.backendCode === 'account_not_on_device'
+
+const isDeviceNotFoundError = (error: unknown): boolean =>
+    isPeraNetworkError(error) &&
+    error.status === 404 &&
+    error.backendCode === 'device_not_found'
+
+const EMPTY_PAGE: SwapHistoryPage = { results: [], next: null }
+
+/**
+ * `fetchSwapHistory` limited to the swaps this device can read. The router
+ * refuses a whole read when one named account isn't registered on the device
+ * (EVM addresses only register through v4 device registration), so a read that
+ * hits that is redone per account and the unregistered ones are dropped. A
+ * refused later page rejects: restarting would repeat rows already shown.
+ */
+export const fetchDeviceSwapHistory = async (
+    params: FetchSwapHistoryParams,
+    scope: ChainScope,
+    resolve?: ResolveSwapAssetRef,
+): Promise<SwapHistoryPage> => {
+    try {
+        return await fetchSwapHistory(params, scope, resolve)
+    } catch (error) {
+        if (isDeviceNotFoundError(error)) return EMPTY_PAGE
+        if (!isAccountNotOnDeviceError(error) || params.cursor) throw error
+        if (params.accounts.length <= 1) return EMPTY_PAGE
+
+        const pages = await Promise.all(
+            params.accounts.map(async account => {
+                try {
+                    return await fetchSwapHistory(
+                        { ...params, accounts: [account], cursor: undefined },
+                        scope,
+                        resolve,
+                    )
+                } catch (accountError) {
+                    if (isAccountNotOnDeviceError(accountError))
+                        return EMPTY_PAGE
+                    throw accountError
+                }
+            }),
+        )
+
+        const byOrderId = new Map<string, SwapHistoryItem>()
+        for (const page of pages) {
+            for (const item of page.results) byOrderId.set(item.orderId, item)
+        }
+        const merged = [...byOrderId.values()].sort(
+            (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+        )
+        return {
+            results:
+                params.limit === undefined
+                    ? merged
+                    : merged.slice(0, params.limit),
+            next: null,
+        }
     }
 }
