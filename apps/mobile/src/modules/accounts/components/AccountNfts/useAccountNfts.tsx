@@ -65,6 +65,8 @@ type UseAccountNftsResult = {
     isMultiChain: boolean
     /** No NFTs on any network: an active network chip, search or suspicious filter doesn't count. */
     showEmptyState: boolean
+    /** The last refresh failed and the gallery is showing stored NFTs. */
+    showRefreshNotice: boolean
     /** Each NFT names its network: several networks are listed together. */
     shouldShowNetwork: boolean
     listEmptyTitle: string
@@ -96,15 +98,23 @@ type UseAccountNftsResult = {
 // how to show them, not that nothing matched.
 const listEmptyCopy = ({
     t,
+    isRefreshFailed,
     isSuspiciousHidden,
     isNetworkEmpty,
     chainName,
 }: {
     t: ReturnType<typeof useLanguage>['t']
+    isRefreshFailed: boolean
     isSuspiciousHidden: boolean
     isNetworkEmpty: boolean
     chainName: string
 }): { title: string; body: string } => {
+    if (isRefreshFailed) {
+        return {
+            title: t('account_details.nfts.refresh_error_title'),
+            body: t('account_details.nfts.refresh_error_body'),
+        }
+    }
     if (isSuspiciousHidden) {
         return {
             title: t('account_details.nfts.suspicious_hidden_title'),
@@ -274,6 +284,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         collectibles: rows,
         isPending,
         isPlaceholderData,
+        hasUnrefreshedHoldings,
     } = useAccountCollectiblesQuery(sources, {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
@@ -395,8 +406,12 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         selectedChainId === null
             ? ''
             : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
+    // A failed refresh keeps the stored NFTs, so the rows are stale, not gone;
+    // with none stored it must not read as "no NFTs yet".
+    const isRefreshFailed = hasUnrefreshedHoldings && rows.length === 0
     const { title: listEmptyTitle, body: listEmptyBody } = listEmptyCopy({
         t,
+        isRefreshFailed,
         isSuspiciousHidden,
         isNetworkEmpty,
         chainName: selectedChainName,
@@ -410,7 +425,12 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         hasAccount: account !== null,
         canOptIn,
         isMultiChain,
-        showEmptyState: !isPending && rows.length === 0 && !searchFilter.length,
+        showEmptyState:
+            !isPending &&
+            rows.length === 0 &&
+            !searchFilter.length &&
+            !hasUnrefreshedHoldings,
+        showRefreshNotice: hasUnrefreshedHoldings && rows.length > 0,
         shouldShowNetwork: isMultiChain && selectedChainId === null,
         listEmptyTitle,
         listEmptyBody,

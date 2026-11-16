@@ -21,6 +21,8 @@ import {
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     abbreviateLargeAmount,
+    LONG_ADDRESS_LENGTH,
+    truncateAlgorandAddress,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -38,8 +40,13 @@ export type UseCollectibleInfoResult = {
     creatorDisplayAddress: string
     onCreatorPressed?: () => void
     onCreatorLongPressed: () => void
-    onAssetIdPressed: () => void
+    /** What the identity row shows, shortened; `onAssetIdLongPressed` copies it whole. */
+    identityDisplay: string
+    /** Undefined when the identity row doesn't open the asset's details. */
+    onAssetIdPressed?: () => void
     onAssetIdLongPressed: () => void
+    /** Undefined when the family lists no label for the collectible's standard. */
+    standardLabel: Optional<string>
     onOpenExplorer?: () => void
     /** Null shows `explorerDomain` instead. */
     explorerLabelKey: Nullable<I18nKey>
@@ -61,6 +68,8 @@ export const useCollectibleInfo = (
         chainUiFor(descriptor.family, scope.chainId).collectibleDetails ??
         neutralCollectibleDetailsDisplay
     const creatorAddress = asset.creator.address
+    const identity = display.identityOf?.(asset.assetId) ?? asset.assetId
+    const standard = asset.peraMetadata?.collectible?.standard
 
     // Both undefined on a network with no explorer (a custom one), so the rows
     // stop being CTAs rather than opening a link that goes nowhere.
@@ -115,8 +124,8 @@ export const useCollectibleInfo = (
     )
 
     const onAssetIdLongPressed = useCallback(
-        () => void copyToClipboard(String(asset.assetId)),
-        [copyToClipboard, asset.assetId],
+        () => void copyToClipboard(identity),
+        [copyToClipboard, identity],
     )
 
     const { amount: totalSupplyAmount, unit: totalSupplyUnit } =
@@ -132,8 +141,15 @@ export const useCollectibleInfo = (
             : '',
         onCreatorPressed: creatorUrl ? creatorPressed : undefined,
         onCreatorLongPressed,
-        onAssetIdPressed,
+        identityDisplay: truncateAlgorandAddress(identity, LONG_ADDRESS_LENGTH),
+        onAssetIdPressed: display.isIdentityLinked
+            ? onAssetIdPressed
+            : undefined,
         onAssetIdLongPressed,
+        standardLabel:
+            standard === undefined
+                ? undefined
+                : display.standardLabels?.[standard],
         onOpenExplorer: explorerUrl ? openExplorer : undefined,
         explorerLabelKey: display.explorerLabelKey,
         explorerDomain: explorerUrl ? extractDomain(explorerUrl) : undefined,

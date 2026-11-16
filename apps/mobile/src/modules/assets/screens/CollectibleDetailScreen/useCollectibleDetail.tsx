@@ -261,6 +261,9 @@ export const useCollectibleDetail = (
         showError,
     ])
 
+    // An EVM NFT's id is `{contract}/{tokenId}`; a `/` would split the file path.
+    const fileStem = assetId.replaceAll('/', '_')
+
     const handleCopyImage = useCallback(async () => {
         const imageUrl = getImageUrl()
         if (!imageUrl) return
@@ -268,7 +271,7 @@ export const useCollectibleDetail = (
         try {
             const base64 = await getImageBase64(
                 imageUrl,
-                `collectible_${assetId}`,
+                `collectible_${fileStem}`,
             )
 
             await Clipboard.setImageAsync(base64)
@@ -281,7 +284,7 @@ export const useCollectibleDetail = (
         } catch {
             errorToast(t('asset_details.collectible.image_copy_failed'), '')
         }
-    }, [assetId, getImageUrl, showToast, errorToast, haptics, t])
+    }, [fileStem, getImageUrl, showToast, errorToast, haptics, t])
 
     const handleSaveImage = useCallback(async () => {
         if (!saveableMediaUrl) return
@@ -290,7 +293,7 @@ export const useCollectibleDetail = (
             const extension = saveableMedia?.extension ?? 'png'
             await saveImageToDevice(
                 saveableMediaUrl,
-                `collectible_${assetId}.${extension}`,
+                `collectible_${fileStem}.${extension}`,
             )
 
             haptics.success()
@@ -310,7 +313,7 @@ export const useCollectibleDetail = (
             errorToast(t('asset_details.collectible.media_save_failed'), '')
         }
     }, [
-        assetId,
+        fileStem,
         saveableMediaUrl,
         saveableMedia,
         showToast,
