@@ -14,6 +14,7 @@ import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { SuspectedPoisoning } from '@perawallet/wallet-core-transactions'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
@@ -36,6 +37,8 @@ export type HistoryFeedSnapshot = {
     isLoadFailed: boolean
     isLoadUnavailable: boolean
     isLoadIntegrityBlocked: boolean
+    isRefreshFailed: boolean
+    isRefreshUnavailable: boolean
     hasNextPage: boolean
     isSearchPaused: boolean
     isRetrying: boolean
@@ -55,6 +58,10 @@ export type MergedHistory = {
     isLoadFailed: boolean
     isLoadUnavailable: boolean
     isLoadIntegrityBlocked: boolean
+    /** Some network failed while rows show; `failedChainIds` names it. */
+    isRefreshFailed: boolean
+    /** Every network in `failedChainIds` lacks the service, so retrying can't help. */
+    isRefreshUnavailable: boolean
     hasNextPage: boolean
     isSearchPaused: boolean
     isRetrying: boolean
@@ -62,8 +69,10 @@ export type MergedHistory = {
     suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
     /** Keyed by transaction id. */
     scopeByTransactionId: ReadonlyMap<string, ChainScope>
-    /** Networks that failed with nothing loaded, so none of their rows are in `rows`. */
+    /** Networks that failed with nothing loaded, or with only their own sends listed. */
     failedChainIds: ChainId[]
+    /** `failedChainIds` by display name, for the failed-network notice. */
+    failedNetworkNames: string[]
     /** Indexes of the feeds whose next page decides what shows next. */
     blockingFeeds: number[]
     /** Indexes of the feeds whose search paused; Search Older resumes them. */
@@ -131,6 +140,10 @@ export const mergeHistoryFeeds = (
     const failed = failedFeeds.map(index => feeds[index]!)
     const loadFailed = failed.filter(feed => feed.isLoadFailed)
     const isLoadFailed = feeds.length > 0 && loadFailed.length === feeds.length
+    const named = isLoadFailed
+        ? []
+        : failed.filter(feed => feed.isLoadFailed || feed.isRefreshFailed)
+    const failedChainIds = [...new Set(named.map(feed => feed.scope.chainId))]
 
     const scopeByTransactionId = new Map<string, ChainScope>()
     const suspectedPoisoningById = new Map<string, SuspectedPoisoning>()
@@ -165,9 +178,16 @@ export const mergeHistoryFeeds = (
         isRefreshing: reported.some(feed => feed.isRefreshing),
         suspectedPoisoningById,
         scopeByTransactionId,
-        failedChainIds: [
-            ...new Set(loadFailed.map(feed => feed.scope.chainId)),
-        ],
+        isRefreshFailed: named.length > 0,
+        isRefreshUnavailable:
+            named.length > 0 &&
+            named.every(
+                feed => feed.isLoadUnavailable || feed.isRefreshUnavailable,
+            ),
+        failedChainIds,
+        failedNetworkNames: failedChainIds.map(
+            chainId => chainDisplayNameOf(chainId) ?? chainId,
+        ),
         blockingFeeds,
         pausedFeeds,
         failedFeeds,

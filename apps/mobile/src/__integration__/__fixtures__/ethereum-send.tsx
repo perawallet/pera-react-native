@@ -132,7 +132,6 @@ export const sentRecord = async () => {
     const [record] = await getPendingTransactionRecords({
         address: SENDER,
         scope: ETH_SCOPE,
-        listedIds: new Set(),
     })
     return record
 }

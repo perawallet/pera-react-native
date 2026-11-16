@@ -23,9 +23,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { historyChainAdapters } from '../history-adapter'
 import {
+    getMinedTransactionHistory,
     getPendingTransactionRecords,
-    getTransactionHistoryWithPending,
     MAX_PENDING_HISTORY_ROWS,
+    mergePendingRecords,
 } from '../pending-history'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -99,12 +100,8 @@ const minedRecord = (
 const ledger = (...attempts: SubmissionAttemptWithHistoryEntry[]) =>
     vi.mocked(getSubmissionAttemptsWithHistoryEntry).mockResolvedValue(attempts)
 
-const pendingRecords = (listedIds: string[] = []) =>
-    getPendingTransactionRecords({
-        address: ADDRESS,
-        scope: SCOPE,
-        listedIds: new Set(listedIds),
-    })
+const pendingRecords = () =>
+    getPendingTransactionRecords({ address: ADDRESS, scope: SCOPE })
 
 describe('getPendingTransactionRecords', () => {
     beforeEach(() => {
@@ -198,18 +195,6 @@ describe('getPendingTransactionRecords', () => {
 
         expect(record.fee).toBeUndefined()
         expect(record.isFeeMaximum).toBeUndefined()
-    })
-
-    it('leaves out an attempt once the chain lists its transaction', async () => {
-        ledger(attempt())
-
-        expect(await pendingRecords(['0xhash1'])).toEqual([])
-    })
-
-    it('leaves out a group attempt when any of its transactions is listed', async () => {
-        ledger(attempt({ txIds: ['0xfirst', '0xsecond'] }))
-
-        expect(await pendingRecords(['0xsecond'])).toEqual([])
     })
 
     it('matches the sender through the chain codec, not by string equality', async () => {
@@ -314,7 +299,7 @@ describe('getPendingTransactionRecords', () => {
     })
 })
 
-describe('getTransactionHistoryWithPending', () => {
+describe('getMinedTransactionHistory', () => {
     const getTransactionHistory = vi.fn()
 
     beforeEach(() => {
@@ -326,88 +311,69 @@ describe('getTransactionHistoryWithPending', () => {
         })
     })
 
-    it("hands the chain the scope's capabilities with every page read", async () => {
-        getTransactionHistory.mockResolvedValue({ items: [] })
+    it("hands the chain the scope's capabilities and reads no ledger", async () => {
+        const page = { items: [minedRecord('0xolder')] }
+        getTransactionHistory.mockResolvedValue(page)
 
-        await getTransactionHistoryWithPending(ADDRESS, SCOPE, {
+        const read = await getMinedTransactionHistory(ADDRESS, SCOPE, {
             cursor: 'page-2',
         })
 
+        expect(read).toBe(page)
         expect(getTransactionHistory).toHaveBeenCalledWith(
             ADDRESS,
             SCOPE,
             { cursor: 'page-2' },
             { capabilities: CAPABILITIES },
         )
+        expect(getSubmissionAttemptsWithHistoryEntry).not.toHaveBeenCalled()
+    })
+})
+
+describe('mergePendingRecords', () => {
+    const pending = (id: string, timestamp: number): TransactionRecord => ({
+        ...minedRecord(id, timestamp),
+        status: 'pending',
     })
 
-    it("puts the wallet's own broadcasts ahead of page one", async () => {
-        ledger(attempt())
-        getTransactionHistory.mockResolvedValue({
-            items: [minedRecord('0xmined')],
-            next: { cursor: 'page-2' },
-        })
+    it('puts a send newer than every mined record ahead of them', () => {
+        const merged = mergePendingRecords(
+            [pending('0xsent', CREATED_AT)],
+            [minedRecord('0xmined')],
+        )
 
-        const page = await getTransactionHistoryWithPending(ADDRESS, SCOPE)
-
-        expect(page.items.map(record => record.id)).toEqual([
-            '0xhash1',
-            '0xmined',
-        ])
-        expect(page.items[0].status).toBe('pending')
-        expect(page.minedItems.map(record => record.id)).toEqual(['0xmined'])
-        expect(page.next).toEqual({ cursor: 'page-2' })
+        expect(merged.map(record => record.id)).toEqual(['0xsent', '0xmined'])
     })
 
-    it('merges a resolved attempt into page one by time, not ahead of it', async () => {
-        ledger(attempt({ status: 'replaced' }))
-        getTransactionHistory.mockResolvedValue({
-            items: [
+    it('merges a send by time, not ahead of newer mined records', () => {
+        const merged = mergePendingRecords(
+            [pending('0xsent', CREATED_AT)],
+            [
                 minedRecord('0xnewer', CREATED_AT + 1_000),
                 minedRecord('0xolder', CREATED_AT - 1_000),
             ],
-        })
+        )
 
-        const page = await getTransactionHistoryWithPending(ADDRESS, SCOPE)
-
-        expect(page.items.map(record => record.id)).toEqual([
+        expect(merged.map(record => record.id)).toEqual([
             '0xnewer',
-            '0xhash1',
+            '0xsent',
             '0xolder',
         ])
     })
 
-    it('passes a later page straight through', async () => {
-        ledger(attempt())
-        const later = { items: [minedRecord('0xolder')] }
-        getTransactionHistory.mockResolvedValue(later)
+    it('leaves a send the chain lists to the mined record', () => {
+        const merged = mergePendingRecords(
+            [pending('0xhash1', CREATED_AT)],
+            [minedRecord('0xhash1')],
+        )
 
-        const page = await getTransactionHistoryWithPending(ADDRESS, SCOPE, {
-            cursor: 'page-2',
-        })
-
-        expect(page).toEqual({ ...later, minedItems: later.items })
-        expect(getSubmissionAttemptsWithHistoryEntry).not.toHaveBeenCalled()
+        expect(merged).toHaveLength(1)
+        expect(merged[0].status).toBe('confirmed')
     })
 
-    it('leaves exactly one record once the mined page lists the pending hash', async () => {
-        ledger(attempt())
-        getTransactionHistory.mockResolvedValue({
-            items: [minedRecord('0xhash1')],
-        })
+    it('lists the sends alone when the chain has nothing loaded', () => {
+        const merged = mergePendingRecords([pending('0xsent', CREATED_AT)], [])
 
-        const page = await getTransactionHistoryWithPending(ADDRESS, SCOPE)
-
-        expect(page.items).toHaveLength(1)
-        expect(page.items[0].status).toBe('confirmed')
-    })
-
-    it('rejects when the mined page does', async () => {
-        ledger(attempt())
-        getTransactionHistory.mockRejectedValue(new Error('offline'))
-
-        await expect(
-            getTransactionHistoryWithPending(ADDRESS, SCOPE),
-        ).rejects.toThrow('offline')
+        expect(merged.map(record => record.id)).toEqual(['0xsent'])
     })
 })

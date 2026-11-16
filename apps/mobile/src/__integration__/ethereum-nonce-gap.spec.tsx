@@ -57,8 +57,10 @@ import {
     useBlockingGapQuery,
     useFillNonceGapMutation,
 } from '@perawallet/wallet-core-transactions'
-import { server } from '@test-utils/msw-server'
+import { http, HttpResponse, server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import {
     resetTestDatabase,
     setupTestDatabase,
@@ -72,6 +74,8 @@ import {
 } from '@test-utils/signing-review'
 import { VIEM_TRANSFER_NONCE_2 } from '@packages/chain-ethereum/src/signing/__tests__/fixtures'
 import { readReplaceableTransaction } from '@packages/chain-ethereum/src/transfer/replacement'
+import { historyPath } from '@packages/chain-ethereum/src/history/api/endpoints'
+import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
 const RPC_URL = 'https://mainnet.rpc.test/'
 
@@ -314,6 +318,43 @@ describe('Flow: unblock an Ethereum send stuck behind a dropped nonce', () => {
             nonce: 2,
         })
         expect(settled.status).toBe('confirmed')
+    })
+
+    // A build listing an EVM history service reads the pinned 503; CI's lists
+    // none, so its read is unavailable instead. Either way the send stays listed.
+    it('Given a send stuck behind a dropped nonce and the history read failing, when History opens, then the send lists with its waiting notice and the failure is named beside it', async () => {
+        server.use(
+            http.get(`*${historyPath(':chainId', ':address')}`, () =>
+                HttpResponse.json({}, { status: 503 }),
+            ),
+        )
+        await recordDroppedSend()
+        const stuck = await broadcastStuckSend()
+
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+
+        const notice = await screen.findByTestId(
+            `transaction_row_notice_${stuck}`,
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        await waitFor(() =>
+            expect(notice.textContent).toContain(
+                'transactions.notice.waiting_on_earlier',
+            ),
+        )
+        const failed = await screen.findByTestId(
+            'history_network_failed',
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(failed.textContent).toMatch(
+            /asset_details\.transaction_list\.network_(failed|unavailable)/,
+        )
+        expect(screen.queryByText('common.error.title')).toBeNull()
+        expect(
+            screen.queryByText('common.network_unavailable.title'),
+        ).toBeNull()
     })
 
     it('Given a send at nonce 2 whose earlier nonce the node holds, when its row asks, then it is not flagged and unblocking is refused', async () => {

@@ -76,6 +76,7 @@ const recordsResult = (
     isFetching: false,
     isFetchingNextPage: false,
     isError: false,
+    isNextPageError: false,
     error: null,
     hasNextPage: false,
     isSearchPaused: false,
@@ -166,9 +167,13 @@ describe('useTransactionHistoryRows', () => {
         )
     })
 
-    it('retries the next page after a failed one, and the first page otherwise', () => {
+    it('retries the page that failed: a later page after its failure, page one otherwise', () => {
         vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
-        const failedNext = recordsResult({ isError: true, hasNextPage: true })
+        const failedNext = recordsResult({
+            isError: true,
+            isNextPageError: true,
+            hasNextPage: true,
+        })
         vi.mocked(useTransactionRecordsQuery).mockReturnValue(failedNext)
 
         const { result, rerender } = renderHook(() =>
@@ -185,6 +190,16 @@ describe('useTransactionHistoryRows', () => {
         rerender()
         act(() => result.current.retry())
         expect(failedFirst.refetch).toHaveBeenCalledTimes(1)
+
+        const failedRefresh = recordsResult({
+            isError: true,
+            hasNextPage: true,
+        })
+        vi.mocked(useTransactionRecordsQuery).mockReturnValue(failedRefresh)
+        rerender()
+        act(() => result.current.retry())
+        expect(failedRefresh.refetch).toHaveBeenCalledTimes(1)
+        expect(failedRefresh.fetchNextPage).not.toHaveBeenCalled()
     })
     it('reports a retry in flight only while the failed read is re-requested', () => {
         vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
@@ -244,6 +259,83 @@ describe('useTransactionHistoryRows', () => {
         expect(result.current.isLoadFailed).toBe(true)
         expect(result.current.isLoadUnavailable).toBe(true)
         expect(result.current.isLoadIntegrityBlocked).toBe(false)
+    })
+
+    describe('refresh failure with rows listed', () => {
+        const SENT = {
+            id: '0xsent',
+            scope: ETH_SCOPE,
+            status: 'pending',
+            timestamp: 1_700_000_000_000,
+            summary: {
+                kind: 'transfer',
+                title: { key: 'transactions.list_item.send' },
+                direction: 'out',
+                icon: 'send',
+            },
+            chainData: { family: 'evm' },
+        } as unknown as TransactionRecord
+        const mount = () =>
+            renderHook(() =>
+                useTransactionHistoryRows({
+                    accountAddress: '0xabc',
+                    scope: ETH_SCOPE,
+                }),
+            )
+
+        beforeEach(() => {
+            vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+        })
+
+        it('keeps the rows and reports the failure beside them, not as a load failure', () => {
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+                recordsResult({
+                    records: [SENT],
+                    isError: true,
+                    error: new Error('503'),
+                }),
+            )
+
+            const { result } = mount()
+
+            expect(result.current.transactionCount).toBe(1)
+            expect(result.current.isLoadFailed).toBe(false)
+            expect(result.current.isRefreshFailed).toBe(true)
+            expect(result.current.isRefreshUnavailable).toBe(false)
+            expect(result.current.failedNetworkNames).toEqual([
+                expect.stringMatching(/ethereum/i),
+            ])
+        })
+
+        it('calls a missing Pera service unavailable', () => {
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+                recordsResult({
+                    records: [SENT],
+                    isError: true,
+                    error: new PeraServiceUnavailableError(ETH_SCOPE),
+                }),
+            )
+
+            const { result } = mount()
+
+            expect(result.current.isRefreshUnavailable).toBe(true)
+        })
+
+        it('leaves a later page failing to the list', () => {
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+                recordsResult({
+                    records: [SENT],
+                    isError: true,
+                    isNextPageError: true,
+                    error: new Error('503'),
+                }),
+            )
+
+            const { result } = mount()
+
+            expect(result.current.isRefreshFailed).toBe(false)
+            expect(result.current.failedNetworkNames).toEqual([])
+        })
     })
 
     describe('suspected poisoning', () => {
