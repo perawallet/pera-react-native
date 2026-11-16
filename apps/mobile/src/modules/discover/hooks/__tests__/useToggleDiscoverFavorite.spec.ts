@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DiscoverEvent, trackEvent } from '@analytics'
+import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
@@ -123,6 +124,36 @@ describe('useToggleDiscoverFavorite', () => {
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })
+    })
+
+    it('shows "Added to {folder}" once the sheet resolves, above the sheet underneath', async () => {
+        const lower = { showNotification: vi.fn() }
+        // The Add to folder sheet closes, handing the notifier back to the sheet below.
+        request.mockImplementation(() => {
+            bottomSheetNotifier.current = lower as never
+            return Promise.resolve({ folderName: 'Swap' })
+        })
+        const { result } = renderHook(() => useToggleDiscoverFavorite())
+        result.current(dapp, null)
+
+        await act(async () => toastOnPress()())
+
+        expect(successToast).toHaveBeenLastCalledWith(
+            'discover.add_to_folder.added',
+            '',
+            { notifier: lower },
+        )
+        bottomSheetNotifier.current = null
+    })
+
+    it('shows nothing when the sheet is dismissed', async () => {
+        request.mockResolvedValue(undefined)
+        const { result } = renderHook(() => useToggleDiscoverFavorite())
+        result.current(dapp, null)
+
+        await act(async () => toastOnPress()())
+
+        expect(successToast).toHaveBeenCalledTimes(1)
     })
 
     it('tapping the toast after unstarring opens nothing', () => {

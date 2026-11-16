@@ -121,7 +121,7 @@
         "add_to_folder": {
             "title": "Adicionar a uma pasta",
             "new_folder": "Nova pasta",
-            "done": "Concluído"
+            "added": "Adicionado a {{folder}}"
         }
     },
     "account_menu": {

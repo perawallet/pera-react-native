@@ -121,7 +121,7 @@
         "add_to_folder": {
             "title": "Ajouter à un dossier",
             "new_folder": "Nouveau dossier",
-            "done": "Terminé"
+            "added": "Ajouté à {{folder}}"
         }
     },
     "account_menu": {
