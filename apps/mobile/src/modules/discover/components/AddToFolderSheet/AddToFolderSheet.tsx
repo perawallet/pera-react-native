@@ -45,6 +45,14 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                     subtitle={sheet.dappName}
                 />
             }
+            footer={
+                <PWButton
+                    variant='primary'
+                    title={t('discover.add_to_folder.done')}
+                    onPress={sheet.done}
+                    testID='discover_add_to_folder_done'
+                />
+            }
         >
             <PWView style={styles.content}>
                 <PWTouchableOpacity
@@ -88,13 +96,6 @@ export const AddToFolderSheet = ({ url }: AddToFolderSheetProps) => {
                         />
                     </PWTouchableOpacity>
                 ))}
-                <PWButton
-                    variant='primary'
-                    title={t('discover.add_to_folder.done')}
-                    onPress={sheet.done}
-                    style={styles.done}
-                    testID='discover_add_to_folder_done'
-                />
             </PWView>
         </PWSheetLayout>
     )

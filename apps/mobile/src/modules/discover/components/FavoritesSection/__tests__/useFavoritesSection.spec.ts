@@ -114,6 +114,19 @@ describe('useFavoritesSection', () => {
         expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FolderCreate)
     })
 
+    it('opens the name sheet without the auto container, as PWSheetLayout needs', async () => {
+        request.mockResolvedValue(undefined)
+        const { result } = renderHook(() => useFavoritesSection())
+
+        await act(() => result.current.openNewFolder())
+
+        expect(request.mock.calls[0]?.[0].options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
+        })
+    })
+
     it('creates nothing when the name sheet is dismissed', async () => {
         request.mockResolvedValue(undefined)
         const { result } = renderHook(() => useFavoritesSection())

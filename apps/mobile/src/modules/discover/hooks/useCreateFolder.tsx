@@ -33,7 +33,12 @@ export const useCreateFolder = (): ((
         async (initialUrl?: string) => {
             const name = await request<FolderNameSheetResult>({
                 contents: <FolderNameSheet mode='create' />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    // PWSheetLayout scrolls only without the auto container.
+                    autoCreateContainer: false,
+                },
             })
             if (name === undefined) return undefined
             const id = createFolder(name, initialUrl)

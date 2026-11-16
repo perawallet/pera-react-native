@@ -112,6 +112,19 @@ describe('useToggleDiscoverFavorite', () => {
         expect(trackEvent).toHaveBeenCalledWith(DiscoverEvent.FavoriteToastTap)
     })
 
+    it('opens Add to folder without the auto container, so a long folder list scrolls', () => {
+        const { result } = renderHook(() => useToggleDiscoverFavorite())
+        result.current(dapp, null)
+
+        toastOnPress()()
+
+        expect(request.mock.calls[0]?.[0].options).toEqual({
+            size: 'auto',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
+        })
+    })
+
     it('tapping the toast after unstarring opens nothing', () => {
         const { result } = renderHook(() => useToggleDiscoverFavorite())
         result.current(dapp, null)

@@ -64,6 +64,8 @@ export const useToggleDiscoverFavorite =
                                 options: {
                                     size: 'auto',
                                     enablePanDownToClose: true,
+                                    // PWSheetLayout scrolls only without the auto container.
+                                    autoCreateContainer: false,
                                 },
                             })
                         },

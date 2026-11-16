@@ -34,7 +34,4 @@ export const useStyles = makeStyles(theme => ({
     name: {
         flex: 1,
     },
-    done: {
-        marginTop: theme.spacing.md,
-    },
 }))
