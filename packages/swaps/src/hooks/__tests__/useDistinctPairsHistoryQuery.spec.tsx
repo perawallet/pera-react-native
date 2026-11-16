@@ -29,7 +29,8 @@ vi.mock('../../api', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceIdLookup: () => () => 'device-1',
+    useDeviceIdLookup: () => (deployment: string | null) =>
+        deployment ? `device-${deployment}` : null,
 }))
 
 function createWrapper() {
@@ -64,10 +65,10 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(fetchSwapHistory).toHaveBeenCalledWith(
             {
-                deviceId: 'device-1',
+                deviceId: 'device-live',
                 accounts: ['fake-a:main:ADDRESS'],
                 limit: 50,
             },
@@ -93,7 +94,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data?.[0].sourceAccount).toEqual(paidBy)
     })
 
@@ -129,7 +130,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        await waitFor(() => expect(result.current.data).toHaveLength(2))
         const batches = vi
             .mocked(fetchSwapHistory)
             .mock.calls.map(([params]) => params.accounts.length)
@@ -157,7 +158,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.isError).toBe(false)
         expect(result.current.data).toHaveLength(1)
     })
@@ -177,12 +178,45 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(fetchSwapHistory).toHaveBeenCalledWith(
             expect.objectContaining({ accounts: ['fake-a:main:ADDRESS'] }),
             SCOPE,
         )
         expect(result.current.data).toHaveLength(1)
+    })
+
+    test('asks each deployment with its own device id and network', async () => {
+        const testnet = {
+            scope: { chainId: 'algorand', networkId: 'testnet' } as ChainScope,
+            address: 'TESTNET',
+        }
+        vi.mocked(fetchSwapHistory).mockResolvedValue({
+            results: [],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () => useDistinctPairsHistoryQuery([ACCOUNT, testnet]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(fetchSwapHistory).toHaveBeenCalledTimes(2))
+        expect(fetchSwapHistory).toHaveBeenCalledWith(
+            expect.objectContaining({
+                deviceId: 'device-live',
+                accounts: ['fake-a:main:ADDRESS'],
+            }),
+            SCOPE,
+        )
+        expect(fetchSwapHistory).toHaveBeenCalledWith(
+            expect.objectContaining({
+                deviceId: 'device-developer',
+                accounts: ['fake-a:test:TESTNET'],
+            }),
+            testnet.scope,
+        )
+        expect(result.current.isError).toBe(false)
     })
 
     test('leaves out orders the wallet did not fund itself', async () => {
@@ -198,7 +232,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data).toEqual([])
     })
 

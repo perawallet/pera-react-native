@@ -10,12 +10,20 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
+import { useQueries, type UseQueryResult } from '@tanstack/react-query'
+import type {
+    ChainScope,
+    WalletMode,
+} from '@perawallet/wallet-core-chain-contract'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { fetchSwapHistory, routerAccountIdOrNull } from '../api'
-import type { SwapAccountAddress, SwapHistoryItem } from '../models'
+import type {
+    SwapAccountAddress,
+    SwapDistinctPairItem,
+    SwapHistoryItem,
+} from '../models'
 import { distinctSwapPairs } from '../utils/distinctSwapPairs'
 import { isSwapHistoryRow } from '../utils/isSwapHistoryRow'
 import { swapQueryKeys } from './querykeys'
@@ -27,66 +35,102 @@ const HISTORY_PAGE_SIZE = 50
 // accounts on several chains would outgrow it in a single request.
 const ACCOUNTS_PER_REQUEST = 20
 
+type RoutableAccount = SwapAccountAddress & { routerId: string }
+
+type HistoryBatch = {
+    /** The deployment's own device id and router scope serve every account in it. */
+    scope: ChainScope
+    deployment: WalletMode
+    accounts: RoutableAccount[]
+}
+
+export type UseDistinctPairsHistoryQueryResult = {
+    data: SwapDistinctPairItem[]
+    /** True only while nothing has loaded yet. */
+    isLoading: boolean
+    /** True only when every batch failed; a failed batch alone leaves the others' pairs and retries on its own. */
+    isError: boolean
+}
+
 const chunksOf = <T>(items: readonly T[], size: number): T[][] =>
     Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
         items.slice(index * size, (index + 1) * size),
     )
 
+const batchesOf = (accounts: readonly SwapAccountAddress[]): HistoryBatch[] => {
+    const byDeployment = new Map<WalletMode, RoutableAccount[]>()
+    for (const account of accounts) {
+        // An account on a network the router has no id for, such as a custom
+        // node, or with no Pera deployment, can't have swapped there.
+        const routerId = routerAccountIdOrNull(account.scope, account.address)
+        const deployment = deploymentOf(account.scope)
+        if (!routerId || !deployment) continue
+        const group = byDeployment.get(deployment) ?? []
+        group.push({ ...account, routerId })
+        byDeployment.set(deployment, group)
+    }
+    return [...byDeployment].flatMap(([deployment, group]) =>
+        chunksOf(group, ACCOUNTS_PER_REQUEST).map(chunk => ({
+            scope: chunk[0].scope,
+            deployment,
+            accounts: chunk,
+        })),
+    )
+}
+
 /**
  * The newest distinct pairs any of `accounts` swapped, each with the account
- * that paid. The device and request scope come from the first account the
- * router has an id for.
+ * that paid. Accounts are named rather than left to the device's
+ * registration, which doesn't carry EVM addresses on every deployment.
  */
 export const useDistinctPairsHistoryQuery = (
     accounts: SwapAccountAddress[],
-) => {
-    // An account on a network the router has no id for, such as a custom
-    // node, can't have swapped there; leaving it out keeps the others' chips.
-    const routable = useMemo(
-        () =>
-            accounts.flatMap(account => {
-                const id = routerAccountIdOrNull(account.scope, account.address)
-                return id ? [{ scope: account.scope, id }] : []
-            }),
-        [accounts],
+): UseDistinctPairsHistoryQueryResult => {
+    const deviceIdOf = useDeviceIdLookup()
+    const batches = useMemo(() => batchesOf(accounts), [accounts])
+
+    const combine = useCallback(
+        (results: UseQueryResult<SwapHistoryItem[]>[]) => {
+            const rows = results.flatMap(result => result.data ?? [])
+            return {
+                data: distinctSwapPairs(rows, DISTINCT_PAIRS_LIMIT),
+                isLoading:
+                    rows.length === 0 &&
+                    results.some(result => result.isLoading),
+                isError:
+                    results.length > 0 &&
+                    results.every(result => result.isError),
+            }
+        },
+        [],
     )
-    const requestScope = routable.at(0)?.scope ?? null
-    const deviceId = useDeviceIdLookup()(
-        requestScope ? deploymentOf(requestScope) : null,
-    )
-    return useQuery({
-        queryKey: swapQueryKeys.distinctPairsHistory(accounts),
-        queryFn: async () => {
-            if (!requestScope) throw new Error('No swap account to read')
-            // Named rather than left to the device's registration, which
-            // doesn't carry EVM addresses on every deployment.
-            const pages = await Promise.allSettled(
-                chunksOf(routable, ACCOUNTS_PER_REQUEST).map(chunk =>
-                    fetchSwapHistory(
+
+    return useQueries({
+        queries: batches.map(batch => {
+            const deviceId = deviceIdOf(batch.deployment)
+            return {
+                queryKey: swapQueryKeys.distinctPairsHistory(
+                    batch.accounts.map(({ scope, address }) => ({
+                        scope,
+                        address,
+                    })),
+                ),
+                queryFn: async () => {
+                    const page = await fetchSwapHistory(
                         {
                             deviceId: deviceId ?? '',
-                            accounts: chunk.map(account => account.id),
+                            accounts: batch.accounts.map(
+                                account => account.routerId,
+                            ),
                             limit: HISTORY_PAGE_SIZE,
                         },
-                        requestScope,
-                    ),
-                ),
-            )
-            const read = pages.flatMap(page =>
-                page.status === 'fulfilled' ? [page.value] : [],
-            )
-            // One failed batch leaves the others' chips; only a total failure is an error.
-            if (read.length === 0) {
-                const [failure] = pages
-                throw failure?.status === 'rejected'
-                    ? failure.reason
-                    : new Error('No swap history read')
+                        batch.scope,
+                    )
+                    return page.results.filter(isSwapHistoryRow)
+                },
+                enabled: !!deviceId,
             }
-            const rows: SwapHistoryItem[] = read.flatMap(page =>
-                page.results.filter(isSwapHistoryRow),
-            )
-            return distinctSwapPairs(rows, DISTINCT_PAIRS_LIMIT)
-        },
-        enabled: requestScope !== null && !!deviceId,
+        }),
+        combine,
     })
 }

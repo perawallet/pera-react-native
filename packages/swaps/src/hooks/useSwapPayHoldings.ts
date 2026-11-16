@@ -24,8 +24,7 @@ import {
     type SwapPayHolding,
 } from '../utils/groupSwapPayHoldings'
 import { isSwappableAsset } from '../utils/isSwappableAsset'
-import { useSwapSigningAccounts } from './useSwapScope'
-import { useSwapSourceChainsResolver } from './useSwapSourceChainsResolver'
+import { useSwapSourceChainsByAccount } from './useSwapSourceChainsByAccount'
 
 export type UseSwapPayHoldingsResult = {
     /** Empty until every account's holdings are read. */
@@ -39,19 +38,8 @@ export type UseSwapPayHoldingsResult = {
 
 /** What every account that can sign a swap holds, on the chains it can pay from, one entry per asset. */
 export const useSwapPayHoldings = (): UseSwapPayHoldingsResult => {
-    const accounts = useSwapSigningAccounts()
-    const sourceChainsOf = useSwapSourceChainsResolver()
-    const sourceChainsByAccount = useMemo(
-        () =>
-            new Map(
-                accounts.map(account => [account.id, sourceChainsOf(account)]),
-            ),
-        [accounts, sourceChainsOf],
-    )
-    const sourceChainIds = useMemo(
-        () => [...new Set([...sourceChainsByAccount.values()].flat())],
-        [sourceChainsByAccount],
-    )
+    const { accounts, sourceChainsByAccount, sourceChainIds } =
+        useSwapSourceChainsByAccount()
 
     const { assetBalances, isPending, isError } =
         useAccountsHoldingsAcrossChainsQuery(accounts)

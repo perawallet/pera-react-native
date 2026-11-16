@@ -16,8 +16,7 @@ import type { SwapHistoryPair } from '../models'
 import { pairsPaidBy } from '../utils/pairsPaidBy'
 import { useDistinctPairsHistoryQuery } from './useDistinctPairsHistoryQuery'
 import { useSwapAccountsAddresses } from './useSwapAccountsAddresses'
-import { useSwapSigningAccounts } from './useSwapScope'
-import { useSwapSourceChainsResolver } from './useSwapSourceChainsResolver'
+import { useSwapSourceChainsByAccount } from './useSwapSourceChainsByAccount'
 
 export type UseRecentSwapPairsQueryResult = {
     pairs: SwapHistoryPair[]
@@ -29,8 +28,7 @@ export type UseRecentSwapPairsQueryResult = {
 
 /** The newest distinct pairs the wallet's swap accounts paid for, each with its payer. */
 export const useRecentSwapPairsQuery = (): UseRecentSwapPairsQueryResult => {
-    const accounts = useSwapSigningAccounts()
-    const sourceChainsOf = useSwapSourceChainsResolver()
+    const { accounts, sourceChainsByAccount } = useSwapSourceChainsByAccount()
     const payers = useSwapAccountsAddresses(accounts)
     const historyAccounts = useMemo(
         () => payers.map(({ scope, address }) => ({ scope, address })),
@@ -39,17 +37,10 @@ export const useRecentSwapPairsQuery = (): UseRecentSwapPairsQueryResult => {
     const { data, isLoading, isError } =
         useDistinctPairsHistoryQuery(historyAccounts)
 
-    const sourceChains = useMemo(
-        () =>
-            new Map(
-                accounts.map(account => [account.id, sourceChainsOf(account)]),
-            ),
-        [accounts, sourceChainsOf],
-    )
     const canPayOn = useCallback(
         (accountId: string, chainId: ChainId) =>
-            !!sourceChains.get(accountId)?.includes(chainId),
-        [sourceChains],
+            !!sourceChainsByAccount.get(accountId)?.includes(chainId),
+        [sourceChainsByAccount],
     )
 
     const pairs = useMemo(
