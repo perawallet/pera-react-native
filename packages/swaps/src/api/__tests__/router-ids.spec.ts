@@ -16,6 +16,7 @@ import {
     routerAccountId,
     routerAccountIdOrNull,
     routerAssetIdOf,
+    routerChainIdOrNull,
     scopeOfRouterChain,
     swapAssetRefOf,
 } from '../router-ids'
@@ -62,6 +63,13 @@ describe('router ids', () => {
             ),
         ).toBeNull()
         expect(routerAccountIdOrNull(SCOPE_A, 'ADDR')).toBe('fake-a:main:ADDR')
+    })
+
+    test('has no chain id, rather than throwing, on a network the router has no id for', () => {
+        expect(routerChainIdOrNull(SCOPE_B)).toBe('fake-b:main')
+        expect(
+            routerChainIdOrNull({ chainId: 'algorand', networkId: 'custom' }),
+        ).toBeNull()
     })
 
     test('refuses a network the router has no id for', () => {

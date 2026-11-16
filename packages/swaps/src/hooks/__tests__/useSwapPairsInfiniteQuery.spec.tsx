@@ -305,6 +305,87 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
         ])
     })
 
+    test('asks the router for the one destination network, on every page it skips', async () => {
+        vi.mocked(fetchSwapPairs)
+            .mockResolvedValueOnce({ assets: [asset('7')], next: 'c2' })
+            .mockResolvedValueOnce({
+                assets: [asset('native', 'mainnet', 'ethereum')],
+                next: null,
+            })
+
+        const { result } = renderHook(
+            () =>
+                useSwapPairsInfiniteQuery({
+                    anchor: ANCHOR,
+                    scope: SCOPE,
+                    destinationScopes: [ETH_SCOPE],
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() =>
+            expect(result.current.assets.map(a => a.ref.chainId)).toEqual([
+                'ethereum',
+            ]),
+        )
+        expect(
+            vi
+                .mocked(fetchSwapPairs)
+                .mock.calls.map(([params]) => [
+                    params.counterpartScope,
+                    params.cursor,
+                ]),
+        ).toEqual([
+            [ETH_SCOPE, undefined],
+            [ETH_SCOPE, 'c2'],
+        ])
+    })
+
+    test('does not narrow the request when several networks are shown', async () => {
+        vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+            assets: [],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapPairsInfiniteQuery({
+                    anchor: ANCHOR,
+                    scope: SCOPE,
+                    destinationScopes: [SCOPE, ETH_SCOPE],
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(
+            vi.mocked(fetchSwapPairs).mock.calls[0][0].counterpartScope,
+        ).toBeUndefined()
+    })
+
+    test('sends the typed search text without narrowing', async () => {
+        vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+            assets: [],
+            next: null,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSwapPairsInfiniteQuery({
+                    anchor: ANCHOR,
+                    scope: SCOPE,
+                    destinationScopes: [ETH_SCOPE],
+                    q: 'usd',
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        const [params] = vi.mocked(fetchSwapPairs).mock.calls[0]
+        expect(params.q).toBe('usd')
+        expect(params.counterpartScope).toBeUndefined()
+    })
+
     test('drops a pair on another chain by default', async () => {
         vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
             assets: [asset('7'), asset('native', 'mainnet', 'ethereum')],
