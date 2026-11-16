@@ -15,7 +15,6 @@ import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
-import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     seedOf,
@@ -58,18 +57,12 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 
-import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
-import {
-    CloudBackupRestorePassphraseScreen,
-    CloudBackupRestoreEncryptionKeyRoute,
-} from '@modules/cloud-backup/routes'
-import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
-// The stack's own registration, not the bare screen: the terminal exit lives
-// there, and a hand-rolled wrapper here would let it rot unnoticed.
-
 import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
+    confirmRestoreAccounts,
+    enterRestoreCredentials,
+    renderCloudBackupFlow,
     renderQueryHook,
     seedHDWalletAccounts,
 } from './__fixtures__/cloudBackup'
@@ -78,24 +71,6 @@ import {
     ALGO25_TEST_MNEMONIC,
 } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
-
-const renderCloudBackupFlow = () =>
-    renderWithNavigation(CloudBackupScreen, 'CloudBackupHome', {
-        additionalScreens: [
-            {
-                name: 'CloudBackupRestorePassphrase',
-                component: CloudBackupRestorePassphraseScreen,
-            },
-            {
-                name: 'CloudBackupRestoreEncryptionKey',
-                component: CloudBackupRestoreEncryptionKeyRoute,
-            },
-            {
-                name: 'CloudBackupOverview',
-                component: CloudBackupOverviewScreen,
-            },
-        ],
-    })
 
 const typeBackupWords = (words: string[]) => {
     words.forEach((word, index) => {
@@ -107,20 +82,8 @@ const typeBackupWords = (words: string[]) => {
 }
 
 const runRestoreFlow = async () => {
-    fireEvent.click(screen.getByTestId('cloud_backup_restore_option'))
-    fireEvent.click(
-        await screen.findByTestId('cloud_backup_restore_sheet_manual'),
-    )
-
-    await waitFor(() => screen.getByTestId('cloud_backup_restore_word_input_0'))
-    typeBackupWords(BACKUP_MNEMONIC)
-    fireEvent.click(
-        screen.getByTestId('cloud_backup_restore_passphrase_continue'),
-    )
-
-    const keyInput = await screen.findByTestId('cloud_backup_restore_key_input')
-    fireEvent.change(keyInput, { target: { value: BACKUP_SALT } })
-    fireEvent.click(screen.getByTestId('cloud_backup_restore_key_button'))
+    await enterRestoreCredentials()
+    await confirmRestoreAccounts()
 }
 
 /** Matches the toast title, not just its presence: the partial-success toast
@@ -499,6 +462,7 @@ describe('Flow: Cloud backup → Restore', () => {
         )
         expect((keyInput as HTMLInputElement).value).toBe(BACKUP_SALT)
         fireEvent.click(screen.getByTestId('cloud_backup_restore_key_button'))
+        await confirmRestoreAccounts()
 
         await waitFor(
             () => {

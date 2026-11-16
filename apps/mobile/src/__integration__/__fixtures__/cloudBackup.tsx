@@ -46,6 +46,7 @@ import {
     useListPasskeysForBackup,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    useResolvePrivateKeyForBackup,
     useResolveSeedEntropyForBackup,
 } from '@perawallet/wallet-core-backup'
 import { createItemKeyHasher } from '@perawallet/wallet-core-backup/test-handlers'
@@ -56,9 +57,12 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
-import { CloudBackupRestoreEncryptionKeyRoute } from '@modules/cloud-backup/routes'
+import {
+    CloudBackupRestoreEncryptionKeyScreen,
+    CloudBackupRestorePassphraseScreen,
+    CloudBackupRestoreSelectAccountsRoute,
+} from '@modules/cloud-backup/routes'
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
-import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 
 import {
@@ -92,25 +96,35 @@ export const BACKUP_SALT = Buffer.from(new Uint8Array(16).fill(7)).toString(
 
 export const DEVICE_ID = 'test-device-id'
 
+/** The restore screens as the cloud-backup stack registers them, the account
+ *  choice through its stack exit. */
+export const restoreFlowScreens = [
+    {
+        name: 'CloudBackupRestorePassphrase',
+        component: CloudBackupRestorePassphraseScreen,
+    },
+    {
+        name: 'CloudBackupRestoreEncryptionKey',
+        component: CloudBackupRestoreEncryptionKeyScreen,
+    },
+    {
+        name: 'CloudBackupRestoreSelectAccounts',
+        component: CloudBackupRestoreSelectAccountsRoute,
+    },
+    {
+        name: 'CloudBackupOverview',
+        component: CloudBackupOverviewScreen,
+    },
+]
+
 export const renderCloudBackupFlow = () =>
     renderWithNavigation(CloudBackupScreen, 'CloudBackupHome', {
-        additionalScreens: [
-            {
-                name: 'CloudBackupRestorePassphrase',
-                component: CloudBackupRestorePassphraseScreen,
-            },
-            {
-                name: 'CloudBackupRestoreEncryptionKey',
-                component: CloudBackupRestoreEncryptionKeyRoute,
-            },
-            {
-                name: 'CloudBackupOverview',
-                component: CloudBackupOverviewScreen,
-            },
-        ],
+        additionalScreens: restoreFlowScreens,
     })
 
-export const runRestoreFlow = async () => {
+/** Types the phrase and the salt and presses Restore, which asks for the PIN
+ *  when one is set. */
+export const enterRestoreCredentials = async () => {
     fireEvent.click(screen.getByTestId('cloud_backup_restore_option'))
     fireEvent.click(
         await screen.findByTestId('cloud_backup_restore_sheet_manual'),
@@ -130,6 +144,35 @@ export const runRestoreFlow = async () => {
     const keyInput = await screen.findByTestId('cloud_backup_restore_key_input')
     fireEvent.change(keyInput, { target: { value: BACKUP_SALT } })
     fireEvent.click(screen.getByTestId('cloud_backup_restore_key_button'))
+}
+
+/** Restores every account, or only the backup accounts whose `group`s are
+ *  given. */
+export const confirmRestoreAccounts = async (groups?: string[]) => {
+    await screen.findByTestId(
+        'cloud_backup_restore_accounts_button',
+        {},
+        { timeout: SLOW_WAIT_TIMEOUT_MS },
+    )
+    if (groups) {
+        fireEvent.click(
+            screen.getByTestId('cloud_backup_restore_accounts_selected'),
+        )
+        for (const group of groups) {
+            fireEvent.click(
+                await screen.findByTestId(
+                    `cloud_backup_restore_accounts_item_${group}`,
+                ),
+            )
+        }
+    }
+    // Queried after choosing: enabling the button re-renders it.
+    fireEvent.click(screen.getByTestId('cloud_backup_restore_accounts_button'))
+}
+
+export const runRestoreFlow = async (groups?: string[]) => {
+    await enterRestoreCredentials()
+    await confirmRestoreAccounts(groups)
 
     expect(
         await screen.findByTestId(
@@ -156,6 +199,9 @@ export const startRealSyncManager = () => {
     const mnemonicHook = renderQueryHook(() =>
         useResolveMnemonicForBackup(ALGORAND_CHAIN_ID),
     )
+    const privateKeyHook = renderQueryHook(() =>
+        useResolvePrivateKeyForBackup(),
+    )
     const listHook = renderQueryHook(() =>
         useListPasskeysForBackup(ALGORAND_CHAIN_ID),
     )
@@ -173,6 +219,7 @@ export const startRealSyncManager = () => {
         importContacts: contactImportHook.current.importContacts,
         resolveHd: hdHook.current,
         resolveMnemonic: mnemonicHook.current,
+        resolvePrivateKey: privateKeyHook.current,
         listPasskeys: listHook.current,
         importPasskeys: passkeyImportHook.current.importPasskeys,
         isLocked: () => false,
