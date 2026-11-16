@@ -85,7 +85,23 @@
                 "create": "Erstellen",
                 "save": "Speichern"
             },
-            "empty": "Noch keine dApps in diesem Ordner"
+            "empty": "Noch keine dApps in diesem Ordner",
+            "menu": {
+                "title": "Ordneroptionen",
+                "open_label": "Ordneroptionen",
+                "rename": "Ordner umbenennen",
+                "rearrange": "dApps neu anordnen",
+                "delete": "Ordner löschen"
+            },
+            "rearrange": {
+                "title": "dApps neu anordnen",
+                "remove_label": "{{name}} aus diesem Ordner entfernen"
+            },
+            "delete_confirm": {
+                "title": "Diesen Ordner löschen?",
+                "body": "Seine dApps bleiben in deinen Favoriten.",
+                "confirm": "Ordner löschen"
+            }
         },
         "favorites": {
             "title": "Favoriten",

@@ -85,7 +85,23 @@
                 "create": "Oluştur",
                 "save": "Kaydet"
             },
-            "empty": "Bu klasörde henüz dApp yok"
+            "empty": "Bu klasörde henüz dApp yok",
+            "menu": {
+                "title": "Klasör seçenekleri",
+                "open_label": "Klasör seçenekleri",
+                "rename": "Klasörü yeniden adlandır",
+                "rearrange": "dApp'leri yeniden sırala",
+                "delete": "Klasörü sil"
+            },
+            "rearrange": {
+                "title": "dApp'leri yeniden sırala",
+                "remove_label": "Bu klasörden çıkar: {{name}}"
+            },
+            "delete_confirm": {
+                "title": "Bu klasör silinsin mi?",
+                "body": "İçindeki dApp'ler favorilerinde kalır.",
+                "confirm": "Klasörü sil"
+            }
         },
         "favorites": {
             "title": "Favoriler",
