@@ -19,9 +19,15 @@ import {
     toError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import {
+    deleteBackupKeys,
+    persistBackupKeys,
+    withBackupEncryptionKey,
+} from '../credentials/keyStorage'
+import {
+    BackupAccountType,
     createEmptySyncState,
+    hdPositionOf,
     isAccountRecordKey,
     isLegacyItemKey,
     trackedItemsFromManifest,
@@ -46,10 +52,17 @@ import type {
 } from '../sync/types'
 import { readableBackupChains } from '../sync/backupChains'
 import { recordImportResults } from '../sync/importRetry'
+import { holdAccountsInBackup } from '../sync/reviewActions'
 import { mergeRemoteSettings } from '../sync/settingsDocument'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
-import { pullBackupItems } from './pullBackupItems'
+import {
+    collectBackupItems,
+    fetchBackupItems,
+    previewBackupAccounts,
+} from './pullBackupItems'
 import type {
+    BackupAccountOption,
+    FetchedBackup,
     PulledAccount,
     PulledSettings,
     PullBackupItemsResult,
@@ -85,7 +98,7 @@ export type RestoreProgress =
     | { phase: 'importing'; done: number; total: number }
     | { phase: 'finishing' }
 
-type RestoreCloudBackupParams = {
+type PrepareCloudBackupRestoreParams = {
     mnemonic: string[]
     /** Base64 salt the UI calls the "encryption key". */
     salt: string
@@ -93,6 +106,28 @@ type RestoreCloudBackupParams = {
      *  parameters its backup was created under, so that path passes them. */
     argon2id?: Argon2idConfig
     deviceId: DeviceId
+    onProgress?: (progress: RestoreProgress) => void
+}
+
+/** A backup unlocked and downloaded, with nothing written to the wallet yet. */
+export type PreparedCloudBackupRestore = {
+    backupId: BackupId
+    /** The pull ran under this id, and the backup must stay registered to it. */
+    deviceId: DeviceId
+    accounts: BackupAccountOption[]
+    fetched: FetchedBackup
+}
+
+/** `'all'` also restores a seed whose accounts were all removed, which no
+ *  option names. Otherwise the `group`s of the accounts to restore. */
+export type RestoreAccountSelection = 'all' | ReadonlySet<string>
+
+type CompleteCloudBackupRestoreParams = {
+    prepared: PreparedCloudBackupRestore
+    selection: RestoreAccountSelection
+    /** An account left unchosen but already on this device is not held: it
+     *  syncs from here like any account the device holds. */
+    isOnDevice?: (address: string) => boolean
     /** Decrypted remote accounts → wallet. Hook-bound (needs KMS), so the app
      *  layer injects it. */
     importAccounts: SyncImportFn
@@ -105,6 +140,12 @@ type RestoreCloudBackupParams = {
     importSettings: SettingsImportFn
     onProgress?: (progress: RestoreProgress) => void
 }
+
+type RestoreCloudBackupParams = PrepareCloudBackupRestoreParams &
+    Omit<
+        CompleteCloudBackupRestoreParams,
+        'prepared' | 'selection' | 'isOnDevice'
+    >
 
 export type RestoreCloudBackupResult = {
     backupId: BackupId
@@ -255,26 +296,42 @@ const withPulledSettings = (
     }
 }
 
+const partition = <T>(
+    items: readonly T[],
+    isKept: (item: T) => boolean,
+): [T[], T[]] => [items.filter(isKept), items.filter(item => !isKept(item))]
+
 /** The manifest leaves every item unread, so marking a failed import is all
  *  it takes for the first syncs to retry it. */
 const syncStateFromPull = (
     backupId: BackupId,
     pull: PullBackupItemsResult,
+    imported: readonly PulledAccount[],
     failed: ImportSummary['failed'],
+    isOnDevice: (address: string) => boolean,
 ): SyncState => {
     const items = trackedItemsFromPull(pull)
     recordImportResults(items, Object.keys(items), failed)
-    return {
-        ...createEmptySyncState(backupId),
-        lastKnownBackupHash: pull.backupGlobalHash,
-        lastSyncedSeq: pull.lastSeq,
-        lastSyncedAt: Date.now(),
-        lastSyncResult: 'SUCCESS',
-        // What this restore could read, so the first sync doesn't re-read the
-        // items it just skipped as unreadable.
-        readableChains: readableBackupChains(),
-        items: withPulledSettings(items, pull.settings),
-    }
+    const restored = new Set(imported)
+    const [kept, held] = partition(
+        pull.accounts,
+        account => restored.has(account) || isOnDevice(account.address),
+    )
+    return holdAccountsInBackup(
+        {
+            ...createEmptySyncState(backupId),
+            lastKnownBackupHash: pull.backupGlobalHash,
+            lastSyncedSeq: pull.lastSeq,
+            lastSyncedAt: Date.now(),
+            lastSyncResult: 'SUCCESS',
+            // What this restore could read, so the first sync doesn't re-read
+            // the items it just skipped as unreadable.
+            readableChains: readableBackupChains(),
+            items: withPulledSettings(items, pull.settings),
+        },
+        held.map(({ address }) => address),
+        kept.map(({ address }) => address),
+    )
 }
 
 const deriveKeys = async (
@@ -296,21 +353,27 @@ const deriveKeys = async (
     }
 }
 
+const failWith = async (error: unknown): Promise<never> => {
+    const category = categorize(error)
+    logFailure(error, category)
+    await cleanUpAfterRestoreFailure()
+    throw new CloudBackupRestoreError(category, error)
+}
+
 /**
- * Rejects with a {@link CloudBackupRestoreError} for every failure, so the
- * caller reads one category rather than shape-matching the underlying error.
+ * Unlocks and downloads the backup, and decrypts only what the user needs to
+ * choose accounts. The keys are stored, since every signed request reads them
+ * back, but the backup is not configured, so nothing syncs until
+ * {@link completeCloudBackupRestore}; {@link discardPreparedCloudBackupRestore}
+ * removes them. Rejects with a {@link CloudBackupRestoreError}.
  */
-export const restoreCloudBackup = async ({
+export const prepareCloudBackupRestore = async ({
     mnemonic,
     salt,
     argon2id,
     deviceId,
-    importAccounts,
-    importContacts,
-    importPasskeys,
-    importSettings,
     onProgress,
-}: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
+}: PrepareCloudBackupRestoreParams): Promise<PreparedCloudBackupRestore> => {
     onProgress?.({ phase: 'unlocking' })
     const { backupId, encryptionKey, authSecretKey, itemKey } =
         await deriveKeys(mnemonic, salt, argon2id)
@@ -324,16 +387,12 @@ export const restoreCloudBackup = async ({
             mnemonic,
         })
 
-        const pull = await pullBackupItems({
-            backupId,
-            deviceId,
-            encryptionKey,
-        })
+        const fetched = await fetchBackupItems({ backupId, deviceId })
 
         /* A legacy backup's secrets payloads lack the `address` field and no
          * longer parse, while its address records still do: importing would
          * leave watch-only copies of the accounts the user just restored. */
-        const legacyKeyCount = Object.keys(pull.manifestItems).filter(
+        const legacyKeyCount = Object.keys(fetched.manifestItems).filter(
             isLegacyItemKey,
         ).length
         if (legacyKeyCount > 0) {
@@ -344,8 +403,110 @@ export const restoreCloudBackup = async ({
             throw new CloudBackupRestoreError('UNKNOWN')
         }
 
-        const summary = await importAccounts(pull.accounts, (done, total) =>
-            onProgress?.({ phase: 'importing', done, total }),
+        return {
+            backupId,
+            deviceId,
+            accounts: previewBackupAccounts(fetched, {
+                backupId,
+                encryptionKey,
+            }),
+            fetched,
+        }
+    } catch (error) {
+        return failWith(error)
+    } finally {
+        zeroBytes(encryptionKey)
+        zeroBytes(authSecretKey)
+        zeroBytes(itemKey)
+    }
+}
+
+/** The user backed out before choosing: the device must not stay joined. */
+export const discardPreparedCloudBackupRestore = (): Promise<void> =>
+    cleanUpAfterRestoreFailure()
+
+const decryptPrepared = async ({
+    backupId,
+    fetched,
+}: PreparedCloudBackupRestore): Promise<PullBackupItemsResult> => {
+    const pull = await withBackupEncryptionKey(encryptionKey =>
+        collectBackupItems(fetched, { backupId, encryptionKey }),
+    )
+    if (pull === null) {
+        throw new CloudBackupRestoreError(
+            'UNKNOWN',
+            new Error('Backup encryption key is missing'),
+        )
+    }
+    return pull
+}
+
+/** A seed's secret rides on the entry filed under the seed's first address,
+ *  which the user may have left out. The chosen accounts still need it, so it
+ *  goes in on its own, which restores the seed and creates no account. */
+const withTheirSeeds = (
+    chosen: PulledAccount[],
+    all: readonly PulledAccount[],
+): PulledAccount[] => {
+    const carried = new Set(
+        chosen.flatMap(({ secretsPayload }) =>
+            secretsPayload?.type === BackupAccountType.hdSeed
+                ? [secretsPayload.address]
+                : [],
+        ),
+    )
+    const needed = new Set(
+        chosen.flatMap(({ addressPayload }) => {
+            const position = hdPositionOf(addressPayload)
+            return position ? [position.seedReference] : []
+        }),
+    )
+    const seeds = new Map<string, PulledAccount>()
+    for (const { secretsPayload } of all) {
+        if (
+            secretsPayload?.type !== BackupAccountType.hdSeed ||
+            !needed.has(secretsPayload.address) ||
+            carried.has(secretsPayload.address)
+        )
+            continue
+        const { address } = secretsPayload
+        seeds.set(address, {
+            address,
+            group: address,
+            addressPayload: { type: BackupAccountType.hdSeed, address },
+            secretsPayload,
+        })
+    }
+    return [...chosen, ...seeds.values()]
+}
+
+/**
+ * Imports the chosen accounts, then contacts, passkeys and settings, and
+ * holds every other account in the backup for the user to add later. Rejects
+ * with a {@link CloudBackupRestoreError}, having removed the stored keys.
+ */
+export const completeCloudBackupRestore = async ({
+    prepared,
+    selection,
+    importAccounts,
+    importContacts,
+    importPasskeys,
+    importSettings,
+    isOnDevice = () => false,
+    onProgress,
+}: CompleteCloudBackupRestoreParams): Promise<RestoreCloudBackupResult> => {
+    try {
+        const pull = await decryptPrepared(prepared)
+        const accounts =
+            selection === 'all'
+                ? pull.accounts
+                : pull.accounts.filter(({ group }) => selection.has(group))
+
+        const summary = await importAccounts(
+            selection === 'all'
+                ? accounts
+                : withTheirSeeds(accounts, pull.accounts),
+            (done, total) => onProgress?.({ phase: 'importing', done, total }),
         )
         onProgress?.({ phase: 'finishing' })
         const contactSummary = await importContactsSafely(
@@ -356,24 +517,46 @@ export const restoreCloudBackup = async ({
         importSettingsSafely(importSettings, pull.settings)
 
         return {
-            backupId,
-            syncState: syncStateFromPull(backupId, pull, summary.failed),
+            backupId: prepared.backupId,
+            syncState: syncStateFromPull(
+                prepared.backupId,
+                pull,
+                accounts,
+                summary.failed,
+                isOnDevice,
+            ),
             summary,
             contactSummary,
-            incompleteAccountCount: incompleteAccounts(pull.accounts, summary),
+            incompleteAccountCount: incompleteAccounts(accounts, summary),
             newerAccountCount: pull.skipped.filter(
                 ({ key, reason }) =>
                     reason === 'newer' && isAccountRecordKey(key),
             ).length,
         }
     } catch (error) {
-        const category = categorize(error)
-        logFailure(error, category)
-        await cleanUpAfterRestoreFailure()
-        throw new CloudBackupRestoreError(category, error)
-    } finally {
-        zeroBytes(encryptionKey)
-        zeroBytes(authSecretKey)
-        zeroBytes(itemKey)
+        return failWith(error)
     }
 }
+
+/** Restores every account, with no choice offered. Rejects with a
+ *  {@link CloudBackupRestoreError}. */
+export const restoreCloudBackup = async ({
+    mnemonic,
+    salt,
+    argon2id,
+    deviceId,
+    onProgress,
+    ...imports
+}: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> =>
+    completeCloudBackupRestore({
+        prepared: await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            argon2id,
+            deviceId,
+            onProgress,
+        }),
+        selection: 'all',
+        onProgress,
+        ...imports,
+    })
