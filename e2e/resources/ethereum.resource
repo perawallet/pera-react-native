@@ -56,6 +56,8 @@ Ethereum Address Of Selected Account
     RETURN    ${address}
 
 Open Ether Amount Entry
+    # Home is still laying out after Go Home, and a tap at a moving button misses it.
+    Wait Until Settled    ${SEND_BUTTON}
     Tap    ${SEND_BUTTON}
     # With more than one chain enabled, Send asks which chain first.
     Wait Until Keyword Succeeds    30s    1s    Send Should Offer Ether Or Chains
