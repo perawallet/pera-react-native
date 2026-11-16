@@ -18,6 +18,7 @@ import {
     trackEvent,
     type LegacyImportFailureReason,
 } from '@analytics'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { isTrustedWebviewOrigin } from '@modules/webview'
 import { useDiscoverFavoritesStore } from '../store/useDiscoverFavoritesStore'
 import { parseLegacyFavoritesMessage } from '../utils/legacyFavorites'
@@ -50,15 +51,21 @@ export type UseLegacyFavoritesImportResult = {
  */
 export const useLegacyFavoritesImport = (): UseLegacyFavoritesImportResult => {
     const status = useDiscoverFavoritesStore(s => s.legacyImport.status)
-    const { projects, isLoading } = useDiscoverDirectory()
+    const hasInternet = useNetworkStatusStore(s => s.hasInternet)
     const [phase, setPhase] = useState<Phase>(() =>
         attemptStarted ? 'ended' : 'idle',
     )
+    // Only the import needs the every-chain list; home queries per chip.
+    const { projects, isLoading } = useDiscoverDirectory({
+        isEnabled: status === 'pending' && phase === 'idle',
+    })
     const endedRef = useRef(false)
     const projectsRef = useRef(projects)
     projectsRef.current = projects
 
-    const canStart = status === 'pending' && !isLoading && phase === 'idle'
+    // Offline, the page cannot load: starting would only burn an attempt.
+    const canStart =
+        status === 'pending' && hasInternet && !isLoading && phase === 'idle'
     useEffect(() => {
         if (!canStart || attemptStarted) return
         attemptStarted = true
@@ -75,6 +82,11 @@ export const useLegacyFavoritesImport = (): UseLegacyFavoritesImportResult => {
     const fail = useCallback(
         (reason: LegacyImportFailureReason) => {
             if (!end()) return
+            // Connectivity, not the legacy data: retry next launch, uncounted.
+            const lostConnection =
+                (reason === 'load_error' || reason === 'timeout') &&
+                !useNetworkStatusStore.getState().hasInternet
+            if (lostConnection) return
             const store = useDiscoverFavoritesStore.getState()
             if (store.recordLegacyImportFailure() === 'gave_up') {
                 trackEvent(DiscoverEvent.LegacyFavoritesImportFailed, {

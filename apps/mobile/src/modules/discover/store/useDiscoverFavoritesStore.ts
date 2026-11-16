@@ -63,8 +63,9 @@ type DiscoverFavoritesActions = {
     /** No-op unless `url` is a favorite and the folder exists. */
     setDappInFolder(id: string, url: string, inFolder: boolean): void
     /**
-     * Adds the legacy favorites that are not favorites yet, before the existing
-     * ones and in the given order, in no folder; marks the import done.
+     * Adds the legacy favorites that are not favorites yet, in no folder, so
+     * newest-first lists show them after the native ones in the given order;
+     * marks the import done.
      */
     importLegacyFavorites(
         entries: readonly LegacyFavorite[],
@@ -284,9 +285,13 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                 }
                 set(state => ({
                     favorites: { ...state.favorites, ...added },
-                    // Legacy favorites are the older ones: newest-first lists
-                    // show them after the native favorites.
-                    favoriteOrder: [...addedOrder, ...state.favoriteOrder],
+                    // Legacy favorites are the older ones, so they go first;
+                    // reversed, because newest-first lists reverse this order
+                    // and must show them as the web app listed them.
+                    favoriteOrder: [
+                        ...[...addedOrder].reverse(),
+                        ...state.favoriteOrder,
+                    ],
                     legacyImport: { ...legacyImport, status: 'done' },
                 }))
                 return { imported: addedOrder.length, alreadyFavorite }

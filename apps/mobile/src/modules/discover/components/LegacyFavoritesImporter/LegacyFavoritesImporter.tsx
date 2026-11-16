@@ -11,9 +11,8 @@
  */
 
 import { WebView } from 'react-native-webview'
-import { config } from '@perawallet/wallet-core-config'
 import { PWView } from '@components/core'
-import { HARDENED_WEBVIEW_PROPS, joinWebViewScripts } from '@modules/webview'
+import { joinWebViewScripts } from '@modules/webview'
 import { legacyFavoritesReaderScript } from '../../utils/legacyFavorites'
 import { useLegacyFavoritesImporter } from './useLegacyFavoritesImporter'
 import { useStyles } from './styles'
@@ -39,19 +38,8 @@ export const LegacyFavoritesImporter = () => {
             testID='discover_legacy_favorites_importer'
         >
             <WebView
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl is the app's own trusted origin
-                source={{ uri: config.discoverBaseUrl }}
+                {...importer.webViewProps}
                 injectedJavaScript={READER_SCRIPT}
-                onMessage={importer.onMessage}
-                onError={importer.onError}
-                onHttpError={importer.onHttpError}
-                onShouldStartLoadWithRequest={
-                    importer.onShouldStartLoadWithRequest
-                }
-                thirdPartyCookiesEnabled={false}
-                mixedContentMode='never'
-                setSupportMultipleWindows={false}
-                {...HARDENED_WEBVIEW_PROPS}
             />
         </PWView>
     )

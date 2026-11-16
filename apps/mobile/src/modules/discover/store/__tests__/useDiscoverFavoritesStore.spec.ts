@@ -356,7 +356,7 @@ describe('useDiscoverFavoritesStore legacy import', () => {
         useDiscoverFavoritesStore.getState().resetState()
     })
 
-    test('imports new favorites before existing ones, in web order, in no folder', () => {
+    test('imports new favorites in no folder, listed after the native ones in web order', () => {
         const store = useDiscoverFavoritesStore.getState()
         store.addFavorite(dapp('https://n.io'))
         store.createFolder('F', 'https://n.io')
@@ -369,10 +369,17 @@ describe('useDiscoverFavoritesStore legacy import', () => {
 
         const state = useDiscoverFavoritesStore.getState()
         expect(result).toEqual({ imported: 2, alreadyFavorite: 0 })
+        // Newest-first lists reverse favoriteOrder, so the legacy block is
+        // stored reversed to list in the web app's order, after the native ones.
         expect(state.favoriteOrder).toEqual([
+            'https://b.io',
+            'https://a.io',
+            'https://n.io',
+        ])
+        expect(selectFavoritesNewestFirst(state).map(f => f.url)).toEqual([
+            'https://n.io',
             'https://a.io',
             'https://b.io',
-            'https://n.io',
         ])
         expect(state.folders).toEqual(foldersBefore)
         expect(state.favorites['https://a.io']).toMatchObject({

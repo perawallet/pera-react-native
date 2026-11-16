@@ -14,6 +14,7 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { config } from '@perawallet/wallet-core-config'
 import { DiscoverEvent, trackEvent } from '@analytics'
+import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import { LEGACY_FAVORITES_MESSAGE_TYPE } from '../../utils/legacyFavorites'
 import { useDiscoverDirectory } from '../useDiscoverDirectory'
@@ -49,6 +50,7 @@ describe('useLegacyFavoritesImport', () => {
         vi.clearAllMocks()
         store().resetState()
         resetLegacyImportAttemptForTests()
+        useNetworkStatusStore.setState({ hasInternet: true })
         mockDirectory(false)
     })
 
@@ -182,5 +184,45 @@ describe('useLegacyFavoritesImport', () => {
         act(() => vi.advanceTimersByTime(LEGACY_IMPORT_TIMEOUT_MS))
 
         expect(store().legacyImport).toEqual({ status: 'pending', attempts: 0 })
+    })
+
+    it('waits for a connection before starting', () => {
+        useNetworkStatusStore.setState({ hasInternet: false })
+        const { result, rerender } = renderHook(() =>
+            useLegacyFavoritesImport(),
+        )
+        expect(result.current.isActive).toBe(false)
+
+        act(() => useNetworkStatusStore.setState({ hasInternet: true }))
+        rerender()
+
+        expect(result.current.isActive).toBe(true)
+    })
+
+    it('does not count a load error or timeout that happens offline', () => {
+        const { result } = renderHook(() => useLegacyFavoritesImport())
+        act(() => useNetworkStatusStore.setState({ hasInternet: false }))
+
+        act(() => result.current.onFailure('load_error'))
+
+        expect(store().legacyImport).toEqual({ status: 'pending', attempts: 0 })
+        expect(result.current.isActive).toBe(false)
+    })
+
+    it('queries the directory only while an import is pending', () => {
+        renderHook(() => useLegacyFavoritesImport())
+        // Enabled until the attempt starts; the started attempt reads the cache.
+        expect(useDiscoverDirectory).toHaveBeenNthCalledWith(1, {
+            isEnabled: true,
+        })
+
+        vi.mocked(useDiscoverDirectory).mockClear()
+        store().importLegacyFavorites([], {})
+        resetLegacyImportAttemptForTests()
+        renderHook(() => useLegacyFavoritesImport())
+
+        expect(useDiscoverDirectory).toHaveBeenLastCalledWith({
+            isEnabled: false,
+        })
     })
 })

@@ -10,21 +10,34 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type {
     ShouldStartLoadRequest,
     WebViewMessageEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import { config } from '@perawallet/wallet-core-config'
-import { isTrustedWebviewOrigin } from '@modules/webview'
+import {
+    HARDENED_WEBVIEW_PROPS,
+    isTrustedWebviewOrigin,
+} from '@modules/webview'
 import { useLegacyFavoritesImport } from '../../hooks/useLegacyFavoritesImport'
 
-export type UseLegacyFavoritesImporterResult = {
-    isActive: boolean
+export type LegacyFavoritesReaderProps = {
+    source: { uri: string }
+    originWhitelist: string[]
     onMessage: (event: WebViewMessageEvent) => void
     onError: () => void
     onHttpError: () => void
     onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean
+    thirdPartyCookiesEnabled: false
+    mixedContentMode: 'never'
+    setSupportMultipleWindows: false
+} & typeof HARDENED_WEBVIEW_PROPS
+
+export type UseLegacyFavoritesImporterResult = {
+    isActive: boolean
+    /** Every reader WebView prop except the injected script. */
+    webViewProps: LegacyFavoritesReaderProps
 }
 
 /** The hidden reader WebView's handlers. */
@@ -56,11 +69,24 @@ export const useLegacyFavoritesImporter =
             [],
         )
 
-        return {
-            isActive,
-            onMessage: handleMessage,
-            onError,
-            onHttpError,
-            onShouldStartLoadWithRequest,
-        }
+        const webViewProps = useMemo(
+            (): LegacyFavoritesReaderProps => ({
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl is the app's own trusted origin
+                source: { uri: config.discoverBaseUrl },
+                // Every scheme reaches the guard: under the default http(s)
+                // whitelist a custom scheme would go straight to the OS.
+                originWhitelist: ['*'],
+                onMessage: handleMessage,
+                onError,
+                onHttpError,
+                onShouldStartLoadWithRequest,
+                thirdPartyCookiesEnabled: false,
+                mixedContentMode: 'never',
+                setSupportMultipleWindows: false,
+                ...HARDENED_WEBVIEW_PROPS,
+            }),
+            [handleMessage, onError, onHttpError, onShouldStartLoadWithRequest],
+        )
+
+        return { isActive, webViewProps }
     }

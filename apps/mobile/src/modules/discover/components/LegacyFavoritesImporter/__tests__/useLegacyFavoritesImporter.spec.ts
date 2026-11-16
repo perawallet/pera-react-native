@@ -43,16 +43,40 @@ describe('useLegacyFavoritesImporter', () => {
         expect(result.current.isActive).toBe(true)
     })
 
+    it('loads the Discover origin hardened, routing every scheme through the guard', () => {
+        const { result } = renderHook(() => useLegacyFavoritesImporter())
+
+        expect(result.current.webViewProps).toMatchObject({
+            source: { uri: config.discoverBaseUrl },
+            originWhitelist: ['*'],
+            allowFileAccess: false,
+            javaScriptCanOpenWindowsAutomatically: false,
+            setSupportMultipleWindows: false,
+            thirdPartyCookiesEnabled: false,
+            mixedContentMode: 'never',
+        })
+    })
+
+    it('refuses a custom-scheme navigation', () => {
+        const { result } = renderHook(() => useLegacyFavoritesImporter())
+
+        expect(
+            result.current.webViewProps.onShouldStartLoadWithRequest({
+                url: 'perawallet://wc?uri=x',
+            } as never),
+        ).toBe(false)
+    })
+
     it('only lets the Discover origin load', () => {
         const { result } = renderHook(() => useLegacyFavoritesImporter())
 
         expect(
-            result.current.onShouldStartLoadWithRequest({
+            result.current.webViewProps.onShouldStartLoadWithRequest({
                 url: `${config.discoverBaseUrl}/browser`,
             } as never),
         ).toBe(true)
         expect(
-            result.current.onShouldStartLoadWithRequest({
+            result.current.webViewProps.onShouldStartLoadWithRequest({
                 url: 'https://evil.io',
             } as never),
         ).toBe(false)
@@ -61,7 +85,7 @@ describe('useLegacyFavoritesImporter', () => {
     it('forwards a message with the url it came from', () => {
         const { result } = renderHook(() => useLegacyFavoritesImporter())
 
-        result.current.onMessage(
+        result.current.webViewProps.onMessage(
             messageEvent(
                 'https://discover.example/',
                 JSON.stringify({ type: 't', favorites: [] }),
@@ -77,7 +101,7 @@ describe('useLegacyFavoritesImporter', () => {
     it('forwards unparseable data as undefined, which fails as malformed', () => {
         const { result } = renderHook(() => useLegacyFavoritesImporter())
 
-        result.current.onMessage(
+        result.current.webViewProps.onMessage(
             messageEvent('https://discover.example/', '{oops'),
         )
 
@@ -90,8 +114,8 @@ describe('useLegacyFavoritesImporter', () => {
     it('reports load and http errors', () => {
         const { result } = renderHook(() => useLegacyFavoritesImporter())
 
-        result.current.onError()
-        result.current.onHttpError()
+        result.current.webViewProps.onError()
+        result.current.webViewProps.onHttpError()
 
         expect(onFailure).toHaveBeenNthCalledWith(1, 'load_error')
         expect(onFailure).toHaveBeenNthCalledWith(2, 'http_error')
