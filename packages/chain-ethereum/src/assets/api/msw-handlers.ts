@@ -41,12 +41,13 @@ export type PeraEvmAssetFixtures = {
     assets?: Record<string, AssetItemResponse> | number
     /**
      * NFT holdings pages keyed by lowercase address; an address left out
-     * holds none. A number fails every holdings read with that status.
+     * holds none. A number fails every holdings read with that status; 503,
+     * 429 and 422 carry the backend's error codes.
      */
     nftHoldings?: Record<string, NftItemResponse[][]> | number
     /**
      * NFT metadata keyed by lowercase CAIP-19 id; an id left out answers
-     * null. A number fails every metadata read with that status.
+     * `unknownNftItem`. A number fails every metadata read with that status.
      */
     nfts?: Record<string, NftItemResponse> | number
     /**
@@ -65,6 +66,7 @@ export const evmNftItem = (
 ): NftItemResponse => ({
     asset_id: `eip155:1/erc721:${BAYC}/1234`,
     standard: 'erc721',
+    token_id: '1234',
     balance: '1',
     name: 'Bored Ape #1234',
     description: 'An ape.',
@@ -80,19 +82,49 @@ export const evmNftItem = (
     },
     media: [
         {
-            type: 'image',
             url: 'https://nft.pera.test/bayc/1234.png',
             preview_url: 'https://nft.pera.test/bayc/1234-preview.png',
             mime_type: 'image/png',
         },
     ],
-    traits: [{ name: 'Background', value: 'Orange' }],
-    acquired_at: '2026-03-02T10:15:00Z',
+    traits: [{ trait_type: 'Background', value: 'Orange' }],
+    acquired_at: null,
     explorer_url: `https://etherscan.io/nft/${BAYC}/1234`,
+    cross_chain_asset_group: null,
     ...overrides,
 })
 
 const NFT_CURSOR = /^page:(\d+)$/
+
+/**
+ * How the backend answers a token it has no metadata for: a blank item, never
+ * null. Standard, contract and token id come from the CAIP-19 id.
+ */
+export const unknownNftItem = (caip19: string): NftItemResponse => {
+    const [, standard = '', contract = '', tokenId = ''] =
+        /^eip155:\d+\/(erc721|erc1155):(0x[0-9a-f]{40})\/(\d+)$/.exec(caip19) ??
+        []
+    return {
+        asset_id: caip19,
+        standard: standard === 'erc1155' ? 'erc1155' : 'erc721',
+        token_id: tokenId,
+        balance: null,
+        name: null,
+        description: null,
+        collection: {
+            address: contract,
+            name: null,
+            symbol: null,
+            verification_tier: 'unverified',
+        },
+        primary_image: null,
+        media: [],
+        traits: [],
+        acquired_at: null,
+        explorer_url: null,
+        cross_chain_asset_group: null,
+    }
+}
 
 /** How the backend answers an id it has no metadata for; its type comes from the CAIP-19 namespace. */
 export const unknownAssetItem = (caip19: string): AssetItemResponse => ({
@@ -131,6 +163,16 @@ export const nativeWhitelistItem = (
 })
 
 const failWith = (status: number) => HttpResponse.json({}, { status })
+
+const NFT_ERROR_BODIES: Record<number, { error: string; code: string }> = {
+    503: { error: 'Upstream unavailable', code: 'upstream_unavailable' },
+    429: { error: 'Upstream rate limited', code: 'upstream_rate_limited' },
+    422: { error: 'NFTs not supported', code: 'nft_not_supported' },
+}
+
+// The NFT routes answer `{ error, code }` for the failures the app tells apart.
+const failNftWith = (status: number) =>
+    HttpResponse.json(NFT_ERROR_BODIES[status] ?? {}, { status })
 
 const INTEGRITY_BYPASS_VALUE = 'DEVELOPMENT_AND_STAGING_ONLY'
 
@@ -207,7 +249,7 @@ export const peraEvmAssetHandlers = ({
                 const refused = rejectUnauthenticated(request)
                 if (refused) return refused
                 if (typeof nftHoldings === 'number') {
-                    return failWith(nftHoldings)
+                    return failNftWith(nftHoldings)
                 }
                 const listed = nftHoldings[String(params.address).toLowerCase()]
                 const pages = listed?.length ? listed : [[]]
@@ -223,8 +265,11 @@ export const peraEvmAssetHandlers = ({
                         { status: 404 },
                     )
                 }
+                const nextUrl = new URL(request.url)
+                nextUrl.searchParams.set('cursor', `page:${index + 1}`)
                 return HttpResponse.json({
-                    next: index + 1 < pages.length ? `page:${index + 1}` : null,
+                    next: index + 1 < pages.length ? nextUrl.toString() : null,
+                    previous: null,
                     results,
                 })
             },
@@ -248,13 +293,17 @@ export const peraEvmAssetHandlers = ({
         http.post(`${base}${NFTS_PATH}`, async ({ request }) => {
             const refused = rejectUnauthenticated(request)
             if (refused) return refused
-            if (typeof nfts === 'number') return failWith(nfts)
+            if (typeof nfts === 'number') return failNftWith(nfts)
             const { ids } = (await request.json()) as { ids: string[] }
             return HttpResponse.json({
                 results: ids.map(id => {
                     const caip19 = id.toLowerCase()
-                    const item = nfts[caip19]
-                    return item ? { ...item, asset_id: caip19 } : null
+                    // The metadata route isn't per account, so it never carries a balance.
+                    return {
+                        ...(nfts[caip19] ?? unknownNftItem(caip19)),
+                        asset_id: caip19,
+                        balance: null,
+                    }
                 }),
             })
         }),

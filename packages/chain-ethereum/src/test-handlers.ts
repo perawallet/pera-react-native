@@ -45,6 +45,7 @@ export {
     evmNftItem,
     nativeWhitelistItem,
     unknownAssetItem,
+    unknownNftItem,
     type PeraEvmAssetFixtures,
 } from './assets/api/msw-handlers'
 export {
