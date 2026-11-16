@@ -15,6 +15,10 @@ import {
     isEvmChainId,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    EVM_NFT_STANDARD_LABELS,
+    parseEvmNftAssetId,
+} from '@perawallet/wallet-core-chain-ethereum'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     extractDomain,
@@ -22,6 +26,7 @@ import {
     type AssetAboutDisplay,
     type AssetDisplayParams,
     type AssetSupplyDisplay,
+    type CollectibleDetailsDisplay,
 } from '@modules/assets'
 import type { ChainUi, ChainUiOverride } from '@modules/chain-ui'
 import {
@@ -80,6 +85,18 @@ export const resolveEthereumAssetSupply = (
     }
 }
 
+// An EVM NFT's asset id is `{contract}/{tokenId}`: the row shows the token id
+// alone, and the contract sits on the creator row above it.
+export const ethereumCollectibleDetailsDisplay: CollectibleDetailsDisplay = {
+    identityLabelKey: i18nKey('asset_details.collectible.token_id'),
+    creatorLabelKey: i18nKey('asset_details.collectible.contract'),
+    hasTotalSupply: false,
+    explorerLabelKey: null,
+    isIdentityLinked: false,
+    identityOf: assetId => parseEvmNftAssetId(assetId)?.tokenId ?? assetId,
+    standardLabels: EVM_NFT_STANDARD_LABELS,
+}
+
 // metro.config.js swaps this for the stub unless the baked CHAINS lists
 // ethereum, which keeps viem out of an Algorand-only bundle.
 export const ethereumChainUi: Optional<ChainUi> = {
@@ -98,6 +115,7 @@ export const ethereumChainUi: Optional<ChainUi> = {
         resolveAbout: resolveEthereumAssetAbout,
         resolveSupply: resolveEthereumAssetSupply,
     },
+    collectibleDetails: ethereumCollectibleDetailsDisplay,
     accountOptions: {
         ExpandedSection: EthereumAccountSection,
         useHasExpandedSection: useHasEthereumAccountSection,
