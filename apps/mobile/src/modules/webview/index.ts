@@ -29,5 +29,10 @@ export {
     resolveWebviewLanguage,
     withLanguageParam,
 } from './hooks/webviewLanguage'
-export { webViewScript, type WebViewScript } from './utils/webViewScript'
+export {
+    joinWebViewScripts,
+    webViewScript,
+    type WebViewScript,
+} from './utils/webViewScript'
+export { HARDENED_WEBVIEW_PROPS } from './components/PWWebView/hardenedWebViewProps'
 export { webViewDappTransport } from './utils/webViewDappTransport'

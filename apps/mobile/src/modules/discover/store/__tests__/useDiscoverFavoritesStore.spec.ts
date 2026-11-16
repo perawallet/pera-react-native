@@ -125,7 +125,7 @@ describe('useDiscoverFavoritesStore', () => {
         expect(state.favoriteOrder).toEqual([])
     })
 
-    test('persists exactly the four state slices', async () => {
+    test('persists exactly the five state slices', async () => {
         useDiscoverFavoritesStore.getState().addFavorite(dapp('https://a.io'))
         const raw = await getProvider().keyValueStorage.getItem(
             'discover-favorites-store',
@@ -136,8 +136,9 @@ describe('useDiscoverFavoritesStore', () => {
             'favorites',
             'folderOrder',
             'folders',
+            'legacyImport',
         ])
-        expect(parsed.version).toBe(2)
+        expect(parsed.version).toBe(3)
     })
 
     test('selectUnsortedFavorites follows favoriteOrder', () => {
@@ -298,7 +299,7 @@ describe('useDiscoverFavoritesStore folders', () => {
         ).toBeNull()
     })
 
-    test('migrate keeps v1 favorites and adds empty folders', () => {
+    test('migrate keeps v1 favorites, adds empty folders and a pending import', () => {
         const favorite = { ...dapp('https://a.io'), addedAt: 1 }
         expect(
             migrateDiscoverFavorites(
@@ -313,17 +314,165 @@ describe('useDiscoverFavoritesStore folders', () => {
             favoriteOrder: ['https://a.io'],
             folders: {},
             folderOrder: [],
+            legacyImport: { status: 'pending', attempts: 0 },
         })
     })
 
-    test('migrate keeps v2 state and resets unknown versions', () => {
+    test('migrate adds a pending import to v2 state', () => {
         const v2 = {
+            favorites: {},
+            favoriteOrder: [],
+            folders: { f: { id: 'f', name: 'F', items: [], createdAt: 1 } },
+            folderOrder: ['f'],
+        }
+        expect(migrateDiscoverFavorites(v2, 2)).toEqual({
+            ...v2,
+            legacyImport: { status: 'pending', attempts: 0 },
+        })
+    })
+
+    test('migrate keeps v3 state and resets unknown versions', () => {
+        const v3 = {
             favorites: {},
             favoriteOrder: [],
             folders: {},
             folderOrder: [],
+            legacyImport: { status: 'pending', attempts: 0 },
         }
-        expect(migrateDiscoverFavorites(v2, 2)).toBe(v2)
-        expect(migrateDiscoverFavorites({ junk: true }, 0)).toEqual(v2)
+        expect(migrateDiscoverFavorites(v3, 3)).toBe(v3)
+        expect(migrateDiscoverFavorites({ junk: true }, 0)).toEqual(v3)
+    })
+})
+
+describe('useDiscoverFavoritesStore legacy import', () => {
+    const legacy = (url: string, name = 'Legacy') => ({
+        url,
+        name,
+        logo: null,
+        categories: ['DeFi'],
+    })
+
+    beforeEach(() => {
+        useDiscoverFavoritesStore.getState().resetState()
+    })
+
+    test('imports new favorites in no folder, listed after the native ones in web order', () => {
+        const store = useDiscoverFavoritesStore.getState()
+        store.addFavorite(dapp('https://n.io'))
+        store.createFolder('F', 'https://n.io')
+        const foldersBefore = useDiscoverFavoritesStore.getState().folders
+
+        const result = store.importLegacyFavorites(
+            [legacy('https://a.io'), legacy('https://b.io')],
+            {},
+        )
+
+        const state = useDiscoverFavoritesStore.getState()
+        expect(result).toEqual({ imported: 2, alreadyFavorite: 0 })
+        // Newest-first lists reverse favoriteOrder, so the legacy block is
+        // stored reversed to list in the web app's order, after the native ones.
+        expect(state.favoriteOrder).toEqual([
+            'https://b.io',
+            'https://a.io',
+            'https://n.io',
+        ])
+        expect(selectFavoritesNewestFirst(state).map(f => f.url)).toEqual([
+            'https://n.io',
+            'https://a.io',
+            'https://b.io',
+        ])
+        expect(state.folders).toEqual(foldersBefore)
+        expect(state.favorites['https://a.io']).toMatchObject({
+            url: 'https://a.io',
+            name: 'Legacy',
+            logo: null,
+            categories: ['DeFi'],
+            chains: [],
+        })
+        expect(state.favorites['https://a.io']?.projectId).toBeUndefined()
+    })
+
+    test('keeps an existing favorite untouched and counts it', () => {
+        const store = useDiscoverFavoritesStore.getState()
+        store.addFavorite(dapp('https://a.io', 'Native'))
+        const folderId = store.createFolder('F', 'https://a.io')
+        const before =
+            useDiscoverFavoritesStore.getState().favorites['https://a.io']
+
+        const result = store.importLegacyFavorites(
+            [legacy('https://a.io/'), legacy('https://a.io')],
+            {},
+        )
+
+        const state = useDiscoverFavoritesStore.getState()
+        expect(result).toEqual({ imported: 0, alreadyFavorite: 2 })
+        expect(state.favorites['https://a.io']).toBe(before)
+        expect(state.folders[folderId]?.items).toEqual(['https://a.io'])
+        expect(state.favoriteOrder).toEqual(['https://a.io'])
+    })
+
+    test('counts a url repeated in the payload once as imported', () => {
+        const result = useDiscoverFavoritesStore
+            .getState()
+            .importLegacyFavorites(
+                [legacy('https://a.io'), legacy('https://A.io/')],
+                {},
+            )
+
+        expect(result).toEqual({ imported: 1, alreadyFavorite: 1 })
+        expect(useDiscoverFavoritesStore.getState().favoriteOrder).toEqual([
+            'https://a.io',
+        ])
+    })
+
+    test('fills chains and projectId from the directory', () => {
+        useDiscoverFavoritesStore
+            .getState()
+            .importLegacyFavorites([legacy('https://a.io')], {
+                'https://a.io': {
+                    ...dapp('https://a.io'),
+                    chains: ['algorand'],
+                    projectId: 'proj-a',
+                },
+            })
+
+        expect(
+            useDiscoverFavoritesStore.getState().favorites['https://a.io'],
+        ).toMatchObject({ chains: ['algorand'], projectId: 'proj-a' })
+    })
+
+    test('marks the import done, even when nothing was imported', () => {
+        useDiscoverFavoritesStore.getState().importLegacyFavorites([], {})
+
+        expect(useDiscoverFavoritesStore.getState().legacyImport).toEqual({
+            status: 'done',
+            attempts: 0,
+        })
+    })
+
+    test('gives up on the third failure', () => {
+        const { recordLegacyImportFailure } =
+            useDiscoverFavoritesStore.getState()
+
+        expect([
+            recordLegacyImportFailure(),
+            recordLegacyImportFailure(),
+            recordLegacyImportFailure(),
+        ]).toEqual(['pending', 'pending', 'gave_up'])
+        expect(useDiscoverFavoritesStore.getState().legacyImport).toEqual({
+            status: 'gave_up',
+            attempts: 3,
+        })
+    })
+
+    test('resetState restores a pending import', () => {
+        const store = useDiscoverFavoritesStore.getState()
+        store.importLegacyFavorites([], {})
+        store.resetState()
+
+        expect(useDiscoverFavoritesStore.getState().legacyImport).toEqual({
+            status: 'pending',
+            attempts: 0,
+        })
     })
 })
