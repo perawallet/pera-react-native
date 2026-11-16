@@ -1124,8 +1124,8 @@ importers:
         specifier: ^7.29.7
         version: 7.29.7
       '@babel/plugin-transform-export-namespace-from':
-        specifier: ^7.29.7
-        version: 7.29.7(@babel/core@7.29.7)
+        specifier: ^8.1.0
+        version: 8.1.0(@babel/core@7.29.7)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -4868,6 +4868,12 @@ packages:
     resolution: {integrity: sha512-G7sHYigPY17oO5SYWnfD/0MTBwVR781S/JI643e/JhUYgVgWE/61SoW3NH9KWUKyKq5LVh3npif99Wkt6j86Jw==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/helper-plugin-utils@8.0.1':
+    resolution: {integrity: sha512-3PKFgjTyPlhFhorfP+SjKQxLViIL++zWjFOO4hGriYU+Bsm983DxEM1JmDRJVWXV0O9npu+xXRqz7Pbd3mh70g==}
+    engines: {node: ^22.18.0 || >=24.11.0}
+    peerDependencies:
+      '@babel/core': ^8.0.0
+
   '@babel/helper-remap-async-to-generator@7.29.7':
     resolution: {integrity: sha512-16AMiW26DbXWBbr3B8wNozKM0ydMLB892vaOaJW/fPJdnT8vJk5sdkQcU/isqUxyCE0cEoa8wZOcbgDuC4b6Og==}
     engines: {node: '>=6.9.0'}
@@ -5019,6 +5025,12 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
+
+  '@babel/plugin-transform-export-namespace-from@8.1.0':
+    resolution: {integrity: sha512-4NpXrz/RfrjoCC3NZkRNWvLSe+kG/p3RKzWIOFAEqE7AuNOiOPi+3T0iEIUQBqjG42RnmUY0uMV0XlREIubxLQ==}
+    engines: {node: ^22.18.0 || >=24.11.0}
+    peerDependencies:
+      '@babel/core': ^8.0.0
 
   '@babel/plugin-transform-flow-strip-types@7.29.7':
     resolution: {integrity: sha512-wRHeUjUjCZnMHmiO5bRgjFLcoEh7JyTdByOW11ahhwNa4V0bmeGEaIvt51yq0zQp2yWIpqfxXXPyUP6GFJZHOQ==}
@@ -6580,6 +6592,7 @@ packages:
 
   '@ledgerhq/errors@6.37.0':
     resolution: {integrity: sha512-T5yiKI5UX7ugeocdTF3TUsCIN2BH41Bio4ZeN410YFjFOf3es08n/5JyMzzKwzRgP0blG3HfBf7s7vJKqCSAeg==}
+    deprecated: This package is no longer maintained and will not receive updates. Published versions remain available.
 
   '@ledgerhq/evm-tools@2.0.0':
     resolution: {integrity: sha512-wkZQxYduOFNwnNloZQ35Dk8oKBVQ1ajNX09wazEVeLxzfWTDMvZwWWtaKK0WUdX53/OX4l2wr/5vaNCJs+IYow==}
@@ -6597,9 +6610,11 @@ packages:
 
   '@ledgerhq/hw-transport-web-ble@6.35.0':
     resolution: {integrity: sha512-nc4FAWZ0GtZO9ydDCKlvDzOEVdUXlGL/0nWPIOeCE5xxuXug5iR0uhC4Bl0qwlUCEnhewmXwLJsCFcCdr/N4QQ==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-web-ble instead.
 
   '@ledgerhq/hw-transport-webhid@6.36.0':
     resolution: {integrity: sha512-1mKWm3LyGOgmaYlAiqbmaGoupOZHbj2Kow5sXLxKZzQa4kFvQuUdinYOWhs7T8hqJyAkz9WlHYyKM7aIs8kjNg==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-web-hid instead.
 
   '@ledgerhq/hw-transport@6.31.9':
     resolution: {integrity: sha512-HqB2Whl2qbrzyvs9gC/GmLhIy8RO4CWzjqHS4k0bPWDZRqKa8m6H32vjrbXGO//pUL1Mlu87UwvxvLyuICdjwg==}
@@ -6621,11 +6636,13 @@ packages:
 
   '@ledgerhq/react-native-hid@6.39.5':
     resolution: {integrity: sha512-q12Q9Qr0wgOen82JX/asSXhLPQITwa5L2n+efP+lJoqrqqvwfu1C2MZ8Nu5qWIFQDB7G121MnzwZGp/TNGQtrw==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-react-native-hid instead.
     peerDependencies:
       react-native: 0.88.0
 
   '@ledgerhq/react-native-hw-transport-ble@6.41.0':
     resolution: {integrity: sha512-MM3WsIXgCWXC85qfLIqUUPz6hvhl/VxSS1TZxZ7xALrtXhgnDpS2h/MuN/mYbbTwPg7/CHnLIeQhb+UI/Bc30w==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-react-native-ble instead.
 
   '@ledgerhq/types-live@6.128.0':
     resolution: {integrity: sha512-LZp36eOjNXyiPQVt3jnxQOaYySlKHNVPtROttpdrGmbrY3Bw7e4AiXMA0YAJ+jtLD8dcVD/u1yOn41kW7oR4rg==}
@@ -12163,6 +12180,10 @@ snapshots:
 
   '@babel/helper-plugin-utils@7.29.7': {}
 
+  '@babel/helper-plugin-utils@8.0.1(@babel/core@7.29.7)':
+    dependencies:
+      '@babel/core': 7.29.7
+
   '@babel/helper-remap-async-to-generator@7.29.7(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
@@ -12333,6 +12354,11 @@ snapshots:
     dependencies:
       '@babel/core': 7.29.7
       '@babel/helper-plugin-utils': 7.29.7
+
+  '@babel/plugin-transform-export-namespace-from@8.1.0(@babel/core@7.29.7)':
+    dependencies:
+      '@babel/core': 7.29.7
+      '@babel/helper-plugin-utils': 8.0.1(@babel/core@7.29.7)
 
   '@babel/plugin-transform-flow-strip-types@7.29.7(@babel/core@7.29.7)':
     dependencies:
