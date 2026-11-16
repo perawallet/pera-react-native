@@ -96,6 +96,55 @@ describe('Pera links with chain=', () => {
         })
     })
 
+    describe("on a chain that shares another chain's adapter", () => {
+        const BASE_TARGET = {
+            chainId: EVM_LINK_L2_CHAIN_ID,
+            networkId: 'mainnet',
+        }
+        const BASE_TOKEN = { chainId: EVM_LINK_L2_CHAIN_ID, assetId: ERC20 }
+
+        it('pays a token on that chain', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/asset-transfer/?chain=${EVM_LINK_L2_CAIP2}&receiverAddress=${EVM_ADDRESS}&assetId=${ERC20}&amount=1000000`,
+                ),
+            ).toMatchObject({
+                type: DeeplinkType.TRANSFER,
+                target: BASE_TARGET,
+                receiverAddress: EVM_ADDRESS,
+                assetRef: BASE_TOKEN,
+            })
+        })
+
+        it('opts in to a token on that chain', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/asset-opt-in/?chain=${EVM_LINK_L2_CAIP2}&assetId=${ERC20}&address=${EVM_ADDRESS}`,
+                ),
+            ).toMatchObject({
+                type: DeeplinkType.ASSET_OPT_IN,
+                target: BASE_TARGET,
+                assetRef: BASE_TOKEN,
+            })
+        })
+
+        it('keeps both swap tokens on that chain', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/swap/?chain=${EVM_LINK_L2_CAIP2}&address=${EVM_ADDRESS}&assetInId=${ERC20}&assetOutId=${EVM_ADDRESS}`,
+                ),
+            ).toMatchObject({
+                type: DeeplinkType.SWAP,
+                target: BASE_TARGET,
+                assetInRef: BASE_TOKEN,
+                assetOutRef: {
+                    chainId: EVM_LINK_L2_CHAIN_ID,
+                    assetId: EVM_ADDRESS,
+                },
+            })
+        })
+    })
+
     it('opens the native asset of the chain the link names when assetId is absent', () => {
         const link = parseDeeplink(
             `perawallet://app/asset-detail/?chain=${EVM_LINK_CAIP2}&address=${EVM_ADDRESS}`,
