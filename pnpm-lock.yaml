@@ -988,8 +988,8 @@ importers:
         specifier: 'catalog:'
         version: 12.0.0
       i18next:
-        specifier: ^26.7.1
-        version: 26.7.1(typescript@7.0.2)
+        specifier: ^27.0.1
+        version: 27.0.1(typescript@7.0.2)
       intl-pluralrules:
         specifier: ^2.0.1
         version: 2.0.1
@@ -1004,7 +1004,7 @@ importers:
         version: 7.91.0(@types/react@19.3.0)(react@19.3.0)
       react-i18next:
         specifier: ^18.0.1
-        version: 18.0.1(@types/react@19.3.0)(i18next@26.7.1(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)
+        version: 18.0.1(@types/react@19.3.0)(i18next@27.0.1(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)
       react-native:
         specifier: 0.88.0
         version: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)
@@ -9592,8 +9592,9 @@ packages:
   hyphenate-style-name@1.1.0:
     resolution: {integrity: sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==}
 
-  i18next@26.7.1:
-    resolution: {integrity: sha512-cX+3RRVczel/V2kCMTACckSGSpqgtWYEA6beXNYVms7dOQiHojdPYHD26lT4IKimNeoGWrLvtPgjftbRvmZJVw==}
+  i18next@27.0.1:
+    resolution: {integrity: sha512-KaE5ozP8UUeVpOJIwMVbbnpRKpyYQuxd9ZbseJoDzezE3nvLnZZQn20pkzyIJwPI2Uet/Qs3WzPTG812f6F/Eg==}
+    engines: {node: '>=22'}
     peerDependencies:
       typescript: ^5 || ^6 || ^7
     peerDependenciesMeta:
@@ -17397,7 +17398,7 @@ snapshots:
 
   hyphenate-style-name@1.1.0: {}
 
-  i18next@26.7.1(typescript@7.0.2):
+  i18next@27.0.1(typescript@7.0.2):
     optionalDependencies:
       typescript: 7.0.2
 
@@ -18499,10 +18500,10 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
-  react-i18next@18.0.1(@types/react@19.3.0)(i18next@26.7.1(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2):
+  react-i18next@18.0.1(@types/react@19.3.0)(i18next@27.0.1(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2):
     dependencies:
       html-parse-stringify: 4.0.1
-      i18next: 26.7.1(typescript@7.0.2)
+      i18next: 27.0.1(typescript@7.0.2)
       react: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
