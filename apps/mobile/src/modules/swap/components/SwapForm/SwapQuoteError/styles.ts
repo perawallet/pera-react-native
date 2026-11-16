@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => ({
     message: {
         color: theme.colors.negative,
     },
-    retryButton: {
+    actionButton: {
         alignSelf: 'flex-start',
     },
 }))

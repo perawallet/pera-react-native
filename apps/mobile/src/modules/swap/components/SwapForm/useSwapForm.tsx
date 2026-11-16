@@ -73,6 +73,7 @@ import {
     SwapProviderContent,
     type SwapProviderResult,
 } from '../SwapProviderContent'
+import { useSwapMinimum } from './useSwapMinimum'
 
 type UseSwapFormResult = {
     selectedAccount: Nullable<WalletAccount>
@@ -96,7 +97,10 @@ type UseSwapFormResult = {
     /** Pay amount exceeds what the account actually holds of the pay asset. */
     hasInsufficientBalance: boolean
     isLocalCurrencyInput: boolean
+    /** The router refused the amount as too small, named a minimum, and the account can spend at least that. */
+    canUseMinimum: boolean
     handleRetryQuote: () => void
+    handleUseMinimum: () => void
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handlePayAmountFocus: () => void
     handleSwapDirection: () => void
@@ -210,6 +214,7 @@ export const useSwapForm = (
         quotedAmount,
         isQuoteFetching,
         quoteFailure,
+        pairMinimum,
         reset: resetQuotes,
         refresh: refreshQuotes,
     } = useSwapQuotes({
@@ -429,6 +434,19 @@ export const useSwapForm = (
         )
     }, [infoToast, t, payAsset, fromAsset])
 
+    const fillMinimum = useCallback((amount: Decimal) => {
+        shouldReopenConfirmRef.current = false
+        isPercentageFillRef.current = false
+        setPayAmount(amount)
+    }, [])
+    const { liftToMinimum, canUseMinimum, handleUseMinimum } = useSwapMinimum({
+        pairMinimum,
+        quoteFailure,
+        spendableMax: spendable?.max ?? null,
+        payDecimals: payAsset?.decimals ?? 0,
+        onFillMinimum: fillMinimum,
+    })
+
     const applyPercentageAmount = useCallback(
         (percentage: number) => {
             if (!selectedAddress) return
@@ -450,7 +468,9 @@ export const useSwapForm = (
                 )
                 return
             }
-            const amount = spendable.max.mul(percentage).div(100).floor()
+            const amount = liftToMinimum(
+                spendable.max.mul(percentage).div(100).floor(),
+            )
             if (amount.isZero()) {
                 // Fee reserves can consume the whole balance; filling the
                 // field with 0 would read as a dead button too.
@@ -472,6 +492,7 @@ export const useSwapForm = (
             infoToast,
             errorToast,
             showBalanceTooLow,
+            liftToMinimum,
             t,
         ],
     )
@@ -846,6 +867,8 @@ export const useSwapForm = (
         handlePayAmountFocus,
         handleSwapDirection,
         handleMaxPress,
+        canUseMinimum,
+        handleUseMinimum,
         handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
         handleOpenReceiveAssetSelection: () =>
             void handleOpenReceiveAssetSelection(),

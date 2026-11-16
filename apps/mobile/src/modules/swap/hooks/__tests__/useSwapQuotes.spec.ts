@@ -214,6 +214,84 @@ describe('useSwapQuotes', () => {
             )
         })
 
+        it("drops the old pair's refusal and minimum on the render the pair changes", async () => {
+            mockAssetsQueryResult = makeAssetsResult(['0', '31566704', '456'])
+            mockCreateQuotes.mockRejectedValueOnce(
+                routerRefusal(422, 'amount_too_low', {
+                    source_amount_minimum: '2000',
+                }),
+            )
+            const renders: unknown[][] = []
+            const { result, rerender } = renderHook(
+                ({ toAssetId }) => {
+                    const quotes = useSwapQuotes({ ...baseParams, toAssetId })
+                    renders.push([quotes.quoteFailure, quotes.pairMinimum])
+                    return quotes
+                },
+                { initialProps: { toAssetId: '31566704' } },
+            )
+            await waitFor(() =>
+                expect(result.current.pairMinimum).toEqual(new Decimal(2000)),
+            )
+            mockCreateQuotes.mockImplementation(() => new Promise(() => {}))
+            renders.length = 0
+
+            rerender({ toAssetId: '456' })
+
+            // Every render, including the one before the quote effect clears
+            // the old failure, must already describe the new pair.
+            expect(renders.length).toBeGreaterThan(0)
+            expect(
+                renders.every(([failure, minimum]) => !failure && !minimum),
+            ).toBe(true)
+        })
+
+        it('keeps the minimum across amount edits on the same pair', async () => {
+            mockCreateQuotes.mockRejectedValueOnce(
+                routerRefusal(422, 'amount_too_low', {
+                    source_amount_minimum: '2000',
+                }),
+            )
+            const { result, rerender } = renderHook(
+                ({ payAmount }) => useSwapQuotes({ ...baseParams, payAmount }),
+                { initialProps: { payAmount: new Decimal(1) } },
+            )
+            await waitFor(() =>
+                expect(result.current.pairMinimum).toEqual(new Decimal(2000)),
+            )
+            mockCreateQuotes.mockResolvedValue([OFFER])
+
+            rerender({ payAmount: new Decimal(5) })
+            act(() => result.current.reset())
+
+            expect(result.current.pairMinimum).toEqual(new Decimal(2000))
+        })
+
+        it('drops a floor the router has since accepted an amount under', async () => {
+            mockCreateQuotes.mockRejectedValueOnce(
+                routerRefusal(422, 'amount_too_low', {
+                    source_amount_minimum: '2000000',
+                }),
+            )
+            const { result, rerender } = renderHook(
+                ({ payAmount }) => useSwapQuotes({ ...baseParams, payAmount }),
+                { initialProps: { payAmount: new Decimal(1) } },
+            )
+            await waitFor(() =>
+                expect(result.current.pairMinimum).toEqual(
+                    new Decimal(2_000_000),
+                ),
+            )
+            mockCreateQuotes.mockResolvedValue([OFFER])
+
+            rerender({ payAmount: new Decimal('1.5') })
+
+            await waitFor(() =>
+                expect(result.current.allQuotes).toEqual([OFFER]),
+            )
+            expect(result.current.pairMinimum).toBeNull()
+        })
+
         it('retries an unavailable route once on refresh and clears on success', async () => {
             mockCreateQuotes.mockRejectedValueOnce(
                 routerRefusal(503, 'route_unavailable'),

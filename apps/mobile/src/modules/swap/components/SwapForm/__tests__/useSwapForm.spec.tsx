@@ -208,6 +208,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
     useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
+    chainDisplayNameOf: () => 'Algorand',
+}))
+
+vi.mock('../../../utils/formatSwapLimit', () => ({
+    formatSwapLimit: (limit: Decimal) => limit.toString(),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -285,6 +290,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return a.equals(b)
         },
         useDebouncedValue: (value: unknown) => value,
+        isPeraNetworkError: () => false,
+        isNotFoundError: () => false,
+        isChainRefusedError: () => false,
         uint64IdToNumber: (id: string | number) => Number(id),
         baseUnitsToDisplayUnits,
         displayUnitsToBaseUnits,
@@ -1483,6 +1491,73 @@ describe('useSwapForm', () => {
             expect(mockCreateQuotes.mock.calls[1][0].sourceAmount).toEqual(
                 mockCreateQuotes.mock.calls[0][0].sourceAmount,
             )
+        })
+    })
+
+    describe('the router minimum', () => {
+        const refuseBelow = (minimum: string) =>
+            mockCreateQuotes.mockRejectedValue({
+                error: 'Amount too low',
+                code: 'amount_too_low',
+                source_amount_minimum: minimum,
+            })
+
+        const typeRefusedAmount = async (
+            result: { current: ReturnType<typeof useSwapForm> },
+            minimum: string,
+        ) => {
+            refuseBelow(minimum)
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(1))
+            })
+        }
+
+        it('offers the minimum the account can afford and fills it', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '2000000')
+
+            expect(result.current.canUseMinimum).toBe(true)
+
+            await act(async () => {
+                result.current.handleUseMinimum()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(2))
+        })
+
+        it('does not offer a minimum above what the account can spend', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '6000000')
+
+            expect(result.current.canUseMinimum).toBe(false)
+        })
+
+        it('fills MAX as is when the balance cannot reach the minimum, so the router answers with its current floor', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '6000000')
+
+            act(() => {
+                result.current.handleMaxPress()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(5))
+            expect(mockInfoToast).not.toHaveBeenCalled()
+        })
+
+        it('lifts a percentage fill under the minimum up to it', async () => {
+            const { result } = renderHook(() => useSwapForm(SCOPE))
+            await typeRefusedAmount(result, '2000000')
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                slippageTolerance: null,
+                balancePercentage: 25,
+                useLocalCurrency: false,
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfig()
+            })
+
+            expect(result.current.payAmount).toEqual(new Decimal(2))
         })
     })
 })

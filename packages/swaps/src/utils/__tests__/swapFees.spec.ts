@@ -13,7 +13,13 @@
 import { describe, expect, test } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { SwapFee, SwapQuote } from '../../models'
-import { peraFeeInSourceAsset, swapFeeOf } from '../swapFees'
+import type { SwapSourceCost } from '../../chain-adapter'
+import {
+    peraFeeInSourceAsset,
+    swapFeeOf,
+    swapNetworkFeeSharePercent,
+    swapNetworkFeeUsd,
+} from '../swapFees'
 
 const SOURCE = { chainId: 'fake-a', networkId: 'main', assetId: 'native' }
 
@@ -74,5 +80,78 @@ describe('peraFeeInSourceAsset', () => {
 
     test('is zero when the quote carries no Pera fee', () => {
         expect(peraFeeInSourceAsset(quoteWith([]))).toEqual(new Decimal(0))
+    })
+})
+
+describe('swapNetworkFeeUsd', () => {
+    const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+    // 10^15 base units of an 18-decimal coin = 0.001; the ceiling is twice that.
+    const SOURCE_COST = {
+        networkFee: new Decimal(2).mul(new Decimal(10).pow(15)),
+        expectedNetworkFee: new Decimal(10).pow(15),
+        nativeDecimals: 18,
+    } as unknown as SwapSourceCost
+    const quotedAt = (usdValue: string | null) =>
+        quoteWith([
+            {
+                kind: 'network',
+                asset: { ...SCOPE, assetId: 'native' },
+                amount: new Decimal(1),
+                usdValue,
+            },
+        ])
+
+    test("prefers the router's own fee when the quote carries one", () => {
+        expect(
+            swapNetworkFeeUsd({
+                quote: quotedAt('0.31'),
+                scope: SCOPE,
+                sourceCost: SOURCE_COST,
+                nativeUsdPrice: new Decimal(3000),
+            }),
+        ).toEqual(new Decimal('0.31'))
+    })
+
+    test('values the expected estimate, not the ceiling, without one', () => {
+        expect(
+            swapNetworkFeeUsd({
+                quote: quotedAt(null),
+                scope: SCOPE,
+                sourceCost: SOURCE_COST,
+                nativeUsdPrice: new Decimal(3000),
+            }),
+        ).toEqual(new Decimal(3))
+    })
+
+    test.each([
+        ['no estimate', null, new Decimal(3000)],
+        ['no native price', SOURCE_COST, undefined],
+        ['a zero native price', SOURCE_COST, new Decimal(0)],
+    ])('is null without a router fee and with %s', (_, sourceCost, price) => {
+        expect(
+            swapNetworkFeeUsd({
+                quote: quotedAt(null),
+                scope: SCOPE,
+                sourceCost,
+                nativeUsdPrice: price,
+            }),
+        ).toBeNull()
+    })
+})
+
+describe('swapNetworkFeeSharePercent', () => {
+    const quoteWorth = (amountInUsdValue: string | null) =>
+        ({ amountInUsdValue }) as unknown as SwapQuote
+
+    test("gives the fee as a percent of the swap's value", () => {
+        expect(
+            swapNetworkFeeSharePercent(quoteWorth('4'), new Decimal(1)),
+        ).toEqual(new Decimal(25))
+    })
+
+    test.each([null, '0'])('is null for a swap worth %s', value => {
+        expect(
+            swapNetworkFeeSharePercent(quoteWorth(value), new Decimal(1)),
+        ).toBeNull()
     })
 })
