@@ -115,6 +115,8 @@ Import Passphrase
     ${kind}=    Set Variable If    len($words) == 24    ${IMPORT_HD_BUTTON}    ${IMPORT_ALGO25_BUTTON}
     Wait Until Settled    ${kind}
     Tap    ${kind}
+    Wait Until Page Contains Element    ${IMPORT_INFO_RECOVER_BUTTON}    timeout=15s
+    Tap    ${IMPORT_INFO_RECOVER_BUTTON}
     FOR    ${i}    IN RANGE    ${{len($words)}}
         ${field}=    quantum.Indexed Row    ${IMPORT_WORD_INPUT_ID}    ${i}
         Input Password    ${field}    ${words}[${i}]
@@ -126,14 +128,23 @@ Import Passphrase
     [Teardown]    Set Log Level    ${level}
 
 Finish Passphrase Import
-    [Documentation]    The account search ends on naming the account or, when other accounts are
-    ...                rekeyed to it, on offering them; skip those so rescan still finds them.
+    [Documentation]    The account search ends on naming a single new account, on offering accounts
+    ...                rekeyed to it (skipped, so rescan still finds them), or, for several accounts,
+    ...                straight back on Home once the address selection is continued.
+    VAR    ${continued}    ${False}
     FOR    ${_}    IN RANGE    120
-        Tap If Present    ${IMPORT_SELECT_CONTINUE}
+        ${selecting}=    Tap If Present    ${IMPORT_SELECT_CONTINUE}
+        IF    ${selecting}
+            VAR    ${continued}    ${True}
+            # Polls the on-chain account search, which has no progress anchor of its own.
+            Sleep    0.5s
+            CONTINUE
+        END
         ${named}=    Tap If Present    ${ACCOUNT_FINISH_BUTTON}
         ${skipped}=    Tap If Present    ${IMPORT_REKEYED_SKIP}
         IF    ${named} or ${skipped}    RETURN
-        # Polls the on-chain account search, which has no progress anchor of its own.
+        ${home}=    Run Keyword And Return Status    Page Should Contain Element    ${MORE_BUTTON}
+        IF    ${continued} and ${home}    RETURN
         Sleep    0.5s
     END
-    Fail    Import never reached the naming or rekeyed-accounts step.
+    Fail    Import never got past the address selection, naming or rekeyed-accounts step.

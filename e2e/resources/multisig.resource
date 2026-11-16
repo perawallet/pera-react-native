@@ -392,8 +392,10 @@ Tap Account Option
     Tap    ${option}
 
 Expand Algorand Network
-    [Documentation]    Rekey sits in the Algorand network row, behind its chevron.
-    Tap Account Option    ${ACCOUNT_ALGORAND_EXPAND}
+    [Documentation]    Rekey sits in the Algorand network row, behind its chevron. A shared account is
+    ...                on Algorand alone, and that row then opens expanded, where a tap would fold it.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${ACCOUNT_OPTION_REKEY}
+    IF    not ${expanded}    Tap Account Option    ${ACCOUNT_ALGORAND_EXPAND}
 
 Open Shared Account Detail
     Open Account Options

@@ -59,6 +59,14 @@ ${WATCH_INFO_CREATE_BUTTON}         tid=watch_info_create_button
 
 
 ${OPTION_ALGORAND_EXPAND}           tid=account_network_algorand_expand
+# Rendered only for an account that is on Ethereum; a not-yet-added network shows _add instead.
+${OPTION_ETHEREUM_COPY}             tid=account_network_ethereum_copy
+
+# Shown only for an account on two or more chains.
+${ASSET_NETWORK_FILTER}             tid=asset_network_filter
+${ASSET_NETWORK_FILTER_ALL}         tid=asset_network_filter_all
+${ASSET_NETWORK_FILTER_ALGORAND}    tid=asset_network_filter_algorand
+${ASSET_NETWORK_FILTER_ETHEREUM}    tid=asset_network_filter_ethereum
 
 
 *** Keywords ***
@@ -152,10 +160,14 @@ Open Account Option
 
 Open Algorand Account Option
     [Documentation]    Rekey and rekeyed-account scan sit in the Algorand network row, behind its chevron.
+    ...                An account on Algorand alone opens that row expanded, where a tap would fold it.
     [Arguments]    ${option}
     Open Account Options
-    Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
-    Tap    ${OPTION_ALGORAND_EXPAND}
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${option}
+    IF    not ${expanded}
+        Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
+        Tap    ${OPTION_ALGORAND_EXPAND}
+    END
     Scroll Until Tappable    ${option}
     Tap    ${option}
 
@@ -176,12 +188,39 @@ Account Name Should Be
     Open Account Options
     Wait Until Page Contains    ${name}    timeout=10s
 
+Require Account On Ethereum
+    [Documentation]    The asset network filter needs the account on two chains. The filter's own
+    ...                absence cannot tell a build without Ethereum from a broken filter, so ask the
+    ...                account options sheet, which offers an Ethereum copy action only then.
+    Open Account Options
+    ${on}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${OPTION_ETHEREUM_COPY}    timeout=5s
+    Skip If    not ${on}
+    ...    The account is not on Ethereum: this build is not multichain (CHAINS without ethereum).
+    Go Home
+
 Receive Should Show Address
     [Documentation]    The receive screen prints the selected account's full address.
     [Arguments]    ${address}
     Tap    ${RECEIVE_BUTTON}
-    Wait Until Page Contains Element    ${RECEIVE_COPY_ADDRESS_BUTTON}    timeout=20s
+    Choose Algorand If Asked    receive    ${RECEIVE_COPY_ADDRESS_BUTTON}
     Wait Until Page Contains    ${address}    timeout=10s
+
+Choose Algorand If Asked
+    [Documentation]    Send and Receive open on a network picker when the account could use more
+    ...                than one chain, as on a multichain build. Algorand is picked by chain id, not
+    ...                as the first row: these flows assert Algorand behaviour.
+    [Arguments]    ${flow}    ${next}
+    ${row}=    Set Variable    ${flow}_chain_row_algorand
+    ${next_id}=    Bare Test Id    ${next}
+    Wait Until Page Contains Element
+    ...    xpath=//*[@name='${row}' or @resource-id='${row}' or @content-desc='${row}' or @name='${next_id}' or @resource-id='${next_id}' or @content-desc='${next_id}']
+    ...    timeout=20s
+    ${asked}=    Run Keyword And Return Status    Page Should Contain Element    tid=${row}
+    IF    ${asked}
+        Wait Until Settled    tid=${row}
+        Tap Until    tid=${row}    ${next}    timeout=20s
+    END
 
 Open Menu
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s

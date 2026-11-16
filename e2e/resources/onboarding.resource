@@ -38,6 +38,12 @@ ${ADD_ACCOUNT_ALGO25_BUTTON}            tid=add_account_create_algo25_button
 # only as resource-id and iOS only as name.
 ${ADD_ACCOUNT_CLOSE_BUTTON}             tid=add_account_close_button
 ${CONFETTI}                             tid=confetti_animation
+# Rendered only while the field holds text, so its absence means the field is empty.
+${ACCOUNT_NAME_CLEAR_BUTTON}            tid=name_account_clear_button
+# PWInput keeps its error node mounted with empty text, so only the copy says a name was refused.
+${ACCOUNT_NAME_TAKEN_ERROR}             xpath=//*[contains(@text,'already have an account with this name') or contains(@label,'already have an account with this name')]
+${SELECT_HD_WALLET_CREATE_NEW}          tid=select_hd_wallet_create_new
+${SELECT_HD_WALLET_SECOND}              tid=select_hd_wallet_item_1
 ${REMOVE_ALL_SUCCESS_SHEET}             tid=settings_delete_all_success_bottom_sheet
 
 ${IMPORT_OPTION_RECOVER_WALLET}         tid=import_account_options_recover_wallet_button
@@ -55,11 +61,16 @@ ${SELECT_ADDRESSES_CONTINUE}            tid=import_select_addresses_continue_but
 ${SELECT_ADDRESSES_ALL}                 tid=import_select_addresses_select_all_checkbox
 ${REKEYED_CONTINUE}                     tid=import_rekeyed_addresses_continue_button
 ${REKEYED_SKIP}                         tid=import_rekeyed_addresses_skip_button
+${IMPORT_ALL_IMPORTED_TITLE}            xpath=//*[@text='Already in your wallet' or @label='Already in your wallet']
+${IMPORT_GO_TO_WALLET}                  xpath=//*[@text='Go to wallet' or @label='Go to wallet']
 ${REKEYED_CHECKBOX_ANY}                 xpath=//*[starts-with(@content-desc,'import_rekeyed_addresses_item_checkbox_') or starts-with(@resource-id, 'import_rekeyed_addresses_item_checkbox_') or starts-with(@name,'import_rekeyed_addresses_item_checkbox_')]
 ${ASB_INFO_CONTINUE}                    tid=asb_import_info_continue_button
 ${ASB_PICK_FILE_BUTTON}                 tid=asb_import_backup_pick_file_button
 ${LEDGER_PAIR_START_BUTTON}             tid=ledger_pair_primary_button
 ${LEDGER_PAIR_INFO_BUTTON}              tid=ledger_pair_info_button
+# Where USB is possible (Android) a transport picker comes first; with a second Ledger chain, a chain picker.
+${LEDGER_TRANSPORT_BLE}                 tid=ledger_transport_options_ble_button
+${LEDGER_CHAIN_ALGORAND}                tid=chain_selection_algorand
 
 ${WATCH_INFO_CREATE_BUTTON}             tid=watch_info_create_button
 ${WATCH_ADDRESS_INPUT}                  tid=watch_account_address_input
@@ -145,12 +156,13 @@ Enter Recovery Phrase For
 
 Finish Import
     [Documentation]    Walks whichever post-import screens the phrase produces (address selection,
-    ...                rekeyed accounts, naming, startup prompts) until Home. Every import ends on the
-    ...                naming screen, and Home only counts once that has been passed: on iOS the tab
-    ...                bar of a wallet that already exists stays in the tree under the import flow.
-    ...                Returns whether the rekeyed screen and the confetti were seen on the way.
+    ...                rekeyed accounts, naming, startup prompts) until Home. Only a single new
+    ...                account is named; several, or rekeyed ones, leave the flow straight from their
+    ...                screen. Home counts once one of those screens has been passed and none is up:
+    ...                on iOS the tab bar of a wallet that already exists stays in the tree under the
+    ...                import flow. Returns whether the rekeyed screen and the confetti were seen.
     [Arguments]    ${rekeyed}=import
-    VAR    ${named}    ${False}
+    VAR    ${passed}    ${False}
     VAR    ${saw_rekeyed}    ${False}
     VAR    ${saw_confetti}    ${False}
     FOR    ${i}    IN RANGE    240
@@ -159,22 +171,28 @@ Finish Import
         ${confetti}=    Is Shown    ${CONFETTI}
         IF    ${confetti}    VAR    ${saw_confetti}    ${True}
         ${select}=    Is Shown    ${SELECT_ADDRESSES_CONTINUE}
-        IF    ${select}    Continue With Selected Addresses
+        IF    ${select}
+            Continue With Selected Addresses
+            VAR    ${passed}    ${True}
+            CONTINUE
+        END
         ${rekeyed_screen}=    Is Shown    ${REKEYED_CONTINUE}
         IF    ${rekeyed_screen}
             VAR    ${saw_rekeyed}    ${True}
             Leave Rekeyed Addresses    ${rekeyed}
+            VAR    ${passed}    ${True}
+            CONTINUE
         END
         ${naming}=    Is Shown    ${ACCOUNT_FINISH_BUTTON}
         IF    ${naming}
             Tap    ${ACCOUNT_FINISH_BUTTON}
-            VAR    ${named}    ${True}
+            VAR    ${passed}    ${True}
             Run Keyword And Ignore Error
             ...    Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=10s
             CONTINUE
         END
         ${home}=    Is Shown    ${MENU_TAB}
-        IF    ${home} and ${named}    RETURN    ${saw_rekeyed}    ${saw_confetti}
+        IF    ${home} and ${passed}    RETURN    ${saw_rekeyed}    ${saw_confetti}
         Sleep    0.5s
     END
     Fail    The import never reached Home.
@@ -217,6 +235,47 @@ Open Add Account
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
 
+Add Multichain Account
+    [Documentation]    With one HD wallet this opens the new account's naming screen; with several the
+    ...                app first asks which wallet to derive it from.
+    Open Add Account
+    Tap    ${ADD_ACCOUNT_ADD_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    timeout=20s
+    Tap    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}
+
+Enter Recovery Phrase From Add Account
+    [Arguments]    ${phrase_type}    ${phrase_env}
+    Open Add Account
+    Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
+    Wait Until Page Contains Element    ${IMPORT_OPTION_RECOVER_WALLET}    timeout=20s
+    Enter Recovery Phrase For    ${phrase_type}    ${phrase_env}
+
+Import Universal Wallet Twice
+    [Documentation]    Imports the Universal wallet, then its phrase again from Add Account, stopping
+    ...                where the app says every address is already held.
+    Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_WORD
+    Wait Clear Of Startup Prompts
+    Enter Recovery Phrase From Add Account    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_WORD
+    Wait Until Page Contains Element    ${IMPORT_ALL_IMPORTED_TITLE}    timeout=90s
+
+Open Ledger Pairing
+    [Documentation]    From the import options: Bluetooth and Algorand through whichever pickers come up.
+    Tap    ${IMPORT_OPTION_PAIR_LEDGER}
+    FOR    ${i}    IN RANGE    40
+        ${paired}=    Is Shown    ${LEDGER_PAIR_START_BUTTON}
+        IF    ${paired}    RETURN
+        FOR    ${choice}    IN    ${LEDGER_TRANSPORT_BLE}    ${LEDGER_CHAIN_ALGORAND}
+            ${offered}=    Is Shown    ${choice}
+            IF    ${offered}
+                Wait Until Settled    ${choice}
+                Tap    ${choice}
+                Wait Until Page Does Not Contain Element    ${choice}    timeout=10s
+            END
+        END
+        Sleep    0.5s
+    END
+    Fail    Pair Ledger never reached the pairing screen.
+
 Reveal Other Add Account Options
     Scroll Into View    add_account_see_other_options_button
     Tap    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}
@@ -231,13 +290,30 @@ Reveal Other Import Options
 
 Name Account And Finish
     [Arguments]    ${name}
-    Wait Until Page Contains Element    ${ACCOUNT_NAME_INPUT}    timeout=60s
-    Clear Text    ${ACCOUNT_NAME_INPUT}
-    Input Text    ${ACCOUNT_NAME_INPUT}    ${name}
+    Type Account Name    ${name}
     Dismiss Keyboard
     Tap    ${ACCOUNT_FINISH_BUTTON}
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
     Wait Until Page Contains Element    ${ACCOUNT_SELECTION_BUTTON}    timeout=30s
+
+Type Account Name
+    [Arguments]    ${name}
+    Wait Until Page Contains Element    ${ACCOUNT_NAME_INPUT}    timeout=60s
+    Clear Text    ${ACCOUNT_NAME_INPUT}
+    Input Text    ${ACCOUNT_NAME_INPUT}    ${name}
+
+Account Name Should Be Refused
+    [Documentation]    The error alone would still let Finish create the duplicate, so both are checked.
+    [Arguments]    ${name}
+    Type Account Name    ${name}
+    Wait Until Page Contains Element    ${ACCOUNT_NAME_TAKEN_ERROR}    timeout=15s
+    Expect Element    ${ACCOUNT_FINISH_BUTTON}    disabled    timeout=10s    retry_interval=0.5s
+
+Account Name Should Be Accepted
+    [Arguments]    ${name}
+    Type Account Name    ${name}
+    Wait Until Page Does Not Contain Element    ${ACCOUNT_NAME_TAKEN_ERROR}    timeout=10s
+    Expect Element    ${ACCOUNT_FINISH_BUTTON}    enabled    timeout=10s    retry_interval=0.5s
 
 Selected Account Should Be Named
     [Documentation]    The account-options sheet is titled with the selected account's name.
@@ -257,7 +333,9 @@ Open Rescan For Rekeyed Accounts
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
     Tap    ${MORE_BUTTON}
     Wait Until Settled    ${ACCOUNT_ALGORAND_EXPAND}
-    Tap    ${ACCOUNT_ALGORAND_EXPAND}
+    # An account on Algorand alone opens with this row already expanded; a tap would fold it.
+    ${expanded}=    Is Shown    ${SCAN_REKEYED_OPTION}
+    IF    not ${expanded}    Tap    ${ACCOUNT_ALGORAND_EXPAND}
     Wait Until Settled    ${SCAN_REKEYED_OPTION}
     Tap    ${SCAN_REKEYED_OPTION}
 

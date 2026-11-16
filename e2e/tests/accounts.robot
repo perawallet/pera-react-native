@@ -60,6 +60,14 @@ Account Options Open From More
     Page Should Contain Element    ${ACCOUNT_TYPE_INFO_BUTTON}
     Page Should Contain Element    ${OPTION_RENAME}
 
+Home Assets Show The Network Filter On A Multichain Build
+    [Tags]    id:accounts.home.network-filter    p1
+    Require Account On Ethereum
+    Wait Until Page Contains Element    ${ASSET_NETWORK_FILTER}    timeout=30s
+    Page Should Contain Element    ${ASSET_NETWORK_FILTER_ALL}
+    Page Should Contain Element    ${ASSET_NETWORK_FILTER_ALGORAND}
+    Page Should Contain Element    ${ASSET_NETWORK_FILTER_ETHEREUM}
+
 Cancelling Removal Keeps The Account
     [Tags]    id:accounts.remove.cancel    p1
     ${before}=    Count Accounts

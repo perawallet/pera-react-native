@@ -44,6 +44,8 @@ ${SEND_INFO_UNDERSTAND}             xpath=//*[@text='I Understand' or @label='I 
 ${SEND_NEXT_BUTTON}                 tid=send_input_next_button
 ${SEND_MAX_BUTTON}                  tid=send_input_max_button
 ${ADDRESS_SEARCH_INPUT}             tid=address_search_input
+# Before any query the destination lists every wallet account except the sender.
+${OTHER_RECIPIENT_ROW}              xpath=(//*[(starts-with(@content-desc, 'account_result_row_') or starts-with(@resource-id, 'account_result_row_') or starts-with(@name,'account_result_row_')) and not(contains(@content-desc,'${FUNDED_ADDRESS}')) and not(contains(@resource-id,'${FUNDED_ADDRESS}')) and not(contains(@name,'${FUNDED_ADDRESS}'))])[1]
 ${SEND_CONFIRM_SLIDE}               tid=send_confirm_button
 ${SEND_CONFIRM_AMOUNT}              tid=send_confirm_amount
 ${SEND_SUCCESS_DONE}                tid=send_success-primary
@@ -158,11 +160,12 @@ Open Receive
     # Home is still laying out after the reset, and a tap at a moving button misses it.
     Wait Until Settled    ${RECEIVE_BUTTON}
     Tap    ${RECEIVE_BUTTON}
-    Wait Until Page Contains Element    ${RECEIVE_COPY_ADDRESS}    timeout=20s
+    Choose Algorand If Asked    receive    ${RECEIVE_COPY_ADDRESS}
 
 Open Send
     Wait Until Page Contains Element    ${SEND_BUTTON}    timeout=30s
     Tap    ${SEND_BUTTON}
+    Choose Algorand If Asked    send    ${SEND_ALGO_ROW}
     Wait Until Settled    ${SEND_ALGO_ROW}
 
 Open Amount Entry

@@ -14,6 +14,7 @@ Test Tags           onboarding
 
 *** Variables ***
 ${SECOND_ACCOUNT_NAME}      E2E Second
+${THIRD_ACCOUNT_NAME}       E2E Third
 ${WATCH_ACCOUNT_NAME}       E2E Watch
 
 
@@ -68,8 +69,7 @@ Pair Ledger Option Opens Its Intro
     [Tags]    id:onboarding.import.ledger-entry    p1
     Start Without Wallet
     Open Import Options From Welcome
-    Tap    ${IMPORT_OPTION_PAIR_LEDGER}
-    Wait Until Page Contains Element    ${LEDGER_PAIR_START_BUTTON}    timeout=20s
+    Open Ledger Pairing
     Page Should Contain Element    ${LEDGER_PAIR_INFO_BUTTON}
 
 Algo25 Wallet Is Recovered From Its 25 Word Phrase
@@ -97,12 +97,35 @@ Universal And Algo25 Wallets Import Side By Side
     Skip If    not ($MNEMONIC_24 and $MNEMONIC_25)    MNEMONIC_24_WORD and MNEMONIC_25_WORD must both be set.
     Import From Welcome    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_WORD
     Wait Clear Of Startup Prompts
-    Open Add Account
-    Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
-    Wait Until Page Contains Element    ${IMPORT_OPTION_RECOVER_WALLET}    timeout=20s
-    Enter Recovery Phrase For    ${RECOVER_ALGO25}    MNEMONIC_25_WORD
+    Enter Recovery Phrase From Add Account    ${RECOVER_ALGO25}    MNEMONIC_25_WORD
     Finish Import
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
+
+Reimporting A Wallet Already In Pera Says So
+    [Documentation]    Importing a held wallet again says it is already there instead of offering its addresses.
+    [Tags]    id:onboarding.import.reimport-held    p1    needs-funded    excludefromci
+    Skip If    not $MNEMONIC_24    MNEMONIC_24_WORD is not set.
+    Import Universal Wallet Twice
+    Page Should Not Contain Element    ${SELECT_ADDRESSES_ALL}
+
+Nothing Left To Import Offers Go To Wallet Instead
+    [Documentation]    With every address already held, the import button becomes Go to wallet.
+    [Tags]    id:onboarding.import.reimport-go-to-wallet    p2    needs-funded    excludefromci
+    Skip If    not $MNEMONIC_24    MNEMONIC_24_WORD is not set.
+    Import Universal Wallet Twice
+    Page Should Contain Element    ${IMPORT_GO_TO_WALLET}
+
+Two Wallets Make The App Ask Which One To Derive From
+    [Documentation]    With two HD wallets, a new account asks which wallet to derive from.
+    [Tags]    id:onboarding.add-account.wallet-picker    p1    needs-funded    excludefromci
+    Skip If    not $MNEMONIC_24    MNEMONIC_24_WORD is not set.
+    Start With New Wallet
+    Enter Recovery Phrase From Add Account    ${RECOVER_UNIVERSAL_WALLET}    MNEMONIC_24_WORD
+    Finish Import
+    Wait Clear Of Startup Prompts
+    Add Multichain Account
+    Wait Until Page Contains Element    ${SELECT_HD_WALLET_CREATE_NEW}    timeout=60s
+    Page Should Contain Element    ${SELECT_HD_WALLET_SECOND}
 
 Import Detects Accounts Rekeyed To The Wallet
     [Tags]    id:onboarding.import.rekeyed-detected    p1    needs-funded    excludefromci
@@ -130,12 +153,38 @@ Rescan Offers Rekeyed Accounts Skipped At Import
 New Account Is Added To The Existing Wallet
     [Tags]    id:onboarding.add-account.hd    p1
     Start With New Wallet
-    Open Add Account
-    Tap    ${ADD_ACCOUNT_ADD_BUTTON}
-    Wait Until Page Contains Element    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    timeout=20s
-    Tap    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}
+    Add Multichain Account
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
     Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
+
+Duplicate Account Name Is Refused
+    [Documentation]    A new account cannot take a name another account already has.
+    [Tags]    id:onboarding.add-account.name-taken    p1
+    Start With New Wallet
+    Add Multichain Account
+    Name Account And Finish    ${SECOND_ACCOUNT_NAME}
+    Add Multichain Account
+    Account Name Should Be Refused    ${SECOND_ACCOUNT_NAME}
+    Account Name Should Be Accepted    ${THIRD_ACCOUNT_NAME}
+
+Duplicate Name Check Ignores Case And Padding
+    [Documentation]    A taken name typed in another case with surrounding spaces is refused too.
+    [Tags]    id:onboarding.add-account.name-taken-normalised    p2
+    Start With New Wallet
+    Add Multichain Account
+    Name Account And Finish    ${SECOND_ACCOUNT_NAME}
+    Add Multichain Account
+    Account Name Should Be Refused    ${SPACE}${SPACE}e2e second${SPACE}${SPACE}
+
+Clear Button Empties The Account Name And Blocks Finish
+    [Documentation]    The clear icon empties the account name and disables Finish.
+    [Tags]    id:onboarding.add-account.name-cleared    p2
+    Start With New Wallet
+    Add Multichain Account
+    Type Account Name    ${SECOND_ACCOUNT_NAME}
+    Tap    ${ACCOUNT_NAME_CLEAR_BUTTON}
+    Wait Until Page Does Not Contain Element    ${ACCOUNT_NAME_CLEAR_BUTTON}    timeout=10s
+    Expect Element    ${ACCOUNT_FINISH_BUTTON}    disabled    timeout=10s    retry_interval=0.5s
 
 Algo25 Account Is Created From Other Options
     [Tags]    id:onboarding.add-account.algo25    p1

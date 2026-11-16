@@ -59,6 +59,21 @@ Max Fills The Amount
     Tap    ${SEND_MAX_BUTTON}
     Wait Until Keyword Succeeds    5s    0.5s    Expect Element    ${SEND_NEXT_BUTTON}    enabled    timeout=0s
 
+Recipient Search Excludes The Sender And Offers The Other Account
+    [Documentation]    Checked on the unfiltered list: a typed full address is offered even when it
+    ...                is the sender's, so only the list shows the exclusion.
+    [Tags]    id:send.recipient.excludes-sender    p1    needs-funded    excludefromci
+    [Setup]    Use Funded Testnet Account
+    [Teardown]    Leave Funded Testnet Account
+    Open Amount Entry
+    Enter Amount    ${SEND_AMOUNT}
+    Open Destination
+    Wait Until Page Contains Element    ${OTHER_RECIPIENT_ROW}    timeout=15s
+    Page Should Not Contain Element    tid=account_result_row_${FUNDED_ADDRESS}
+    Dismiss Keyboard
+    Tap    ${OTHER_RECIPIENT_ROW}
+    Wait Until Page Contains Element    ${SEND_CONFIRM_SLIDE}    timeout=25s
+
 Own Address Leads To Confirmation
     [Tags]    id:send.confirm.reach    p1    needs-funded    excludefromci
     [Setup]    Use Funded Testnet Account
