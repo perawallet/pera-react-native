@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { DiscoverDapp, DiscoverFavorite, DiscoverFolder } from '../types'
+import type { LegacyFavorite } from '../utils/legacyFavorites'
 import { normalizeDappUrl } from '../utils/normalizeDappUrl'
 
 export type DiscoverFavoritesState = {
@@ -29,6 +30,22 @@ export type DiscoverFavoritesState = {
     folders: Record<string, DiscoverFolder>
     /** The keys of `folders`, newest first. */
     folderOrder: string[]
+    /** The one-time copy of the legacy WebView Discover's favorites. */
+    legacyImport: LegacyImportState
+}
+
+export type LegacyImportStatus = 'pending' | 'done' | 'gave_up'
+
+export type LegacyImportState = {
+    status: LegacyImportStatus
+    /** Failed attempts so far; the import gives up at `LEGACY_IMPORT_MAX_ATTEMPTS`. */
+    attempts: number
+}
+
+export type LegacyImportResult = {
+    imported: number
+    /** Already a favorite, natively or earlier in the same payload. */
+    alreadyFavorite: number
 }
 
 type DiscoverFavoritesActions = {
@@ -45,6 +62,16 @@ type DiscoverFavoritesActions = {
     deleteFolder(id: string): void
     /** No-op unless `url` is a favorite and the folder exists. */
     setDappInFolder(id: string, url: string, inFolder: boolean): void
+    /**
+     * Adds the legacy favorites that are not favorites yet, before the existing
+     * ones and in the given order, in no folder; marks the import done.
+     */
+    importLegacyFavorites(
+        entries: readonly LegacyFavorite[],
+        directory: Readonly<Record<string, DiscoverDapp>>,
+    ): LegacyImportResult
+    /** Counts a failed attempt; returns the status it leaves the import in. */
+    recordLegacyImportFailure(): LegacyImportStatus
     resetState(): void
 }
 
@@ -52,7 +79,14 @@ export type DiscoverFavoritesStore = DiscoverFavoritesState &
     DiscoverFavoritesActions
 
 const STORE_NAME = 'discover-favorites-store'
-const STORE_VERSION = 2
+const STORE_VERSION = 3
+
+export const LEGACY_IMPORT_MAX_ATTEMPTS = 3
+
+const pendingLegacyImport: LegacyImportState = {
+    status: 'pending',
+    attempts: 0,
+}
 
 export const FOLDER_NAME_MAX_LENGTH = 40
 
@@ -61,6 +95,7 @@ const initialState: DiscoverFavoritesState = {
     favoriteOrder: [],
     folders: {},
     folderOrder: [],
+    legacyImport: pendingLegacyImport,
 }
 
 /** The trimmed folder name, or null when it is empty or longer than the limit. */
@@ -81,12 +116,19 @@ const requireFolderName = (raw: string): string => {
     return name
 }
 
-/** v1 had favorites only; they carry over in no folder. Unknown versions start empty. */
+/**
+ * v1 had favorites only; they carry over in no folder. v1 and v2 predate the
+ * legacy import, so it is pending. Unknown versions start empty.
+ */
 export const migrateDiscoverFavorites = (
     persisted: unknown,
     version: number,
 ): DiscoverFavoritesState => {
     if (version === STORE_VERSION) return persisted as DiscoverFavoritesState
+    if (version === 2) {
+        const v2 = persisted as Omit<DiscoverFavoritesState, 'legacyImport'>
+        return { ...v2, legacyImport: pendingLegacyImport }
+    }
     if (version === 1) {
         const v1 = persisted as Pick<
             DiscoverFavoritesState,
@@ -97,6 +139,7 @@ export const migrateDiscoverFavorites = (
             favoriteOrder: v1.favoriteOrder,
             folders: {},
             folderOrder: [],
+            legacyImport: pendingLegacyImport,
         }
     }
     return initialState
@@ -213,6 +256,50 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                     folders: { ...state.folders, [id]: { ...folder, items } },
                 }))
             },
+            importLegacyFavorites: (entries, directory) => {
+                const { favorites, legacyImport } = get()
+                const added: Record<string, DiscoverFavorite> = {}
+                const addedOrder: string[] = []
+                let alreadyFavorite = 0
+                for (const entry of entries) {
+                    const key = normalizeDappUrl(entry.url)
+                    if (key === null) continue
+                    if (favorites[key] || added[key]) {
+                        alreadyFavorite += 1
+                        continue
+                    }
+                    const listed = directory[key]
+                    added[key] = {
+                        url: entry.url,
+                        name: entry.name,
+                        logo: entry.logo,
+                        categories: entry.categories,
+                        chains: listed?.chains ?? [],
+                        ...(listed?.projectId
+                            ? { projectId: listed.projectId }
+                            : {}),
+                        addedAt: Date.now(),
+                    }
+                    addedOrder.push(key)
+                }
+                set(state => ({
+                    favorites: { ...state.favorites, ...added },
+                    // Legacy favorites are the older ones: newest-first lists
+                    // show them after the native favorites.
+                    favoriteOrder: [...addedOrder, ...state.favoriteOrder],
+                    legacyImport: { ...legacyImport, status: 'done' },
+                }))
+                return { imported: addedOrder.length, alreadyFavorite }
+            },
+            recordLegacyImportFailure: () => {
+                const attempts = get().legacyImport.attempts + 1
+                const status: LegacyImportStatus =
+                    attempts >= LEGACY_IMPORT_MAX_ATTEMPTS
+                        ? 'gave_up'
+                        : 'pending'
+                set({ legacyImport: { status, attempts } })
+                return status
+            },
             resetState: () => set(initialState),
         }),
         {
@@ -225,6 +312,7 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                 favoriteOrder: state.favoriteOrder,
                 folders: state.folders,
                 folderOrder: state.folderOrder,
+                legacyImport: state.legacyImport,
             }),
         },
     ),
