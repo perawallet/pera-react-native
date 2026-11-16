@@ -53,9 +53,10 @@ export const peraFeeInSourceAsset = (quote: SwapQuote): Decimal => {
 export const HIGH_NETWORK_FEE_SHARE_PERCENT = new Decimal(10)
 
 /**
- * The source chain's network fee in USD. The chain's own estimate is what the
- * user pays, so it wins once the native coin has a price; otherwise the
- * quote's USD figure for its source-chain fee. Null when neither is known.
+ * The source chain's network fee in USD, as the swap is likely to pay it: the
+ * router's own figure when the quote carries one, else the chain's expected
+ * estimate at the native price. Never the signed maximum, which would overstate
+ * the fee several times. Null when neither is known.
  */
 export const swapNetworkFeeUsd = ({
     quote,
@@ -68,14 +69,13 @@ export const swapNetworkFeeUsd = ({
     sourceCost: Nullable<SwapSourceCost>
     nativeUsdPrice: Maybe<Decimal>
 }): Nullable<Decimal> => {
-    if (sourceCost && nativeUsdPrice?.greaterThan(0)) {
-        return baseUnitsToDisplayUnits(
-            sourceCost.networkFee,
-            sourceCost.nativeDecimals,
-        ).mul(nativeUsdPrice)
-    }
     const quotedUsd = swapFeeOf(quote, 'network', scope)?.usdValue
-    return quotedUsd ? new Decimal(quotedUsd) : null
+    if (quotedUsd) return new Decimal(quotedUsd)
+    if (!sourceCost || !nativeUsdPrice?.greaterThan(0)) return null
+    return baseUnitsToDisplayUnits(
+        sourceCost.expectedNetworkFee,
+        sourceCost.nativeDecimals,
+    ).mul(nativeUsdPrice)
 }
 
 /** `networkFeeUsd` as a percent of the swap's USD value; null when the swap has no value. */

@@ -37,9 +37,10 @@ vi.mock('../../../hooks/useSwapFiatText', () => ({
 
 const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
-// 10^15 wei = 0.001 ETH; at $3,000 that is a $3 fee.
+// Expected 10^15 wei = 0.001 ETH; at $3,000 that is a $3 fee. The ceiling is twice that.
 const SOURCE_COST = {
-    networkFee: new Decimal(10).pow(15),
+    networkFee: new Decimal(2).mul(new Decimal(10).pow(15)),
+    expectedNetworkFee: new Decimal(10).pow(15),
     nativeDecimals: 18,
 } as unknown as SwapSourceCost
 
@@ -113,9 +114,7 @@ describe('useSwapNetworkFeeWarning', () => {
         )
     })
 
-    it("values the quote's fee when the native coin has no price", () => {
-        mockUseAssetPricesQuery.mockReturnValue({ data: new Map() })
-
+    it("prefers the router's fee over the chain's estimate", () => {
         render({ quote: quoteWorth('1', '0.31') })
 
         expect(mockT).toHaveBeenCalledWith(

@@ -25,6 +25,7 @@ import {
 } from '../../connect/callBatch/__tests__/harness'
 import { testChainContext } from '../../__tests__/context'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { readEvmFeePresets } from '../../transfer/fees'
 import {
     estimateEvmSwapSourceCost,
     evmShortfallOf,
@@ -88,6 +89,26 @@ describe('estimateEvmSwapSourceCost', () => {
         expect(withApproval.networkFee.div(cost.networkFee).toString()).toBe(
             gasRatio.toString(),
         )
+    })
+
+    it('expects the swap to pay the base fee plus the tip, not the signed maximum', async () => {
+        fakeNode({ balance: RICH })
+        const client = createEvmClient(scope, ctx, ETHEREUM)
+        const { baseFeePerGas, presets } = await readEvmFeePresets(
+            client,
+            ETHEREUM,
+            scope.networkId,
+        )
+
+        const cost = await estimate(ETHEREUM.nativeAsset.assetId)
+
+        expect(cost.expectedNetworkFee.toString()).toBe(
+            (
+                SWAP_CALL_GAS_CEILING *
+                (baseFeePerGas + presets.normal.maxPriorityFeePerGas)
+            ).toString(),
+        )
+        expect(cost.expectedNetworkFee.lessThan(cost.networkFee)).toBe(true)
     })
 
     it('adds the spend approval while the allowance is short', async () => {

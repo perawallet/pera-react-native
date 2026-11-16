@@ -85,24 +85,37 @@ describe('peraFeeInSourceAsset', () => {
 
 describe('swapNetworkFeeUsd', () => {
     const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
-    // 10^15 base units of an 18-decimal coin = 0.001.
+    // 10^15 base units of an 18-decimal coin = 0.001; the ceiling is twice that.
     const SOURCE_COST = {
-        networkFee: new Decimal(10).pow(15),
+        networkFee: new Decimal(2).mul(new Decimal(10).pow(15)),
+        expectedNetworkFee: new Decimal(10).pow(15),
         nativeDecimals: 18,
     } as unknown as SwapSourceCost
-    const quote = quoteWith([
-        {
-            kind: 'network',
-            asset: { ...SCOPE, assetId: 'native' },
-            amount: new Decimal(1),
-            usdValue: '0.31',
-        },
-    ])
+    const quotedAt = (usdValue: string | null) =>
+        quoteWith([
+            {
+                kind: 'network',
+                asset: { ...SCOPE, assetId: 'native' },
+                amount: new Decimal(1),
+                usdValue,
+            },
+        ])
 
-    test("values the chain's own estimate at the native price", () => {
+    test("prefers the router's own fee when the quote carries one", () => {
         expect(
             swapNetworkFeeUsd({
-                quote,
+                quote: quotedAt('0.31'),
+                scope: SCOPE,
+                sourceCost: SOURCE_COST,
+                nativeUsdPrice: new Decimal(3000),
+            }),
+        ).toEqual(new Decimal('0.31'))
+    })
+
+    test('values the expected estimate, not the ceiling, without one', () => {
+        expect(
+            swapNetworkFeeUsd({
+                quote: quotedAt(null),
                 scope: SCOPE,
                 sourceCost: SOURCE_COST,
                 nativeUsdPrice: new Decimal(3000),
@@ -114,24 +127,13 @@ describe('swapNetworkFeeUsd', () => {
         ['no estimate', null, new Decimal(3000)],
         ['no native price', SOURCE_COST, undefined],
         ['a zero native price', SOURCE_COST, new Decimal(0)],
-    ])("falls back to the quote's fee with %s", (_, sourceCost, price) => {
+    ])('is null without a router fee and with %s', (_, sourceCost, price) => {
         expect(
             swapNetworkFeeUsd({
-                quote,
+                quote: quotedAt(null),
                 scope: SCOPE,
                 sourceCost,
                 nativeUsdPrice: price,
-            }),
-        ).toEqual(new Decimal('0.31'))
-    })
-
-    test('is null when neither is known', () => {
-        expect(
-            swapNetworkFeeUsd({
-                quote: quoteWith([]),
-                scope: SCOPE,
-                sourceCost: null,
-                nativeUsdPrice: null,
             }),
         ).toBeNull()
     })

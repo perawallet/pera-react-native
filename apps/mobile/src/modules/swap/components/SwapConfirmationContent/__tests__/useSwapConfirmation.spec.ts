@@ -80,6 +80,7 @@ const ASSETS: Record<string, { assetId: string; name: string }> = {
 
 const SOURCE_COST: SwapSourceCost = {
     networkFee: new Decimal(10).pow(15),
+    expectedNetworkFee: new Decimal(10).pow(14),
     shortfall: null,
     needsSpendApproval: false,
     nativeSymbol: 'ETH',
