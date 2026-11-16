@@ -1087,6 +1087,19 @@
             "update_to_restore": "Aktualisiere Pera, um {{count}} weitere Konten wiederherzustellen.",
             "update_to_restore_one": "Aktualisiere Pera, um {{count}} weiteres Konto wiederherzustellen."
         },
+        "restore_accounts": {
+            "title": "Wähle die Konten zum Wiederherstellen",
+            "description": "Dieses Backup enthält {{count}} Konten. Wähle, welche du zu diesem Gerät hinzufügen möchtest.",
+            "description_one": "Dieses Backup enthält {{count}} Konto. Wähle, ob du es zu diesem Gerät hinzufügen möchtest.",
+            "description_empty": "Dieses Backup enthält keine Konten. Seine Kontakte und Einstellungen werden zu diesem Gerät hinzugefügt.",
+            "all_accounts": "Alle Konten",
+            "selected_accounts": "Ausgewählte Konten",
+            "left_out_hint": "Nicht ausgewählte Konten bleiben im Backup. Du kannst sie später über Cloud-Backup zu diesem Gerät hinzufügen.",
+            "device_notice_title": "Deine Konten auf diesem Gerät werden gesichert",
+            "device_notice_body": "Die {{count}} Konten auf diesem Gerät werden zu diesem Backup hinzugefügt. Wer die Passphrase und den Backup-Schlüssel dieses Backups hat, kann auf sie zugreifen, einschließlich ihrer Wiederherstellungsphrasen und privaten Schlüssel.",
+            "device_notice_body_one": "Das Konto auf diesem Gerät wird zu diesem Backup hinzugefügt. Wer die Passphrase und den Backup-Schlüssel dieses Backups hat, kann darauf zugreifen, einschließlich seiner Wiederherstellungsphrase oder seines privaten Schlüssels.",
+            "restore": "Wiederherstellen"
+        },
         "restore_scan": {
             "title": "QR-Code scannen",
             "instructions": "Öffne Cloud-Backup auf deinem anderen Gerät, wähle „Mit anderen Geräten synchronisieren“ und scanne den angezeigten Code.",

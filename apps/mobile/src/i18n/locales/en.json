@@ -1095,6 +1095,19 @@
             "update_to_restore": "Update Pera to restore {{count}} more accounts.",
             "update_to_restore_one": "Update Pera to restore {{count}} more account."
         },
+        "restore_accounts": {
+            "title": "Choose accounts to restore",
+            "description": "This backup holds {{count}} accounts. Choose which ones to add to this device.",
+            "description_one": "This backup holds {{count}} account. Choose whether to add it to this device.",
+            "description_empty": "This backup holds no accounts. Its contacts and settings will be added to this device.",
+            "all_accounts": "All Accounts",
+            "selected_accounts": "Selected Accounts",
+            "left_out_hint": "Accounts you leave out stay in the backup. You can add them to this device later from Cloud Backup.",
+            "device_notice_title": "Your accounts on this device will be backed up",
+            "device_notice_body": "The {{count}} accounts on this device will be added to this backup. Anyone with its backup phrase and encryption key can access them, including their recovery passphrases and private keys.",
+            "device_notice_body_one": "The account on this device will be added to this backup. Anyone with its backup phrase and encryption key can access it, including its recovery passphrase or private key.",
+            "restore": "Restore"
+        },
         "restore_scan": {
             "title": "Scan QR Code",
             "instructions": "Open Cloud Backup on your other device, choose “Sync with other devices”, and scan the code it shows.",

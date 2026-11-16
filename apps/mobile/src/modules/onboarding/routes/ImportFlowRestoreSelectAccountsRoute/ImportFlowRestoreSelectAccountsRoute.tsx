@@ -10,4 +10,13 @@
  limitations under the License
  */
 
-export { ImportFlowRestoreEncryptionKeyRoute } from './ImportFlowRestoreEncryptionKeyRoute'
+import { CloudBackupRestoreSelectAccountsScreen } from '@modules/cloud-backup/routes'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
+
+// The restore screens are shared with the cloud-backup stack, whose
+// `CloudBackupOverview` exit does not exist here; a restore reached from the
+// import flow ends like every other import.
+export const ImportFlowRestoreSelectAccountsRoute = () => {
+    const { exitAccountFlow } = useExitAccountFlow()
+    return <CloudBackupRestoreSelectAccountsScreen onDone={exitAccountFlow} />
+}

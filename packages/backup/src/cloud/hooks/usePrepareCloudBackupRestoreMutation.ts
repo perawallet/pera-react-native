@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -20,19 +19,13 @@ import {
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
 import {
-    restoreCloudBackup,
-    type RestoreCloudBackupResult,
+    prepareCloudBackupRestore,
+    type PreparedCloudBackupRestore,
 } from '../restore/restoreCloudBackup'
 import type { Argon2idConfig } from '../models'
-import { applyBackupSettings } from '../sync/backupSettingsStores'
 import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
 import { useCloudBackupRestoreProgressStore } from '../store/restoreProgressStore'
-import { useCloudBackupStore } from '../store/store'
-import { useBackupSyncStateStore } from '../store/syncStateStore'
-import { useCloudBackupContactImport } from './useCloudBackupContactImport'
-import { useCloudBackupImport } from './useCloudBackupImport'
-import { useCloudBackupPasskeyImport } from './useCloudBackupPasskeyImport'
-import { useResolveSeedEntropyForBackup } from './useResolveSeedEntropyForBackup'
+import { useCloudBackupRestoreSessionStore } from '../store/restoreSessionStore'
 
 export type RestoreCloudBackupVariables = {
     /** Base64 salt the UI calls the "encryption key". */
@@ -43,42 +36,39 @@ export type RestoreCloudBackupVariables = {
 }
 
 // TanStack swaps a pending mutation's options on every render, so the device ID travels in the variables.
-type RestoreCloudBackupMutationVariables = RestoreCloudBackupVariables & {
-    deviceId: Nullable<string>
-}
+type PrepareCloudBackupRestoreMutationVariables =
+    RestoreCloudBackupVariables & {
+        deviceId: Nullable<string>
+    }
 
-export type UseRestoreCloudBackupMutationResult = {
+export type UsePrepareCloudBackupRestoreMutationResult = {
     mutate: (variables: RestoreCloudBackupVariables) => void
     mutateAsync: (
         variables: RestoreCloudBackupVariables,
-    ) => Promise<RestoreCloudBackupResult>
+    ) => Promise<PreparedCloudBackupRestore>
     isPending: boolean
 }
 
 /**
- * Pulls the remote backup for the phrase held in the restore draft and imports
- * it into the wallet. Rejects with a `CloudBackupRestoreError`; read its
- * category with `restoreErrorCategoryOf`.
+ * Unlocks and downloads the backup for the phrase held in the restore draft,
+ * and holds it in the restore session for the user to choose accounts.
+ * `useCompleteCloudBackupRestoreMutation` writes it to the wallet. Rejects
+ * with a `CloudBackupRestoreError`; read its category with
+ * `restoreErrorCategoryOf`.
  */
-export const useRestoreCloudBackupMutation = (
-    scope: ChainScope,
+export const usePrepareCloudBackupRestoreMutation = (
     options?: UseMutationOptions<
-        RestoreCloudBackupResult,
+        PreparedCloudBackupRestore,
         Error,
-        RestoreCloudBackupMutationVariables
+        PrepareCloudBackupRestoreMutationVariables
     >,
-): UseRestoreCloudBackupMutationResult => {
+): UsePrepareCloudBackupRestoreMutationResult => {
     const deployment = useWalletDeployment()
-    const setConfigured = useCloudBackupStore(state => state.setConfigured)
-    const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const setProgress = useCloudBackupRestoreProgressStore(
         state => state.setProgress,
     )
-    const { importAccounts } = useCloudBackupImport(scope)
-    const { importContacts } = useCloudBackupContactImport()
-    const { importPasskeys } = useCloudBackupPasskeyImport(
-        scope.chainId,
-        useResolveSeedEntropyForBackup(scope.chainId),
+    const setSession = useCloudBackupRestoreSessionStore(
+        state => state.setSession,
     )
 
     const { mutate, mutateAsync, isPending } = useMutation({
@@ -87,7 +77,7 @@ export const useRestoreCloudBackupMutation = (
             salt,
             argon2id,
             deviceId,
-        }: RestoreCloudBackupMutationVariables): Promise<RestoreCloudBackupResult> => {
+        }: PrepareCloudBackupRestoreMutationVariables): Promise<PreparedCloudBackupRestore> => {
             if (!deviceId) {
                 throw new Error('Device ID is unavailable')
             }
@@ -97,37 +87,29 @@ export const useRestoreCloudBackupMutation = (
             if (!mnemonic) {
                 throw new Error('Cloud backup restore phrase is missing')
             }
-            let result: RestoreCloudBackupResult
+            let prepared: PreparedCloudBackupRestore
             try {
-                result = await restoreCloudBackup({
+                prepared = await prepareCloudBackupRestore({
                     mnemonic,
                     salt,
                     argon2id,
                     deviceId,
-                    importAccounts,
-                    importContacts,
-                    importPasskeys,
-                    importSettings: settings =>
-                        applyBackupSettings(settings, scope.chainId),
                     onProgress: setProgress,
                 })
             } finally {
                 setProgress(null)
             }
-            // The backup is registered server-side under exactly this device
-            // id, and every later signed request has to reuse it.
-            setConfigured({ backupId: result.backupId, salt, deviceId })
-            setSyncState(result.syncState)
-            return result
+            setSession({ prepared, salt })
+            return prepared
         },
         ...options,
     })
 
-    // Read at call time: the QR scan holds `restore` across an awaited sheet, during which the device can register.
+    // Read at call time: the QR scan holds `prepare` across an awaited sheet, during which the device can register.
     const withDeviceId = useCallback(
         (
             variables: RestoreCloudBackupVariables,
-        ): RestoreCloudBackupMutationVariables => ({
+        ): PrepareCloudBackupRestoreMutationVariables => ({
             ...variables,
             deviceId: deviceIdForDeployment(
                 useDeviceStore.getState(),
@@ -136,16 +118,16 @@ export const useRestoreCloudBackupMutation = (
         }),
         [deployment],
     )
-    const restore = useCallback(
+    const prepare = useCallback(
         (variables: RestoreCloudBackupVariables) =>
             mutate(withDeviceId(variables)),
         [mutate, withDeviceId],
     )
-    const restoreAsync = useCallback(
+    const prepareAsync = useCallback(
         (variables: RestoreCloudBackupVariables) =>
             mutateAsync(withDeviceId(variables)),
         [mutateAsync, withDeviceId],
     )
 
-    return { mutate: restore, mutateAsync: restoreAsync, isPending }
+    return { mutate: prepare, mutateAsync: prepareAsync, isPending }
 }

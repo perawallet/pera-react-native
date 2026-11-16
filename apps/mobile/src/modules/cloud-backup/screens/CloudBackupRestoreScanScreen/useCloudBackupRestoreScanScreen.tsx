@@ -15,22 +15,20 @@ import {
     BackupSyncQrUnsupportedVersionError,
     parseBackupSyncQrEnvelope,
     useCloudBackupRestoreDraftStore,
-    useRestoreCloudBackupMutation,
     type BackupSyncQrContents,
 } from '@perawallet/wallet-core-backup'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { scannerNotifier } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useRequirePinVerification } from '@modules/security'
 import { BackupCodeSheet } from '../../components/BackupCodeSheet'
 import {
     useCloudBackupRestoreProgress,
     type UseCloudBackupRestoreProgressResult,
 } from '../../hooks/useCloudBackupRestoreProgress'
-import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
+import { usePrepareCloudBackupRestore } from '../../hooks/usePrepareCloudBackupRestore'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 
@@ -48,10 +46,6 @@ const scanFailureToast = (t: Translate, isUnsupportedVersion: boolean) => ({
     type: 'error' as const,
 })
 
-export type UseCloudBackupRestoreScanScreenParams = {
-    onDone: () => void
-}
-
 export type UseCloudBackupRestoreScanScreenResult = {
     isScannerVisible: boolean
     isRestoring: boolean
@@ -62,110 +56,112 @@ export type UseCloudBackupRestoreScanScreenResult = {
     handleCloseScanner: () => void
 }
 
-export const useCloudBackupRestoreScanScreen = ({
-    onDone,
-}: UseCloudBackupRestoreScanScreenParams): UseCloudBackupRestoreScanScreenResult => {
-    const { t } = useLanguage()
-    const { showToast } = useToast()
-    const { request: requestBottomSheet } = useBottomSheet()
-    const setMnemonic = useCloudBackupRestoreDraftStore(
-        state => state.setMnemonic,
-    )
-    const clearDraft = useCloudBackupRestoreDraftStore(
-        state => state.clearDraft,
-    )
+export const useCloudBackupRestoreScanScreen =
+    (): UseCloudBackupRestoreScanScreenResult => {
+        const { t } = useLanguage()
+        const { requirePinVerification } = useRequirePinVerification()
+        const { showToast } = useToast()
+        const { request: requestBottomSheet } = useBottomSheet()
+        const setMnemonic = useCloudBackupRestoreDraftStore(
+            state => state.setMnemonic,
+        )
+        const clearDraft = useCloudBackupRestoreDraftStore(
+            state => state.clearDraft,
+        )
 
-    // Scrubs the scanned phrase however the screen is left — a failed restore
-    // and a back-out both stop here, and clearing twice is harmless.
-    useEffect(() => () => clearDraft(), [clearDraft])
+        // Scrubs the scanned phrase however the screen is left — a failed restore
+        // and a back-out both stop here, and clearing twice is harmless.
+        useEffect(() => () => clearDraft(), [clearDraft])
 
-    // Closed on mount: the screen body explains what to do on the other
-    // device first, and the OS camera prompt is meaningless without it.
-    const {
-        isOpen: isScannerVisible,
-        open: handleOpenScanner,
-        close: handleCloseScanner,
-    } = useModalState()
+        // Closed on mount: the screen body explains what to do on the other
+        // device first, and the OS camera prompt is meaningless without it.
+        const {
+            isOpen: isScannerVisible,
+            open: handleOpenScanner,
+            close: handleCloseScanner,
+        } = useModalState()
 
-    const outcome = useRestoreOutcome({ clearDraft, onDone })
-    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
-    const { mutate: restore, isPending: isRestoring } =
-        useRestoreCloudBackupMutation(scope, outcome)
-    const restoreProgress = useCloudBackupRestoreProgress()
+        const { prepare, isRestoring } = usePrepareCloudBackupRestore()
+        const restoreProgress = useCloudBackupRestoreProgress()
 
-    const handleScanned = useCallback(
-        async (raw: string, restartScanning: () => void) => {
-            try {
-                parseBackupSyncQrEnvelope(raw)
-            } catch (error) {
-                showToast(
-                    scanFailureToast(
-                        t,
-                        error instanceof BackupSyncQrUnsupportedVersionError,
-                    ),
-                    // The camera is its own OS window, so a toast on the global
-                    // notifier stays hidden behind it until the scanner closes.
-                    { notifier: scannerNotifier.current ?? undefined },
+        const handleScanned = useCallback(
+            async (raw: string, restartScanning: () => void) => {
+                try {
+                    parseBackupSyncQrEnvelope(raw)
+                } catch (error) {
+                    showToast(
+                        scanFailureToast(
+                            t,
+                            error instanceof
+                                BackupSyncQrUnsupportedVersionError,
+                        ),
+                        // The camera is its own OS window, so a toast on the global
+                        // notifier stays hidden behind it until the scanner closes.
+                        { notifier: scannerNotifier.current ?? undefined },
+                    )
+                    restartScanning()
+                    return
+                }
+
+                // The sheet renders in the app's root tree, below that camera
+                // window, so the scanner has to go before the code can be asked
+                // for. Reopening it is what resumes scanning from here on.
+                handleCloseScanner()
+
+                const contents = await requestBottomSheet<BackupSyncQrContents>(
+                    {
+                        contents: <BackupCodeSheet raw={raw} />,
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
+                    },
                 )
-                restartScanning()
-                return
-            }
 
-            // The sheet renders in the app's root tree, below that camera
-            // window, so the scanner has to go before the code can be asked
-            // for. Reopening it is what resumes scanning from here on.
-            handleCloseScanner()
+                if (!contents) {
+                    handleOpenScanner()
+                    return
+                }
+                if (!(await requirePinVerification())) return
 
-            const contents = await requestBottomSheet<BackupSyncQrContents>({
-                contents: <BackupCodeSheet raw={raw} />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: true,
-                    autoCreateContainer: false,
-                },
-            })
+                setMnemonic(contents.mnemonic.split(' '))
+                // The envelope carries the parameters the backup was created
+                // under; deriving on this build's defaults instead would yield a
+                // different backupId and surface as bad credentials.
+                prepare({
+                    salt: contents.backupSalt,
+                    argon2id: contents.argon2id,
+                })
+            },
+            [
+                t,
+                showToast,
+                handleCloseScanner,
+                handleOpenScanner,
+                requestBottomSheet,
+                requirePinVerification,
+                setMnemonic,
+                prepare,
+            ],
+        )
 
-            if (!contents) {
-                handleOpenScanner()
-                return
-            }
+        // Stable identity: QRScannerView memoises the native barcode callback
+        // on this, and an inline arrow at the call site would rebuild the
+        // camera output every render.
+        const handleScanSuccess = useCallback(
+            (raw: string, restartScanning: () => void) =>
+                void handleScanned(raw, restartScanning),
+            [handleScanned],
+        )
 
-            setMnemonic(contents.mnemonic.split(' '))
-            // The envelope carries the parameters the backup was created
-            // under; deriving on this build's defaults instead would yield a
-            // different backupId and surface as bad credentials.
-            restore({
-                salt: contents.backupSalt,
-                argon2id: contents.argon2id,
-            })
-        },
-        [
-            t,
-            showToast,
-            handleCloseScanner,
+        return {
+            isScannerVisible,
+            isRestoring,
+            restoreProgress,
+            handleScanned,
+            handleScanSuccess,
             handleOpenScanner,
-            requestBottomSheet,
-            setMnemonic,
-            restore,
-        ],
-    )
-
-    // Stable identity: QRScannerView memoises the native barcode callback
-    // on this, and an inline arrow at the call site would rebuild the
-    // camera output every render.
-    const handleScanSuccess = useCallback(
-        (raw: string, restartScanning: () => void) =>
-            void handleScanned(raw, restartScanning),
-        [handleScanned],
-    )
-
-    return {
-        isScannerVisible,
-        isRestoring,
-        restoreProgress,
-        handleScanned,
-        handleScanSuccess,
-        handleOpenScanner,
-        handleCloseScanner,
+            handleCloseScanner,
+        }
     }
-}

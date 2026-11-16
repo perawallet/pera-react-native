@@ -40,6 +40,7 @@ import {
     contactRecordAddresses,
     contactRecordEntries,
     contactRecordRemovedFamilies,
+    isAccountKey,
     isAccountRecordKey,
     isAccountRecordReadable,
     isContactRecordKey,
@@ -494,15 +495,44 @@ export const buildPulledAccounts = ({
     return accounts
 }
 
-export const pullBackupItems = async ({
+/** The backup as the server sent it, still sealed, so a restore can hold it
+ *  while the user chooses what to keep. */
+export type FetchedBackup = {
+    backupGlobalHash: string
+    lastSeq: number
+    manifestItems: Record<BackupItemKey, ManifestItem>
+    items: FetchedItem[]
+}
+
+type BackupDecryption = {
+    backupId: BackupId
+    encryptionKey: Uint8Array
+}
+
+export const fetchBackupItems = async ({
     backupId,
     deviceId,
-    encryptionKey,
-}: PullBackupItemsParams): Promise<PullBackupItemsResult> => {
+}: Pick<
+    PullBackupItemsParams,
+    'backupId' | 'deviceId'
+>): Promise<FetchedBackup> => {
     const manifest = await fetchManifest(backupId, deviceId)
+    return {
+        backupGlobalHash: manifest.backupGlobalHash,
+        lastSeq: manifest.lastSeq,
+        manifestItems: manifest.items,
+        items: await readItemsInBatches(
+            backupId,
+            deviceId,
+            selectWantedKeys(manifest.items),
+        ),
+    }
+}
 
-    const wantedKeys = selectWantedKeys(manifest.items)
-    const items = await readItemsInBatches(backupId, deviceId, wantedKeys)
+export const collectBackupItems = (
+    fetched: FetchedBackup,
+    { backupId, encryptionKey }: BackupDecryption,
+): PullBackupItemsResult => {
     const {
         records,
         addressPayloads,
@@ -513,12 +543,12 @@ export const pullBackupItems = async ({
         settings,
         trackedByKey,
         skipped,
-    } = collectItemPayloads(items, encryptionKey, backupId)
+    } = collectItemPayloads(fetched.items, encryptionKey, backupId)
 
     return {
-        backupGlobalHash: manifest.backupGlobalHash,
-        lastSeq: manifest.lastSeq,
-        manifestItems: manifest.items,
+        backupGlobalHash: fetched.backupGlobalHash,
+        lastSeq: fetched.lastSeq,
+        manifestItems: fetched.manifestItems,
         trackedByKey,
         accounts: buildPulledAccounts({
             records,
@@ -533,4 +563,60 @@ export const pullBackupItems = async ({
         settings,
         skipped,
     }
+}
+
+export const pullBackupItems = async ({
+    backupId,
+    deviceId,
+    encryptionKey,
+}: PullBackupItemsParams): Promise<PullBackupItemsResult> =>
+    collectBackupItems(await fetchBackupItems({ backupId, deviceId }), {
+        backupId,
+        encryptionKey,
+    })
+
+/** One account in the backup, as the restore offers it for choosing. */
+export type BackupAccountOption = {
+    /** Shared by every chain of the account; a selection names these. */
+    group: string
+    name: Nullable<string>
+    chains: { chain?: ChainId; address: string }[]
+}
+
+const nameOf = (payload: AccountEntryPayload): Nullable<string> =>
+    ('customName' in payload ? payload.customName?.trim() : undefined) || null
+
+/**
+ * The accounts a restore can offer, read from the account items alone: no
+ * secret is decrypted before the user has chosen. A seed whose accounts were
+ * all removed has no entry here, so only "all accounts" restores it.
+ */
+export const previewBackupAccounts = (
+    fetched: FetchedBackup,
+    decryption: BackupDecryption,
+): BackupAccountOption[] => {
+    const { records, addressPayloads } = collectItemPayloads(
+        fetched.items.filter(item => isAccountKey(item.key)),
+        decryption.encryptionKey,
+        decryption.backupId,
+    )
+    const byGroup = new Map<string, BackupAccountOption>()
+    for (const account of buildPulledAccounts({
+        records,
+        addressPayloads,
+        secretsPayloads: new Map(),
+    })) {
+        const option = byGroup.get(account.group) ?? {
+            group: account.group,
+            name: null,
+            chains: [],
+        }
+        option.name ??= nameOf(account.addressPayload)
+        option.chains.push({
+            ...(account.chain ? { chain: account.chain } : {}),
+            address: account.address,
+        })
+        byGroup.set(account.group, option)
+    }
+    return [...byGroup.values()]
 }

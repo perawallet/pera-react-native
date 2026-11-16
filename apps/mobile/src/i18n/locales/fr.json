@@ -1095,6 +1095,19 @@
             "update_to_restore": "Mettez à jour Pera pour restaurer {{count}} comptes supplémentaires.",
             "update_to_restore_one": "Mettez à jour Pera pour restaurer {{count}} compte supplémentaire."
         },
+        "restore_accounts": {
+            "title": "Choisissez les comptes à restaurer",
+            "description": "Cette sauvegarde contient {{count}} comptes. Choisissez ceux à ajouter à cet appareil.",
+            "description_one": "Cette sauvegarde contient {{count}} compte. Choisissez si vous souhaitez l’ajouter à cet appareil.",
+            "description_empty": "Cette sauvegarde ne contient aucun compte. Ses contacts et ses paramètres seront ajoutés à cet appareil.",
+            "all_accounts": "Tous les comptes",
+            "selected_accounts": "Comptes sélectionnés",
+            "left_out_hint": "Les comptes non sélectionnés restent dans la sauvegarde. Vous pourrez les ajouter à cet appareil plus tard depuis Sauvegarde cloud.",
+            "device_notice_title": "Les comptes de cet appareil seront sauvegardés",
+            "device_notice_body": "Les {{count}} comptes de cet appareil seront ajoutés à cette sauvegarde. Toute personne disposant de sa phrase de sauvegarde et de sa clé de chiffrement pourra y accéder, y compris à leurs passphrases de récupération et clés privées.",
+            "device_notice_body_one": "Le compte de cet appareil sera ajouté à cette sauvegarde. Toute personne disposant de sa phrase de sauvegarde et de sa clé de chiffrement pourra y accéder, y compris à sa passphrase de récupération ou à sa clé privée.",
+            "restore": "Restaurer"
+        },
         "restore_scan": {
             "title": "Scanner le QR code",
             "instructions": "Ouvrez Sauvegarde cloud sur votre autre appareil, choisissez « Synchroniser avec d’autres appareils », puis scannez le code affiché.",

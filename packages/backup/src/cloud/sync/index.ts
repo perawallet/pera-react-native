@@ -26,6 +26,7 @@ export {
     markAccountForBackup,
     importFromBackup,
     deleteFromBackup,
+    holdAccountsInBackup,
     keepAccountInBackup,
     markContactForBackup,
     importContactFromBackup,

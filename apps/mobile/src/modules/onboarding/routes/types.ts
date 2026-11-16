@@ -162,6 +162,7 @@ export type ImportFlowParamList = {
     CloudBackupRestorePassphrase: undefined
     CloudBackupRestoreEncryptionKey: undefined
     CloudBackupRestoreScan: undefined
+    CloudBackupRestoreSelectAccounts: undefined
 }
 
 export type OnboardingStackParamList = ImportFlowParamList & {

@@ -70,6 +70,18 @@ const failureToast = (t: Translate, category: RestoreErrorCategory) => ({
     type: 'error' as const,
 })
 
+/** Toasts why a restore step failed. */
+export const useRestoreFailureToast = (): ((error: unknown) => void) => {
+    const { t } = useLanguage()
+    const { showToast } = useToast()
+
+    return useCallback(
+        (error: unknown) =>
+            showToast(failureToast(t, restoreErrorCategoryOf(error))),
+        [showToast, t],
+    )
+}
+
 export type UseRestoreOutcomeParams = {
     clearDraft: () => void
     /**
@@ -92,6 +104,7 @@ export const useRestoreOutcome = ({
     const { t } = useLanguage()
     const { showToast } = useToast()
     const haptics = useHaptics()
+    const onError = useRestoreFailureToast()
 
     const onSuccess = useCallback(
         (result: RestoreCloudBackupResult) => {
@@ -103,12 +116,6 @@ export const useRestoreOutcome = ({
             onDone()
         },
         [showToast, haptics, t, clearDraft, onDone],
-    )
-
-    const onError = useCallback(
-        (error: unknown) =>
-            showToast(failureToast(t, restoreErrorCategoryOf(error))),
-        [showToast, t],
     )
 
     return { onSuccess, onError }

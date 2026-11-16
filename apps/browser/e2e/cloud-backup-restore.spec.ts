@@ -109,6 +109,8 @@ test('restoring a backup during onboarding sends the registered device id', asyn
             .getByTestId('cloud_backup_restore_key_input')
             .fill(ENCRYPTION_KEY)
         await page.getByTestId('cloud_backup_restore_key_button').click()
+        await page.getByTestId('vault-reauth-password-input').fill(PASSWORD)
+        await page.getByTestId('vault-reauth-confirm').click()
 
         // Argon2id at 256 MiB runs before the first request.
         await expect(

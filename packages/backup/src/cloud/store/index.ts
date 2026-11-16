@@ -19,3 +19,8 @@ export { useProvenPasskeysStore } from './provenPasskeysStore'
 export type { ProvenPasskeysStore } from './provenPasskeysStore'
 export { useCloudBackupRestoreProgressStore } from './restoreProgressStore'
 export type { CloudBackupRestoreProgressStore } from './restoreProgressStore'
+export { useCloudBackupRestoreSessionStore } from './restoreSessionStore'
+export type {
+    CloudBackupRestoreSession,
+    CloudBackupRestoreSessionStore,
+} from './restoreSessionStore'

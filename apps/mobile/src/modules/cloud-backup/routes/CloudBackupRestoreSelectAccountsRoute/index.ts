@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { ImportFlowRestoreScanRoute } from './ImportFlowRestoreScanRoute'
+export { CloudBackupRestoreSelectAccountsRoute } from './CloudBackupRestoreSelectAccountsRoute'

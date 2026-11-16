@@ -10,39 +10,33 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     readCloudBackupImportedKey,
     useCloudBackupRestoreDraftStore,
-    useRestoreCloudBackupMutation,
     type BackupEncryptionKey,
     type RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { ALGORAND_CHAIN_ID } from '@modules/algorand/chain-id'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useRequirePinVerification } from '@modules/security'
 import {
     useCloudBackupRestoreProgress,
     type UseCloudBackupRestoreProgressResult,
 } from '../../hooks/useCloudBackupRestoreProgress'
-import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
+import { usePrepareCloudBackupRestore } from '../../hooks/usePrepareCloudBackupRestore'
 
 type Translate = ReturnType<typeof useLanguage>['t']
-
-type RestoreDraft = {
-    hasMnemonic: boolean
-    clearDraft: () => void
-}
 
 /**
  * Scrubs the entered recovery phrase on unmount. This is where the manual
  * restore flow consumes the mnemonic the passphrase screen wrote, so success,
- * back-out and any other exit from that flow all pass through here. The success
- * path clears it too; doing so is idempotent.
+ * back-out and any other exit from that flow all pass through here. The
+ * account choice sits above this screen, so the phrase outlives it until the
+ * flow exits.
  */
-const useRestoreDraft = (): RestoreDraft => {
+const useRestoreDraft = (): boolean => {
     const hasMnemonic = useCloudBackupRestoreDraftStore(
         state =>
             state.mnemonicIndices !== null || state.mnemonicRawBytes !== null,
@@ -53,25 +47,35 @@ const useRestoreDraft = (): RestoreDraft => {
 
     useEffect(() => () => clearDraft(), [clearDraft])
 
-    return { hasMnemonic, clearDraft }
+    return hasMnemonic
 }
 
 const useRestoreRunner = (
-    restore: (variables: RestoreCloudBackupVariables) => void,
+    prepare: (variables: RestoreCloudBackupVariables) => void,
     hasMnemonic: boolean,
     salt: string,
     importedKey: Nullable<BackupEncryptionKey>,
-): (() => void) =>
-    useCallback(() => {
-        if (!hasMnemonic || salt.length === 0) return
-        trackEvent(CloudBackupEvent.RestoreEncryptionKeyProceed)
-        // The file's Argon2id settings belong to its salt; an edited key is
-        // restored like a typed one, on this build's defaults.
-        restore(salt === importedKey?.salt ? importedKey : { salt })
-    }, [hasMnemonic, salt, importedKey, restore])
+): (() => void) => {
+    const { requirePinVerification } = useRequirePinVerification()
+    // The PIN sheet takes a moment to mount, and a second tap in that window
+    // would open a second one.
+    const isStartingRef = useRef(false)
 
-export type UseCloudBackupRestoreEncryptionKeyScreenParams = {
-    onDone: () => void
+    const start = useCallback(async () => {
+        if (!hasMnemonic || salt.length === 0 || isStartingRef.current) return
+        isStartingRef.current = true
+        try {
+            trackEvent(CloudBackupEvent.RestoreEncryptionKeyProceed)
+            if (!(await requirePinVerification())) return
+            // The file's Argon2id settings belong to its salt; an edited key
+            // is restored like a typed one, on this build's defaults.
+            prepare(salt === importedKey?.salt ? importedKey : { salt })
+        } finally {
+            isStartingRef.current = false
+        }
+    }, [hasMnemonic, salt, importedKey, prepare, requirePinVerification])
+
+    return useCallback(() => void start(), [start])
 }
 
 type UseCloudBackupRestoreEncryptionKeyScreenResult = {
@@ -84,39 +88,37 @@ type UseCloudBackupRestoreEncryptionKeyScreenResult = {
     handleRestore: () => void
 }
 
-export const useCloudBackupRestoreEncryptionKeyScreen = ({
-    onDone,
-}: UseCloudBackupRestoreEncryptionKeyScreenParams): UseCloudBackupRestoreEncryptionKeyScreenResult => {
-    const { t } = useLanguage()
-    // Read once: editing the field must not be undone by a store update, and
-    // the draft is written before this screen mounts.
-    const [importedKey] = useState(readCloudBackupImportedKey)
-    const [encryptionKey, setEncryptionKey] = useState(importedKey?.salt ?? '')
-    const { hasMnemonic, clearDraft } = useRestoreDraft()
-    const outcome = useRestoreOutcome({ clearDraft, onDone })
-    const scope = useSelectedScope(ALGORAND_CHAIN_ID)
-    const mutation = useRestoreCloudBackupMutation(scope, outcome)
-    const isRestoring = mutation.isPending
-    const restoreProgress = useCloudBackupRestoreProgress()
-    const handleRestore = useRestoreRunner(
-        mutation.mutate,
-        hasMnemonic,
-        encryptionKey,
-        importedKey,
-    )
+export const useCloudBackupRestoreEncryptionKeyScreen =
+    (): UseCloudBackupRestoreEncryptionKeyScreenResult => {
+        const { t } = useLanguage()
+        // Read once: editing the field must not be undone by a store update,
+        // and the draft is written before this screen mounts.
+        const [importedKey] = useState(readCloudBackupImportedKey)
+        const [encryptionKey, setEncryptionKey] = useState(
+            importedKey?.salt ?? '',
+        )
+        const hasMnemonic = useRestoreDraft()
+        const { prepare, isRestoring } = usePrepareCloudBackupRestore()
+        const restoreProgress = useCloudBackupRestoreProgress()
+        const handleRestore = useRestoreRunner(
+            prepare,
+            hasMnemonic,
+            encryptionKey,
+            importedKey,
+        )
 
-    const handleKeyChange = useCallback(
-        (value: string) => setEncryptionKey(value.trim()),
-        [],
-    )
+        const handleKeyChange = useCallback(
+            (value: string) => setEncryptionKey(value.trim()),
+            [],
+        )
 
-    return {
-        t,
-        encryptionKey,
-        isRestoring,
-        restoreProgress,
-        canRestore: encryptionKey.length > 0 && !isRestoring,
-        handleKeyChange,
-        handleRestore,
+        return {
+            t,
+            encryptionKey,
+            isRestoring,
+            restoreProgress,
+            canRestore: encryptionKey.length > 0 && !isRestoring,
+            handleKeyChange,
+            handleRestore,
+        }
     }
-}

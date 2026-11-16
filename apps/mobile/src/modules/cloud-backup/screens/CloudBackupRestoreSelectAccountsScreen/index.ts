@@ -10,13 +10,5 @@
  limitations under the License
  */
 
-import { CloudBackupRestoreScanScreen } from '@modules/cloud-backup/routes'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
-
-// The restore screens are shared with the cloud-backup stack, whose
-// `CloudBackupOverview` exit does not exist here; a restore reached from the
-// import flow ends like every other import.
-export const ImportFlowRestoreScanRoute = () => {
-    const { exitAccountFlow } = useExitAccountFlow()
-    return <CloudBackupRestoreScanScreen onDone={exitAccountFlow} />
-}
+export { CloudBackupRestoreSelectAccountsScreen } from './CloudBackupRestoreSelectAccountsScreen'
+export type { CloudBackupRestoreSelectAccountsScreenProps } from './CloudBackupRestoreSelectAccountsScreen'

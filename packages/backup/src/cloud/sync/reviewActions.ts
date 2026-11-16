@@ -60,7 +60,10 @@ import {
     type SyncItemState,
     type SyncState,
 } from '../models'
-import { buildPulledAccounts, buildPulledContacts } from '../restore'
+import {
+    buildPulledAccounts,
+    buildPulledContacts,
+} from '../restore/pullBackupItems'
 import { deleteItemIfPresent } from './pushDirty'
 import type {
     ContactImportFn,
@@ -188,6 +191,17 @@ const keysFor = (state: SyncState, address: string): BackupItemKey[] => {
 const liveKeysFor = (state: SyncState, address: string): BackupItemKey[] =>
     keysFor(state, address).filter(isLiveIn(state))
 
+/** The seed secrets the account `address` derives from. */
+const seedKeysFor = (state: SyncState, address: string): BackupItemKey[] => {
+    const recordKey = recordKeyFor(state, address)
+    const seedReference = recordKey
+        ? recordSeedReference(state.items[recordKey])
+        : null
+    return seedReference
+        ? trackedKeysUnder(state, seedReference, BACKUP_SECRETS_KEY_PREFIX)
+        : []
+}
+
 /**
  * Forgets what the backup knew about an address so the next reconcile treats
  * its items as brand new. Dropping the tombstone rather than reviving it is
@@ -202,14 +216,10 @@ export const markAccountForBackup = (
     address: string,
 ): SyncState => {
     const items = { ...state.items }
-    const recordKey = recordKeyFor(state, address)
-    const seedReference = recordKey
-        ? recordSeedReference(state.items[recordKey])
-        : null
-    const seedKeys = seedReference
-        ? trackedKeysUnder(state, seedReference, BACKUP_SECRETS_KEY_PREFIX)
-        : []
-    for (const key of new Set([...keysFor(state, address), ...seedKeys])) {
+    for (const key of new Set([
+        ...keysFor(state, address),
+        ...seedKeysFor(state, address),
+    ])) {
         const item = items[key] as SyncItemState
         if (item.status === BackupItemStatus.ACTIVE && item.knownVer > 0) {
             items[key] = { ...item, pendingDelete: false, pendingImport: false }
@@ -237,6 +247,41 @@ export const keepAccountInBackup = (
             pendingImport: true,
             isDirty: false,
             pendingDelete: false,
+        }
+    }
+    return { ...state, items }
+}
+
+/**
+ * Holds the accounts a restore left off this device, as {@link
+ * keepAccountInBackup} does for a removed one, so sync never imports them and
+ * review offers them back. A seed one of the `kept` accounts derives from
+ * stays live, whichever account's address it is filed under.
+ */
+export const holdAccountsInBackup = (
+    state: SyncState,
+    held: readonly string[],
+    kept: readonly string[],
+): SyncState => {
+    const keptKeys = new Set(
+        kept.flatMap(address => [
+            ...keysFor(state, address),
+            ...seedKeysFor(state, address),
+        ]),
+    )
+    const items = { ...state.items }
+    for (const address of held) {
+        for (const key of [
+            ...keysFor(state, address),
+            ...seedKeysFor(state, address),
+        ]) {
+            if (keptKeys.has(key) || !isLiveIn(state)(key)) continue
+            items[key] = {
+                ...(items[key] as SyncItemState),
+                pendingImport: true,
+                isDirty: false,
+                pendingDelete: false,
+            }
         }
     }
     return { ...state, items }

@@ -11,4 +11,3 @@
  */
 
 export { CloudBackupRestoreScanScreen } from './CloudBackupRestoreScanScreen'
-export type { CloudBackupRestoreScanScreenProps } from './CloudBackupRestoreScanScreen'

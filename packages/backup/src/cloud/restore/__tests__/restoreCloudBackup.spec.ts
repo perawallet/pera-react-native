@@ -21,6 +21,7 @@ const {
     persistBackupKeysMock,
     deleteBackupKeysMock,
     pullBackupItemsMock,
+    previewBackupAccountsMock,
     keystoreKeysMock,
     secretBytesById,
     withSecretMock,
@@ -33,6 +34,7 @@ const {
         persistBackupKeysMock: vi.fn(),
         deleteBackupKeysMock: vi.fn(),
         pullBackupItemsMock: vi.fn(),
+        previewBackupAccountsMock: vi.fn().mockReturnValue([]),
         keystoreKeysMock: vi.fn().mockReturnValue([]),
         secretBytesById,
         // Mirrors `withSecret`'s real contract: hands the handler a live
@@ -57,9 +59,15 @@ vi.mock('../../crypto', () => ({ deriveBackupKeys: deriveBackupKeysMock }))
 vi.mock('../../credentials/keyStorage', () => ({
     persistBackupKeys: persistBackupKeysMock,
     deleteBackupKeys: deleteBackupKeysMock,
+    withBackupEncryptionKey: (handler: (bytes: Uint8Array) => unknown) =>
+        handler(new Uint8Array(32).fill(5)),
 }))
+// The mocked fetch hands back the decrypted pull itself, so collecting it is
+// the identity; `pullBackupItems.spec` covers the real decryption.
 vi.mock('../pullBackupItems', () => ({
-    pullBackupItems: pullBackupItemsMock,
+    fetchBackupItems: pullBackupItemsMock,
+    collectBackupItems: (fetched: unknown) => fetched,
+    previewBackupAccounts: previewBackupAccountsMock,
 }))
 // Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
 // acceptance test below exercises the actual seed-lookup logic; only the
@@ -106,6 +114,9 @@ import {
 } from '../../models'
 import {
     CloudBackupRestoreError,
+    completeCloudBackupRestore,
+    discardPreparedCloudBackupRestore,
+    prepareCloudBackupRestore,
     restoreCloudBackup,
 } from '../restoreCloudBackup'
 import {
@@ -676,6 +687,223 @@ describe('restoreCloudBackup', () => {
         expect(failed.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(failed.authSecretKey.every(byte => byte === 0)).toBe(true)
         expect(failed.itemKey.every(byte => byte === 0)).toBe(true)
+    })
+})
+
+describe('prepareCloudBackupRestore and completeCloudBackupRestore', () => {
+    const B_ACCOUNT_KEY = accountItemKey(hashAddress('B'))
+    const twoAccounts = {
+        ...pull,
+        manifestItems: {
+            ...pull.manifestItems,
+            [B_ACCOUNT_KEY]: manifestItem(),
+        },
+        trackedByKey: {
+            ...pull.trackedByKey,
+            [B_ACCOUNT_KEY]: { address: 'B', accountType: 'watch' },
+        },
+        accounts: [
+            ...pull.accounts,
+            {
+                address: 'B',
+                group: 'B',
+                addressPayload: { type: 'watch', address: 'B' },
+                secretsPayload: null,
+            },
+        ],
+    }
+    const imports = () => {
+        const { mnemonic: _, salt: __, deviceId: ___, ...rest } = params()
+        return rest
+    }
+
+    beforeEach(() => {
+        deriveBackupKeysMock.mockReset().mockImplementation(async () => keys())
+        persistBackupKeysMock.mockReset().mockResolvedValue(undefined)
+        deleteBackupKeysMock.mockReset().mockResolvedValue(undefined)
+        pullBackupItemsMock.mockReset().mockResolvedValue(twoAccounts)
+        previewBackupAccountsMock.mockReset().mockReturnValue([
+            { group: 'A', name: 'Alpha', chains: [{ address: 'A' }] },
+            { group: 'B', name: null, chains: [{ address: 'B' }] },
+        ])
+        importAccounts.mockReset().mockResolvedValue(SUMMARY)
+        importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
+        importPasskeys.mockReset().mockResolvedValue(PASSKEY_SUMMARY)
+        importSettings.mockReset()
+    })
+
+    test('prepares the account choice without importing anything', async () => {
+        const { mnemonic, salt, deviceId } = params()
+
+        const prepared = await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            deviceId,
+        })
+
+        expect(prepared.backupId).toBe('did:pera:abc')
+        expect(prepared.deviceId).toBe('device-123')
+        expect(prepared.accounts.map(({ group }) => group)).toEqual(['A', 'B'])
+        expect(importAccounts).not.toHaveBeenCalled()
+        expect(importContacts).not.toHaveBeenCalled()
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('imports only the chosen accounts and holds the rest in the backup', async () => {
+        const { mnemonic, salt, deviceId } = params()
+        const prepared = await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            deviceId,
+        })
+
+        const result = await completeCloudBackupRestore({
+            prepared,
+            selection: new Set(['B']),
+            ...imports(),
+        })
+
+        expect(importAccounts).toHaveBeenCalledWith(
+            [twoAccounts.accounts[1]],
+            expect.any(Function),
+        )
+        expect(result.syncState.items[ACCOUNT_KEY]?.pendingImport).toBe(true)
+        expect(result.syncState.items[SECRETS_KEY]?.pendingImport).toBe(true)
+        expect(
+            result.syncState.items[B_ACCOUNT_KEY]?.pendingImport,
+        ).toBeUndefined()
+        expect(importContacts).toHaveBeenCalledWith(twoAccounts.contacts)
+    })
+
+    test('does not hold an unchosen account this device already has', async () => {
+        const { mnemonic, salt, deviceId } = params()
+        const prepared = await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            deviceId,
+        })
+
+        const result = await completeCloudBackupRestore({
+            prepared,
+            selection: new Set(['B']),
+            isOnDevice: address => address === 'A',
+            ...imports(),
+        })
+
+        expect(result.syncState.items[ACCOUNT_KEY]?.pendingImport).toBe(
+            undefined,
+        )
+        expect(result.syncState.items[SECRETS_KEY]?.pendingImport).toBe(
+            undefined,
+        )
+    })
+
+    test('brings the seed of a chosen HD account along when its entry was left out', async () => {
+        const seedSecret = {
+            type: BackupAccountType.hdSeed,
+            address: 'SEED',
+            seed: 'ff',
+            entropy: 'ee',
+        }
+        const hdEntry = (address: string, keyIndex: number) => ({
+            type: HD_ACCOUNT_KIND,
+            address,
+            seedFirstDerivedAddress: 'SEED',
+            account: 0,
+            keyIndex,
+        })
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            accounts: [
+                {
+                    address: 'SEED',
+                    group: 'SEED/0/0',
+                    addressPayload: hdEntry('SEED', 0),
+                    secretsPayload: seedSecret,
+                },
+                {
+                    address: 'SECOND',
+                    group: 'SEED/0/1',
+                    addressPayload: hdEntry('SECOND', 1),
+                    secretsPayload: null,
+                },
+            ],
+        })
+        const { mnemonic, salt, deviceId } = params()
+        const prepared = await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            deviceId,
+        })
+
+        await completeCloudBackupRestore({
+            prepared,
+            selection: new Set(['SEED/0/1']),
+            ...imports(),
+        })
+
+        expect(importAccounts.mock.calls[0]?.[0]).toEqual([
+            expect.objectContaining({ group: 'SEED/0/1' }),
+            {
+                address: 'SEED',
+                group: 'SEED',
+                addressPayload: {
+                    type: BackupAccountType.hdSeed,
+                    address: 'SEED',
+                },
+                secretsPayload: seedSecret,
+            },
+        ])
+    })
+
+    test('imports every account and holds none for "all"', async () => {
+        const { mnemonic, salt, deviceId } = params()
+        const prepared = await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            deviceId,
+        })
+
+        const result = await completeCloudBackupRestore({
+            prepared,
+            selection: 'all',
+            ...imports(),
+        })
+
+        expect(importAccounts).toHaveBeenCalledWith(
+            twoAccounts.accounts,
+            expect.any(Function),
+        )
+        expect(
+            Object.values(result.syncState.items).some(
+                item => item.pendingImport === true,
+            ),
+        ).toBe(false)
+    })
+
+    test('removes the stored keys when the import fails', async () => {
+        const { mnemonic, salt, deviceId } = params()
+        const prepared = await prepareCloudBackupRestore({
+            mnemonic,
+            salt,
+            deviceId,
+        })
+        importAccounts.mockRejectedValue(new Error('kms down'))
+
+        await expect(
+            completeCloudBackupRestore({
+                prepared,
+                selection: 'all',
+                ...imports(),
+            }),
+        ).rejects.toBeInstanceOf(CloudBackupRestoreError)
+        expect(deleteBackupKeysMock).toHaveBeenCalled()
+    })
+
+    test('removes the stored keys when the user backs out before choosing', async () => {
+        await discardPreparedCloudBackupRestore()
+
+        expect(deleteBackupKeysMock).toHaveBeenCalled()
     })
 })
 
