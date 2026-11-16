@@ -30,6 +30,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { useWebViewStore } from '@modules/webview'
 import { useDiscoverFavoritesStore } from '@modules/discover/store/useDiscoverFavoritesStore'
+import { resetLegacyImportAttemptForTests } from '@modules/discover/hooks/useLegacyFavoritesImport'
 
 // The integration setup registers whichever chains config enables.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
@@ -369,6 +370,30 @@ describe('Flow: Discover home', () => {
             ).toHaveLength(1)
         })
         await flush()
+    })
+
+    it('Given the legacy favorites are not imported yet, then the native home mounts the hidden importer once the directory settles', async () => {
+        resetLegacyImportAttemptForTests()
+        useHandlers()
+        renderHome()
+
+        expect(
+            await screen.findByTestId('discover_legacy_favorites_importer'),
+        ).toBeTruthy()
+        await flush()
+    })
+
+    it('Given the legacy favorites were imported, then the home mounts no importer', async () => {
+        resetLegacyImportAttemptForTests()
+        useDiscoverFavoritesStore.getState().importLegacyFavorites([], {})
+        useHandlers()
+        renderHome()
+
+        expect(await screen.findByTestId('discover_home_search')).toBeTruthy()
+        await flush()
+        expect(
+            screen.queryByTestId('discover_legacy_favorites_importer'),
+        ).toBeNull()
     })
 
     it('Given nothing favorited, then Favorites shows its empty state and New Folder', async () => {

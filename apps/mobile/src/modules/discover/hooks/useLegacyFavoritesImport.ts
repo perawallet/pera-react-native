@@ -24,7 +24,6 @@ import { parseLegacyFavoritesMessage } from '../utils/legacyFavorites'
 import { dappsByNormalizedUrl } from '../utils/toDiscoverDapp'
 import { useDiscoverDirectory } from './useDiscoverDirectory'
 
-// lanekeep-ignore-next-line pera/no-numeric-sizes reason: a duration in ms, not a size
 export const LEGACY_IMPORT_TIMEOUT_MS = 10_000
 
 // One attempt per app launch, however often the home mounts: a failed or

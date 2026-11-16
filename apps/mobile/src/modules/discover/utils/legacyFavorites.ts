@@ -25,7 +25,6 @@ export type LegacyFavorite = {
 export const LEGACY_FAVORITES_MESSAGE_TYPE = 'discover-legacy-favorites'
 
 /** The web app caps its favorites list at this length. */
-// lanekeep-ignore-next-line pera/no-numeric-sizes reason: a list length, not a size
 export const LEGACY_FAVORITES_MAX = 500
 
 /**

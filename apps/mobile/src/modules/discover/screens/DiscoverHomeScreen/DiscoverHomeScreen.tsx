@@ -30,6 +30,7 @@ import { AssetRowSkeleton } from '@modules/assets'
 import { DappRow } from '../../components/DappRow'
 import { DiscoverSectionHeader } from '../../components/DiscoverSectionHeader'
 import { FavoritesSection } from '../../components/FavoritesSection'
+import { LegacyFavoritesImporter } from '../../components/LegacyFavoritesImporter'
 import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
 import { dappHostOf } from '../../utils/normalizeDappUrl'
@@ -179,6 +180,8 @@ export const DiscoverHomeScreen = () => {
                     </PWView>
                 ) : null}
             </PWScrollView>
+            {/* One-time, hidden: copies the legacy WebView Discover's favorites. */}
+            <LegacyFavoritesImporter />
         </PWScreen>
     )
 }
