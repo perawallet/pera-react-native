@@ -45,7 +45,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         ...actual,
         config: {
             ...actual.config,
-            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+            chains: {
+                enabled: ['algorand', 'ethereum', 'base'],
+                capabilities: {},
+            },
         },
     }
 })
@@ -71,6 +74,7 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
     custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
     chains: {
         ethereum: { address: ETHEREUM_ADDRESS, keyPairId: 'eth-key' },
+        base: { address: ETHEREUM_ADDRESS, keyPairId: 'eth-key' },
     },
     name: 'Eth',
 } as WalletAccount
@@ -83,6 +87,7 @@ const RECEIVED_URL = assetDetailUrl('eip155:1')
 const SENT_URL = assetDetailUrl('eip155:1', TOKEN.toLowerCase())
 const FAILED_URL = assetDetailUrl('eip155:1')
 const SEPOLIA_URL = assetDetailUrl('eip155:11155111')
+const BASE_SENT_URL = assetDetailUrl('eip155:8453', TOKEN.toLowerCase())
 
 const evmRow = (
     id: string,
@@ -121,13 +126,19 @@ const EVM_ROWS = [
         'Transaction failed: 0.5 ETH to 0x1234…5678',
         FAILED_URL,
     ),
+    evmRow(
+        '304',
+        'evm-transfer-sent',
+        'Transaction successful: 10 USDC to 0x1234…5678 on Base',
+        BASE_SENT_URL,
+    ),
 ]
 
-const assetDetailsRoute = (assetId: string) => ({
+const assetDetailsRoute = (assetId: string, chainId = 'ethereum') => ({
     screen: 'Home',
     params: {
         screen: 'AssetDetails',
-        params: { assetId, chainId: 'ethereum' },
+        params: { assetId, chainId },
     },
 })
 
@@ -188,7 +199,7 @@ describe('Flow: Ethereum transfer notifications', () => {
         vi.spyOn(navigationRef, 'isReady').mockReturnValue(true)
     })
 
-    describe('Given the notifications list holds a received, a sent and a failed transfer', () => {
+    describe('Given the notifications list holds received, sent and failed transfers', () => {
         it('When NotificationsScreen mounts, then all three messages render', async () => {
             renderWithNavigation(NotificationsScreen, 'Notifications')
 
@@ -236,6 +247,25 @@ describe('Flow: Ethereum transfer notifications', () => {
             await waitFor(() =>
                 expect(dispatch).toHaveBeenCalledWith(
                     StackActions.replace('TabBar', assetDetailsRoute(TOKEN)),
+                ),
+            )
+        })
+
+        // Base has no deeplink adapter of its own; Ethereum's serves its links.
+        it("When a sent row on another EVM chain is pressed, then that chain's token screen opens", async () => {
+            const dispatch = vi
+                .spyOn(navigationRef, 'dispatch')
+                .mockImplementation(() => undefined)
+            renderWithNavigation(NotificationsScreen, 'Notifications')
+
+            fireEvent.click(await screen.findByTestId('notification_row_304'))
+
+            await waitFor(() =>
+                expect(dispatch).toHaveBeenCalledWith(
+                    StackActions.replace(
+                        'TabBar',
+                        assetDetailsRoute(TOKEN, 'base'),
+                    ),
                 ),
             )
         })
