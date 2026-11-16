@@ -38,7 +38,7 @@ export const DiscoverFolderScreen = () => {
             ),
             headerRight: () => (
                 <PWTouchableOpacity
-                    onPress={openMenu}
+                    onPress={() => void openMenu()}
                     testID='discover_folder_menu_button'
                     accessibilityLabel={t('discover.folders.menu.open_label')}
                 >
