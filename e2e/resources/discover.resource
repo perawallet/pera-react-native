@@ -16,6 +16,7 @@ ${AGE_GATE_CONFIRM}         xpath=//*[@text='I am 18 or older' or @label='I am 1
 ${AGE_GATE_RETRY}           tid=age-gate-retry
 ${WEBVIEW_OFFLINE}          tid=pw-webview-offline
 ${WEBVIEW_TIMEOUT}          tid=pw-webview-timeout
+${WEBVIEW_UNAVAILABLE}      tid=pw-webview-unavailable
 # The native home or the web app's WebView, whichever this build's Discover tab renders.
 ${DISCOVER_LOADED}          xpath=//*[@name='discover_home_screen' or @resource-id='discover_home_screen' or @content-desc='discover_home_screen'] | //android.webkit.WebView | //XCUIElementTypeWebView
 # The Debug Tools row to Manage Cache has no testID.
@@ -49,6 +50,7 @@ Discover Should Be Loaded
     Page Should Not Contain Element    ${AGE_GATE_RETRY}
     Page Should Not Contain Element    ${WEBVIEW_OFFLINE}
     Page Should Not Contain Element    ${WEBVIEW_TIMEOUT}
+    Page Should Not Contain Element    ${WEBVIEW_UNAVAILABLE}
 
 Clear One-Time Flags
     [Documentation]    Developer > Debug Tools > Manage Cache: resets the age declaration and every

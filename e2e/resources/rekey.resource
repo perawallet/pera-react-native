@@ -41,6 +41,7 @@ ${IMPORT_HD_BUTTON}                 tid=import_options_hd_wallet_button
 ${IMPORT_ALGO25_BUTTON}             tid=import_options_algo25_button
 ${IMPORT_ACCOUNT_BUTTON}            tid=import_account_import_button
 ${IMPORT_SELECT_CONTINUE}           tid=import_select_addresses_continue_button
+${IMPORT_SELECT_ALL}                tid=import_select_addresses_select_all_checkbox
 ${IMPORT_REKEYED_SKIP}              tid=import_rekeyed_addresses_skip_button
 
 
@@ -132,19 +133,39 @@ Finish Passphrase Import
     ...                rekeyed to it (skipped, so rescan still finds them), or, for several accounts,
     ...                straight back on Home once the address selection is continued.
     VAR    ${continued}    ${False}
+    VAR    ${clear_polls}    ${0}
     FOR    ${_}    IN RANGE    120
-        ${selecting}=    Tap If Present    ${IMPORT_SELECT_CONTINUE}
+        ${selecting}=    Run Keyword And Return Status    Page Should Contain Element    ${IMPORT_SELECT_CONTINUE}
+        IF    ${selecting} and ${continued}
+            # Polls the on-chain search, which runs under an overlay on this screen once continued.
+            VAR    ${clear_polls}    ${0}
+            Sleep    0.5s
+            CONTINUE
+        END
         IF    ${selecting}
+            # A disabled Continue takes the tap and does nothing, so select the accounts first.
+            ${ready}=    Run Keyword And Return Status
+            ...    Expect Element    ${IMPORT_SELECT_CONTINUE}    enabled    timeout=0s    loglevel=NONE
+            IF    not ${ready}    Tap    ${IMPORT_SELECT_ALL}
+            Expect Element    ${IMPORT_SELECT_CONTINUE}    enabled    timeout=3s    retry_interval=0.5s    loglevel=NONE
+            Tap    ${IMPORT_SELECT_CONTINUE}
             VAR    ${continued}    ${True}
-            # Polls the on-chain account search, which has no progress anchor of its own.
+            VAR    ${clear_polls}    ${0}
             Sleep    0.5s
             CONTINUE
         END
         ${named}=    Tap If Present    ${ACCOUNT_FINISH_BUTTON}
         ${skipped}=    Tap If Present    ${IMPORT_REKEYED_SKIP}
         IF    ${named} or ${skipped}    RETURN
+        # On iOS an existing wallet's Home stays in the tree under the import flow, so Home only
+        # counts once no import screen has been in the tree for several polls in a row.
         ${home}=    Run Keyword And Return Status    Page Should Contain Element    ${MORE_BUTTON}
-        IF    ${continued} and ${home}    RETURN
+        IF    ${continued} and ${home}
+            VAR    ${clear_polls}    ${clear_polls + 1}
+        ELSE
+            VAR    ${clear_polls}    ${0}
+        END
+        IF    ${clear_polls} >= 3    RETURN
         Sleep    0.5s
     END
     Fail    Import never got past the address selection, naming or rekeyed-accounts step.

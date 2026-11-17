@@ -158,11 +158,14 @@ Finish Import
     [Documentation]    Walks whichever post-import screens the phrase produces (address selection,
     ...                rekeyed accounts, naming, startup prompts) until Home. Only a single new
     ...                account is named; several, or rekeyed ones, leave the flow straight from their
-    ...                screen. Home counts once one of those screens has been passed and none is up:
-    ...                on iOS the tab bar of a wallet that already exists stays in the tree under the
-    ...                import flow. Returns whether the rekeyed screen and the confetti were seen.
+    ...                screen. On iOS the tab bar of a wallet that already exists stays in the tree
+    ...                under the import flow, so Home only counts once a step has been passed and no
+    ...                import screen has been in the tree for several polls in a row.
+    ...                Returns whether the rekeyed screen and the confetti were seen.
     [Arguments]    ${rekeyed}=import
     VAR    ${passed}    ${False}
+    VAR    ${clear_polls}    ${0}
+    VAR    ${selection_continued}    ${False}
     VAR    ${saw_rekeyed}    ${False}
     VAR    ${saw_confetti}    ${False}
     FOR    ${i}    IN RANGE    240
@@ -172,8 +175,16 @@ Finish Import
         IF    ${confetti}    VAR    ${saw_confetti}    ${True}
         ${select}=    Is Shown    ${SELECT_ADDRESSES_CONTINUE}
         IF    ${select}
-            Continue With Selected Addresses
-            VAR    ${passed}    ${True}
+            VAR    ${clear_polls}    ${0}
+            # The rekeyed scan runs under an overlay on this screen once it is continued; a second
+            # tap would land on the screen the user already left.
+            IF    ${selection_continued}
+                Sleep    0.5s
+            ELSE
+                Continue With Selected Addresses
+                VAR    ${selection_continued}    ${True}
+                VAR    ${passed}    ${True}
+            END
             CONTINUE
         END
         ${rekeyed_screen}=    Is Shown    ${REKEYED_CONTINUE}
@@ -181,18 +192,25 @@ Finish Import
             VAR    ${saw_rekeyed}    ${True}
             Leave Rekeyed Addresses    ${rekeyed}
             VAR    ${passed}    ${True}
+            VAR    ${clear_polls}    ${0}
             CONTINUE
         END
         ${naming}=    Is Shown    ${ACCOUNT_FINISH_BUTTON}
         IF    ${naming}
             Tap    ${ACCOUNT_FINISH_BUTTON}
             VAR    ${passed}    ${True}
+            VAR    ${clear_polls}    ${0}
             Run Keyword And Ignore Error
             ...    Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=10s
             CONTINUE
         END
         ${home}=    Is Shown    ${MENU_TAB}
-        IF    ${home} and ${passed}    RETURN    ${saw_rekeyed}    ${saw_confetti}
+        IF    ${home} and ${passed}
+            VAR    ${clear_polls}    ${clear_polls + 1}
+        ELSE
+            VAR    ${clear_polls}    ${0}
+        END
+        IF    ${clear_polls} >= 3    RETURN    ${saw_rekeyed}    ${saw_confetti}
         Sleep    0.5s
     END
     Fail    The import never reached Home.

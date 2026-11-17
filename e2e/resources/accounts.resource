@@ -220,9 +220,17 @@ Ensure Account On Ethereum
     Open Account Options
     # Android lists only what is on screen, so the row is scrolled to before its absence counts.
     ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${ETHEREUM_ROW_OR_SEE_ALL}
-    # Scrolling the whole sheet to find nothing is slow, and a build does not change mid-run. Only
-    # key accounts come here, which can all go on Ethereum where the build ships it.
-    Set Global Variable    ${ETHEREUM_OFFERED}    ${offered}
+    # Scrolling the whole sheet to find nothing is slow, and a build does not change mid-run, so
+    # the answer is kept. A keyless account offers no Ethereum on any build, so a "no" is kept
+    # only when the sheet proves the account has a key, and fails loudly otherwise.
+    IF    ${offered}
+        Set Global Variable    ${ETHEREUM_OFFERED}    ${True}
+    ELSE
+        ${keyed}=    Run Keyword And Return Status    Scroll Until Present    ${OPTION_VIEW_PASSPHRASE}
+        Should Be True    ${keyed}
+        ...    The selected account offers no Ethereum and no passphrase: a case left a keyless account selected.
+        Set Global Variable    ${ETHEREUM_OFFERED}    ${False}
+    END
     Skip If    not ${offered}
     ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
     ${folded}=    Run Keyword And Return Status    Page Should Contain Element    ${NETWORKS_SEE_ALL}

@@ -69,8 +69,15 @@ Recipient Search Excludes The Sender And Offers The Other Account
     Enter Amount    ${SEND_AMOUNT}
     Open Destination
     Wait Until Page Contains Element    ${OTHER_RECIPIENT_ROW}    timeout=15s
-    Page Should Not Contain Element    tid=account_result_row_${FUNDED_ADDRESS}
     Dismiss Keyboard
+    # Android lists only the rows on screen, so the sender's absence counts once the whole list
+    # has been scrolled through.
+    ${listed}=    Run Keyword And Return Status    Scroll Until Present    tid=account_result_row_${FUNDED_ADDRESS}
+    Should Not Be True    ${listed}    The recipient list offers the sending account.
+    FOR    ${_}    IN RANGE    6
+        Swipe By Percent    50    35    50    75    duration=400ms
+    END
+    Wait Until Settled    ${OTHER_RECIPIENT_ROW}
     Tap    ${OTHER_RECIPIENT_ROW}
     Wait Until Page Contains Element    ${SEND_CONFIRM_SLIDE}    timeout=25s
 

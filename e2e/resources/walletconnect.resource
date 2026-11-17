@@ -116,7 +116,7 @@ Connect WC EVM Session
     ...                which the harness opens at /evm/uri. A harness without it answers 404.
     TRY
         ${session}=    Send Harness Request    /evm/uri
-    EXCEPT    HTTP Error 404*    type=GLOB
+    EXCEPT    *HTTP Error 404*    type=GLOB
         Skip    The WC harness has no /evm/uri: an EVM request needs a WalletConnect v2 (eip155) dApp session.
     END
     ${deeplink}=    Evaluate    'perawallet-wc://wc?uri=' + urllib.parse.quote($session['uri'], safe='')
