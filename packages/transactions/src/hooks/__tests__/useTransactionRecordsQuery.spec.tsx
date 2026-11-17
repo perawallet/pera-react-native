@@ -47,6 +47,10 @@ vi.mock('../../pending-history', async importOriginal => ({
     getPendingTransactionRecords: mocks.getPendingTransactionRecords,
     getMinedTransactionHistory: mocks.getMinedTransactionHistory,
 }))
+vi.mock('../historyReadRetry', async importOriginal => ({
+    ...(await importOriginal<typeof import('../historyReadRetry')>()),
+    historyReadRetryDelay: () => 0,
+}))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     subscribeToSubmissionLedger: (listener: () => void) => {

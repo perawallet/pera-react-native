@@ -349,6 +349,36 @@ describe('getEvmTransactionHistory', () => {
             }),
         ).rejects.toBeInstanceOf(UnknownEvmNetworkError)
     })
+
+    it('has at most two pages in flight, and reads the rest as those answer', async () => {
+        let inFlight = 0
+        let mostInFlight = 0
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                async () => {
+                    inFlight++
+                    mostInFlight = Math.max(mostInFlight, inFlight)
+                    await new Promise(resolve => setTimeout(resolve, 10))
+                    inFlight--
+                    return HttpResponse.json({
+                        next: null,
+                        previous: null,
+                        results: [],
+                    })
+                },
+            ),
+        )
+
+        const pages = await Promise.all(
+            Array.from({ length: 5 }, () =>
+                getEvmTransactionHistory(ETHEREUM, ME, MAINNET),
+            ),
+        )
+
+        expect(pages).toHaveLength(5)
+        expect(mostInFlight).toBe(2)
+    })
 })
 
 describe('with contractDecoding', () => {

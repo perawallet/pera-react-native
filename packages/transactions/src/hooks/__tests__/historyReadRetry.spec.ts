@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
-import { shouldRetryHistoryRead } from '../historyReadRetry'
+import {
+    PeraNetworkError,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
+import {
+    historyReadRetryDelay,
+    shouldRetryHistoryRead,
+} from '../historyReadRetry'
 
 const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+const RATE_LIMITED = new PeraNetworkError('client', { status: 429 })
 
 describe('shouldRetryHistoryRead', () => {
     afterEach(() => {
@@ -29,6 +36,11 @@ describe('shouldRetryHistoryRead', () => {
         expect(shouldRetryHistoryRead(1, error)).toBe(false)
     })
 
+    it('retries a rate-limited read three times', () => {
+        expect(shouldRetryHistoryRead(2, RATE_LIMITED)).toBe(true)
+        expect(shouldRetryHistoryRead(3, RATE_LIMITED)).toBe(false)
+    })
+
     it('never retries a Pera service the network lacks', () => {
         expect(
             shouldRetryHistoryRead(0, new PeraServiceUnavailableError(SCOPE)),
@@ -39,5 +51,25 @@ describe('shouldRetryHistoryRead', () => {
         onlineManager.setOnline(false)
 
         expect(shouldRetryHistoryRead(0, new Error('offline'))).toBe(false)
+    })
+})
+
+describe('historyReadRetryDelay', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it("keeps TanStack's delay for a read that wasn't rate limited", () => {
+        expect(historyReadRetryDelay(0, new Error('not ready'))).toBe(1000)
+    })
+
+    it('backs a rate-limited read off from 2s, doubling, with up to half again of jitter', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0)
+        expect(
+            [0, 1, 2].map(count => historyReadRetryDelay(count, RATE_LIMITED)),
+        ).toEqual([2000, 4000, 8000])
+
+        vi.spyOn(Math, 'random').mockReturnValue(0.999)
+        expect(historyReadRetryDelay(0, RATE_LIMITED)).toBeLessThan(3000)
     })
 })

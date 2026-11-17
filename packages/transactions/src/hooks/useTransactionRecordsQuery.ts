@@ -36,7 +36,10 @@ import {
     mergePendingRecords,
 } from '../pending-history'
 import { isFeePaidByAccount } from '../utils/fee'
-import { shouldRetryHistoryRead } from './historyReadRetry'
+import {
+    historyReadRetryDelay,
+    shouldRetryHistoryRead,
+} from './historyReadRetry'
 import {
     consumeFullRefetchRequest,
     requestFullRefetch,
@@ -345,6 +348,7 @@ export const useTransactionRecordsQuery = ({
         getNextPageParam: (lastPage: RecordsPage) => lastPage.next ?? undefined,
         networkMode: 'always',
         retry: shouldRetryHistoryRead,
+        retryDelay: historyReadRetryDelay,
         enabled: isActive,
     })
 

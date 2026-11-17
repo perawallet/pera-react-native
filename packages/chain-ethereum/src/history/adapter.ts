@@ -19,7 +19,11 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    createConcurrencyLimit,
+    type ConcurrencyLimit,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
@@ -72,6 +76,18 @@ const toRecords = (
     ]
 }
 
+// One gate for every EVM chain: each page costs the backend several upstream
+// explorer calls under one shared rate limit, so the All view asking every
+// chain at once got most of its pages refused.
+const HISTORY_PAGES_IN_FLIGHT = 2
+let historyPageGate: Optional<ConcurrencyLimit>
+
+// Built on first use, so importing the adapter runs nothing.
+const gatedHistoryPage: ConcurrencyLimit = task => {
+    historyPageGate ??= createConcurrencyLimit(HISTORY_PAGES_IN_FLIGHT)
+    return historyPageGate(task)
+}
+
 /**
  * Newest first. A page can be empty and still have `next`. Mined rows only:
  * JSON-RPC can't enumerate history, so there is no fallback.
@@ -83,7 +99,9 @@ export const getEvmTransactionHistory = async (
     page?: PageRef,
     isDecoding = false,
 ): Promise<Page<TransactionRecord>> => {
-    const { items, next } = await fetchHistoryPage(scope, chain, address, page)
+    const { items, next } = await gatedHistoryPage(() =>
+        fetchHistoryPage(scope, chain, address, page),
+    )
     return {
         items: items.flatMap(item =>
             toRecords(item, address, scope, chain, isDecoding),
