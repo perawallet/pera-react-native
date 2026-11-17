@@ -135,7 +135,8 @@ too, and nothing is signed once it is off. Only EVM chains honour `messageSignin
 declares it but no Algorand signing path reads it, so overriding it for `algorand` changes nothing.
 
 The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain's network and
-account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
+account changes, and `watchLockNotices` with the wallet's lock and unlock, which only the injected
+providers act on. v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
 declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.
 
 A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. The target

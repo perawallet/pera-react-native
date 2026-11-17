@@ -51,6 +51,7 @@ import {
 import { sanitizeDappIcons } from './icons'
 import {
     acknowledgedSiteWarningOf,
+    canSiteSeeAccounts,
     isWorseSiteWarning,
     readSiteWarning,
     type DappAccount,
@@ -91,6 +92,11 @@ export type DappHandlerDeps = {
      * through an approval, where the warning shows. Absent, every site is clear.
      */
     siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
+    /**
+     * Read when the wallet pushes accounts to a page; a request carries its own
+     * reading on its context. A realm that never pushes passes `() => true`.
+     */
+    isWalletLocked: () => boolean | Promise<boolean>
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -637,10 +643,15 @@ export const createDappConnectionHandler = (
                     existing && !(await hasNewSiteWarning(existing, ctx.origin))
                         ? existing
                         : undefined
+                // A locked wallet shows a connected site no accounts, as
+                // `eth_accounts` does; signing still goes through the approval.
                 return deliver(
                     respond,
                     connection
-                        ? jsonRpcResult(request.id, accountsFor(connection))
+                        ? jsonRpcResult(
+                              request.id,
+                              ctx.isWalletLocked ? [] : accountsFor(connection),
+                          )
                         : jsonRpcError(
                               request.id,
                               JsonRpcErrorCode.Unauthorized,
@@ -703,10 +714,34 @@ export const createDappConnectionHandler = (
                   }
                 : null
         }
+        if (notice.type === 'lock-changed') {
+            const connection = await getConnection(id)
+            if (!connection) return null
+            // `window.pera` connections are keyed by the site's origin.
+            const isVisible =
+                (await canSiteSeeAccounts(
+                    notice.isLocked,
+                    connection,
+                    id,
+                    deps.siteWarningOf,
+                )) &&
+                // The site check is a network call: a lock that landed during
+                // it has already sent `[]`, which this must not overtake.
+                !(await deps.isWalletLocked())
+            return {
+                method: DAPP_NOTIFICATIONS.accountsChanged,
+                params: {
+                    accounts: isVisible
+                        ? accountsFor(connection).map(({ address }) => address)
+                        : [],
+                },
+            }
+        }
         const connection = await getConnection(id)
         if (!connection?.accounts.some(a => notice.changed.includes(a))) {
             return null
         }
+        if (await deps.isWalletLocked()) return null
         return {
             method: DAPP_NOTIFICATIONS.accountsChanged,
             params: {
@@ -744,7 +779,10 @@ export const createDappConnectionHandler = (
         methodsFor: () => [...PERMISSION_METHODS],
         async notify(id, notice: WalletNotice) {
             // The protocol carries one chain, fixed per handler.
-            if (!new Set([deps.chainId]).has(walletNoticeChainId(notice))) {
+            if (
+                notice.type !== 'lock-changed' &&
+                !new Set([deps.chainId]).has(walletNoticeChainId(notice))
+            ) {
                 return
             }
             const notification = await notificationFor(id, notice)

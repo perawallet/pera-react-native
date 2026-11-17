@@ -1723,6 +1723,8 @@ export const createWalletConnectV2Handler = (
         id: ConnectionId,
         notice: WalletNotice,
     ): Promise<void> => {
+        // A WalletConnect session's accounts are not withdrawn by the app lock.
+        if (notice.type === 'lock-changed') return
         const walletKit = client
         const current = kit.currentContext()
         const chain = v2ChainFor(walletNoticeChainId(notice))

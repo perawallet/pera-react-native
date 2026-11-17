@@ -97,3 +97,21 @@ export const watchWalletNotices = (
         unsubscribeAccounts()
     }
 }
+
+/**
+ * Feeds the registry a `lock-changed` notice on each lock or unlock reported
+ * by `subscribe`, never one repeating `isLockedNow` or the last reported
+ * state. Returns the unsubscribe.
+ */
+export const watchLockNotices = (
+    registry: Pick<ConnectionRegistry, 'notify'>,
+    isLockedNow: boolean,
+    subscribe: (listener: (isLocked: boolean) => void) => () => void,
+): (() => void) => {
+    let last = isLockedNow
+    return subscribe(isLocked => {
+        if (isLocked === last) return
+        last = isLocked
+        void registry.notify({ type: 'lock-changed', isLocked })
+    })
+}
