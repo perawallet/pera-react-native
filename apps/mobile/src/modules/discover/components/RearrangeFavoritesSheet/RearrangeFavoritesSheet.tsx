@@ -44,7 +44,7 @@ export const RearrangeFavoritesSheet = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const sheet = useRearrangeFavoritesSheet()
-    const { remove, reorder, beginDrag } = sheet
+    const { remove, reorder, beginDrop } = sheet
 
     const renderItem = useCallback(
         ({ item, drag }: RenderItemParams<RearrangeFavoriteEntry>) => (
@@ -140,7 +140,7 @@ export const RearrangeFavoritesSheet = () => {
                 data={sheet.entries}
                 renderItem={renderItem}
                 keyExtractor={keyOf}
-                onDragBegin={beginDrag}
+                onRelease={beginDrop}
                 onDragEnd={handleDragEnd}
                 activationDistance={10}
                 showsVerticalScrollIndicator={false}

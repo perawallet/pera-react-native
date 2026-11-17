@@ -96,7 +96,7 @@ describe('useRearrangeFavoritesSheet', () => {
     it('apply while a drop settles saves the dropped order', () => {
         const { result } = renderHook(() => useRearrangeFavoritesSheet())
 
-        act(() => result.current.beginDrag())
+        act(() => result.current.beginDrop())
         act(() => result.current.apply())
         expect(dismiss).not.toHaveBeenCalled()
 
@@ -104,5 +104,17 @@ describe('useRearrangeFavoritesSheet', () => {
 
         expect(recent()).toEqual([B, A, C])
         expect(dismiss).toHaveBeenCalledTimes(1)
+    })
+
+    it('a cancel during a settling drop discards the pending apply', () => {
+        const { result } = renderHook(() => useRearrangeFavoritesSheet())
+
+        act(() => result.current.beginDrop())
+        act(() => result.current.apply())
+        act(() => result.current.cancel())
+        act(() => result.current.reorder([B, A, C]))
+
+        expect(recent()).toEqual([C, B, A])
+        expect(trackEvent).not.toHaveBeenCalled()
     })
 })

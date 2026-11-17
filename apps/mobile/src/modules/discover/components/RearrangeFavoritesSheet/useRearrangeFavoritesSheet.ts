@@ -22,8 +22,8 @@ export type RearrangeFavoriteEntry = { key: string; dapp: DiscoverFavorite }
 
 export type UseRearrangeFavoritesSheetResult = {
     entries: RearrangeFavoriteEntry[]
-    /** A drag started; Apply waits for its `reorder` (the drop) to land. */
-    beginDrag: () => void
+    /** A drag was released; Apply waits for its `reorder` (the drop) to land. */
+    beginDrop: () => void
     reorder: (keys: string[]) => void
     remove: (key: string) => void
     apply: () => void
@@ -71,7 +71,7 @@ export const useRearrangeFavoritesSheet =
             [applyRearrange, dismiss],
         )
 
-        const beginDrag = useCallback(() => {
+        const beginDrop = useCallback(() => {
             isDropSettling.current = true
         }, [])
 
@@ -108,7 +108,12 @@ export const useRearrangeFavoritesSheet =
             commit(entriesRef.current)
         }, [commit])
 
-        const cancel = useCallback(() => dismiss(), [dismiss])
+        // The list stays mounted through the close animation, so a drop that
+        // lands then must not apply what the user just cancelled.
+        const cancel = useCallback(() => {
+            isApplyPending.current = false
+            dismiss()
+        }, [dismiss])
 
-        return { entries, beginDrag, reorder, remove, apply, cancel }
+        return { entries, beginDrop, reorder, remove, apply, cancel }
     }
