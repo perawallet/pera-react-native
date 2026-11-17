@@ -109,7 +109,12 @@ describe('pickRefreshedQuote', () => {
         expect(
             pickRefreshedQuote(
                 noMinimum,
-                [offer({ amountOut: new Decimal('999'), minimumAmountOut: null })],
+                [
+                    offer({
+                        amountOut: new Decimal('999'),
+                        minimumAmountOut: null,
+                    }),
+                ],
                 NOW,
             ),
         ).toBeNull()
@@ -128,7 +133,12 @@ describe('pickRefreshedQuote', () => {
         expect(
             pickRefreshedQuote(
                 confirmed,
-                [offer({ amountOut: new Decimal('1191'), minimumAmountOut: null })],
+                [
+                    offer({
+                        amountOut: new Decimal('1191'),
+                        minimumAmountOut: null,
+                    }),
+                ],
                 NOW,
             ),
         ).not.toBeNull()

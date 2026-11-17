@@ -58,7 +58,9 @@ export const swapOrderRefusalOf = (
     if (code === 'insufficient_balance') return 'insufficient-balance'
     if (code && UNAVAILABLE_CODES.includes(code)) return 'provider-unavailable'
     if (code && DECLINED_CODES.includes(code)) return 'provider-declined'
-    return error.kind === 'server' ? 'provider-unavailable' : 'provider-declined'
+    return error.kind === 'server'
+        ? 'provider-unavailable'
+        : 'provider-declined'
 }
 
 /** Why the router gave no quote. Limits are base units of the request's source asset; null when the router named none. */
