@@ -29,6 +29,11 @@ export const useStyles = makeStyles(theme => ({
     info: {
         flex: 1,
     },
+    countRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     count: {
         color: theme.colors.textGray,
     },
