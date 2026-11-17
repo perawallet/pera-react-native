@@ -34,6 +34,10 @@ import { LegacyFavoritesImporter } from '../../components/LegacyFavoritesImporte
 import { RowDivider } from '../../components/RowDivider'
 import { NewsCard } from '../../components/NewsCard'
 import { dappSubtitle } from '../../utils/dappSubtitle'
+import {
+    AccountHeaderToolbar,
+    useAccountDrawerPickerKind,
+} from '@modules/accounts'
 import { useStyles } from './styles'
 import {
     useDiscoverHomeScreen,
@@ -46,6 +50,8 @@ export const DiscoverHomeScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const home = useDiscoverHomeScreen()
+    // The header's account picker opens the portfolio drawer, as on Home.
+    useAccountDrawerPickerKind('portfolio')
     const { topDapps, news } = home
 
     const renderTopDapps = () => {
@@ -123,6 +129,7 @@ export const DiscoverHomeScreen = () => {
             scroll='never'
             testID='discover_home_screen'
         >
+            <AccountHeaderToolbar testIDPrefix='discover_home' />
             <PWScrollView
                 contentContainerStyle={styles.content}
                 refreshControl={

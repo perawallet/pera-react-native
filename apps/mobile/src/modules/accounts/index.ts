@@ -25,6 +25,7 @@ export {
     type AccountDrawerPickerProps,
 } from './components/AccountDrawer'
 export { AccountErrorBoundary } from './components/AccountErrorBoundary'
+export { AccountHeaderToolbar } from './components/AccountHeaderToolbar'
 export { getFilterTimes } from './components/AccountHistory/utils'
 export {
     AccountMenuContent,

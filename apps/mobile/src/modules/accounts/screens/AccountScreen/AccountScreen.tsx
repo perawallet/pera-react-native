@@ -11,7 +11,7 @@
  */
 
 import Animated from 'react-native-reanimated'
-import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
@@ -20,23 +20,14 @@ import { useShouldPlayConfetti } from '@modules/onboarding'
 
 import { useAccountScreenAnimation } from './useAccountScreenAnimation'
 import { useStyles } from './styles'
-import { useModalState } from '@hooks/useModalState'
-import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useAccountDrawerPickerKind } from '@modules/accounts/components/AccountDrawer'
-import { QRScannerView } from '@components/QRScannerView'
+import { AccountHeaderToolbar } from '@modules/accounts/components/AccountHeaderToolbar'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
-import { NotificationsIcon } from '@modules/messages'
-import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 import { HomeBannersStrip } from '@modules/banners'
-import { trackEvent, HomeEvent } from '@analytics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useCallback } from 'react'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { PasteLinkContent } from '@modules/menu'
-import { routeCapabilities } from '@routes/capabilities'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
 
@@ -44,7 +35,6 @@ export const AccountScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const account = useSelectedAccount()
-    const scannerState = useModalState()
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
@@ -55,22 +45,9 @@ export const AccountScreen = () => {
     const { banners: visibleBanners } = useVisibleBanners()
     const hasHomeBanner = visibleBanners.length > 0
     const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
-    const { request: requestBottomSheet } = useBottomSheet()
 
     // Shapes the shared tab-shell drawer while this screen is focused.
     useAccountDrawerPickerKind('portfolio')
-
-    const openPasteLink = useCallback(() => {
-        trackEvent(HomeEvent.PasteLink)
-        void requestBottomSheet({
-            contents: <PasteLinkContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
 
     if (!account) {
         return (
@@ -99,41 +76,9 @@ export const AccountScreen = () => {
                     hasHomeBanner ? animatedCornerStyle : undefined,
                 ]}
             >
-                <PWToolbar
-                    paddingStyle='none'
+                <AccountHeaderToolbar
+                    testIDPrefix='account_screen'
                     style={styles.iconBar}
-                    left={
-                        <AccountSelection
-                            showSearch
-                            style={styles.accountSelectionToolbar}
-                            showPeraCardActivation
-                        />
-                    }
-                    right={
-                        <PWView style={styles.iconBarSection}>
-                            <AccountHeaderMenu testID='account_screen_dropdown' />
-                            {routeCapabilities.qrScanner && (
-                                <PWTouchableOpacity
-                                    onPress={() => {
-                                        trackEvent(HomeEvent.QrScan)
-                                        scannerState.open()
-                                    }}
-                                    testID='account_screen_qr_scanner_button'
-                                >
-                                    <PWIcon name='camera' />
-                                </PWTouchableOpacity>
-                            )}
-                            {routeCapabilities.deepLinkPaste && (
-                                <PWTouchableOpacity
-                                    onPress={openPasteLink}
-                                    testID='account_screen_paste_link_button'
-                                >
-                                    <PWIcon name='link' />
-                                </PWTouchableOpacity>
-                            )}
-                            <NotificationsIcon testID='account_screen_notifications' />
-                        </PWView>
-                    }
                 />
                 <PWView style={styles.tabNavigator}>
                     <AccountTabNavigator
@@ -142,14 +87,6 @@ export const AccountScreen = () => {
                     />
                 </PWView>
             </AnimatedPWView>
-            {routeCapabilities.qrScanner && (
-                <QRScannerView
-                    isVisible={scannerState.isOpen}
-                    onSuccess={scannerState.close}
-                    onClose={scannerState.close}
-                    animationType='slide'
-                />
-            )}
         </PWView>
     )
 }
