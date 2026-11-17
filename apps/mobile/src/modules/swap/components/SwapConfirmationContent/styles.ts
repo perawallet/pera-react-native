@@ -124,9 +124,5 @@ export const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.layerGrayLighter,
             borderRadius: theme.spacing.sm,
         },
-        confirmButton: {
-            paddingHorizontal: theme.spacing.lg,
-            paddingTop: theme.spacing.xxl,
-        },
     }
 })

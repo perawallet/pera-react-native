@@ -110,6 +110,17 @@ export const SwapConfirmationContent = ({
                     }
                 />
             }
+            footer={
+                <ConfirmAction
+                    title={t('swap.quote.slide_to_confirm')}
+                    onConfirm={() => void handleSlideConfirm()}
+                    isLoading={isProcessing}
+                    isDisabled={insufficientFeeMessage !== null}
+                    isConfirmed={swapStatus === 'success'}
+                    style={CONFIRM_ACTION_LAYOUT}
+                    testID='swap-confirm-slide'
+                />
+            }
         >
             <PWView style={styles.assetsGroup}>
                 <SwapAssetSection
@@ -208,18 +219,6 @@ export const SwapConfirmationContent = ({
                     </PWText>
                 </PWView>
             )}
-
-            <PWView style={styles.confirmButton}>
-                <ConfirmAction
-                    title={t('swap.quote.slide_to_confirm')}
-                    onConfirm={() => void handleSlideConfirm()}
-                    isLoading={isProcessing}
-                    isDisabled={insufficientFeeMessage !== null}
-                    isConfirmed={swapStatus === 'success'}
-                    style={CONFIRM_ACTION_LAYOUT}
-                    testID='swap-confirm-slide'
-                />
-            </PWView>
         </PWSheetLayout>
     )
 }
