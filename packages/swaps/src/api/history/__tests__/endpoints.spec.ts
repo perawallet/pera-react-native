@@ -19,7 +19,11 @@ import {
     vi,
     type Mock,
 } from 'vitest'
-import { PeraNetworkError, queryClient } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    PeraNetworkError,
+    queryClient,
+} from '@perawallet/wallet-core-shared'
 import { fetchDeviceSwapHistory, fetchSwapHistory } from '../endpoints'
 import { routerOrderItem, SCOPE_A } from '../../__tests__/routerFixtures'
 
@@ -214,23 +218,82 @@ describe('fetchDeviceSwapHistory', () => {
         ).rejects.toThrow()
     })
 
-    test('rejects when a probe fails for another reason, remembering nothing', async () => {
+    test('remembers the refusals it confirmed when another probe fails', async () => {
         ;(queryClient as Mock).mockImplementation(
             async (request: { params: { accounts?: string } }) => {
-                if (request.params.accounts === A) {
+                const named = (request.params.accounts ?? '').split(',')
+                if (named.includes(C)) throw notOnDevice()
+                if (named.includes(A)) {
                     throw new PeraNetworkError('server', { status: 500 })
                 }
-                throw notOnDevice()
+                return page(null)
             },
         )
 
         await expect(
-            fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A),
+            fetchDeviceSwapHistory({ deviceId, accounts: [A, B, C] }, SCOPE_A),
         ).rejects.toThrow()
         vi.clearAllMocks()
         ;(queryClient as Mock).mockResolvedValue(page(null))
-        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B, C] }, SCOPE_A)
+
         expect(accountParams()).toEqual([`${A},${B}`])
+    })
+
+    test('finds one refused account among eight by halving, not one probe each', async () => {
+        const accounts = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(
+            name => `fake-a:main:${name}`,
+        )
+        refuseAccounts(accounts[7])
+
+        await fetchDeviceSwapHistory({ deviceId, accounts }, SCOPE_A)
+
+        // The refused read, three halving probes, then the readable read.
+        expect(queryClient).toHaveBeenCalledTimes(5)
+        expect(accountParams().at(-1)).toBe(accounts.slice(0, 7).join(','))
+    })
+
+    test('logs how many accounts it drops, without naming them', async () => {
+        const warn = vi.spyOn(logger, 'warn')
+        refuseAccounts(B)
+
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+
+        expect(warn).toHaveBeenCalledWith(expect.any(String), {
+            deviceId,
+            dropped: 1,
+            readable: 1,
+        })
+    })
+
+    test("keeps a page's account list for its cursor after the memo expires", async () => {
+        vi.useFakeTimers()
+        refuseAccounts(B)
+        await fetchDeviceSwapHistory({ deviceId, accounts: [A, B] }, SCOPE_A)
+        vi.clearAllMocks()
+        vi.advanceTimersByTime(6 * 60 * 1000)
+
+        await fetchDeviceSwapHistory(
+            { deviceId, accounts: [A, B], cursor: 'n2' },
+            SCOPE_A,
+        )
+
+        expect(accountParams()).toEqual([A])
+    })
+
+    test('hands out a fresh empty page each time', async () => {
+        refuseAccounts(A, B)
+
+        const first = await fetchDeviceSwapHistory(
+            { deviceId, accounts: [A, B] },
+            SCOPE_A,
+        )
+        const second = await fetchDeviceSwapHistory(
+            { deviceId, accounts: [A, B] },
+            SCOPE_A,
+        )
+
+        expect(first.results).not.toBe(second.results)
     })
 
     test('rejects an account refusal on a page after the first', async () => {

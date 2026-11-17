@@ -138,7 +138,8 @@ export const useSwapToAssetSelectionList = ({
         assets: availableAssets,
         isLoading,
         isSuccess: isPairsSuccess,
-        isError: isLoadError,
+        isError: isPairsError,
+        isFetching: isPairsFetching,
         hasNextPage,
         fetchNextPage,
         refetch,
@@ -148,6 +149,9 @@ export const useSwapToAssetSelectionList = ({
         destinationScopes: visibleScopes,
         q: debouncedSearchFilter || undefined,
     })
+
+    // Retrying a failed first page keeps the query in error with isLoading false, so show the skeleton instead.
+    const isRetrying = isPairsError && isPairsFetching
 
     const handleEndReached = useCallback(() => {
         if (hasNextPage) fetchNextPage()
@@ -265,8 +269,8 @@ export const useSwapToAssetSelectionList = ({
         selectedChainId,
         handleSelectChain,
         isChainShown: selectedChainId === null && chainOptions.length > 0,
-        isLoading,
-        isLoadError,
+        isLoading: isLoading || isRetrying,
+        isLoadError: isPairsError && !isRetrying,
         handleRetry: refetch,
         handleEndReached,
         handleAssetSelected,

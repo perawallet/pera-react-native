@@ -42,6 +42,8 @@ export type UseSwapPairsInfiniteQueryResult = {
     isSuccess: boolean
     /** The first page failed; a failed later page keeps the loaded rows and is not an error here. */
     isError: boolean
+    /** A request is in flight, including a retry of a failed first page (which leaves `isLoading` false). */
+    isFetching: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
     refetch: () => void
@@ -162,6 +164,7 @@ export const useSwapPairsInfiniteQuery = ({
         isLoading: query.isLoading,
         isSuccess: query.isSuccess,
         isError: query.isError && !query.data?.pages.length,
+        isFetching: query.isFetching,
         hasNextPage,
         // A list fires onEndReached repeatedly; without this a second call
         // would cancel the page already loading.

@@ -269,6 +269,25 @@ describe('useSwapToAssetSelectionList', () => {
             expect(result.current.items).toHaveLength(1)
         })
 
+        it('shows loading, not the error, while a retry is in flight', () => {
+            mockUseSwapPairsInfiniteQuery.mockReturnValue({
+                assets: [],
+                isLoading: false,
+                isError: true,
+                isFetching: true,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+                refetch: mockRefetch,
+            })
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+
+            expect(result.current.isLoadError).toBe(false)
+            expect(result.current.isLoading).toBe(true)
+        })
+
         it('reports no error when the pairs read succeeded', () => {
             const { result } = renderHook(() =>
                 useSwapToAssetSelectionList(defaultParams),

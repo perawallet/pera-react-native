@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { hashKey, useQuery } from '@tanstack/react-query'
 import type { PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
 import { logger, useStableIdList } from '@perawallet/wallet-core-shared'
@@ -26,6 +26,12 @@ type UseAssetsQueryResult = {
     isRefetching: boolean
     isError: boolean
 }
+
+// Rows served after a failed refresh go stale at once, so the next mount or
+// reconnect retries the refresh instead of pinning them (and their verification
+// tier) for the session under `staleTime: Infinity`. Keyed by query hash, not
+// data: structural sharing keeps the old array when a later refresh matches it.
+const servedAfterFailedRefresh = new Set<string>()
 
 type UseAssetsQueryOptions = {
     /**
@@ -54,18 +60,21 @@ export const useAssetsQuery = (
 
     const query = useQuery({
         queryKey: getAssetsQueryKey(stableIds, scope, { fetchMissing }),
-        staleTime: Infinity,
+        staleTime: ({ queryHash }) =>
+            servedAfterFailedRefresh.has(queryHash) ? 0 : Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and
         // get an empty id list) don't mount a live observer per row.
         enabled: isEnabled,
-        queryFn: async () => {
+        queryFn: async ({ queryKey }) => {
             if (!fetchMissing) {
                 return getAssetsByIds({ assetIds: stableIds, scope })
             }
 
+            const queryHash = hashKey(queryKey)
             try {
                 await fetchAndPersistAssets(stableIds, scope)
+                servedAfterFailedRefresh.delete(queryHash)
             } catch (error) {
                 // A failed refresh must not hide a stored row: callers read an
                 // absent asset as nonexistent.
@@ -84,6 +93,7 @@ export const useAssetsQuery = (
                     count: stored.length,
                     error,
                 })
+                servedAfterFailedRefresh.add(queryHash)
                 return stored
             }
             return getAssetsByIds({ assetIds: stableIds, scope })
