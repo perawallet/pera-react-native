@@ -60,8 +60,10 @@ const toRecords = (
             ...(item.block_number !== undefined && {
                 blockNumber: item.block_number,
             }),
-            // No `from` means the row is known only from a transfer log, so
-            // another address signed it and the gas was never this account's.
+            // No `from` means the row is known only from a transfer log. Read
+            // unfiltered, another address signed it and the gas was never this
+            // account's; an ERC-20 view names no sender on any row, so there
+            // the account's own sends lose their fee and initiator too.
             fee:
                 item.fee === null || item.from === null
                     ? undefined
@@ -73,13 +75,21 @@ const toRecords = (
     ]
 }
 
-// The backend filters native and ERC-20 views only; an NFT's history is read whole.
+// Only an ERC-20's view is asked for. The backend filters no NFT view, and its
+// native view strips the other assets' legs from each row, so a token send
+// would read as a call that moved nothing and stay in the native History.
 const filterIdOf = (
     assetId: Optional<string>,
     scope: ChainScope,
     chain: EvmChain,
 ): Optional<string> => {
-    if (assetId === undefined || isEvmNftAssetId(assetId)) return undefined
+    if (
+        assetId === undefined ||
+        assetId === chain.nativeAsset.assetId ||
+        isEvmNftAssetId(assetId)
+    ) {
+        return undefined
+    }
     // An id this client can't place still filters client-side; a thrown read
     // would fail the screen instead of listing nothing.
     try {
