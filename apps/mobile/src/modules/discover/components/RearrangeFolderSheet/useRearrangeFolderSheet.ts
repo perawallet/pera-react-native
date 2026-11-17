@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useDiscoverFavoritesStore } from '../../store/useDiscoverFavoritesStore'
 import type { DiscoverFavorite } from '../../types'
@@ -25,6 +25,8 @@ export type UseRearrangeFolderSheetParams = { folderId: string }
 
 export type UseRearrangeFolderSheetResult = {
     entries: RearrangeEntry[]
+    /** A drag started; Done waits for its `reorder` (the drop) to land. */
+    beginDrag: () => void
     reorder: (keys: string[]) => void
     remove: (key: string) => void
     done: () => void
@@ -50,24 +52,52 @@ export const useRearrangeFolderSheet = ({
     const { resolve, dismiss } =
         useBottomSheetResult<RearrangeFolderSheetResult>()
     const [entries, setEntries] = useState(() => readEntries(folderId))
+    // The list reports a drop only once its settle animation ends, so Done
+    // tapped in between would resolve the order from before the drag.
+    const entriesRef = useRef(entries)
+    const isDropSettling = useRef(false)
+    const isDonePending = useRef(false)
 
-    const reorder = useCallback((keys: string[]) => {
-        setEntries(current => {
-            const byKey = new Map(current.map(entry => [entry.key, entry]))
-            return keys.flatMap(key => {
+    const update = useCallback((next: RearrangeEntry[]) => {
+        entriesRef.current = next
+        setEntries(next)
+    }, [])
+
+    const beginDrag = useCallback(() => {
+        isDropSettling.current = true
+    }, [])
+
+    const reorder = useCallback(
+        (keys: string[]) => {
+            const byKey = new Map(
+                entriesRef.current.map(entry => [entry.key, entry]),
+            )
+            const next = keys.flatMap(key => {
                 const entry = byKey.get(key)
                 return entry ? [entry] : []
             })
-        })
-    }, [])
-    const remove = useCallback((key: string) => {
-        setEntries(current => current.filter(entry => entry.key !== key))
-    }, [])
-    const done = useCallback(
-        () => resolve(entries.map(entry => entry.key)),
-        [entries, resolve],
+            update(next)
+            isDropSettling.current = false
+            if (isDonePending.current) {
+                isDonePending.current = false
+                resolve(next.map(entry => entry.key))
+            }
+        },
+        [resolve, update],
     )
+    const remove = useCallback(
+        (key: string) =>
+            update(entriesRef.current.filter(entry => entry.key !== key)),
+        [update],
+    )
+    const done = useCallback(() => {
+        if (isDropSettling.current) {
+            isDonePending.current = true
+            return
+        }
+        resolve(entriesRef.current.map(entry => entry.key))
+    }, [resolve])
     const cancel = useCallback(() => dismiss(), [dismiss])
 
-    return { entries, reorder, remove, done, cancel }
+    return { entries, beginDrag, reorder, remove, done, cancel }
 }

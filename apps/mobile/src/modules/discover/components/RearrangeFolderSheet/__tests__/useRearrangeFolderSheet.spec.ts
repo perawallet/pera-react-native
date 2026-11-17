@@ -103,6 +103,36 @@ describe('useRearrangeFolderSheet', () => {
         expect(resolve).toHaveBeenCalledWith([K2])
     })
 
+    it('waits for a settling drop before resolving done', () => {
+        // Done tapped between finger lift and onDragEnd must save the dropped
+        // order, not the order from before the drag.
+        const { result } = renderHook(() =>
+            useRearrangeFolderSheet({ folderId }),
+        )
+
+        act(() => result.current.beginDrag())
+        act(() => result.current.done())
+        expect(resolve).not.toHaveBeenCalled()
+
+        act(() => result.current.reorder([K2, K1]))
+
+        expect(resolve).toHaveBeenCalledTimes(1)
+        expect(resolve).toHaveBeenCalledWith([K2, K1])
+    })
+
+    it('resolves at once when no drag is settling', () => {
+        const { result } = renderHook(() =>
+            useRearrangeFolderSheet({ folderId }),
+        )
+
+        act(() => result.current.beginDrag())
+        act(() => result.current.reorder([K2, K1]))
+        act(() => result.current.done())
+
+        expect(resolve).toHaveBeenCalledTimes(1)
+        expect(resolve).toHaveBeenCalledWith([K2, K1])
+    })
+
     it("resolves the folder's own keys, even when a url no longer normalises to its key", () => {
         // A stored favorite whose url would not normalise back to its key.
         useDiscoverFavoritesStore.setState(state => ({
