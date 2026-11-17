@@ -39,6 +39,8 @@ export const useOpenDapp = (): UseOpenDappResult => {
                 return
             }
             trackEvent(DiscoverEvent.DappOpenTap, dappEventPayload(dapp, chain))
+            // Most visited counts opens from Discover; non-favorites are ignored.
+            useDiscoverFavoritesStore.getState().recordVisit(url)
             pushWebView({
                 url,
                 enablePeraConnect: true,
