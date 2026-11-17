@@ -58,7 +58,7 @@ export const useAssetsQuery = (
     const stableIds = useStableIdList(ids)
     const isEnabled = stableIds.length > 0
 
-    const query = useQuery({
+    const query = useQuery<PeraAsset[]>({
         queryKey: getAssetsQueryKey(stableIds, scope, { fetchMissing }),
         staleTime: ({ queryHash }) =>
             servedAfterFailedRefresh.has(queryHash) ? 0 : Infinity,
