@@ -342,6 +342,13 @@ patchedDependencies:
   # package in `buildFromSource`; drop both once 13 is below minSdk or upstream
   # skips the listener there.
   "expo-splash-screen@58.0.11": patches/expo-splash-screen@58.0.11.patch
+  # Android: Fabric can mount a GestureHandlerRootView while MainActivity is
+  # being destroyed (an rn-screens header detach makes Reanimated flush mount
+  # operations), when its parent chain no longer reaches a RootView. Upstream
+  # throws "has not been mounted under ReactRootView" from onAttachedToWindow,
+  # crashing the destroy; the patch leaves the root disabled until the next
+  # attach. Still unguarded in 3.5.0. Drop once upstream handles it.
+  "react-native-gesture-handler@3.3.0": patches/react-native-gesture-handler@3.3.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is
