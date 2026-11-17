@@ -49,6 +49,8 @@ export const fetchHistoryPage = async (
     chain: EvmChain,
     address: string,
     page?: PageRef,
+    /** CAIP-19, native or ERC-20 only. The backend binds the cursor to it, so every page must send it. */
+    caip19AssetId?: string,
 ): Promise<EvmHistoryPage> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
@@ -56,11 +58,12 @@ export const fetchHistoryPage = async (
         scope,
         method: 'GET',
         url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
-        params: page && {
-            cursor: page.cursor,
-            ...(page.limit !== undefined && {
+        params: {
+            ...(page && { cursor: page.cursor }),
+            ...(page?.limit !== undefined && {
                 limit: Math.min(Math.max(page.limit, 1), HISTORY_MAX_PAGE_SIZE),
             }),
+            ...(caip19AssetId !== undefined && { asset_id: caip19AssetId }),
         },
         headers: await buildIntegrityHeadersWhenReady(),
     })

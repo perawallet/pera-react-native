@@ -205,6 +205,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: 'c1' },
+            undefined,
         )
         expect(result.current.hasNextPage).toBe(false)
     })
@@ -271,6 +272,7 @@ describe('useTransactionRecordsQuery', () => {
             ADDRESS,
             SCOPE,
             { cursor: `c${MAX_RECORD_PAGE_READS}` },
+            undefined,
         )
     })
 
@@ -589,6 +591,7 @@ describe('useTransactionRecordsQuery', () => {
                 ADDRESS,
                 SCOPE,
                 undefined,
+                undefined,
             )
             expect(result.current.records.map(r => r.id)).toEqual([
                 'B',
@@ -826,6 +829,7 @@ describe('useTransactionRecordsQuery', () => {
                     ADDRESS,
                     SCOPE,
                     { cursor: 'c1' },
+                    undefined,
                 ),
             )
             serve(backend)
@@ -942,6 +946,49 @@ describe('useTransactionRecordsQuery', () => {
             expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
         )
         expect(result.current.hasNextPage).toBe(false)
+    })
+
+    test('asks the chain for the filtered asset on every page it reads', async () => {
+        mocks.getMinedTransactionHistory
+            .mockResolvedValueOnce({ items: [], next: { cursor: 'c1' } })
+            .mockResolvedValueOnce({ items: [record('USDC', JAN_10, USDC)] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.records.map(r => r.id)).toEqual(['USDC']),
+        )
+        expect(mocks.getMinedTransactionHistory.mock.calls).toEqual([
+            [ADDRESS, SCOPE, undefined, USDC],
+            [ADDRESS, SCOPE, { cursor: 'c1' }, USDC],
+        ])
+    })
+
+    test('settles on an empty list when the asset has no history', async () => {
+        mocks.getMinedTransactionHistory.mockResolvedValueOnce({ items: [] })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                    assetId: USDC,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isFetched).toBe(true))
+        expect(result.current.records).toEqual([])
+        expect(result.current.hasNextPage).toBe(false)
+        expect(result.current.isError).toBe(false)
     })
 
     test('keeps a call the account paid gas for in the native asset’s History, but not one another address sent', async () => {

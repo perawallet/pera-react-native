@@ -47,7 +47,7 @@ import { usePendingTransactionRecordsQuery } from './usePendingTransactionRecord
 export type UseTransactionRecordsQueryParams = {
     accountAddress: string
     scope: ChainScope
-    /** Kept client-side: the records backends take no asset filter. */
+    /** Sent to the chain, which may ignore it, and kept client-side either way. */
     assetId?: string
     /** `YYYY-MM-DD`, inclusive, UTC. */
     afterTime?: string
@@ -215,7 +215,12 @@ export const useTransactionRecordsQuery = ({
         for (let read = 1; ; read++) {
             signal.throwIfAborted()
             const { items: minedItems, next } =
-                await getMinedTransactionHistory(accountAddress, scope, page)
+                await getMinedTransactionHistory(
+                    accountAddress,
+                    scope,
+                    page,
+                    assetId,
+                )
             // The first read can be empty with a next page, so the newest id
             // is the first one any read lists.
             if (pageParam === null) newestMinedId ??= minedItems[0]?.id

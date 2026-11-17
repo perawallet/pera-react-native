@@ -20,6 +20,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { isEvmNftAssetId, toCaip19 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
@@ -82,8 +83,20 @@ export const getEvmTransactionHistory = async (
     scope: ChainScope,
     page?: PageRef,
     isDecoding = false,
+    assetId?: string,
 ): Promise<Page<TransactionRecord>> => {
-    const { items, next } = await fetchHistoryPage(scope, chain, address, page)
+    // The backend filters native and ERC-20 views only; an NFT's history is read whole.
+    const caip19AssetId =
+        assetId === undefined || isEvmNftAssetId(assetId)
+            ? undefined
+            : toCaip19(assetId, scope, chain)
+    const { items, next } = await fetchHistoryPage(
+        scope,
+        chain,
+        address,
+        page,
+        caip19AssetId,
+    )
     return {
         items: items.flatMap(item =>
             toRecords(item, address, scope, chain, isDecoding),
@@ -109,6 +122,7 @@ export const createEvmHistoryAdapter = (
             scope,
             page,
             options?.capabilities.contractDecoding ?? false,
+            options?.assetId,
         ),
     getTransactionDetail: (txId, scope, record) =>
         readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),

@@ -351,6 +351,63 @@ describe('getEvmTransactionHistory', () => {
     })
 })
 
+describe('filtered to one asset', () => {
+    const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+    const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+
+    const readParams = async (assetId: string, cursor?: string) => {
+        let url: URL | undefined
+        server.use(
+            http.get(
+                `${PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                ({ request }) => {
+                    url = new URL(request.url)
+                    return HttpResponse.json({
+                        next: null,
+                        previous: null,
+                        results: [],
+                    })
+                },
+            ),
+        )
+        await createEvmHistoryAdapter(
+            ETHEREUM,
+            testChainContext(),
+        ).getTransactionHistory(ME, MAINNET, cursor ? { cursor } : undefined, {
+            capabilities: evmCapabilityDefaults,
+            assetId,
+        })
+        return url?.searchParams
+    }
+
+    it.each([
+        [
+            'an ERC-20 by its lowercased contract',
+            getAddress(USDC),
+            `eip155:1/erc20:${USDC}`,
+        ],
+        [
+            'the native coin by its SLIP-44 id',
+            ETHEREUM.nativeAsset.assetId,
+            'eip155:1/slip44:60',
+        ],
+    ])(
+        'asks the backend for %s, on a cursor page too',
+        async (_, assetId, expected) => {
+            const params = await readParams(assetId, 'abc')
+
+            expect(params?.get('asset_id')).toBe(expected)
+            expect(params?.get('cursor')).toBe('abc')
+        },
+    )
+
+    it('reads an NFT’s history unfiltered, since the backend filters no NFT view', async () => {
+        const params = await readParams(`${getAddress(BAYC)}/1234`)
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
+})
+
 describe('with contractDecoding', () => {
     const swap = evmHistoryItem({
         hash: hash(2),
