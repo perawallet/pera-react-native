@@ -57,7 +57,7 @@ class IOSFirebaseLaneTest < Minitest::Test
     ENV['IOS_FIREBASE_PROVISIONING_PROFILE_NAME'] = 'Firebase App'
     ENV['IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_NAME'] = 'Firebase AutoFill'
     ENV['FIREBASE_IOS_SERVICE_CREDENTIALS_FILE'] = File.join(@work, 'credentials.json')
-    File.write(ENV['FIREBASE_IOS_SERVICE_CREDENTIALS_FILE'], '{}')
+    File.write(ENV['FIREBASE_IOS_SERVICE_CREDENTIALS_FILE'], '{"client_email":"ci@example.iam","project_id":"pera-test"}')
     ENV['RELEASE_NOTES'] = "Features:\n- Real changelog"
     ENV['FIREBASE_TESTER_GROUPS'] = 'qa-team'
     ENV.delete('FIREBASE_APP_ID_IOS')
@@ -116,6 +116,24 @@ class IOSFirebaseLaneTest < Minitest::Test
     error = assert_raises(RuntimeError) { @host.invoke(:deploy_testflight, scheme: 'Pera7Staging', firebase: true) }
     assert_match(/GOOGLE_APP_ID/, error.message)
     assert_empty @host.actions
+  end
+  def test_credentials_that_are_not_a_service_account_key_fail_before_the_build
+    File.write(ENV['FIREBASE_IOS_SERVICE_CREDENTIALS_FILE'], '{"type":"something-else"}')
+    error = assert_raises(RuntimeError) { @host.invoke(:deploy_testflight, scheme: 'Pera7Staging', firebase: true) }
+    assert_match(/service-account key/, error.message)
+    assert_empty @host.actions
+  end
+  def test_missing_tester_groups_fail_before_the_build
+    ENV.delete('FIREBASE_TESTER_GROUPS')
+    error = assert_raises(RuntimeError) { @host.invoke(:deploy_testflight, scheme: 'Pera7Staging', firebase: true) }
+    assert_match(/FIREBASE_TESTER_GROUPS/, error.message)
+    assert_empty @host.actions
+  end
+  def test_escaped_line_breaks_in_the_notes_reach_firebase_as_real_ones
+    ENV['RELEASE_NOTES'] = 'Features:\\n- Escaped'
+    @host.invoke(:distribute_firebase, scheme: 'Pera7Staging')
+    upload = @host.actions.find { |name, _| name == :firebase_app_distribution }.last
+    assert_equal "Features:\n- Escaped", upload[:release_notes]
   end
   def test_manifest_opt_in_keeps_existing_staging_delivery_working
     manifest = YAML.safe_load(File.read(File.join(ROOT, 'ci/pipelines.yml')), aliases: true)

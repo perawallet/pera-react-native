@@ -100,8 +100,8 @@ cp "apps/mobile/build/ios/${IOS_SCHEME}.ipa" "$CI_ARTIFACT_DIR/${NAME}.ipa"
 if [ "$FIREBASE_UPLOAD" = true ]; then
   cp "apps/mobile/build/ios/${IOS_SCHEME}-firebase.ipa" "$CI_ARTIFACT_DIR/${NAME}-firebase.ipa"
 fi
-# Kept so a shipped build can be re-symbolicated. gym names the zip after the
-# app product, not the scheme, hence the glob.
+# Kept so a shipped build can be re-symbolicated. gym names each zip after its
+# export's output_name, hence the glob.
 for dsym in apps/mobile/build/ios/*.dSYM.zip; do
   [ -f "$dsym" ] || continue
   # The Firebase export zips the same archive's dSYMs a second time.

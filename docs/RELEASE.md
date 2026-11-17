@@ -59,14 +59,15 @@ Then change these two fields of `nightly.jobs.ios-staging` in
 ```yaml
 env:
     FIREBASE_IOS_DISTRIBUTION: 'true'
+    FIREBASE_TESTER_GROUPS: '<aliases of tester groups in the iOS app>'
 secrets: *ios_firebase_secrets
 ```
 
 `_ios_firebase_secrets` in that manifest is the opt-in secret list. It includes all
 normal iOS build secrets plus the five names above; missing values fail with an
 actionable message before building. Unset or `false` keeps Firebase disabled.
-`FIREBASE_TESTER_GROUPS` can select existing tester-group aliases; its default is
-`qa-testers`. The lane obtains the Firebase app ID from the environment-selected
+`FIREBASE_TESTER_GROUPS` is required: tester groups belong to each Firebase app,
+so name groups you have confirmed exist in the iOS one. The lane obtains the Firebase app ID from the environment-selected
 `config/GoogleService-Info.plist`; `FIREBASE_APP_ID_IOS` can explicitly override it. Set
 these non-secret options in the job's `env` when needed.
 

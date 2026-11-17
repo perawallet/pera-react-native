@@ -73,14 +73,20 @@ def ios_bundle_ids(scheme)
   [app, app + (production ? ".autofill-extension" : ".PasskeyAutofillCredentialProvider")]
 end
 
-# The ad-hoc profile names, service credentials file and app id the Firebase
-# export needs, raising on whichever is missing.
+# The ad-hoc profile names, service credentials file, app id and tester groups
+# the Firebase export needs, raising on whichever is missing, so a
+# misconfiguration fails before the build rather than after TestFlight
+# accepted it.
 def ios_firebase_settings
   app_profile = ENV["IOS_FIREBASE_PROVISIONING_PROFILE_NAME"].to_s.strip
   extension_profile = ENV["IOS_FIREBASE_AUTOFILL_PROVISIONING_PROFILE_NAME"].to_s.strip
   credentials = ENV["FIREBASE_IOS_SERVICE_CREDENTIALS_FILE"].to_s
   UI.user_error!("Firebase needs separate ad-hoc profiles for the app and AutoFill extension") if app_profile.empty? || extension_profile.empty?
   UI.user_error!("Firebase service credentials were not prepared by the iOS job") unless File.file?(credentials)
+  UI.user_error!("Firebase service credentials are not a service-account key") unless service_account_key?(credentials)
+  # Tester groups belong to each Firebase app, so the Android lanes' alias may not exist here.
+  groups = ENV["FIREBASE_TESTER_GROUPS"].to_s.strip
+  UI.user_error!("Firebase needs FIREBASE_TESTER_GROUPS naming groups of the iOS app") if groups.empty?
 
   # Read the environment-selected config explicitly so CI never prompts to
   # choose an app or relies on an archive's default plist location.
@@ -90,7 +96,15 @@ def ios_firebase_settings
   end
   UI.user_error!("Firebase needs the selected environment's iOS GOOGLE_APP_ID") unless app_id.match?(/\A1:\d+:ios:[0-9a-f]+\z/)
 
-  [app_profile, extension_profile, credentials, app_id]
+  [app_profile, extension_profile, credentials, app_id, groups]
+end
+
+def service_account_key?(path)
+  require 'json'
+  key = JSON.parse(File.read(path))
+  key.is_a?(Hash) && !key["client_email"].to_s.empty? && !key["project_id"].to_s.empty?
+rescue JSON::ParserError
+  false
 end
 
 # Firebase Apple 13 ships only as Swift packages, so Crashlytics' upload tool
@@ -289,7 +303,7 @@ platform :ios do
     scheme = options[:scheme] || "Pera7Staging"
     archive = options[:archive_path] || lane_context[SharedValues::XCODEBUILD_ARCHIVE]
     UI.user_error!("Firebase needs the archive produced by the TestFlight build") unless archive && File.directory?(archive)
-    app_profile, extension_profile, credentials, app_id = ios_firebase_settings
+    app_profile, extension_profile, credentials, app_id, groups = ios_firebase_settings
 
     bundle_id, extension_id = ios_bundle_ids(scheme)
     # gym resolves a workspace and scheme even when only exporting, and the
@@ -309,10 +323,8 @@ platform :ios do
         provisioningProfiles: { bundle_id => app_profile, extension_id => extension_profile }
       }
     )
-    notes = ENV["RELEASE_NOTES"].to_s
+    notes = unescape_changelog(ENV["RELEASE_NOTES"].to_s)
     notes = "Build #{ENV['BUILD_NUMBER'] || 'dev'}" if notes.empty?
-    groups = ENV["FIREBASE_TESTER_GROUPS"].to_s.strip
-    groups = "qa-testers" if groups.empty?
     firebase_app_distribution(app: app_id, ipa_path: ipa, groups: groups, release_notes: notes, service_credentials_file: credentials)
   end
 
@@ -409,7 +421,7 @@ platform :android do
     # Play's "What's new" for this build: pera-admin's summary of the release,
     # when the job has one. Never RELEASE_NOTES, whose full changelog runs past
     # Play's 500 characters and would fail the upload.
-    play_notes = play_changelog_dir(ENV["CI_RELEASE_NOTES_SUMMARY"], resolve_build_number)
+    play_notes = play_changelog_dir(unescape_changelog(ENV["CI_RELEASE_NOTES_SUMMARY"].to_s), resolve_build_number)
 
     upload_to_play_store(
       track: "internal",
@@ -519,6 +531,7 @@ def play_changelog_dir(notes, version_code)
   require 'fileutils'
   dir = File.join(Dir.mktmpdir("play-notes"), "en-US", "changelogs")
   FileUtils.mkdir_p(dir)
+  UI.important("Play notes cut to #{PLAY_NOTES_MAX} characters (the summary has #{text.length})") if text.length > PLAY_NOTES_MAX
   File.write(File.join(dir, "#{version_code}.txt"), text[0, PLAY_NOTES_MAX])
   File.expand_path("../..", dir)
 end

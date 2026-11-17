@@ -4,7 +4,8 @@ require 'minitest/autorun'
 module UI
   def self.user_error!(message); raise message; end
   def self.message(_); end
-  def self.important(_); end
+  def self.important(message); warnings << message; end
+  def self.warnings; @warnings ||= []; end
 end
 
 # The real deploy_internal lane against recorded actions: no Fastlane gems, builds or uploads.
@@ -51,6 +52,14 @@ class PlayReleaseNotesTest < Minitest::Test
     text = File.read(File.join(upload[:metadata_path], 'en-US', 'changelogs', '4242.txt'))
     assert text.start_with?("- Swap is faster.\n")
     assert_equal 500, text.length
+    assert(UI.warnings.any? { |message| message.include?('cut to 500') })
+  end
+
+  def test_escaped_line_breaks_in_the_summary_reach_play_as_real_ones
+    ENV['CI_RELEASE_NOTES_SUMMARY'] = '- Swap is faster.\\n- Send is clearer.'
+    upload = play_upload
+    text = File.read(File.join(upload[:metadata_path], 'en-US', 'changelogs', '4242.txt'))
+    assert_equal "- Swap is faster.\n- Send is clearer.", text
   end
 
   def test_sends_no_changelog_without_a_summary
