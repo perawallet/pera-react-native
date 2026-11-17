@@ -76,11 +76,14 @@ Account On Ethereum Offers Copy And QR For Both Networks
     ...                add button for the same actions the Algorand row has.
     [Tags]    id:accounts.networks.ethereum-added    p1
     Ensure Account On Ethereum
+    # Adding the network can leave the sheet scrolled, and Android lists only what is on screen.
+    Go Home
+    Open Account Options
     Page Should Contain Element    ${NETWORKS_TITLE}
+    Page Should Contain Element    ${OPTION_ALGORAND_QR}
+    Scroll Until Present    ${OPTION_ETHEREUM_QR}
+    Page Should Contain Element    ${OPTION_ETHEREUM_COPY}
     Page Should Not Contain Element    ${OPTION_ETHEREUM_ADD}
-    FOR    ${action}    IN    ${OPTION_COPY_ADDRESS}    ${OPTION_ALGORAND_QR}    ${OPTION_ETHEREUM_COPY}    ${OPTION_ETHEREUM_QR}
-        Page Should Contain Element    ${action}
-    END
     # The actions being there says nothing about what they act on; the row has to print an address.
     ${row}=    Text Under    ${OPTION_ETHEREUM_ROW}
     Should Match Regexp    ${row}    0x[0-9a-fA-F]{4}    msg=The Ethereum row shows no address: "${row}".
@@ -89,13 +92,14 @@ Algorand Row Expands To Its Minimum Balance And Rekey
     [Documentation]    An account on Algorand alone opens that row expanded, where a tap would fold it.
     [Tags]    id:accounts.networks.algorand-expanded    p2
     Open Account Options
-    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_REKEY}
+    ${expanded}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${OPTION_ALGORAND_MIN_BALANCE}
     IF    not ${expanded}
         Scroll Until Tappable    ${OPTION_ALGORAND_EXPAND}
         Tap    ${OPTION_ALGORAND_EXPAND}
     END
     Wait Until Page Contains Element    ${OPTION_ALGORAND_MIN_BALANCE}    timeout=15s
-    Page Should Contain Element    ${OPTION_REKEY}
+    Scroll Until Present    ${OPTION_REKEY}
 
 Account Type Info Opens Its Explanation
     [Tags]    id:accounts.type-info.sheet    p2

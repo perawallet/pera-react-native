@@ -70,6 +70,7 @@ ${OPTION_REKEY}                     tid=account_option_rekey-account
 ${NETWORKS_TITLE}                   tid=account_networks_title
 # Networks the account could be on but is not yet are folded behind this row.
 ${NETWORKS_SEE_ALL}                 tid=account_networks_see_all
+${ETHEREUM_ROW_OR_SEE_ALL}          xpath=//*[@name='account_network_ethereum' or @resource-id='account_network_ethereum' or @content-desc='account_network_ethereum' or @name='account_networks_see_all' or @resource-id='account_networks_see_all' or @content-desc='account_networks_see_all']
 ${ACCOUNT_TYPE_INFO_LEARN_MORE}     tid=account-type-info-learn-more-button
 # The toggle carries no testID.
 ${SEE_WALLET_STRUCTURE}             xpath=//*[@text='See wallet structure' or @label='See wallet structure']
@@ -208,21 +209,23 @@ Ensure Account On Ethereum
     ...                multichain screen lacks cannot tell a build without Ethereum from a broken
     ...                screen; this sheet can.
     Open Account Options
-    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_ETHEREUM_COPY}
-    IF    ${on}    RETURN
+    # Android lists only what is on screen, so the row is scrolled to before its absence counts.
+    ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${ETHEREUM_ROW_OR_SEE_ALL}
+    Skip If    not ${offered}
+    ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
     ${folded}=    Run Keyword And Return Status    Page Should Contain Element    ${NETWORKS_SEE_ALL}
     IF    ${folded}
         Scroll Until Tappable    ${NETWORKS_SEE_ALL}
         Tap    ${NETWORKS_SEE_ALL}
+        Wait Until Page Contains Element    ${OPTION_ETHEREUM_ROW}    timeout=10s
     END
-    ${addable}=    Run Keyword And Return Status
-    ...    Wait Until Page Contains Element    ${OPTION_ETHEREUM_ADD}    timeout=5s
-    Skip If    not ${addable}
-    ...    The account cannot be put on Ethereum: this build is not multichain (CHAINS without ethereum).
-    Scroll Until Tappable    ${OPTION_ETHEREUM_ADD}
-    Tap    ${OPTION_ETHEREUM_ADD}
-    # Deriving the Ethereum key can ask for the PIN.
-    Unlock With Known Pins
+    ${addable}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_ETHEREUM_ADD}
+    IF    ${addable}
+        Scroll Until Tappable    ${OPTION_ETHEREUM_ADD}
+        Tap    ${OPTION_ETHEREUM_ADD}
+        # Deriving the Ethereum key can ask for the PIN.
+        Unlock With Known Pins
+    END
     Wait Until Page Contains Element    ${OPTION_ETHEREUM_COPY}    timeout=60s
 
 Options Should Offer No Key Actions
