@@ -171,6 +171,26 @@ Confirmed Removal Drops The Account
     ${after}=    Count Accounts
     Should Be Equal As Integers    ${after}    ${before - 1}
 
+Token Approvals Open From The Ethereum Row
+    [Documentation]    Skips on a build without Ethereum or with token approvals switched off. Only
+    ...                reads the list: revoking signs a transaction.
+    [Tags]    id:accounts.ethereum.token-approvals    p1
+    Ensure Account On Ethereum
+    # Options appear under a network's chevron, which is offered only when the chain has some.
+    ${expandable}=    Run Keyword And Return Status    Scroll Until Present    ${OPTION_ETHEREUM_EXPAND}
+    Skip If    not ${expandable}    Token approvals are switched off for Ethereum on this build.
+    ${expanded}=    Run Keyword And Return Status    Page Should Contain Element    ${OPTION_TOKEN_APPROVALS}
+    IF    not ${expanded}
+        Scroll Until Tappable    ${OPTION_ETHEREUM_EXPAND}
+        Tap    ${OPTION_ETHEREUM_EXPAND}
+    END
+    Scroll Until Tappable    ${OPTION_TOKEN_APPROVALS}
+    Tap    ${OPTION_TOKEN_APPROVALS}
+    Wait Until Page Contains Element    ${TOKEN_APPROVALS_SCREEN}    timeout=30s
+    Wait Until Page Contains Element    ${TOKEN_APPROVALS_LOADED}    timeout=30s
+    Page Should Not Contain Element    ${TOKEN_APPROVALS_RETRY}
+    ...    message=The approvals list failed to load.
+
 Watch Account Lists Algorand Alone And Offers No Key Actions
     [Documentation]    A watch account holds no key: nothing to reveal, rekey or derive Ethereum from.
     [Tags]    id:accounts.networks.watch-account    p1

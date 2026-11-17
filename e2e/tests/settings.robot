@@ -55,6 +55,26 @@ Theme Can Be Switched
         Theme Should Be Selected    ${original}
     END
 
+Language Can Be Switched And Back
+    [Documentation]    Switches to Turkish and back to following the device, which the suite runs in
+    ...                English. A device set to another language skips rather than leave it changed.
+    [Tags]    id:settings.language.switch    p1
+    Open From Settings    ${SETTINGS_ITEM_LANGUAGE}    ${LANGUAGE_SYSTEM_RADIO}
+    ${follows_device}=    Switch Is On    ${LANGUAGE_SYSTEM_RADIO}
+    Skip If    not ${follows_device}    The app is set to a chosen language, which this case would have to undo.
+    # Remote config decides which languages are offered.
+    ${offered}=    Run Keyword And Return Status    Scroll Until Present    ${LANGUAGE_TURKISH_RADIO}
+    Skip If    not ${offered}    Turkish is not among the languages remote config offers on this build.
+    TRY
+        Tap    ${LANGUAGE_TURKISH_RADIO}
+        Switch Should Be    ${LANGUAGE_TURKISH_RADIO}    ${True}
+        Wait Until Page Contains Element    ${LANGUAGE_TITLE_TURKISH}    timeout=10s
+    FINALLY
+        Tap    ${LANGUAGE_SYSTEM_RADIO}
+        Switch Should Be    ${LANGUAGE_SYSTEM_RADIO}    ${True}
+    END
+    Wait Until Page Contains Element    ${LANGUAGE_TITLE_ENGLISH}    timeout=10s
+
 Notifications Settings Open
     [Tags]    id:settings.notifications.open    p1
     Open From Settings    ${SETTINGS_ITEM_NOTIFICATIONS}    ${SETTINGS_NOTIFICATIONS_SCREEN}
