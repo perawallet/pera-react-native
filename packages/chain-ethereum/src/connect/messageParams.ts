@@ -23,6 +23,7 @@ import {
 } from '../accounts/address-codec'
 import { isRecord } from '../signing/adapter'
 import { isPermitTypedData } from '../signing/permits'
+import { hasUnreadableTypedDataValue } from '../signing/typedDataValues'
 import {
     parseDomainChainId,
     type EthereumPersonalSignPayload,
@@ -177,6 +178,11 @@ const validateSignTypedData = (
     }
     if (!isWithinTypedDataBudget(typedData)) {
         return invalid('eth_signTypedData_v4 typedData is too large')
+    }
+    if (hasUnreadableTypedDataValue(typedData)) {
+        return invalid(
+            'eth_signTypedData_v4 typedData has a value that does not match its type',
+        )
     }
     if (isBoundToOtherChain(typedData, session)) {
         return invalid(

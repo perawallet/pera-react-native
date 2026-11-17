@@ -70,6 +70,7 @@ import {
 } from './digests'
 import { spendApprovalOf } from './permits'
 import { toViemSignature } from './sign'
+import { hasUnreadableTypedDataValue } from './typedDataValues'
 
 /** The `MessageRequest.payload` for `personal_sign`. */
 export type EthereumPersonalSignPayload = {
@@ -178,6 +179,10 @@ const readTypedData = (payload: unknown): TypedDataDefinition => {
         validateTypedData(definition)
     } catch (error) {
         throw new Error(MALFORMED_TYPED_DATA, { cause: error })
+    }
+    // viem hashes `[x]`, `true` and `''` as integers that the review can't read.
+    if (hasUnreadableTypedDataValue(definition)) {
+        throw new Error(MALFORMED_TYPED_DATA)
     }
     return definition
 }

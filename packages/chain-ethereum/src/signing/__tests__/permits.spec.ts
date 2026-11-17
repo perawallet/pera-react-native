@@ -12,7 +12,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { getAddress, maxUint160, maxUint256, maxUint48 } from 'viem'
+import {
+    getAddress,
+    hashTypedData,
+    maxUint160,
+    maxUint256,
+    maxUint48,
+} from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     createEvmMessageSignerAdapter,
@@ -22,6 +28,7 @@ import {
     DAI_PERMIT_TYPED_DATA,
     EIP2612_PERMIT_TYPED_DATA,
     ERC721_PERMIT_TYPED_DATA,
+    ETHEREUM_SIGNER_ACCOUNT,
     MAIL_TYPED_DATA,
     PERMIT2_BATCH_TRANSFER_FROM_TYPED_DATA,
     PERMIT2_BATCH_TYPED_DATA,
@@ -362,6 +369,7 @@ describe('spend approval recognition', () => {
                 'a DAI-style Permit with allowed typed uint256',
                 edit(DAI_PERMIT_TYPED_DATA, copy => {
                     copy.types.Permit[4].type = 'uint256'
+                    copy.message.allowed = '1'
                 }),
             ],
             [
@@ -444,4 +452,154 @@ describe('spend approval recognition', () => {
             'spendApproval',
         )
     })
+})
+
+describe('wrapped integer values', () => {
+    const adapter = createEvmMessageSignerAdapter(ETHEREUM)
+    const context = {
+        account: ETHEREUM_SIGNER_ACCOUNT,
+        accounts: [ETHEREUM_SIGNER_ACCOUNT],
+    }
+    const expectRefused = (typed: unknown) => {
+        expect(describeTyped(typed).kind).toBe('raw')
+        expect(() =>
+            adapter.plan(
+                typedDataMessageRequest(MAINNET, SENDER, typed),
+                context,
+            ),
+        ).toThrow('The typed-data message payload is malformed')
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+        vi.setSystemTime(PERMIT_NOW_MS)
+    })
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('hashes a wrapped amount to the same digest as the scalar', () => {
+        const wrapped = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+            copy.message.value = [maxUint256.toString()]
+        })
+        const scalar = edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+            copy.message.value = maxUint256.toString()
+        })
+
+        expect(hashTypedData(wrapped as never)).toBe(
+            hashTypedData(scalar as never),
+        )
+    })
+
+    const wrappedLeaves: [string, unknown, (copy: any) => void][] = [
+        [
+            'EIP-2612 value',
+            EIP2612_PERMIT_TYPED_DATA,
+            copy => (copy.message.value = [copy.message.value]),
+        ],
+        [
+            'EIP-2612 deadline',
+            EIP2612_PERMIT_TYPED_DATA,
+            copy => (copy.message.deadline = [copy.message.deadline]),
+        ],
+        [
+            'DAI expiry',
+            DAI_PERMIT_TYPED_DATA,
+            copy => (copy.message.expiry = [copy.message.expiry]),
+        ],
+        [
+            'DAI allowed',
+            DAI_PERMIT_TYPED_DATA,
+            copy => (copy.message.allowed = [true]),
+        ],
+        [
+            'ERC-721 tokenId',
+            ERC721_PERMIT_TYPED_DATA,
+            copy => (copy.message.tokenId = [copy.message.tokenId]),
+        ],
+        [
+            'ERC-721 deadline',
+            ERC721_PERMIT_TYPED_DATA,
+            copy => (copy.message.deadline = [copy.message.deadline]),
+        ],
+        [
+            'PermitSingle amount',
+            PERMIT2_SINGLE_TYPED_DATA,
+            copy =>
+                (copy.message.details.amount = [copy.message.details.amount]),
+        ],
+        [
+            'PermitSingle expiration',
+            PERMIT2_SINGLE_TYPED_DATA,
+            copy =>
+                (copy.message.details.expiration = [
+                    copy.message.details.expiration,
+                ]),
+        ],
+        [
+            'PermitSingle sigDeadline',
+            PERMIT2_SINGLE_TYPED_DATA,
+            copy => (copy.message.sigDeadline = [copy.message.sigDeadline]),
+        ],
+        [
+            'PermitBatch details[1].amount',
+            PERMIT2_BATCH_TYPED_DATA,
+            copy =>
+                (copy.message.details[1].amount = [
+                    copy.message.details[1].amount,
+                ]),
+        ],
+        [
+            'PermitTransferFrom permitted.amount',
+            PERMIT2_TRANSFER_FROM_TYPED_DATA,
+            copy =>
+                (copy.message.permitted.amount = [
+                    copy.message.permitted.amount,
+                ]),
+        ],
+        [
+            'PermitTransferFrom deadline',
+            PERMIT2_TRANSFER_FROM_TYPED_DATA,
+            copy => (copy.message.deadline = [copy.message.deadline]),
+        ],
+        [
+            'PermitBatchTransferFrom permitted[0].amount',
+            PERMIT2_BATCH_TRANSFER_FROM_TYPED_DATA,
+            copy =>
+                (copy.message.permitted[0].amount = [
+                    copy.message.permitted[0].amount,
+                ]),
+        ],
+        [
+            'PermitWitnessTransferFrom permitted.amount',
+            PERMIT2_WITNESS_TRANSFER_FROM_TYPED_DATA,
+            copy =>
+                (copy.message.permitted.amount = [
+                    copy.message.permitted.amount,
+                ]),
+        ],
+        [
+            'PermitBatchWitnessTransferFrom deadline',
+            PERMIT2_BATCH_WITNESS_TRANSFER_FROM_TYPED_DATA,
+            copy => (copy.message.deadline = [copy.message.deadline]),
+        ],
+    ]
+
+    it.each(wrappedLeaves)(
+        'refuses a permit whose %s is array-wrapped',
+        (_name, fixture, wrap) => {
+            expectRefused(edit(fixture, wrap))
+        },
+    )
+
+    it.each([[[['1000000']]], [[]], [true], [''], ['  ']])(
+        'refuses an EIP-2612 value of %j, which viem hashes as an integer',
+        value => {
+            expectRefused(
+                edit(EIP2612_PERMIT_TYPED_DATA, copy => {
+                    copy.message.value = value
+                }),
+            )
+        },
+    )
 })
