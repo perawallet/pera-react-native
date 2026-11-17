@@ -23,7 +23,11 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { getAddress, type Hex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { isChainRefusedError } from '@perawallet/wallet-core-shared'
+import {
+    isChainRefusedError,
+    isPeraNetworkError,
+    isTransientNetworkError,
+} from '@perawallet/wallet-core-shared'
 import { cachedWhitelist } from '../../assets/api/whitelist-cache'
 import {
     evmNftItem,
@@ -74,7 +78,10 @@ const TOKEN_LEG = {
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
+afterEach(() => {
+    server.resetHandlers()
+    vi.useRealTimers()
+})
 afterAll(() => server.close())
 
 const rpc = (nonce: Hex = '0x0', ethCall = erc20CallResponder({})) =>
@@ -484,6 +491,51 @@ describe('createEvmActivityCheck', () => {
             )
 
             await expect(checkWith([])([QUIET, OTHER], SCOPE)).rejects.toThrow()
+        })
+
+        it.each([
+            ['HTTP 429', () => new HttpResponse(null, { status: 429 }), 429],
+            ['HTTP 503', () => new HttpResponse(null, { status: 503 }), 503],
+            ['a dropped connection', () => HttpResponse.error(), undefined],
+        ])(
+            'rejects with a transient network error when the node answers every footprint read with %s',
+            async (_, respond, status) => {
+                server.use(http.post(TEST_RPC_URL, respond))
+
+                const error = await checkWith([])([QUIET, OTHER], SCOPE).then(
+                    () => undefined,
+                    (reason: unknown) => reason,
+                )
+
+                expect(isTransientNetworkError(error)).toBe(true)
+                if (status !== undefined) {
+                    expect(isPeraNetworkError(error) && error.status).toBe(
+                        status,
+                    )
+                }
+            },
+        )
+
+        it("gives up on a node that never answers within the discovery read ceiling, under the context's own larger read timeout", async () => {
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+            server.use(http.post(TEST_RPC_URL, () => new Promise(() => {})))
+            const ops = createEthereumAccountStateOps(
+                {
+                    ...testChainContext(),
+                    timeouts: { readMs: 15_000, submitMs: 15_000 },
+                },
+                ETHEREUM,
+                { listedTokens: cachedWhitelist(ETHEREUM) },
+            )
+
+            const check = ops.checkActivity([QUIET], SCOPE).then(
+                () => undefined,
+                (reason: unknown) => reason,
+            )
+            await vi.advanceTimersByTimeAsync(5000)
+            const error = await check
+
+            expect(isTransientNetworkError(error)).toBe(true)
         })
 
         it('leaves out an address whose footprint failed and no token source found', async () => {

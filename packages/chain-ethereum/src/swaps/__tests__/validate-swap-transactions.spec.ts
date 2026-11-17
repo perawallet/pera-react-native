@@ -25,7 +25,10 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import type { EvmSwapCall } from '../decode-swap-transaction'
-import { validateEvmSwapTransactions } from '../validate-swap-transactions'
+import {
+    EvmSwapRouteUndeclaredError,
+    validateEvmSwapTransactions,
+} from '../validate-swap-transactions'
 
 const SENDER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -108,7 +111,19 @@ describe('validateEvmSwapTransactions', () => {
 
     it.each<[string, readonly EvmSwapCall[], SwapQuoteRequest?]>([
         ['no call at all', []],
-        ['a call to an undeclared contract', [call({ to: STRANGER })]],
+        [
+            'a lone transfer on the source token',
+            [
+                call({
+                    to: TOKEN,
+                    data: encodeFunctionData({
+                        abi: erc20Abi,
+                        functionName: 'transfer',
+                        args: [STRANGER, AMOUNT],
+                    }),
+                }),
+            ],
+        ],
         [
             'more native value than requested',
             [call({ value: AMOUNT + 1n })],
@@ -148,11 +163,23 @@ describe('validateEvmSwapTransactions', () => {
         ['a swap with no calldata', [call({ data: '0x' })]],
     ])('refuses %s', (_name, calls, request) => {
         expect(() => validate(calls, request)).toThrow(SwapQuoteMismatchError)
+        expect(() => validate(calls, request)).not.toThrow(
+            EvmSwapRouteUndeclaredError,
+        )
+    })
+
+    it('names a call to an undeclared contract', () => {
+        expect(() => validate([call({ to: STRANGER })])).toThrow(
+            EvmSwapRouteUndeclaredError,
+        )
+        expect(() => validate([call({ to: STRANGER })])).toThrow(
+            SwapQuoteMismatchError,
+        )
     })
 
     it('refuses everything while the route declares no contracts', () => {
         expect(() => validate([call()], TOKEN_REQUEST, [])).toThrow(
-            SwapQuoteMismatchError,
+            EvmSwapRouteUndeclaredError,
         )
     })
 

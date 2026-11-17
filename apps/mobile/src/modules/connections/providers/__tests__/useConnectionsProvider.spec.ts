@@ -19,11 +19,12 @@ import {
     vi,
     type Mock,
 } from 'vitest'
-import { cleanup, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { useSecurityStore } from '@perawallet/wallet-core-security'
+import { createEip1193ConnectionHandler } from '@perawallet/wallet-core-dapp'
+import { isAppLocked, useSecurityStore } from '@perawallet/wallet-core-security'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import type { Connection } from '@perawallet/wallet-extension-connections'
@@ -169,11 +170,23 @@ const mockCreateV2 = vi.fn((options: V2Options) => ({
     options,
 }))
 const mockRegister = vi.fn((_handler: { kind: string }) => {})
-const mockUnwatchWalletNotices = vi.fn()
-const mockWatchWalletNotices = vi.fn((_registry: object) => {
-    return mockUnwatchWalletNotices
+// Hoisted: the connections mock reads these when it is built, which the
+// pass-through dApp mock below triggers before the module body runs.
+const {
+    mockUnwatchWalletNotices,
+    mockWatchWalletNotices,
+    mockUseSigningAdapter,
+} = vi.hoisted(() => {
+    const mockUnwatchWalletNotices = vi.fn()
+    return {
+        mockUnwatchWalletNotices,
+        mockWatchWalletNotices: vi.fn((_registry: object) => {
+            return mockUnwatchWalletNotices
+        }),
+        mockUseSigningAdapter: vi.fn(),
+    }
 })
-const mockUseSigningAdapter = vi.fn()
+const mockNotify = vi.fn(async (_notice: object) => {})
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     importLegacyConnections: mockImport,
@@ -185,6 +198,17 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
 vi.mock('@perawallet/wallet-core-walletconnect/v2', () => ({
     createWalletConnectV2Handler: mockCreateV2,
 }))
+// Pass-through: the real handler registers; the spy only records its deps.
+vi.mock('@perawallet/wallet-core-dapp', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-dapp')>()
+    return {
+        ...actual,
+        createEip1193ConnectionHandler: vi.fn(
+            actual.createEip1193ConnectionHandler,
+        ),
+    }
+})
 // Partial: the boot sequence, the active-registry accessor and the scope
 // matcher run for real; only the registry itself and the signing adapter are
 // stubbed.
@@ -196,6 +220,7 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
         register: mockRegister,
         initialize: mockInitialize,
         teardown: vi.fn(async () => {}),
+        notify: mockNotify,
         subscribeToProposals: (listener: (proposal: MockProposal) => void) => {
             proposalSubscription.listener = listener
             return () => {
@@ -314,6 +339,7 @@ describe('useConnectionsProvider', () => {
         mockWatchWalletNotices.mockClear()
         mockUnwatchWalletNotices.mockClear()
         mockUseSigningAdapter.mockClear()
+        mockNotify.mockClear()
         proposalSubscription.listener = null
         errorSubscription.listener = null
         requestBottomSheet.mockClear()
@@ -409,6 +435,30 @@ describe('useConnectionsProvider', () => {
         unmount()
 
         expect(mockUnwatchWalletNotices).toHaveBeenCalledTimes(1)
+    })
+
+    it('hands the in-app browser provider the app lock, for what it pushes to pages', () => {
+        renderHook(() => useConnectionsProvider())
+
+        expect(
+            vi.mocked(createEip1193ConnectionHandler).mock.calls.at(-1)?.[0]
+                .isWalletLocked,
+        ).toBe(isAppLocked)
+    })
+
+    it('tells connected pages when the app locks and unlocks, until unmount', () => {
+        useSecurityStore.getState().setAppLockActive(false)
+        const { unmount } = renderHook(() => useConnectionsProvider())
+
+        act(() => useSecurityStore.getState().setAppLockActive(true))
+        act(() => useSecurityStore.getState().setAppLockActive(false))
+        unmount()
+        useSecurityStore.getState().setAppLockActive(true)
+
+        expect(mockNotify.mock.calls).toEqual([
+            [{ type: 'lock-changed', isLocked: true }],
+            [{ type: 'lock-changed', isLocked: false }],
+        ])
     })
 
     it('hands the signing adapter the network-switch prompt and the transaction view', () => {

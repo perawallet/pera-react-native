@@ -1334,6 +1334,17 @@ describe('notify', () => {
         })
     })
 
+    it('leaves a session’s accounts alone when the app locks', async () => {
+        const { handler, walletKit } = await withSessions(
+            { [TOPIC]: liveSession() },
+            [recordFor(TOPIC)],
+        )
+
+        await handler.notify?.(TOPIC, { type: 'lock-changed', isLocked: true })
+
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
+    })
+
     it('never tells a session about an account it does not hold', async () => {
         const { handler, walletKit } = await withSessions(
             { [TOPIC]: liveSession() },

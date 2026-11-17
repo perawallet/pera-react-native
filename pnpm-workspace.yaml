@@ -305,11 +305,16 @@ patchedDependencies:
   # only seeds a script-directory lookup the inlined WASM never uses; guard it
   # with `typeof`. Drop once upstream's build stops emitting the bare read.
   "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
-  # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
-  # and the list calls it whenever its data's keys change, i.e. on every
-  # reorder. requestIdleCallback is RN's documented replacement. Patches the
-  # two builds Metro reads (`src` on native, `lib/module` on web); tests mock
-  # the package. Drop once upstream ships a release without it.
+  # Two fixes, each in the two builds Metro reads (`src` on native,
+  # `lib/module` on web); tests mock the package:
+  # - RN 0.87 removed InteractionManager (undefined in release, a throw in
+  #   dev), and the list calls it whenever its data's keys change, i.e. on
+  #   every reorder. requestIdleCallback is RN's documented replacement.
+  # - CellRendererComponent holds a cell's last drag offset until its next
+  #   onLayout, but a mapper that still saw the drag can write it back after
+  #   that onLayout, leaving rows shifted after a drop above the list
+  #   (Android). The held offset is used only until the list resets.
+  # Drop once upstream ships a release with both.
   "react-native-draggable-flatlist@4.0.3": patches/react-native-draggable-flatlist@4.0.3.patch
   # Type-only: 14.0.1 defaults the class's extra-props generic to `undefined`,
   # so `WebViewProps & undefined` is `never` and every JSX prop fails to

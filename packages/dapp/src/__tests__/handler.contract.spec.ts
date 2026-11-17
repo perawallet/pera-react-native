@@ -50,6 +50,7 @@ runHandlerContractTests(
             getNetworkId: () => 'mainnet',
             getCustomNetworkGenesisHash: () => undefined,
             getAccounts: () => [{ address: 'AAAA', name: 'A' }],
+            isWalletLocked: () => false,
         })
     },
     {

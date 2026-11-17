@@ -137,11 +137,16 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { resolveRouterErrorBody } = await vi.importActual<
         typeof import('@packages/swaps/src/api/router-error')
     >('@packages/swaps/src/api/router-error')
+    // Chain adapters subclass it at load, so it must exist before any spec runs.
+    const { SwapQuoteMismatchError } = await vi.importActual<
+        typeof import('@packages/swaps/src/errors')
+    >('@packages/swaps/src/errors')
     return {
         useSwaps: vi.fn(),
         isSwappableAsset: vi.fn(() => true),
         swapQuoteFailureOf,
         resolveRouterErrorBody,
+        SwapQuoteMismatchError,
         formatSwapRate,
         swapRate,
         swapFeeOf,

@@ -24,8 +24,10 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
+    deferToNextCycle,
     isChainRefusedError,
     isPeraNetworkError,
+    isTransientNetworkError,
     logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -48,10 +50,18 @@ const WALLET_KEY_INDEX_LIMIT = 20
 // chains: a healthy chain waiting its turn must not read as a dead one. It
 // doesn't run before the first answer: on a slow link that answer is slow for
 // every chain, and cutting them all would fail an import that only needed time.
-// Keep it above one lookup's own timeout (`DISCOVERY_LOOKUP_BOUNDS` in
-// chain-ethereum): a chain can't answer before its lookups settle, so a
-// shorter window cuts a lookup that was about to succeed.
+// Keep it above one lookup's own timeout, whatever the lookup is: a chain
+// can't answer before its lookups settle, so a shorter window cuts a lookup
+// that was about to succeed. Each ask of a batch gets its own window.
 const CHAIN_PROBE_IDLE_TIMEOUT_MS = 8000
+// The pause before a batch is asked once more, long enough for a rate limit
+// or a dropped connection to clear.
+const PROBE_RETRY_DELAY_MS = 1000
+
+const isTemporaryProbeFailure = (error: unknown): boolean =>
+    !isChainRefusedError(error) &&
+    (isTransientNetworkError(error) ||
+        (isPeraNetworkError(error) && error.status === 429))
 
 /** One answer per index, in order: `true` when the index has activity. */
 export type HdBatchProbe = (indices: readonly HdIndex[]) => Promise<boolean[]>
@@ -239,9 +249,9 @@ export type ProbedHdIndex = {
 /**
  * How far a chain answered one probed batch. `answered`: every index derived
  * and the chain answered for every address. `partial`: it answered some, but
- * an index failed to derive or the answer left an address out. `failed`: the
- * probe rejected, or no index derived. `refused`: the backend has the chain
- * switched off, so checking it again can't help.
+ * left an address unanswered after it was asked once more, or an index failed
+ * to derive. `failed`: the probe rejected, or no index derived. `refused`: the
+ * backend has the chain switched off, so checking it again can't help.
  */
 export type HdProbeOutcome = 'answered' | 'partial' | 'failed' | 'refused'
 
@@ -263,10 +273,13 @@ type DiscoverWalletActivityParams = {
     accountGapLimit?: number
     keyIndexGapLimit?: number
     /**
-     * Called once per chain for each probed batch. A batch whose probe
-     * rejects is asked once more; a chain still pending when no chain has
-     * answered for `CHAIN_PROBE_IDLE_TIMEOUT_MS` also `failed`. A chain whose
-     * batch `failed`, or was `refused`, is not probed again for the rest of the
+     * Called once per chain for each probed batch. A batch is asked at most
+     * twice, with a pause between: when its probe rejects for a temporary
+     * reason, or answers without some addresses, which are then asked alone.
+     * A chain still pending when no chain has answered for
+     * `CHAIN_PROBE_IDLE_TIMEOUT_MS` is cut `failed` and is not asked again; an
+     * idle second ask for left-out addresses settles `partial` instead. A chain
+     * whose batch `failed`, or was `refused`, is not probed again for the rest of the
      * walk, and its pending lookups are aborted. A batch still in flight when
      * `signal` aborts settles nothing.
      */
@@ -310,10 +323,20 @@ export async function discoverWalletActivity({
         ChainId,
         { batches: number; lastAnswerMs: number }
     >()
-    // A chain whose probe rejected twice in a row is down for this walk:
+    // A chain whose batch failed is down for this walk:
     // probing it again would only queue more failing lookups ahead of the
     // chains that answer.
     const failedChains = new Set<ChainId>()
+    const retriedBy = new Map<ChainId, number>()
+    const unansweredBy = new Map<ChainId, number>()
+    const unansweredWarned = new Set<ChainId>()
+    const underivedWarned = new Set<ChainId>()
+    // One warn per chain: a failing index repeats for every index after it.
+    const warnUnderived = (chainId: ChainId, error: unknown): void => {
+        if (underivedWarned.has(chainId)) return
+        underivedWarned.add(chainId)
+        logger.warn('Wallet discovery derivation failed', { chainId, error })
+    }
     // Aborted once the walk gives up on a chain, so its queued lookups stop
     // holding slots the healthy chains need, and when the user cancels: the
     // lookups a cancel leaves queued would hold the gate every later walk
@@ -384,8 +407,9 @@ export async function discoverWalletActivity({
     // Deriving saves the private key, and every chain of a family derives the
     // same key at an index: derive it once and build each chain's address from it.
     const keys = new Map<string, Promise<Optional<DerivedKey>>>()
+    const keyFailures = new Map<string, unknown>()
 
-    const keyAt = (
+    const keyAt = async (
         chainId: ChainId,
         { account, keyIndex }: HdIndex,
         opts: DeriveOpts,
@@ -399,11 +423,16 @@ export async function discoverWalletActivity({
                 .deriveAccount(kmsCore, walletId, account, keyIndex, opts)
                 .then(
                     ({ keyPairId, publicKey }) => ({ keyPairId, publicKey }),
-                    () => undefined,
+                    (error: unknown) => {
+                        keyFailures.set(id, error)
+                        return undefined
+                    },
                 )
             keys.set(id, key)
         }
-        return key
+        const derived = await key
+        if (!derived) warnUnderived(chainId, keyFailures.get(id))
+        return derived
     }
 
     // Keystore saves are slow on device, so a chain that can derive in memory
@@ -435,7 +464,10 @@ export async function discoverWalletActivity({
         for (const index of indices) {
             if (getPublicKey) {
                 const publicKey = await getPublicKey(index).catch(
-                    () => undefined,
+                    (error: unknown) => {
+                        warnUnderived(scope.chainId, error)
+                        return undefined
+                    },
                 )
                 const entry = publicKey && {
                     address: codec.fromPublicKey(publicKey, opts),
@@ -472,34 +504,55 @@ export async function discoverWalletActivity({
             return entries.map(() => undefined)
         }
         const chainAbort = chainAbortOf(chainId)
-        const check = async () =>
+        const check = async (asked: string[]) =>
             accountsChainAdapters
                 .get(chainId)
-                .checkActivity(addresses, scope, chainAbort.signal)
+                .checkActivity(asked, scope, chainAbort.signal)
+        const isStopped = (): boolean =>
+            signal?.aborted === true || chainAbort.signal.aborted
+        let asks = 1
+        const pauseBeforeSecondAsk = async (): Promise<void> => {
+            asks = 2
+            retriedBy.set(chainId, (retriedBy.get(chainId) ?? 0) + 1)
+            await deferToNextCycle(PROBE_RETRY_DELAY_MS)
+        }
+        // A refusal or another 4xx would only fail again, and a batch that
+        // stayed silent past the idle window is cut for good: neither is re-asked.
+        const ask = async (): Promise<Map<string, boolean>> => {
+            let first: Map<string, boolean>
+            try {
+                first = await withIdleTimeout(chainId, check(addresses))
+            } catch (error) {
+                if (!isTemporaryProbeFailure(error) || isStopped()) throw error
+                await pauseBeforeSecondAsk()
+                // A batch that cut the chain meanwhile already decided its outcome.
+                if (isStopped()) throw error
+                const retried = await withIdleTimeout(chainId, check(addresses))
+                markAnswered()
+                return retried
+            }
+            markAnswered()
+            const missing = addresses.filter(address => !first.has(address))
+            if (missing.length === 0) return first
+            if (signal?.aborted) throw new Error('Wallet discovery cancelled')
+            if (isStopped()) return first
+            await pauseBeforeSecondAsk()
+            // A cancel settles nothing; a chain another batch cut already
+            // decided its outcome, and what this batch has is still an answer.
+            if (signal?.aborted) throw new Error('Wallet discovery cancelled')
+            if (isStopped()) return first
+            try {
+                const second = await withIdleTimeout(chainId, check(missing))
+                markAnswered()
+                return new Map([...first, ...second])
+            } catch (error) {
+                if (isChainRefusedError(error) || signal?.aborted) throw error
+                return first
+            }
+        }
         let activity: Map<string, boolean>
         try {
-            // Pera lookups get one try each, so a dropped answer mustn't cost a
-            // healthy chain the rest of the walk: a batch that fails while the
-            // walk is still hearing from chains is asked once more. One that
-            // stays silent past the idle window is cut instead. Node clients
-            // retry their own reads, and a 4xx (a refusal included) would only
-            // fail again.
-            activity = await withIdleTimeout(
-                chainId,
-                check().catch((error: unknown) => {
-                    const isTransient =
-                        isPeraNetworkError(error) && error.metadata.retryable
-                    if (
-                        !isTransient ||
-                        signal?.aborted ||
-                        chainAbort.signal.aborted
-                    ) {
-                        throw error
-                    }
-                    return check()
-                }),
-            )
-            markAnswered()
+            activity = await ask()
             const answered = answeredBy.get(chainId) ?? {
                 batches: 0,
                 lastAnswerMs: 0,
@@ -528,6 +581,7 @@ export async function discoverWalletActivity({
                     logger.warn('Wallet discovery probe failed', {
                         chainId,
                         error,
+                        asks,
                     })
                 }
             }
@@ -541,9 +595,24 @@ export async function discoverWalletActivity({
             return entries.map(() => undefined)
         }
         onProbeAnswered?.()
+        const unanswered = addresses.filter(
+            address => !activity.has(address),
+        ).length
+        if (unanswered > 0) {
+            unansweredBy.set(chainId, (unansweredBy.get(chainId) ?? 0) + 1)
+            if (!unansweredWarned.has(chainId)) {
+                unansweredWarned.add(chainId)
+                logger.warn(
+                    'Wallet discovery probe left addresses unanswered',
+                    {
+                        chainId,
+                        unanswered,
+                    },
+                )
+            }
+        }
         const isComplete =
-            addresses.length === entries.length &&
-            addresses.every(address => activity.has(address))
+            addresses.length === entries.length && unanswered === 0
         onProbeSettled?.(chainId, isComplete ? 'answered' : 'partial')
         return entries.map(entry =>
             entry && activity.get(entry.address) === true ? entry : undefined,
@@ -638,6 +707,8 @@ export async function discoverWalletActivity({
         probedIndexes: probed.size,
         chains: Object.fromEntries(answeredBy),
         cutChains: Object.fromEntries(cutOutcomes),
+        retriedChains: Object.fromEntries(retriedBy),
+        unansweredChains: Object.fromEntries(unansweredBy),
     })
 
     return [...probed.values()]

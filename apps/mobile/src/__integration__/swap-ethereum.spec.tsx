@@ -808,10 +808,37 @@ describe('Flow: Swap from an Ethereum account', () => {
 
         const outcome = await api.execute(tokenToEtherQuote())
 
-        expect(outcome).toMatchObject({ kind: 'error', phase: 'prepare' })
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            phase: 'prepare',
+            title: 'swap.execution.failed_title.prepare',
+            message: 'swap.execution.route_unverified_body',
+        })
         expect(sent).toEqual([])
         expect(kmsCore.sign).not.toHaveBeenCalled()
         await waitFor(() => expect(reports).toEqual([{ status: 'cancelled' }]))
+    })
+
+    it('Given the shipped route table, when an ERC-20 swap runs, then nothing is ordered or signed and the error names the unverified route', async () => {
+        vi.mocked(swapChainAdapters.get('ethereum').executeSwap).mockRestore()
+        selectSender(ETHEREUM_SENDER)
+        await seedSenderEther('10000000000000000000')
+        const api = await startHost()
+        const sent = fakeNode()
+        mockEthereumSwapOrder([APPROVE_TX, TOKEN_SWAP_TX])
+        const { reports } = spyOnSwapSubmissionAndReports()
+
+        const outcome = await api.execute(tokenToEtherQuote())
+
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            phase: 'prepare',
+            title: 'swap.execution.failed_title.prepare',
+            message: 'swap.execution.route_unverified_body',
+        })
+        expect(kmsCore.sign).not.toHaveBeenCalled()
+        expect(sent).toEqual([])
+        expect(reports).toEqual([])
     })
 
     it("Given ether swapped into the account's own Algorand address, when the swap runs, then the order is tracked until completed", async () => {

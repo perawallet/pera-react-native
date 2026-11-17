@@ -145,7 +145,12 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { useAccountCapabilityScope } = await vi.importActual<
         typeof import('@perawallet/wallet-core-accounts')
     >('@perawallet/wallet-core-accounts')
+    // Chain adapters subclass it at load.
+    const { SwapQuoteMismatchError } = await vi.importActual<
+        typeof import('@packages/swaps/src/errors')
+    >('@packages/swaps/src/errors')
     return {
+        SwapQuoteMismatchError,
         useSwapScope: (
             account: Parameters<typeof useAccountCapabilityScope>[0],
         ) => useAccountCapabilityScope(account, 'swap'),
