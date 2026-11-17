@@ -1,0 +1,33 @@
+diff --git a/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootView.kt b/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootView.kt
+index 15571c476b0b854df76e6bab8390a174582512ee..db156cd7ecda1c35cb412194ca07fc4e08f92a5d 100644
+--- a/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootView.kt
++++ b/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootView.kt
+@@ -33,6 +33,13 @@ class RNGestureHandlerRootView(context: Context?) : ReactViewGroup(context) {
+       )
+     }
+     if (rootViewEnabled && rootHelper == null) {
++      if (!isMountedUnderRootView(this)) {
++        // Fabric can mount this view while the activity is being destroyed, after the
++        // parent chain stopped reaching a RootView. The next attach retries.
++        Log.w(ReactConstants.TAG, "[GESTURE HANDLER] Root view attached outside a RootView")
++        rootViewEnabled = false
++        return
++      }
+       rootHelper = RNGestureHandlerRootHelper(context as ReactContext, this, moduleId)
+     }
+   }
+@@ -96,6 +103,14 @@ class RNGestureHandlerRootView(context: Context?) : ReactViewGroup(context) {
+   }
+ 
+   companion object {
++    private fun isMountedUnderRootView(viewGroup: ViewGroup): Boolean {
++      var parent: ViewParent? = viewGroup.parent
++      while (parent != null && parent !is RootView) {
++        parent = parent.parent
++      }
++      return parent != null
++    }
++
+     private fun hasGestureHandlerEnabledRootView(viewGroup: ViewGroup): Boolean {
+       UiThreadUtil.assertOnUiThread()
+ 
