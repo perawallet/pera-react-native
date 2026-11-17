@@ -91,8 +91,8 @@
                 "categories_title": "Categorias",
                 "all": "Todas",
                 "sort_title": "Ordenar por",
-                "sort_recent": "Adicionadas recentemente",
-                "sort_visits": "Mais visitadas"
+                "sort_recent": "Adicionados recentemente",
+                "sort_visits": "Mais visitados"
             },
             "rearrange": {
                 "title": "Reorganizar",

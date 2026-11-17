@@ -12,7 +12,10 @@
 
 import { create } from 'zustand'
 import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
-import type { FavoritesSort } from './useDiscoverFavoritesStore'
+import {
+    useDiscoverFavoritesStore,
+    type FavoritesSort,
+} from './useDiscoverFavoritesStore'
 
 type DiscoverFavoritesFilterState = {
     /** A category title from the favorites, or null for All. */
@@ -43,6 +46,21 @@ export const useDiscoverFavoritesFilterStore = create<
     setSort: sort => set({ sort }),
     reset: () => set(initialState),
 }))
+
+// Once no favorite has the chosen category, go back to All for good, so a
+// later favorite in that category doesn't switch the filter back on unasked.
+useDiscoverFavoritesStore.subscribe(({ favorites }) => {
+    const { category, setCategory } =
+        useDiscoverFavoritesFilterStore.getState()
+    if (
+        category !== null &&
+        !Object.values(favorites).some(dapp =>
+            dapp.categories.includes(category),
+        )
+    ) {
+        setCategory(null)
+    }
+})
 
 registerStore({
     name: 'discover-favorites-filter-store',

@@ -93,6 +93,17 @@ describe('useRearrangeFavoritesSheet', () => {
         )
     })
 
+    it('keeps a favorite added while the sheet is open', () => {
+        const { result } = renderHook(() => useRearrangeFavoritesSheet())
+        const D = 'https://d.io'
+
+        act(() => store().addFavorite(dapp(D)))
+        act(() => result.current.remove(B))
+        act(() => result.current.apply())
+
+        expect(recent()).toEqual([D, C, A])
+    })
+
     it('apply while a drop settles saves the dropped order', () => {
         const { result } = renderHook(() => useRearrangeFavoritesSheet())
 

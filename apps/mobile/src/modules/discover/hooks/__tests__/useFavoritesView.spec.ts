@@ -78,6 +78,20 @@ describe('useFavoritesView', () => {
         expect(result.current.total).toBe(3)
     })
 
+    it('stays on All when a removed category comes back', () => {
+        act(() => filter().setCategory('Explorer'))
+        act(() => favorites().removeFavorite('https://allo.info'))
+        act(() =>
+            favorites().addFavorite(
+                dapp('https://explorer.io', 'Explorer', ['Explorer']),
+            ),
+        )
+        const { result } = renderHook(() => useFavoritesView())
+
+        expect(result.current.category).toBeNull()
+        expect(result.current.total).toBe(4)
+    })
+
     it('orders by visits when sorted by Most visited', () => {
         const { result } = renderHook(() => useFavoritesView())
 

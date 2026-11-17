@@ -48,7 +48,7 @@ export const useRearrangeFavoritesSheet =
         const { dismiss } = useBottomSheetResult<void>()
         const applyRearrange = useDiscoverFavoritesStore(s => s.applyRearrange)
         const [entries, setEntries] = useState(readEntries)
-        const initialCount = useRef(entries.length)
+        const initialKeys = useRef(entries.map(entry => entry.key))
         // The list reports a drop only once its settle animation ends, so
         // Apply tapped in between would save the order from before the drag.
         const entriesRef = useRef(entries)
@@ -62,9 +62,14 @@ export const useRearrangeFavoritesSheet =
 
         const commit = useCallback(
             (list: RearrangeFavoriteEntry[]) => {
-                applyRearrange(list.map(entry => entry.key))
+                const keys = list.map(entry => entry.key)
+                const kept = new Set(keys)
+                const removed = initialKeys.current.filter(
+                    key => !kept.has(key),
+                )
+                applyRearrange(keys, removed)
                 trackEvent(DiscoverEvent.FavoritesRearrange, {
-                    [Key.RemovedCount]: initialCount.current - list.length,
+                    [Key.RemovedCount]: removed.length,
                 })
                 dismiss()
             },

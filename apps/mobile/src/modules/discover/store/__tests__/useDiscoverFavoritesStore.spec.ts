@@ -184,16 +184,24 @@ describe('useDiscoverFavoritesStore visits and rearrange', () => {
         expect(urls('visits')).toEqual([A, C, B])
     })
 
-    test('applyRearrange sets the newest-first order and removes the rest', () => {
+    test('applyRearrange sets the newest-first order and removes the removed', () => {
         store().recordVisit(B)
-        store().applyRearrange([A, C, 'https://unknown.io'])
+        store().applyRearrange([A, C, 'https://unknown.io'], [B])
         expect(urls('recent')).toEqual([A, C])
         expect(store().isFavorite(B)).toBe(false)
         expect(store().visits).toEqual({})
     })
 
+    test('applyRearrange keeps a favorite missing from the list, newest first', () => {
+        store().addFavorite(dapp('https://d.io', 'D'))
+        store().recordVisit('https://d.io')
+        store().applyRearrange([A, C], [B])
+        expect(urls('recent')).toEqual(['https://d.io', A, C])
+        expect(store().visits).toEqual({ 'https://d.io': 1 })
+    })
+
     test('a new favorite lands first after a rearrange', () => {
-        store().applyRearrange([A, B, C])
+        store().applyRearrange([A, B, C], [])
         store().addFavorite(dapp('https://d.io', 'D'))
         expect(urls('recent')).toEqual(['https://d.io', A, B, C])
     })

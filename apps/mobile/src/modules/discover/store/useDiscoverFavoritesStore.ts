@@ -51,10 +51,14 @@ type DiscoverFavoritesActions = {
     /** Counts an open of `url` for Most visited; no-op unless it is a favorite. */
     recordVisit(url: string): void
     /**
-     * Rearrange's Apply: the favorites in this newest-first order. Favorites
-     * missing from the list are removed; unknown keys are ignored.
+     * Rearrange's Apply: removes `removedKeys` and orders the rest as
+     * `newestFirstKeys`. A favorite in neither list was added while the sheet
+     * was open, so it stays, newest first. Unknown keys are ignored.
      */
-    applyRearrange(newestFirstKeys: readonly string[]): void
+    applyRearrange(
+        newestFirstKeys: readonly string[],
+        removedKeys: readonly string[],
+    ): void
     /**
      * Adds the legacy favorites that are not favorites yet, so newest-first
      * lists show them after the native ones in the given order;
@@ -176,19 +180,25 @@ export const useDiscoverFavoritesStore = create<DiscoverFavoritesStore>()(
                     },
                 }))
             },
-            applyRearrange: newestFirstKeys => {
-                const { favorites, visits } = get()
-                const kept = [...new Set(newestFirstKeys)].filter(
-                    key => key in favorites,
+            applyRearrange: (newestFirstKeys, removedKeys) => {
+                const { favorites, favoriteOrder, visits } = get()
+                const removed = new Set(removedKeys)
+                const ordered = [...new Set(newestFirstKeys)].filter(
+                    key => key in favorites && !removed.has(key),
                 )
-                const keep = new Set(kept)
+                const inList = new Set(ordered)
+                const addedMeanwhile = favoriteOrder.filter(
+                    key => !inList.has(key) && !removed.has(key),
+                )
                 set({
                     favorites: Object.fromEntries(
-                        Object.entries(favorites).filter(([k]) => keep.has(k)),
+                        Object.entries(favorites).filter(
+                            ([k]) => !removed.has(k),
+                        ),
                     ),
-                    favoriteOrder: [...kept].reverse(),
+                    favoriteOrder: [...ordered.reverse(), ...addedMeanwhile],
                     visits: Object.fromEntries(
-                        Object.entries(visits).filter(([k]) => keep.has(k)),
+                        Object.entries(visits).filter(([k]) => !removed.has(k)),
                     ),
                 })
             },
