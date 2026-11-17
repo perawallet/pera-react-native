@@ -185,6 +185,12 @@ auditConfig:
     # to a device. Drop both once @expo/config-plugins moves to glob 14.
     - GHSA-3g3m-2fjr-6pw4 # glob: AbortSignal cancellation bypass
     - GHSA-g3hv-75wg-m249 # minimatch: denial of service via globparts amplification
+    # picomatch has no patched release (the advisory names 4.0.8; npm's latest is
+    # 4.0.7). Every consumer is build or test tooling (@expo/cli,
+    # @expo/metro-config, tinyglobby and fdir under @react-native/codegen, vite,
+    # vitest, micromatch, anymatch), which matches our own globs, never user
+    # input, and never ships to a device. Drop this entry once 4.0.8 is out.
+    - GHSA-fc5q-39xc-vjpf # picomatch: ReDoS through repeated extglobs
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
