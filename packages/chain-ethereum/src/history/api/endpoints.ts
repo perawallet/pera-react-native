@@ -15,7 +15,13 @@ import type {
     PageRef,
 } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeadersWhenReady } from '@perawallet/wallet-core-app-integrity'
-import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    createConcurrencyLimit,
+    queryClient,
+    type ConcurrencyLimit,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
@@ -39,6 +45,18 @@ export type EvmHistoryPage = {
     next: Nullable<string>
 }
 
+// One gate for every EVM chain and every reader of a page: each page costs the
+// backend several upstream explorer calls under one shared rate limit, so the
+// All view asking every chain at once got most of its pages refused.
+const HISTORY_PAGES_IN_FLIGHT = 2
+let historyPageGate: Optional<ConcurrencyLimit>
+
+// Built on first use, so importing the module runs nothing.
+const gatedHistoryPage: ConcurrencyLimit = task => {
+    historyPageGate ??= createConcurrencyLimit(HISTORY_PAGES_IN_FLIGHT)
+    return historyPageGate(task)
+}
+
 /**
  * Newest first; rows this client can't read are dropped. Rejects with
  * `UnknownEvmNetworkError` for a scope that isn't the chain's, and with
@@ -50,20 +68,28 @@ export const fetchHistoryPage = async (
     address: string,
     page?: PageRef,
 ): Promise<EvmHistoryPage> => {
-    const { data } = await queryClient<unknown>({
-        backend: 'pera',
-        service: HISTORY_SERVICE,
-        scope,
-        method: 'GET',
-        url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
-        params: page && {
-            cursor: page.cursor,
-            ...(page.limit !== undefined && {
-                limit: Math.min(Math.max(page.limit, 1), HISTORY_MAX_PAGE_SIZE),
-            }),
-        },
-        headers: await buildIntegrityHeadersWhenReady(),
-    })
+    const { data } = await gatedHistoryPage(async () =>
+        queryClient<unknown>({
+            backend: 'pera',
+            service: HISTORY_SERVICE,
+            scope,
+            method: 'GET',
+            url: historyPath(
+                eip155ChainIdOf(scope, chain),
+                address.toLowerCase(),
+            ),
+            params: page && {
+                cursor: page.cursor,
+                ...(page.limit !== undefined && {
+                    limit: Math.min(
+                        Math.max(page.limit, 1),
+                        HISTORY_MAX_PAGE_SIZE,
+                    ),
+                }),
+            },
+            headers: await buildIntegrityHeadersWhenReady(),
+        }),
+    )
     const { next, results } = evmHistoryPageSchema.parse(data)
     return {
         items: results.flatMap(row => {
