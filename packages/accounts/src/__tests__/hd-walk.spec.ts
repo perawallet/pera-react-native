@@ -29,6 +29,8 @@ import {
     registerChainFamilies,
 } from './chainFamilies'
 
+const PAUSE_MS = 1000
+
 const probeActiveAt =
     (active: readonly string[]): HdBatchProbe =>
     async indices =>
@@ -191,6 +193,10 @@ describe('walkHdTree', () => {
 })
 
 describe('discoverWalletActivity', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     const activeOn = (
         families: ReturnType<typeof registerChainFamilies>,
         chainId: typeof ALGORAND,
@@ -475,32 +481,173 @@ describe('discoverWalletActivity', () => {
             expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'answered']])
         })
 
-        it('reports partial when the answer leaves an address out, which reads as inactive', async () => {
+        it('reports partial when the answer still leaves an address out after a second ask, which reads as inactive', async () => {
+            vi.useFakeTimers()
             const families = registerChainFamilies([ETHEREUM])
-            families.checkActivity
+            const omitted = familyHdAddress('evm', 0, 1)
+            const probe = families.checkActivity
                 .get(ETHEREUM)!
                 .mockImplementation(
-                    async (probed: string[]) => new Map([[probed[0]!, false]]),
+                    async (probed: string[]) =>
+                        new Map(
+                            probed
+                                .filter(address => address !== omitted)
+                                .map(address => [address, false]),
+                        ),
+                )
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const onProbeSettled = vi.fn()
+
+            const walk = walkOne(onProbeSettled)
+            await vi.advanceTimersByTimeAsync(PAUSE_MS)
+            const probed = await walk
+
+            expect(probe).toHaveBeenCalledTimes(2)
+            expect(probe.mock.calls[1]![0]).toEqual([omitted])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'partial']])
+            expect(activeIndexes(probed)).toEqual([])
+            expect(
+                warn.mock.calls.filter(
+                    ([message]) =>
+                        message ===
+                        'Wallet discovery probe left addresses unanswered',
+                ),
+            ).toEqual([
+                [
+                    'Wallet discovery probe left addresses unanswered',
+                    { chainId: ETHEREUM, unanswered: 1 },
+                ],
+            ])
+        })
+
+        it('asks only the addresses a batch left unanswered once more, and reports answered when they answer', async () => {
+            vi.useFakeTimers()
+            const families = registerChainFamilies([ETHEREUM])
+            const missing = familyHdAddress('evm', 0, 1)
+            const probe = families.checkActivity
+                .get(ETHEREUM)!
+                .mockImplementationOnce(
+                    async (probed: string[]) =>
+                        new Map(
+                            probed
+                                .filter(address => address !== missing)
+                                .map(address => [address, false]),
+                        ),
+                )
+                .mockImplementation(
+                    async (probed: string[]) =>
+                        new Map(probed.map(address => [address, false])),
                 )
             const onProbeSettled = vi.fn()
 
-            const probed = await walkOne(onProbeSettled)
+            const walk = walkOne(onProbeSettled)
+            await vi.advanceTimersByTimeAsync(PAUSE_MS)
+            await walk
 
-            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'partial']])
-            expect(activeIndexes(probed)).toEqual([])
+            expect(probe).toHaveBeenCalledTimes(2)
+            expect(probe.mock.calls[1]![0]).toEqual([missing])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'answered']])
         })
 
-        it('reports partial when one index fails to derive', async () => {
+        it('reports refused when the second ask of the unanswered addresses is refused', async () => {
+            vi.useFakeTimers()
             const families = registerChainFamilies([ETHEREUM])
-            activeOn(families, ETHEREUM, [])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockImplementationOnce(
+                    async (probed: string[]) => new Map([[probed[0]!, false]]),
+                )
+                .mockRejectedValue(
+                    new PeraNetworkError('client', {
+                        status: 422,
+                        backendCode: 'chain_not_enabled',
+                    }),
+                )
+            vi.spyOn(logger, 'info').mockImplementation(() => {})
+            const onProbeSettled = vi.fn()
+
+            const walk = walkOne(onProbeSettled)
+            await vi.advanceTimersByTimeAsync(PAUSE_MS)
+            await walk
+
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'refused']])
+        })
+
+        it('reports partial when one index fails to derive, without asking again', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            const probe = activeOn(families, ETHEREUM, [])
             vi.mocked(
                 families.derivations.get(ETHEREUM)!.deriveAccount,
             ).mockRejectedValueOnce(new Error('keystore locked'))
+            vi.spyOn(logger, 'warn').mockImplementation(() => {})
             const onProbeSettled = vi.fn()
 
             await walkOne(onProbeSettled)
 
             expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'partial']])
+            expect(probe).toHaveBeenCalledOnce()
+        })
+
+        it('warns once per chain with the error when a key fails to derive', async () => {
+            const families = registerChainFamilies([ALGORAND, ETHEREUM])
+            activeOn(families, ALGORAND, [])
+            activeOn(families, ETHEREUM, [])
+            const error = new Error('keystore locked')
+            vi.mocked(
+                families.derivations.get(ETHEREUM)!.deriveAccount,
+            ).mockRejectedValue(error)
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+            await discoverWalletActivity({
+                walletId: 'seed',
+                chainIds: [ALGORAND, ETHEREUM],
+                accountGapLimit: 1,
+                keyIndexGapLimit: 3,
+            })
+
+            expect(
+                warn.mock.calls.filter(
+                    ([message]) =>
+                        message === 'Wallet discovery derivation failed',
+                ),
+            ).toEqual([
+                [
+                    'Wallet discovery derivation failed',
+                    { chainId: ETHEREUM, error },
+                ],
+            ])
+        })
+
+        it('warns once per chain and reports partial when the in-memory key getter rejects', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            activeOn(families, ETHEREUM, [])
+            const error = new Error('root key wiped')
+            const { getPublicKey } = deriveInMemoryOn(ETHEREUM)
+            getPublicKey.mockRejectedValue(error)
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const onProbeSettled = vi.fn()
+
+            await discoverWalletActivity({
+                walletId: 'seed',
+                chainIds: [ETHEREUM],
+                rootKey: new Uint8Array([1, 2, 3]),
+                accountGapLimit: 1,
+                keyIndexGapLimit: 3,
+                onProbeSettled,
+            })
+
+            expect(
+                warn.mock.calls.filter(
+                    ([message]) =>
+                        message === 'Wallet discovery derivation failed',
+                ),
+            ).toEqual([
+                [
+                    'Wallet discovery derivation failed',
+                    { chainId: ETHEREUM, error },
+                ],
+            ])
+            expect(onProbeSettled.mock.calls[0]).toEqual([ETHEREUM, 'failed'])
         })
 
         it('reports failed when the probe rejects', async () => {
@@ -627,12 +774,16 @@ describe('discoverWalletActivity', () => {
             .get(ETHEREUM)!
             .mockRejectedValue(new PeraNetworkError('server', { status: 503 }))
 
-        const probed = await discoverWalletActivity({
+        vi.useFakeTimers()
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const walk = discoverWalletActivity({
             walletId: 'seed',
             chainIds: [ALGORAND, ETHEREUM],
             accountGapLimit: 1,
             keyIndexGapLimit: 1,
         })
+        await vi.advanceTimersByTimeAsync(PAUSE_MS * 3)
+        const probed = await walk
 
         expect(ethereumProbe).toHaveBeenCalledTimes(2)
         expect(activeIndexes(probed)).toEqual([
@@ -641,26 +792,177 @@ describe('discoverWalletActivity', () => {
         ])
     })
 
-    it('asks a batch once more when a Pera lookup times out, and keeps a chain that then answers', async () => {
-        const families = registerChainFamilies([ETHEREUM])
-        activeOn(families, ETHEREUM, [familyHdAddress('evm', 0, 0)])
+    it.each([
+        ['a 429', new PeraNetworkError('client', { status: 429 })],
+        ['a 503', new PeraNetworkError('server', { status: 503 })],
+        ['a timeout', new PeraNetworkError('timeout')],
+        ['being offline', new PeraNetworkError('offline')],
+    ])(
+        'asks a batch once more after a one-second pause when its probe fails with %s, and keeps a chain that then answers',
+        async (_, error) => {
+            vi.useFakeTimers()
+            const families = registerChainFamilies([ETHEREUM])
+            const probe = activeOn(
+                families,
+                ETHEREUM,
+                [],
+            ).mockRejectedValueOnce(error)
+            const onProbeSettled = vi.fn()
+
+            const walk = discoverWalletActivity({
+                walletId: 'seed',
+                chainIds: [ETHEREUM],
+                accountGapLimit: 1,
+                keyIndexGapLimit: 1,
+                onProbeSettled,
+            })
+            await vi.advanceTimersByTimeAsync(PAUSE_MS - 1)
+            expect(probe).toHaveBeenCalledOnce()
+            await vi.advanceTimersByTimeAsync(1)
+            await walk
+
+            expect(probe).toHaveBeenCalledTimes(2)
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'answered']])
+        },
+    )
+
+    it('gives the second ask its own idle window', async () => {
+        vi.useFakeTimers()
+        const families = registerChainFamilies([ALGORAND, ETHEREUM])
+        activeOn(families, ALGORAND, [])
         families.checkActivity
             .get(ETHEREUM)!
-            .mockRejectedValueOnce(new PeraNetworkError('timeout'))
+            .mockImplementationOnce(
+                () =>
+                    new Promise((_, reject) =>
+                        setTimeout(
+                            () => reject(new PeraNetworkError('timeout')),
+                            5000,
+                        ),
+                    ),
+            )
+            .mockImplementationOnce(
+                (probed: string[]) =>
+                    new Promise(resolve =>
+                        setTimeout(
+                            () =>
+                                resolve(
+                                    new Map(
+                                        probed.map(address => [
+                                            address,
+                                            address ===
+                                                familyHdAddress('evm', 0, 0),
+                                        ]),
+                                    ),
+                                ),
+                            6000,
+                        ),
+                    ),
+            )
         const onProbeSettled = vi.fn()
 
-        const probed = await discoverWalletActivity({
+        const walk = discoverWalletActivity({
             walletId: 'seed',
-            chainIds: [ETHEREUM],
+            chainIds: [ALGORAND, ETHEREUM],
             accountGapLimit: 1,
             keyIndexGapLimit: 1,
             onProbeSettled,
         })
+        await vi.advanceTimersByTimeAsync(5000 + PAUSE_MS + 6000)
+        const probed = await walk
 
         expect(onProbeSettled).not.toHaveBeenCalledWith(ETHEREUM, 'failed')
         expect(activeIndexes(probed)).toEqual([
             [{ account: 0, keyIndex: 0 }, [ETHEREUM]],
         ])
+    })
+
+    it('asks nothing more and reports no chain failed when the walk is cancelled during the pause', async () => {
+        vi.useFakeTimers()
+        const families = registerChainFamilies([ETHEREUM])
+        const probe = activeOn(families, ETHEREUM, []).mockRejectedValueOnce(
+            new PeraNetworkError('timeout'),
+        )
+        const controller = new AbortController()
+        const onProbeSettled = vi.fn()
+
+        const walk = discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ETHEREUM],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+            signal: controller.signal,
+            onProbeSettled,
+        })
+        await vi.advanceTimersByTimeAsync(PAUSE_MS / 2)
+        controller.abort()
+        await vi.advanceTimersByTimeAsync(PAUSE_MS)
+        await walk
+
+        expect(probe).toHaveBeenCalledOnce()
+        expect(onProbeSettled).not.toHaveBeenCalled()
+    })
+
+    it('settles nothing when the walk is cancelled during the pause before the unanswered addresses are asked again', async () => {
+        vi.useFakeTimers()
+        const families = registerChainFamilies([ETHEREUM])
+        const probe = families.checkActivity
+            .get(ETHEREUM)!
+            .mockImplementation(
+                async (probed: string[]) => new Map([[probed[0]!, false]]),
+            )
+        const controller = new AbortController()
+        const onProbeSettled = vi.fn()
+
+        const walk = discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ETHEREUM],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 2,
+            signal: controller.signal,
+            onProbeSettled,
+        })
+        await vi.advanceTimersByTimeAsync(PAUSE_MS / 2)
+        controller.abort()
+        await vi.advanceTimersByTimeAsync(PAUSE_MS)
+        await walk
+
+        expect(probe).toHaveBeenCalledOnce()
+        expect(onProbeSettled).not.toHaveBeenCalled()
+    })
+
+    it('cuts a second ask that hangs after eight silent seconds of its own, and logs that it was asked twice', async () => {
+        vi.useFakeTimers()
+        const families = registerChainFamilies([ALGORAND, ETHEREUM])
+        activeOn(families, ALGORAND, [])
+        const probe = families.checkActivity
+            .get(ETHEREUM)!
+            .mockRejectedValueOnce(new PeraNetworkError('timeout'))
+            .mockImplementation(
+                () => new Promise<Map<string, boolean>>(() => {}),
+            )
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const onProbeSettled = vi.fn()
+
+        const walk = discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND, ETHEREUM],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+            onProbeSettled,
+        })
+        await vi.advanceTimersByTimeAsync(PAUSE_MS + 7999)
+        expect(onProbeSettled).not.toHaveBeenCalledWith(ETHEREUM, 'failed')
+        await vi.advanceTimersByTimeAsync(1)
+        await walk
+
+        expect(probe).toHaveBeenCalledTimes(2)
+        expect(onProbeSettled).toHaveBeenCalledWith(ETHEREUM, 'failed')
+        expect(warn).toHaveBeenCalledWith('Wallet discovery probe failed', {
+            chainId: ETHEREUM,
+            error: expect.any(Error),
+            asks: 2,
+        })
     })
 
     it.each([
@@ -672,10 +974,7 @@ describe('discoverWalletActivity', () => {
             }),
         ],
         ['a 4xx', new PeraNetworkError('client', { status: 403 })],
-        [
-            'a node error, which its client already retried',
-            new Error('rpc down'),
-        ],
+        ['an unclassified error', new Error('rpc down')],
     ])(
         'asks a batch only once when its probe fails with %s',
         async (_, error) => {
@@ -980,17 +1279,21 @@ describe('discoverWalletActivity', () => {
     })
 
     it('aborts the lookups of a chain whose probe failed twice', async () => {
+        vi.useFakeTimers()
         const families = registerChainFamilies([ETHEREUM])
         const probe = families.checkActivity
             .get(ETHEREUM)!
             .mockRejectedValue(new PeraNetworkError('server', { status: 503 }))
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
-        await discoverWalletActivity({
+        const walk = discoverWalletActivity({
             walletId: 'seed',
             chainIds: [ETHEREUM],
             accountGapLimit: 1,
             keyIndexGapLimit: 1,
         })
+        await vi.advanceTimersByTimeAsync(PAUSE_MS)
+        await walk
 
         expect(probe).toHaveBeenCalledTimes(2)
         expect(probe.mock.calls[1]![2]!.aborted).toBe(true)
@@ -1155,6 +1458,42 @@ describe('discoverWalletActivity', () => {
             probedIndexes: 1,
             chains: { [ALGORAND]: { batches: 1 } },
             cutChains: { [ETHEREUM]: 'failed' },
+        })
+    })
+
+    it('counts second asks and still-unanswered batches per chain in the timing line', async () => {
+        vi.useFakeTimers()
+        const families = registerChainFamilies([ETHEREUM])
+        const omitted = familyHdAddress('evm', 0, 1)
+        families.checkActivity
+            .get(ETHEREUM)!
+            .mockRejectedValueOnce(new PeraNetworkError('timeout'))
+            .mockImplementation(
+                async (probed: string[]) =>
+                    new Map(
+                        probed
+                            .filter(address => address !== omitted)
+                            .map(address => [address, false]),
+                    ),
+            )
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+
+        const walk = discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ETHEREUM],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 2,
+        })
+        await vi.advanceTimersByTimeAsync(PAUSE_MS)
+        await walk
+
+        const [, timings] = info.mock.calls.find(
+            ([message]) => message === 'Wallet discovery walk timings',
+        )!
+        expect(timings).toMatchObject({
+            retriedChains: { [ETHEREUM]: 1 },
+            unansweredChains: { [ETHEREUM]: 1 },
         })
     })
 
