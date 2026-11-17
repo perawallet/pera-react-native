@@ -73,6 +73,22 @@ const toRecords = (
     ]
 }
 
+// The backend filters native and ERC-20 views only; an NFT's history is read whole.
+const filterIdOf = (
+    assetId: Optional<string>,
+    scope: ChainScope,
+    chain: EvmChain,
+): Optional<string> => {
+    if (assetId === undefined || isEvmNftAssetId(assetId)) return undefined
+    // An id this client can't place still filters client-side; a thrown read
+    // would fail the screen instead of listing nothing.
+    try {
+        return toCaip19(assetId, scope, chain)
+    } catch {
+        return undefined
+    }
+}
+
 /**
  * Newest first. A page can be empty and still have `next`. Mined rows only:
  * JSON-RPC can't enumerate history, so there is no fallback.
@@ -85,11 +101,7 @@ export const getEvmTransactionHistory = async (
     isDecoding = false,
     assetId?: string,
 ): Promise<Page<TransactionRecord>> => {
-    // The backend filters native and ERC-20 views only; an NFT's history is read whole.
-    const caip19AssetId =
-        assetId === undefined || isEvmNftAssetId(assetId)
-            ? undefined
-            : toCaip19(assetId, scope, chain)
+    const caip19AssetId = filterIdOf(assetId, scope, chain)
     const { items, next } = await fetchHistoryPage(
         scope,
         chain,

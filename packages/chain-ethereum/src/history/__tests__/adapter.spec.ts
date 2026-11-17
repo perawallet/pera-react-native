@@ -406,6 +406,12 @@ describe('filtered to one asset', () => {
 
         expect(params?.has('asset_id')).toBe(false)
     })
+
+    it('reads unfiltered, rather than failing, for an id it cannot place', async () => {
+        const params = await readParams('not-a-contract')
+
+        expect(params?.has('asset_id')).toBe(false)
+    })
 })
 
 describe('with contractDecoding', () => {

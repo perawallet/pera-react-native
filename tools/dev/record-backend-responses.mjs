@@ -79,8 +79,8 @@ const ROUTES = [
             chainId: Number(chainId),
             address,
         }),
-        // The app pages with `cursor` and `limit` only; a filtered query
-        // (`asset_id`) answers transfer-stream rows with most fields null.
+        // Unfiltered pages only. An asset view (`asset_id`) is another shape:
+        // its ERC-20 rows carry no `from`, `to`, `value` or `method`.
         accepts: ({ params }) =>
             [...params.keys()].every(
                 key => key === 'cursor' || key === 'limit',
