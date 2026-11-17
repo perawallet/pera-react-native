@@ -21,7 +21,10 @@ export type MockSwapPairsParams = (
     | { response: z.input<typeof swapPairsResponseSchema>; status?: 200 }
     | { response: SwapRouterErrorBody; status: number }
 ) & {
-    /** Answers only a request with exactly this `q`; any other falls through to the next handler. */
+    /**
+     * Answers only a request with exactly this `q`; any other falls through to the next handler.
+     * Pair it with an unfiltered `mockSwapPairs`, or the unmatched request escapes to the network and times out.
+     */
     q?: string
 }
 

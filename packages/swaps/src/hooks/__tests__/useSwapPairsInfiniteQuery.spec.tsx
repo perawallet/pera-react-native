@@ -341,6 +341,34 @@ describe('swaps/useSwapPairsInfiniteQuery', () => {
         ])
     })
 
+    test.each([
+        ['destination scopes are omitted', undefined],
+        ['the one destination is the anchor network', [SCOPE]],
+    ])(
+        'does not narrow the same-network request when %s',
+        async (_, destinationScopes) => {
+            vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
+                assets: [],
+                next: null,
+            })
+
+            const { result } = renderHook(
+                () =>
+                    useSwapPairsInfiniteQuery({
+                        anchor: ANCHOR,
+                        scope: SCOPE,
+                        destinationScopes,
+                    }),
+                { wrapper: createWrapper() },
+            )
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+            const [params] = vi.mocked(fetchSwapPairs).mock.calls[0]
+            expect(params.counterpartScope).toBeUndefined()
+            expect(params.q).toBeUndefined()
+        },
+    )
+
     test('does not narrow the request when several networks are shown', async () => {
         vi.mocked(fetchSwapPairs).mockResolvedValueOnce({
             assets: [],

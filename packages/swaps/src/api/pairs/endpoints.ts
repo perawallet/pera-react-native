@@ -41,8 +41,9 @@ export type FetchSwapPairsParams = {
     limit?: number
 }
 
-// The router's `q` also matches the asset id, and the slash bounds the chain id
-// so `eip155:1/` doesn't match `eip155:10/`.
+// Assumes the router's `q` prefix-matches the asset id (unconfirmed against the live router);
+// the slash keeps `eip155:1/` off `eip155:10/`. A `q` request is a search, so its order may
+// differ from the plain listing. Callers send this only for a cross-network list, which is empty without it.
 const sentQueryOf = (
     q: Optional<string>,
     counterpartScope: Optional<ChainScope>,
