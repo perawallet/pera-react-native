@@ -40,3 +40,60 @@ index 7c88afc..eddad74 100644
        reset();
      });
    }
+diff --git a/lib/module/components/CellRendererComponent.js b/lib/module/components/CellRendererComponent.js
+index 7e32214..81472f7 100644
+--- a/lib/module/components/CellRendererComponent.js
++++ b/lib/module/components/CellRendererComponent.js
+@@ -28,7 +28,8 @@ function CellRendererComponent(props) {
+   } = useRefs();
+   const {
+     horizontalAnim,
+-    scrollOffset
++    scrollOffset,
++    activeIndexAnim
+   } = useAnimatedValues();
+   const {
+     activeKey,
+@@ -55,7 +56,11 @@ function CellRendererComponent(props) {
+       heldTanslate.value = translate.value;
+     }
+ 
+-    const t = activeKey ? translate.value : heldTanslate.value;
++    // Hold only until reset() (activeIndexAnim back to -1). A mapper that still
++    // saw the drag can re-capture a stale translate after onLayout cleared the
++    // hold, and no later onLayout clears it: rows stayed shifted (Android).
++    const isSettlingDrop = activeIndexAnim.value >= 0;
++    const t = activeKey ? translate.value : isSettlingDrop ? heldTanslate.value : 0;
+     return {
+       transform: [horizontalAnim.value ? {
+         translateX: t
+diff --git a/src/components/CellRendererComponent.tsx b/src/components/CellRendererComponent.tsx
+index e4e861a..62b55e2 100644
+--- a/src/components/CellRendererComponent.tsx
++++ b/src/components/CellRendererComponent.tsx
+@@ -34,7 +34,7 @@ function CellRendererComponent<T>(props: Props<T>) {
+   const viewRef = useRef<Animated.View>(null);
+   const { cellDataRef, propsRef, containerRef } = useRefs<T>();
+ 
+-  const { horizontalAnim, scrollOffset } = useAnimatedValues();
++  const { horizontalAnim, scrollOffset, activeIndexAnim } = useAnimatedValues();
+   const {
+     activeKey,
+     keyExtractor,
+@@ -63,7 +63,15 @@ function CellRendererComponent<T>(props: Props<T>) {
+     if (translate.value && !isWeb) {
+       heldTanslate.value = translate.value;
+     }
+-    const t = activeKey ? translate.value : heldTanslate.value;
++    // Hold only until reset() (activeIndexAnim back to -1). A mapper that still
++    // saw the drag can re-capture a stale translate after onLayout cleared the
++    // hold, and no later onLayout clears it: rows stayed shifted (Android).
++    const isSettlingDrop = activeIndexAnim.value >= 0;
++    const t = activeKey
++      ? translate.value
++      : isSettlingDrop
++      ? heldTanslate.value
++      : 0;
+     return {
+       transform: [horizontalAnim.value ? { translateX: t } : { translateY: t }],
+     };
