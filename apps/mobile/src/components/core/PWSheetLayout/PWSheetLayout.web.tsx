@@ -71,6 +71,8 @@ export const PWSheetLayout = ({
         bottomInset: insets.bottom,
         hasFooter: footer != null,
         isKeyboardVisible,
+        // The web sheet is not content-measured by gorhom: the footer stacks.
+        footerInset: 0,
     })
 
     const scrollable = (
