@@ -35,6 +35,9 @@ export enum DiscoverEvent {
     FolderDelete = 'discover_folder_delete',
     FolderRearrange = 'discover_folder_rearrange',
     FavoriteToastTap = 'discover_favorite_toast_tap',
+    FavoritesCategorySelect = 'discover_favorites_category_select',
+    FavoritesSortSelect = 'discover_favorites_sort_select',
+    FavoritesRearrange = 'discover_favorites_rearrange',
     LegacyFavoritesImported = 'discover_legacy_favorites_imported',
     LegacyFavoritesImportFailed = 'discover_favorites_migration_failed',
 }
@@ -77,6 +80,12 @@ export interface DiscoverRequiredPayloads {
     [DiscoverEvent.FolderRearrange]: {
         [Key.RemovedCount]: number
     }
+    /** `all` when the filter is cleared. */
+    [DiscoverEvent.FavoritesCategorySelect]: { [Key.CategoryName]: string }
+    [DiscoverEvent.FavoritesSortSelect]: {
+        [Key.FilterName]: 'recent' | 'visits'
+    }
+    [DiscoverEvent.FavoritesRearrange]: { [Key.RemovedCount]: number }
     [DiscoverEvent.LegacyFavoritesImported]: {
         [Key.ImportedCount]: number
         [Key.SkippedCount]: number

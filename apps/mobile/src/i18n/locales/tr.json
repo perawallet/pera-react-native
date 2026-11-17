@@ -37,6 +37,7 @@
         "home": {
             "title": "Discover",
             "top_dapps": "Popüler dApp’ler",
+            "explore_dapps": "dApp’leri keşfet",
             "news": "Haberler",
             "dapps_error": "Öne çıkan dApp’ler yüklenemedi",
             "dapps_empty": "{{chain}} ağında henüz dApp yok"
@@ -116,6 +117,20 @@
             "added_toast": {
                 "title": "Favorilere eklendi",
                 "body": "Bir klasöre eklemek için dokun"
+            },
+            "search_placeholder": "Favorilerde ara",
+            "filter": {
+                "all_categories": "Tüm kategoriler",
+                "categories_title": "Kategoriler",
+                "all": "Tümü",
+                "sort_title": "Sırala",
+                "sort_recent": "Son eklenenler",
+                "sort_visits": "En çok ziyaret edilenler"
+            },
+            "rearrange": {
+                "title": "Yeniden sırala",
+                "open_label": "Favorileri yeniden sırala",
+                "remove_label": "Favorilerden çıkar: {{name}}"
             }
         },
         "add_to_folder": {

@@ -37,6 +37,7 @@
         "home": {
             "title": "Entdecken",
             "top_dapps": "Top-dApps",
+            "explore_dapps": "dApps entdecken",
             "news": "Neuigkeiten",
             "dapps_error": "Die empfohlenen dApps konnten nicht geladen werden",
             "dapps_empty": "Noch keine dApps auf {{chain}}"
@@ -116,6 +117,20 @@
             "added_toast": {
                 "title": "Zu Favoriten hinzugefügt",
                 "body": "Tippe, um es einem Ordner hinzuzufügen"
+            },
+            "search_placeholder": "Favoriten durchsuchen",
+            "filter": {
+                "all_categories": "Alle Kategorien",
+                "categories_title": "Kategorien",
+                "all": "Alle",
+                "sort_title": "Sortieren nach",
+                "sort_recent": "Zuletzt hinzugefügt",
+                "sort_visits": "Meistbesucht"
+            },
+            "rearrange": {
+                "title": "Neu anordnen",
+                "open_label": "Favoriten neu anordnen",
+                "remove_label": "{{name}} aus den Favoriten entfernen"
             }
         },
         "add_to_folder": {
