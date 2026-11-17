@@ -62,6 +62,14 @@ const refuse: (reason: string) => never = reason => {
     throw new SwapQuoteMismatchError(reason)
 }
 
+/** The order calls a contract the app hasn't declared for this route, as opposed to a malformed order. */
+export class EvmSwapRouteUndeclaredError extends SwapQuoteMismatchError {
+    constructor() {
+        super('The swap calls a contract the route does not declare')
+        this.name = 'EvmSwapRouteUndeclaredError'
+    }
+}
+
 const selectorOf = (call: EvmSwapCall): Nullable<Hex> =>
     size(call.data) >= SELECTOR_SIZE ? slice(call.data, 0, SELECTOR_SIZE) : null
 
@@ -151,7 +159,7 @@ export const validateEvmSwapTransactions = ({
         refuse('The last transaction is not the swap')
     }
     if (!routeContracts.some(to => areEvmAddressesEqual(to, swap.to))) {
-        refuse('The swap calls a contract the route does not declare')
+        throw new EvmSwapRouteUndeclaredError()
     }
 
     const amount = toBigInt(sourceAmount)

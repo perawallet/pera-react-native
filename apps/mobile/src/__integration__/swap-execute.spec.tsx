@@ -53,7 +53,10 @@ import {
     useCreateSwapOrderMutation,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
-import { mockCreateSwapOrder } from '@perawallet/wallet-core-swaps/test-handlers'
+import {
+    mockCreateSwapOrder,
+    mockCreateSwapQuotes,
+} from '@perawallet/wallet-core-swaps/test-handlers'
 import { SigningOverlays } from '@modules/signing/shell'
 import {
     useSwapExecution,
@@ -143,6 +146,65 @@ describe('Flow: Swap execute (order → sign → submit → report)', () => {
                 },
             ],
         })
+    })
+
+    it('Given a quote with under 15 s left, when the swap runs, then a fresh offer from the same provider is fetched and its order is placed and sent', async () => {
+        const sender = await startSwapHost()
+        fund(sender)
+        const routerAsset = (assetId: string, unitName: string) => ({
+            asset_id: `${ALGORAND_MAINNET_CAIP2}/asa:${assetId}`,
+            name: unitName,
+            unit_name: unitName,
+            fraction_decimals: 6,
+            logo: null,
+            verification_tier: 'verified',
+            cross_chain_asset_group: null,
+        })
+        server.use(
+            mockCreateSwapQuotes({
+                response: {
+                    results: [
+                        {
+                            quote_id: 'quote-2',
+                            aggregator: 'pera',
+                            provider: 'tinyman',
+                            source_asset: routerAsset('0', 'ALGO'),
+                            destination_asset: routerAsset('31566704', 'USDC'),
+                            source_amount: '1000000',
+                            destination_amount_expected: '300000',
+                            destination_amount_minimum: '297000',
+                            source_amount_usd_value: null,
+                            destination_amount_usd_value: null,
+                            fees: [],
+                            funding_method: 'wallet',
+                            expires_at: null,
+                            deposit_address: null,
+                            extras: null,
+                        },
+                    ],
+                },
+            }),
+        )
+        mockSwapOrderWithPayment({ sender, receiver: REVIEW_RECEIVER_ADDRESS })
+        const orderBodies: Array<Record<string, unknown>> = []
+        server.use(
+            http.post('*/api/v4/swap/orders/', async ({ request }) => {
+                orderBodies.push(
+                    (await request.clone().json()) as Record<string, unknown>,
+                )
+                return undefined
+            }),
+        )
+        spyOnSwapSubmissionAndReports()
+        const quote = {
+            ...buildRouterSwapQuote(sender),
+            fetchedAt: Date.now() - 50_000,
+        }
+
+        const outcome = await executeSwap!(quote)
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(orderBodies).toEqual([{ quote_id: 'quote-2' }])
     })
 
     it('Given the router no longer has the quote, when the swap runs, then it resolves as a stale quote and nothing is signed, submitted or reported', async () => {

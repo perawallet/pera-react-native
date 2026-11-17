@@ -4296,9 +4296,18 @@
         },
         "execution": {
             "error_title": "Falha na conversão",
-            "error_body": "Algo deu errado durante a conversão. Tente novamente.",
+            "failed_title": {
+                "prepare": "Não foi possível iniciar a conversão",
+                "approval": "Falha na aprovação",
+                "swap": "Falha na conversão"
+            },
             "provider_failed_body": "Este provedor não conseguiu concluir a conversão. Tente outro provedor.",
-            "insufficient_native_title": "{{symbol}} insuficiente",
+            "provider_unavailable_body": "O provedor está indisponível no momento. Tente novamente em instantes.",
+            "route_unverified_body": "A Pera ainda não consegue verificar o contrato de conversão deste provedor na rede {{network}}, então nada foi assinado. Tente outro provedor ou tente novamente mais tarde.",
+            "quote_mismatch_body": "As transações do provedor não correspondiam a esta cotação, então nada foi assinado. Tente novamente ou escolha outro provedor.",
+            "unsupported_order_body": "A Pera não consegue concluir o pedido deste provedor, então nada foi assinado. Escolha outro provedor.",
+            "signing_failed_body": "Não foi possível assinar a transação, então ela não foi enviada. Tente novamente.",
+            "order_insufficient_balance_body": "Seu saldo não cobre este valor e a taxa de rede. Tente um valor menor ou adicione fundos para a taxa.",
             "insufficient_native_body": "Esta conta precisa de pelo menos {{amount}} {{symbol}} a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais {{symbol}} e tente novamente.",
             "success_title": "Conversão concluída",
             "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",

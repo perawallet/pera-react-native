@@ -46,6 +46,7 @@ import {
     type SwapOrder,
     type SwapReportedTransaction,
     type SwapSignTransactionsStep,
+    type SwapTransactionStep,
 } from '@perawallet/wallet-core-swaps'
 import { EvmErrorCode, evmErrorCodeOf, toEvmError } from '../blockchain/errors'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
@@ -72,6 +73,7 @@ import {
     readEvmAllowance,
 } from './source-cost'
 import {
+    EvmSwapRouteUndeclaredError,
     validateEvmSwapTransactions,
     type EvmSwapPlan,
 } from './validate-swap-transactions'
@@ -235,6 +237,7 @@ const buildAndSign = async (
     sender: Address,
     call: EvmSwapCall,
     summary: TransactionSummary,
+    step: SwapTransactionStep,
     { signingSource }: ExecuteSwapParams,
     { scope, addSignRequest }: SwapExecutionContext,
 ): Promise<SignedCall | ExecuteSwapResult> => {
@@ -254,6 +257,7 @@ const buildAndSign = async (
             phase: 'prepare',
             reason: 'prepare-failed',
             error: toEvmError(error, chain.row.nativeAsset.symbol),
+            step,
         })
     }
     if (shortfall) {
@@ -262,6 +266,7 @@ const buildAndSign = async (
             reason: 'insufficient-native-balance',
             chainId: scope.chainId,
             shortfall,
+            step,
         })
     }
     try {
@@ -276,7 +281,7 @@ const buildAndSign = async (
     } catch (error) {
         if (isUserRejection(error)) return { kind: 'user-rejected' }
         logger.warn('[swap] signing failed', { error: `${error}` })
-        return failed({ phase: 'signing', reason: 'signing-failed' })
+        return failed({ phase: 'signing', reason: 'signing-failed', step })
     }
 }
 
@@ -306,6 +311,7 @@ const sendApproval = async (
         sender,
         approval,
         summary,
+        'approval',
         input,
         context,
     )
@@ -332,6 +338,7 @@ const sendApproval = async (
                     ? 'reverted'
                     : 'submission-failed',
             error,
+            step: 'approval',
         })
     }
 }
@@ -393,12 +400,18 @@ export const executeEvmSwap = async ({
     const { scope, createOrder, reportOrder } = context
     const { onOrderSubmitting, onOrderRejected } = context
 
-    if (!isQuoteFresh(quote)) return { kind: 'stale-quote' }
-
-    // With nothing declared the check would refuse any order, so don't create one.
+    // With nothing declared the check would refuse any order, so don't create
+    // one. It sits above the freshness check so a lapsed quote still reports
+    // the unverifiable route rather than stale-quote.
     if (routeContracts.length === 0) {
-        return failed({ phase: 'prepare', reason: 'quote-mismatch' })
+        return failed({
+            phase: 'prepare',
+            reason: 'route-unverified',
+            chainId: scope.chainId,
+        })
     }
+
+    if (!isQuoteFresh(quote)) return { kind: 'stale-quote' }
 
     const client = createEvmClient(scope, ctx, chain)
     const sender = getAddress(quote.request.sourceAddress)
@@ -464,7 +477,15 @@ export const executeEvmSwap = async ({
         // Raw text goes to the log only; it must never reach the toast body.
         logger.warn('[swap] validation failed', { error: `${error}` })
         cancelOrder()
-        return failed({ phase: 'prepare', reason: 'quote-mismatch' })
+        return failed(
+            error instanceof EvmSwapRouteUndeclaredError
+                ? {
+                      phase: 'prepare',
+                      reason: 'route-unverified',
+                      chainId: scope.chainId,
+                  }
+                : { phase: 'prepare', reason: 'quote-mismatch' },
+        )
     }
 
     let approval: Nullable<EvmSwapCall> = plan.approval
@@ -527,6 +548,7 @@ export const executeEvmSwap = async ({
             },
             value: sourceAmount,
         }),
+        'swap',
         input,
         context,
     )
@@ -551,6 +573,7 @@ export const executeEvmSwap = async ({
             phase: 'submission',
             reason: 'submission-failed',
             error,
+            step: 'swap',
         })
     }
     reported.push({ scope, txHash: swapTxId, purpose: lastStep.purpose })
@@ -579,6 +602,7 @@ export const executeEvmSwap = async ({
                 phase: 'submission',
                 reason: 'reverted',
                 error,
+                step: 'swap',
             })
         }
         // Reported and in the ledger: the reconciler settles it from here.
