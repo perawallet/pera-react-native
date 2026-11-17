@@ -31,6 +31,36 @@ export const isSwapQuoteGoneError = (error: unknown): boolean =>
     error.backendCode !== undefined &&
     QUOTE_GONE_CODES.includes(error.backendCode)
 
+/** What the order call's refusal means for the user, whatever the provider's own wording. */
+export type SwapOrderRefusal =
+    | 'insufficient-balance'
+    | 'provider-unavailable'
+    | 'provider-declined'
+
+const UNAVAILABLE_CODES: readonly string[] = [
+    'upstream_unavailable',
+    'upstream_rate_limited',
+    'route_unavailable',
+]
+
+const DECLINED_CODES: readonly string[] = [
+    'order_rejected',
+    'provider_response_rejected',
+]
+
+/** Null for anything that isn't a router answer (offline, timeout, a plain Error). */
+export const swapOrderRefusalOf = (
+    error: unknown,
+): Nullable<SwapOrderRefusal> => {
+    if (!isPeraNetworkError(error)) return null
+    if (error.kind !== 'client' && error.kind !== 'server') return null
+    const code = resolveRouterErrorBody(error)?.code ?? error.backendCode
+    if (code === 'insufficient_balance') return 'insufficient-balance'
+    if (code && UNAVAILABLE_CODES.includes(code)) return 'provider-unavailable'
+    if (code && DECLINED_CODES.includes(code)) return 'provider-declined'
+    return error.kind === 'server' ? 'provider-unavailable' : 'provider-declined'
+}
+
 /** Why the router gave no quote. Limits are base units of the request's source asset; null when the router named none. */
 export type SwapQuoteFailure =
     | { kind: 'amount-too-low'; minimum: Nullable<Decimal> }
