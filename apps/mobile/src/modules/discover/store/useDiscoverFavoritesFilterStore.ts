@@ -50,8 +50,7 @@ export const useDiscoverFavoritesFilterStore = create<
 // Once no favorite has the chosen category, go back to All for good, so a
 // later favorite in that category doesn't switch the filter back on unasked.
 useDiscoverFavoritesStore.subscribe(({ favorites }) => {
-    const { category, setCategory } =
-        useDiscoverFavoritesFilterStore.getState()
+    const { category, setCategory } = useDiscoverFavoritesFilterStore.getState()
     if (
         category !== null &&
         !Object.values(favorites).some(dapp =>

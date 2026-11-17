@@ -18,21 +18,4 @@ export const useStyles = makeStyles(theme => ({
         // lanekeep-ignore-next-line pera/no-numeric-sizes reason: Figma's 6 pt chip gap, between the xs (4) and sm (8) tokens
         gap: theme.spacing.xs + theme.spacing.xxs,
     },
-    // Figma: 1 pt border, 16 radius, 16 x 6 padding, 8 gap to the chevron.
-    chip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.lg,
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: Figma's 6 pt chip padding, between the xs (4) and sm (8) tokens
-        paddingVertical: theme.spacing.xs + theme.spacing.xxs,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.borderRadius.lg,
-        flexShrink: 1,
-    },
-    label: {
-        color: theme.colors.textGray,
-        flexShrink: 1,
-    },
 }))

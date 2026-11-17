@@ -10,38 +10,12 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWView } from '@components/core'
+import { FavoritesFilterChip } from '../FavoritesFilterChip'
 import { useFavoritesFilterBar } from './useFavoritesFilterBar'
 import { useStyles } from './styles'
 
 export type FavoritesFilterBarProps = { testID?: string }
-
-type ChipProps = { label: string; onPress: () => void; testID: string }
-
-const FilterChip = ({ label, onPress, testID }: ChipProps) => {
-    const styles = useStyles()
-    return (
-        <PWTouchableOpacity
-            style={styles.chip}
-            onPress={onPress}
-            testID={testID}
-        >
-            <PWText
-                variant='body'
-                weight={500}
-                numberOfLines={1}
-                style={styles.label}
-            >
-                {label}
-            </PWText>
-            <PWIcon
-                name='chevron-down'
-                size='sm'
-                variant='secondary'
-            />
-        </PWTouchableOpacity>
-    )
-}
 
 /** The category and sort chips above a favorites list (Figma "All categories", "Recently added"). */
 export const FavoritesFilterBar = ({
@@ -54,12 +28,12 @@ export const FavoritesFilterBar = ({
             style={styles.row}
             testID={testID}
         >
-            <FilterChip
+            <FavoritesFilterChip
                 label={bar.categoryLabel}
                 onPress={bar.openCategories}
                 testID={`${testID}_category`}
             />
-            <FilterChip
+            <FavoritesFilterChip
                 label={bar.sortLabel}
                 onPress={bar.openSort}
                 testID={`${testID}_sort`}
