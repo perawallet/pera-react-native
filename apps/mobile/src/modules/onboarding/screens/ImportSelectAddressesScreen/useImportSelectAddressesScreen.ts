@@ -276,14 +276,24 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         ].filter(address => address !== ''),
                     ),
                 ]
-                // Nothing found active on Algorand has accounts rekeyed to it worth a wait; a
-                // later "Scan for rekeyed accounts" still finds any.
-                const discoveredRekeyedAccounts = isFoundActiveOnlyElsewhere(
-                    accountsToAdd,
-                    ALGORAND_CHAIN_ID,
+                // Skipped only when discovery checked Algorand, found none of the selection active
+                // there, and the selection is the whole scan set: an already-held sibling of the
+                // same seed may have accounts rekeyed to it since it was imported. A later "Scan
+                // for rekeyed accounts" still finds any.
+                const selectedAddresses = new Set(accountsToAdd.map(addressOf))
+                const isScanSetTheSelection = scanAddresses.every(address =>
+                    selectedAddresses.has(address),
                 )
-                    ? []
-                    : await scanRekeyed(scanAddresses)
+                const isRekeyScanNeeded =
+                    failedChainIds?.includes(ALGORAND_CHAIN_ID) === true ||
+                    !isScanSetTheSelection ||
+                    !isFoundActiveOnlyElsewhere(
+                        accountsToAdd,
+                        ALGORAND_CHAIN_ID,
+                    )
+                const discoveredRekeyedAccounts = isRekeyScanNeeded
+                    ? await scanRekeyed(scanAddresses)
+                    : []
 
                 if (
                     discoveredRekeyedAccounts === REKEY_SCAN_UNAVAILABLE ||
@@ -354,6 +364,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         t,
         scope.chainId,
         addressOf,
+        failedChainIds,
     ])
 
     useEffect(() => {

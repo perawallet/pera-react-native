@@ -740,6 +740,14 @@ describe('isFoundActiveOnlyElsewhere', () => {
         ).toBe(false)
     })
 
+    it('is false for an account with no entry on the chain, whose address another account holds', () => {
+        const accounts = [accountOn({ ethereum: 'discovery' })]
+
+        expect(
+            isFoundActiveOnlyElsewhere(accounts, 'algorand' as ChainId),
+        ).toBe(false)
+    })
+
     it('is false with no accounts', () => {
         expect(isFoundActiveOnlyElsewhere([], 'algorand' as ChainId)).toBe(
             false,
