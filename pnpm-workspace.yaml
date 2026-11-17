@@ -112,10 +112,10 @@ catalog:
   expo: 58.0.17
   expo-application: 58.1.2
   expo-device: 58.0.5
-  expo-local-authentication: 58.0.2
+  expo-local-authentication: 58.0.3
   expo-localization: 58.0.5
-  expo-notifications: 58.1.8
-  expo-sqlite: 58.0.15
+  expo-notifications: 58.1.9
+  expo-sqlite: 58.0.18
   fake-indexeddb: 6.2.8
   falcon-1024: 0.2.0
   # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
@@ -129,7 +129,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.15.0
   msw: ^2.14.6
-  oxfmt: ^0.77.0
+  oxfmt: ^0.78.0
   punycode: ^2.3.1
   react: 19.3.0
   react-dom: 19.3.0
